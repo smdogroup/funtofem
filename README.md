@@ -2,13 +2,7 @@
 
 This repository contains the FUNtoFEM coupling framework and load and displacement transfer tools for aeroelastic analysis and optimization.
 
-### Documentation ###
-
-[Documentation for users and developers](https://github.gatech.edu/pages/gkennedy9/funtofem/index.html)
-
 ### Installation ###
-
-[Installation](https://github.gatech.edu/pages/gkennedy9/funtofem/install.html)
 
 * Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
 * In the funtofem/ directory, copy Makefile.in.info to Makefile.in and edit
