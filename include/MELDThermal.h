@@ -1,0 +1,94 @@
+#ifndef MELDTHERMAL_H
+#define MELDTHERMAL_H
+
+#include "mpi.h"
+#include "TransferScheme.h"
+
+/*
+  MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
+  scheme for transferring loads and displacements between large non-matching
+  aerodynamic and structural meshes. It connects each aerodynamic node to a
+  specified number of nearest structural nodes, and extrapolates its motion
+  from the connected structural nodes through the solution of a shape-matching
+  problem. The aerodynamic loads are extrapolated to the structural mesh in a
+  consistent and conservative manner, derived from the principle of virtual
+  work.
+
+  Users must specify symmetry in the constructor 
+  isymm = -1 for no symmetry 
+        =  0 for symmetry across x = 0 
+        =  1 for symmetry across y = 0
+        =  2 for symmetry across z = 0
+
+  Users must also specify number of nearest nodes in initialize(num_nearest)
+*/
+
+class MELDThermal : public TransferScheme {
+ public:
+  // Constructor
+  MELDThermal( MPI_Comm all,
+	       MPI_Comm structure, int _struct_root,
+	       MPI_Comm aero, int _aero_root,
+	       int _isymm, int num_nearest,
+	       F2FScalar beta );
+
+  // Destructor
+  ~MELDThermal();
+
+  // Initialization
+  virtual void initialize();
+
+  // Set the aerodynamic and structural node locations
+  void setStructNodes(const F2FScalar *struct_X, int struct_nnodes);
+  void setAeroNodes(const F2FScalar *aero_X, int aero_nnodes);
+
+  // Temperature and flux transfers
+  void transferTemp(const F2FScalar *struct_temp,
+                     F2FScalar *aero_temp);
+  void transferFlux(const F2FScalar *aero_flux,
+                    F2FScalar *struct_flux);
+
+  void transferDisps(const F2FScalar*, F2FScalar*){}
+  void transferLoads(const F2FScalar*, F2FScalar*){}
+  void applydDduS(const F2FScalar*, F2FScalar*){}
+  void applydDduSTrans(const F2FScalar*, F2FScalar*){}
+  void applydLduS(const F2FScalar*, F2FScalar*){}
+  void applydLduSTrans(const F2FScalar*, F2FScalar*){}
+  void applydDdxA0(const F2FScalar*, F2FScalar*){}
+  void applydDdxS0(const F2FScalar*, F2FScalar*){}
+  void applydLdxA0(const F2FScalar*, F2FScalar*){}
+  void applydLdxS0(const F2FScalar*, F2FScalar*){}
+ 
+ protected:
+  // Local structural data
+  int ns_local;
+  F2FScalar* Xs_local;
+
+  // Symmetry specifier
+  int isymm;
+
+  // Mesh update indicator
+  int mesh_update;
+
+  // Data for the connectivity and weighting
+  int nn; // number of nearest nodes
+  F2FScalar global_beta; // weighting decay parameter
+  int *global_conn; // Connectivity for each thermal node
+
+  // Data for thermal transfer
+  F2FScalar *global_W;
+  F2FScalar *global_xs0bar;
+  F2FScalar *global_R;
+  F2FScalar *global_S;
+
+  // Parallel movement of structural vectors
+  void distributeStructuralMesh();
+  void collectStructuralVector(const F2FScalar *local, F2FScalar *global, int vars_per_node=3);
+  void distributeStructuralVector(F2FScalar *global, F2FScalar *local, int vars_per_node=3);
+  
+  // Auxiliary functions for creating connectivity and weighting
+  void setAeroStructConn(int *aerostruct_conn);
+  void computeWeights(F2FScalar *W);
+};
+
+#endif //MELDTHERMAL_H

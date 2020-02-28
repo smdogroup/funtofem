@@ -167,18 +167,18 @@ void MELD::collectStructuralVector(const F2FScalar *local, F2FScalar *global) {
 void MELD::distributeStructuralVector(F2FScalar *global, F2FScalar *local) {
 
   // Get the contributions from each aero processor
-  MPI_Allreduce(MPI_IN_PLACE,global, ns*3, F2F_MPI_TYPE,MPI_SUM,global_comm);
+  MPI_Allreduce(MPI_IN_PLACE, global, ns*3, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Collect how many nodes each structural processor has
   if ( struct_comm != MPI_COMM_NULL ) {
     int struct_nprocs;
     int struct_rank;
-    MPI_Comm_size(struct_comm,&struct_nprocs);
-    MPI_Comm_rank(struct_comm,&struct_rank);
+    MPI_Comm_size(struct_comm, &struct_nprocs);
+    MPI_Comm_rank(struct_comm, &struct_rank);
 
     int *ns_list = new int[struct_nprocs];
 
-    MPI_Gather(&ns_local,1, MPI_INT, ns_list, 1, MPI_INT, 0, struct_comm);
+    MPI_Gather(&ns_local, 1, MPI_INT, ns_list, 1, MPI_INT, 0, struct_comm);
 
     // Distribute to the structural processors
     int *disps = new int[struct_nprocs];
@@ -202,7 +202,7 @@ void MELD::distributeStructuralVector(F2FScalar *global, F2FScalar *local) {
 }
 
 void MELD::distributeStructuralMesh() {
-  MPI_Allreduce(MPI_IN_PLACE,&mesh_update,1,MPI_INT,MPI_SUM,global_comm);
+  MPI_Allreduce(MPI_IN_PLACE, &mesh_update, 1, MPI_INT, MPI_SUM, global_comm);
   if ( mesh_update > 0 ) {
     ns = 0;
     if (struct_comm != MPI_COMM_NULL) {
@@ -343,8 +343,8 @@ void MELD::computeWeights(F2FScalar *W) {
     F2FScalar wtotal = 0.0;
     F2FScalar v[3];
 
-    // Find the minimum distance for normalization
-    F2FScalar v_min = 1.0e9;
+    // Find the average squared distance for normalization
+    F2FScalar v2_avg = 0.0;
     F2FScalar dist;
 
     for ( int j = 0; j < nn; j++ ){
@@ -358,11 +358,11 @@ void MELD::computeWeights(F2FScalar *W) {
         rxs0[isymm] *= -1.0;
         vec_diff(rxs0, xa0, v);
       }
-      v_min += vec_dot(v, v)/nn;
+      v2_avg += vec_dot(v, v)/nn;
     }
 
     // Make sure we don't divide by zero
-    if (F2FRealPart(v_min) < 1.0e-7) v_min = 1.0e-7;
+    if (F2FRealPart(v2_avg) < 1.0e-7) v2_avg = 1.0e-7;
 
     for ( int j = 0; j < nn; j++ ){
       if (local_conn[j] < ns) {
@@ -375,7 +375,7 @@ void MELD::computeWeights(F2FScalar *W) {
         rxs0[isymm] *= -1.0;
         vec_diff(rxs0, xa0, v);
       }
-      w[j] = exp(-global_beta*vec_dot(v, v)/v_min);
+      w[j] = exp(-global_beta*vec_dot(v, v)/v2_avg);
       wtotal += w[j];
     }
 
