@@ -80,6 +80,19 @@ cdef extern from "MELD.h":
          MPI_Comm aero, int aero_root,
          int symmetry, int num_nearest, F2FScalar beta)
 
+cdef extern from "MELDThermal.h":
+  cppclass MELDThermal(TransferScheme):
+    # Constructor
+    MELDThermal(MPI_Comm all,
+                MPI_Comm structure, int struct_root,
+                MPI_Comm aero, int aero_root,
+                int symmetry, int num_nearest, F2FScalar beta)
+
+    void transferTemp(const F2FScalar *struct_temp,
+                               F2FScalar *aero_temp)
+    void transferFlux(const F2FScalar *aero_flux,
+                               F2FScalar *struct_flux)
+
 cdef extern from "LinearizedMELD.h":
   cppclass LinearizedMELD(MELD):
     # Constructor

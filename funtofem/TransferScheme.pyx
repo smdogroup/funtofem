@@ -621,6 +621,100 @@ cdef class pyMELD(pyTransferScheme):
     def __dealloc__(self):
         del self.ptr
 
+
+# Wrap the MELD class
+cdef class pyMELDThermal(pyTransferScheme):
+    """
+    MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
+    scheme for transferring loads and displacements between large non-matching
+    aerodynamic and structural meshes. It connects each aerodynamic node to a
+    specified number of nearest structural nodes, and extrapolates its motion
+    from the connected structural nodes through the solution of a shape-matching
+    problem. The aerodynamic loads are extrapolated to the structural mesh in a
+    consistent and conservative manner, derived from the principle of virtual
+    work
+
+    Version modified to transfer temperature and flux rather than load and displacement
+
+    Parameters
+    ----------
+    comm: MPI.comm
+        MPI communicator for all processes
+    struct: MPI.comm
+        MPI communicator for the structural root process
+    struct_root: int
+        id of the structural root process
+    aero: MPI.comm
+        MPI communicator for the aerodynamic root process
+    aero_root: int
+        id of the aerodynamic root process
+    symmetry: int
+        symmetry specifier (-1 for none, 0 for x-plane, 1 for y-plane,
+        2 for z-plane)
+    num_nearest: int
+        number of structural nodes linked to each aerodynamic node
+    beta: float
+        weighting decay parameter
+
+    """
+    def __cinit__(self, MPI.Comm comm,
+                  MPI.Comm struct, int struct_root,
+                  MPI.Comm aero, int aero_root,
+                  int symmetry, int num_nearest,
+                  F2FScalar beta):
+        cdef MPI_Comm c_comm = comm.ob_mpi
+        cdef MPI_Comm struct_comm = struct.ob_mpi
+        cdef MPI_Comm aero_comm = aero.ob_mpi
+
+        # Allocate the underlying class
+        self.ptr = new MELDThermal(c_comm, struct_comm, struct_root, 
+                                   aero_comm, aero_root, symmetry,
+                                   num_nearest, beta)
+
+        return
+
+    def __dealloc__(self):
+        del self.ptr
+
+    def transferTemp(self, 
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temp,
+                     np.ndarray[F2FScalar, ndim=1, mode='c'] aero_temp):
+        """
+        Convert the input structural node displacements into aerodynamic
+        surface node displacements and store in empty input array
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural temperatures
+        aero_disps: ndarray
+            One-dimensional empty array of size of aerodynamic temperatures
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.transferTemp(<F2FScalar*>struct_temp.data, <F2FScalar*>aero_temp.data)         
+        return
+
+    def transferFlux(self, 
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
+                     np.ndarray[F2FScalar, ndim=1, mode='c'] struct_flux):
+        """
+        Convert the input aerodynamic surface loads into structural loads and
+        store in empty input array
+
+        Parameters
+        ----------
+        aero_loads: ndarray
+            One-dimensional array of aerodynamic surface flux
+        struct_loads: ndarray
+            One-dimensional empty array of size of structural flux
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.transferFlux(<F2FScalar*>aero_flux.data, <F2FScalar*>struct_flux.data)
+        return
+
+
 # Wrap the MELD class
 cdef class pyLinearizedMELD(pyTransferScheme):
     """
