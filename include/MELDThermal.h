@@ -48,6 +48,28 @@ class MELDThermal : public TransferScheme {
   void transferFlux(const F2FScalar *aero_flux,
                     F2FScalar *struct_flux);
 
+  // Action of transpose Jacobians needed for solving adjoint system
+  void applydTdtS(const F2FScalar *vecs, F2FScalar *prods);
+  void applydTdtSTrans(const F2FScalar *vecs, F2FScalar *prods);
+  void applydQdqA(const F2FScalar *vecs, F2FScalar *prods);
+  void applydQdqATrans(const F2FScalar *vecs, F2FScalar *prods);
+
+  //Test Functions
+  void testFluxTransfer(const F2FScalar *struct_temps,
+                                      const F2FScalar *aero_flux,
+                                      const F2FScalar *pert, 
+                                      const F2FScalar h);
+  void testTempJacVecProducts(const F2FScalar *struct_temps, 
+                                            const F2FScalar *test_vec_a, 
+                                            const F2FScalar *test_vec_s,
+                                            const F2FScalar h);
+  void testFluxJacVecProducts(const F2FScalar *struct_temps, 
+                                            const F2FScalar *aero_flux,
+                                            const F2FScalar *test_vec_s1, 
+                                            const F2FScalar *test_vec_s2,
+                                            const F2FScalar h);
+
+  // Inherited Displacement and Load Transfer functions (NOT implemented for Thermal MELD scheme)
   void transferDisps(const F2FScalar*, F2FScalar*){}
   void transferLoads(const F2FScalar*, F2FScalar*){}
   void applydDduS(const F2FScalar*, F2FScalar*){}

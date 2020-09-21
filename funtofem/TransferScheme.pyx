@@ -713,6 +713,181 @@ cdef class pyMELDThermal(pyTransferScheme):
         cdef MELDThermal *mt = <MELDThermal*> self.ptr
         mt.transferFlux(<F2FScalar*>aero_flux.data, <F2FScalar*>struct_flux.data)
         return
+    
+    def applydTdtS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the
+        displacement transfer residuals with respect to the structural
+        displacements to an input vector and stores the products in empty
+        input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural displacements
+        p: ndarray
+            One-dimensional empty array of size of aerodynamic displacements
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.applydTdtS(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydTdtSTrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the displacement transfer residuals with respect to the
+        structural displacements to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of aerodynamic displacements
+        p: ndarray
+            One-dimensional empty array of size of structural displacements
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.applydTdtSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydQdqA(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the load
+        transfer residuals with respect to the structural displacements to an
+        input vector and store the products in empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural displacements
+        p: ndarray
+            One-dimensional empty array of size of structural loads
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.applydQdqA(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydQdqATrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the load transfer residuals with respect to the
+        structural displacements to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural loads
+        p: ndarray
+            One-dimensional empty array of size of structural displacements
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.applydQdqATrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+
+    def testFluxTransfer(self, 
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
+            F2FScalar h):
+        """
+        Test the output of :meth:`transferLoads` by comparison with results from
+        finite difference approximation or complex step approximation
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural displacements
+        aero_loads: ndarray
+            One-dimensional array of aerodynamic loads
+        test_vec_s: ndarray
+            One-dimensional array of perturbations of size of structural
+            displacements
+        h: float
+            Step size (for finite difference or complex step)
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.testFluxTransfer(<F2FScalar*>struct_temps.data,
+                                  <F2FScalar*>aero_flux.data,
+                                  <F2FScalar*>test_vec_s.data, h)
+
+        return
+
+    def testTempJacVecProducts(self, 
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
+            F2FScalar h):
+        """
+        Test output of :meth:`applydDduS` and :meth:`applydDduSTrans` by
+        comparison with results from finite difference approximation or
+        complex step approximation
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural displacements
+        test_vec_a: ndarray
+            One-dimensional array of perturbations of size of displacement
+            transfer residuals
+        test_vec_s: ndarray
+            One-dimensional array of perturbations of size of structural
+            displacements
+        h: float
+            Step size (for finite difference or complex step)
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.testTempJacVecProducts(<F2FScalar*>struct_temps.data,
+                                        <F2FScalar*>test_vec_a.data,
+                                        <F2FScalar*>test_vec_s.data, h)
+
+        return
+
+    def testFluxJacVecProducts(self, 
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
+            F2FScalar h):
+        """
+        Test output of :meth:`applydLduS` and :meth:`applydLduSTrans` by
+        comparison with results from finite difference approximation or
+        complex step approximation
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural displacements
+        aero_loads: ndarray
+            One-dimensional array of aerodynamic loads
+        test_vec_s1: ndarray
+            One-dimensional array of perturbations of size of load transfer
+            residuals
+        test_vec_s2: ndarray
+            One-dimensional array of perturbations of size of structural
+            displacements
+        h: float
+            Step size (for finite difference or complex step)
+
+        """
+        cdef MELDThermal *mt = <MELDThermal*> self.ptr
+        mt.testFluxJacVecProducts(<F2FScalar*>struct_temps.data,
+                                        <F2FScalar*>aero_flux.data,
+                                        <F2FScalar*>test_vec_s1.data,
+                                        <F2FScalar*>test_vec_s2.data, h)
+
+        return
 
 
 # Wrap the MELD class
