@@ -357,7 +357,7 @@ void MELDThermal::computeWeights(F2FScalar *W) {
         rxs0[isymm] *= -1.0;
         vec_diff(rxs0, xa0, v);
       }
-      v2_avg += vec_dot(v, v)/nn;
+      v2_avg += vec_dot(v, v)/(1.0*nn);
     }
 
     // Make sure we don't divide by zero
@@ -474,3 +474,469 @@ void MELDThermal::transferFlux(const F2FScalar *aero_flux,
   distributeStructuralVector(struct_flux_global, struct_flux, 1); // set vars_per_node = 1 for flux
   delete [] struct_flux_global;
 }
+
+/*  
+  Apply the action of the temperature transfer w.r.t structural temperature
+  Jacobian to the input vector
+  
+  Arguments
+  ---------
+  vecs  : input vector
+
+  Returns
+  --------
+  prods : output vector
+
+*/
+void MELDThermal::applydTdtS(const F2FScalar *vecs, F2FScalar *prods) {
+  // Make a global image of the input vector
+  F2FScalar *vecs_global = new F2FScalar[ns];
+  collectStructuralVector(vecs, vecs_global, 1); // set vars_per_node = 1 for temps
+
+  // Zero array of Jacobian-vector products every call
+  memset(prods, 0, na*sizeof(F2FScalar));
+
+  // Loop over all aerodynamic surface nodes
+  for ( int i = 0; i < na; i++ ) {
+
+    // Loop over linked structural nodes and add up nonzero contributions to
+    // Jacobian-vector product
+    for ( int j = 0; j < nn; j++ ){
+      int indx = global_conn[nn*i+j];
+
+      F2FScalar v;
+      if (indx < ns) {
+        v = vecs_global[indx];
+      }
+      else {
+        indx -= ns;
+        v = vecs_global[indx];
+      }
+
+      // Compute each component of the Jacobian vector product as follows:
+      // Jv[k] = w*v[k]
+      F2FScalar w = global_W[nn*i+j];
+      prods[i] +=  w*v;
+    }
+  }
+
+  // Clean up the allocated memory
+  delete [] vecs_global;
+}
+
+/*  
+  Apply the action of the temperature transfer w.r.t structural temperature
+  transpose Jacobian to the input vector
+  
+  Arguments
+  ----------
+  vecs  : input vector
+
+  Returns
+  --------
+  prods : output vector
+
+*/
+void MELDThermal::applydTdtSTrans( const F2FScalar *vecs, F2FScalar *prods ) {
+
+  // Zero array of transpose Jacobian-vector products every call
+  F2FScalar *prods_global = new F2FScalar[ns];
+  memset(prods_global, 0, ns*sizeof(F2FScalar));
+
+  // Loop over aerodynamic surface nodes
+  for ( int i = 0; i < na; i++ ) {
+
+    // Loop over linked structural nodes and add up nonzero contributions to
+    // Jacobian-vector product
+    for ( int j = 0; j < nn; j++ ) {
+      int indx = global_conn[nn*i+j];
+      F2FScalar w = global_W[nn*i+j];
+
+      if (indx < ns) {
+         prods_global[indx] += w*vecs[i];
+      }
+      else {
+        indx -= ns;
+        prods_global[indx] += w*vecs[i];
+      }
+    }
+  }
+
+  // distribute the results to the structural processors
+  distributeStructuralVector(prods_global, prods, 1); // set vars_per_node = 1 for flux
+
+  // clean up allocated memory
+  delete [] prods_global;
+}
+
+/*  
+  Apply the action of the flux transfer w.r.t structural temperature
+  Jacobian to the input vector
+  
+  Arguments
+  ---------
+  vecs  : input vector
+
+  Returns
+  --------
+  prods : output vector
+
+*/
+void MELDThermal::applydQdqA(const F2FScalar *vecs, F2FScalar *prods) {
+  applydTdtSTrans(vecs, prods);
+}
+
+/*  
+  Apply the action of the flux transfer w.r.t structural temperature
+  transpose Jacobian to the input vector
+  
+  Arguments
+  ----------
+  vecs  : input vector
+
+  Returns
+  --------
+  prods : output vector
+
+*/
+void MELDThermal::applydQdqATrans( const F2FScalar *vecs, F2FScalar *prods ) {
+  applydTdtS(vecs, prods);
+}
+
+/* 
+  Tests flux transfer by computing derivative of product of heat flux on and
+  temperatures of aerodynamic surface nodes with respect to structural node
+  temperatures and comparing with results from finite difference and complex
+  step approximation
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  aero_flux    : heat flux on aerodynamic surface nodes
+  pert         : direction of perturbation of structural node heat flux
+  h            : step size 
+
+*/
+void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
+                                      const F2FScalar *aero_flux,
+                                      const F2FScalar *pert, 
+                                      const F2FScalar h) {
+
+  // Transfer the structural temperatures
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Transfer the aerodynamic heat flux
+  F2FScalar *struct_flux = new F2FScalar[ns];
+  transferFlux(aero_flux, struct_flux);
+
+  // Compute directional derivative (structural heat flux times perturbation)
+  F2FScalar deriv = 0.0;
+  for (int j = 0; j < ns; j++ ) {
+    deriv += struct_flux[j]*pert[j];
+  }
+
+  // Approximate using complex step
+#ifdef FUNTOFEM_USE_COMPLEX
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  F2FScalar *Ua_cs = new F2FScalar[na];
+
+  for (int j = 0; j < ns; j++ ) {
+    Us_cs[j] = struct_temps[j] + F2FScalar(0.0, F2FRealPart(h)*F2FRealPart(pert[j]));
+  }
+  transferTemp(Us_cs, Ua_cs);
+
+  F2FScalar work = 0.0;
+  for ( int i = 0; i < na; i++ ) {
+    work += Fa[i]*Ua_cs[i];
+  }
+  F2FScalar deriv_approx = F2FImagPart(work)/h;
+  
+  delete [] Us_cs;
+  delete [] Ua_cs;
+
+  // Approximate using finite difference (central)
+#else
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  F2FScalar *Ua_pos = new F2FScalar[na];
+  F2FScalar *Ua_neg = new F2FScalar[na];
+  for (int j = 0; j < ns; j++ ) {
+    Us_pos[j] = struct_temps[j] + h*pert[j];
+    Us_neg[j] = struct_temps[j] - h*pert[j];
+  }
+
+  transferTemp(Us_pos, Ua_pos);
+  F2FScalar work_pos = 0.0;
+  for ( int i = 0; i < na; i++ ) {
+    work_pos += Fa[i]*Ua_pos[i];
+  }
+  
+
+  transferTemp(Us_neg, Ua_neg);
+  F2FScalar work_neg = 0.0;
+  for ( int i = 0; i < na; i++ ) {
+    work_neg += Fa[i]*Ua_neg[i];
+  }
+
+  F2FScalar deriv_approx = 0.5*(work_pos - work_neg)/h;
+
+  delete [] Us_pos;
+  delete [] Us_neg;
+  delete [] Ua_pos;
+  delete [] Ua_neg;
+#endif // FUNTOFEM_USE_COMPLEX
+  // Compute relative error
+  F2FScalar rel_error = (deriv - deriv_approx)/deriv_approx;
+
+  // Print results
+  printf("\n");
+  printf("Heat Flux transfer test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", F2FRealPart(rel_error));
+  printf("\n");
+
+  // Free allocated memory
+  delete [] aero_temps;
+  delete [] struct_flux;
+}	
+
+/* 
+  Tests output of dTdtSProducts and dTdtSTransProducts by computing a product
+  test_vec_a*J*test_vec_s (where J is the Jacobian) and comparing with results
+  from finite difference and complex step
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  test_vec_a   : test vector the length of the aero nodes
+  test_vec_s   : test vector the length of the struct nodes
+  h            : step size
+
+*/
+void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps, 
+                                            const F2FScalar *test_vec_a, 
+                                            const F2FScalar *test_vec_s,
+                                            const F2FScalar h) {
+  // Transfer the structural temperatures
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Compute the Jacobian-vector products using the function
+  F2FScalar *grad1 = new F2FScalar[na];
+  applydTdtS(test_vec_s, grad1);
+
+  // Compute product of test_vec_a with the Jacobian-vector products
+  F2FScalar deriv1 = 0.0;
+  for (int i = 0; i < na; i++) {
+    deriv1 += test_vec_a[i]*grad1[i];
+  }
+
+  // Compute the transpose Jacobian-vector products using the function
+  F2FScalar *grad2 = new F2FScalar[ns];
+  applydTdtSTrans(test_vec_a, grad2);
+
+  // Compute product of V1 with the transpose Jacobian-vector products
+  F2FScalar deriv2 = 0.0;
+  for (int j = 0; j < ns; j++) {
+    deriv2 += test_vec_s[j]*grad2[j];
+  }
+
+  // Compute complex step approximation
+#ifdef FUNTOFEM_USE_COMPLEX
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  memset(Us_cs, 0.0, ns*sizeof(F2FScalar));
+  for (int j = 0; j < ns; j++) {
+    Us_cs[j] += struct_temps[j] + F2FScalar(0.0, F2FRealPart(h*test_vec_s[j]));
+  }
+  transferTemp(Us_cs, aero_temps);
+
+  F2FScalar VPsi = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi += test_vec_a[i]*Psi;
+  }
+  F2FScalar deriv1_approx = 1.0*F2FImagPart(VPsi)/h;
+
+  delete [] Us_cs;
+
+  // Compute finite difference approximation (central)
+#else
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  for (int j = 0; j < ns; j++) {
+    Us_pos[j] = struct_temps[j] + h*test_vec_s[j];
+    Us_neg[j] = struct_temps[j] - h*test_vec_s[j];
+  }
+
+  transferTemp(Us_pos, aero_temps);
+  F2FScalar VPsi_pos = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi_pos += test_vec_a[i]*Psi;
+  }
+
+  transferTemp(Us_neg, aero_temps);
+  F2FScalar VPsi_neg = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi_neg += test_vec_a[i]*Psi;
+  }
+
+  F2FScalar deriv1_approx = -0.5*(VPsi_pos - VPsi_neg)/h;
+
+  delete [] Us_pos;
+  delete [] Us_neg;
+#endif
+  // Compute relative error
+  F2FScalar rel_error1 = (deriv1 - deriv1_approx)/deriv1_approx;
+  F2FScalar rel_error2 = (deriv2 - deriv1_approx)/deriv1_approx;
+
+  // Print out results of test
+  printf("V2^{T}*dT/dt_{S}*V1 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv1_approx));
+  printf("relative error = %22.15e\n", F2FRealPart(rel_error1));
+  printf("\n");
+
+  printf("V1^{T}*(dT/dt_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv1_approx));
+  printf("relative error = %22.15e\n", F2FRealPart(rel_error2));
+  printf("\n");
+
+  // Free allocated memory
+  delete [] aero_temps;
+  delete [] grad1;
+  delete [] grad2;
+}
+
+/*
+  Tests output of dQdqAProducts and dQdqATransProducts by computing a product
+  test_vec_a*J*test_vec_s (where J is the Jacobian) and comparing with
+  results from finite difference and complex step
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  aero_flux   : aerodynamic heat flux
+  test_vec_a  : test vector the size of aero nodes
+  test_vec_s  : test vector the size of struct nodes
+  h            : step size
+
+*/
+void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps, 
+                                            const F2FScalar *aero_flux,
+                                            const F2FScalar *test_vec_a, 
+                                            const F2FScalar *test_vec_s,
+                                            const F2FScalar h) {
+  // Transfer the structural displacements
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Transfer the aerodynamic loads to get MM, IPIV
+  F2FScalar *struct_flux = new F2FScalar[ns];
+  transferFlux(aero_flux, struct_flux);
+
+  // Compute the Jacobian-vector products using the function
+  F2FScalar *grad1 = new F2FScalar[ns];
+  applydQdqA(test_vec_a, grad1);
+
+  // Compute directional derivative
+  F2FScalar deriv1 = 0.0;
+  for (int j = 0; j < ns; j++) {
+    deriv1 += grad1[j]*test_vec_s[j];
+  }
+
+  // Compute transpose Jacobian-vector products using the function
+  F2FScalar *grad2 = new F2FScalar[na];
+  applydQdqATrans(test_vec_s, grad2);
+
+  // Compute directional derivative
+  F2FScalar deriv2 = 0.0;
+  for (int j = 0; j < na; j++ ) {
+    deriv2 += grad2[j]*test_vec_a[j];
+  }
+
+  // Approximate using complex step
+#ifdef FUNTOFEM_USE_COMPLEX
+  printf("complex\n");
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  memset(Us_cs, 0.0, ns*sizeof(F2FScalar)); //added
+  for (int j = 0; j < ns; j++ ) {
+    Us_cs[j] += struct_temps[j] + 
+               F2FScalar(0.0, F2FRealPart(h)*F2FRealPart(test_vec_s[j]));
+               //F2FScalar(0.0, F2FRealPart(h*test_vec_s1[j]));
+  }
+  transferTemp(Us_cs, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+
+  F2FScalar VPhi = 0.0;
+  for (int j = 0; j < na; j++) {
+    F2FScalar Phi = Xa[j] + aero_temps[j];
+    VPhi += test_vec_a[j]*Phi;
+  }
+  printf("VPhi real: %e\n",F2FRealPart(VPhi));
+  printf("VPhi imag: %e\n",F2FImagPart(VPhi));
+  F2FScalar deriv_approx = 1.0*F2FImagPart(VPhi)/h;
+  printf("Deriv Approx: %e\n",deriv_approx);
+  delete [] Us_cs;
+
+  // Approximate using finite difference (central)
+#else
+  printf("Finite Difference\n");
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  for (int j = 0; j < ns; j++) {
+    Us_pos[j] = struct_temps[j] + h*test_vec_a[j];
+    Us_neg[j] = struct_temps[j] - h*test_vec_a[j];
+  }
+
+  transferTemp(Us_pos, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+  F2FScalar VPhi_pos = 0.0;
+  for (int j = 0; j < ns; j++) {
+    F2FScalar Phi = struct_flux[j];
+    VPhi_pos += test_vec_s[j]*Phi;
+  }
+
+  transferTemp(Us_neg, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+  F2FScalar VPhi_neg = 0.0;
+  for (int j = 0; j < ns; j++) {
+    F2FScalar Phi = struct_flux[j];
+    VPhi_neg += test_vec_s[j]*Phi;
+  }
+
+  F2FScalar deriv_approx = -0.5*(VPhi_pos - VPhi_neg)/h;
+
+  delete [] Us_pos;
+  delete [] Us_neg;
+#endif
+  // Compute relative error
+  F2FScalar rel_error1 = (deriv1 - deriv_approx)/deriv_approx;
+  F2FScalar rel_error2 = (deriv2 - deriv_approx)/deriv_approx;
+
+  // Print out results of test
+  printf("V2^{T}*dQ/dq_{A}*V1 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", F2FRealPart(rel_error1));
+  printf("\n");
+
+  // Print out results of test
+  printf("V1^{T}*(dQ/dq_{A})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", F2FRealPart(rel_error2));
+  printf("\n");
+
+  // Free allocated memory
+  delete [] aero_temps;
+  delete [] struct_flux;
+  delete [] grad1;
+  delete [] grad2;
+}
+
+

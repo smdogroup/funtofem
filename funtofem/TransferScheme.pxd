@@ -80,6 +80,40 @@ cdef extern from "MELD.h":
          MPI_Comm aero, int aero_root,
          int symmetry, int num_nearest, F2FScalar beta)
 
+cdef extern from "MELDThermal.h":
+  cppclass MELDThermal(TransferScheme):
+    # Constructor
+    MELDThermal(MPI_Comm all,
+                MPI_Comm structure, int struct_root,
+                MPI_Comm aero, int aero_root,
+                int symmetry, int num_nearest, F2FScalar beta)
+
+    void transferTemp(const F2FScalar *struct_temp,
+                               F2FScalar *aero_temp)
+    void transferFlux(const F2FScalar *aero_flux,
+                               F2FScalar *struct_flux)
+
+    # Action of transpose Jacobians needed for solving adjoint system
+    void applydTdtS(const F2FScalar *vecs, F2FScalar *prods)
+    void applydTdtSTrans(const F2FScalar *vecs, F2FScalar *prods)
+    void applydQdqA(const F2FScalar *vecs, F2FScalar *prods)
+    void applydQdqATrans(const F2FScalar *vecs, F2FScalar *prods)
+
+    # Routines to test necessary functionality of transfer scheme
+    void testFluxTransfer(const F2FScalar *struct_temps,
+                          const F2FScalar *aero_flux,
+                          const F2FScalar *pert, 
+                          const F2FScalar h)
+    void testTempJacVecProducts(const F2FScalar *struct_temps, 
+                                const F2FScalar *test_vec_a, 
+                                const F2FScalar *test_vec_s,
+                                const F2FScalar h)
+    void testFluxJacVecProducts(const F2FScalar *struct_temps, 
+                                const F2FScalar *aero_flux,
+                                const F2FScalar *test_vec_s1, 
+                                const F2FScalar *test_vec_s2,
+                                const F2FScalar h)
+
 cdef extern from "LinearizedMELD.h":
   cppclass LinearizedMELD(MELD):
     # Constructor
