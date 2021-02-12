@@ -161,12 +161,12 @@ class TacsSteadyInterface(SolverInterface):
         if self.tacs_proc:
             self.func_grad = []
             dvsens = np.zeros(self.num_components)
-            for func,_ in enumerate(scenario.functions):
+            for func in scenario.functions:
 
                 # get df/dx if the function is a structural function
                 self.tacs.evalDVSens(self.funclist[func], dvsens)
                 if self.functag[func] == 0:
-                    dvsens *= 0.0
+                    dvsens.zeroEntries()
 
                 # get psi_S * dS/dx if a structural function that requires an adjoint
                 adjResProduct = np.zeros(dvsens.size)
@@ -193,7 +193,7 @@ class TacsSteadyInterface(SolverInterface):
                     self.tacs.evalXptSens(self.funclist[func], fXptSens)
                     df = fXptSens.getArray()
                     if self.functag[func] == 0:
-                        df *= 0.0
+                        df[:] = 0.0
 
                     # get psi_S * dS/dx if a structural function that requires an adjoint
                     if self.functag[func] > -1:

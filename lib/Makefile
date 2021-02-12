@@ -8,5 +8,6 @@ default:
 
 clean:
 	${RM} libtransfer_schemes.${SO_EXT}
+	${RM} libtransfer_schemes.a
 
 

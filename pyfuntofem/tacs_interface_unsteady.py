@@ -151,6 +151,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         body.struct_nnodes = nnodes
         body.struct_X = struct_X
+        body.struct_disps = np.zeros(3*nnodes,dtype=TACS.dtype)
 
         return
 
@@ -291,6 +292,7 @@ class TacsUnsteadyInterface(SolverInterface):
         if self.tacs_proc:
             for ibody, body in enumerate(bodies):
                 self.set_mesh(ibody,body)
+                self.get_mesh(ibody,body)
             self.integrator[scenario.id].iterate(0)
 
         return 0
@@ -305,7 +307,7 @@ class TacsUnsteadyInterface(SolverInterface):
                     load_vector[tacs_body.dof*n:tacs_body.dof*n+body.xfer_ndof] = body.struct_loads[body.xfer_ndof*i:body.xfer_ndof*i+body.xfer_ndof]
 
             # take a step in the structural solver
-            self.integrator[scenario.id].iterate(step,self.bvec_forces)
+            self.integrator[scenario.id].iterate(step, self.bvec_forces)
 
             # Extract the structural displacements
             self.tacs.getVariables(self.ans)
@@ -325,6 +327,7 @@ class TacsUnsteadyInterface(SolverInterface):
             self.struct_rhs_vec = []
             for func in range(len(self.funclist)):
                 self.struct_rhs_vec.append(self.tacs.createVec())
+        return 0
 
     def post_adjoint(self,scenario,bodies):
         self.eval_gradients(scenario)

@@ -24,7 +24,7 @@ from .base import Base
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
-    def __init__(self,name, id=0, group=None,steady=True,fun3d=False,steps=1000):
+    def __init__(self,name, id=0, group=None, steady=True, fun3d=True, steps=1000):
         """
         Parameters
         ----------

@@ -41,7 +41,7 @@ inc_dirs, lib_dirs, libs = get_mpi_flags()
 runtime_lib_dirs = get_global_dir(['lib'])
 
 # Relative paths for the include/library directories
-rel_inc_dirs = ['src','include']
+rel_inc_dirs = ['src', 'include']
 rel_lib_dirs = ['lib']
 libs.extend(['transfer_schemes'])
 
@@ -55,17 +55,16 @@ inc_dirs.extend([numpy.get_include(), mpi4py.get_include()])
 exts = []
 for mod in ['TransferScheme']:
     exts.append(Ext('funtofem.%s'%(mod), sources=['funtofem/%s.pyx'%(mod)],
-                    language='c++',
-                    include_dirs=inc_dirs, libraries=libs, 
+                    include_dirs=inc_dirs, libraries=libs,
                     library_dirs=lib_dirs, runtime_library_dirs=runtime_lib_dirs))
+
 for e in exts:
     e.cython_directives = {"embedsignature": True,
                            "binding":True}
-    
+
 setup(name='funtofem',
       version=0.1,
       description='Aeroelastic coupling framework and transfer schemes',
       author='Graeme J. Kennedy',
       author_email='graeme.kennedy@ae.gatech.edu',
-      ext_modules=cythonize(exts, language='c++', 
-        include_path=inc_dirs))
+      ext_modules=cythonize(exts, include_path=inc_dirs))

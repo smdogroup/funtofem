@@ -447,7 +447,7 @@ void MELDThermal::transferTemp(const F2FScalar *struct_Temp,
 void MELDThermal::transferFlux(const F2FScalar *aero_flux,
                                F2FScalar *struct_flux) {
   // Copy prescribed aero loads into member variable
-  memcpy(Fa, aero_flux, na*sizeof(F2FScalar));  
+  memcpy(Fa, aero_flux, na*sizeof(F2FScalar));
 
   // Zero struct flux
   F2FScalar *struct_flux_global = new F2FScalar[ns];
@@ -475,10 +475,10 @@ void MELDThermal::transferFlux(const F2FScalar *aero_flux,
   delete [] struct_flux_global;
 }
 
-/*  
+/*
   Apply the action of the temperature transfer w.r.t structural temperature
   Jacobian to the input vector
-  
+
   Arguments
   ---------
   vecs  : input vector
@@ -524,10 +524,10 @@ void MELDThermal::applydTdtS(const F2FScalar *vecs, F2FScalar *prods) {
   delete [] vecs_global;
 }
 
-/*  
+/*
   Apply the action of the temperature transfer w.r.t structural temperature
   transpose Jacobian to the input vector
-  
+
   Arguments
   ----------
   vecs  : input vector
@@ -569,10 +569,10 @@ void MELDThermal::applydTdtSTrans( const F2FScalar *vecs, F2FScalar *prods ) {
   delete [] prods_global;
 }
 
-/*  
+/*
   Apply the action of the flux transfer w.r.t structural temperature
   Jacobian to the input vector
-  
+
   Arguments
   ---------
   vecs  : input vector
@@ -586,10 +586,10 @@ void MELDThermal::applydQdqA(const F2FScalar *vecs, F2FScalar *prods) {
   applydTdtSTrans(vecs, prods);
 }
 
-/*  
+/*
   Apply the action of the flux transfer w.r.t structural temperature
   transpose Jacobian to the input vector
-  
+
   Arguments
   ----------
   vecs  : input vector
@@ -603,7 +603,7 @@ void MELDThermal::applydQdqATrans( const F2FScalar *vecs, F2FScalar *prods ) {
   applydTdtS(vecs, prods);
 }
 
-/* 
+/*
   Tests flux transfer by computing derivative of product of heat flux on and
   temperatures of aerodynamic surface nodes with respect to structural node
   temperatures and comparing with results from finite difference and complex
@@ -614,12 +614,12 @@ void MELDThermal::applydQdqATrans( const F2FScalar *vecs, F2FScalar *prods ) {
   struct_temps : structural node temperatures
   aero_flux    : heat flux on aerodynamic surface nodes
   pert         : direction of perturbation of structural node heat flux
-  h            : step size 
+  h            : step size
 
 */
 void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
                                       const F2FScalar *aero_flux,
-                                      const F2FScalar *pert, 
+                                      const F2FScalar *pert,
                                       const F2FScalar h) {
 
   // Transfer the structural temperatures
@@ -651,7 +651,7 @@ void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
     work += Fa[i]*Ua_cs[i];
   }
   F2FScalar deriv_approx = F2FImagPart(work)/h;
-  
+
   delete [] Us_cs;
   delete [] Ua_cs;
 
@@ -671,7 +671,7 @@ void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
   for ( int i = 0; i < na; i++ ) {
     work_pos += Fa[i]*Ua_pos[i];
   }
-  
+
 
   transferTemp(Us_neg, Ua_neg);
   F2FScalar work_neg = 0.0;
@@ -700,9 +700,9 @@ void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
   // Free allocated memory
   delete [] aero_temps;
   delete [] struct_flux;
-}	
+}
 
-/* 
+/*
   Tests output of dTdtSProducts and dTdtSTransProducts by computing a product
   test_vec_a*J*test_vec_s (where J is the Jacobian) and comparing with results
   from finite difference and complex step
@@ -715,8 +715,8 @@ void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
   h            : step size
 
 */
-void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps, 
-                                            const F2FScalar *test_vec_a, 
+void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps,
+                                            const F2FScalar *test_vec_a,
                                             const F2FScalar *test_vec_s,
                                             const F2FScalar h) {
   // Transfer the structural temperatures
@@ -826,9 +826,9 @@ void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps,
   h            : step size
 
 */
-void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps, 
+void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
                                             const F2FScalar *aero_flux,
-                                            const F2FScalar *test_vec_a, 
+                                            const F2FScalar *test_vec_a,
                                             const F2FScalar *test_vec_s,
                                             const F2FScalar h) {
   // Transfer the structural displacements
@@ -865,7 +865,7 @@ void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
   F2FScalar *Us_cs = new F2FScalar[ns];
   memset(Us_cs, 0.0, ns*sizeof(F2FScalar)); //added
   for (int j = 0; j < ns; j++ ) {
-    Us_cs[j] += struct_temps[j] + 
+    Us_cs[j] += struct_temps[j] +
                F2FScalar(0.0, F2FRealPart(h)*F2FRealPart(test_vec_s[j]));
                //F2FScalar(0.0, F2FRealPart(h*test_vec_s1[j]));
   }
@@ -877,10 +877,10 @@ void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
     F2FScalar Phi = Xa[j] + aero_temps[j];
     VPhi += test_vec_a[j]*Phi;
   }
-  printf("VPhi real: %e\n",F2FRealPart(VPhi));
-  printf("VPhi imag: %e\n",F2FImagPart(VPhi));
+  printf("VPhi real: %e\n", F2FRealPart(VPhi));
+  printf("VPhi imag: %e\n", F2FImagPart(VPhi));
   F2FScalar deriv_approx = 1.0*F2FImagPart(VPhi)/h;
-  printf("Deriv Approx: %e\n",deriv_approx);
+  printf("Deriv Approx: %e\n", F2FRealPart(deriv_approx));
   delete [] Us_cs;
 
   // Approximate using finite difference (central)

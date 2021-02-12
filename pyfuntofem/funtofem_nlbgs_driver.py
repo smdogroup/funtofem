@@ -275,7 +275,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     u = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
                     body.rigid_transform = np.zeros((4,4),dtype=TransferScheme.dtype)
 
-                    body.transfer.transformEquivRigidMotion(body.aero_disps,rotation,translation,u)
+                    body.transfer.transformEquivRigidMotion(body.aero_disps, rotation, translation, u)
 
                     body.rigid_transform[:3,:3] = rotation.reshape((3,3,),order='F')
                     body.rigid_transform[:3, 3] = translation
@@ -296,7 +296,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Transfer loads from fluid and get loads on structure
             for body in self.model.bodies:
-                body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TransferScheme.dtype)
                 body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
             # Take a step in the FEM model
@@ -455,13 +455,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # end of solve loop
 
         # evaluate the initial conditions
-        fail = self.solvers['flow'].iterate_adjoint(scenario,self.model.bodies,step=0)
+        fail = self.solvers['flow'].iterate_adjoint(scenario, self.model.bodies, step=0)
         fail = self.comm.allreduce(fail)
         if fail != 0:
             if self.comm.Get_rank() == 0:
                 print('Flow solver returned fail flag')
             return fail
-        fail = self.solvers['structural'].iterate_adjoint(scenario,self.model.bodies,step=0)
+        fail = self.solvers['structural'].iterate_adjoint(scenario, self.model.bodies, step=0)
         fail = self.comm.allreduce(fail)
         if fail != 0:
             if self.comm.Get_rank() == 0:

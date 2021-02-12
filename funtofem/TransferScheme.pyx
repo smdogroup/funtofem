@@ -1,5 +1,5 @@
 #!/bin/python
-#distuils: language = c++
+# distutils: language=c++
 # For the use of MPI
 from mpi4py.libmpi cimport *
 cimport mpi4py.MPI as MPI
@@ -71,10 +71,10 @@ cdef class pyTransferScheme:
 
         """
         self.ptr.initialize()
-        
+
         return
 
-    def transferDisps(self, 
+    def transferDisps(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_disps):
         """
@@ -93,7 +93,7 @@ cdef class pyTransferScheme:
                                <F2FScalar*>aero_disps.data)
         return
 
-    def transferLoads(self, 
+    def transferLoads(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_loads):
         """
@@ -262,7 +262,7 @@ cdef class pyTransferScheme:
         self.ptr.applydLdxS0(<F2FScalar*>v.data, <F2FScalar*>p.data)
         return
 
-    def testLoadTransfer(self, 
+    def testLoadTransfer(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
@@ -290,7 +290,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testDispJacVecProducts(self, 
+    def testDispJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
@@ -320,7 +320,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testLoadJacVecProducts(self, 
+    def testLoadJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
@@ -354,7 +354,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testdDdxA0Products(self, 
+    def testdDdxA0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a1,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a2,
@@ -383,7 +383,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testdDdxS0Products(self, 
+    def testdDdxS0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
@@ -412,7 +412,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testdLdxA0Products(self, 
+    def testdLdxA0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
@@ -426,7 +426,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testdLdxA0Products(self, 
+    def testdLdxA0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
@@ -459,7 +459,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def testdLdxS0Products(self, 
+    def testdLdxS0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
@@ -492,7 +492,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def transformEquivRigidMotion(self, 
+    def transformEquivRigidMotion(self,
         np.ndarray[F2FScalar, ndim=1, mode='c'] aero_disps,
         np.ndarray[F2FScalar, ndim=1, mode='c'] R,
         np.ndarray[F2FScalar, ndim=1, mode='c'] t,
@@ -526,7 +526,7 @@ cdef class pyTransferScheme:
 
         return
 
-    def applydRduATrans(self, 
+    def applydRduATrans(self,
         np.ndarray[F2FScalar, ndim=1, mode='c'] vecs,
         np.ndarray[F2FScalar, ndim=1, mode='c'] prods):
         """
@@ -612,7 +612,7 @@ cdef class pyMELD(pyTransferScheme):
         cdef MPI_Comm aero_comm = aero.ob_mpi
 
         # Allocate the underlying class
-        self.ptr = new MELD(c_comm, struct_comm, struct_root, 
+        self.ptr = new MELD(c_comm, struct_comm, struct_root,
                             aero_comm, aero_root, symmetry,
                             num_nearest, beta)
 
@@ -667,7 +667,7 @@ cdef class pyMELDThermal(pyTransferScheme):
         cdef MPI_Comm aero_comm = aero.ob_mpi
 
         # Allocate the underlying class
-        self.ptr = new MELDThermal(c_comm, struct_comm, struct_root, 
+        self.ptr = new MELDThermal(c_comm, struct_comm, struct_root,
                                    aero_comm, aero_root, symmetry,
                                    num_nearest, beta)
 
@@ -676,7 +676,7 @@ cdef class pyMELDThermal(pyTransferScheme):
     def __dealloc__(self):
         del self.ptr
 
-    def transferTemp(self, 
+    def transferTemp(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temp,
                      np.ndarray[F2FScalar, ndim=1, mode='c'] aero_temp):
         """
@@ -692,10 +692,10 @@ cdef class pyMELDThermal(pyTransferScheme):
 
         """
         cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.transferTemp(<F2FScalar*>struct_temp.data, <F2FScalar*>aero_temp.data)         
+        mt.transferTemp(<F2FScalar*>struct_temp.data, <F2FScalar*>aero_temp.data)
         return
 
-    def transferFlux(self, 
+    def transferFlux(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
                      np.ndarray[F2FScalar, ndim=1, mode='c'] struct_flux):
         """
@@ -713,7 +713,7 @@ cdef class pyMELDThermal(pyTransferScheme):
         cdef MELDThermal *mt = <MELDThermal*> self.ptr
         mt.transferFlux(<F2FScalar*>aero_flux.data, <F2FScalar*>struct_flux.data)
         return
-    
+
     def applydTdtS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
                    np.ndarray[F2FScalar, ndim=1, mode='c'] p):
         """
@@ -794,7 +794,7 @@ cdef class pyMELDThermal(pyTransferScheme):
         return
 
 
-    def testFluxTransfer(self, 
+    def testFluxTransfer(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
@@ -823,7 +823,7 @@ cdef class pyMELDThermal(pyTransferScheme):
 
         return
 
-    def testTempJacVecProducts(self, 
+    def testTempJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
@@ -854,7 +854,7 @@ cdef class pyMELDThermal(pyTransferScheme):
 
         return
 
-    def testFluxJacVecProducts(self, 
+    def testFluxJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
@@ -923,8 +923,8 @@ cdef class pyLinearizedMELD(pyTransferScheme):
         cdef MPI_Comm aero_comm = aero.ob_mpi
 
         # Allocate the underlying class
-        self.ptr = new LinearizedMELD(c_comm, struct_comm, struct_root, 
-                                      aero_comm, aero_root, 
+        self.ptr = new LinearizedMELD(c_comm, struct_comm, struct_root,
+                                      aero_comm, aero_root,
                                       num_nearest, beta)
 
         return
@@ -987,8 +987,8 @@ cdef class pyRBF(pyTransferScheme):
         cdef MPI_Comm aero_comm = aero.ob_mpi
 
         # Allocate the underlying class
-        self.ptr = new RBF(c_comm, struct_comm, struct_root, 
-                           aero_comm, aero_root, 
+        self.ptr = new RBF(c_comm, struct_comm, struct_root,
+                           aero_comm, aero_root,
                            rbf_type, sampling_ratio)
 
         return

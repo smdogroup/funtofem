@@ -358,7 +358,7 @@ void MELD::computeWeights(F2FScalar *W) {
         rxs0[isymm] *= -1.0;
         vec_diff(rxs0, xa0, v);
       }
-      v2_avg += vec_dot(v, v)/nn;
+      v2_avg += vec_dot(v, v)/(1.0*nn);
     }
 
     // Make sure we don't divide by zero

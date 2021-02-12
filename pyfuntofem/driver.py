@@ -22,6 +22,8 @@ limitations under the License.
 # Drivers/Optimization
 from .funtofem_driver import *
 from .funtofem_nlbgs_driver import *
+from .funtofem_nlbgs_aerothermal_driver import *
+from .funtofem_nlbgs_aerothermoelastic_driver import *
 from .funtofem_nlbgs_fsi_subiters_driver import *
 from .pyopt_optimization import *
 

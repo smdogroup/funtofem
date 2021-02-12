@@ -26,16 +26,16 @@ complex_debug:
 	@cd lib && ${MAKE} || exit 1
 
 interface:
-	@python setup.py build_ext --inplace
+	@python3 setup.py build_ext --inplace
 
 debug_interface:
-	@python setup.py build_ext --inplace
+	@python3 setup.py build_ext --inplace
 
 complex_interface:
-	@python setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
 
 complex_debug_interface:
-	@python setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
 
 clean:
 	@cd src && ${MAKE} $@ || exit 1

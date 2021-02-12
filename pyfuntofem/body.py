@@ -25,7 +25,7 @@ class Body(Base):
     """
     Defines a body base class for FUNtoFEM. Can be used as is or as a parent class for bodies with shape parameterization.
     """
-    def __init__(self,name,id=0,group=None,boundary=0,fun3d=False,motion_type='deform'):
+    def __init__(self,name,id=0,group=None,boundary=0,fun3d=True,motion_type='deform'):
         """
 
         Parameters
@@ -92,12 +92,19 @@ class Body(Base):
         # load and displacement transfer
         self.transfer = None
 
+        # heat flux and temperature transfer
+        self.thermal_transfer = None
+
         # Number of nodes
         self.struct_nnodes  = None
         self.aero_nnodes    = None
 
         # Number of degrees of freedom on the structures side of the transfer
         self.xfer_ndof      = 3
+
+        # Number of degrees of freedom on the thermal structural side of the transfer
+        self.therm_xfer_ndof      = 1
+        self.T_ref = 300 # reference temperature in Kelvin
 
         # Node locations
         self.struct_X  = None
@@ -110,10 +117,18 @@ class Body(Base):
         # forward variables
         self.struct_disps  = None
         self.struct_forces = None
+        self.struct_loads = None
 
         self.rigid_transform = None
         self.aero_disps  = None
         self.aero_forces = None
+        self.aero_loads = None
+
+        self.struct_temps  = None
+        self.struct_heat_flux = None
+
+        self.aero_temps  = None
+        self.aero_heat_flux = None
 
     def update_id(self,id):
         """
