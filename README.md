@@ -28,3 +28,5 @@ limitations under the License.
 * Jan Kiviaho (jfk115@msstate.edu)
 * Kevin Jacobson (kevin.e.jacobson@nasa.gov)
 * Graeme Kennedy (graeme.kennedy@aerospace.gatech.edu)
+* Lenard Halim (lenard.halim@gatech.edu)
+* Sejal Sahu (ssahu32@gatech.edu)
