@@ -1,6 +1,6 @@
 # FUNtoFEM #
 
-This repository contains the FUNtoFEM coupling framework and load and displacement transfer tools for aeroelastic analysis and optimization.
+This repository contains the FUNtoFEM coupling framework and load and displacement transfer schemes for aeroelastic analysis and optimization.
 
 ### Installation ###
 
