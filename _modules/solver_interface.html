@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    
+    <title>solver_interface &mdash; FUNtoFEM .0 documentation</title>
+    
+    <link rel="stylesheet" type="text/css" href="../_static/css/spc-bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../_static/css/spc-extend.css">
+    <link rel="stylesheet" href="../_static/scipy.css" type="text/css" >
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" >
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/js/copybutton.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" >
+    <link rel="search" title="Search" href="../search.html" >
+    <link rel="top" title="FUNtoFEM .0 documentation" href="../index.html" >
+    <link rel="up" title="Module code" href="index.html" > 
+  </head>
+  <body>
+
+  <div class="container">
+    <div class="header">
+    </div>
+  </div>
+
+
+    <div class="container">
+      <div class="main">
+        
+	<div class="row-fluid">
+	  <div class="span12">
+	    <div class="spc-navbar">
+              
+    <ul class="nav nav-pills pull-left">
+        <li class="active"><a href="["></a></li>
+        <li class="active"><a href="]"></a></li>
+	
+        <li class="active"><a href="../index.html">FUNtoFEM .0 documentation</a></li>
+	
+          <li class="active"><a href="index.html" accesskey="U">Module code</a></li> 
+    </ul>
+              
+              
+    <ul class="nav nav-pills pull-right">
+      <li class="active">
+        <a href="../genindex.html" title="General Index"
+           accesskey="I">index</a>
+      </li>
+      <li class="active">
+        <a href="../py-modindex.html" title="Python Module Index"
+           >modules</a>
+      </li>
+    </ul>
+              
+	    </div>
+	  </div>
+	</div>
+        
+
+	<div class="row-fluid">
+      <div class="spc-rightsidebar span3">
+        <div class="sphinxsidebarwrapper">
+
+        </div>
+      </div>
+          <div class="span9">
+            
+        <div class="bodywrapper">
+          <div class="body" id="spc-section-body">
+            
+  <h1>Source code for solver_interface</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file is part of the package FUNtoFEM for coupled aeroelastic simulation</span>
+<span class="sd">and design optimization.</span>
+
+<span class="sd">Copyright (C) 2015 Georgia Tech Research Corporation.</span>
+<span class="sd">Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.</span>
+<span class="sd">All rights reserved.</span>
+
+<span class="sd">FUNtoFEM is licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">you may not use this software except in compliance with the License.</span>
+<span class="sd">You may obtain a copy of the License at</span>
+
+<span class="sd">   http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">See the License for the specific language governing permissions and</span>
+<span class="sd">limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SolverInterface"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface">[docs]</a><span class="k">class</span> <span class="nc">SolverInterface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class to define what functions solver interfaces in FUNtoFEM need</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SolverInterface.set_variables"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.set_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the design variables into the solver.</span>
+<span class="sd">        The scenario and bodies objects have dictionaries of :class:`~variable.Variable` objects.</span>
+<span class="sd">        The interface class should pick out which type of variables it needs and pass them into the solver</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for body in bodies:</span>
+<span class="sd">               if &#39;structural&#39; in body.variables:</span>
+<span class="sd">                   for var in body.variables[&#39;structural&#39;]:</span>
+<span class="sd">                       solver.set_body_variable(body.id, var.value)</span>
+
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           if &#39;aerodynamic&#39; in scenario.variables:</span>
+<span class="sd">               for var in scenario.variables[&#39;aerodynamic&#39;]:</span>
+<span class="sd">                   if var.active:</span>
+<span class="sd">                       solver.set_body_variable(var.name, var.value)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.set_functions"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.set_functions">[docs]</a>    <span class="k">def</span> <span class="nf">set_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the function definitions into the solver.</span>
+<span class="sd">        The scenario has a list of function objects.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for func in scenario.functions:</span>
+
+<span class="sd">               # Set the structural functions in</span>
+<span class="sd">               if function.adjoint and function.analysis_type==&#39;structural&#39;:</span>
+<span class="sd">                   solver.set_adjoint_function(function.name, function.start, function,stop)</span>
+
+<span class="sd">               # Tell the solver that an adjoint is needed, but the function is not explicitly dependent on structural states</span>
+<span class="sd">               elif function.adjoint and function.analysis_type !=&#39;structural&#39;:</span>
+<span class="sd">                   solver.set_dummy_function()</span>
+
+<span class="sd">               # Functions such as structural mass do not need and adjoint</span>
+<span class="sd">               elif not function.adjoint and function.analysis_type==&#39;structural&#39;:</span>
+<span class="sd">                   solver.set_nonadjoint_function(function.name)</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.get_functions"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.get_functions">[docs]</a>    <span class="k">def</span> <span class="nf">get_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Put the function values from the solver in the value attribute of the scneario&#39;s functions.</span>
+<span class="sd">        The scenario has the list of function objects where the function&#39;s owned by this solver will be set.</span>
+<span class="sd">        You can evaluate the functions based on the name or based on the functions set during :func:`~solver_interface.SolverInterface.set_functions`.</span>
+<span class="sd">        The solver is only responsible for returning the values of functions it owns.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           for func in scenario.functions:</span>
+
+<span class="sd">               # Set the structural functions in</span>
+<span class="sd">               if function.analysis_type==&#39;structural&#39;:</span>
+<span class="sd">                   if function.name == &#39;mass&#39;:</span>
+<span class="sd">                       function.value = solver.evaluate_mass()</span>
+<span class="sd">                   elif function.name == &#39;ksfailure&#39;:</span>
+<span class="sd">                       function.value = solver.get_ksfailure()</span>
+<span class="sd">                   elif function.name == &#39;ksfailure&#39;:</span>
+<span class="sd">                       function.value = solver.get_ksfailure()</span>
+<span class="sd">                   else function.name == &#39;ksfailure&#39;:</span>
+<span class="sd">                       print &quot;Unknown structural function in get_functions&quot;</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.get_function_gradients"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.get_function_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">get_function_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">offset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the derivatives of all the functions with respect to design variables associated with this solver.</span>
+<span class="sd">        The derivatives in the scenario and body objects are a Python dictionary where the keys are the type of variable.</span>
+<span class="sd">        Each entry in the dictionary a list where each entry is associated with a function in the model. Finally, there is a list where each index is associated with a particular design variable.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        offset: int</span>
+<span class="sd">            offset of the scenario&#39;s function index w.r.t the full list of functions in the model.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            for func, function in enumerate(scenario.functions):</span>
+<span class="sd">                for vartype in scenario.variables:</span>
+<span class="sd">                    if vartype == &#39;aerodynamic&#39;:</span>
+<span class="sd">                        for i, var in enumerate(scenario.variables[vartype]):</span>
+<span class="sd">                            if var.active:</span>
+<span class="sd">                                scenario.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id,var.id)</span>
+
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            for func, function in enumerate(scenario.functions):</span>
+<span class="sd">                for body in bodies:</span>
+<span class="sd">                    for vartype in body.variables:</span>
+<span class="sd">                        if vartype == &#39;structural&#39;:</span>
+<span class="sd">                            for i, var in enumerate(body.variables[vartype]):</span>
+<span class="sd">                                if var.active:</span>
+<span class="sd">                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id,body.id,var.id)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.get_coordinate_derivatives"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.get_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">get_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add the solver&#39;s contributions to the coordinate derivatives for this time step or the total value for the steady case.</span>
+<span class="sd">        The coordinate derivatives are stored in the body objects in the aero_shape_term and struct_shape_term attributes.</span>
+
+<span class="sd">        For time dependent problems, this is called at the end of every time step during reverse marching.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The time step number</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            nfunctions = scenario.count_adjoint_functions()</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.shape and body.aero_nnodes &gt; 0:</span>
+
+<span class="sd">                    lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(step)</span>
+
+<span class="sd">                    # Add (don&#39;t overwrite) the solver&#39;s contribution</span>
+<span class="sd">                    body.aero_shape_term[ ::3,:nfunctions] += lam_x[:,:]</span>
+<span class="sd">                    body.aero_shape_term[1::3,:nfunctions] += lam_y[:,:]</span>
+<span class="sd">                    body.aero_shape_term[2::3,:nfunctions] += lam_z[:,:]</span>
+
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.shape:</span>
+
+<span class="sd">                    lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(step)</span>
+
+<span class="sd">                    # Add (don&#39;t overwrite) the solver&#39;s contribution</span>
+<span class="sd">                    body.struct_shape_term[ ::3,:nfunctions] += lam_x[:,:]</span>
+<span class="sd">                    body.struct_shape_term[1::3,:nfunctions] += lam_y[:,:]</span>
+<span class="sd">                    body.struct_shape_term[2::3,:nfunctions] += lam_z[:,:]</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.initialize"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function allows the solver to set up anything that is necessary before the scenario is simulated (forward analysis), e.g., load in the mesh which has been updated by the shape parameterization, allocate arrays, set initial conditions, etc.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # Set in the new aerodynamic surface meshes</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                solver.set_mesh(ibody, body.aero_X)</span>
+
+<span class="sd">           # Initialize the flow field</span>
+<span class="sd">           solver.initialize()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="SolverInterface.iterate"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.iterate">[docs]</a>    <span class="k">def</span> <span class="nf">iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Advance the solver&#39;s residual(s) within a forward iteration call in the nonlinear block Gauss Seidel solver.</span>
+
+<span class="sd">        For an aerodynamic solver, this might include:</span>
+<span class="sd">        #. Deforming the meshes</span>
+<span class="sd">        #. Solving for the new flow state</span>
+<span class="sd">        #. Integrating to get new aerodynamic surface forces and putting them in the body objects</span>
+
+<span class="sd">        For a structural solver, the structural forces should be applied and new structural displacements should be put into the body objects</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # Input the surface deflections</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.aero_nnodes &gt; 0:</span>
+<span class="sd">                    solver.input_surface_deformation(ibody, body.aero_disps)</span>
+
+<span class="sd">            # Advance the solver</span>
+<span class="sd">            solver.iterate()</span>
+
+<span class="sd">            # Extract the surface forces</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.aero_nnodes &gt; 0:</span>
+<span class="sd">                    body.aero_loads = solver.extract_forces(ibody)</span>
+
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # Input the forces on the structure</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.aero_nnodes &gt; 0:</span>
+<span class="sd">                    solver.input_forces(ibody, body.struct_loads)</span>
+
+<span class="sd">            # Advance the solver</span>
+<span class="sd">            solver.iterate()</span>
+
+<span class="sd">            # Extract the displacemets</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                if body.aero_nnodes &gt; 0:</span>
+<span class="sd">                    body.struct_disps = solver.extract_displacements(ibody)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.post"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform any tasks the solver needs to do after the forward steps are complete, e.g., evaluate functions, post-process, deallocate unneeded memory.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.initialize_adjoint"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.initialize_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform any tasks the solver needs to do before taking adjoint steps</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="SolverInterface.set_states"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.set_states">[docs]</a>    <span class="k">def</span> <span class="nf">set_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the states (aero_loads, struct_disps) associated with this step either from memory or the disk for the transfer scheme to linearize about.</span>
+<span class="sd">        This function is called at the beginning of each adjoint step in time dependent problems.</span>
+
+
+<span class="sd">        **Note: in the NLBGS algorithm the transfer scheme uses the structural displacements from the prior step. set_states will request the states from the previous step but then ask the structural solver to linearize about the current step in iterate_adjoint**</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The time step number that the driver wants the states from</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # Find the step&#39;s values on the disk</span>
+<span class="sd">            disps_hist = solver.load_state(step)</span>
+
+<span class="sd">            # Set the structural displacements for the transfer scheme residuals to linearize about</span>
+<span class="sd">            for body in bodies:</span>
+<span class="sd">                body.struct_disps = disps_hist[body.id]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.iterate_adjoint"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.iterate_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">iterate_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an adjoint or adjoint-product.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The step number. Will start at the final step and march backwards to 0, the initial condition.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Aerodynamic Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # Read in the force adjoint</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                solver.set_force_adjoint(body.psi_F)</span>
+
+<span class="sd">                # take a reverse step in the adjoint solver</span>
+<span class="sd">                solver.iterate_adjoint(step)</span>
+
+<span class="sd">                # pull out the grid adjoint value</span>
+<span class="sd">                for ibody, body in enumerate(bodies):</span>
+<span class="sd">                    psi_G = solver.get_grid_adjoint(ibody)</span>
+
+<span class="sd">                    # &#39;solve&#39; for the displacement adjoint</span>
+<span class="sd">                    body.psi_D = -psi_G</span>
+
+
+<span class="sd">        Structural Solver:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # put the body RHS&#39;s into the solver bvec</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                solver.add_body_rhs_term(ibody, body.struct_rhs)</span>
+
+<span class="sd">            # take a reverse step in the adjoint solver</span>
+<span class="sd">            solver.iterate_adjoint(step)</span>
+
+<span class="sd">            # pull out the structural adjoint value</span>
+<span class="sd">            for ibody, body in enumerate(bodies):</span>
+<span class="sd">                body.psi_S = solver.get_struct_adjoint(ibody)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.post_adjoint"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.post_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">post_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container container-navbar-bottom">
+      <div class="spc-navbar">
+        
+      </div>
+    </div>
+    <div class="container">
+    <div class="footer">
+    <div class="row-fluid">
+    <ul class="inline pull-left">
+      <li>
+        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+      </li>
+      <li>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      </li>
+    </ul>
+    </div>
+    </div>
+    </div>
+  </body>
+</html>

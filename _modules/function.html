@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    
+    <title>function &mdash; FUNtoFEM .0 documentation</title>
+    
+    <link rel="stylesheet" type="text/css" href="../_static/css/spc-bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../_static/css/spc-extend.css">
+    <link rel="stylesheet" href="../_static/scipy.css" type="text/css" >
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" >
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/js/copybutton.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" >
+    <link rel="search" title="Search" href="../search.html" >
+    <link rel="top" title="FUNtoFEM .0 documentation" href="../index.html" >
+    <link rel="up" title="Module code" href="index.html" > 
+  </head>
+  <body>
+
+  <div class="container">
+    <div class="header">
+    </div>
+  </div>
+
+
+    <div class="container">
+      <div class="main">
+        
+	<div class="row-fluid">
+	  <div class="span12">
+	    <div class="spc-navbar">
+              
+    <ul class="nav nav-pills pull-left">
+        <li class="active"><a href="["></a></li>
+        <li class="active"><a href="]"></a></li>
+	
+        <li class="active"><a href="../index.html">FUNtoFEM .0 documentation</a></li>
+	
+          <li class="active"><a href="index.html" accesskey="U">Module code</a></li> 
+    </ul>
+              
+              
+    <ul class="nav nav-pills pull-right">
+      <li class="active">
+        <a href="../genindex.html" title="General Index"
+           accesskey="I">index</a>
+      </li>
+      <li class="active">
+        <a href="../py-modindex.html" title="Python Module Index"
+           >modules</a>
+      </li>
+    </ul>
+              
+	    </div>
+	  </div>
+	</div>
+        
+
+	<div class="row-fluid">
+      <div class="spc-rightsidebar span3">
+        <div class="sphinxsidebarwrapper">
+
+        </div>
+      </div>
+          <div class="span9">
+            
+        <div class="bodywrapper">
+          <div class="body" id="spc-section-body">
+            
+  <h1>Source code for function</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file is part of the package FUNtoFEM for coupled aeroelastic simulation</span>
+<span class="sd">and design optimization.</span>
+
+<span class="sd">Copyright (C) 2015 Georgia Tech Research Corporation.</span>
+<span class="sd">Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.</span>
+<span class="sd">All rights reserved.</span>
+
+<span class="sd">FUNtoFEM is licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">you may not use this software except in compliance with the License.</span>
+<span class="sd">You may obtain a copy of the License at</span>
+
+<span class="sd">   http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">See the License for the specific language governing permissions and</span>
+<span class="sd">limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Function"><a class="viewcode-back" href="../model.html#function.Function">[docs]</a><span class="k">class</span> <span class="nc">Function</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;holds component function information in FUNtoFEM&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">body</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">adjoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">averaging</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name: str</span>
+<span class="sd">            name of the function</span>
+<span class="sd">        id: int</span>
+<span class="sd">            id number of function</span>
+<span class="sd">        value: float</span>
+<span class="sd">            value of the function</span>
+<span class="sd">        start: int</span>
+<span class="sd">            time step that the function window starts. If steady, then ignore</span>
+<span class="sd">        stop: int</span>
+<span class="sd">            time step that the function window ends. If steady, set to -1 (the default)</span>
+<span class="sd">        analysis_type: str</span>
+<span class="sd">            type of analysis this function is associated with: &#39;aerodynamic&#39;,&#39;structural&#39;</span>
+<span class="sd">        body: int</span>
+<span class="sd">            body number that the function is associated with. The default is 0 which is all bodies</span>
+<span class="sd">        adjoint: bool</span>
+<span class="sd">            whether or not an adjoint is required for a function</span>
+<span class="sd">        options: dict</span>
+<span class="sd">            any options associated with the function and pass to the solvers</span>
+<span class="sd">        averaging: bool</span>
+<span class="sd">            whether the function is averaged or integrated or the function window. Ignored for steady functions</span>
+
+
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        lift = Function(&#39;lift&#39;,analysis_type=&#39;aerodynamic&#39;)</span>
+
+<span class="sd">        mass = Function(&#39;mass&#39;,analysis_type=&#39;structural&#39;,adjoint=False)</span>
+
+<span class="sd">        ks = Function(&#39;ksFailure&#39;,analysis_type=&#39;structural&#39;,options={&#39;ksweight&#39;:50.0})</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span>  <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span>    <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>  <span class="o">=</span> <span class="n">stop</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">averaging</span> <span class="o">=</span> <span class="n">averaging</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">=</span> <span class="n">analysis_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">body</span>
+
+        <span class="c1"># whether or not an adjoint is required</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjoint</span> <span class="o">=</span> <span class="n">adjoint</span>
+
+        <span class="c1"># any function options or parameters to pass to the solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span></div>
+</pre></div>
+
+          </div>
+        </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container container-navbar-bottom">
+      <div class="spc-navbar">
+        
+      </div>
+    </div>
+    <div class="container">
+    <div class="footer">
+    <div class="row-fluid">
+    <ul class="inline pull-left">
+      <li>
+        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+      </li>
+      <li>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      </li>
+    </ul>
+    </div>
+    </div>
+    </div>
+  </body>
+</html>
