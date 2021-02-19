@@ -2,6 +2,10 @@
 
 This repository contains the FUNtoFEM coupling framework and load and displacement transfer schemes for aeroelastic analysis and optimization.
 
+### Documentation ###
+
+[Documentation for users and developers](https://smdogroup.github.io/funtofem/index.html)
+
 ### Installation ###
 
 * Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
