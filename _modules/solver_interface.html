@@ -23,6 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <script type="text/javascript" src="../_static/js/copybutton.js"></script>
     <link rel="index" title="Index" href="../genindex.html" >
     <link rel="search" title="Search" href="../search.html" >
@@ -128,10 +129,10 @@
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">           for body in bodies:</span>
+<span class="sd">           for ibody,body in enumerate(bodies):</span>
 <span class="sd">               if &#39;structural&#39; in body.variables:</span>
 <span class="sd">                   for var in body.variables[&#39;structural&#39;]:</span>
-<span class="sd">                       solver.set_body_variable(body.id, var.value)</span>
+<span class="sd">                       solver.set_body_variable(ibody, var.value)</span>
 
 <span class="sd">        Aerodynamic Solver:</span>
 
@@ -212,7 +213,7 @@
 <span class="sd">                   elif function.name == &#39;ksfailure&#39;:</span>
 <span class="sd">                       function.value = solver.get_ksfailure()</span>
 <span class="sd">                   else function.name == &#39;ksfailure&#39;:</span>
-<span class="sd">                       print &quot;Unknown structural function in get_functions&quot;</span>
+<span class="sd">                       print(&quot;Unknown structural function in get_functions&quot;)</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
@@ -251,12 +252,12 @@
 <span class="sd">        .. code-block:: python</span>
 
 <span class="sd">            for func, function in enumerate(scenario.functions):</span>
-<span class="sd">                for body in bodies:</span>
+<span class="sd">                for ibody, body in enumerate(bodies):</span>
 <span class="sd">                    for vartype in body.variables:</span>
 <span class="sd">                        if vartype == &#39;structural&#39;:</span>
 <span class="sd">                            for i, var in enumerate(body.variables[vartype]):</span>
 <span class="sd">                                if var.active:</span>
-<span class="sd">                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id,body.id,var.id)</span>
+<span class="sd">                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(func,ibody,i)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -341,7 +342,8 @@
 
 <div class="viewcode-block" id="SolverInterface.iterate"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.iterate">[docs]</a>    <span class="k">def</span> <span class="nf">iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Advance the solver&#39;s residual(s) within a forward iteration call in the nonlinear block Gauss Seidel solver.</span>
+<span class="sd">        Advance the solver&#39;s residual(s).</span>
+<span class="sd">        Called in NLBGS solver.</span>
 
 <span class="sd">        For an aerodynamic solver, this might include:</span>
 <span class="sd">        #. Deforming the meshes</span>
@@ -393,7 +395,7 @@
 <span class="sd">                if body.aero_nnodes &gt; 0:</span>
 <span class="sd">                    body.struct_disps = solver.extract_displacements(ibody)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.post"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -448,14 +450,15 @@
 <span class="sd">            disps_hist = solver.load_state(step)</span>
 
 <span class="sd">            # Set the structural displacements for the transfer scheme residuals to linearize about</span>
-<span class="sd">            for body in bodies:</span>
-<span class="sd">                body.struct_disps = disps_hist[body.id]</span>
+<span class="sd">            for ibody,body in enumerate(bodies):</span>
+<span class="sd">                body.struct_disps = disps_hist[ibody]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.iterate_adjoint"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.iterate_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">iterate_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an adjoint or adjoint-product.</span>
+<span class="sd">        Called in NLBGS solver.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -502,13 +505,62 @@
 <span class="sd">            for ibody, body in enumerate(bodies):</span>
 <span class="sd">                body.psi_S = solver.get_struct_adjoint(ibody)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+        <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.post_adjoint"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.post_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">post_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div></div>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="SolverInterface.step_pre"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.step_pre">[docs]</a>    <span class="k">def</span> <span class="nf">step_pre</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Operations before at a step in an FSI subiteration case.</span>
+<span class="sd">        Called in NLBGS with FSI subiterations.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The step number. Will start at the final step and march backwards to 0, the initial condition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="SolverInterface.step_solver"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.step_solver">[docs]</a>    <span class="k">def</span> <span class="nf">step_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">,</span><span class="n">fsi_subiter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Step in an FSI subiteration case.</span>
+<span class="sd">        Called in NLBGS with FSI subiterations.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The step number. Will start at the final step and march backwards to 0, the initial condition.</span>
+<span class="sd">        fsi_subiter: int</span>
+<span class="sd">            The FSI subiteration number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+<div class="viewcode-block" id="SolverInterface.step_post"><a class="viewcode-back" href="../programmers_guide.html#solver_interface.SolverInterface.step_post">[docs]</a>    <span class="k">def</span> <span class="nf">step_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Operations after at a step in an FSI subiteration case.</span>
+<span class="sd">        Called in NLBGS with FSI subiterations.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scenario: :class:`~scenario.Scenario`</span>
+<span class="sd">            The current scenario</span>
+<span class="sd">        bodies: list of :class:`~body.Body` objects</span>
+<span class="sd">            The bodies in the model</span>
+<span class="sd">        step: int</span>
+<span class="sd">            The step number. Will start at the final step and march backwards to 0, the initial condition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span></div></div>
 </pre></div>
 
           </div>
@@ -528,10 +580,10 @@
     <div class="row-fluid">
     <ul class="inline pull-left">
       <li>
-        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+        &copy; Copyright 2021, FUNtoFEM Developers.
       </li>
       <li>
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.8.5.
       </li>
     </ul>
     </div>

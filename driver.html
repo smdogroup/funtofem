@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <script type="text/javascript" src="_static/js/copybutton.js"></script>
     <link rel="index" title="Index" href="genindex.html" >
     <link rel="search" title="Search" href="search.html" >
@@ -81,7 +82,7 @@
 	<div class="row-fluid">
       <div class="spc-rightsidebar span3">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">FUNtoFEM driver</a><ul>
 <li><a class="reference internal" href="#creating-the-solver-dictionary">Creating the solver dictionary</a></li>
@@ -96,7 +97,7 @@
 <li><a class="reference internal" href="#setting-up-a-design-optimization">Setting up a design optimization</a></li>
 <li><a class="reference internal" href="#driver-classes">Driver Classes</a><ul>
 <li><a class="reference internal" href="#module-funtofem_driver">FUNtoFEM Driver Class</a></li>
-<li><a class="reference internal" href="#module-funtofem_nlbgs_driver">FUNtoFEM NLBGS Driver Class</a></li>
+<li><a class="reference internal" href="#funtofem-nlbgs-driver-class">FUNtoFEM NLBGS Driver Class</a></li>
 </ul>
 </li>
 </ul>
@@ -134,7 +135,7 @@ The nonlinear block Gauss Seidel is the current driver.</p>
 <h2>Creating the solver dictionary<a class="headerlink" href="#creating-the-solver-dictionary" title="Permalink to this headline">¶</a></h2>
 <p>The disciplinary solvers in FUNtoFEM are a dictionary of the solver interface objects. The solver interface objects exchange data and ask the disciplinary solvers to do tasks like taking forward and adjoint interations and calculating coordinate derivatives.</p>
 <p>Here’s some pseudocode to create the solvers for the NLBGS driver.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">solvers</span> <span class="o">=</span> <span class="p">{}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">solvers</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flow_solver</span><span class="p">()</span>
 <span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">structural_solver</span><span class="p">()</span>
 </pre></div>
@@ -153,7 +154,7 @@ If no transfer scheme options are provide, MELD with the default options is used
 <h3>MELD<a class="headerlink" href="#meld" title="Permalink to this headline">¶</a></h3>
 <p>The MELD scheme is the only scheme in FUNtoFEM that currently has implemented all of the derivatives necessary for shape derivatives in optimization.
 The default options for MELD are:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;MELD&#39;</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;MELD&#39;</span><span class="p">}</span>
 
 <span class="c1"># symmetry plane -1-&gt; no symmetry</span>
 <span class="c1">#                 0-&gt; x=0 plane symmetry</span>
@@ -173,7 +174,7 @@ The default options for MELD are:</p>
 <h3>Linearized MELD<a class="headerlink" href="#linearized-meld" title="Permalink to this headline">¶</a></h3>
 <p>The linearized version of MELD has a lower computational cost than the full version, but it also more error prone for larger deflections and extrapolations.
 It cannot reproduce rigid motion, and should not be used for case such as rotors.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;linearized MELD&#39;</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;linearized MELD&#39;</span><span class="p">}</span>
 
 <span class="c1"># weighting function parameter. As lower values of beta -&gt; more equal weighting</span>
 <span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
@@ -187,7 +188,7 @@ It cannot reproduce rigid motion, and should not be used for case such as rotors
 <h3>Radial Basis Function<a class="headerlink" href="#radial-basis-function" title="Permalink to this headline">¶</a></h3>
 <p>Radial basis function (RBF) interpolation is available in FUNtoFEM with various basis functions.</p>
 <p>The options available for the RBF scheme are the different basis functions:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;RBF&#39;</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;RBF&#39;</span><span class="p">}</span>
 
 <span class="c1"># Available basis functions:</span>
 <span class="c1"># &#39;thin plate spline&#39;</span>
@@ -209,7 +210,7 @@ For the aerodynamic nodes, the force integration and displacement transfer still
 <div class="section" id="running-the-driver">
 <h2>Running the driver<a class="headerlink" href="#running-the-driver" title="Permalink to this headline">¶</a></h2>
 <p>Once the model, solver dictionary, transfer options are created, you can instantiate the driver and run the coupled forward and adjoint solvers.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">transfer_options</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">transfer_options</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
 
 <span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 
@@ -249,10 +250,10 @@ limitations under the License.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>solvers</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – the various disciplinary solvers</li>
+<li><strong>solvers</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – the various disciplinary solvers</li>
 <li><strong>comm</strong> (<em>MPI.comm</em>) – MPI communicator</li>
-<li><strong>transfer_options</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – options of the load and displacement transfer scheme</li>
-<li><strong>model</strong> (<a class="reference internal" href="model.html#funtofem_model.FUNtoFEMmodel" title="funtofem_model.FUNtoFEMmodel"><code class="xref py py-class docutils literal"><span class="pre">FUNtoFEMmodel</span></code></a>) – The model containing the design data</li>
+<li><strong>transfer_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – options of the load and displacement transfer scheme</li>
+<li><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMmodel</span></code>) – The model containing the design data</li>
 </ul>
 </td>
 </tr>
@@ -280,7 +281,7 @@ limitations under the License.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – number of coupled solver steps. Only for use if a FUNtoFEM model is not defined</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – number of coupled solver steps. Only for use if a FUNtoFEM model is not defined</td>
 </tr>
 </tbody>
 </table>
@@ -295,45 +296,8 @@ limitations under the License.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-funtofem_nlbgs_driver">
-<span id="funtofem-nlbgs-driver-class"></span><h3>FUNtoFEM NLBGS Driver Class<a class="headerlink" href="#module-funtofem_nlbgs_driver" title="Permalink to this headline">¶</a></h3>
-<p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
-and design optimization.</p>
-<p>Copyright (C) 2015 Georgia Tech Research Corporation.
-Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
-All rights reserved.</p>
-<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at</p>
-<blockquote>
-<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an “AS IS” BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.</p>
-<dl class="class">
-<dt id="funtofem_nlbgs_driver.FUNtoFEMnlbgs">
-<em class="property">class </em><code class="descclassname">funtofem_nlbgs_driver.</code><code class="descname">FUNtoFEMnlbgs</code><span class="sig-paren">(</span><em>solvers</em>, <em>comm</em>, <em>struct_comm</em>, <em>struct_master</em>, <em>aero_comm</em>, <em>aero_master</em>, <em>transfer_options=None</em>, <em>model=None</em>, <em>theta_init=0.125</em>, <em>theta_min=0.01</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_nlbgs_driver.html#FUNtoFEMnlbgs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_nlbgs_driver.FUNtoFEMnlbgs" title="Permalink to this definition">¶</a></dt>
-<dd><p>The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel solvers for steady and unsteady coupled adjoint.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>solvers</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – the various disciplinary solvers</li>
-<li><strong>comm</strong> (<em>MPI.comm</em>) – MPI communicator</li>
-<li><strong>transfer_options</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – options of the load and displacement transfer scheme</li>
-<li><strong>model</strong> (<a class="reference internal" href="model.html#funtofem_model.FUNtoFEMmodel" title="funtofem_model.FUNtoFEMmodel"><code class="xref py py-class docutils literal"><span class="pre">FUNtoFEMmodel</span></code></a>) – The model containing the design data</li>
-<li><strong>theta_init</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Initial value of theta for the Aitken under-relaxation</li>
-<li><strong>theta_min</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Minimum value of theta for the Aitken under-relaxation</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+<div class="section" id="funtofem-nlbgs-driver-class">
+<h3>FUNtoFEM NLBGS Driver Class<a class="headerlink" href="#funtofem-nlbgs-driver-class" title="Permalink to this headline">¶</a></h3>
 </div>
 </div>
 </div>
@@ -356,10 +320,10 @@ limitations under the License.</p>
     <div class="row-fluid">
     <ul class="inline pull-left">
       <li>
-        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+        &copy; Copyright 2021, FUNtoFEM Developers.
       </li>
       <li>
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.8.5.
       </li>
     </ul>
     </div>

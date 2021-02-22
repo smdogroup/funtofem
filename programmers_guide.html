@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <script type="text/javascript" src="_static/js/copybutton.js"></script>
     <link rel="index" title="Index" href="genindex.html" >
     <link rel="search" title="Search" href="search.html" >
@@ -81,7 +82,7 @@
 	<div class="row-fluid">
       <div class="spc-rightsidebar span3">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Programmer’s Guide</a><ul>
 <li><a class="reference internal" href="#create-an-interface-class-for-a-solver">Create an interface class for a solver</a><ul>
@@ -132,11 +133,11 @@ All of the methods in this class (except set_mesh) have the current scenario and
 These objects contain the coupling input data for the solver and are where the solver interface needs to set the coupling output.</p>
 <div class="section" id="data-to-be-set-during-initialization">
 <h3>Data to be set during initialization<a class="headerlink" href="#data-to-be-set-during-initialization" title="Permalink to this headline">¶</a></h3>
-<p>Before instantiating the driver, the <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects need to contain some information about the meshes.
+<p>Before instantiating the driver, the <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects need to contain some information about the meshes.
 It is recommended to do this during the instantiation of the solvers in the solver dictionary.
-For an aerodynamic solver, the <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> holds the surface mesh and number of nodes on the processor: body.aero_X and body.aero_nnodes.
+For an aerodynamic solver, the <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> holds the surface mesh and number of nodes on the processor: body.aero_X and body.aero_nnodes.
 aero_X is a flattened array of length 3*aero_nnodes.
-For a structural solver, the <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> holds the entire structural mesh and number of nodes: body.struct_X and body.struct_nnodes.
+For a structural solver, the <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> holds the entire structural mesh and number of nodes: body.struct_X and body.struct_nnodes.
 struct_X is a flattened array of length 3*struct_nnodes.</p>
 </div>
 <div class="section" id="module-solver_interface">
@@ -164,15 +165,15 @@ limitations under the License.</p>
 <dt id="solver_interface.SolverInterface.set_variables">
 <code class="descname">set_variables</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.set_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.set_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the design variables into the solver.
-The scenario and bodies objects have dictionaries of <a class="reference internal" href="model.html#variable.Variable" title="variable.Variable"><code class="xref py py-class docutils literal"><span class="pre">Variable</span></code></a> objects.
+The scenario and bodies objects have dictionaries of <a class="reference internal" href="model.html#variable.Variable" title="variable.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a> objects.
 The interface class should pick out which type of variables it needs and pass them into the solver</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -180,14 +181,14 @@ The interface class should pick out which type of variables it needs and pass th
 </table>
 <p class="rubric">Examples</p>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span><span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="k">if</span> <span class="s1">&#39;structural&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]:</span>
-            <span class="n">solver</span><span class="o">.</span><span class="n">set_body_variable</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">set_body_variable</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s1">&#39;aerodynamic&#39;</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s1">&#39;aerodynamic&#39;</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
             <span class="n">solver</span><span class="o">.</span><span class="n">set_body_variable</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
@@ -205,8 +206,8 @@ The scenario has a list of function objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -214,7 +215,7 @@ The scenario has a list of function objects.</p>
 </table>
 <p class="rubric">Examples</p>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
 
     <span class="c1"># Set the structural functions in</span>
     <span class="k">if</span> <span class="n">function</span><span class="o">.</span><span class="n">adjoint</span> <span class="ow">and</span> <span class="n">function</span><span class="o">.</span><span class="n">analysis_type</span><span class="o">==</span><span class="s1">&#39;structural&#39;</span><span class="p">:</span>
@@ -236,15 +237,15 @@ The scenario has a list of function objects.</p>
 <code class="descname">get_functions</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.get_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.get_functions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Put the function values from the solver in the value attribute of the scneario’s functions.
 The scenario has the list of function objects where the function’s owned by this solver will be set.
-You can evaluate the functions based on the name or based on the functions set during <a class="reference internal" href="#solver_interface.SolverInterface.set_functions" title="solver_interface.SolverInterface.set_functions"><code class="xref py py-func docutils literal"><span class="pre">set_functions()</span></code></a>.
+You can evaluate the functions based on the name or based on the functions set during <a class="reference internal" href="#solver_interface.SolverInterface.set_functions" title="solver_interface.SolverInterface.set_functions"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_functions()</span></code></a>.
 The solver is only responsible for returning the values of functions it owns.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -252,7 +253,7 @@ The solver is only responsible for returning the values of functions it owns.</p
 </table>
 <p class="rubric">Examples</p>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
 
     <span class="c1"># Set the structural functions in</span>
     <span class="k">if</span> <span class="n">function</span><span class="o">.</span><span class="n">analysis_type</span><span class="o">==</span><span class="s1">&#39;structural&#39;</span><span class="p">:</span>
@@ -263,7 +264,7 @@ The solver is only responsible for returning the values of functions it owns.</p
         <span class="k">elif</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;ksfailure&#39;</span><span class="p">:</span>
             <span class="n">function</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_ksfailure</span><span class="p">()</span>
         <span class="k">else</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;ksfailure&#39;</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s2">&quot;Unknown structural function in get_functions&quot;</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unknown structural function in get_functions&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -279,9 +280,9 @@ Each entry in the dictionary a list where each entry is associated with a functi
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
-<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – offset of the scenario’s function index w.r.t the full list of functions in the model.</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – offset of the scenario’s function index w.r.t the full list of functions in the model.</li>
 </ul>
 </td>
 </tr>
@@ -289,7 +290,7 @@ Each entry in the dictionary a list where each entry is associated with a functi
 </table>
 <p class="rubric">Examples</p>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span><span class="p">,</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span><span class="p">,</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;aerodynamic&#39;</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
@@ -298,13 +299,13 @@ Each entry in the dictionary a list where each entry is associated with a functi
 </pre></div>
 </div>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span><span class="p">,</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span><span class="p">,</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">vartype</span> <span class="o">==</span> <span class="s1">&#39;structural&#39;</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
                     <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">offset</span><span class="o">+</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_derivative</span><span class="p">(</span><span class="n">function</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">body</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">var</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">offset</span><span class="o">+</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_derivative</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">ibody</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -320,9 +321,9 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
-<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – The time step number</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The time step number</li>
 </ul>
 </td>
 </tr>
@@ -330,7 +331,7 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 </table>
 <p class="rubric">Examples</p>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">shape</span> <span class="ow">and</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
@@ -343,7 +344,7 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 </pre></div>
 </div>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
 
         <span class="n">lam_x</span><span class="p">,</span> <span class="n">lam_y</span><span class="p">,</span> <span class="n">lam_Z</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">extract_coordinate_derivatives</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
@@ -365,8 +366,8 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -374,7 +375,7 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 </table>
 <p class="rubric">Examples</p>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span> <span class="c1"># Set in the new aerodynamic surface meshes</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Set in the new aerodynamic surface meshes</span>
  <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
      <span class="n">solver</span><span class="o">.</span><span class="n">set_mesh</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_X</span><span class="p">)</span>
 
@@ -387,7 +388,8 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <dl class="method">
 <dt id="solver_interface.SolverInterface.iterate">
 <code class="descname">iterate</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em>, <em>step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.iterate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Advance the solver’s residual(s) within a forward iteration call in the nonlinear block Gauss Seidel solver.</p>
+<dd><p>Advance the solver’s residual(s).
+Called in NLBGS solver.</p>
 <p>For an aerodynamic solver, this might include:
 #. Deforming the meshes
 #. Solving for the new flow state
@@ -398,8 +400,8 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -407,7 +409,7 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 </table>
 <p class="rubric">Examples</p>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Input the surface deflections</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Input the surface deflections</span>
 <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">solver</span><span class="o">.</span><span class="n">input_surface_deformation</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
@@ -422,7 +424,7 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 </pre></div>
 </div>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Input the forces on the structure</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Input the forces on the structure</span>
 <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">solver</span><span class="o">.</span><span class="n">input_forces</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span><span class="p">)</span>
@@ -447,8 +449,8 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -465,8 +467,8 @@ The coordinate derivatives are stored in the body objects in the aero_shape_term
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
 </ul>
 </td>
 </tr>
@@ -485,9 +487,9 @@ This function is called at the beginning of each adjoint step in time dependent 
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
-<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – The time step number that the driver wants the states from</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The time step number that the driver wants the states from</li>
 </ul>
 </td>
 </tr>
@@ -495,12 +497,12 @@ This function is called at the beginning of each adjoint step in time dependent 
 </table>
 <p class="rubric">Examples</p>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Find the step&#39;s values on the disk</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the step&#39;s values on the disk</span>
 <span class="n">disps_hist</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 
 <span class="c1"># Set the structural displacements for the transfer scheme residuals to linearize about</span>
-<span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
-    <span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span> <span class="o">=</span> <span class="n">disps_hist</span><span class="p">[</span><span class="n">body</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span><span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span> <span class="o">=</span> <span class="n">disps_hist</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -508,15 +510,16 @@ This function is called at the beginning of each adjoint step in time dependent 
 <dl class="method">
 <dt id="solver_interface.SolverInterface.iterate_adjoint">
 <code class="descname">iterate_adjoint</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em>, <em>step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.iterate_adjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.iterate_adjoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an adjoint or adjoint-product.</p>
+<dd><p>Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an adjoint or adjoint-product.
+Called in NLBGS solver.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<a class="reference internal" href="model.html#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a>) – The current scenario</li>
-<li><strong>bodies</strong> (list of <a class="reference internal" href="model.html#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> objects) – The bodies in the model</li>
-<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</li>
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</li>
 </ul>
 </td>
 </tr>
@@ -524,7 +527,7 @@ This function is called at the beginning of each adjoint step in time dependent 
 </table>
 <p class="rubric">Examples</p>
 <p>Aerodynamic Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># Read in the force adjoint</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read in the force adjoint</span>
 <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">set_force_adjoint</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_F</span><span class="p">)</span>
 
@@ -540,7 +543,7 @@ This function is called at the beginning of each adjoint step in time dependent 
 </pre></div>
 </div>
 <p>Structural Solver:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># put the body RHS&#39;s into the solver bvec</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># put the body RHS&#39;s into the solver bvec</span>
 <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">add_body_rhs_term</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span><span class="p">)</span>
 
@@ -558,6 +561,67 @@ This function is called at the beginning of each adjoint step in time dependent 
 <dt id="solver_interface.SolverInterface.post_adjoint">
 <code class="descname">post_adjoint</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.post_adjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.post_adjoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="solver_interface.SolverInterface.step_pre">
+<code class="descname">step_pre</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em>, <em>step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.step_pre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.step_pre" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operations before at a step in an FSI subiteration case.
+Called in NLBGS with FSI subiterations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="solver_interface.SolverInterface.step_solver">
+<code class="descname">step_solver</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em>, <em>step</em>, <em>fsi_subiter</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.step_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.step_solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Step in an FSI subiteration case.
+Called in NLBGS with FSI subiterations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</li>
+<li><strong>fsi_subiter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The FSI subiteration number</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="solver_interface.SolverInterface.step_post">
+<code class="descname">step_post</code><span class="sig-paren">(</span><em>scenario</em>, <em>bodies</em>, <em>step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solver_interface.html#SolverInterface.step_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solver_interface.SolverInterface.step_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operations after at a step in an FSI subiteration case.
+Called in NLBGS with FSI subiterations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</li>
+<li><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</li>
+<li><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -582,7 +646,7 @@ This function is called at the beginning of each adjoint step in time dependent 
 <p>To create a new driver, you only need to add the algorithms use to solve the coupled equations: _solve_steady_forward, _solve_steady_adjoint, _solve_unsteady_forward, _solve_unsteady_adjoint.
 If you are only need either a steady or unsteady driver, you do not need to add the other pair of functions.
 The functions are hidden (begin with an underscore) since they should only be called by the driver.
-The user should call <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_forward" title="funtofem_driver.FUNtoFEMDriver.solve_forward"><code class="xref py py-func docutils literal"><span class="pre">solve_forward()</span></code></a> and <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_adjoint" title="funtofem_driver.FUNtoFEMDriver.solve_adjoint"><code class="xref py py-func docutils literal"><span class="pre">solve_adjoint()</span></code></a>.
+The user should call <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_forward" title="funtofem_driver.FUNtoFEMDriver.solve_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_forward()</span></code></a> and <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_adjoint" title="funtofem_driver.FUNtoFEMDriver.solve_adjoint"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_adjoint()</span></code></a>.
 Within the driver, the programmer has the freedom to make calls in certain order.</p>
 </div>
 </div>
@@ -605,10 +669,10 @@ Within the driver, the programmer has the freedom to make calls in certain order
     <div class="row-fluid">
     <ul class="inline pull-left">
       <li>
-        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+        &copy; Copyright 2021, FUNtoFEM Developers.
       </li>
       <li>
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.8.5.
       </li>
     </ul>
     </div>

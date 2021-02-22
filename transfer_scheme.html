@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <script type="text/javascript" src="_static/js/copybutton.js"></script>
     <link rel="index" title="Index" href="genindex.html" >
     <link rel="search" title="Search" href="search.html" >
@@ -98,8 +99,468 @@
         <div class="bodywrapper">
           <div class="body" id="spc-section-body">
             
-  <div class="section" id="transfer-scheme">
-<h1>Transfer Scheme<a class="headerlink" href="#transfer-scheme" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-TransferScheme">
+<span id="transfer-scheme"></span><h1>Transfer Scheme<a class="headerlink" href="#module-TransferScheme" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="TransferScheme.pyTransferScheme">
+<em class="property">class </em><code class="descclassname">TransferScheme.</code><code class="descname">pyTransferScheme</code><a class="headerlink" href="#TransferScheme.pyTransferScheme" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract class that defines the transfer scheme interface</p>
+<p class="rubric">Notes</p>
+<p>C++ extension must be compiled in complex mode in order to use complex
+step approximation in test functions</p>
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydDduS">
+<code class="descname">applydDduS</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydDduS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the
+displacement transfer residuals with respect to the structural
+displacements to an input vector and stores the products in empty
+input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural displacements</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of aerodynamic displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydDduSTrans">
+<code class="descname">applydDduSTrans</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydDduSTrans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the transpose of the Jacobian containing the
+derivatives of the displacement transfer residuals with respect to the
+structural displacements to an input vector and store the products in
+empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of aerodynamic displacements</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydDdxA0">
+<code class="descname">applydDdxA0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydDdxA0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the
+displacement transfer residuals with respect to the initial aerodynamic
+surface node locations to an input vector and store the products in
+empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of aerodynamic surface node locations</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of aerodynamic displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydDdxS0">
+<code class="descname">applydDdxS0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydDdxS0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the
+displacement transfer residuals with respect to the initial structural
+node locations to an input vector and store the products in empty input
+array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural node locations</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of aerodynamic displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydLduS">
+<code class="descname">applydLduS</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydLduS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the load
+transfer residuals with respect to the structural displacements to an
+input vector and store the products in empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural displacements</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural loads</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydLduSTrans">
+<code class="descname">applydLduSTrans</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydLduSTrans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the transpose of the Jacobian containing the
+derivatives of the load transfer residuals with respect to the
+structural displacements to an input vector and store the products in
+empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural loads</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydLdxA0">
+<code class="descname">applydLdxA0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydLdxA0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the
+displacement transfer residuals with respect to the initial structural
+node locations to an input vector and store the products in empty input
+array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural node locations</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural loads</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydLdxS0">
+<code class="descname">applydLdxS0</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydLdxS0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the action of the Jacobian containing the derivatives of the load
+transfer residuals with respect to the initial structural node locations
+to an input vector and store the products in empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>ndarray</em>) – One-dimensional array of size of structural node locations</li>
+<li><strong>p</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural loads</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydRduATrans">
+<code class="descname">applydRduATrans</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydRduATrans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute rigid transform Jacobian-vector products for solving adjoint
+equations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vecs</strong> (<em>ndarray</em>) – array of rigid transform adjoint variables</li>
+<li><strong>prods</strong> (<em>ndarray</em>) – array of Jacobian-vector products</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.applydRdxA0Trans">
+<code class="descname">applydRdxA0Trans</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.applydRdxA0Trans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute rigid transform Jacobian-vector products for gradient assembly</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>aero_disps</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic displacements</li>
+<li><strong>vecs</strong> (<em>ndarray</em>) – array of rigid transform adjoint variables</li>
+<li><strong>prods</strong> (<em>ndarray</em>) – array of Jacobian-vector products</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run routines (e.g. building connectivity through search, assembling
+interpolation matrix, etc.) necessary to prepare transfer scheme to
+perform load and displacement transfer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.setAeroNodes">
+<code class="descname">setAeroNodes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.setAeroNodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set and store the aerodynamic surface node locations in memory</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic surface node locations</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.setStructNodes">
+<code class="descname">setStructNodes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.setStructNodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set and store the structural node locations in memory</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>ndarray</em>) – One-dimensional array of structural node locations</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testDispJacVecProducts">
+<code class="descname">testDispJacVecProducts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testDispJacVecProducts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydDduS" title="TransferScheme.pyTransferScheme.applydDduS"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydDduS()</span></code></a> and <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydDduSTrans" title="TransferScheme.pyTransferScheme.applydDduSTrans"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydDduSTrans()</span></code></a> by
+comparison with results from finite difference approximation or
+complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>test_vec_a</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of displacement
+transfer residuals</li>
+<li><strong>test_vec_s</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of structural
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testLoadJacVecProducts">
+<code class="descname">testLoadJacVecProducts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testLoadJacVecProducts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydLduS" title="TransferScheme.pyTransferScheme.applydLduS"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydLduS()</span></code></a> and <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydLduSTrans" title="TransferScheme.pyTransferScheme.applydLduSTrans"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydLduSTrans()</span></code></a> by
+comparison with results from finite difference approximation or
+complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>aero_loads</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic loads</li>
+<li><strong>test_vec_s1</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of load transfer
+residuals</li>
+<li><strong>test_vec_s2</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of structural
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testLoadTransfer">
+<code class="descname">testLoadTransfer</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testLoadTransfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test the output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.transferLoads" title="TransferScheme.pyTransferScheme.transferLoads"><code class="xref py py-meth docutils literal notranslate"><span class="pre">transferLoads()</span></code></a> by comparison with results from
+finite difference approximation or complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>aero_loads</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic loads</li>
+<li><strong>test_vec_s</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of structural
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testdDdxA0Products">
+<code class="descname">testdDdxA0Products</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testdDdxA0Products" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydDdxA0" title="TransferScheme.pyTransferScheme.applydDdxA0"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydDdxA0()</span></code></a> by comparison with results from
+finite difference approximation or complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>test_vec_a1</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of displacement
+transfer residuals</li>
+<li><strong>test_vec_a2</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of aerodynamic
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testdDdxS0Products">
+<code class="descname">testdDdxS0Products</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testdDdxS0Products" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydDdxS0" title="TransferScheme.pyTransferScheme.applydDdxS0"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydDdxS0()</span></code></a> by comparison with results from
+finite difference approximation or complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>test_vec_a</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of displacement
+transfer residuals</li>
+<li><strong>test_vec_s</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of structural
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testdLdxA0Products">
+<code class="descname">testdLdxA0Products</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testdLdxA0Products" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.testdLdxS0Products">
+<code class="descname">testdLdxS0Products</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.testdLdxS0Products" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test output of <a class="reference internal" href="#TransferScheme.pyTransferScheme.applydLdxS0" title="TransferScheme.pyTransferScheme.applydLdxS0"><code class="xref py py-meth docutils literal notranslate"><span class="pre">applydLdxS0()</span></code></a> by comparison with results from
+finite difference approximation or complex step approximation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>aero_loads</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic loads</li>
+<li><strong>test_vec_s1</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of load transfer
+residuals</li>
+<li><strong>test_vec_s2</strong> (<em>ndarray</em>) – One-dimensional array of perturbations of size of structural
+displacements</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – Step size (for finite difference or complex step)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.transferDisps">
+<code class="descname">transferDisps</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.transferDisps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the input structural node displacements into aerodynamic
+surface node displacements and store in empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>struct_disps</strong> (<em>ndarray</em>) – One-dimensional array of structural displacements</li>
+<li><strong>aero_disps</strong> (<em>ndarray</em>) – One-dimensional empty array of size of aerodynamic displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.transferLoads">
+<code class="descname">transferLoads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.transferLoads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the input aerodynamic surface loads into structural loads and
+store in empty input array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>aero_loads</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic surface loads</li>
+<li><strong>struct_loads</strong> (<em>ndarray</em>) – One-dimensional empty array of size of structural loads</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="TransferScheme.pyTransferScheme.transformEquivRigidMotion">
+<code class="descname">transformEquivRigidMotion</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TransferScheme.pyTransferScheme.transformEquivRigidMotion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute least-squares fit of rigid rotation and translation to set of
+aerodynamic surface displacements.
+Use rotation and translation to compute difference between given
+displacements and the displacements due to rigid motion alone,
+i.e. the elastic deformation.
+Store the computed rotation, translation, and elastic deformation in
+empty input arrays</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>aero_disps</strong> (<em>ndarray</em>) – One-dimensional array of aerodynamic displacements</li>
+<li><strong>R</strong> (<em>(</em><em>3</em><em>,</em><em>3</em><em>) </em><em>ndarray</em>) – Empty (3,3) array for output rotation matrix</li>
+<li><strong>t</strong> (<em>(</em><em>,</em><em>3</em><em>) </em><em>ndarray</em>) – Empty (3,1) array for output translatio</li>
+<li><strong>u</strong> (<em>ndarray</em>) – One-dimensional array of elastic deformations of size of
+aerodynamic displacements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -120,10 +581,10 @@
     <div class="row-fluid">
     <ul class="inline pull-left">
       <li>
-        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+        &copy; Copyright 2021, FUNtoFEM Developers.
       </li>
       <li>
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.8.5.
       </li>
     </ul>
     </div>

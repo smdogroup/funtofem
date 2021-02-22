@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <script type="text/javascript" src="_static/js/copybutton.js"></script>
     <link rel="index" title="Index" href="genindex.html" >
     <link rel="search" title="Search" href="search.html" >
@@ -81,7 +82,7 @@
 	<div class="row-fluid">
       <div class="spc-rightsidebar span3">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">FUNtoFEM model</a><ul>
 <li><a class="reference internal" href="#assembling-the-model">Assembling the model</a></li>
@@ -89,14 +90,14 @@
 <li><a class="reference internal" href="#design-variables">Design variables</a></li>
 <li><a class="reference internal" href="#function-values">Function values</a></li>
 <li><a class="reference internal" href="#gradients">Gradients</a></li>
-<li><a class="reference internal" href="#module-funtofem_model">FUNtoFEM Model Class</a></li>
+<li><a class="reference internal" href="#funtofem-model-class">FUNtoFEM Model Class</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#bodies-and-scenarios">Bodies and Scenarios</a><ul>
 <li><a class="reference internal" href="#scenarios">Scenarios</a></li>
 <li><a class="reference internal" href="#bodies">Bodies</a></li>
 <li><a class="reference internal" href="#base-class">Base class</a></li>
-<li><a class="reference internal" href="#module-massoud_body">MassoudBody</a></li>
+<li><a class="reference internal" href="#massoudbody">MassoudBody</a></li>
 <li><a class="reference internal" href="#variables">Variables</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 </ul>
@@ -134,7 +135,7 @@ The scenarios are the different points of a multipoint optimization.</p>
 <p>Methods on this page with <strong>[driver call]</strong> and <strong>[model call]</strong> are calls that the user does not make directly and can be ignored.</p>
 <div class="section" id="assembling-the-model">
 <h2>Assembling the model<a class="headerlink" href="#assembling-the-model" title="Permalink to this headline">¶</a></h2>
-<p>A model is assembled using the <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.add_body" title="funtofem_model.FUNtoFEMmodel.add_body"><code class="xref py py-func docutils literal"><span class="pre">add_body()</span></code></a> and <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.add_scenario" title="funtofem_model.FUNtoFEMmodel.add_scenario"><code class="xref py py-func docutils literal"><span class="pre">add_scenario()</span></code></a> calls. See <a class="reference internal" href="#bodies-and-scenarios">bodies and scenarios</a> for details about their creation.</p>
+<p>A model is assembled using the <code class="xref py py-func docutils literal notranslate"><span class="pre">add_body()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">add_scenario()</span></code> calls. See <a class="reference internal" href="#bodies-and-scenarios">bodies and scenarios</a> for details about their creation.</p>
 <p>The bodies and scenarios are kept in lists in the same order that they are input.</p>
 </div>
 <div class="section" id="exchanging-the-model-data-with-an-optimizer">
@@ -143,12 +144,12 @@ The scenarios are the different points of a multipoint optimization.</p>
 <div class="section" id="design-variables">
 <h3>Design variables<a class="headerlink" href="#design-variables" title="Permalink to this headline">¶</a></h3>
 <p>The assembled model contains all the design variables information that an optimizer such as PyOpt needs.
-A list of the active design for the entire model is returned by <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_variables" title="funtofem_model.FUNtoFEMmodel.get_variables"><code class="xref py py-func docutils literal"><span class="pre">get_variables()</span></code></a>.
-The output list contains the <a class="reference internal" href="#module-variable" title="variable"><code class="xref py py-class docutils literal"><span class="pre">variable</span></code></a> type. Here is an example of passing the variable information from the model to a PyOpt optimizer:</p>
+A list of the active design for the entire model is returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code>.
+The output list contains the <a class="reference internal" href="#module-variable" title="variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">variable</span></code></a> type. Here is an example of passing the variable information from the model to a PyOpt optimizer:</p>
 <p><strong>The variables are stored in the model as a dictionary.</strong>
 <strong>They return in of ordered list of scenarios in the order they were added to the model, then the bodies in the order that they were added. Within each scenario and body, the order is alphabetical by variable type. Within each variable type, the variables are in the order added to the body/scenario.</strong></p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyOpt</span> <span class="kn">import</span> <span class="n">Optimization</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyOpt</span> <span class="kn">import</span> <span class="n">Optimization</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="n">opt_prob</span> <span class="o">=</span> <span class="n">Optimization</span><span class="p">(</span><span class="s1">&#39;optimization&#39;</span><span class="p">,</span><span class="n">design_problem</span><span class="o">.</span><span class="n">eval_obj_con</span><span class="p">)</span>
 <span class="n">variables</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
@@ -159,26 +160,26 @@ The output list contains the <a class="reference internal" href="#module-variabl
                                       <span class="n">upper</span><span class="o">=</span><span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="o">/</span><span class="n">var</span><span class="o">.</span><span class="n">scaling</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Optimizers such as PyOpt will typically provide a list of new values at each design point. These can be set back into model type using <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.set_variables" title="funtofem_model.FUNtoFEMmodel.set_variables"><code class="xref py py-func docutils literal"><span class="pre">set_variables()</span></code></a>.
+<p>Optimizers such as PyOpt will typically provide a list of new values at each design point. These can be set back into model type using <code class="xref py py-func docutils literal notranslate"><span class="pre">set_variables()</span></code>.
 The variables can be pre-scaled and passed directing into this call, or with the scale argument set to True, the scaling will be done automatically.</p>
 </div>
 <div class="section" id="function-values">
 <h3>Function values<a class="headerlink" href="#function-values" title="Permalink to this headline">¶</a></h3>
-<p>Once the driver has been run, <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_forward" title="funtofem_driver.FUNtoFEMDriver.solve_forward"><code class="xref py py-func docutils literal"><span class="pre">solve_forward()</span></code></a>, the functions can be retrieved using <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_functions" title="funtofem_model.FUNtoFEMmodel.get_functions"><code class="xref py py-func docutils literal"><span class="pre">get_functions()</span></code></a>.
-The output list contains the <a class="reference internal" href="#module-function" title="function"><code class="xref py py-class docutils literal"><span class="pre">function</span></code></a> type. The following code prints the function values:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+<p>Once the driver has been run, <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_forward" title="funtofem_driver.FUNtoFEMDriver.solve_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_forward()</span></code></a>, the functions can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_functions()</span></code>.
+The output list contains the <a class="reference internal" href="#module-function" title="function"><code class="xref py py-class docutils literal notranslate"><span class="pre">function</span></code></a> type. The following code prints the function values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 <span class="n">functions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
 
-<span class="k">print</span> <span class="s2">&quot;Function values:&quot;</span>
+<span class="nb">print</span> <span class="s2">&quot;Function values:&quot;</span>
 <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-    <span class="k">print</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">value</span>
+    <span class="nb">print</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">value</span>
 </pre></div>
 </div>
 <p>The functions in the FUNtoFEM model need to be single discipline functions to maintain modularity. The following pseudo code lays out a function that can be used as an objective evaluation with PyObj:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">eval_obj_con</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">eval_obj_con</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="n">fail</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">set_variables</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">set_variables</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
     <span class="n">functions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
 
@@ -192,8 +193,8 @@ The output list contains the <a class="reference internal" href="#module-functio
 </div>
 <div class="section" id="gradients">
 <h3>Gradients<a class="headerlink" href="#gradients" title="Permalink to this headline">¶</a></h3>
-<p>The derivatives in the model class are populated by <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_adjoint" title="funtofem_driver.FUNtoFEMDriver.solve_adjoint"><code class="xref py py-func docutils literal"><span class="pre">solve_adjoint()</span></code></a>. Gradients can be retrieved using <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_function_gradients" title="funtofem_model.FUNtoFEMmodel.get_function_gradients"><code class="xref py py-func docutils literal"><span class="pre">get_function_gradients()</span></code></a>.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
+<p>The derivatives in the model class are populated by <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_adjoint" title="funtofem_driver.FUNtoFEMDriver.solve_adjoint"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_adjoint()</span></code></a>. Gradients can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_function_gradients()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
 
 <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 <span class="n">functions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
@@ -202,11 +203,11 @@ The output list contains the <a class="reference internal" href="#module-functio
 <span class="n">grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions_gradients</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span><span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">functions</span><span class="p">):</span>
            <span class="k">for</span> <span class="n">ivar</span><span class="p">,</span><span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-               <span class="k">print</span> <span class="s1">&#39;Derivative of &#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w.r.t.&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="p">[</span><span class="n">ifunc</span><span class="p">][</span><span class="n">ivar</span><span class="p">]</span>
+               <span class="nb">print</span> <span class="s1">&#39;Derivative of &#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w.r.t.&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="p">[</span><span class="n">ifunc</span><span class="p">][</span><span class="n">ivar</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>The following is a pseudo code would be a gradient evaluation for pyOpt.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">eval_obj_con_grad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">obj</span><span class="p">,</span><span class="n">con</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">eval_obj_con_grad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">obj</span><span class="p">,</span><span class="n">con</span><span class="p">)</span>
 
     <span class="n">fail</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -228,414 +229,37 @@ The output list contains the <a class="reference internal" href="#module-functio
 </pre></div>
 </div>
 </div>
-<div class="section" id="module-funtofem_model">
-<span id="funtofem-model-class"></span><h3>FUNtoFEM Model Class<a class="headerlink" href="#module-funtofem_model" title="Permalink to this headline">¶</a></h3>
-<p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
-and design optimization.</p>
-<p>Copyright (C) 2015 Georgia Tech Research Corporation.
-Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
-All rights reserved.</p>
-<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at</p>
-<blockquote>
-<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an “AS IS” BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.</p>
-<dl class="class">
-<dt id="funtofem_model.FUNtoFEMmodel">
-<em class="property">class </em><code class="descclassname">funtofem_model.</code><code class="descname">FUNtoFEMmodel</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel" title="Permalink to this definition">¶</a></dt>
-<dd><p>The FUNtoFEMmodel type holds all the data required for a FUNtoFEM coupled simulation.
-To create a model, instantiate it then add bodies and scenarios to it.
-There are functions in the model type that allow for extraction of the function and
-derivative values as well as setting the design variables</p>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="#module-body" title="body"><code class="xref py py-mod docutils literal"><span class="pre">body</span></code></a>, <a class="reference internal" href="#module-scenario" title="scenario"><code class="xref py py-mod docutils literal"><span class="pre">scenario</span></code></a></p>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the model</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the model</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.add_body">
-<code class="descname">add_body</code><span class="sig-paren">(</span><em>body</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.add_body"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.add_body" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a body to the model. The body must be completely defined before adding to the model</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>body</strong> (<em>body object</em>) – the body to be added</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.add_scenario">
-<code class="descname">add_scenario</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.add_scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.add_scenario" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a scenario to model. The scenario must be completely defined before adding to the model</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scenario</strong> (<em>scenario object</em>) – the scenario to be added</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.print_summary">
-<code class="descname">print_summary</code><span class="sig-paren">(</span><em>print_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.print_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.print_summary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print out a summary of the assembled model for inspection</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>print_level</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – how much detail to print in the summary. Print level &lt; 0 does not print all the variables</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.get_variables">
-<code class="descname">get_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.get_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.get_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the variable objects of the entire model. Coupled variables only appear one</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>var_list</strong></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of variable objects</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.set_variables">
-<code class="descname">set_variables</code><span class="sig-paren">(</span><em>dv</em>, <em>scale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.set_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.set_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the variable values of the entire model given a list of values
-in the same order as get_variables</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dv</strong> (<em>list of float</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#complex" title="(in Python v2.7)"><em>complex</em></a><em>, or </em><em>Variable objects</em>) – The variable values in the same order as <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_variables" title="funtofem_model.FUNtoFEMmodel.get_variables"><code class="xref py py-func docutils literal"><span class="pre">get_variables()</span></code></a> returns them</li>
-<li><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If scale, then the model variables will be set to dv * scaling stored in the variable type</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.count_functions">
-<code class="descname">count_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.count_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.count_functions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the number of functions in the model</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – The total number of functions in the model</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.get_functions">
-<code class="descname">get_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.get_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.get_functions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all the functions in the model</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>functions</strong> – list of all the functions in the model ordered by the scenarios</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of function objects</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.get_function_gradients">
-<code class="descname">get_function_gradients</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.get_function_gradients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.get_function_gradients" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the function gradients for all the functions in the model</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>gradients</strong> – derivative values
-1st index = function number in the same order as get_functions
-2st index = variable number in the same order as get_variables</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of list of floats</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives">
-<code class="descname">enforce_coupling_derivatives</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/funtofem_model.html#FUNtoFEMmodel.enforce_coupling_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[driver call]</strong> Sum the coupled variable derivatives in each group.</p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="funtofem-model-class">
+<h3>FUNtoFEM Model Class<a class="headerlink" href="#funtofem-model-class" title="Permalink to this headline">¶</a></h3>
 </div>
 </div>
 <div class="section" id="bodies-and-scenarios">
 <h2>Bodies and Scenarios<a class="headerlink" href="#bodies-and-scenarios" title="Permalink to this headline">¶</a></h2>
 <p>Bodies and scenarios organize the data associated for the coupling and design.
 Additionally, the body class holds the shape parameterization and transfer scheme.
-Shape parameterization is added by creating a new body class that subclasses the <a class="reference internal" href="#module-body" title="body"><code class="xref py py-class docutils literal"><span class="pre">body</span></code></a> class. See <a class="reference internal" href="#massoud_body.MassoudBody" title="massoud_body.MassoudBody"><code class="xref py py-class docutils literal"><span class="pre">MassoudBody</span></code></a> for an example.
-The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
+Shape parameterization is added by creating a new body class that subclasses the <code class="xref py py-class docutils literal notranslate"><span class="pre">body</span></code> class. See <code class="xref py py-class docutils literal notranslate"><span class="pre">MassoudBody</span></code> for an example.
+The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
 <div class="section" id="scenarios">
 <h3>Scenarios<a class="headerlink" href="#scenarios" title="Permalink to this headline">¶</a></h3>
 <p>Scenarios hold <a class="reference internal" href="#variables">variables</a> and <a class="reference internal" href="#functions">functions</a> in lists.
-Variables and functions are added using <a class="reference internal" href="#scenario.Scenario.add_function" title="scenario.Scenario.add_function"><code class="xref py py-func docutils literal"><span class="pre">add_function()</span></code></a> and <a class="reference internal" href="#scenario.Scenario.add_variable" title="scenario.Scenario.add_variable"><code class="xref py py-func docutils literal"><span class="pre">add_variable()</span></code></a>.</p>
+Variables and functions are added using <code class="xref py py-func docutils literal notranslate"><span class="pre">add_function()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">add_variable()</span></code>.</p>
 <p>An example of a scenario variable could be flow variables such as angle of attack or Mach number.</p>
 <div class="figure">
 <img alt="_images/scenario.png" src="_images/scenario.png" />
 </div>
-<span class="target" id="module-scenario"></span><p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
-and design optimization.</p>
-<p>Copyright (C) 2015 Georgia Tech Research Corporation.
-Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
-All rights reserved.</p>
-<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at</p>
-<blockquote>
-<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an “AS IS” BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.</p>
-<dl class="class">
-<dt id="scenario.Scenario">
-<em class="property">class </em><code class="descclassname">scenario.</code><code class="descname">Scenario</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em>, <em>group=None</em>, <em>steady=True</em>, <em>fun3d=True</em>, <em>steps=1000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario" title="Permalink to this definition">¶</a></dt>
-<dd><p>A class to hold scenario information for a design point in optimization</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the scenario</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – ID number of the body in the list of bodies in the model</li>
-<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – group number for the scenario. Coupled variables defined in the scenario will be coupled with
-scenarios in the same group</li>
-<li><strong>steady</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether the scenario’s simulation is steady or unsteady</li>
-<li><strong>fun3d</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not you are using FUN3D. If true, the scenario class will auto-populate ‘aerodynamic’ required by FUN3D</li>
-<li><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – the number of coupled time steps to run for the scenario</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<dl class="last docutils">
-<dt><a class="reference internal" href="#module-base" title="base"><code class="xref py py-mod docutils literal"><span class="pre">base</span></code></a></dt>
-<dd>Scenario inherits from Base</dd>
-</dl>
-</div>
-<dl class="method">
-<dt id="scenario.Scenario.add_function">
-<code class="descname">add_function</code><span class="sig-paren">(</span><em>function</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario.add_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario.add_function" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a new function to the scenario’s function list</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>function</strong> (<a class="reference internal" href="#function.Function" title="function.Function"><em>Function</em></a>) – function object to be added to scenario</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="scenario.Scenario.count_functions">
-<code class="descname">count_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario.count_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario.count_functions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the number of functions in this scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of functions in this scenario</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="scenario.Scenario.count_adjoint_functions">
-<code class="descname">count_adjoint_functions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario.count_adjoint_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario.count_adjoint_functions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the number of functions that require an adjoint in this scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of adjoint-requiring functions in this scenario</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="scenario.Scenario.add_variable">
-<code class="descname">add_variable</code><span class="sig-paren">(</span><em>vartype</em>, <em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario.add_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario.add_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a new variable to the scenario’s variable dictionary</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – type of variable</li>
-<li><strong>var</strong> (<em>Variable object</em>) – variable to be added</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="scenario.Scenario.update_id">
-<code class="descname">update_id</code><span class="sig-paren">(</span><em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scenario.html#Scenario.update_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scenario.Scenario.update_id" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Update the id number of the scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the scenario</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 <div class="section" id="bodies">
 <h3>Bodies<a class="headerlink" href="#bodies" title="Permalink to this headline">¶</a></h3>
-<p>Shape parameterization is added by creating a new body class that subclasses the <a class="reference internal" href="#module-body" title="body"><code class="xref py py-class docutils literal"><span class="pre">body</span></code></a> class. See <a class="reference internal" href="#massoud_body.MassoudBody" title="massoud_body.MassoudBody"><code class="xref py py-class docutils literal"><span class="pre">MassoudBody</span></code></a> for an example.
-The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
+<p>Shape parameterization is added by creating a new body class that subclasses the <code class="xref py py-class docutils literal notranslate"><span class="pre">body</span></code> class. See <code class="xref py py-class docutils literal notranslate"><span class="pre">MassoudBody</span></code> for an example.
+The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
 <div class="figure">
 <img alt="_images/body.png" src="_images/body.png" />
 </div>
-<span class="target" id="module-body"></span><p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
-and design optimization.</p>
-<p>Copyright (C) 2015 Georgia Tech Research Corporation.
-Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
-All rights reserved.</p>
-<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at</p>
-<blockquote>
-<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an “AS IS” BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.</p>
-<dl class="class">
-<dt id="body.Body">
-<em class="property">class </em><code class="descclassname">body.</code><code class="descname">Body</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em>, <em>group=None</em>, <em>boundary=0</em>, <em>fun3d=True</em>, <em>motion_type='deform'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/body.html#Body"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#body.Body" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defines a body base class for FUNtoFEM. Can be used as is or as a parent class for bodies with shape parameterization.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the body</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – ID number of the body in the list of bodies in the model</li>
-<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – group number for the body. Coupled variables defined in the body will be coupled with
-bodies in the same group</li>
-<li><strong>boundary</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – FUN3D boundary number associated with the body</li>
-<li><strong>fun3d</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not you are using FUN3D. If true, the body class will auto-populate ‘rigid_motion’ required by FUN3D</li>
-<li><strong>motion_type</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – the type of motion the body is undergoing. Possible options: ‘deform’,’rigid’,’deform+rigid’,’rigid+deform’</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<dl class="last docutils">
-<dt><a class="reference internal" href="#module-base" title="base"><code class="xref py py-mod docutils literal"><span class="pre">base</span></code></a></dt>
-<dd>Body inherits from Base</dd>
-<dt><a class="reference internal" href="#module-massoud_body" title="massoud_body"><code class="xref py py-mod docutils literal"><span class="pre">massoud_body</span></code></a></dt>
-<dd>example of class inheriting Body and adding shape parameterization</dd>
-</dl>
-</div>
-<dl class="method">
-<dt id="body.Body.update_id">
-<code class="descname">update_id</code><span class="sig-paren">(</span><em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/body.html#Body.update_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#body.Body.update_id" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Update the id number of the body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the scenario</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="body.Body.add_variable">
-<code class="descname">add_variable</code><span class="sig-paren">(</span><em>vartype</em>, <em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/body.html#Body.add_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#body.Body.add_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a new variable to the body’s variable dictionary</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – type of variable</li>
-<li><strong>var</strong> (<em>Variable object</em>) – variable to be added</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 <div class="section" id="base-class">
 <h3>Base class<a class="headerlink" href="#base-class" title="Permalink to this headline">¶</a></h3>
 <p>The body and scenario classes subclass the <a class="reference internal" href="#base-class">base class</a>.</p>
-<p>Although most of the methods in the base class are used internally in the model, <a class="reference internal" href="#base.Base.set_variable" title="base.Base.set_variable"><code class="xref py py-func docutils literal"><span class="pre">set_variable()</span></code></a> allows the user to change attributes of existing <a class="reference internal" href="#variables">variables</a> in the body or scenario.
+<p>Although most of the methods in the base class are used internally in the model, <a class="reference internal" href="#base.Base.set_variable" title="base.Base.set_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_variable()</span></code></a> allows the user to change attributes of existing <a class="reference internal" href="#variables">variables</a> in the body or scenario.
 For example, if the shape parameterization created a specific number of variables, but you do not want to use all of them in the optimization, you can set the variable to be inactive.</p>
 <span class="target" id="module-base"></span><p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
 and design optimization.</p>
@@ -661,9 +285,9 @@ limitations under the License.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the body or scenario</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number in list of bodies or scenarios in the model</li>
-<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – group number for the body or scenario. Coupled variables defined in the body/scenario will be coupled with
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the body or scenario</li>
+<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number in list of bodies or scenarios in the model</li>
+<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – group number for the body or scenario. Coupled variables defined in the body/scenario will be coupled with
 bodies/scenarios in the same group</li>
 </ul>
 </td>
@@ -672,7 +296,7 @@ bodies/scenarios in the same group</li>
 </table>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="#module-body" title="body"><code class="xref py py-mod docutils literal"><span class="pre">body</span></code></a>, <a class="reference internal" href="#module-scenario" title="scenario"><code class="xref py py-mod docutils literal"><span class="pre">scenario</span></code></a></p>
+<p class="last"><code class="xref py py-mod docutils literal notranslate"><span class="pre">body</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">scenario</span></code></p>
 </div>
 <dl class="method">
 <dt id="base.Base.add_variable">
@@ -683,7 +307,7 @@ bodies/scenarios in the same group</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – type of variable</li>
+<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of variable</li>
 <li><strong>var</strong> (<em>Variable object</em>) – variable to be added</li>
 </ul>
 </td>
@@ -701,15 +325,15 @@ bodies/scenarios in the same group</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – type of variable</li>
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the variable</li>
-<li><strong>index</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a><em> or </em><em>list of ints</em>) – list of id numbers for the variables to modify</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#complex" title="(in Python v2.7)"><em>complex</em></a>) – value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – lower bound for the variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – upper bound for the variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the variable is coupled</li>
+<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of variable</li>
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the variable</li>
+<li><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a><em> or </em><em>list of ints</em>) – list of id numbers for the variables to modify</li>
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.9)"><em>complex</em></a>) – value of the variable</li>
+<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound for the variable</li>
+<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound for the variable</li>
+<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
+<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the variable is active</li>
+<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the variable is coupled</li>
 </ul>
 </td>
 </tr>
@@ -731,7 +355,7 @@ bodies/scenarios in the same group</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of active variables in the variable dictionary</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></td>
 </tr>
 </tbody>
 </table>
@@ -748,7 +372,7 @@ This is the number of unique variables to this object</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of uncoupled, active variables in the variable dictionary</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></td>
 </tr>
 </tbody>
 </table>
@@ -795,7 +419,7 @@ Updates coupled variables in the body or scenario based on the input’s variabl
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<a class="reference internal" href="#module-body" title="body"><em>body</em></a><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
 </tr>
 </tbody>
 </table>
@@ -810,7 +434,7 @@ Update the id number of the body or scenario</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the scenario</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of the scenario</td>
 </tr>
 </tbody>
 </table>
@@ -825,7 +449,7 @@ Adds coupled derivatives in the body or scenario based on the input’s derivati
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<a class="reference internal" href="#module-body" title="body"><em>body</em></a><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
 </tr>
 </tbody>
 </table>
@@ -840,7 +464,7 @@ Updates coupled derivatives in the body or scenario based on the input’s deriv
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<a class="reference internal" href="#module-body" title="body"><em>body</em></a><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
 </tr>
 </tbody>
 </table>
@@ -862,7 +486,7 @@ Get the derivatives of a function, n, with respect to all the active variables i
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – the function number</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – the function number</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of derivative values for each active variable in this object</td>
 </tr>
@@ -881,7 +505,7 @@ Get the derivatives of a function, n, with respect to all the uncoupled, active 
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – the function number</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – the function number</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of derivative values for each uncoupled, active variable in this object</td>
 </tr>
@@ -894,106 +518,14 @@ Get the derivatives of a function, n, with respect to all the uncoupled, active 
 </dd></dl>
 
 </div>
-<div class="section" id="module-massoud_body">
-<span id="massoudbody"></span><h3>MassoudBody<a class="headerlink" href="#module-massoud_body" title="Permalink to this headline">¶</a></h3>
-<p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
-and design optimization.</p>
-<p>Copyright (C) 2015 Georgia Tech Research Corporation.
-Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
-All rights reserved.</p>
-<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at</p>
-<blockquote>
-<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an “AS IS” BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.</p>
-<dl class="class">
-<dt id="massoud_body.MassoudBody">
-<em class="property">class </em><code class="descclassname">massoud_body.</code><code class="descname">MassoudBody</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em>, <em>group=None</em>, <em>boundary=0</em>, <em>fun3d=True</em>, <em>motion_type='deform'</em>, <em>ndv=0</em>, <em>aero_gp_file=''</em>, <em>struct_gp_file=''</em>, <em>dv_file=''</em>, <em>usd_file=''</em>, <em>comm=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/massoud_body.html#MassoudBody"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#massoud_body.MassoudBody" title="Permalink to this definition">¶</a></dt>
-<dd><p>Body class with Massoud parameterization</p>
-<p>Uses calls to the Massoud Python wrapper</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the body</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the body</li>
-<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – group number for coupling of variables</li>
-<li><strong>boundary</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – FUN3D boundary number associated with the body</li>
-<li><strong>fun3d</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not you are using FUN3D. If true, the body class will auto-populate ‘rigid_motion’ required by FUN3D</li>
-<li><strong>motion_type</strong> – the type of motion the body is undergoing. Possible options: ‘deform’,’rigid’,’deform+rigid’</li>
-<li><strong>ndv</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – number of shape design variables in the MASSOUD parameterization</li>
-<li><strong>aero_gp_file</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the file with the MASSOUD parameterized aerodynamic surface mesh</li>
-<li><strong>struct_gp_file</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the file with the MASSOUD parameterized structural mesh</li>
-<li><strong>dv_file</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the MASSOUD dv_file</li>
-<li><strong>usd_file</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the MASSOUD usd_file</li>
-<li><strong>comm</strong> (<em>MPI comm</em>) – the FUNtoFEM communicator</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<dl class="last docutils">
-<dt><a class="reference internal" href="#module-body" title="body"><code class="xref py py-mod docutils literal"><span class="pre">body</span></code></a></dt>
-<dd>MassoudBody inherits from Body</dd>
-</dl>
-</div>
-<dl class="method">
-<dt id="massoud_body.MassoudBody.initialize_shape_parameterization">
-<code class="descname">initialize_shape_parameterization</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/massoud_body.html#MassoudBody.initialize_shape_parameterization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#massoud_body.MassoudBody.initialize_shape_parameterization" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[driver call]</strong>
-Create the map of structural node locations since TACS doesn’t give us global id numbers</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="massoud_body.MassoudBody.update_shape">
-<code class="descname">update_shape</code><span class="sig-paren">(</span><em>complex_run=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/massoud_body.html#MassoudBody.update_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#massoud_body.MassoudBody.update_shape" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[driver call]</strong>
-perturbs the shape of the body based on the body’s shape variables and update the meshes</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>complex_run</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the run is complex mode</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="massoud_body.MassoudBody.shape_derivative">
-<code class="descname">shape_derivative</code><span class="sig-paren">(</span><em>scenario</em>, <em>offset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/massoud_body.html#MassoudBody.shape_derivative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#massoud_body.MassoudBody.shape_derivative" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[driver call]</strong>
-Calculates the shape derivative given the coordinate derivatives</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scenario</strong> (<em>scenario object</em>) – The current scenario</li>
-<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – function offset number</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="massoudbody">
+<h3>MassoudBody<a class="headerlink" href="#massoudbody" title="Permalink to this headline">¶</a></h3>
 </div>
 <div class="section" id="variables">
 <h3>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h3>
 <p>Some solvers like FUN3D require some design variables to be defined, whether or not it is being used in design.
-The active attribute of the <a class="reference internal" href="#variable.Variable" title="variable.Variable"><code class="xref py py-class docutils literal"><span class="pre">Variable</span></code></a> class. Setting it to False, allows you to still define the variable but it won’t be returned when calling <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_variables" title="funtofem_model.FUNtoFEMmodel.get_variables"><code class="xref py py-func docutils literal"><span class="pre">get_variables()</span></code></a>.
-When the variable is added to a <a class="reference internal" href="#scenario.Scenario" title="scenario.Scenario"><code class="xref py py-class docutils literal"><span class="pre">Scenario</span></code></a> or <a class="reference internal" href="#body.Body" title="body.Body"><code class="xref py py-class docutils literal"><span class="pre">Body</span></code></a> using <a class="reference internal" href="#base.Base.add_variable" title="base.Base.add_variable"><code class="xref py py-func docutils literal"><span class="pre">add_variable()</span></code></a>, the vartype argument specifies what discipline the variable is associated with.</p>
+The active attribute of the <a class="reference internal" href="#variable.Variable" title="variable.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a> class. Setting it to False, allows you to still define the variable but it won’t be returned when calling <code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code>.
+When the variable is added to a <code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> using <a class="reference internal" href="#base.Base.add_variable" title="base.Base.add_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_variable()</span></code></a>, the vartype argument specifies what discipline the variable is associated with.</p>
 <span class="target" id="module-variable"></span><p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
 and design optimization.</p>
 <p>Copyright (C) 2015 Georgia Tech Research Corporation.
@@ -1018,14 +550,14 @@ limitations under the License.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the variable</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – current value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – lower bound of the design variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – upper bound of the design variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the design variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of the design variable</li>
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the variable</li>
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – current value of the variable</li>
+<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound of the design variable</li>
+<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound of the design variable</li>
+<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
+<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is active</li>
+<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
+<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of the design variable</li>
 </ul>
 </td>
 </tr>
@@ -1042,12 +574,12 @@ limitations under the License.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – new value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – lower bound of the design variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – upper bound of the design variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the design variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – new value of the variable</li>
+<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound of the design variable</li>
+<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound of the design variable</li>
+<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
+<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is active</li>
+<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
 </ul>
 </td>
 </tr>
@@ -1063,8 +595,8 @@ limitations under the License.</p>
 <p>Functions in the FUNtoFEM framework are single discipline functions.
 The <em>analysis_type</em> argument specifics which discipline the function is associated with.
 Currently the options are ‘aerodynamic’ and ‘structural’.</p>
-<p>Once the function is instantiated, <a class="reference internal" href="#scenario.Scenario.add_function" title="scenario.Scenario.add_function"><code class="xref py py-class docutils literal"><span class="pre">add_function</span></code></a> is used to add it to a scenario.
-Although the function values could be accessed from the model type, <a class="reference internal" href="#funtofem_model.FUNtoFEMmodel.get_functions" title="funtofem_model.FUNtoFEMmodel.get_functions"><code class="xref py py-func docutils literal"><span class="pre">get_functions()</span></code></a> will return all the <a class="reference internal" href="#functions">functions</a> defined in the model.</p>
+<p>Once the function is instantiated, <code class="xref py py-class docutils literal notranslate"><span class="pre">add_function</span></code> is used to add it to a scenario.
+Although the function values could be accessed from the model type, <code class="xref py py-func docutils literal notranslate"><span class="pre">get_functions()</span></code> will return all the <a class="reference internal" href="#functions">functions</a> defined in the model.</p>
 <p>When FUNtoFEM is used with FUN3D, the name of any function that would be defined in the rubber.data can be used.
 For functions that do not need an adjoint, such as structural mass, the boolean, adjoint, should be set to false.
 Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor without including that of the sting model, you can use the body argument to pass that information to the solver.</p>
@@ -1092,16 +624,16 @@ limitations under the License.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – name of the function</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – id number of function</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – value of the function</li>
-<li><strong>start</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – time step that the function window starts. If steady, then ignore</li>
-<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – time step that the function window ends. If steady, set to -1 (the default)</li>
-<li><strong>analysis_type</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – type of analysis this function is associated with: ‘aerodynamic’,’structural’</li>
-<li><strong>body</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – body number that the function is associated with. The default is 0 which is all bodies</li>
-<li><strong>adjoint</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether or not an adjoint is required for a function</li>
-<li><strong>options</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) – any options associated with the function and pass to the solvers</li>
-<li><strong>averaging</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – whether the function is averaged or integrated or the function window. Ignored for steady functions</li>
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the function</li>
+<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of function</li>
+<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – value of the function</li>
+<li><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – time step that the function window starts. If steady, then ignore</li>
+<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – time step that the function window ends. If steady, set to -1 (the default)</li>
+<li><strong>analysis_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of analysis this function is associated with: ‘aerodynamic’,’structural’</li>
+<li><strong>body</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – body number that the function is associated with. The default is 0 which is all bodies</li>
+<li><strong>adjoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not an adjoint is required for a function</li>
+<li><strong>options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – any options associated with the function and pass to the solvers</li>
+<li><strong>averaging</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether the function is averaged or integrated or the function window. Ignored for steady functions</li>
 </ul>
 </td>
 </tr>
@@ -1135,10 +667,10 @@ limitations under the License.</p>
     <div class="row-fluid">
     <ul class="inline pull-left">
       <li>
-        &copy; Copyright 2017, Jan F. Kiviaho, Kevin E. Jacobson, Graeme J. Kennedy.
+        &copy; Copyright 2021, FUNtoFEM Developers.
       </li>
       <li>
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.8.5.
       </li>
     </ul>
     </div>
