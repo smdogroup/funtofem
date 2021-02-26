@@ -24,12 +24,6 @@ SO_LINK_FLAGS=-fPIC -shared
 # Where your LAPACK/BLAS libraries are located
 LAPACK_LIBS = -L/usr/lib -llapack -lblas
 
-# Python, numpy, mpi4py includes (for Python interface)
-PYTHON_INCLUDE = ${shell python-config --includes}
-PYTHON_LIB = -lpython3
-NUMPY_DIR=${shell python -c "import numpy; print(numpy.get_include())"}
-MPI4PY_DIR=${shell python -c "import mpi4py; print(mpi4py.get_include())"}
-
 # TransferScheme include, lib, and ld flags (do not modify)
 F2F_INCLUDE = -I${F2F_DIR}/include
 F2F_LIB = ${F2F_DIR}/lib/libtransfer_schemes.a
