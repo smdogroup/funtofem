@@ -20,10 +20,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
+from pyfuntofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
-class wedgeTACS(TacsSteadyAerothermalInterface):
+class wedgeTACS(TacsSteadyInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
         super(wedgeTACS,self).__init__(comm, tacs_comm, model)
 

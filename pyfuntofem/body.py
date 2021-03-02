@@ -25,7 +25,7 @@ class Body(Base):
     """
     Defines a body base class for FUNtoFEM. Can be used as is or as a parent class for bodies with shape parameterization.
     """
-    def __init__(self,name,id=0,group=None,boundary=0,fun3d=True,motion_type='deform'):
+    def __init__(self,name,analysis_type,id=0,group=None,boundary=0,fun3d=True,motion_type='deform'):
         """
 
         Parameters
@@ -56,6 +56,7 @@ class Body(Base):
         super(Body,self).__init__(name,id,group)
 
         self.name = name
+        self.analysis_type = analysis_type
         self.id   = id
         self.group = group
         self.group_master = False

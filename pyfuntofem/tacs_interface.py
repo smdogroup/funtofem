@@ -26,7 +26,7 @@ from .solver_interface import SolverInterface
 import numpy as np
 
 
-class TacsSteadyAerothermoelasticInterface(SolverInterface):
+class TacsSteadyInterface(SolverInterface):
     """
     A base class to do coupled steady aerothermal simulations with TACS
     """
@@ -230,14 +230,21 @@ class TacsSteadyAerothermoelasticInterface(SolverInterface):
                 self.get_mesh(body)
                 # Need initial temperatures defined to pass to fluid solver
                 # currently initializing to the TACS reference temperature
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
-                body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
             self.first_pass = False
         else:
             for body in bodies:
                 self.set_mesh(body)
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
-                body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
+
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                    
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':    
+                    body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
 
         if self.tacs_proc:
             # Assemble and factor the Jacobian matrix

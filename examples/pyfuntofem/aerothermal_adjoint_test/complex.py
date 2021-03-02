@@ -76,7 +76,7 @@ class wedge_adjoint(object):
             'npts': 5}
 
         # instantiate the driver
-        self.driver = FUNtoFEMnlbgs_aerothermal(solvers, self.comm, self.tacs_comm, 0, self.comm, 0,
+        self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0,
             transfer_options, model=self.model)
 
         # Set up some variables and constants related to the problem
@@ -93,7 +93,7 @@ class wedge_adjoint(object):
         thickness = 0.015
         # Build the model
         model = FUNtoFEMmodel('wedge')
-        plate = Body('plate', group=0, boundary=1)
+        plate = Body('plate','aerothermal', group=0, boundary=1)
         plate.add_variable('structural', Variable('thickness', value=thickness, lower=0.01, upper=0.1))
         model.add_body(plate)
 
