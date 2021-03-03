@@ -56,6 +56,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         
         # Aitken acceleration settings
         self.theta_init = theta_init
+        self.theta_therm_init = theta_init
         self.theta_min = theta_min
         self.theta_max = theta_max
         self.theta = []
