@@ -36,6 +36,8 @@ class TacsSteadyInterface(SolverInterface):
         self.assembler = None
         self.res = None
         self.ans = None
+        self.ext_force = None
+        self.update = None
         self.mat = None
         self.pc = None
         self.struct_X_vec = None
@@ -397,8 +399,10 @@ class TacsSteadyInterface(SolverInterface):
     def iterate_adjoint(self, scenario, bodies, step):
         fail = 0
         for body in bodies:
-            body.psi_S[:,:] = 0.0
-            body.psi_T_S[:,:] = 0.0
+            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                body.psi_S[:,:] = 0.0
+            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                body.psi_T_S[:,:] = 0.0
 
         if self.tacs_proc:
             # Evaluate state variable sensitivities and scale to get right-hand side

@@ -25,7 +25,7 @@ import numpy as np
 
 class wedgeTACS(TacsSteadyInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
-        super(wedgeTACS,self).__init__(comm, tacs_comm, model)
+        super(wedgeTACS,self).__init__(comm, tacs_comm, model, ndof=1)
 
         self.tacs_proc = False
         if comm.Get_rank() < n_tacs_procs:
@@ -107,6 +107,8 @@ class wedgeTACS(TacsSteadyInterface):
             self.assembler = assembler
             self.res = res
             self.ans = ans
+            self.ext_force = assembler.createVec()
+            self.update = assembler.createVec()
             self.mat = mat
             self.pc = pc
             self.struct_X = struct_X

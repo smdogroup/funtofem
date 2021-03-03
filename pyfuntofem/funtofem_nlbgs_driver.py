@@ -214,8 +214,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         steps = scenario.steps
 
         # Load the current state
-        if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-            for body in self.model.bodies:
+        for body in self.model.bodies:
+            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                 aero_disps = np.zeros(body.aero_disps.size,dtype=TransferScheme.dtype)
                 body.transfer.transferDisps(body.struct_disps, aero_disps)
 
@@ -657,14 +657,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.aitken_vec = []
             self.theta = []
 
-        if self.aitken_therm_init:
-            self.aitken_therm_init = False
-
-            # initialize the 'previous update' to zero
-            self.therm_up_prev = []
-            self.aitken_therm_vec = []
-            self.theta = []
-
             for ibody, body in enumerate(self.model.bodies):
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     up_prev_body = []
@@ -678,6 +670,15 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     self.aitken_vec.append(aitken_vec_body)
                     self.theta.append(theta_body)
 
+        if self.aitken_therm_init:
+            self.aitken_therm_init = False
+
+            # initialize the 'previous update' to zero
+            self.therm_up_prev = []
+            self.aitken_therm_vec = []
+            self.theta_therm = []
+
+            for ibody, body in enumerate(self.model.bodies):
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                     up_prev_body = []
                     aitken_therm_vec_body = []
@@ -685,10 +686,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     for func in range(nfunctions):
                         up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
                         aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-                        theta_body.append(self.theta_init)
+                        theta_body.append(self.theta_therm_init)
                     self.therm_up_prev.append(up_prev_body)
                     self.aitken_therm_vec.append(aitken_therm_vec_body)
-                    self.theta.append(theta_body)
+                    self.theta_therm.append(theta_body)
 
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
@@ -714,13 +715,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                         # Only update theta if the vector changed
                         if norm2 > 1e-13:
-                            self.theta[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-                            self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],self.theta_max)),self.theta_min))
-                        self.aitken_therm_vec[ibody][func] += self.theta[ibody][func] * up
+                            self.theta_therm[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
+                            self.theta_therm[ibody][func] = np.max((np.min((self.theta_therm[ibody][func],self.theta_max)),self.theta_min))
+                        self.aitken_therm_vec[ibody][func] += self.theta_therm[ibody][func] * up
                         self.therm_up_prev[ibody][func] =up[:]
                         body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
 
-        return self.aitken_vec
+        return
 
 
     # def _aitken_relax_thermal(self):
@@ -757,40 +758,40 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
     #             body.struct_temps = self.aitken_therm_vec[ibody]
     #     return
 
-    def _aitken_adjoint_relax_thermal(self,scenario):
-        nfunctions =  scenario.count_adjoint_functions()
-        if self.aitken_therm_init:
-            self.aitken_therm_init = False
+    # def _aitken_adjoint_relax_thermal(self,scenario):
+    #     nfunctions =  scenario.count_adjoint_functions()
+    #     if self.aitken_therm_init:
+    #         self.aitken_therm_init = False
 
-            # initialize the 'previous update' to zero
-            self.therm_up_prev = []
-            self.aitken_therm_vec = []
-            self.theta = []
+    #         # initialize the 'previous update' to zero
+    #         self.therm_up_prev = []
+    #         self.aitken_therm_vec = []
+    #         self.theta = []
 
-            for ibody, body in enumerate(self.model.bodies):
-                up_prev_body = []
-                aitken_therm_vec_body = []
-                theta_body = []
-                for func in range(nfunctions):
-                    up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-                    aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-                    theta_body.append(self.theta_init)
-                self.therm_up_prev.append(up_prev_body)
-                self.aitken_therm_vec.append(aitken_therm_vec_body)
-                self.theta.append(theta_body)
+    #         for ibody, body in enumerate(self.model.bodies):
+    #             up_prev_body = []
+    #             aitken_therm_vec_body = []
+    #             theta_body = []
+    #             for func in range(nfunctions):
+    #                 up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
+    #                 aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
+    #                 theta_body.append(self.theta_init)
+    #             self.therm_up_prev.append(up_prev_body)
+    #             self.aitken_therm_vec.append(aitken_therm_vec_body)
+    #             self.theta.append(theta_body)
 
-        # do the Aitken update
-        for ibody, body in enumerate(self.model.bodies):
-            if body.struct_nnodes > 0:
-                for func in range(nfunctions):
-                    up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
-                    norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
+    #     # do the Aitken update
+    #     for ibody, body in enumerate(self.model.bodies):
+    #         if body.struct_nnodes > 0:
+    #             for func in range(nfunctions):
+    #                 up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
+    #                 norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
 
-                    # Only update theta if the vector changed
-                    if norm2 > 1e-13:
-                        self.theta[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-                        self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],self.theta_max)),self.theta_min))
-                    self.aitken_therm_vec[ibody][func] += self.theta[ibody][func] * up
-                    self.therm_up_prev[ibody][func] =up[:]
-                    body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
-        return self.aitken_therm_vec
+    #                 # Only update theta if the vector changed
+    #                 if norm2 > 1e-13:
+    #                     self.theta[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
+    #                     self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],self.theta_max)),self.theta_min))
+    #                 self.aitken_therm_vec[ibody][func] += self.theta[ibody][func] * up
+    #                 self.therm_up_prev[ibody][func] =up[:]
+    #                 body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
+    #     return self.aitken_therm_vec
