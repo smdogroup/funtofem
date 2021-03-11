@@ -3,11 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to FUNtoFEM's documentation
+Welcome to FUNtoFEM's Documentation
 ===================================
 
 If you are using FUNtoFEM with existing interface class and solvers, you should only need the :doc:`model` and :doc:`driver`.
-If you wish to create a new interface or a new driver, see the :doc:`programmers_guide`
+If you wish to create a new interface or a new driver, see the :doc:`programmers_guide`.
+
+.. figure:: images/funtofem_flowchart.png
 
 .. toctree::
    :maxdepth: 2
@@ -27,3 +29,34 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+
+External Resources
+==================
+
+Access publications by the SMDO Group `here <http://gkennedy.gatech.edu/publications/>`_.
+
+Return to FUNtoFEM GitHub Repository `here <https://github.com/smdogroup/funtofem>`_.
+
+
+
+Acknowledgements
+==================
+
+FUNtoFEM was developed with funding from NASA through the Transformational Tools and Technologies program with grant number NNX15AU22A and funding from the US Air Force Research Laboratory (AFRL), contract number FA8650-18-2-2227.
+
+
+
+License
+==================
+
+FUNtoFEM is licensed under the Apache License, Version 2.0 (the "License");
+you may not use this software except in compliance with the License.
+You may obtain a copy of the License `here <http://www.apache.org/licenses/LICENSE-2.0>`_.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
