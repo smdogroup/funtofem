@@ -24,7 +24,7 @@ from __future__ import print_function
 
 import numpy as np
 from funtofem           import TransferScheme
-from solver_interface   import SolverInterface
+from pyfuntofem.solver_interface   import SolverInterface
 
 class SU2Interface(SolverInterface):
     '''

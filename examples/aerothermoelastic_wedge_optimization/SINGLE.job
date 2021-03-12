@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -N subsonic_wedge
+#PBS -W group_list=a1607
+#PBS -l select=1:ncpus=16:mpiprocs=16:model=san
+#PBS -l walltime=00:30:00
+#PBS -q devel
+#PBS -j oe
+#PBS -m e
+
+cd $PBS_O_WORKDIR
+
+source ~/.profile
+time mpiexec_mpt -n 16 python py_optimization.py 2>&1 > opt.out
