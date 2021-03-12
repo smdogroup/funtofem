@@ -1,1 +1,0 @@
-This file ultimately provided the same results as the 4_deg_bump case, in both plate temperature distribution and flow pressure distribution. I think this is because this case still has an instantaneous change from the symmetry boundary condition to the plate. Might be worth retrying this with a plate that remains clsoe to tangent to the symmetry plane for a longer distance.
