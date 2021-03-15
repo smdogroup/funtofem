@@ -91,7 +91,7 @@ class wedge_adjoint(object):
         thickness = 0.015
         # Build the model
         model = FUNtoFEMmodel('wedge')
-        plate = Body('plate', 'aerothermoelastic', group=0, boundary=1)
+        plate = Body('plate', 'aeroelastic', group=0, boundary=1)
         plate.add_variable('structural', Variable('thickness', value=thickness, lower=0.01, upper=0.1))
         model.add_body(plate)
 

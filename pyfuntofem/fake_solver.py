@@ -24,8 +24,8 @@ from __future__ import print_function
 
 import numpy as np
 import os
-from funtofem           import TransferScheme
-from pyfuntofem.solver_interface   import SolverInterface
+from funtofem import TransferScheme
+from pyfuntofem.solver_interface import SolverInterface
 
 class FakeSolver(SolverInterface):
     def __init__(self, comm, model):
@@ -34,8 +34,15 @@ class FakeSolver(SolverInterface):
         #  Instantiate FUN3D
         self.naero = 10
         np.random.seed(0)
-        self.b = (np.random.rand(self.naero) - 0.5)
-        self.Jac = 0.1*(np.random.rand(self.naero, self.naero) - 0.5)
+        self.b1 = 0.01*(np.random.rand(3*self.naero) - 0.5)
+        self.Jac1 = 0.01*(np.random.rand(3*self.naero, 3*self.naero) - 0.5)
+        # self.b1 = np.zeros(3*self.naero)
+        # self.Jac1 = np.zeros((3*self.naero, 3*self.naero))
+
+        self.b2 = 0.1*(np.random.rand(self.naero) - 0.5)
+        self.Jac2 = 0.05*(np.random.rand(self.naero, self.naero) - 0.5)
+        # self.b2 = np.zeros(self.naero)
+        # self.Jac2 = np.zeros((self.naero, self.naero))
 
         # Get the initial aero surface meshes
         self.initialize(model.scenarios[0], model.bodies, first_pass=True)
@@ -79,6 +86,10 @@ class FakeSolver(SolverInterface):
             if scenario.steady:
                 for ibody, body in enumerate(bodies):
                     if body.aero_nnodes > 0:
+                        if body.transfer is not None:
+                            body.aero_loads = self.force_save[scenario.id][ibody]
+                            body.aero_disps = self.disps_save[scenario.id][ibody]
+
                         if body.thermal_transfer is not None:
                             body.aero_heat_flux = self.heat_flux_save[scenario.id][ibody]
                             body.aero_temps = self.temps_save[scenario.id][ibody]
@@ -129,8 +140,13 @@ class FakeSolver(SolverInterface):
     def iterate(self,scenario,bodies,step):
         # Compute the heat flux
         for ibody, body in enumerate(bodies,1):
-            body.aero_heat_flux = np.zeros(4*body.aero_nnodes, dtype=TransferScheme.dtype)
-            body.aero_heat_flux[3::4] = np.dot(self.Jac, body.aero_temps) + self.b
+            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
+                body.aero_loads[:] = np.dot(self.Jac1, body.aero_disps) + self.b1
+
+            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':    
+                body.aero_heat_flux = np.zeros(4*body.aero_nnodes, dtype=TransferScheme.dtype)
+                body.aero_heat_flux[3::4] = np.dot(self.Jac2, body.aero_temps) + self.b2
 
         if not scenario.steady:
             # save this steps forces for the adjoint
@@ -172,15 +188,21 @@ class FakeSolver(SolverInterface):
         nfunctions = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies,1):
             if body.aero_nnodes > 0:
-                # Solve the heat flux adjoint equation
-                psi_Q = -body.dQdfta
+                # Solve the force and heat flux adjoint equation
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    psi_F = -body.dLdfa
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':    
+                    psi_Q = -body.dQdfta
 
         for ibody, body in enumerate(bodies,1):
             if body.aero_nnodes > 0:
 
                 if body.thermal_transfer is not None:
                     for func in range(nfunctions):
-                        body.dAdta[:,func] = np.dot(self.Jac.T, psi_Q[3::4,func])
+                        if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                            body.dGdua[:,func] = np.dot(self.Jac1.T, psi_F[:,func])
+                        if body.analysis_type == 'aerothemal' or body.analysis_type == 'aerothermoelastic':
+                            body.dAdta[:,func] = np.dot(self.Jac2.T, psi_Q[3::4,func])
 
         return fail
 
