@@ -35,12 +35,12 @@ Indices and tables
 Authors
 =======
 
-Jan Kiviaho
-Kevin Jacobson
-Graeme Kennedy
-Liam Smith
-Lenard Halim
-Sejal Sahu 
+* Jan Kiviaho
+* Kevin Jacobson
+* Graeme Kennedy
+* Liam Smith
+* Lenard Halim
+* Sejal Sahu 
 
 
 
