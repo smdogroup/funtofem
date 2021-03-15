@@ -32,6 +32,17 @@ Indices and tables
 * :ref:`search`
 
 
+Authors
+=======
+
+Jan Kiviaho
+Kevin Jacobson
+Graeme Kennedy
+Liam Smith
+Lenard Halim
+Sejal Sahu 
+
+
 
 External Resources
 ==================
