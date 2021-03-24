@@ -1,4 +1,4 @@
-FUNtoFEM driver
+FUNtoFEM Driver
 ***************
 
 While the FUNtoFEM model holds a lot of the aeroelastic and design data, the driver is what solves the coupled problems. 

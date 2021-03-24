@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>FUNtoFEM model &#8212; FUNtoFEM .0 documentation</title>
+    <title>FUNtoFEM Model &#8212; FUNtoFEM .0 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -17,8 +17,8 @@
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="FUNtoFEM driver" href="driver.html" />
-    <link rel="prev" title="Aerothermoelastic Framework" href="aerothermoelastic_framework.html" /> 
+    <link rel="next" title="FUNtoFEM Driver" href="driver.html" />
+    <link rel="prev" title="Analysis Framework" href="analysis_framework.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -30,10 +30,10 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="driver.html" title="FUNtoFEM driver"
+          <a href="driver.html" title="FUNtoFEM Driver"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="aerothermoelastic_framework.html" title="Aerothermoelastic Framework"
+          <a href="analysis_framework.html" title="Analysis Framework"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li> 
       </ul>
@@ -42,7 +42,7 @@
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">FUNtoFEM model</a><ul>
+<li><a class="reference internal" href="#">FUNtoFEM Model</a><ul>
 <li><a class="reference internal" href="#assembling-the-model">Assembling the model</a></li>
 <li><a class="reference internal" href="#exchanging-the-model-data-with-an-optimizer">Exchanging the model data with an optimizer</a><ul>
 <li><a class="reference internal" href="#design-variables">Design variables</a></li>
@@ -65,11 +65,11 @@
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="aerothermoelastic_framework.html"
-                        title="previous chapter">Aerothermoelastic Framework</a></p>
+  <p class="topless"><a href="analysis_framework.html"
+                        title="previous chapter">Analysis Framework</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="driver.html"
-                        title="next chapter">FUNtoFEM driver</a></p>
+                        title="next chapter">FUNtoFEM Driver</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
@@ -91,7 +91,7 @@
           <div class="body" role="main">
             
   <div class="section" id="funtofem-model">
-<h1>FUNtoFEM model<a class="headerlink" href="#funtofem-model" title="Permalink to this headline">¶</a></h1>
+<h1>FUNtoFEM Model<a class="headerlink" href="#funtofem-model" title="Permalink to this headline">¶</a></h1>
 <p>The model classes are used to stored design and coupling data related to the aeroelastic problem.
 The model is made up of <a class="reference internal" href="#bodies-and-scenarios">bodies and scenarios</a> .</p>
 <div class="figure">
@@ -222,6 +222,122 @@ The driver adds the details for the transfer scheme. See <a class="reference int
 <div class="figure">
 <img alt="_images/body.png" src="_images/body.png" />
 </div>
+<table border="1" class="colwidths-given docutils align-center" id="id1">
+<caption><span class="caption-text">Body Member List</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Default Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>self.name</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-odd"><td>self.analysis_type</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-even"><td>self.id</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-odd"><td>self.group</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-even"><td>self.group_master</td>
+<td>False</td>
+</tr>
+<tr class="row-odd"><td>self.boundary</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-even"><td>self.motion_type</td>
+<td>Required Input</td>
+</tr>
+<tr class="row-odd"><td>self.variables</td>
+<td>{}</td>
+</tr>
+<tr class="row-even"><td>self.derivatives</td>
+<td>{}</td>
+</tr>
+<tr class="row-odd"><td>self.parent</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.children</td>
+<td>[]</td>
+</tr>
+<tr class="row-odd"><td>self.shape</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.parameterization</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>self.transfer</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.thermal_transfer</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.struct_nnodes</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.aero_nnodes</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.xfer_ndof</td>
+<td>3.0</td>
+</tr>
+<tr class="row-even"><td>self.therm_xfer_ndof</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>self.T_ref</td>
+<td>300</td>
+</tr>
+<tr class="row-even"><td>self.struct_X</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.aero_X</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.struct_id</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.aero_id</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.struct_disps</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.struct_forces</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.struct_loads</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.rigid_transform</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.aero_disps</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.aero_forces</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.struct_temps</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.struct_heat_flux</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>self.aero_temps</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>self.aero_heat_flux</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="base-class">
 <h3>Base class<a class="headerlink" href="#base-class" title="Permalink to this headline">¶</a></h3>
@@ -587,10 +703,10 @@ Some functions are associated with particular bodies, for instance, if you wante
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="driver.html" title="FUNtoFEM driver"
+          <a href="driver.html" title="FUNtoFEM Driver"
              >next</a> |</li>
         <li class="right" >
-          <a href="aerothermoelastic_framework.html" title="Aerothermoelastic Framework"
+          <a href="analysis_framework.html" title="Analysis Framework"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li> 
       </ul>

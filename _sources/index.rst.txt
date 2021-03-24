@@ -15,7 +15,7 @@ If you wish to create a new interface or a new driver, see the :doc:`programmers
    :maxdepth: 2
    :caption: Contents:
 
-   aerothermoelastic_framework
+   analysis_framework
    model
    driver
    transfer_scheme
