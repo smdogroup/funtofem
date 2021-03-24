@@ -1,4 +1,4 @@
-FUNtoFEM model
+FUNtoFEM Model
 **************
 The model classes are used to stored design and coupling data related to the aeroelastic problem.
 The model is made up of `bodies and scenarios`_ .
@@ -162,6 +162,46 @@ The driver adds the details for the transfer scheme. See :class:`~funtofem_drive
 
 .. autoclass:: Body
    :members:
+
+.. csv-table:: Body Member List
+   :header: "Name", "Default Value"
+   :widths: 20, 20
+   :align: center
+
+   "self.name", "Required Input"
+   "self.analysis_type", "Required Input"
+   "self.id", "Required Input"
+   "self.group", "Required Input"
+   "self.group_master", "False"
+   "self.boundary", "Required Input"
+   "self.motion_type", "Required Input"
+   "self.variables", "{}"
+   "self.derivatives", "{}"
+   "self.parent", "None"
+   "self.children", "[]"
+   "self.shape", "None"
+   "self.parameterization", 1.0
+   "self.transfer", "None"
+   "self.thermal_transfer", "None"
+   "self.struct_nnodes", "None"
+   "self.aero_nnodes", "None"
+   "self.xfer_ndof", 3.0
+   "self.therm_xfer_ndof", 1.0
+   "self.T_ref", 300
+   "self.struct_X", "None"
+   "self.aero_X", "None"
+   "self.struct_id", "None"
+   "self.aero_id", "None"
+   "self.struct_disps", "None"
+   "self.struct_forces", "None"
+   "self.struct_loads", "None"
+   "self.rigid_transform", "None"
+   "self.aero_disps", "None"
+   "self.aero_forces", "None"
+   "self.struct_temps", "None"
+   "self.struct_heat_flux", "None"
+   "self.aero_temps", "None"
+   "self.aero_heat_flux", "None"
 
 Base class
 ==========
