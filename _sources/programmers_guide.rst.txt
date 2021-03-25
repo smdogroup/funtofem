@@ -27,40 +27,6 @@ aero_X is a flattened array of length 3*aero_nnodes.
 For a structural solver, the :class:`~body.Body` holds the entire structural mesh and number of nodes: body.struct_X and body.struct_nnodes.
 struct_X is a flattened array of length 3*struct_nnodes.
 
-
-.. csv-table:: Member List (TACS Interface)
-   :header: "Member Name", "Default Value"
-   :widths: 10, 10
-
-   "self.assembler", "None"
-   "self.res", "None"
-   "self.ans", "None"
-   "self.ext_force", "None"
-   "self.update", "None"
-   "self.mat", "None"
-   "self.struct_X_vec", "None"
-   "self.struct_nnodes", "None"
-   "self.struct_X", "None"
-   "self.svsenslist", "None"
-   "self.dvsenslist", "None"
-   "self.struct_rhs_vec", "None"
-   "self.psi_S_vec", "None"
-   "self.psi_S", "None"
-   "self.ans_array", "None"
-   "self.comm", "None"
-   "self.func_grad", "None"
-   "self.vol", 1.0
-   "self.gmres", "None"
-   "self.funclist", "None"
-   "self.functag", "None"
-   "self.num_components", "None"
-   "self.nfunc", "model.count_functions()"
-   "self.dof", "ndof"
-   "self.thermal_index", "self.dof-1"
-   "self.struct_vars_all", "{}"
-   "self.first_pass", "True"
-
-
 Solver Interface Class
 ======================
 .. automodule:: solver_interface

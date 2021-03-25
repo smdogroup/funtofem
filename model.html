@@ -225,116 +225,152 @@ The driver adds the details for the transfer scheme. See <a class="reference int
 <table border="1" class="colwidths-given docutils align-center" id="id1">
 <caption><span class="caption-text">Body Member List</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
 <colgroup>
-<col width="50%" />
-<col width="50%" />
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Name</th>
 <th class="head">Default Value</th>
+<th class="head">Description</th>
 </tr>
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td>self.name</td>
 <td>Required Input</td>
+<td>Name</td>
 </tr>
 <tr class="row-odd"><td>self.analysis_type</td>
 <td>Required Input</td>
+<td>Analysis type (aeroelastic, aerothermal, aerothermoelastic)</td>
 </tr>
 <tr class="row-even"><td>self.id</td>
 <td>Required Input</td>
+<td>ID</td>
 </tr>
 <tr class="row-odd"><td>self.group</td>
 <td>Required Input</td>
+<td>Group categorization</td>
 </tr>
 <tr class="row-even"><td>self.group_master</td>
 <td>False</td>
+<td>Top-level body group</td>
 </tr>
 <tr class="row-odd"><td>self.boundary</td>
-<td>Required Input</td>
+<td>0.0</td>
+<td>Body boundary</td>
 </tr>
 <tr class="row-even"><td>self.motion_type</td>
-<td>Required Input</td>
+<td>deform</td>
+<td>Motion type</td>
 </tr>
 <tr class="row-odd"><td>self.variables</td>
 <td>{}</td>
+<td>Owned variables</td>
 </tr>
 <tr class="row-even"><td>self.derivatives</td>
 <td>{}</td>
+<td>Owned derivatives</td>
 </tr>
 <tr class="row-odd"><td>self.parent</td>
 <td>None</td>
+<td>Body parent</td>
 </tr>
 <tr class="row-even"><td>self.children</td>
 <td>[]</td>
+<td>Owned bodies</td>
 </tr>
 <tr class="row-odd"><td>self.shape</td>
 <td>None</td>
+<td>Shape</td>
 </tr>
 <tr class="row-even"><td>self.parameterization</td>
 <td>1.0</td>
+<td>Geometry type</td>
 </tr>
 <tr class="row-odd"><td>self.transfer</td>
 <td>None</td>
+<td>Transfer method</td>
 </tr>
 <tr class="row-even"><td>self.thermal_transfer</td>
 <td>None</td>
+<td>Thermal transfer method</td>
 </tr>
 <tr class="row-odd"><td>self.struct_nnodes</td>
 <td>None</td>
+<td>Number of structural nodes</td>
 </tr>
 <tr class="row-even"><td>self.aero_nnodes</td>
 <td>None</td>
+<td>Number of aerodynamic nodes</td>
 </tr>
 <tr class="row-odd"><td>self.xfer_ndof</td>
 <td>3.0</td>
+<td>Variable degree of freedom</td>
 </tr>
 <tr class="row-even"><td>self.therm_xfer_ndof</td>
 <td>1.0</td>
+<td>Thermal variable degree of freedom</td>
 </tr>
 <tr class="row-odd"><td>self.T_ref</td>
 <td>300</td>
+<td>Reference temperature</td>
 </tr>
 <tr class="row-even"><td>self.struct_X</td>
 <td>None</td>
+<td>Structural variables</td>
 </tr>
 <tr class="row-odd"><td>self.aero_X</td>
 <td>None</td>
+<td>Aerodynamic variables</td>
 </tr>
 <tr class="row-even"><td>self.struct_id</td>
 <td>None</td>
+<td>Structural ID</td>
 </tr>
 <tr class="row-odd"><td>self.aero_id</td>
 <td>None</td>
+<td>Aerodynamic ID</td>
 </tr>
 <tr class="row-even"><td>self.struct_disps</td>
 <td>None</td>
+<td>Structural displacements</td>
 </tr>
 <tr class="row-odd"><td>self.struct_forces</td>
 <td>None</td>
+<td>Structural forces</td>
 </tr>
 <tr class="row-even"><td>self.struct_loads</td>
 <td>None</td>
+<td>Structural loads</td>
 </tr>
 <tr class="row-odd"><td>self.rigid_transform</td>
 <td>None</td>
+<td>Body transformation scheme</td>
 </tr>
 <tr class="row-even"><td>self.aero_disps</td>
 <td>None</td>
+<td>Aerodynamic displacements</td>
 </tr>
 <tr class="row-odd"><td>self.aero_forces</td>
 <td>None</td>
+<td>Aerodynamic forces</td>
 </tr>
 <tr class="row-even"><td>self.struct_temps</td>
 <td>None</td>
+<td>Structural temperature</td>
 </tr>
 <tr class="row-odd"><td>self.struct_heat_flux</td>
 <td>None</td>
+<td>Structural heat flux</td>
 </tr>
 <tr class="row-even"><td>self.aero_temps</td>
 <td>None</td>
+<td>Aerodynamic temperature</td>
 </tr>
 <tr class="row-odd"><td>self.aero_heat_flux</td>
 <td>None</td>
+<td>Aerodynamic heat flux</td>
 </tr>
 </tbody>
 </table>
