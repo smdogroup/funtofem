@@ -1,0 +1,19 @@
+   PERTURB   EPSILON GRIDPOINT
+     0       1.e-30       11
+
+0  = No perturbation
+1  = Mach number
+2  = Alpha
+3  = Shape
+4  = x-rotation rate
+5  = y-rotation rate
+6  = z-rotation rate
+7  = Grid point x
+8  = Grid point y
+9  = Grid point z
+11 = truncation error
+12 = first rcs jet plenum p0
+13 = first rcs jet plenum t0
+100+ = add an imaginary source term to equation PERTURB-100 of node GRIDPOINT
+         (to verify the adjoint lambda value)
+

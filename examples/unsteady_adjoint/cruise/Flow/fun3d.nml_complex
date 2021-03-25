@@ -1,0 +1,65 @@
+&project
+  !project_rootname = "crm_mesh2"
+  project_rootname = "wing"
+/
+&raw_grid
+  grid_format = "aflr3"
+  data_format = 'ASCII'
+/
+
+
+&governing_equations
+   eqn_type = "compressible"
+   viscous_terms = "laminar"
+/
+
+&reference_physical_properties
+    mach_number           = (0.84, 0.0)
+    dim_input_type        = "nondimensional"
+    temperature_units     = "Kelvin"
+    temperature           = (216.66, 0.0)
+    reynolds_number       = (3.456e6, 0.0)
+    angle_of_attack       = (3.0, 0.0)
+    angle_of_yaw          = (0.0, 0.0)
+/
+
+&inviscid_flux_method
+  first_order_iterations = 0
+  flux_limiter = 'none'
+/
+
+&nonlinear_solver_parameters
+   time_accuracy        = "1storder"
+   time_step_nondim     = (0.001, 0.0)
+   subiterations        = 20
+/
+
+&linear_solver_parameters
+  meanflow_sweeps   = 15
+  line_implicit     = "off"
+  turbulence_sweeps = 10
+/
+
+&code_run_control
+  steps              = 4
+  restart_write_freq = 100
+  restart_read       = "off"
+/
+
+&global
+  moving_grid = .true.
+/
+
+&elasticity_gmres
+  tol=(1e-15, 0.0)
+  tol_abs=(1e-15, 0.0)
+/
+
+&massoud_output
+   n_bodies = 1
+   nbndry(1) = 1
+   boundary_list(1) = '2'
+   massoud_use_initial_coords = .true.
+   aero_loads_dynamic_pressure = (9510.486, 0.0)
+   output_scale_factor = (1.0, 0.0)
+/
