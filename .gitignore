@@ -10,4 +10,5 @@ python/TransferScheme.cpp
 *ugrid
 *mapbc
 *.bdf
+*.job
 fake_interface*
