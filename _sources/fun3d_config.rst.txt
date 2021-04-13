@@ -3,17 +3,16 @@ FUN3D Configuration Requirements
 
 In order to configure FUNtoFEM to be utilized with FUN3D, two settings are required to be initialized. These are the "fun3d.nml" and "moving_body.input" files. Within the FUN3D example, these files must be located in the following, relative path: "/example/steady/Flow/". The following lines of code must be added to their respective files. 
 
+Complete instances of these files can be found within the FUNtoFEM examples on the GitHub repository, located `here <https://github.com/smdogroup/funtofem/tree/new_driver/examples/aerothermoelastic_wedge_optimization/steady/Flow>`_.
 
-FUN3D Namelist (fun3d.nml)
-==========================
+**FUN3D Namelist (fun3d.nml)**
 
 .. code-block:: fortran
 
    funtofem_include_skin_friction = .true.
 
 
-Input File (moving_body.input)
-==============================
+**Input File (moving_body.input)**
 
 .. code-block:: fortran
 

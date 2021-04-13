@@ -40,15 +40,6 @@
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">FUN3D Configuration Requirements</a><ul>
-<li><a class="reference internal" href="#fun3d-namelist-fun3d-nml">FUN3D Namelist (fun3d.nml)</a></li>
-<li><a class="reference internal" href="#input-file-moving-body-input">Input File (moving_body.input)</a></li>
-</ul>
-</li>
-</ul>
-
   <h4>Previous topic</h4>
   <p class="topless"><a href="programmers_guide.html"
                         title="previous chapter">Programmer’s Guide</a></p>
@@ -78,18 +69,15 @@
   <div class="section" id="fun3d-configuration-requirements">
 <h1>FUN3D Configuration Requirements<a class="headerlink" href="#fun3d-configuration-requirements" title="Permalink to this headline">¶</a></h1>
 <p>In order to configure FUNtoFEM to be utilized with FUN3D, two settings are required to be initialized. These are the “fun3d.nml” and “moving_body.input” files. Within the FUN3D example, these files must be located in the following, relative path: “/example/steady/Flow/”. The following lines of code must be added to their respective files.</p>
-<div class="section" id="fun3d-namelist-fun3d-nml">
-<h2>FUN3D Namelist (fun3d.nml)<a class="headerlink" href="#fun3d-namelist-fun3d-nml" title="Permalink to this headline">¶</a></h2>
+<p>Complete instances of these files can be found within the FUNtoFEM examples on the GitHub repository, located <a class="reference external" href="https://github.com/smdogroup/funtofem/tree/new_driver/examples/aerothermoelastic_wedge_optimization/steady/Flow">here</a>.</p>
+<p><strong>FUN3D Namelist (fun3d.nml)</strong></p>
 <div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">funtofem_include_skin_friction</span> <span class="o">=</span> <span class="p">.</span><span class="n">true</span><span class="p">.</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="input-file-moving-body-input">
-<h2>Input File (moving_body.input)<a class="headerlink" href="#input-file-moving-body-input" title="Permalink to this headline">¶</a></h2>
+<p><strong>Input File (moving_body.input)</strong></p>
 <div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">motion_driver</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;funtofem&#39;</span><span class="p">,</span> <span class="c">! tells fun3d to use motion inputs from python</span>
 <span class="n">mesh_movement</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;deform&#39;</span><span class="p">,</span>  <span class="c">! can use &#39;rigid&#39;, &#39;deform&#39;, &#39;rigid+deform&#39; with funtofem interface</span>
 </pre></div>
-</div>
 </div>
 </div>
 
