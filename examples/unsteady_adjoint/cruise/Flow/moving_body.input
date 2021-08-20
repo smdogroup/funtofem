@@ -1,0 +1,10 @@
+&body_definitions
+   n_moving_bodies = 1
+   body_frame_forces = .false.
+   body_name(1) = 'wing'
+   motion_driver(1) = 'funtofem'
+   n_defining_bndry(1) = 1
+   defining_bndry(1,1) = 2
+   mesh_movement(1)    = 'deform'
+/
+

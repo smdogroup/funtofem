@@ -9,3 +9,6 @@ python/TransferScheme.cpp
 *.dat
 *ugrid
 *mapbc
+*.bdf
+*.job
+fake_interface*

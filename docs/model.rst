@@ -1,4 +1,4 @@
-FUNtoFEM model
+FUNtoFEM Model
 **************
 The model classes are used to stored design and coupling data related to the aeroelastic problem.
 The model is made up of `bodies and scenarios`_ .
@@ -162,6 +162,46 @@ The driver adds the details for the transfer scheme. See :class:`~funtofem_drive
 
 .. autoclass:: Body
    :members:
+
+.. csv-table:: Body Member List
+   :header: "Name", "Default Value","Description"
+   :widths: 20, 20, 20
+   :align: center
+
+   "self.name", "Required Input", "Name"
+   "self.analysis_type", "Required Input", "Analysis type (aeroelastic, aerothermal, aerothermoelastic)"
+   "self.id", "Required Input", "ID"
+   "self.group", "Required Input", "Group categorization"
+   "self.group_master", "False", "Top-level body group"
+   "self.boundary", 0.0, "Body boundary"
+   "self.motion_type", "deform", "Motion type"
+   "self.variables", "{}", "Owned variables"
+   "self.derivatives", "{}", "Owned derivatives"
+   "self.parent", "None", "Body parent"
+   "self.children", "[]", "Owned bodies"
+   "self.shape", "None", "Shape"
+   "self.parameterization", 1.0, "Geometry type"
+   "self.transfer", "None", "Transfer method"
+   "self.thermal_transfer", "None", "Thermal transfer method"
+   "self.struct_nnodes", "None", "Number of structural nodes"
+   "self.aero_nnodes", "None", "Number of aerodynamic nodes"
+   "self.xfer_ndof", 3.0, "Variable degree of freedom"
+   "self.therm_xfer_ndof", 1.0, "Thermal variable degree of freedom"
+   "self.T_ref", 300, "Reference temperature"
+   "self.struct_X", "None", "Structural variables"
+   "self.aero_X", "None", "Aerodynamic variables"
+   "self.struct_id", "None", "Structural ID"
+   "self.aero_id", "None", "Aerodynamic ID"
+   "self.struct_disps", "None", "Structural displacements"
+   "self.struct_forces", "None", "Structural forces"
+   "self.struct_loads", "None", "Structural loads"
+   "self.rigid_transform", "None", "Body transformation scheme"
+   "self.aero_disps", "None", "Aerodynamic displacements"
+   "self.aero_forces", "None", "Aerodynamic forces"
+   "self.struct_temps", "None", "Structural temperature"
+   "self.struct_heat_flux", "None", "Structural heat flux"
+   "self.aero_temps", "None", "Aerodynamic temperature"
+   "self.aero_heat_flux", "None", "Aerodynamic heat flux"
 
 Base class
 ==========

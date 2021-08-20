@@ -5,4 +5,3 @@ Transfer Scheme
 
 .. autoclass:: pyTransferScheme
     :members:
-
