@@ -60,7 +60,7 @@ jobs:
           echo "=============================================================";
           echo "Install FUNtoFEM";
           echo "=============================================================";
-          export FUNTOFEM_DIR=${GITHUB_WORKSPACE};
+          export F2F_DIR=${GITHUB_WORKSPACE};
           pip install testflo;
           conda install -c anaconda openmpi -q -y;
           conda install gxx_linux-64 -q -y;
@@ -69,10 +69,10 @@ jobs:
           conda install -c conda-forge metis -q -y;
           conda install -c conda-forge mpi4py  -q -y;
           pip install cython;
-          cd $FUNTOFEM_DIR;
+          cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
-          make ${{ matrix.OPTIONAL }} FUNTOFEM_DIR=$FUNTOFEM_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
-          cd $FUNTOFEM_DIR;
+          make ${{ matrix.OPTIONAL }} F2F_DIR=$F2F_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
+          cd $F2F_DIR;
           make ${{ matrix.INTERFACE }};
           echo "=============================================================";
           echo "running tests";
