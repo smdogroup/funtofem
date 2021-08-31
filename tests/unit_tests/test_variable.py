@@ -23,7 +23,7 @@ from pyfuntofem.model import Variable
 import unittest
 
 class VariableTest(unittest.TestCase):
-    def test_variable():
+    def test_variable(self):
         var = Variable(name='test', value=1.0, lower=-1.0, upper = 2.0, scaling = 3.0, active=False, coupled = True, id = 4)
         assert var.name=='test'
         assert var.value==1.0
@@ -34,7 +34,7 @@ class VariableTest(unittest.TestCase):
         assert var.coupled==True
         assert var.id==4
 
-    def test_variable_assign():
+    def test_variable_assign(self):
         var = Variable(name='test')
         var.assign(value=1.0, lower=-1.0, upper = 2.0, scaling = 3.0, active=False, coupled = True)
         assert var.value==1.0
