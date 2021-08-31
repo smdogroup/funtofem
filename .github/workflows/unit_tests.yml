@@ -40,10 +40,15 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - name: Check out my other private repo
+        uses: actions/checkout@master
+        with:
+          repository: orgname/reponame
 
       - name: Install and run unit tests
         run: |
           echo "=============================================================";
+          ls
           echo "Run #${GITHUB_RUN_NUMBER}";
           echo "Run ID: ${GITHUB_RUN_ID}";
           echo "Testing: ${GITHUB_REPOSITORY}";
@@ -67,7 +72,8 @@ jobs:
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis -q -y;
-          conda install -c conda-forge mpi4py  -q -y;
+          conda install -c conda-forge mpi4py -q -y;
+          conda install -c conda-forge matplotlib  -q -y;
           pip install cython;
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
