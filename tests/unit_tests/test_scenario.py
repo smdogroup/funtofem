@@ -22,9 +22,9 @@ limitations under the License.
 from pyfuntofem.model import Scenario, Function, Variable
 import unittest
 
-class ScenarioTest():
+class ScenarioTest(unittest.TestCase):
     # Note: most of the functionality for Scenario is tested by test_body.py
-    def build_scenario():
+    def build_scenario(self):
         cruise = Scenario(name='cruise', group=0,steady=False,fun3d=True,steps=10)
 
         drag = Function('cd',analysis_type='aerodynamic')
@@ -37,7 +37,7 @@ class ScenarioTest():
 
         return cruise
 
-    def test_build_scenario():
+    def test_build_scenario(self):
         scenario = build_scenario()
 
         assert scenario.name == 'cruise'
