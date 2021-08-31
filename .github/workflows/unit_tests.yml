@@ -90,4 +90,4 @@ jobs:
           echo "=============================================================";
           echo "running tests";
           echo "=============================================================";
-          testflo /tests/unit_tests/.;
+          testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
