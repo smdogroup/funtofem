@@ -26,7 +26,7 @@ import unittest
 
 class BodyTest(unittest.TestCase):
     def test_body(self):
-        body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid')
+        body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid', analysis_type='aerothermal')
 
         assert body.name == 'test body'
         assert body.id == 1
@@ -49,7 +49,7 @@ class BodyTest(unittest.TestCase):
 
         return body
 
-    def test_body_variable_functionality():
+    def test_body_variable_functionality(self):
         body = create_body(self)
 
         assert body.variables['aerodynamic'][0].name == 'var 1'
