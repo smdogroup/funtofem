@@ -23,7 +23,7 @@ from pyfuntofem.model import Function
 import unittest
 
 class FunctionTest(unittest.TestCase):
-   def test_function():
+   def test_function(self):
        func = Function(name='test', id = 1, value=2.0, start=3, stop=4, analysis_type='aerodynamic', body=5, adjoint=False, options={'opt':6}, averaging=True)
        assert func.name == 'test'
        assert func.id == 1

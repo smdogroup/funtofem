@@ -25,7 +25,7 @@ from pyfuntofem.model import Variable
 import unittest
 
 class BodyTest(unittest.TestCase):
-    def test_body():
+    def test_body(self):
         body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid')
 
         assert body.name == 'test body'
@@ -34,7 +34,7 @@ class BodyTest(unittest.TestCase):
         assert body.boundary == 3
         assert body.motion_type == 'deform+rigid'
 
-    def create_body():
+    def create_body(self):
         body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid')
         body.update_id
 
@@ -50,7 +50,7 @@ class BodyTest(unittest.TestCase):
         return body
 
     def test_body_variable_functionality():
-        body = create_body()
+        body = create_body(self)
 
         assert body.variables['aerodynamic'][0].name == 'var 1'
         assert body.variables['aerodynamic'][0].body == body.id
@@ -60,7 +60,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['aerodynamic'][1].body == body.id
         assert body.variables['aerodynamic'][1].value== 1.0
 
-    def test_body_update_id():
+    def test_body_update_id(self):
         body = create_body()
         body.update_id(2)
 
@@ -69,7 +69,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['aerodynamic'][1].body   == body.id
         assert body.variables['structural'][0].body    == body.id
 
-    def test_body_set_variable():
+    def test_body_set_variable(self):
         body = create_body()
 
         # set by index
@@ -96,7 +96,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['aerodynamic'][0].active  == True
         assert body.variables['aerodynamic'][1].active  == True
 
-    def test_body_count_variables():
+    def test_body_count_variables(self):
         body = create_body()
         active_vars_count = body.count_active_variables()
 
@@ -113,7 +113,7 @@ class BodyTest(unittest.TestCase):
         var_count = body.count_uncoupled_variables()
         assert var_count == 2
 
-    def test_body_active_variables():
+    def test_body_active_variables(self):
         body = create_body()
 
         vars = body.active_variables()
@@ -122,7 +122,7 @@ class BodyTest(unittest.TestCase):
         assert vars[0].name == 'var 1'
         assert vars[1].name == 'var 2'
 
-    def test_body_uncoupled_variables():
+    def test_body_uncoupled_variables(self):
         body = create_body()
 
         vars = body.uncoupled_variables()

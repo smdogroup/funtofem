@@ -23,7 +23,7 @@ from pyfuntofem.model import *
 import unittest
 
 class ModelTest(unittest.TestCase):
-    def build_model():
+    def build_model(self):
         rotor_model = FUNtoFEMmodel('rotorcraft')
 
         # Set up the scenarios
@@ -95,11 +95,11 @@ class ModelTest(unittest.TestCase):
             rotor_model.add_body(blade)
         return rotor_model
 
-    def test_count_functions():
+    def test_count_functions(self):
         model = build_model()
         assert model.count_functions() == 8
 
-    def test_get_functions():
+    def test_get_functions(self):
         model = build_model()
         functions = model.get_functions()
 
@@ -134,7 +134,7 @@ class ModelTest(unittest.TestCase):
         assert functions[7].scenario == 2
         assert functions[7].analysis_type == 'structural'
 
-    def test_get_variables():
+    def test_get_variables(self):
         model = build_model() 
 
         var_list = model.get_variables()
@@ -165,7 +165,7 @@ class ModelTest(unittest.TestCase):
             assert var_list[9+i].analysis_type == 'structural'
 
 
-    def test_set_variables():
+    def test_set_variables(self):
        model = build_model() 
 
        var_list = model.get_variables()
@@ -197,7 +197,7 @@ class ModelTest(unittest.TestCase):
            assert model.bodies[i].variables['structural'][4].value == 5.0 + offset + offset2
            assert model.bodies[i].variables['controls'][0].value == 0.2 + offset + offset2
 
-    def test_derivatives():
+    def test_derivatives(self):
         model = build_model()
 
         # Put some dummy derivative values in 
