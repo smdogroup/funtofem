@@ -88,6 +88,6 @@ jobs:
           cd $F2F_DIR;
           make ${{ matrix.INTERFACE }};
           echo "=============================================================";
-          echo "running tests";
+          echo "Running Tests";
           echo "=============================================================";
           testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
