@@ -35,7 +35,7 @@ class BodyTest(unittest.TestCase):
         assert body.motion_type == 'deform+rigid'
 
     def create_body(self):
-        body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid')
+        body = Body(name='test body', id = 1, group = 2, boundary = 3, fun3d = False, motion_type='deform+rigid', analysis_type='aerothermal')
         body.update_id
 
         var = Variable(name='var 1',value = 0.0, active = True, coupled = False)
@@ -50,7 +50,7 @@ class BodyTest(unittest.TestCase):
         return body
 
     def test_body_variable_functionality(self):
-        body = self.create_body(self)
+        body = self.create_body()
 
         assert body.variables['aerodynamic'][0].name == 'var 1'
         assert body.variables['aerodynamic'][0].body == body.id
