@@ -50,7 +50,7 @@ class BodyTest(unittest.TestCase):
         return body
 
     def test_body_variable_functionality(self):
-        body = create_body(self)
+        body = self.create_body(self)
 
         assert body.variables['aerodynamic'][0].name == 'var 1'
         assert body.variables['aerodynamic'][0].body == body.id
@@ -61,7 +61,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['aerodynamic'][1].value== 1.0
 
     def test_body_update_id(self):
-        body = create_body()
+        body = self.create_body()
         body.update_id(2)
 
         assert body.id == 2
@@ -70,7 +70,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['structural'][0].body    == body.id
 
     def test_body_set_variable(self):
-        body = create_body()
+        body = self.create_body()
 
         # set by index
         body.set_variable('aerodynamic',index=1,value = 4.0,lower=-2.0,upper=6.0,scaling = 9.0, active = False, coupled = False)
@@ -97,7 +97,7 @@ class BodyTest(unittest.TestCase):
         assert body.variables['aerodynamic'][1].active  == True
 
     def test_body_count_variables(self):
-        body = create_body()
+        body = self.create_body()
         active_vars_count = body.count_active_variables()
 
         assert  active_vars_count == 2
@@ -114,7 +114,7 @@ class BodyTest(unittest.TestCase):
         assert var_count == 2
 
     def test_body_active_variables(self):
-        body = create_body()
+        body = self.create_body()
 
         vars = body.active_variables()
 
@@ -123,7 +123,7 @@ class BodyTest(unittest.TestCase):
         assert vars[1].name == 'var 2'
 
     def test_body_uncoupled_variables(self):
-        body = create_body()
+        body = self.create_body()
 
         vars = body.uncoupled_variables()
 

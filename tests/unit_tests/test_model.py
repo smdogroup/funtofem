@@ -96,11 +96,11 @@ class ModelTest(unittest.TestCase):
         return rotor_model
 
     def test_count_functions(self):
-        model = build_model()
+        model = self.build_model()
         assert model.count_functions() == 8
 
     def test_get_functions(self):
-        model = build_model()
+        model = self.build_model()
         functions = model.get_functions()
 
         assert functions[0].name == 'thrust'
@@ -135,7 +135,7 @@ class ModelTest(unittest.TestCase):
         assert functions[7].analysis_type == 'structural'
 
     def test_get_variables(self):
-        model = build_model() 
+        model = self.build_model() 
 
         var_list = model.get_variables()
 
@@ -166,7 +166,7 @@ class ModelTest(unittest.TestCase):
 
 
     def test_set_variables(self):
-       model = build_model() 
+       model = self.build_model() 
 
        var_list = model.get_variables()
 
@@ -198,7 +198,7 @@ class ModelTest(unittest.TestCase):
            assert model.bodies[i].variables['controls'][0].value == 0.2 + offset + offset2
 
     def test_derivatives(self):
-        model = build_model()
+        model = self.build_model()
 
         # Put some dummy derivative values in 
         model.scenarios[0].derivatives['aerodynamic'][0][1] = 1.0

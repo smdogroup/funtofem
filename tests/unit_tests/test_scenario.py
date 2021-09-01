@@ -35,13 +35,11 @@ class ScenarioTest(unittest.TestCase):
 
         cruise.set_variable('aerodynamic','AOA', value = 5.0)
 
-        #return cruise
+        return cruise
 
-        #def test_build_scenario(self):
-        #scenario = build_scenario()
+    def test_build_scenario(self):
+        scenario = self.build_scenario()
         
-        scenario = cruise
-
         assert scenario.name == 'cruise'
 
         # Check the attributes
