@@ -69,7 +69,7 @@ class ModelTest(unittest.TestCase):
 
         # Set up the bodies
         for bl in range(3):
-            blade = Body('blade %i' % bl,group=1,fun3d=True)
+            blade = Body('blade %i' % bl,group=1,fun3d=True, analysis_type='aeroelastic'))
 
             # Add the coupled thickness variables
             thicknesses = np.array([ 1.0, 2.0 ,3.0, 4.0])
