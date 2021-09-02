@@ -1,6 +1,6 @@
 name: Build and unit tests
 
-on: push
+on: [push, pull_request]
 
 jobs:
   # This job is called test_docs.
