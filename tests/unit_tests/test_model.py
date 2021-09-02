@@ -68,12 +68,12 @@ class ModelTest(unittest.TestCase):
         rotor_model.add_scenario(forward_flight)
 
         # Set up the bodies
-        for bl in xrange(3):
+        for bl in range(3):
             blade = Body('blade %i' % bl,group=1,fun3d=True)
 
             # Add the coupled thickness variables
             thicknesses = np.array([ 1.0, 2.0 ,3.0, 4.0])
-            for i in xrange(thicknesses.size):
+            for i in range(thicknesses.size):
                 thick = Variable('thickness %i' % i, value=thicknesses[i], lower = 0.0, upper = 5.0,
                                  coupled = True)
                 blade.add_variable('structural',thick)
@@ -158,7 +158,7 @@ class ModelTest(unittest.TestCase):
         assert var_list[5].value == 1.0
         assert var_list[5].analysis_type == 'structural'
 
-        for i in xrange(3):
+        for i in range(3):
             assert var_list[9+i].name == 'thickness 4'
             assert var_list[9+i].value == 5.0
             assert var_list[9+i].body  == i + 1
@@ -178,7 +178,7 @@ class ModelTest(unittest.TestCase):
        assert model.scenarios[0].variables['aerodynamic'][1].value == 3.0 + offset
        assert model.scenarios[1].variables['aerodynamic'][1].value == 5.0 + offset
 
-       for i in xrange(3):
+       for i in range(3):
            assert model.bodies[i].variables['structural'][0].value == 1.0 + offset
            assert model.bodies[i].variables['structural'][4].value == 5.0 + offset
            assert model.bodies[i].variables['controls'][0].value == 0.2 + offset
@@ -192,7 +192,7 @@ class ModelTest(unittest.TestCase):
        assert model.scenarios[0].variables['aerodynamic'][1].value == 3.0 + offset + offset2
        assert model.scenarios[1].variables['aerodynamic'][1].value == 5.0 + offset + offset2
 
-       for i in xrange(3):
+       for i in range(3):
            assert model.bodies[i].variables['structural'][0].value == 1.0 + offset + offset2
            assert model.bodies[i].variables['structural'][4].value == 5.0 + offset + offset2
            assert model.bodies[i].variables['controls'][0].value == 0.2 + offset + offset2
