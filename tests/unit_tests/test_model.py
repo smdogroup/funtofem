@@ -150,20 +150,29 @@ class ModelTest(unittest.TestCase):
         assert var_list[1].analysis_type == 'aerodynamic'
         assert var_list[1].scenario == 2
 
-        assert var_list[2].name == 'collective'
-        assert var_list[2].value == 0.2
-        assert var_list[2].analysis_type == 'controls'
+        assert var_list[2].name == 'thickness 0'
+        assert var_list[2].value == 1.0
+        assert var_list[2].analysis_type == 'structural'
 
-        assert var_list[5].name == 'thickness 0'
-        assert var_list[5].value == 1.0
+        assert var_list[3].name == 'thickness 1'
+        assert var_list[3].value == 2.0
+        assert var_list[3].analysis_type == 'structural'
+
+        assert var_list[4].name == 'thickness 2'
+        assert var_list[4].value == 3.0
+        assert var_list[4].analysis_type == 'structural'
+
+        assert var_list[5].name == 'thickness 3'
+        assert var_list[5].value == 4.0
         assert var_list[5].analysis_type == 'structural'
 
-        for i in range(3):
-            assert var_list[9+i].name == 'thickness 4'
-            assert var_list[9+i].value == 5.0
-            assert var_list[9+i].body  == i + 1
-            assert var_list[9+i].analysis_type == 'structural'
+        assert var_list[6].name == 'thickness 4'
+        assert var_list[6].value == 5.0
+        assert var_list[6].analysis_type == 'structural'
 
+        assert var_list[7].name == 'collective'
+        assert var_list[7].value == 0.2
+        assert var_list[7].analysis_type == 'controls'
 
     def test_set_variables(self):
        model = self.build_model() 
@@ -214,4 +223,4 @@ class ModelTest(unittest.TestCase):
 
         assert derivs[0][0] == 1.0
         assert derivs[3][1] == 2.0
-        assert derivs[2][5] == 6.0
+        assert derivs[2][5] == 0.0

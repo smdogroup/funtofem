@@ -6,7 +6,6 @@ python/TransferScheme.cpp
 *.pxi
 *.so
 *.out
-*.dat
 *ugrid
 *mapbc
 *.bdf
