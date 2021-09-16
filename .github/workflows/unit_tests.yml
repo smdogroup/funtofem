@@ -13,9 +13,9 @@ jobs:
       matrix:
         include:
           # real versions
-          - NAME: Real
-            OPTIONAL: 'default'
-            INTERFACE: 'interface'
+          #- NAME: Real
+          #  OPTIONAL: 'default'
+          #  INTERFACE: 'interface'
 
           # complex versions
           - NAME: Complex
@@ -80,4 +80,7 @@ jobs:
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";
+          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
+          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermoelastic_adjoint_test/gen_TACS_bdf_aero.py;
+          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/unsteady_aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
           testflo ${GITHUB_WORKSPACE}/tests/;
