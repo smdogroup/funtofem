@@ -53,7 +53,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         """
 
         super(FUNtoFEMnlbgs,self).__init__(solvers,comm,struct_comm,struct_master,aero_comm,aero_master,transfer_options=transfer_options,model=model)
-        
+
         # Aitken acceleration settings
         self.theta_init = theta_init
         self.theta_therm_init = theta_init
@@ -147,19 +147,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # Loop over the NLBGS steps
         for step in range(1,steps+1):
-            # Transfer displacements and temperatures
-            for body in self.model.bodies:
-                
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
-                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
-                    
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_temps = np.zeros(body.aero_nnodes,dtype=TransferScheme.dtype)
-                    body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
-
             # Take a step in the flow solver
-            fail = self.solvers['flow'].iterate(scenario,self.model.bodies,step)
+            fail = self.solvers['flow'].iterate(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -169,13 +158,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Transfer the loads and heat flux
             for body in self.model.bodies:
-                
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
                     body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_heat_flux = np.zeros(body.struct_nnodes,dtype=TransferScheme.dtype)
+                    body.struct_heat_flux = np.zeros(body.struct_nnodes, dtype=TransferScheme.dtype)
                     # FUN3D returns x,y,z, and magnitude of the surface normal heat flux
                     # only need magnitude for TACS
                     heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order='C')
@@ -192,6 +180,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Under-relaxation for solver stability
             self._aitken_relax()
+
+            # Transfer displacements and temperatures
+            for body in self.model.bodies:
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
+
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    body.aero_temps = np.zeros(body.aero_nnodes,dtype=TransferScheme.dtype)
+                    body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
 
         # end solve loop
         return fail

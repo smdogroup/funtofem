@@ -20,11 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from __future__ import print_function
-
 import numpy as np
-from funtofem           import TransferScheme
-from pyfuntofem.solver_interface   import SolverInterface
+from funtofem import TransferScheme
+from pyfuntofem.solver_interface import SolverInterface
 
 class SU2Interface(SolverInterface):
     '''
@@ -43,7 +41,7 @@ class SU2Interface(SolverInterface):
         self.num_local_surf_nodes = 0
 
         # Get the identifiers of the moving surface
-        moving_marker_tags = self.su2.GetAllMovingMarkersTag()
+        moving_marker_tags = self.su2.GetAllDeformMeshMarkersTag()
         if moving_marker_tags is None or len(moving_marker_tags) == 0:
             raise RuntimeError('No moving surface defined in the mesh')
 
@@ -82,10 +80,11 @@ class SU2Interface(SolverInterface):
             offset = 3*sum(self.num_surf_nodes[:index])
 
             for vert in range(self.num_surf_nodes[index]):
+                x, y, z = self.su2.GetInitialMeshCoord(surf_id, vert)
                 idx = 3*vert + offset
-                bodies[0].aero_X[idx] = self.su2.GetVertexCoordX(surf_id, vert)
-                bodies[0].aero_X[idx+1] = self.su2.GetVertexCoordY(surf_id, vert)
-                bodies[0].aero_X[idx+2] = self.su2.GetVertexCoordZ(surf_id, vert)
+                bodies[0].aero_X[idx] = x
+                bodies[0].aero_X[idx+1] = y
+                bodies[0].aero_X[idx+2] = z
 
         return 0
 
@@ -111,40 +110,42 @@ class SU2Interface(SolverInterface):
         for index, surf_id in enumerate(self.surface_ids):
             offset = 3*sum(self.num_surf_nodes[:index])
 
-            for vert in range(self.num_surf_nodes[index]):
-                idx = 3*vert + offset
-                self.su2.SetVertexCoordX(surf_id, vert,
-                                         bodies[0].aero_X[idx] + bodies[0].aero_disps[idx])
-                self.su2.SetVertexCoordY(surf_id, vert,
-                                         bodies[0].aero_X[idx+1] + bodies[0].aero_disps[idx+1])
-                self.su2.SetVertexCoordZ(surf_id, vert,
-                                         bodies[0].aero_X[idx+2] + bodies[0].aero_disps[idx+2])
+            if bodies[0].aero_disps is not None:
+                print(bodies[0].aero_disps[:])
+                for vert in range(self.num_surf_nodes[index]):
+                    idx = 3*vert + offset
+                    u = bodies[0].aero_disps[idx]
+                    v = bodies[0].aero_disps[idx+1]
+                    w = bodies[0].aero_disps[idx+2]
+                    self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
 
-        self.su2.StaticMeshUpdate()
+        # Uh-oh, does this work? No!
+        # If this is an unsteady computation than we will need this:
+        # self.su2.DynamicMeshUpdate(step)
 
-        for itr in range(self.num_su2_iters):
-            self.su2.PreprocessExtIter(itr)
-            self.su2.Run()
-            stop_iter = self.su2.Monitor(itr)
-            self.su2.Output(itr)
-            if stop_iter:
-                break
+        # for itr in range(self.num_su2_iters):
+        self.su2.ResetConvergence()
+        self.su2.Preprocess(0)
+        self.su2.Run()
+        self.su2.Postprocess()
+        self.su2.Monitor(0)
+        self.su2.Output(0)
 
         # Pull out the forces from SU2
         bodies[0].aero_loads[:] = 0.0
         for index, surf_id in enumerate(self.surface_ids):
             offset = 3*sum(self.num_surf_nodes[:index])
 
-            for vert in range(self.num_surf_nodes[index]):
-                halo = self.su2.ComputeVertexForces(surf_id, vert)
+            if bodies[0].aero_loads is not None:
+                for vert in range(self.num_surf_nodes[index]):
+                    fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
 
-                if not halo:
-                    bodies[0].aero_loads[3*vert]   = self.qinf * self.su2.GetVertexForceX(surf_id, vert)
-                    bodies[0].aero_loads[3*vert+1] = self.qinf * self.su2.GetVertexForceY(surf_id, vert)
-                    bodies[0].aero_loads[3*vert+2] = self.qinf * self.su2.GetVertexForceZ(surf_id, vert)
+                    if not self.su2.IsAHaloNode(surf_id, vert):
+                        bodies[0].aero_loads[3*vert] = self.qinf * fx
+                        bodies[0].aero_loads[3*vert+1] = self.qinf * fy
+                        bodies[0].aero_loads[3*vert+2] = self.qinf * fz
 
         return 0
-
 
     def post(self,scenario, bodies, first_pass=False):
         if not first_pass:

@@ -85,7 +85,7 @@ class TacsSteadyInterface(SolverInterface):
             alpha = 1.0
             beta = 0.0
             gamma = 0.0
-            self.assembler.assembleJacobian(alpha,beta,gamma,self.res,self.mat)
+            self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat)
             self.pc.factor()
 
     def get_mesh(self,body):
@@ -147,12 +147,12 @@ class TacsSteadyInterface(SolverInterface):
                             x[i] = var.value
                             self.num_components += 1
 
-                        self.tacs.setDesignVars(x)
+                        self.assembler.setDesignVars(x)
 
                         alpha = 1.0
                         beta = 0.0
                         gamma = 0.0
-                        self.tacs.assembleJacobian(alpha,beta,gamma,self.res,self.mat)
+                        self.assembler.assembleJacobian(alpha,beta,gamma,self.res,self.mat)
                         self.pc.factor()
 
     def set_functions(self,scenario,bodies):
@@ -232,7 +232,7 @@ class TacsSteadyInterface(SolverInterface):
             if bodies[0].analysis_type=='aerothermal' or bodies[0].analysis_type=='aerothermoelastic':
                 feval = self.assembler.evalFunctions(self.funclist)
             elif bodies[0].analysis_type=='aeroelastic':
-                feval = self.tacs.evalFunctions(self.funclist)
+                feval = self.assembler.evalFunctions(self.funclist)
             for i, func in enumerate(scenario.functions):
                 if func.analysis_type == 'structural':
                     func.value = feval[i]
@@ -296,7 +296,7 @@ class TacsSteadyInterface(SolverInterface):
                 for func in scenario.functions:
 
                     # get df/dx if the function is a structural function
-                    self.tacs.evalDVSens(self.funclist[func], dvsens)
+                    self.assembler.evalDVSens(self.funclist[func], dvsens)
                     if self.functag[func] == 0:
                         dvsens.zeroEntries()
 
@@ -305,7 +305,7 @@ class TacsSteadyInterface(SolverInterface):
                     if self.functag[func] > -1:
                         psi_S_array = self.psi_S_vec.getArray()
                         psi_S_array[:] = self.psi_S[:,func]
-                        self.tacs.evalAdjointResProduct(self.psi_S_vec, adjResProduct)
+                        self.assembler.evalAdjointResProduct(self.psi_S_vec, adjResProduct)
 
                     self.func_grad.append(dvsens[:] + adjResProduct[:])
 
@@ -360,13 +360,13 @@ class TacsSteadyInterface(SolverInterface):
                         bodies[0].struct_shape_term[:,func] += df[:] + adjResProduct[:]
 
                 elif bodies[0].analysis_type=='aeroelastic':
-                    fXptSens = self.tacs.createNodeVec()
-                    adjResProduct_vec = self.tacs.createNodeVec()
+                    fXptSens = self.assembler.createNodeVec()
+                    adjResProduct_vec = self.assembler.createNodeVec()
 
                     for func,_ in enumerate(scenario.functions):
 
                         # get df/dx if the function is a structural function
-                        self.tacs.evalXptSens(self.funclist[func], fXptSens)
+                        self.assembler.evalXptSens(self.funclist[func], fXptSens)
                         df = fXptSens.getArray()
                         if self.functag[func] == 0:
                             df[:] = 0.0
@@ -375,7 +375,7 @@ class TacsSteadyInterface(SolverInterface):
                         if self.functag[func] > -1:
                             psi_S_array = self.psi_S_vec.getArray()
                             psi_S_array[:] = self.psi_S[:,func]
-                            self.tacs.evalAdjointResXptSensProduct(self.psi_S_vec, adjResProduct_vec)
+                            self.assembler.evalAdjointResXptSensProduct(self.psi_S_vec, adjResProduct_vec)
                             adjResProduct = adjResProduct_vec.getArray()
                         else:
                             adjResProduct = np.zeros(df.size,dtype=TACS.dtype)
@@ -423,7 +423,7 @@ class TacsSteadyInterface(SolverInterface):
                 self.assembler.setBCs(self.ans)
                 self.assembler.setVariables(self.ans)
 
-        elif bodies[0].analysis_type=='aeroelastic':
+        elif bodies[0].analysis_type == 'aeroelastic':
             if self.first_pass:
                 for body in bodies:
                     self.get_mesh(body)
@@ -513,10 +513,10 @@ class TacsSteadyInterface(SolverInterface):
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TACS.dtype)
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
 
-        elif bodies[0].analysis_type=='aeroelastic':
+        elif bodies[0].analysis_type == 'aeroelastic':
             if self.tacs_proc:
                 # Compute the residual from tacs self.res = K*u
-                self.tacs.assembleRes(self.res)
+                self.assembler.assembleRes(self.res)
                 res_array = self.res.getArray()
                 res_array[:] = 0.0
 
@@ -527,13 +527,17 @@ class TacsSteadyInterface(SolverInterface):
                         res_array[i::self.dof] += body.struct_loads[i::body.xfer_ndof]
 
                 # Add the aerodynamic loads in the residual
-                self.tacs.applyBCs(self.res)
+                self.assembler.applyBCs(self.res)
 
+                print('res = ', self.res.getArray())
+                
                 # Solve
                 self.pc.applyFactor(self.res, self.ans)
-                self.tacs.setVariables(self.ans)
+                self.assembler.setVariables(self.ans)
 
                 ans_array = self.ans.getArray()
+
+                print('ans = ', ans_array)
 
                 # Extract displacements
                 for body in bodies:
@@ -644,8 +648,8 @@ class TacsSteadyInterface(SolverInterface):
                 ans_array = self.ans.getArray()
                 ans_array[:] = self.struct_disps_all[scenario.id]
 
-                self.tacs.setVariables(self.ans)
-                self.tacs.evalFunctions(self.funclist)
+                self.assembler.setVariables(self.ans)
+                self.assembler.evalFunctions(self.funclist)
 
                 for body in bodies:
                     struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TACS.dtype)
@@ -756,12 +760,12 @@ class TacsSteadyInterface(SolverInterface):
                 body.psi_S[:,:] = 0.0
 
             if self.tacs_proc:
-                self.tacs.evalFunctions(self.funclist)
+                self.assembler.evalFunctions(self.funclist)
                 for func,_ in enumerate(self.funclist):
                     if self.functag[func] == -1:
                         break
                     # Evaluate state variable sensitivities and scale to get right-hand side
-                    self.tacs.evalSVSens(self.funclist[func], self.svsens)
+                    self.assembler.evalSVSens(self.funclist[func], self.svsens)
                     if self.functag[func] == 1:
 
                         self.svsens.scale(-1.0)
@@ -780,7 +784,7 @@ class TacsSteadyInterface(SolverInterface):
                             struct_rhs_array[i::self.dof] += body.struct_rhs[i::body.xfer_ndof,func]
 
                         # Solve structural adjoint equation
-                        self.tacs.applyBCs(self.struct_rhs_vec)
+                        self.assembler.applyBCs(self.struct_rhs_vec)
                         self.gmres.solve(self.struct_rhs_vec, self.psi_S_vec)
                         psi_S_6dof = self.psi_S_vec.getArray()
                         self.psi_S[:,func] = psi_S_6dof[:]

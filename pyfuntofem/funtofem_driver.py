@@ -116,7 +116,8 @@ class FUNtoFEMDriver(object):
             for body in self.model.bodies:
                 transfer_options.append({'scheme': 'meld', 'isym': -1, 'beta': 0.5, 'npts': 200})
 
-        # if the user gave a dictionary instead of a list of dictionaries, assume all bodies use the same settings
+        # if the user gave a dictionary instead of a list of
+        # dictionaries, assume all bodies use the same settings
         if type(transfer_options) is dict:
             transfer_options = len(self.model.bodies) * [ transfer_options ]
 
@@ -169,8 +170,10 @@ class FUNtoFEMDriver(object):
                     if 'npts' in transfer_options[ibody]:
                         num_nearest = transfer_options[ibody]['npts']
 
-                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm, self.struct_master, self.aero_comm, self.aero_master,
-                                                        isym, num_nearest, beta)
+                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm,
+                                                          self.struct_master, self.aero_comm,
+                                                          self.aero_master,
+                                                          isym, num_nearest, beta)
 
                 elif transfer_options[ibody]['scheme'].lower()== 'linearized meld':
 
@@ -186,8 +189,10 @@ class FUNtoFEMDriver(object):
                         num_nearest = transfer_options[ibody]['npts']
 
 
-                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.comm, 0, self.comm, 0,
-                                                            num_nearest, beta)
+                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.struct_comm,
+                                                                    self.struct_master, self.aero_comm,
+                                                                    self.aero_master,
+                                                                    isym, num_nearest, beta)
 
                 elif transfer_options[ibody]['scheme'].lower()== 'beam':
                     conn = transfer_options[ibody]['conn']
@@ -196,8 +201,10 @@ class FUNtoFEMDriver(object):
                     ndof = transfer_options[ibody]['ndof']
 
                     body.xfer_ndof = ndof
-                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm, self.struct_master, self.aero_comm,
-                                                                    self.aero_master, conn, nelems, order, ndof)
+                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm,
+                                                                  self.struct_master, self.aero_comm,
+                                                                  self.aero_master, conn, nelems,
+                                                                  order, ndof)
                 else:
                     print("Error: Unknown transfer scheme for body", ibody)
                     quit()
