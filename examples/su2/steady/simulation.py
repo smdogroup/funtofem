@@ -49,7 +49,7 @@ su2 = pysu2.CSinglezoneDriver(SU2_CFD_ConfigFile, 1, comm)
 onera = FUNtoFEMmodel('onera')
 wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
 onera.add_body(wing)
-cruise = Scenario('cruise', steps=50)
+cruise = Scenario('cruise', steps=5)
 onera.add_scenario(cruise)
 
 # Instatiate the flow and structural solvers

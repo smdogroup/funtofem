@@ -36,6 +36,7 @@ class OneraPlate(TacsSteadyInterface):
         super(OneraPlate, self).__init__(comm, tacs_comm, model)
 
         assembler = None
+        mat = None
 
         if comm.Get_rank() < n_tacs_procs:
             # Set the creator object

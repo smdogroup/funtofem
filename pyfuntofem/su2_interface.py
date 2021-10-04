@@ -50,21 +50,17 @@ class SU2Interface(SolverInterface):
                 self.surface_ids.append(all_marker_ids[tag])
                 self.num_surf_nodes.append(self.su2.GetNumberVertices(self.surface_ids[-1]))
 
-        # Keep track of the total number of surface nodes
-        self.num_total_surf_nodes = np.sum(self.num_surf_nodes)
+        # Keep track of the total number of surface nodes. Cast to an integer
+        # since np.sum returns a zero float for an empty array
+        self.num_total_surf_nodes = int(np.sum(self.num_surf_nodes))
 
         # Get the initial aero surface meshes
         self.initialize(model.scenarios[0], model.bodies, first_pass=True)
         self.post(model.scenarios[0], model.bodies, first_pass=True)
 
-        self.num_su2_iters = 5
-
         return
 
     def initialize(self, scenario, bodies, first_pass=False):
-
-        # Reset the convergence tolerances
-        self.su2.ResetConvergence()
 
         # Get the coordinates associated with the surface nodes
         bodies[0].aero_nnodes = self.num_total_surf_nodes
@@ -81,6 +77,9 @@ class SU2Interface(SolverInterface):
                 bodies[0].aero_X[idx] = x
                 bodies[0].aero_X[idx+1] = y
                 bodies[0].aero_X[idx+2] = z
+
+        # Reset the convergence tolerances
+        self.su2.ResetConvergence()
 
         return 0
 
@@ -103,16 +102,23 @@ class SU2Interface(SolverInterface):
             the time step number
         """
 
-        for index, surf_id in enumerate(self.surface_ids):
-            offset = 3*sum(self.num_surf_nodes[:index])
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
 
-            if bodies[0].aero_disps is not None:
-                for vert in range(self.num_surf_nodes[index]):
-                    idx = 3*vert + offset
-                    u = bodies[0].aero_disps[idx]
-                    v = bodies[0].aero_disps[idx+1]
-                    w = bodies[0].aero_disps[idx+2]
-                    self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
+                if body.transfer is not None:
+                    for vert in range(self.num_surf_nodes[index]):
+                        idx = 3*(vert + offset)
+                        u = body.aero_disps[idx]
+                        v = body.aero_disps[idx+1]
+                        w = body.aero_disps[idx+2]
+                        self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
+
+                if body.thermal_transfer is not None:
+                    for vert in range(self.num_suf_nodes[index]):
+                        idx = vert + offset
+                        Twall = body.aero_temps[idx]
+                        self.su2.SetVertexTemperature(surf_id, vert, Twall)
 
         # If this is an unsteady computation than we will need this:
         # self.su2.DynamicMeshUpdate(step)
@@ -125,18 +131,35 @@ class SU2Interface(SolverInterface):
         self.su2.Output(0)
 
         # Pull out the forces from SU2
-        bodies[0].aero_loads[:] = 0.0
-        for index, surf_id in enumerate(self.surface_ids):
-            offset = 3*sum(self.num_surf_nodes[:index])
+        for ibody, body in enumerate(bodies):
+            if body.transfer:
+                body.aero_loads[:] = 0.0
+            if body.thermal_transfer:
+                body.aero_heat_flux[:] = 0.0
+                body.aero_heat_flux_mag[:] = 0.0
 
-            if bodies[0].aero_loads is not None:
-                for vert in range(self.num_surf_nodes[index]):
-                    fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
 
-                    if not self.su2.IsAHaloNode(surf_id, vert):
-                        bodies[0].aero_loads[3*vert] = self.qinf * fx
-                        bodies[0].aero_loads[3*vert+1] = self.qinf * fy
-                        bodies[0].aero_loads[3*vert+2] = self.qinf * fz
+                if body.transfer is not None:
+                    for vert in range(self.num_surf_nodes[index]):
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
+                            body.aero_loads[3*vert] = fx
+                            body.aero_loads[3*vert+1] = fy
+                            body.aero_loads[3*vert+2] = fz
+
+                if body.thermal_transfer is not None:
+                    for vert in range(self.num_surf_nodes[index]):
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            hx, hy, hz = self.su2.GetVertexHeatFluxes(surf_id, vert)
+                            body.aero_heat_flux[3*vert] = hx
+                            body.aero_heat_flux[3*vert+1] = hy
+                            body.aero_heat_flux[3*vert+2] = hz
+
+                            hmag = self.su2.GetVertexNormalHeatFlux(surf_id, vert)
+                            body.aero_heat_flux_mag[vert] = hmag
 
         return 0
 

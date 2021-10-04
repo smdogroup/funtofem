@@ -49,7 +49,8 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
-    def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None):
+    def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None,
+                              thermal_index=0):
 
         self.tacs_proc = False
         self.assembler = None
@@ -60,6 +61,7 @@ class TacsSteadyInterface(SolverInterface):
         self.mat = None
         self.pc = None
         self.gmres = None
+        self.thermal_index = thermal_index
 
         self.struct_X_vec = None
         self.struct_nnodes = None
@@ -98,9 +100,11 @@ class TacsSteadyInterface(SolverInterface):
             self.ext_force = assembler.createVec()
             self.update = assembler.createVec()
 
+            # Get and set the structural node locations
             self.struct_X_vec = assembler.createNodeVec()
             assembler.getNodes(self.struct_X_vec)
             self.struct_nnodes = len(self.struct_X_vec.getArray())//3
+
             self.struct_X = np.zeros(3*self.struct_nnodes)
             self.struct_X[:] = self.struct_X_vec.getArray()[:]
             self.dvsenslist = []
@@ -126,8 +130,9 @@ class TacsSteadyInterface(SolverInterface):
     def set_variables(self, scenario, bodies):
         if self.tacs_proc:
             # Set the design variable values on the processors that
-            # have an instance of TACSAssembler
+            # have an instance of TACSAssembler.
             xvec = self.assembler.createDesignVec()
+            self.assembler.getDesignVars(xvec)
             xarray = xvec.getArray()
 
             if self.tacs_comm.rank == 0:
@@ -250,8 +255,6 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
-    # FIXME function not yet updated for aerothermal coordinate derivatives
-    # old eval_Sens functions still used currently
     def get_coordinate_derivatives(self, scenario, bodies, step):
         """ Evaluate gradients with respect to structural design variables"""
 
@@ -294,23 +297,12 @@ class TacsSteadyInterface(SolverInterface):
             struct_X[:] = body.struct_X[:]
             self.assembler.setNodes(self.struct_X_vec)
 
-            # Set the boundary conditions
-            self.assembler.setBCs(self.ans)
-            self.assembler.setVariables(self.ans)
-
-            # Assemble the Jacobian matrix and factor it
-            alpha = 1.0
-            beta = 0.0
-            gamma = 0.0
-            self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat)
-            self.pc.factor()
-
         return
 
     def get_mesh(self, body):
         if self.tacs_proc:
             body.struct_X = self.struct_X_vec.getArray().copy()
-            body.struct_nnodes = int(body.struct_X.size/3)
+            body.struct_nnodes = body.struct_X.size//3
         else:
             body.struct_nnodes = 0
             body.struct_X = np.array([], dtype=TACS.dtype)
@@ -327,8 +319,21 @@ class TacsSteadyInterface(SolverInterface):
                     body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                self.first_pass = False
             else:
                 self.set_mesh(body)
+
+        if self.tacs_proc:
+            # Set the boundary conditions
+            self.assembler.setBCs(self.ans)
+            self.assembler.setVariables(self.ans)
+
+            # Assemble the Jacobian matrix and factor it
+            alpha = 1.0
+            beta = 0.0
+            gamma = 0.0
+            self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat)
+            self.pc.factor()
 
         return 0
 
@@ -368,6 +373,10 @@ class TacsSteadyInterface(SolverInterface):
             self.ans.axpy(-1.0, self.update)
             self.assembler.setBCs(self.ans)
 
+            print('res.norm() = ', self.res.norm())
+            print('update.norm() = ', self.update.norm())
+            print('ans.norm() = ', self.ans.norm())
+
             # Set the variables into the assembler object
             self.assembler.setVariables(self.ans)
 
@@ -375,12 +384,16 @@ class TacsSteadyInterface(SolverInterface):
             ans_array = self.ans.getArray()
             for body in bodies:
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TACS.dtype)
+                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
                         body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
 
+                    print('body.struct_disps = ', body.struct_disps)
+
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
+                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                 dtype=TACS.dtype)
                     body.struct_temps[:] = ans_array[self.thermal_index::ndof]
         else:
             for body in bodies:

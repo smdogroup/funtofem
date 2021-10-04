@@ -31,10 +31,12 @@ except:
     pass
 
 class FUNtoFEMnlbgs(FUNtoFEMDriver):
-    def __init__(self,solvers,comm,struct_comm,struct_master,aero_comm,aero_master,transfer_options=None,model=None,
-                 theta_init=0.125,theta_min=0.01,theta_max=1.0):
+    def __init__(self, solvers, comm, struct_comm, struct_root,
+                 aero_comm, aero_root, transfer_options=None, model=None,
+                 theta_init=0.125, theta_min=0.01, theta_max=1.0):
         """
-        The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel solvers for steady and unsteady coupled adjoint.
+        The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
+        solvers for steady and unsteady coupled adjoint.
 
         Parameters
         ----------
@@ -52,7 +54,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             Minimum value of theta for the Aitken under-relaxation
         """
 
-        super(FUNtoFEMnlbgs,self).__init__(solvers,comm,struct_comm,struct_master,aero_comm,aero_master,transfer_options=transfer_options,model=model)
+        super(FUNtoFEMnlbgs,self).__init__(solvers, comm, struct_comm, struct_root, aero_comm,
+                                           aero_root, transfer_options=transfer_options, model=model)
 
         # Aitken acceleration settings
         self.theta_init = theta_init
@@ -68,7 +71,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         self.up_prev = None
         self.therm_up_prev = None
 
-    def _initialize_adjoint_variables(self,scenario,bodies):
+    def _initialize_adjoint_variables(self, scenario, bodies):
         """
         Initialize the adjoint variables
 
@@ -84,42 +87,44 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         for body in bodies:
             if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                body.psi_L = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
+                body.psi_L = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.psi_S = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
+                body.psi_S = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.struct_rhs = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
+                body.struct_rhs = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
                                            dtype=TransferScheme.dtype)
 
-                body.dLdfa = np.zeros((body.aero_nnodes*3,nfunctions),
+                body.dLdfa = np.zeros((body.aero_nnodes*3, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.dGdua = np.zeros((body.aero_nnodes*3,nfunctions),
+                body.dGdua = np.zeros((body.aero_nnodes*3, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.psi_D = np.zeros((body.aero_nnodes*3,nfunctions),
+                body.psi_D = np.zeros((body.aero_nnodes*3, nfunctions),
                                       dtype=TransferScheme.dtype)
 
             if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                 # Thermal terms
-                body.psi_Q = np.zeros((body.struct_nnodes*body.therm_xfer_ndof,nfunctions),
+                body.psi_Q = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.psi_T_S = np.zeros((body.struct_nnodes*body.therm_xfer_ndof,nfunctions),
+                body.psi_T_S = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.struct_rhs_T = np.zeros((body.struct_nnodes*body.therm_xfer_ndof,nfunctions),
+                body.struct_rhs_T = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                            dtype=TransferScheme.dtype)
 
-                body.dQdfta = np.zeros((body.aero_nnodes*4,nfunctions),
+                body.dQdfta = np.zeros((body.aero_nnodes*4, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.dAdta = np.zeros((body.aero_nnodes,nfunctions),
+                body.dAdta = np.zeros((body.aero_nnodes, nfunctions),
                                       dtype=TransferScheme.dtype)
-                body.psi_T = np.zeros((body.aero_nnodes,nfunctions),
+                body.psi_T = np.zeros((body.aero_nnodes, nfunctions),
                                       dtype=TransferScheme.dtype)
 
             if body.shape:
-                body.aero_shape_term = np.zeros((body.aero_nnodes*3,nfunctions_total),dtype=TransferScheme.dtype)
-                body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions_total),dtype=TransferScheme.dtype)
+                body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
+                                                dtype=TransferScheme.dtype)
+                body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
+                                                  dtype=TransferScheme.dtype)
 
 
-    def _solve_steady_forward(self,scenario,steps=None):
+    def _solve_steady_forward(self, scenario, steps=None):
         """
         Solve the aerothermoelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
@@ -146,7 +151,19 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 steps = 1000
 
         # Loop over the NLBGS steps
-        for step in range(1,steps+1):
+        for step in range(1, steps+1):
+            # Transfer displacements and temperatures
+            for body in self.model.bodies:
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    body.aero_disps = np.zeros(3*body.aero_nnodes,
+                                               dtype=TransferScheme.dtype)
+                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
+
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    body.aero_temps = np.zeros(body.aero_nnodes,
+                                               dtype=TransferScheme.dtype)
+                    body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
+
             # Take a step in the flow solver
             fail = self.solvers['flow'].iterate(scenario, self.model.bodies, step)
 
@@ -159,18 +176,21 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Transfer the loads and heat flux
             for body in self.model.bodies:
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                    body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                     body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_heat_flux = np.zeros(body.struct_nnodes, dtype=TransferScheme.dtype)
+                    body.struct_heat_flux = np.zeros(body.struct_nnodes,
+                                                     dtype=TransferScheme.dtype)
                     # FUN3D returns x,y,z, and magnitude of the surface normal heat flux
                     # only need magnitude for TACS
-                    heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order='C')
-                    body.thermal_transfer.transferFlux(heat_flux_magnitude, body.struct_heat_flux)
+                    heat_flux_magnitude = body.aero_heat_flux_mag[:]
+                    body.thermal_transfer.transferFlux(heat_flux_magnitude,
+                                                       body.struct_heat_flux)
 
             # Take a step in the FEM model
-            fail = self.solvers['structural'].iterate(scenario,self.model.bodies,step)
+            fail = self.solvers['structural'].iterate(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -184,11 +204,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                    body.aero_disps = np.zeros(body.aero_nnodes*3,
+                                               dtype=TransferScheme.dtype)
                     body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_temps = np.zeros(body.aero_nnodes,dtype=TransferScheme.dtype)
+                    body.aero_temps = np.zeros(body.aero_nnodes,
+                                               dtype=TransferScheme.dtype)
                     body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
 
         # end solve loop
@@ -215,10 +237,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # Load the current state
         for body in self.model.bodies:
             if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                aero_disps = np.zeros(body.aero_disps.size,dtype=TransferScheme.dtype)
+                aero_disps = np.zeros(body.aero_disps.size,
+                                      dtype=TransferScheme.dtype)
                 body.transfer.transferDisps(body.struct_disps, aero_disps)
 
-                struct_loads = np.zeros(body.struct_loads.size,dtype=TransferScheme.dtype)
+                struct_loads = np.zeros(body.struct_loads.size,
+                                        dtype=TransferScheme.dtype)
                 body.transfer.transferLoads(body.aero_loads, struct_loads)
 
         # Initialize the adjoint variables
@@ -234,14 +258,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         # Transform load transfer adjoint variables using transpose Jacobian from
                         # funtofem: dLdfA^T * psi_L = dDdus * psi_S
-                        psi_L_r = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                        psi_L_r = np.zeros(body.aero_nnodes*3,
+                                           dtype=TransferScheme.dtype)
                         body.transfer.applydDduS(body.psi_S[:, func].copy(order='C'), psi_L_r)
                         body.dLdfa[:,func] = psi_L_r
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                         # Transform heat flux transfer adjoint variables using transpose Jacobian from
                         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
-                        psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+                        psi_Q_r = np.zeros(body.aero_nnodes,
+                                           dtype=TransferScheme.dtype)
                         body.thermal_transfer.applydQdqATrans(body.psi_T_S[:, func].copy(order='C'), psi_Q_r)
 
                         # Only set heat flux magnitude component of thermal adjoint in FUN3D
@@ -263,25 +289,28 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                     if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         # calculate dDdu_s^T * psi_D
-                        psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                        psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.psi_D = - body.dGdua
                         body.transfer.applydDduSTrans(body.psi_D[:, func].copy(order='C'), psi_D_product)
 
                         # calculate dLdu_s^T * psi_L
-                        psi_L_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                        psi_L_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.transfer.applydLduSTrans(body.psi_L[:, func].copy(order='C'), psi_L_product)
                         # structural elastic rhs
                         body.struct_rhs[:,func] = -psi_D_product - psi_L_product
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                         # calculate dTdt_s^T * psi_T
-                        psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TransferScheme.dtype)
+                        psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.psi_T = body.dAdta
                         body.thermal_transfer.applydTdtSTrans(body.psi_T[:, func].copy(order='C'), psi_T_product)
                         body.struct_rhs_T[:,func] = -psi_T_product
 
             # take a step in the structural adjoint
-            fail = self.solvers['structural'].iterate_adjoint(scenario,self.model.bodies,step)
+            fail = self.solvers['structural'].iterate_adjoint(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -293,7 +322,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # end of solve loop
 
-        self._extract_coordinate_derivatives(scenario,self.model.bodies,steps)
+        self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
         return 0
 
     def _solve_unsteady_forward(self,scenario,steps=None):
@@ -319,7 +348,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if not self.fakemodel:
                 steps = scenario.steps
             else:
-                if self.comm.Get_rank()==0:
+                if self.comm.Get_rank() == 0:
                     print("No number of steps given for the coupled problem. Using default (1000)")
                 steps = 1000
 
@@ -337,14 +366,14 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                 if ('rigid'  in body.motion_type and
                     'deform' in body.motion_type):
-                    rotation = np.zeros(9,dtype=TransferScheme.dtype)
-                    translation = np.zeros(3,dtype=TransferScheme.dtype)
-                    u = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
-                    body.rigid_transform = np.zeros((4,4),dtype=TransferScheme.dtype)
+                    rotation = np.zeros(9, dtype=TransferScheme.dtype)
+                    translation = np.zeros(3, dtype=TransferScheme.dtype)
+                    u = np.zeros(body.aero_nnodes*3, dtype=TransferScheme.dtype)
+                    body.rigid_transform = np.zeros((4,4), dtype=TransferScheme.dtype)
 
                     body.transfer.transformEquivRigidMotion(body.aero_disps, rotation, translation, u)
 
-                    body.rigid_transform[:3,:3] = rotation.reshape((3,3,),order='F')
+                    body.rigid_transform[:3,:3] = rotation.reshape((3,3,), order='F')
                     body.rigid_transform[:3, 3] = translation
                     body.rigid_transform[-1,-1] = 1.0
 
@@ -499,7 +528,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                                     psi_E[3*node+i] = (  tmt[i,0] * body.dGdua[3*node+0,func]
                                                        + tmt[i,1] * body.dGdua[3*node+1,func]
                                                        + tmt[i,2] * body.dGdua[3*node+2,func]
-                                                       + tmt[i,3]                            )
+                                                       + tmt[i,3])
 
                             # get the product dE/dT^T psi_E
                             dEdTmat = np.zeros((3,4),dtype=TransferScheme.dtype)
@@ -508,12 +537,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                                 for i in range(3):
                                     for j in range(4):
                                         if j < 3:
-                                            dEdTmat[i,j] += -(body.aero_X[3*n+j]+body.aero_disps[3*n+j]) * psi_E[3*n+i]
+                                            dEdTmat[i,j] += -(body.aero_X[3*n+j] +
+                                                              body.aero_disps[3*n+j]) * psi_E[3*n+i]
                                         else:
                                             dEdTmat[i,j] += - psi_E[3*n+i]
 
                             dEdT = dEdTmat.flatten(order='F')
-
                             dEdT = self.comm.allreduce(dEdT)
 
                             # solve the rigid transform adjoint
@@ -534,17 +563,20 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                     if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         # calculate dDdu_s^T * psi_D
-                        psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                        psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.transfer.applydDduSTrans(body.psi_D[:,func].copy(order='C'), psi_D_product)
 
                         # calculate dLdu_s^T * psi_L
-                        psi_L_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                        psi_L_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.transfer.applydLduSTrans(body.psi_L[:,func].copy(order='C'), psi_L_product)
                         body.struct_rhs[:,func] = -psi_D_product - psi_L_product
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                         # calculate dTdt_s^T * psi_T
-                        psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TransferScheme.dtype)
+                        psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                 dtype=TransferScheme.dtype)
                         body.psi_T = body.dAdta
                         body.thermal_transfer.applydTdtSTrans(body.psi_T[:, func].copy(order='C'), psi_T_product)
                         body.struct_rhs_T[:,func] = -psi_T_product
@@ -596,13 +628,17 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             for ind, body in enumerate(self.model.bodies):
 
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    self.up_prev.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
-                    self.aitken_vec.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
+                    self.up_prev.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                 dtype=TransferScheme.dtype))
+                    self.aitken_vec.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                    dtype=TransferScheme.dtype))
                     self.theta.append(self.theta_init)
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-                    self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
+                    self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
+                                                                 dtype=TransferScheme.dtype))
+                    self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
+                                                                    dtype=TransferScheme.dtype))
                     self.theta.append(self.theta_init)
 
         # do the Aitken update
@@ -616,7 +652,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     # Only update theta if the displacements changed
                     if norm2 > 1e-13:
                         self.theta[ibody] *= 1.0 - (up - self.up_prev[ibody]).dot(up)/norm2
-                        self.theta[ibody] = np.max((np.min((self.theta[ibody],self.theta_max)),self.theta_min))
+                        self.theta[ibody] = np.max((np.min((self.theta[ibody], self.theta_max)), self.theta_min))
 
                     # handle the min/max for complex step
                     if type(self.theta[ibody]) == np.complex128 or type(self.theta[ibody]) == complex:
@@ -662,8 +698,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     aitken_vec_body = []
                     theta_body = []
                     for func in range(nfunctions):
-                        up_prev_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
-                        aitken_vec_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
+                        up_prev_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                     dtype=TransferScheme.dtype))
+                        aitken_vec_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
+                                                        dtype=TransferScheme.dtype))
                         theta_body.append(self.theta_init)
                     self.up_prev.append(up_prev_body)
                     self.aitken_vec.append(aitken_vec_body)
@@ -683,8 +721,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     aitken_therm_vec_body = []
                     theta_body = []
                     for func in range(nfunctions):
-                        up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-                        aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
+                        up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
+                                                               dtype=TransferScheme.dtype))
+                        aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
+                                                                        dtype=TransferScheme.dtype))
                         theta_body.append(self.theta_therm_init)
                     self.therm_up_prev.append(up_prev_body)
                     self.aitken_therm_vec.append(aitken_therm_vec_body)
