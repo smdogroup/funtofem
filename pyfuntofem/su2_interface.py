@@ -27,11 +27,12 @@ from pyfuntofem.solver_interface import SolverInterface
 class SU2Interface(SolverInterface):
     """FUNtoFEM interface class for SU2."""
 
-    def __init__(self, comm, model, su2, qinf, forward_options=None, adjoint_options=None):
+    def __init__(self, comm, model, su2, su2ad=None,
+                 forward_options=None, adjoint_options=None):
         """Initialize the SU2 interface"""
         self.comm = comm
         self.su2 = su2
-        self.qinf = qinf
+        self.su2ad = su2ad
 
         self.surf_id = None
         self.num_local_surf_nodes = 0
@@ -171,25 +172,86 @@ class SU2Interface(SolverInterface):
     def initialize_adjoint(self, scenario, bodies):
         pass
 
-    def iterate_adjoint(self,scenario,bodies,step):
+    def iterate_adjoint(self, scenario, bodies, step):
+
+        func = 0
+
+        for ibody, body in enumerate(bodies):
+            # Extract the adjoint terms for the vertex forces
+
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
+
+                if body.transfer is not None:
+                    psi_F = - body.dLdfa
+                    for vert in range(self.num_surf_nodes[index]):
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            fx_adj = psi_F[3*vert, func]
+                            fy_adj = psi_F[3*vert+1, func]
+                            fz_adj = psi_F[3*vert+2, func]
+                            self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
+
+                if body.thermal_transfer is not None:
+                    psi_Q_flux = - body.dQfluxdha
+                    psi_Q_mag = - body.dQmagdta
+
+                    for vert in range(self.num_surf_nodes[index]):
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            hx_adj = psi_Q_flux[3*vert, func]
+                            hy_adj = psi_Q_flux[3*vert+1, func]
+                            hz_adj = psi_Q_flux[3*vert+2, func]
+                            self.su2ad.SetVertexHeatFluxes_Adjoint(surf_id, vert,
+                                                                   hx_adj, hy_adj, hz_adj)
+
+                            hmag_adj = psi_Q_mag[vert, func]
+                            self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
+
+        # If this is an unsteady computation than we will need this:
+        # self.su2.DynamicMeshUpdate(step)
+
+        self.su2ad.ResetConvergence()
+        self.su2ad.Preprocess(0)
+        self.su2ad.Run()
+        self.su2ad.Postprocess()
+        self.su2ad.Monitor(0)
+        self.su2ad.Output(0)
+
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
+
+                if body.transfer is not None:
+                    for vert in range(self.num_surf_nodes[index]):
+                        idx = 3*(vert + offset)
+                        u_adj, v_adj, w_adj = self.su2.GetMeshDisplacement_Adjoint(surf_id, vert)
+                        body.dGdua[idx, func] += u_adj
+                        body.dGdua[idx+1, func] += v_adj
+                        body.dGdua[idx+2, func] += w_adj
+
+                if body.thermal_transfer is not None:
+                    for vert in range(self.num_suf_nodes[index]):
+                        idx = vert + offset
+                        Twall_adj = self.su2.GetVertexTemperature_Adjoint(surf_id, vert)
+                        body.dAdta[idx, func] += Twall_adj
+
+        return
+
+    def post_adjoint(self, scenario, bodies):
         pass
 
-    def post_adjoint(self,scenario,bodies):
+    def set_functions(self, scenario, bodies):
         pass
 
-    def set_functions(self,scenario,bodies):
+    def set_variables(self, scenario, bodies):
         pass
 
-    def set_variables(self,scenario,bodies):
+    def get_functions(self, scenario, bodies):
         pass
 
-    def get_functions(self,scenario,bodies):
+    def get_function_gradients(self, scenario, bodies, offset):
         pass
 
-    def get_function_gradients(self,scenario,bodies,offset):
-        pass
-
-    def get_coordinate_derivatives(self,scenario,bodies,step):
+    def get_coordinate_derivatives(self, scenario, bodies, step):
         pass
 
     def set_states(self, scenario, bodies, step):

@@ -622,7 +622,8 @@ class Fun3dInterface(SolverInterface):
 
                 # Solve the heat flux adjoint equation
                 if body.thermal_transfer is not None:
-                    psi_Q_mag = - body.dQdfta
+                    psi_Q_mag = - body.dQmagdha
+                    psi_Q_flux = - body.dQfluxdha
 
                     lam_x_thermal = np.zeros((body.aero_nnodes, nfunctions),
                                              dtype=TransferScheme.dtype)
