@@ -42,8 +42,6 @@ class TacsSteadyInterface(SolverInterface):
         self.funclist = None
         self.functag = None
 
-        self.struct_disps_all = {}
-        self.struct_temps_all = {}
         self.struct_vars_all = {} # saved displacements and temps
         self.first_pass = True
 
@@ -373,10 +371,6 @@ class TacsSteadyInterface(SolverInterface):
             self.ans.axpy(-1.0, self.update)
             self.assembler.setBCs(self.ans)
 
-            print('res.norm() = ', self.res.norm())
-            print('update.norm() = ', self.update.norm())
-            print('ans.norm() = ', self.ans.norm())
-
             # Set the variables into the assembler object
             self.assembler.setVariables(self.ans)
 
@@ -404,7 +398,7 @@ class TacsSteadyInterface(SolverInterface):
 
     def post(self,scenario,bodies):
         if self.tacs_proc:
-            self.struct_temps_all[scenario.id] = self.ans.getArray().copy()
+            self.struct_vars_all[scenario.id] = self.ans.getArray().copy()
 
             # export the f5 file
             try:

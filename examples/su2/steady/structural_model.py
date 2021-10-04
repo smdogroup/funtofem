@@ -68,18 +68,9 @@ class OneraPlate(TacsSteadyInterface):
                 elem_ids = np.zeros(nelems, dtype=np.intc)
                 creator.setGlobalConnectivity(nnodes, ptr, conn, elem_ids)
 
-                # Set up the boundary conditions
-                bcnodes = np.array(nodes[0,:], dtype=np.intc)
-
-                # Set the boundary condition variables
-                nbcs = ndof*bcnodes.shape[0]
-                bcvars = np.zeros(nbcs, dtype=np.intc)
-                for i in range(ndof):
-                    bcvars[i:nbcs:ndof] = i
-
-                # Set the boundary condition pointers
-                bcptr = np.arange(0, nbcs+1, ndof, dtype=np.intc)
-                creator.setBoundaryConditions(bcnodes, bcvars, bcptr)
+                # Set the boundary conditions - fixed on the root
+                bcnodes = np.array(nodes[0, :], dtype=np.intc)
+                creator.setBoundaryConditions(bcnodes)
 
                 # Set the node locations
                 Xpts = np.zeros(3*nnodes)
@@ -116,7 +107,7 @@ class OneraPlate(TacsSteadyInterface):
             # Create TACS Assembler object from the mesh loader
             assembler = creator.createTACS()
 
-            # Create distributed matrix and vector objects
+            # Create distributed matrix
             mat = assembler.createSchurMat()  # stiffness matrix
 
         self._initialize_variables(assembler, mat)
@@ -130,7 +121,7 @@ class OneraPlate(TacsSteadyInterface):
                 TACS.OUTPUT_NODES |
                 TACS.OUTPUT_DISPLACEMENTS |
                 TACS.OUTPUT_EXTRAS)
-        f5 = TACS.ToFH5(self.tacs, TACS.BEAM_OR_SHELL_ELEMENT, flag)
+        f5 = TACS.ToFH5(self.assembler, TACS.BEAM_OR_SHELL_ELEMENT, flag)
         file_out = "onera_struct_out.f5"
         f5.writeToFile(file_out)
 
