@@ -25,14 +25,10 @@ from funtofem import TransferScheme
 from pyfuntofem.solver_interface import SolverInterface
 
 class SU2Interface(SolverInterface):
-    '''
-    FUNtoFEM interface class for SU2.
-    '''
+    """FUNtoFEM interface class for SU2."""
 
     def __init__(self, comm, model, su2, qinf, forward_options=None, adjoint_options=None):
-        '''
-        Initialize the SU2 interface
-        '''
+        """Initialize the SU2 interface"""
         self.comm = comm
         self.su2 = su2
         self.qinf = qinf
@@ -111,7 +107,6 @@ class SU2Interface(SolverInterface):
             offset = 3*sum(self.num_surf_nodes[:index])
 
             if bodies[0].aero_disps is not None:
-                print(bodies[0].aero_disps[:])
                 for vert in range(self.num_surf_nodes[index]):
                     idx = 3*vert + offset
                     u = bodies[0].aero_disps[idx]
@@ -119,11 +114,9 @@ class SU2Interface(SolverInterface):
                     w = bodies[0].aero_disps[idx+2]
                     self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
 
-        # Uh-oh, does this work? No!
         # If this is an unsteady computation than we will need this:
         # self.su2.DynamicMeshUpdate(step)
 
-        # for itr in range(self.num_su2_iters):
         self.su2.ResetConvergence()
         self.su2.Preprocess(0)
         self.su2.Run()

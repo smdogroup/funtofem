@@ -35,25 +35,23 @@ class OneraPlate(TacsSteadyInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
         super(OneraPlate, self).__init__(comm, tacs_comm, model)
 
-        self.tacs_proc = False
+        assembler = None
 
         if comm.Get_rank() < n_tacs_procs:
-            self.tacs_proc = True
-
             # Set the creator object
-            self.dof = 6  # six degrees of freedom in shell elements
-            creator = TACS.Creator(tacs_comm, self.dof)
+            ndof = 6
+            creator = TACS.Creator(tacs_comm, ndof)
 
             if tacs_comm.rank == 0:
                 # Create the elements
                 nx = 10
                 ny = 10
-    
+
                 # Set the nodes
                 nnodes = (nx+1)*(ny+1)
                 nelems = nx*ny
                 nodes = np.arange(nnodes).reshape((nx+1, ny+1))
-    
+
                 conn = []
                 for j in range(ny):
                     for i in range(nx):
@@ -73,13 +71,13 @@ class OneraPlate(TacsSteadyInterface):
                 bcnodes = np.array(nodes[0,:], dtype=np.intc)
 
                 # Set the boundary condition variables
-                nbcs = self.dof*bcnodes.shape[0]
+                nbcs = ndof*bcnodes.shape[0]
                 bcvars = np.zeros(nbcs, dtype=np.intc)
-                for i in range(self.dof):
-                    bcvars[i:nbcs:self.dof] = i
+                for i in range(ndof):
+                    bcvars[i:nbcs:ndof] = i
 
                 # Set the boundary condition pointers
-                bcptr = np.arange(0, nbcs+1, self.dof, dtype=np.intc)
+                bcptr = np.arange(0, nbcs+1, ndof, dtype=np.intc)
                 creator.setBoundaryConditions(bcnodes, bcvars, bcptr)
 
                 # Set the node locations
@@ -96,17 +94,17 @@ class OneraPlate(TacsSteadyInterface):
 
             # Set the material properties
             props = constitutive.MaterialProperties(rho=2570.0, E=70e9, nu=0.3, ys=350e6)
-            
+
             # Set constitutive properties
             t = 0.025
             tnum = 0
             maxt = 0.015
-            mint = 0.015       
+            mint = 0.015
             con = constitutive.IsoShellConstitutive(props, t=t, tNum=tnum)
 
             # Create a transformation object
             transform = elements.ShellNaturalTransform()
-            
+
             # Create the element object
             element = elements.Quad4Shell(transform, con)
 
@@ -119,38 +117,12 @@ class OneraPlate(TacsSteadyInterface):
 
             # Create distributed matrix and vector objects
             mat = assembler.createSchurMat()  # stiffness matrix
-            ans = assembler.createVec()    # state vector
-            res = assembler.createVec()    # load vector (effectively)
 
-            # Create distributed node vector from TACS Assembler object and
-            # extract the node locations
-            self.struct_X_vec = assembler.createNodeVec()
-            self.struct_X = []
-            self.struct_nnodes = []
-
-            assembler.getNodes(self.struct_X_vec)
-            self.struct_X.append(self.struct_X_vec.getArray())
-            self.struct_nnodes.append(len(self.struct_X)/3)
-
-            # Assemble the stiffness matrix
-            alpha = 1.0
-            beta = 0.0
-            gamma = 0.0
-            assembler.assembleJacobian(alpha, beta, gamma, res, mat)
-
-            # Create the preconditioner for the stiffness matrix and factor
-            pc = TACS.Pc(mat)
-            pc.factor()
-
-            # Initialize member variables pertaining to TACS that will be used
-            # by FUNtoFEM in solve
-            self.assembler = assembler
-            self.res = res
-            self.ans = ans
-            self.mat = mat
-            self.pc = pc
+        self._initialize_variables(assembler, mat)
 
         self.initialize(model.scenarios[0], model.bodies)
+
+        return
 
     def post_export_f5(self):
         flag = (TACS.OUTPUT_CONNECTIVITY |
@@ -160,5 +132,5 @@ class OneraPlate(TacsSteadyInterface):
         f5 = TACS.ToFH5(self.tacs, TACS.BEAM_OR_SHELL_ELEMENT, flag)
         file_out = "onera_struct_out.f5"
         f5.writeToFile(file_out)
-        
+
         return

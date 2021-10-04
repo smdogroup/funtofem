@@ -42,7 +42,6 @@ else:
     key = world_rank
 tacs_comm = comm.Split(color, key)
 
-ndim = 3
 SU2_CFD_ConfigFile = 'inv_ONERAM6_new.cfg'
 su2 = pysu2.CSinglezoneDriver(SU2_CFD_ConfigFile, 1, comm)
 
@@ -66,7 +65,7 @@ options = {'scheme': 'meld', 'beta': 0.5, 'npts': 50, 'isym': -1}
 # Instantiate the driver
 struct_master = 0
 aero_master = 0
-driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master, 
+driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
                        comm, aero_master, model=onera, transfer_options=options,
                        theta_init=0.5, theta_min=0.1)
 
