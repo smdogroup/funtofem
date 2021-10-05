@@ -69,17 +69,25 @@ class OneraPlate(TacsSteadyInterface):
                 creator.setGlobalConnectivity(nnodes, ptr, conn, elem_ids)
 
                 # Set the boundary conditions - fixed on the root
-                bcnodes = np.array(nodes[0, :], dtype=np.intc)
+                bcnodes = np.array(nodes[:, 0], dtype=np.intc)
                 creator.setBoundaryConditions(bcnodes)
+
+                root_chord = 0.8
+                semi_span = 1.2
+                taper_ratio = 0.56
+                sweep = 26.7 # degrees
 
                 # Set the node locations
                 Xpts = np.zeros(3*nnodes)
-                x = np.linspace(0, 10, nx+1)
-                y = np.linspace(0, 10, ny+1)
+                x = np.linspace(0, 1, nx+1)
+                y = np.linspace(0, 1, ny+1)
                 for j in range(ny+1):
                     for i in range(nx+1):
-                        Xpts[3*nodes[i,j]] = x[i]
-                        Xpts[3*nodes[i,j]+1] = y[j]
+                        c = root_chord*(1.0 - y[j]) + root_chord*taper_ratio*y[j]
+                        xoff = 0.25*root_chord + semi_span*y[j]*np.tan(sweep*np.pi/180.0)
+
+                        Xpts[3*nodes[i,j]] = xoff + c*(x[i] - 0.25)
+                        Xpts[3*nodes[i,j]+1] = semi_span*y[j]
 
                 # Set the node locations
                 creator.setNodes(Xpts)

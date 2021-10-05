@@ -284,7 +284,9 @@ class TacsSteadyInterface(SolverInterface):
                 xptsens.beginSetValues(TACS.ADD_VALUES)
                 xptsens.endSetValues(TACS.ADD_VALUES)
 
-            bodies[0].struct_shape_term[:, func] = xptsens.getArray()
+                for body in bodies:
+                    if body.shape:
+                        body.struct_shape_term[:, func] = xptsens.getArray()
 
         return
 
@@ -311,12 +313,12 @@ class TacsSteadyInterface(SolverInterface):
         for body in bodies:
             if self.first_pass:
                 self.get_mesh(body)
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                     # FIXME need initial temperatures defined to pass to fluid solver
                     # currently initializing to the TACS reference temperature
                     body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                 self.first_pass = False
             else:
                 self.set_mesh(body)
@@ -350,11 +352,11 @@ class TacsSteadyInterface(SolverInterface):
             # Add the external load and heat fluxes on the structure
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    ext_force_array[self.thermal_index::ndof] += body.struct_heat_flux[:]
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     for i in range(body.xfer_ndof):
                         ext_force_array[i::ndof] += body.struct_loads[i::body.xfer_ndof]
+                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    ext_force_array[self.thermal_index::ndof] += body.struct_heat_flux[:]
 
             # Zero the contributions at the DOF associated with boundary
             # conditions so that it doesn't interfere with Dirichlet BCs
@@ -377,13 +379,11 @@ class TacsSteadyInterface(SolverInterface):
             # Extract displacements and temperatures for each body
             ans_array = self.ans.getArray()
             for body in bodies:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
                         body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
-
-                    print('body.struct_disps = ', body.struct_disps)
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
@@ -419,7 +419,7 @@ class TacsSteadyInterface(SolverInterface):
             # Extract the displacements and temperatures for each body
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
                         struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
@@ -500,7 +500,7 @@ class TacsSteadyInterface(SolverInterface):
                     # Form new right-hand side of structural adjoint equation using state
                     # variable sensitivites and the transformed temperature transfer
                     # adjoint variables
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         for i in range(body.xfer_ndof):
                             struct_rhs_array[i::ndof] += body.struct_rhs[i::body.xfer_ndof, func]
 
@@ -524,13 +524,12 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Set the adjoint variables for each body
                 for body in bodies:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         for i in range(body.xfer_ndof):
                             body.psi_S[i::body.xfer_ndof, func] = self.psi_S[i::ndof, func]
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        for i in range(body.therm_xfer_ndof):
-                            body.psi_S[i::body.therm_xfer_ndof, func] = self.psi_S[self.thermal_index::ndof, func]
+                        body.psi_T_S[:, func] = self.psi_S[self.thermal_index::ndof, func]
 
         return fail
 

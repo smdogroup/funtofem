@@ -21,19 +21,45 @@ limitations under the License.
 """
 
 import numpy as np
+import shutil
 from funtofem import TransferScheme
 from pyfuntofem.solver_interface import SolverInterface
+
+import pysu2
+try:
+    import pysu2ad
+except:
+    pass
 
 class SU2Interface(SolverInterface):
     """FUNtoFEM interface class for SU2."""
 
-    def __init__(self, comm, model, su2, su2ad=None,
+    def __init__(self, comm, model, su2_config, su2ad_config=None, qinf=1.0,
+                 restart_file='restart_flow.dat',
+                 solution_file='solution_flow.dat',
                  forward_options=None, adjoint_options=None):
         """Initialize the SU2 interface"""
         self.comm = comm
-        self.su2 = su2
-        self.su2ad = su2ad
+        self.qinf = qinf
+        self.su2_config = su2_config
+        self.su2ad_config = su2ad_config
+        self.restart_file = restart_file
+        self.solution_file = solution_file
+        self.su2 = None
+        self.su2ad = None
 
+        # Get the initial aero surface meshes
+        self.initialize(model.scenarios[0], model.bodies, first_pass=True)
+        self.post(model.scenarios[0], model.bodies, first_pass=True)
+
+        return
+
+    def initialize(self, scenario, bodies, first_pass=False):
+        # Instantiate the SU2 flow solver
+        if first_pass or self.su2 is None:
+            self.su2 = pysu2.CSinglezoneDriver(self.su2_config, 1, self.comm)
+
+        # Keep track of what is a node on the surface
         self.surf_id = None
         self.num_local_surf_nodes = 0
 
@@ -55,32 +81,22 @@ class SU2Interface(SolverInterface):
         # since np.sum returns a zero float for an empty array
         self.num_total_surf_nodes = int(np.sum(self.num_surf_nodes))
 
-        # Get the initial aero surface meshes
-        self.initialize(model.scenarios[0], model.bodies, first_pass=True)
-        self.post(model.scenarios[0], model.bodies, first_pass=True)
-
-        return
-
-    def initialize(self, scenario, bodies, first_pass=False):
-
         # Get the coordinates associated with the surface nodes
         bodies[0].aero_nnodes = self.num_total_surf_nodes
         bodies[0].aero_X = np.zeros(3*self.num_total_surf_nodes, dtype=TransferScheme.dtype)
         bodies[0].aero_loads = np.zeros(3*self.num_total_surf_nodes,
                                         dtype=TransferScheme.dtype)
 
-        for index, surf_id in enumerate(self.surface_ids):
-            offset = 3*sum(self.num_surf_nodes[:index])
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
 
-            for vert in range(self.num_surf_nodes[index]):
-                x, y, z = self.su2.GetInitialMeshCoord(surf_id, vert)
-                idx = 3*vert + offset
-                bodies[0].aero_X[idx] = x
-                bodies[0].aero_X[idx+1] = y
-                bodies[0].aero_X[idx+2] = z
-
-        # Reset the convergence tolerances
-        self.su2.ResetConvergence()
+                for vert in range(self.num_surf_nodes[index]):
+                    x, y, z = self.su2.GetInitialMeshCoord(surf_id, vert)
+                    idx = 3*(vert + offset)
+                    body.aero_X[idx] = x
+                    body.aero_X[idx+1] = y
+                    body.aero_X[idx+2] = z
 
         return 0
 
@@ -104,6 +120,7 @@ class SU2Interface(SolverInterface):
         """
 
         for ibody, body in enumerate(bodies):
+
             for index, surf_id in enumerate(self.surface_ids):
                 offset = sum(self.num_surf_nodes[:index])
 
@@ -122,8 +139,6 @@ class SU2Interface(SolverInterface):
                         self.su2.SetVertexTemperature(surf_id, vert, Twall)
 
         # If this is an unsteady computation than we will need this:
-        # self.su2.DynamicMeshUpdate(step)
-
         self.su2.ResetConvergence()
         self.su2.Preprocess(0)
         self.su2.Run()
@@ -147,9 +162,9 @@ class SU2Interface(SolverInterface):
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2.IsAHaloNode(surf_id, vert):
                             fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
-                            body.aero_loads[3*vert] = fx
-                            body.aero_loads[3*vert+1] = fy
-                            body.aero_loads[3*vert+2] = fz
+                            body.aero_loads[3*vert] = self.qinf * fx
+                            body.aero_loads[3*vert+1] = self.qinf * fy
+                            body.aero_loads[3*vert+2] = self.qinf * fz
 
                 if body.thermal_transfer is not None:
                     for vert in range(self.num_surf_nodes[index]):
@@ -165,12 +180,56 @@ class SU2Interface(SolverInterface):
         return 0
 
     def post(self,scenario, bodies, first_pass=False):
-        if not first_pass:
+        if not first_pass and self.su2 is not None:
             self.su2.Postprocessing()
+
+        # If this isn't the first pass, delete the flow object
+        if not first_pass:
+            del self.su2
+            self.su2 = None
+
+        # Copy the restart file to the solution file...
+        self.comm.Barrier()
+        if self.comm.rank == 0:
+            shutil.copyfile(self.restart_file, self.solution_file)
+        self.comm.Barrier()
+
         return
 
     def initialize_adjoint(self, scenario, bodies):
-        pass
+        # Instantiate the SU2 flow solver
+        if self.su2ad is None:
+            # Delete the primal if it exists at this point...
+            if self.su2 is not None:
+                del self.su2
+                self.su2 = None
+
+            # Create the discrete adjoint version of SU2
+            self.su2ad = pysu2ad.CDiscAdjSinglezoneDriver(self.su2ad_config, 1, self.comm)
+
+        # Keep track of what is a node on the surface
+        self.surf_id = None
+        self.num_local_surf_nodes = 0
+
+        # Get the identifiers of the moving surface
+        moving_marker_tags = self.su2ad.GetAllDeformMeshMarkersTag()
+        if moving_marker_tags is None or len(moving_marker_tags) == 0:
+            raise RuntimeError('No moving surface defined in the mesh')
+
+        # Get the marker ids for each surface
+        all_marker_ids = self.su2ad.GetAllBoundaryMarkers()
+        self.surface_ids = []
+        self.num_surf_nodes = []
+        for tag in moving_marker_tags:
+            if tag in all_marker_ids:
+                self.surface_ids.append(all_marker_ids[tag])
+                self.num_surf_nodes.append(self.su2ad.GetNumberVertices(self.surface_ids[-1]))
+
+        # Keep track of the total number of surface nodes. Cast to an integer
+        # since np.sum returns a zero float for an empty array
+        self.num_total_surf_nodes = int(np.sum(self.num_surf_nodes))
+
+        return
 
     def iterate_adjoint(self, scenario, bodies, step):
 
@@ -184,11 +243,12 @@ class SU2Interface(SolverInterface):
 
                 if body.transfer is not None:
                     psi_F = - body.dLdfa
+                    print('psi_F = ', np.dot(psi_F.T, psi_F))
                     for vert in range(self.num_surf_nodes[index]):
-                        if not self.su2.IsAHaloNode(surf_id, vert):
-                            fx_adj = psi_F[3*vert, func]
-                            fy_adj = psi_F[3*vert+1, func]
-                            fz_adj = psi_F[3*vert+2, func]
+                        if not self.su2ad.IsAHaloNode(surf_id, vert):
+                            fx_adj = self.qinf * psi_F[3*vert, func]
+                            fy_adj = self.qinf * psi_F[3*vert+1, func]
+                            fz_adj = self.qinf * psi_F[3*vert+2, func]
                             self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
 
                 if body.thermal_transfer is not None:
@@ -196,25 +256,22 @@ class SU2Interface(SolverInterface):
                     psi_Q_mag = - body.dQmagdta
 
                     for vert in range(self.num_surf_nodes[index]):
-                        if not self.su2.IsAHaloNode(surf_id, vert):
-                            hx_adj = psi_Q_flux[3*vert, func]
-                            hy_adj = psi_Q_flux[3*vert+1, func]
-                            hz_adj = psi_Q_flux[3*vert+2, func]
-                            self.su2ad.SetVertexHeatFluxes_Adjoint(surf_id, vert,
-                                                                   hx_adj, hy_adj, hz_adj)
+                        if not self.su2ad.IsAHaloNode(surf_id, vert):
+                            # hx_adj = psi_Q_flux[3*vert, func]
+                            # hy_adj = psi_Q_flux[3*vert+1, func]
+                            # hz_adj = psi_Q_flux[3*vert+2, func]
+                            # self.su2ad.SetVertexHeatFluxes_Adjoint(surf_id, vert,
+                            #                                        hx_adj, hy_adj, hz_adj)
 
                             hmag_adj = psi_Q_mag[vert, func]
                             self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
-
-        # If this is an unsteady computation than we will need this:
-        # self.su2.DynamicMeshUpdate(step)
 
         self.su2ad.ResetConvergence()
         self.su2ad.Preprocess(0)
         self.su2ad.Run()
         self.su2ad.Postprocess()
-        self.su2ad.Monitor(0)
-        self.su2ad.Output(0)
+        self.su2ad.Update()
+        stopCalc = self.su2ad.Monitor(0)
 
         for ibody, body in enumerate(bodies):
             for index, surf_id in enumerate(self.surface_ids):
@@ -223,21 +280,28 @@ class SU2Interface(SolverInterface):
                 if body.transfer is not None:
                     for vert in range(self.num_surf_nodes[index]):
                         idx = 3*(vert + offset)
-                        u_adj, v_adj, w_adj = self.su2.GetMeshDisplacement_Adjoint(surf_id, vert)
-                        body.dGdua[idx, func] += u_adj
-                        body.dGdua[idx+1, func] += v_adj
-                        body.dGdua[idx+2, func] += w_adj
+                        u_adj, v_adj, w_adj = self.su2ad.GetMeshDisp_Sensitivity(surf_id, vert)
+                        body.dGdua[idx, func] = u_adj
+                        body.dGdua[idx+1, func] = v_adj
+                        body.dGdua[idx+2, func] = w_adj
 
                 if body.thermal_transfer is not None:
-                    for vert in range(self.num_suf_nodes[index]):
+                    for vert in range(self.num_surf_nodes[index]):
                         idx = vert + offset
-                        Twall_adj = self.su2.GetVertexTemperature_Adjoint(surf_id, vert)
-                        body.dAdta[idx, func] += Twall_adj
+                        Twall_adj = self.su2ad.GetVertexTemperature_Adjoint(surf_id, vert)
+                        body.dAdta[idx, func] = Twall_adj
 
-        return
+            print('body.dGdua = ', np.dot(body.dGdua.T, body.dGdua))
+
+        return 0
 
     def post_adjoint(self, scenario, bodies):
-        pass
+        if self.su2ad is not None:
+            self.su2ad.Postprocessing()
+            del self.su2ad
+            self.su2ad = None
+
+        return
 
     def set_functions(self, scenario, bodies):
         pass

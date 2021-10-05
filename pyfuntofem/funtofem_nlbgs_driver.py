@@ -106,9 +106,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.psi_Q = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
                 body.psi_T_S = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
-                                      dtype=TransferScheme.dtype)
+                                        dtype=TransferScheme.dtype)
                 body.struct_rhs_T = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
-                                           dtype=TransferScheme.dtype)
+                                             dtype=TransferScheme.dtype)
 
                 body.dQdfta = np.zeros((body.aero_nnodes*4, nfunctions),
                                       dtype=TransferScheme.dtype)

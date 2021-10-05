@@ -26,9 +26,6 @@ from pyfuntofem.su2_interface import SU2Interface
 from structural_model import OneraPlate
 from mpi4py import MPI
 
-# Import SU2
-import pysu2
-
 # Split the communicator
 n_tacs_procs = 1
 comm = MPI.COMM_WORLD
@@ -42,25 +39,33 @@ else:
     key = world_rank
 tacs_comm = comm.Split(color, key)
 
-SU2_CFD_ConfigFile = 'inv_ONERAM6_new.cfg'
-su2 = pysu2.CSinglezoneDriver(SU2_CFD_ConfigFile, 1, comm)
+su2_config = 'inv_ONERAM6.cfg'
+su2_adj_config= 'inv_ONERAM6_adjoint.cfg'
 
 # Create model
 onera = FUNtoFEMmodel('onera')
+
 wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
 onera.add_body(wing)
-cruise = Scenario('cruise', steps=5)
+
+steps = 5
+cruise = Scenario('cruise', steps=steps)
 onera.add_scenario(cruise)
+
+drag = Function('drag', analysis_type='aerodynamic')
+cruise.add_function(drag)
 
 # Instatiate the flow and structural solvers
 solvers = {}
 
 qinf = 101325.0 # freestream pressure
-solvers['flow'] = SU2Interface(comm, onera, su2, qinf)
+solvers['flow'] = SU2Interface(comm, onera,
+                               su2_config, su2ad_config=su2_adj_config,
+                               qinf=1.0)
 solvers['structural'] = OneraPlate(comm, tacs_comm, onera, n_tacs_procs)
 
 # Specify the transfer scheme options
-options = {'scheme': 'meld', 'beta': 0.5, 'npts': 50, 'isym': -1}
+options = {'scheme': 'meld', 'beta': 0.5, 'npts': 50, 'isym': 1}
 
 # Instantiate the driver
 struct_master = 0
@@ -71,3 +76,4 @@ driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
 
 # Run the forward analysis
 fail = driver.solve_forward()
+fail = driver.solve_adjoint()
