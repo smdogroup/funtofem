@@ -47,6 +47,7 @@ class SU2Interface(SolverInterface):
         self.solution_file = solution_file
         self.su2 = None
         self.su2ad = None
+        self.func_values = {}
 
         # Get the initial aero surface meshes
         self.initialize(model.scenarios[0], model.bodies, first_pass=True)
@@ -180,11 +181,18 @@ class SU2Interface(SolverInterface):
         return 0
 
     def post(self,scenario, bodies, first_pass=False):
-        if not first_pass and self.su2 is not None:
-            self.su2.Postprocessing()
-
         # If this isn't the first pass, delete the flow object
         if not first_pass:
+            # Record the function values before deleting everything
+            self.func_values['drag'] = self.su2.Get_Drag()
+            self.func_values['lift'] = self.su2.Get_Lift()
+            self.func_values['mx'] = self.su2.Get_Mx()
+            self.func_values['my'] = self.su2.Get_My()
+            self.func_values['mz'] = self.su2.Get_Mz()
+            self.func_values['cd'] = self.su2.Get_DragCoeff()
+            self.func_values['cl'] = self.su2.Get_LiftCoeff()
+
+            self.su2.Postprocessing()
             del self.su2
             self.su2 = None
 
@@ -237,12 +245,12 @@ class SU2Interface(SolverInterface):
 
         for ibody, body in enumerate(bodies):
             # Extract the adjoint terms for the vertex forces
-
             for index, surf_id in enumerate(self.surface_ids):
                 offset = sum(self.num_surf_nodes[:index])
 
                 if body.transfer is not None:
                     psi_F = - body.dLdfa
+
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
                             fx_adj = self.qinf * psi_F[3*vert, func]
@@ -305,29 +313,9 @@ class SU2Interface(SolverInterface):
         return
 
     def get_functions(self, scenario, bodies):
-        if self.su2 is None:
-            return
-
         for function in scenario.functions:
-            if function.analysi_type == 'aerodynamic':
-                value = 0.0
-                if self.comm.rank == 0:
-                    name = function.name.lower()
-                    if name  == 'drag':
-                        value = self.su2.Get_Drag()
-                    elif name == 'lift':
-                        value = self.su2.Get_Lift()
-                    elif name == 'mx':
-                        value = self.su2.Get_Mx()
-                    elif name == 'my':
-                        value = self.su2.Get_My()
-                    elif name == 'mz':
-                        value = self.su2.Get_Mz()
-                    elif name == 'cd':
-                        value = self.su2.Get_DragCoeff()
-                    elif name == 'cl':
-                        value = self.su2.Get_LiftCoeff()
-                function.value = self.comm.bcast(value, root=0)
+            if function.analysis_type == 'aerodynamic':
+                function.value = self.func_values[function.name.lower()]
 
         return
 

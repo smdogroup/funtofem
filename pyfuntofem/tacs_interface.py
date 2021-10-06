@@ -149,8 +149,7 @@ class TacsSteadyInterface(SolverInterface):
             self.functag = []
             for func in scenario.functions:
                 if func.analysis_type != 'structural':
-                    # use mass as a placeholder for nonstructural functions
-                    self.funclist.append(functions.StructuralMass(self.assembler))
+                    self.funclist.append(None)
                     self.functag.append(0)
 
                 elif func.name.lower() == 'ksfailure':
@@ -210,12 +209,12 @@ class TacsSteadyInterface(SolverInterface):
                     if vartype == 'structural':
                         for i, var in enumerate(body.variables[vartype]):
                             if var.active:
-                                if self.tacs_proc:
-                                    body.derivatives[vartype][offset+ifunc][i] = self.func_grad[ifunc][i]
+                                if self.tacs_proc and self.tacs_comm.rank == 0:
+                                    body.derivatives[vartype][offset + ifunc][i] = self.func_grad[ifunc][i]
 
                                 # Do we have to broadcast for every single variable? This
                                 # should be in an outer loop.
-                                body.derivatives[vartype][offset+ifunc][i] = self.comm.bcast(body.derivatives[vartype][offset+ifunc][i], root=0)
+                                body.derivatives[vartype][offset + ifunc][i] = self.comm.bcast(body.derivatives[vartype][offset+ifunc][i], root=0)
 
         return
 
@@ -234,7 +233,7 @@ class TacsSteadyInterface(SolverInterface):
             adjResProduct = self.assembler.createDesignVec()
 
             for func, dvsens in enumerate(self.dvsenslist):
-                if self.functag[func] == 1:
+                if self.functag[func] >= 0:
                     psi_S_array = self.psi_S_vec.getArray()
                     psi_S_array[:] = self.psi_S[:, func]
 
@@ -249,7 +248,7 @@ class TacsSteadyInterface(SolverInterface):
                 dvsens.beginSetValues(TACS.ADD_VALUES)
                 dvsens.endSetValues(TACS.ADD_VALUES)
 
-                self.func_grad.append(dvsens.getArray())
+                self.func_grad.append(dvsens.getArray().copy())
 
         return
 
@@ -257,8 +256,6 @@ class TacsSteadyInterface(SolverInterface):
         """ Evaluate gradients with respect to structural design variables"""
 
         if self.tacs_proc:
-            self.func_grad = []
-
             for func, xptsens in enumerate(self.xptsenslist):
                 xptsens.zeroEntries()
 

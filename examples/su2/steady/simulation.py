@@ -46,22 +46,28 @@ su2_adj_config= 'inv_ONERAM6_adjoint.cfg'
 onera = FUNtoFEMmodel('onera')
 
 wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
-onera.add_body(wing)
 
-steps = 5
+# Add a structural design variable to the wing
+t = 0.025
+svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
+wing.add_variable('structural', svar)
+
+steps = 15
 cruise = Scenario('cruise', steps=steps)
 onera.add_scenario(cruise)
 
 drag = Function('drag', analysis_type='aerodynamic')
 cruise.add_function(drag)
 
+# Add the body after the variables
+onera.add_body(wing)
+
 # Instatiate the flow and structural solvers
 solvers = {}
 
 qinf = 101325.0 # freestream pressure
-solvers['flow'] = SU2Interface(comm, onera,
-                               su2_config, su2ad_config=su2_adj_config,
-                               qinf=1.0)
+solvers['flow'] = SU2Interface(comm, onera, su2_config,
+                               su2ad_config=su2_adj_config, qinf=1.0)
 solvers['structural'] = OneraPlate(comm, tacs_comm, onera, n_tacs_procs)
 
 # Specify the transfer scheme options
@@ -75,5 +81,23 @@ driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
                        theta_init=0.5, theta_min=0.1)
 
 # Run the forward analysis
+x = np.array([0.025])
+onera.set_variables(x)
 fail = driver.solve_forward()
+functions = onera.get_functions()
+for func in functions:
+    f0 = func.value
+
 fail = driver.solve_adjoint()
+grads = onera.get_function_gradients()
+print(grads)
+
+dh = 1e-6
+x = x + dh
+onera.set_variables(x)
+fail = driver.solve_forward()
+functions = onera.get_functions()
+for func in functions:
+    f1 = func.value
+
+print('Finite-difference: ', (f1 - f0)/dh)
