@@ -243,7 +243,6 @@ class SU2Interface(SolverInterface):
 
                 if body.transfer is not None:
                     psi_F = - body.dLdfa
-                    print('psi_F = ', np.dot(psi_F.T, psi_F))
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
                             fx_adj = self.qinf * psi_F[3*vert, func]
@@ -291,8 +290,6 @@ class SU2Interface(SolverInterface):
                         Twall_adj = self.su2ad.GetVertexTemperature_Adjoint(surf_id, vert)
                         body.dAdta[idx, func] = Twall_adj
 
-            print('body.dGdua = ', np.dot(body.dGdua.T, body.dGdua))
-
         return 0
 
     def post_adjoint(self, scenario, bodies):
@@ -304,18 +301,43 @@ class SU2Interface(SolverInterface):
         return
 
     def set_functions(self, scenario, bodies):
-        pass
-
-    def set_variables(self, scenario, bodies):
-        pass
+        # Not sure what to do here yet...
+        return
 
     def get_functions(self, scenario, bodies):
-        pass
+        if self.su2 is None:
+            return
+
+        for function in scenario.functions:
+            if function.analysi_type == 'aerodynamic':
+                value = 0.0
+                if self.comm.rank == 0:
+                    name = function.name.lower()
+                    if name  == 'drag':
+                        value = self.su2.Get_Drag()
+                    elif name == 'lift':
+                        value = self.su2.Get_Lift()
+                    elif name == 'mx':
+                        value = self.su2.Get_Mx()
+                    elif name == 'my':
+                        value = self.su2.Get_My()
+                    elif name == 'mz':
+                        value = self.su2.Get_Mz()
+                    elif name == 'cd':
+                        value = self.su2.Get_DragCoeff()
+                    elif name == 'cl':
+                        value = self.su2.Get_LiftCoeff()
+                function.value = self.comm.bcast(value, root=0)
+
+        return
 
     def get_function_gradients(self, scenario, bodies, offset):
         pass
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
+        pass
+
+    def set_variables(self, scenario, bodies):
         pass
 
     def set_states(self, scenario, bodies, step):

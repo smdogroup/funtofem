@@ -295,7 +295,7 @@ class Fun3dInterface(SolverInterface):
 
                 # The funtofem function in FUN3D acts as any adjoint function
                 # that isn't dependent on FUN3D variables
-                name = function.name if function.analysis_type=='aerodynamic' else 'funtofem'
+                name = function.name if function.analysis_type == 'aerodynamic' else 'funtofem'
 
                 interface.design_push_component_func(function.id,
                                                      1,
@@ -305,6 +305,9 @@ class Fun3dInterface(SolverInterface):
                                                      1.0,
                                                      0.0,
                                                      1.0)
+
+        return
+
     def set_variables(self, scenario, bodies):
         """
         Set the aerodynamic variable definitions into FUN3D using the design interface.
@@ -345,7 +348,7 @@ class Fun3dInterface(SolverInterface):
                 interface.design_push_body_rigid_var(ibody, var.id, var.name, var.active,
                                                      var.value, var.lower, var.upper)
 
-    def get_functions(self,scenario,bodies):
+    def get_functions(self, scenario, bodies):
         """
         Populate the scenario with the aerodynamic function values.
 
@@ -357,11 +360,13 @@ class Fun3dInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
         for function in scenario.functions:
-            if function.analysis_type=='aerodynamic':
+            if function.analysis_type == 'aerodynamic':
                 # the [6] index returns the value
                 if self.comm.Get_rank() == 0:
                     function.value = interface.design_pull_composite_func(function.id)[6]
                 function.value = self.comm.bcast(function.value, root=0)
+
+        return
 
     def get_function_gradients(self, scenario, bodies, offset):
         """
