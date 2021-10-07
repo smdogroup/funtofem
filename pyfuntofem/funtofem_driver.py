@@ -37,7 +37,8 @@ class FUNtoFEMDriver(object):
     """
     The FUNtoFEM driver base class has all of the driver except for the coupling algorithms
     """
-    def __init__(self, solvers, comm, struct_comm, struct_master, aero_comm, aero_master, transfer_options=None, model=None):
+    def __init__(self, solvers, comm, struct_comm, struct_root,
+                 aero_comm, aero_root, transfer_options=None, model=None):
         """
         Parameters
         ----------
@@ -54,9 +55,9 @@ class FUNtoFEMDriver(object):
         # communicator
         self.comm = comm
         self.aero_comm = aero_comm
-        self.aero_master = aero_master
+        self.aero_root = aero_root
         self.struct_comm = struct_comm
-        self.struct_master = struct_master
+        self.struct_root = struct_root
 
         # Solver classes
         self.solvers = solvers
@@ -66,7 +67,7 @@ class FUNtoFEMDriver(object):
             self.fakemodel = False
         else:
             print("FUNtoFEM driver: generating fake model")
-            from pyfuntofem.model import FUNtoFEMmodel,Body,Scenario,Function
+            from pyfuntofem.model import FUNtoFEMmodel, Body, Scenario, Function
 
             model = FUNtoFEMmodel('fakemodel')
 
@@ -116,7 +117,8 @@ class FUNtoFEMDriver(object):
             for body in self.model.bodies:
                 transfer_options.append({'scheme': 'meld', 'isym': -1, 'beta': 0.5, 'npts': 200})
 
-        # if the user gave a dictionary instead of a list of dictionaries, assume all bodies use the same settings
+        # if the user gave a dictionary instead of a list of
+        # dictionaries, assume all bodies use the same settings
         if type(transfer_options) is dict:
             transfer_options = len(self.model.bodies) * [ transfer_options ]
 
@@ -133,28 +135,47 @@ class FUNtoFEMDriver(object):
                 # Set up the load and displacement transfer schemes
                 if transfer_options[ibody]['scheme'].lower() == 'hermes':
 
-                    body.transfer = HermesTransfer(self.comm,self.struct_comm,self.aero_comm)
+                    body.transfer = HermesTransfer(self.comm, self.struct_comm, self.aero_comm)
 
                 elif transfer_options[ibody]['scheme'].lower() == 'rbf':
-
-                    basis=TransferScheme.PY_THIN_PLATE_SPLINE
+                    basis = TransferScheme.PY_THIN_PLATE_SPLINE
 
                     if 'basis function' in transfer_options[ibody]:
-                        if transfer_options[ibody]['basis function'].lower()=='thin plate spline':
-                            basis=TransferScheme.PY_THIN_PLATE_SPLINE
-                        elif transfer_options[ibody]['basis function'].lower()=='gaussian':
-                            basis=TransferScheme.PY_GAUSSIAN
-                        elif transfer_options[ibody]['basis function'].lower()=='multiquadric':
-                            basis=TransferScheme.PY_MULTIQUADRIC
-                        elif transfer_options[ibody]['basis function'].lower()=='inverse multiquadric':
-                            basis=TransferScheme.PY_INVERSE_MULTIQUADRIC
+                        if transfer_options[ibody]['basis function'].lower() == 'thin plate spline':
+                            basis = TransferScheme.PY_THIN_PLATE_SPLINE
+                        elif transfer_options[ibody]['basis function'].lower() == 'gaussian':
+                            basis = TransferScheme.PY_GAUSSIAN
+                        elif transfer_options[ibody]['basis function'].lower() == 'multiquadric':
+                            basis = TransferScheme.PY_MULTIQUADRIC
+                        elif transfer_options[ibody]['basis function'].lower() == 'inverse multiquadric':
+                            basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
                         else:
                             print('Unknown RBF basis function for body number', ibody)
                             quit()
 
-                    body.transfer = TransferScheme.pyRBF(self.comm, self.comm, 0, self.comm, 0, basis, 1)
+                    body.transfer = TransferScheme.pyRBF(self.comm, self.struct_comm,
+                                                         self.struct_root, self.aero_comm,
+                                                         self.aero_root, basis, 1)
 
-                elif transfer_options[ibody]['scheme'].lower()== 'meld':
+                elif transfer_options[ibody]['scheme'].lower() == 'meld':
+                    # defaults
+                    isym = -1 # No symmetry
+                    beta = 0.5 # Decay factor
+                    num_nearest = 200 # Number of nearest neighbours
+
+                    if 'isym' in transfer_options[ibody]:
+                        isym = transfer_options[ibody]['isym']
+                    if 'beta' in transfer_options[ibody]:
+                        beta = transfer_options[ibody]['beta']
+                    if 'npts' in transfer_options[ibody]:
+                        num_nearest = transfer_options[ibody]['npts']
+
+                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm,
+                                                          self.struct_root, self.aero_comm,
+                                                          self.aero_root,
+                                                          isym, num_nearest, beta)
+
+                elif transfer_options[ibody]['scheme'].lower() == 'linearized meld':
                     # defaults
                     isym = -1
                     beta = 0.5
@@ -162,32 +183,16 @@ class FUNtoFEMDriver(object):
 
                     if 'isym' in transfer_options[ibody]:
                         isym = transfer_options[ibody]['isym']
-
                     if 'beta' in transfer_options[ibody]:
                         beta = transfer_options[ibody]['beta']
-
-                    if 'npts' in transfer_options[ibody]:
-                        num_nearest = transfer_options[ibody]['npts']
-
-                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm, self.struct_master, self.aero_comm, self.aero_master,
-                                                        isym, num_nearest, beta)
-
-                elif transfer_options[ibody]['scheme'].lower()== 'linearized meld':
-
-                    # defaults
-                    isym = -1
-                    beta = 0.5
-                    num_nearest = 200
-
-                    if 'beta' in transfer_options[ibody]:
-                        beta = transfer_options[ibody]['beta']
-
                     if 'npts' in transfer_options[ibody]:
                         num_nearest = transfer_options[ibody]['npts']
 
 
-                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.comm, 0, self.comm, 0,
-                                                            num_nearest, beta)
+                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.struct_comm,
+                                                                    self.struct_root, self.aero_comm,
+                                                                    self.aero_root,
+                                                                    isym, num_nearest, beta)
 
                 elif transfer_options[ibody]['scheme'].lower()== 'beam':
                     conn = transfer_options[ibody]['conn']
@@ -196,8 +201,10 @@ class FUNtoFEMDriver(object):
                     ndof = transfer_options[ibody]['ndof']
 
                     body.xfer_ndof = ndof
-                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm, self.struct_master, self.aero_comm,
-                                                                    self.aero_master, conn, nelems, order, ndof)
+                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm,
+                                                                  self.struct_root, self.aero_comm,
+                                                                  self.aero_root, conn, nelems,
+                                                                  order, ndof)
                 else:
                     print("Error: Unknown transfer scheme for body", ibody)
                     quit()
@@ -214,16 +221,15 @@ class FUNtoFEMDriver(object):
 
                     if 'isym' in transfer_options[ibody]:
                         isym = transfer_options[ibody]['isym']
-
                     if 'beta' in transfer_options[ibody]:
                         beta = transfer_options[ibody]['beta']
-
                     if 'npts' in transfer_options[ibody]:
                         num_nearest = transfer_options[ibody]['npts']
 
-                    body.thermal_transfer = TransferScheme.pyMELDThermal(self.comm,
-                        self.struct_comm, self.struct_master, self.aero_comm, self.aero_master,
-                        isym, num_nearest, beta)
+                    body.thermal_transfer = TransferScheme.pyMELDThermal(self.comm, self.struct_comm,
+                                                                         self.struct_root, self.aero_comm,
+                                                                         self.aero_root,
+                                                                         isym, num_nearest, beta)
                 else:
                     print("Error: Unknown thermal transfer scheme for body", ibody)
                     quit()
@@ -313,7 +319,6 @@ class FUNtoFEMDriver(object):
         self.struct_disps = []
         self.struct_temps = []
         for body in self.model.bodies:
-
             if body.transfer is not None:
                 if self.struct_comm != MPI.COMM_NULL:
                     body.transfer.setStructNodes(body.struct_X)
@@ -348,7 +353,8 @@ class FUNtoFEMDriver(object):
         # update the shapes first
         for body in self.model.bodies:
             if body.shape:
-                complex_run = True if (TransferScheme.dtype==np.complex128 or TransferScheme.dtype == complex) else False
+                complex_run = True if (TransferScheme.dtype == np.complex128 or
+                                       TransferScheme.dtype == complex) else False
                 body.update_shape(complex_run)
 
         # loop over the forward problem for the different scenarios
@@ -402,14 +408,13 @@ class FUNtoFEMDriver(object):
 
         # Set the functions into the solvers
         for scenario in self.model.scenarios:
-
             # tell the solvers what the variable values and functions are for this scenario
-            self._distribute_variables(scenario,self.model.bodies)
-            self._distribute_functions(scenario,self.model.bodies)
+            self._distribute_variables(scenario, self.model.bodies)
+            self._distribute_functions(scenario, self.model.bodies)
 
             # Initialize the adjoint solvers
-            self._initialize_adjoint_variables(scenario,self.model.bodies)
-            self._initialize_adjoint(scenario,self.model.bodies)
+            self._initialize_adjoint_variables(scenario, self.model.bodies)
+            self._initialize_adjoint(scenario, self.model.bodies)
 
             if scenario.steady:
                 fail = self._solve_steady_adjoint(scenario)
@@ -421,7 +426,7 @@ class FUNtoFEMDriver(object):
                     return fail
 
             # Perform any operations after the adjoint solve
-            self._post_adjoint(scenario,self.model.bodies)
+            self._post_adjoint(scenario, self.model.bodies)
 
             self._eval_function_grads(scenario)
 
@@ -430,50 +435,48 @@ class FUNtoFEMDriver(object):
 
     def _initialize_forward(self,scenario,bodies):
         for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize(scenario,bodies)
+            fail = self.solvers[solver].initialize(scenario, bodies)
             if fail!=0:
                 return fail
         return 0
 
     def _initialize_adjoint(self,scenario,bodies):
         for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize_adjoint(scenario,bodies)
+            fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
             if fail!=0:
                 return fail
         return 0
 
-    def _post_forward(self,scenario,bodies):
+    def _post_forward(self, scenario, bodies):
         for solver in self.solvers.keys():
             self.solvers[solver].post(scenario,bodies)
 
-    def _post_adjoint(self,scenario,bodies):
+    def _post_adjoint(self, scenario, bodies):
         for solver in self.solvers.keys():
-            self.solvers[solver].post_adjoint(scenario,bodies)
+            self.solvers[solver].post_adjoint(scenario, bodies)
 
-    def _distribute_functions(self,scenario,bodies):
+    def _distribute_functions(self, scenario, bodies):
         for solver in self.solvers.keys():
-            self.solvers[solver].set_functions(scenario,bodies)
+            self.solvers[solver].set_functions(scenario, bodies)
 
-    def _distribute_variables(self,scenario,bodies):
+    def _distribute_variables(self, scenario, bodies):
         for solver in self.solvers.keys():
-            self.solvers[solver].set_variables(scenario,bodies)
+            self.solvers[solver].set_variables(scenario, bodies)
 
-    def _eval_functions(self,scenario,bodies):
+    def _eval_functions(self, scenario, bodies):
         for solver in self.solvers.keys():
-            self.solvers[solver].get_functions(scenario,self.model.bodies)
+            self.solvers[solver].get_functions(scenario, self.model.bodies)
 
-    def _eval_function_grads(self,scenario):
-
+    def _eval_function_grads(self, scenario):
         offset = self._get_scenario_function_offset(scenario)
-
         for solver in self.solvers.keys():
-            self.solvers[solver].get_function_gradients(scenario,self.model.bodies,offset)
+            self.solvers[solver].get_function_gradients(scenario, self.model.bodies, offset)
 
         for body in self.model.bodies:
             if body.shape:
-                body.shape_derivative(scenario,offset)
+                body.shape_derivative(scenario, offset)
 
-    def _get_scenario_function_offset(self,scenario):
+    def _get_scenario_function_offset(self, scenario):
         """
         The offset tells each scenario what is first function's index is
         """
@@ -483,13 +486,12 @@ class FUNtoFEMDriver(object):
 
         return offset
 
-    def _extract_coordinate_derivatives(self,scenario,bodies,step):
-
+    def _extract_coordinate_derivatives(self, scenario, bodies, step):
         nfunctions = scenario.count_adjoint_functions()
 
         # get the contributions from the solvers
         for solver in self.solvers.keys():
-            self.solvers[solver].get_coordinate_derivatives(scenario,self.model.bodies,step)
+            self.solvers[solver].get_coordinate_derivatives(scenario, self.model.bodies, step)
 
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:
@@ -497,7 +499,7 @@ class FUNtoFEMDriver(object):
                 if body.shape and body.transfer:
 
                     # Aerodynamic coordinate derivatives
-                    temp = np.zeros((3*body.aero_nnodes),dtype=TransferScheme.dtype)
+                    temp = np.zeros((3*body.aero_nnodes), dtype=TransferScheme.dtype)
                     for func in range(nfunctions):
                         # Load transfer term
                         body.transfer.applydLdxA0(body.psi_L[:, func].copy(order='C'), temp)
@@ -508,7 +510,7 @@ class FUNtoFEMDriver(object):
                         body.aero_shape_term[:,func] += temp.copy()
 
                     # Structural coordinate derivatives
-                    temp = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                    temp = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TransferScheme.dtype)
                     for func in range(nfunctions):
                         # Load transfer term
                         body.transfer.applydLdxS0(body.psi_L[:, func].copy(order='C'), temp)
@@ -520,14 +522,14 @@ class FUNtoFEMDriver(object):
 
         return
 
-    def _solve_steady_forward(self,scenario,steps):
+    def _solve_steady_forward(self, scenario, steps):
         return 1
 
-    def _solve_unsteady_forward(self,scenario,steps):
+    def _solve_unsteady_forward(self, scenario, steps):
         return 1
 
-    def _solve_steady_adjoint(self,scenario):
+    def _solve_steady_adjoint(self, scenario):
         return 1
 
-    def _solve_unsteady_adjoint(self,scenario):
+    def _solve_unsteady_adjoint(self, scenario):
         return 1

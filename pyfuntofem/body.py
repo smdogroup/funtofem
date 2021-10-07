@@ -23,9 +23,11 @@ from .base import Base
 
 class Body(Base):
     """
-    Defines a body base class for FUNtoFEM. Can be used as is or as a parent class for bodies with shape parameterization.
+    Defines a body base class for FUNtoFEM. Can be used as is or as a
+    parent class for bodies with shape parameterization.
     """
-    def __init__(self,name,analysis_type,id=0,group=None,boundary=0,fun3d=True,motion_type='deform'):
+    def __init__(self, name, analysis_type, id=0, group=None,
+                 boundary=0, fun3d=True, motion_type='deform'):
         """
 
         Parameters
@@ -59,7 +61,7 @@ class Body(Base):
         self.analysis_type = analysis_type
         self.id   = id
         self.group = group
-        self.group_master = False
+        self.group_root = False
         self.boundary = boundary
         self.motion_type = motion_type
 
@@ -70,21 +72,21 @@ class Body(Base):
         self.children = []
 
         if fun3d:
-            self.add_variable('rigid_motion',dv('RotRate',active=False,id=1))
-            self.add_variable('rigid_motion',dv('RotFreq',active=False,id=2))
-            self.add_variable('rigid_motion',dv('RotAmpl',active=False,id=3))
-            self.add_variable('rigid_motion',dv('RotOrgx',active=False,id=4))
-            self.add_variable('rigid_motion',dv('RotOrgy',active=False,id=5))
-            self.add_variable('rigid_motion',dv('RotOrgz',active=False,id=6))
-            self.add_variable('rigid_motion',dv('RotVecx',active=False,id=7))
-            self.add_variable('rigid_motion',dv('RotVecy',active=False,id=8))
-            self.add_variable('rigid_motion',dv('RotVecz',active=False,id=9))
-            self.add_variable('rigid_motion',dv('TrnRate',active=False,id=10))
-            self.add_variable('rigid_motion',dv('TrnFreq',active=False,id=11))
-            self.add_variable('rigid_motion',dv('TrnAmpl',active=False,id=12))
-            self.add_variable('rigid_motion',dv('TrnVecx',active=False,id=13))
-            self.add_variable('rigid_motion',dv('TrnVecy',active=False,id=14))
-            self.add_variable('rigid_motion',dv('TrnVecz',active=False,id=15))
+            self.add_variable('rigid_motion', dv('RotRate',active=False,id=1))
+            self.add_variable('rigid_motion', dv('RotFreq',active=False,id=2))
+            self.add_variable('rigid_motion', dv('RotAmpl',active=False,id=3))
+            self.add_variable('rigid_motion', dv('RotOrgx',active=False,id=4))
+            self.add_variable('rigid_motion', dv('RotOrgy',active=False,id=5))
+            self.add_variable('rigid_motion', dv('RotOrgz',active=False,id=6))
+            self.add_variable('rigid_motion', dv('RotVecx',active=False,id=7))
+            self.add_variable('rigid_motion', dv('RotVecy',active=False,id=8))
+            self.add_variable('rigid_motion', dv('RotVecz',active=False,id=9))
+            self.add_variable('rigid_motion', dv('TrnRate',active=False,id=10))
+            self.add_variable('rigid_motion', dv('TrnFreq',active=False,id=11))
+            self.add_variable('rigid_motion', dv('TrnAmpl',active=False,id=12))
+            self.add_variable('rigid_motion', dv('TrnVecx',active=False,id=13))
+            self.add_variable('rigid_motion', dv('TrnVecy',active=False,id=14))
+            self.add_variable('rigid_motion', dv('TrnVecz',active=False,id=15))
 
         # shape parameterization
         self.shape = None
@@ -97,19 +99,19 @@ class Body(Base):
         self.thermal_transfer = None
 
         # Number of nodes
-        self.struct_nnodes  = None
-        self.aero_nnodes    = None
+        self.struct_nnodes = None
+        self.aero_nnodes = None
 
         # Number of degrees of freedom on the structures side of the transfer
-        self.xfer_ndof      = 3
+        self.xfer_ndof = 3
 
         # Number of degrees of freedom on the thermal structural side of the transfer
-        self.therm_xfer_ndof      = 1
+        self.therm_xfer_ndof = 1
         self.T_ref = 300 # reference temperature in Kelvin
 
-        # Node locations
-        self.struct_X  = None
-        self.aero_X    = None
+        # Node locations u
+        self.struct_X = None
+        self.aero_X = None
 
         # ID number of nodes
         self.struct_id  = None

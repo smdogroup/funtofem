@@ -22,7 +22,7 @@
 
 class Function(object):
     """holds component function information in FUNtoFEM"""
-    def __init__(self,name, id=0, value=0.0, start=0, stop=-1, analysis_type=None,
+    def __init__(self, name, id=0, value=0.0, start=0, stop=-1, analysis_type=None,
                  body=-1, adjoint=True,options=None,averaging=None):
         """
 
@@ -53,11 +53,11 @@ class Function(object):
 
         Examples
         --------
-        lift = Function('lift',analysis_type='aerodynamic')
+        lift = Function('lift', analysis_type='aerodynamic')
 
-        mass = Function('mass',analysis_type='structural',adjoint=False)
+        mass = Function('mass', analysis_type='structural', adjoint=False)
 
-        ks = Function('ksFailure',analysis_type='structural',options={'ksweight':50.0})
+        ks = Function('ksFailure', analysis_type='structural', options={'ksweight':50.0})
         """
         self.name  = name
         self.id    = id

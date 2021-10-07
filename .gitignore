@@ -2,7 +2,8 @@ Makefile.in
 *.o
 *.pyc
 doc/build
-python/TransferScheme.cpp
+funtofem/TransferScheme.cpp
+lib/libtransfer_schemes.a
 *.pxi
 *.so
 *.out
@@ -11,3 +12,4 @@ python/TransferScheme.cpp
 *.bdf
 *.job
 fake_interface*
+*~

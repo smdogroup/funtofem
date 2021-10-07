@@ -75,7 +75,6 @@ class wedge_adjoint(object):
 
         # instantiate the driver
         self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0, transfer_options, model=self.model)
-        #self.driver = FUNtoFEMnlbgs_aerothermal(solvers, self.comm, self.tacs_comm, 0, self.comm, 0, transfer_options, model=self.model)
 
         # Set up some variables and constants related to the problem
         self.cruise_lift = None
