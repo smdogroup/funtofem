@@ -20,6 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import sys
 from pyfuntofem.model import *
 from pyfuntofem.driver import *
 from pyfuntofem.su2_interface import SU2Interface
@@ -80,24 +81,35 @@ driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
                        comm, aero_master, model=onera, transfer_options=options,
                        theta_init=0.5, theta_min=0.1)
 
-# Run the forward analysis
-x = np.array([0.025])
-onera.set_variables(x)
-fail = driver.solve_forward()
-functions = onera.get_functions()
-for func in functions:
-    f0 = func.value
+if 'test' in sys.argv:
+    fail = driver.solve_forward()
+    fail = driver.solve_adjoint()
 
-fail = driver.solve_adjoint()
-grads = onera.get_function_gradients()
-print(grads)
+    solvers['flow'].adjoint_test(cruise, onera.bodies, epsilon=1e-8)
+    solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-8)
+else:
+    # Perform a finite difference check
+    dh = 1e-6
+    x = np.array([0.025])
+    onera.set_variables(x)
 
-dh = 1e-6
-x = x + dh
-onera.set_variables(x)
-fail = driver.solve_forward()
-functions = onera.get_functions()
-for func in functions:
-    f1 = func.value
+    fail = driver.solve_forward()
+    functions = onera.get_functions()
+    for func in functions:
+        f0 = func.value
 
-print('Finite-difference: ', (f1 - f0)/dh)
+    fail = driver.solve_adjoint()
+    grads = onera.get_function_gradients()
+    if comm.rank == 0:
+        print('Adjoint gradient: ', grads)
+
+    x = x + dh
+    onera.set_variables(x)
+    fail = driver.solve_forward()
+    functions = onera.get_functions()
+    for func in functions:
+        f1 = func.value
+
+    if comm.rank == 0:
+        print('Adjoint gradient: ', grads)
+        print('Finite-difference: ', (f1 - f0)/dh)

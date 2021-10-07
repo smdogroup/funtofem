@@ -533,3 +533,84 @@ class TacsSteadyInterface(SolverInterface):
     def post_adjoint(self, scenario, bodies):
         if self.tacs_proc:
             self.eval_gradients(scenario, bodies)
+
+    def adjoint_test(self, scenario, bodies, step=0, epsilon=1e-6):
+        """
+        For the structures problem, the input to the forward computation
+        is the structural forces and the output is the displacements
+        at the structural nodes.
+
+        uS = uS(fS)
+
+        The Jacobian of the forward code is
+
+        J = d(uS)/d(fS).
+
+        A finite-difference adjoint-vector product gives
+
+        J*pS ~= (uS(fS + epsilon*pS) - uS(fS))/epsilon
+
+        The adjoint code computes the product
+
+        lam_fS = J^{T}*lam_uS
+
+        As a result, we should have the identity:
+
+        lam_fS^{T}*pS = lam_uS*J*pS ~ lam_uS^{T}*(uS(fS + epsilon*pS) - uS(fS))/epsilon
+        """
+
+        # Comptue one step of the forward solution
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Store the output forces
+        for ibody, body in enumerate(bodies):
+            if body.transfer is not None:
+                # Copy the structural displacements from the initial run
+                # for later use
+                body.struct_disps_copy = body.struct_disps.copy()
+
+                # Set the the adjoint input to the structures
+                body.struct_rhs = np.random.uniform(size=body.struct_rhs.shape)
+
+        # Compute one step of the adjoint
+        self.initialize_adjoint(scenario, bodies)
+        self.iterate_adjoint(scenario, bodies, step)
+        self.post_adjoint(scenario, bodies)
+
+        # Perturb the structural loads
+        adjoint_product = 0.0
+        for ibody, body in enumerate(bodies):
+            if body.transfer is not None:
+                body.struct_loads_pert = np.random.uniform(size=body.struct_loads.shape)
+                body.struct_loads += epsilon*body.struct_loads_pert
+
+                # Compute the adjoint product. Note that the
+                # negative sign is from convention due to the
+                # presence of the negative sign in psi_F = -dLdfa
+                adjoint_product += np.dot(body.psi_S[:, 0], body.struct_loads_pert)
+
+        # Sum up the result across all processors
+        adjoint_product = self.comm.allreduce(adjoint_product)
+
+        # Run the perturbed aerodynamic simulation
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Compute the finite-difference approximation
+        fd_product = 0.0
+        for ibody, body in enumerate(bodies):
+            if body.transfer is not None:
+                fd = (body.struct_disps - body.struct_disps_copy)/epsilon
+                fd_product += np.dot(fd, body.struct_rhs[:, 0])
+
+        # Compute the finite-differenc approximation
+        fd_product = self.comm.allreduce(fd_product)
+
+        if self.comm.rank == 0:
+            print('TACS FUNtoFEM adjoint result:           ', adjoint_product)
+            print('TACS FUNtoFEM finite-difference result: ', fd_product)
+
+        return

@@ -180,7 +180,7 @@ class SU2Interface(SolverInterface):
 
         return 0
 
-    def post(self,scenario, bodies, first_pass=False):
+    def post(self, scenario, bodies, first_pass=False):
         # If this isn't the first pass, delete the flow object
         if not first_pass:
             # Record the function values before deleting everything
@@ -198,8 +198,8 @@ class SU2Interface(SolverInterface):
 
         # Copy the restart file to the solution file...
         self.comm.Barrier()
-        if self.comm.rank == 0:
-            shutil.copyfile(self.restart_file, self.solution_file)
+        if not first_pass and self.comm.rank == 0:
+            shutil.move(self.restart_file, self.solution_file)
         self.comm.Barrier()
 
         return
@@ -330,3 +330,111 @@ class SU2Interface(SolverInterface):
 
     def set_states(self, scenario, bodies, step):
         pass
+
+    def adjoint_test(self, scenario, bodies, step=0, epsilon=1e-6):
+        """
+        The input to the forward computation are the displacements on the
+        aerodynamic mesh. The output are the forces at the aerodynamic
+        surface.
+
+        fA = fA(uA)
+
+        The Jacobian of the forward code is
+
+        J = d(fA)/d(uA).
+
+        A finite-difference adjoint-vector product gives
+
+        J*pA ~= (fA(uA + epsilon*pA) - fA(uA))/epsilon
+
+        The adjoint code computes the product
+
+        lam_uA = J^{T}*lam_fA
+
+        As a result, we should have the identity:
+
+        lam_uA^{T}*pA = lam_fA*J*pA ~ lam_fA^{T}*(fA(uA + epsilon*pA) - fA(uA))/epsilon
+        """
+
+        # Comptue one step of the forward solution
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+
+        # Store the output forces
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
+
+                if body.transfer is not None:
+                    # Copy the aero loads from the initial run for
+                    # later use...
+                    body.aero_loads_copy = body.aero_loads.copy()
+
+                    # Set the the adjoint input for the load transfer
+                    # at the aerodynamic loads
+                    body.dLdfa = np.random.uniform(size=body.dLdfa.shape)
+
+                    # Zero the contributions at halo nodes
+                    for vert in range(self.num_surf_nodes[index]):
+                        if self.su2.IsAHaloNode(surf_id, vert):
+                            body.dLdfa[3*vert:3*(vert+1)] = 0.0
+
+        # Post after at this point, so that su2 is still defined above and
+        # not yet deleted...
+        self.post(scenario, bodies)
+
+        # Compute one step of the adjoint
+        self.initialize_adjoint(scenario, bodies)
+        self.iterate_adjoint(scenario, bodies, step)
+
+        # Perturb the displacements
+        adjoint_product = 0.0
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
+
+                if body.transfer is not None:
+                    body.aero_disps_pert = np.random.uniform(size=body.aero_disps.shape)
+
+                    # Zero the contributions at halo nodes
+                    for vert in range(self.num_surf_nodes[index]):
+                        if self.su2ad.IsAHaloNode(surf_id, vert):
+                            body.aero_disps_pert[3*vert:3*(vert+1)] = 0.0
+
+                    body.aero_disps += epsilon*body.aero_disps_pert
+
+                    # Compute the adjoint product. Note that the
+                    # negative sign is from convention due to the
+                    # presence of the negative sign in psi_F = -dLdfa
+                    adjoint_product -= np.dot(body.dGdua[:, 0], body.aero_disps_pert)
+
+        # Perform the post-adjoint call here so that su2ad is defined above
+        # and not yet deleted..
+        self.post_adjoint(scenario, bodies)
+
+        # Sum up the result across all processors
+        adjoint_product = self.comm.allreduce(adjoint_product)
+
+        # Run the perturbed aerodynamic simulation
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Compute the finite-difference approximation
+        fd_product = 0.0
+        for ibody, body in enumerate(bodies):
+            for index, surf_id in enumerate(self.surface_ids):
+                offset = sum(self.num_surf_nodes[:index])
+
+                if body.transfer is not None:
+                    fd = (body.aero_loads - body.aero_loads_copy)/epsilon
+                    fd_product += np.dot(fd, body.dLdfa[:, 0])
+
+        # Compute the finite-differenc approximation
+        fd_product = self.comm.allreduce(fd_product)
+
+        if self.comm.rank == 0:
+            print('SU2 FUNtoFEM adjoint result:           ', adjoint_product)
+            print('SU2 FUNtoFEM finite-difference result: ', fd_product)
+
+        return

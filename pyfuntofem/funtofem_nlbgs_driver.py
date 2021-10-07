@@ -317,8 +317,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 if self.comm.Get_rank() == 0:
                     print('Structural solver returned fail flag')
                 return fail
+
             self._aitken_adjoint_relax(scenario)
-            #self._aitken_adjoint_relax_thermal(scenario)
 
         # end of solve loop
 
