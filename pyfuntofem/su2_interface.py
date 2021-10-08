@@ -277,7 +277,6 @@ class SU2Interface(SolverInterface):
         self.su2ad.Preprocess(0)
         self.su2ad.Run()
         self.su2ad.Postprocess()
-        self.su2ad.Update()
         stopCalc = self.su2ad.Monitor(0)
 
         for ibody, body in enumerate(bodies):

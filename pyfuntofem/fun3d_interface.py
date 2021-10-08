@@ -500,7 +500,7 @@ class Fun3dInterface(SolverInterface):
                     body.aero_heat_flux[0::3] = self.thermal_scale * cqx[:]
                     body.aero_heat_flux[1::3] = self.thermal_scale * cqy[:]
                     body.aero_heat_flux[2::3] = self.thermal_scale * cqz[:]
-                    body.aero_heat_flux[:] = self.thermal_scale * cq_mag[:]
+                    body.aero_heat_flux_mag[:] = self.thermal_scale * cq_mag[:]
 
         if not scenario.steady:
             # save this steps forces for the adjoint
@@ -627,8 +627,7 @@ class Fun3dInterface(SolverInterface):
 
                 # Solve the heat flux adjoint equation
                 if body.thermal_transfer is not None:
-                    psi_Q_mag = - body.dQmagdha
-                    psi_Q_flux = - body.dQfluxdha
+                    psi_Q = - body.dQdfta
 
                     lam_x_thermal = np.zeros((body.aero_nnodes, nfunctions),
                                              dtype=TransferScheme.dtype)
@@ -781,6 +780,7 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies,1):
             if body.transfer is not None:
                 self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
+
             if body.thermal_transfer is not None:
                 self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
                 self.heat_flux_mag_hist[scenario.id][step][ibody] = body.aero_heat_flux_mag.copy()

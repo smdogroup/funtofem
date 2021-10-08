@@ -110,8 +110,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.struct_rhs_T = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                              dtype=TransferScheme.dtype)
 
-                body.dQdfta = np.zeros((body.aero_nnodes*4, nfunctions),
-                                      dtype=TransferScheme.dtype)
+                body.dQdfta = np.zeros((body.aero_nnodes, nfunctions),
+                                       dtype=TransferScheme.dtype)
+                body.dQfluxdfta = np.zeros((body.aero_nnodes*3, nfunctions),
+                                           dtype=TransferScheme.dtype)
                 body.dAdta = np.zeros((body.aero_nnodes, nfunctions),
                                       dtype=TransferScheme.dtype)
                 body.psi_T = np.zeros((body.aero_nnodes, nfunctions),
@@ -272,7 +274,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                         # Only set heat flux magnitude component of thermal adjoint in FUN3D
                         # Can either use surface normal magnitude OR x,y,z components, not both
-                        body.dQdfta[3::4,func] = psi_Q_r
+                        body.dQdfta[:, func] = psi_Q_r
 
             # Iterate over the aerodynamic adjoint
             fail = self.solvers['flow'].iterate_adjoint(scenario, self.model.bodies, step)
@@ -502,7 +504,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
                         psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
                         body.thermal_transfer.applydQdqATrans(body.psi_T_S[:, func].copy(order='C'), psi_Q_r)
-                        body.dQdfta[3::4,func] = psi_Q_r
+                        body.dQdfta[:, func] = psi_Q_r
 
             fail = self.solvers['flow'].iterate_adjoint(scenario, self.model.bodies, step)
 

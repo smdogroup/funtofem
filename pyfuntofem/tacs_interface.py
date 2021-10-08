@@ -49,6 +49,14 @@ class TacsSteadyInterface(SolverInterface):
 
     def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None,
                               thermal_index=0):
+        """
+        Initialize the variables required for analysis and
+        optimization using TACS. This initialization takes in optional
+        TACSMat, TACSPc and TACSKsm objects for the solution
+        procedure. The assembler object must be defined on the subset
+        of structural processors. On all other processors it must be
+        None.
+        """
 
         self.tacs_proc = False
         self.assembler = None
@@ -69,15 +77,17 @@ class TacsSteadyInterface(SolverInterface):
         self.xptsenslist = []
 
         self.struct_rhs_vec = None
-        self.psi_S_vec = None
-
         self.psi_S = None
+
         self.ans_array = None
         self.func_grad = None
         self.vol = 1.0
 
         if assembler is not None:
             self.tacs_proc = True
+            self.mat = mat
+            self.pc = pc
+            self.gmres = gmres
 
             if mat is None:
                 self.mat = assembler.createSchurMat()
@@ -103,7 +113,7 @@ class TacsSteadyInterface(SolverInterface):
             assembler.getNodes(self.struct_X_vec)
             self.struct_nnodes = len(self.struct_X_vec.getArray())//3
 
-            self.struct_X = np.zeros(3*self.struct_nnodes)
+            self.struct_X = np.zeros(3*self.struct_nnodes, dtype=TACS.dtype)
             self.struct_X[:] = self.struct_X_vec.getArray()[:]
             self.dvsenslist = []
             self.svsenslist = []
@@ -115,13 +125,16 @@ class TacsSteadyInterface(SolverInterface):
                 self.xptsenslist.append(assembler.createNodeVec())
 
             self.struct_rhs_vec = assembler.createVec()
-            self.psi_S_vec = assembler.createVec()
+            self.psi_S = []
+            for ifunc in range(self.nfunc):
+                self.psi_S.append(self.assembler.createVec())
 
-            ndof = assembler.getVarsPerNode()
-            self.psi_S = np.zeros((ndof*self.struct_nnodes, self.nfunc), dtype=TACS.dtype)
             self.ans_array = assembler.createVec()
             self.func_grad = None
-            self.vol = 1.0 # required for AverageTemp function, not sure if needed on body level
+
+            # required for AverageTemp function, not sure if needed on
+            # body level
+            self.vol = 1.0
 
         return
 
@@ -228,23 +241,11 @@ class TacsSteadyInterface(SolverInterface):
 
             # get df/dx if the function is a structural function
             self.assembler.addDVSens(self.funclist, self.dvsenslist)
+            self.assembler.addAdjointResProducts(self.psi_S, self.dvsenslist)
 
-            # get psi_S * dS/dx if a structural function that requires an adjoint
-            adjResProduct = self.assembler.createDesignVec()
-
+            # Add the values across processors - this is required to
+            # collect the distributed design variable contributions
             for func, dvsens in enumerate(self.dvsenslist):
-                if self.functag[func] >= 0:
-                    psi_S_array = self.psi_S_vec.getArray()
-                    psi_S_array[:] = self.psi_S[:, func]
-
-                    # addAdjointResProducts also requires a list
-                    adjResProduct.zeroEntries()
-                    self.assembler.addAdjointResProducts([self.psi_S_vec], [adjResProduct])
-
-                    dvsens.axpy(1.0, adjResProduct)
-
-                # Add the values across processors - this is required to collect
-                # the distributed design variable contributions
                 dvsens.beginSetValues(TACS.ADD_VALUES)
                 dvsens.endSetValues(TACS.ADD_VALUES)
 
@@ -261,26 +262,15 @@ class TacsSteadyInterface(SolverInterface):
 
             # get df/dx if the function is a structural function
             self.assembler.addXptSens(self.funclist, self.xptsenslist)
+            self.assembler.addAdjointResXptSensProducts(self.psi_S, self.xptsenslist)
 
-            # get psi_S * dS/dx if a structural function that requires an adjoint
-            adjResProduct = self.assembler.createNodeVec()
-
+            # Add the values across processors - this is required to collect
+            # the distributed design variable contributions
             for func, xptsens in enumerate(self.xptsenslist):
-                if self.functag[func] == 1:
-                    psi_S_array = self.psi_S_vec.getArray()
-                    psi_S_array[:] = self.psi_S[:, func]
-
-                    # addAdjointResProducts also requires a list
-                    adjResProduct.zeroEntries()
-                    self.assembler.addAdjointResXptSensProducts([self.psi_S_vec], [adjResProduct])
-
-                    xptsens.axpy(1.0, adjResProduct)
-
-                # Add the values across processors - this is required to collect
-                # the distributed design variable contributions
                 xptsens.beginSetValues(TACS.ADD_VALUES)
                 xptsens.endSetValues(TACS.ADD_VALUES)
 
+            for func, xptsens in enumerate(self.xptsenslist):
                 for body in bodies:
                     if body.shape:
                         body.struct_shape_term[:, func] = xptsens.getArray()
@@ -422,7 +412,8 @@ class TacsSteadyInterface(SolverInterface):
                         struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
+                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                 dtype=TACS.dtype)
                     body.struct_temps[:] = ans_array[self.thermal_index::ndof]
 
             # Check if this is thermoelastic analysis
@@ -460,11 +451,10 @@ class TacsSteadyInterface(SolverInterface):
 
             # Evaluate state variable sensitivities and scale to get right-hand side
             for func in range(len(self.funclist)):
-                # Check if the function is a TACS function or not
-                if self.functag[func] == -1:
-                    break
-
                 if self.functag[func] == 1:
+                    # Scale the derivative of the function w.r.t. the
+                    # state variables by -1 since this will appear on
+                    # the right-hand-side of the adjoint
                     self.svsenslist[func].scale(-1.0)
                 else:
                     self.svsenslist[func].zeroEntries()
@@ -486,7 +476,7 @@ class TacsSteadyInterface(SolverInterface):
             for func in range(len(self.funclist)):
                 # Check if the function is a TACS function or not
                 if self.functag[func] == -1:
-                    break
+                    continue
 
                 # Copy values into the right-hand-side
                 self.struct_rhs_vec.copyValues(self.svsenslist[func])
@@ -513,20 +503,18 @@ class TacsSteadyInterface(SolverInterface):
                 self.assembler.applyBCs(self.struct_rhs_vec)
 
                 # Solve structural adjoint equation
-                self.gmres.solve(self.struct_rhs_vec, self.psi_S_vec)
+                self.gmres.solve(self.struct_rhs_vec, self.psi_S[func])
 
-                # Extract the adjoint variables and store them
-                psi_S_array = self.psi_S_vec.getArray()
-                self.psi_S[:, func] = psi_S_array[:]
+                psi_S_array = self.psi_S[func].getArray()
 
                 # Set the adjoint variables for each body
                 for body in bodies:
                     if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                         for i in range(body.xfer_ndof):
-                            body.psi_S[i::body.xfer_ndof, func] = self.psi_S[i::ndof, func]
+                            body.psi_S[i::body.xfer_ndof, func] = psi_S_array[i::ndof]
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        body.psi_T_S[:, func] = self.psi_S[self.thermal_index::ndof, func]
+                        body.psi_T_S[:, func] = psi_S_array[self.thermal_index]
 
         return fail
 

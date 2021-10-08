@@ -60,6 +60,9 @@ onera.add_scenario(cruise)
 drag = Function('drag', analysis_type='aerodynamic')
 cruise.add_function(drag)
 
+# failure = Function('ksfailure', analysis_type='structural')
+# cruise.add_function(drag)
+
 # Add the body after the variables
 onera.add_body(wing)
 
@@ -93,23 +96,33 @@ else:
     x = np.array([0.025])
     onera.set_variables(x)
 
+    # Get the function value
     fail = driver.solve_forward()
-    functions = onera.get_functions()
-    for func in functions:
-        f0 = func.value
+    funcs0 = onera.get_functions()
+    f0vals = []
+    for func in funcs0:
+        f0vals.append(func.value)
+        if comm.rank == 0:
+            print('Function value: ', func.value)
 
+    # Evaluate the function gradient
     fail = driver.solve_adjoint()
     grads = onera.get_function_gradients()
     if comm.rank == 0:
         print('Adjoint gradient: ', grads)
 
+    # Compute the function value at the perturbed point
     x = x + dh
     onera.set_variables(x)
     fail = driver.solve_forward()
-    functions = onera.get_functions()
-    for func in functions:
-        f1 = func.value
+    funcs1 = onera.get_functions()
+
+    f1vals = []
+    for func in funcs1:
+        f1vals.append(func.value)
 
     if comm.rank == 0:
-        print('Adjoint gradient: ', grads)
-        print('Finite-difference: ', (f1 - f0)/dh)
+        for k, funcs in enumerate(zip(f0vals, f1vals)):
+            print('Function value: ', funcs[0], funcs[1]) 
+            print('Adjoint gradient: ', grads)
+            print('Finite-difference: ', (funcs[1] - funcs[0])/dh)
