@@ -53,11 +53,11 @@ t = 0.025
 svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
 wing.add_variable('structural', svar)
 
-steps = 15
+steps = 20
 cruise = Scenario('cruise', steps=steps)
 onera.add_scenario(cruise)
 
-drag = Function('drag', analysis_type='aerodynamic')
+drag = Function('cd', analysis_type='aerodynamic')
 cruise.add_function(drag)
 
 # failure = Function('ksfailure', analysis_type='structural')
@@ -92,11 +92,11 @@ if 'test' in sys.argv:
     solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-8)
 else:
     # Perform a finite difference check
-    dh = 1e-6
-    x = np.array([0.025])
-    onera.set_variables(x)
+    dh = 1e-5
+    x0 = np.array([0.025])
 
     # Get the function value
+    onera.set_variables(x0)
     fail = driver.solve_forward()
     funcs0 = onera.get_functions()
     f0vals = []
@@ -112,17 +112,25 @@ else:
         print('Adjoint gradient: ', grads)
 
     # Compute the function value at the perturbed point
-    x = x + dh
+    x = x0 + dh
     onera.set_variables(x)
     fail = driver.solve_forward()
     funcs1 = onera.get_functions()
-
     f1vals = []
     for func in funcs1:
         f1vals.append(func.value)
+
+    # Compute the function value at the perturbed point
+    x = x0 - dh
+    onera.set_variables(x)
+    fail = driver.solve_forward()
+    funcs0 = onera.get_functions()
+    f0vals = []
+    for func in funcs0:
+        f0vals.append(func.value)
 
     if comm.rank == 0:
         for k, funcs in enumerate(zip(f0vals, f1vals)):
             print('Function value: ', funcs[0], funcs[1]) 
             print('Adjoint gradient: ', grads)
-            print('Finite-difference: ', (funcs[1] - funcs[0])/dh)
+            print('Finite-difference: ', 0.5*(funcs[1] - funcs[0])/dh)

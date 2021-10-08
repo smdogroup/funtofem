@@ -249,7 +249,7 @@ class SU2Interface(SolverInterface):
                 offset = sum(self.num_surf_nodes[:index])
 
                 if body.transfer is not None:
-                    psi_F = - body.dLdfa
+                    psi_F = body.dLdfa
 
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
@@ -259,18 +259,11 @@ class SU2Interface(SolverInterface):
                             self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
 
                 if body.thermal_transfer is not None:
-                    psi_Q_flux = - body.dQfluxdha
-                    psi_Q_mag = - body.dQmagdta
+                    psi_Q = body.dQdfta
 
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            # hx_adj = psi_Q_flux[3*vert, func]
-                            # hy_adj = psi_Q_flux[3*vert+1, func]
-                            # hz_adj = psi_Q_flux[3*vert+2, func]
-                            # self.su2ad.SetVertexHeatFluxes_Adjoint(surf_id, vert,
-                            #                                        hx_adj, hy_adj, hz_adj)
-
-                            hmag_adj = psi_Q_mag[vert, func]
+                            hmag_adj = psi_Q[vert, func]
                             self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
 
         self.su2ad.ResetConvergence()
