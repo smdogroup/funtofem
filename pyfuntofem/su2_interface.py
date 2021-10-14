@@ -162,21 +162,24 @@ class SU2Interface(SolverInterface):
                 if body.transfer is not None:
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2.IsAHaloNode(surf_id, vert):
+                            idx = 3*(vert + offset)
                             fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
-                            body.aero_loads[3*vert] = self.qinf * fx
-                            body.aero_loads[3*vert+1] = self.qinf * fy
-                            body.aero_loads[3*vert+2] = self.qinf * fz
+                            body.aero_loads[idx] = self.qinf * fx
+                            body.aero_loads[idx+1] = self.qinf * fy
+                            body.aero_loads[idx+2] = self.qinf * fz
 
                 if body.thermal_transfer is not None:
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2.IsAHaloNode(surf_id, vert):
+                            idx = 3*(vert + offset)
                             hx, hy, hz = self.su2.GetVertexHeatFluxes(surf_id, vert)
-                            body.aero_heat_flux[3*vert] = hx
-                            body.aero_heat_flux[3*vert+1] = hy
-                            body.aero_heat_flux[3*vert+2] = hz
+                            body.aero_heat_flux[idx] = hx
+                            body.aero_heat_flux[idx+1] = hy
+                            body.aero_heat_flux[idx+2] = hz
 
+                            idx = vert + offset
                             hmag = self.su2.GetVertexNormalHeatFlux(surf_id, vert)
-                            body.aero_heat_flux_mag[vert] = hmag
+                            body.aero_heat_flux_mag[idx] = hmag
 
         return 0
 
@@ -253,9 +256,12 @@ class SU2Interface(SolverInterface):
 
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            fx_adj = self.qinf * psi_F[3*vert, func]
-                            fy_adj = self.qinf * psi_F[3*vert+1, func]
-                            fz_adj = self.qinf * psi_F[3*vert+2, func]
+                            # Set the adjoint contribution on all nodes, whether or not they
+                            # are halo nodes or not...
+                            idx = 3*(vert + offset)
+                            fx_adj = self.qinf * psi_F[idx, func]
+                            fy_adj = self.qinf * psi_F[idx+1, func]
+                            fz_adj = self.qinf * psi_F[idx+2, func]
                             self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
 
                 if body.thermal_transfer is not None:
@@ -263,7 +269,8 @@ class SU2Interface(SolverInterface):
 
                     for vert in range(self.num_surf_nodes[index]):
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            hmag_adj = psi_Q[vert, func]
+                            idx = vert + offset
+                            hmag_adj = psi_Q[idx, func]
                             self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
 
         self.su2ad.ResetConvergence()
@@ -367,9 +374,9 @@ class SU2Interface(SolverInterface):
                     body.dLdfa = np.random.uniform(size=body.dLdfa.shape)
 
                     # Zero the contributions at halo nodes
-                    for vert in range(self.num_surf_nodes[index]):
-                        if self.su2.IsAHaloNode(surf_id, vert):
-                            body.dLdfa[3*vert:3*(vert+1)] = 0.0
+                    # for vert in range(self.num_surf_nodes[index]):
+                    #     if self.su2.IsAHaloNode(surf_id, vert):
+                    #         body.dLdfa[3*vert:3*(vert+1)] = 0.0
 
         # Post after at this point, so that su2 is still defined above and
         # not yet deleted...
@@ -395,10 +402,8 @@ class SU2Interface(SolverInterface):
 
                     body.aero_disps += epsilon*body.aero_disps_pert
 
-                    # Compute the adjoint product. Note that the
-                    # negative sign is from convention due to the
-                    # presence of the negative sign in psi_F = -dLdfa
-                    adjoint_product -= np.dot(body.dGdua[:, 0], body.aero_disps_pert)
+                    # Compute the adjoint product
+                    adjoint_product += np.dot(body.dGdua[:, 0], body.aero_disps_pert)
 
         # Perform the post-adjoint call here so that su2ad is defined above
         # and not yet deleted..

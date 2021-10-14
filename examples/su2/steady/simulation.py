@@ -54,6 +54,9 @@ svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
 wing.add_variable('structural', svar)
 
 steps = 20
+if 'test' in sys.argv:
+    steps = 1
+
 cruise = Scenario('cruise', steps=steps)
 onera.add_scenario(cruise)
 
@@ -88,11 +91,11 @@ if 'test' in sys.argv:
     fail = driver.solve_forward()
     fail = driver.solve_adjoint()
 
-    solvers['flow'].adjoint_test(cruise, onera.bodies, epsilon=1e-8)
-    solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-8)
+    solvers['flow'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
+    solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
 else:
     # Perform a finite difference check
-    dh = 1e-5
+    dh = 1e-8
     x0 = np.array([0.025])
 
     # Get the function value
@@ -131,6 +134,6 @@ else:
 
     if comm.rank == 0:
         for k, funcs in enumerate(zip(f0vals, f1vals)):
-            print('Function value: ', funcs[0], funcs[1]) 
+            print('Function value: ', funcs[0], funcs[1])
             print('Adjoint gradient: ', grads)
             print('Finite-difference: ', 0.5*(funcs[1] - funcs[0])/dh)
