@@ -8,10 +8,45 @@ This repository contains the FUNtoFEM coupling framework and load and displaceme
 
 ### Installation ###
 
-* Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
-* In the funtofem/ directory, copy Makefile.in.info to Makefile.in and edit
-* For real mode: `make` and `make interface` (Python interface) in the funtofem/ directory
-* For complex mode: `make complex` and `make complex_interface` in the funtofem/ directory
+#### Dependencies and options
+Dependencies:
+* CMake
+* MPI and mpi4py
+* Cython
+* Lapack/BLAS
+Options:
+* USE_COMPLEX: whether to compile with complex numbers
+* USE_MKL: whether to look for Intel MKL instead of openBLAS
+
+#### UNIX
+In the funtofem directory,
+```sh
+# Configure and build
+mkdir build && cd build
+cmake [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
+make
+# Build the python interface
+cd ..
+python setup.py develop --user
+```
+To update the python interface after changes once the code is installed, use `python setup.py build_ext --inplace`.
+
+#### Windows
+In the funtofem directory,
+```dos
+REM Setup env
+call "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.dat" amd64 REM VS build tools
+call "C:\Program Files\Intel\oneAPI\mkl\latest\env\vars.bat" intel64 vs2019 REM if Intel MKL are used
+REM Configure and build
+mkdir build
+cd build
+cmake -A x64 [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
+cmake --build . --config Release|Debug
+REM Build the python interface
+cd ..
+python setup.py develop --user
+```
+To update the python interface after changes once the code is installed, use `python setup.py build_ext --inplace`.
 
 ### License ###
 
