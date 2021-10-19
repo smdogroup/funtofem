@@ -22,7 +22,7 @@
 
   Users must also specify number of nearest nodes in initialize(num_nearest)
 */
-class MELD : public TransferScheme {
+class F2F_API MELD : public TransferScheme {
  public:
   // Constructor
   MELD(MPI_Comm all,

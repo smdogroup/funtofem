@@ -14,26 +14,23 @@ Dependencies:
 * MPI and mpi4py
 * Cython
 * Lapack/BLAS
+
 Options:
 * USE_COMPLEX: whether to compile with complex numbers
 * USE_MKL: whether to look for Intel MKL instead of openBLAS
 
-#### UNIX
+#### UNIX (GCC-openMPI)
 In the funtofem directory,
 ```sh
 # Configure and build
 mkdir build && cd build
-cmake [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
+cmake [-DCMAKE_BUILD_TYPE=Release|Debug] [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
 make
-# Build the python interface
-cd ..
-python setup.py develop --user
 ```
-To update the python interface after changes once the code is installed, use `python setup.py build_ext --inplace`.
 
-#### Windows
+#### Windows (MSVC-MSMPI)
 In the funtofem directory,
-```dos
+```bat
 REM Setup env
 call "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.dat" amd64 REM VS build tools
 call "C:\Program Files\Intel\oneAPI\mkl\latest\env\vars.bat" intel64 vs2019 REM if Intel MKL are used
@@ -42,11 +39,16 @@ mkdir build
 cd build
 cmake -A x64 [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
 cmake --build . --config Release|Debug
-REM Build the python interface
-cd ..
-python setup.py develop --user
 ```
-To update the python interface after changes once the code is installed, use `python setup.py build_ext --inplace`.
+
+#### Python interface
+To build the python interface, from the funtofem directory,
+```sh
+# Build the python interface for the first time
+python setup.py develop --user [--define FUNTOFEM_USE_COMPLEX]
+# Update the python interface after it has been installed once, if changes are made
+python setup.py build_ext --inplace [--define FUNTOFEM_USE_COMPLEX]
+```
 
 ### License ###
 

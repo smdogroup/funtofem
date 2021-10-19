@@ -20,17 +20,19 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Compile/Link flags
-IF(UNIX)
+IF(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     # Compiler flags
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wpedantic")
-    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3") # NB: should be handled automatically by Cmake
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g") # NB: should be handled automatically by Cmake
     # Linker flags
     IF(NOT APPLE)
         SET(CMAKE_SHARED_LINKER_FLAGS "-fPIC -shared")
     ELSE()
         SET(CMAKE_SHARED_LINKER_FLAGS "-fPIC -dynamiclib -single_module -undefined dynamic_lookup -multiply_defined suppress")
     ENDIF()
+ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	# Compiler flags
+	ADD_DEFINITIONS(-D_USE_MATH_DEFINES) # otherwise M_PI is undefined
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /permissive-") # parallel build, recognize alternative keywords (or, ...)
 ENDIF()
 
 # -- OUTPUT
@@ -38,8 +40,17 @@ ENDIF()
 FILE(GLOB SRCS src/*.cpp)
 ADD_LIBRARY(transfer_schemes SHARED ${SRCS})
 TARGET_INCLUDE_DIRECTORIES(transfer_schemes PUBLIC ${PROJECT_SOURCE_DIR}/include)
+IF(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+SET_TARGET_PROPERTIES(transfer_schemes PROPERTIES
+                      ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib
+					  ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib
+					  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib
+					  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib) # add DEBUG_POSTFIX "_d" to make the difference between debug and release libs
+ELSE()
 SET_TARGET_PROPERTIES(transfer_schemes PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+ENDIF()
+
 # Add definitions
 IF(${USE_COMPLEX})
     # C++

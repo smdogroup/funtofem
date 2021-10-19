@@ -7,7 +7,7 @@
   Linearized MELD is a transfer scheme developed from the MELD transfer scheme
   assuming displacements tend to zero.
 */
-class LinearizedMELD : public MELD {
+class F2F_API LinearizedMELD : public MELD {
  public:
   // Constructor
   LinearizedMELD(MPI_Comm all, MPI_Comm structure, int struct_root,

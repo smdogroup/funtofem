@@ -4,6 +4,18 @@
 #include <complex>
 #include "mpi.h"
 
+// Macro for DLL export on Windows
+#if defined(WIN32)
+#ifdef transfer_schemes_EXPORTS
+#define F2F_API __declspec(dllexport)
+#else
+#define F2F_API __declspec(dllimport)
+#endif
+#else
+#define F2F_API
+#endif
+
+
 /*
   Use the cplx type for F2FComplex
 */
@@ -22,22 +34,22 @@ typedef F2FReal F2FScalar;
 #endif
 
 // Define the real part function for the complex data type
-inline double F2FRealPart( const F2FComplex& c ){
+F2F_API inline double F2FRealPart( const F2FComplex& c ){
   return real(c);
 }
 
 // Define the imaginary part function for the complex data type
-inline double F2FImagPart( const F2FComplex& c ){
+F2F_API inline double F2FImagPart( const F2FComplex& c ){
   return imag(c);
 }
 
 // Dummy function for real part
-inline double F2FRealPart( const double& r ){
+F2F_API inline double F2FRealPart( const double& r ){
   return r;
 }
 
 // Compute the absolute value
-inline F2FReal F2Ffabs( const F2FReal& c ){
+F2F_API inline F2FReal F2Ffabs( const F2FReal& c ){
   if (c < 0.0){
     return -c;
   }
@@ -45,14 +57,14 @@ inline F2FReal F2Ffabs( const F2FReal& c ){
 }
 
 // Compute the absolute value
-inline F2FComplex F2Ffabs( const F2FComplex& c ){
+F2F_API inline F2FComplex F2Ffabs( const F2FComplex& c ){
   if (real(c) < 0.0){
     return -c;
   }
   return c;
 }
 
-class TransferScheme {
+class F2F_API TransferScheme {
  public:
   // Destructor
   virtual ~TransferScheme();
@@ -164,12 +176,12 @@ class TransferScheme {
 };
 
 // Functions for vector and matrix math
-void vec_add( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
-void vec_diff( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
-void vec_scal_mult( const F2FScalar a, const F2FScalar *x, F2FScalar *ax );
-void vec_cross( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
-F2FScalar vec_mag ( const F2FScalar *x );
-F2FScalar vec_dot( const F2FScalar *x, const F2FScalar *y);
-F2FScalar det( const F2FScalar *A);
+F2F_API void vec_add( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
+F2F_API void vec_diff( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
+F2F_API void vec_scal_mult( const F2FScalar a, const F2FScalar *x, F2FScalar *ax );
+F2F_API void vec_cross( const F2FScalar *x, const F2FScalar *y, F2FScalar *xy );
+F2F_API F2FScalar vec_mag ( const F2FScalar *x );
+F2F_API F2FScalar vec_dot( const F2FScalar *x, const F2FScalar *y);
+F2F_API F2FScalar det( const F2FScalar *A);
 
 #endif //TRANSFERSCHEME_H

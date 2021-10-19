@@ -6,6 +6,9 @@ funtofem/TransferScheme.cpp
 *.pxi
 *.so
 *.out
+*.exp
+*.lib
+*.dll
 *ugrid
 *mapbc
 *.bdf
