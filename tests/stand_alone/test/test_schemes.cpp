@@ -19,6 +19,7 @@
   limitations under the License.
 */
 #include <cstdlib>
+#include <ctime>
 #include "MELD.h"
 #include "LinearizedMELD.h"
 #include "RBF.h"

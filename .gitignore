@@ -9,6 +9,7 @@ funtofem/TransferScheme.cpp
 *.exp
 *.lib
 *.dll
+*.dll.a
 *ugrid
 *mapbc
 *.bdf
