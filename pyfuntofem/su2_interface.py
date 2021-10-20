@@ -247,13 +247,6 @@ class SU2Interface(SolverInterface):
                 if body.transfer is not None:
                     for vert in range(nverts):
                         if not self.su2.IsAHaloNode(surf_id, vert):
-<<<<<<< HEAD
-                            idx = 3*(vert + offset)
-                            fx, fy, fz = self.su2.GetFlowLoad(surf_id, vert)
-                            body.aero_loads[idx] = self.qinf * fx
-                            body.aero_loads[idx+1] = self.qinf * fy
-                            body.aero_loads[idx+2] = self.qinf * fz
-=======
                             global_vertex = su2.GetVertexGlobalIndex(surf_id, vert)
                             local_index = self.local_nodes[global_vertex]
 
@@ -261,29 +254,16 @@ class SU2Interface(SolverInterface):
                             body.aero_loads[3*local_index] = self.qinf * fx
                             body.aero_loads[3*local_index+1] = self.qinf * fy
                             body.aero_loads[3*local_index+2] = self.qinf * fz
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
                 if body.thermal_transfer is not None:
                     for vert in range(nverts):
                         if not self.su2.IsAHaloNode(surf_id, vert):
-<<<<<<< HEAD
-                            idx = 3*(vert + offset)
-                            hx, hy, hz = self.su2.GetVertexHeatFluxes(surf_id, vert)
-                            body.aero_heat_flux[idx] = hx
-                            body.aero_heat_flux[idx+1] = hy
-                            body.aero_heat_flux[idx+2] = hz
-=======
                             global_vertex = su2.GetVertexGlobalIndex(surf_id, vert)
                             local_index = self.local_nodes[global_vertex]
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
                             idx = vert + offset
                             hmag = self.su2.GetVertexNormalHeatFlux(surf_id, vert)
-<<<<<<< HEAD
-                            body.aero_heat_flux_mag[idx] = hmag
-=======
                             body.aero_heat_flux_mag[local_index] = hmag
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
         return 0
 
@@ -341,28 +321,6 @@ class SU2Interface(SolverInterface):
                 nverts = su2.GetNumberVertices(surf_id)
 
                 if body.transfer is not None:
-<<<<<<< HEAD
-                    psi_F = body.dLdfa
-
-                    for vert in range(self.num_surf_nodes[index]):
-                        if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            # Set the adjoint contribution on all nodes, whether or not they
-                            # are halo nodes or not...
-                            idx = 3*(vert + offset)
-                            fx_adj = self.qinf * psi_F[idx, func]
-                            fy_adj = self.qinf * psi_F[idx+1, func]
-                            fz_adj = self.qinf * psi_F[idx+2, func]
-                            self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
-
-                if body.thermal_transfer is not None:
-                    psi_Q = body.dQdfta
-
-                    for vert in range(self.num_surf_nodes[index]):
-                        if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            idx = vert + offset
-                            hmag_adj = psi_Q[idx, func]
-                            self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
-=======
                     for vert in range(nverts):
                         fx_adj = self.qinf * local_psi_F[index][3*vert]
                         fy_adj = self.qinf * local_psi_F[index][3*vert+1]
@@ -373,19 +331,14 @@ class SU2Interface(SolverInterface):
                     for vert in range(nverts):
                         hmag_adj = local_psi_Q[index][vert]
                         self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
         self.su2ad.ResetConvergence()
         self.su2ad.Preprocess(0)
         self.su2ad.Run()
         self.su2ad.Postprocess()
-<<<<<<< HEAD
-        stopCalc = self.su2ad.Monitor(0)
-=======
         self.su2ad.Update()
         stop = self.su2ad.Monitor(0)
         self.su2ad.Output(0)
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
         for ibody, body in enumerate(bodies):
             send_halo_dGdua = None
@@ -519,29 +472,9 @@ class SU2Interface(SolverInterface):
                 # later use...
                 body.aero_loads_copy = body.aero_loads.copy()
 
-<<<<<<< HEAD
-                if body.transfer is not None:
-                    # Copy the aero loads from the initial run for
-                    # later use...
-                    body.aero_loads_copy = body.aero_loads.copy()
-
-                    # Set the the adjoint input for the load transfer
-                    # at the aerodynamic loads
-                    body.dLdfa = np.random.uniform(size=body.dLdfa.shape)
-
-                    # Zero the contributions at halo nodes
-                    # for vert in range(self.num_surf_nodes[index]):
-                    #     if self.su2.IsAHaloNode(surf_id, vert):
-                    #         body.dLdfa[3*vert:3*(vert+1)] = 0.0
-
-        # Post after at this point, so that su2 is still defined above and
-        # not yet deleted...
-        self.post(scenario, bodies)
-=======
                 # Set the the adjoint input for the load transfer
                 # at the aerodynamic loads
                 body.dLdfa = np.random.uniform(size=body.dLdfa.shape)
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
         # Compute one step of the adjoint
         self.initialize_adjoint(scenario, bodies)
@@ -555,19 +488,10 @@ class SU2Interface(SolverInterface):
                 body.aero_disps_pert = np.random.uniform(size=body.aero_disps.shape)
                 body.aero_disps += epsilon*body.aero_disps_pert
 
-<<<<<<< HEAD
-                    # Compute the adjoint product
-                    adjoint_product += np.dot(body.dGdua[:, 0], body.aero_disps_pert)
-
-        # Perform the post-adjoint call here so that su2ad is defined above
-        # and not yet deleted..
-        self.post_adjoint(scenario, bodies)
-=======
                 # Compute the adjoint product. Note that the
                 # negative sign is from convention due to the
                 # presence of the negative sign in psi_F = -dLdfa
                 adjoint_product += np.dot(body.dGdua[:, 0], body.aero_disps_pert)
->>>>>>> 69c2fa1 (modified su2 interface to use a unique set of interface nodes)
 
         # Sum up the result across all processors
         adjoint_product = self.comm.allreduce(adjoint_product)
