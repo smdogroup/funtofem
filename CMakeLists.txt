@@ -40,16 +40,8 @@ ENDIF()
 FILE(GLOB SRCS src/*.cpp)
 ADD_LIBRARY(transfer_schemes SHARED ${SRCS})
 TARGET_INCLUDE_DIRECTORIES(transfer_schemes PUBLIC ${PROJECT_SOURCE_DIR}/include)
-IF(WIN32)
-SET_TARGET_PROPERTIES(transfer_schemes PROPERTIES
-                      ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib
-					  ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib
-					  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib
-					  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib) # TODO add DEBUG_POSTFIX "_d" to make the difference between debug and release libs
-ELSE()
-SET_TARGET_PROPERTIES(transfer_schemes PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-ENDIF()
+INSTALL(TARGETS transfer_schemes DESTINATION ${PROJECT_SOURCE_DIR}/lib)
+#SET_TARGET_PROPERTIES(transfer_schemes PROPERTIES DEBUG_POSTFIX "_d") # to make the difference between debug and release libs
 # Define exe for testing
 ADD_EXECUTABLE(test_schemes tests/stand_alone/test/test_schemes.cpp)
 TARGET_LINK_LIBRARIES(test_schemes transfer_schemes)

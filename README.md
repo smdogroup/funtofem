@@ -25,7 +25,8 @@ In the funtofem directory,
 # Configure and build
 mkdir build && cd build
 cmake [-DCMAKE_BUILD_TYPE=Release|Debug] [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
-make
+make install
+ctest
 ```
 
 #### Windows (MSVC-MSMPI)
@@ -33,12 +34,13 @@ In the funtofem directory,
 ```bat
 REM Setup env
 call "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.dat" amd64 REM VS build tools
-call "C:\Program Files\Intel\oneAPI\mkl\latest\env\vars.bat" intel64 vs2019 REM if Intel MKL are used
+call "C:\Program Files\Intel\oneAPI\setvars.bat" intel64 vs2019 REM if Intel MKL are used
 REM Configure and build
 mkdir build
 cd build
 cmake -A x64 [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
-cmake --build . --config Release|Debug
+cmake --build . --target install --config Release|Debug
+ctest -C Release|Debug
 ```
 
 #### Python interface
