@@ -10,6 +10,7 @@ funtofem/TransferScheme.cpp
 *.lib
 *.dll
 *.dll.a
+*.pyd
 *ugrid
 *mapbc
 *.bdf

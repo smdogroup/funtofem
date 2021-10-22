@@ -52,6 +52,19 @@ python setup.py develop --user [--define FUNTOFEM_USE_COMPLEX]
 python setup.py build_ext --inplace [--define FUNTOFEM_USE_COMPLEX]
 ```
 
+**Warning - temporary fix**  
+If the interface build fails on winodws, try to replace:
+```python
+rc = os.spawnv(os.P_WAIT, executable, cmd)
+```
+by,
+```python
+import subprocess
+cp = subprocess.run(' '.join([executable] + cmd[1:]))
+rc = cp.returncode
+```
+in  `/Python_install_dir/Lib/distutils/spawn.py` (around line 69).
+
 ### License ###
 
 FUNtoFEM is licensed under the Apache License, Version 2.0 (the "License");
