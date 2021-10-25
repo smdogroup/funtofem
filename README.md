@@ -47,7 +47,7 @@ ctest -C Release|Debug
 To build the python interface, from the funtofem directory,
 ```sh
 # Build the python interface for the first time
-python setup.py develop --user [--define FUNTOFEM_USE_COMPLEX]
+python setup.py develop --user
 # Update the python interface after it has been installed once, if changes are made
 python setup.py build_ext --inplace [--define FUNTOFEM_USE_COMPLEX]
 ```
@@ -63,7 +63,7 @@ import subprocess
 cp = subprocess.run(' '.join([executable] + cmd[1:]))
 rc = cp.returncode
 ```
-in  `/Python_install_dir/Lib/distutils/spawn.py` (around line 69).
+in `/Python_install_dir/Lib/distutils/spawn.py` (around line 69).
 
 ### License ###
 
