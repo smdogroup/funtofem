@@ -74,55 +74,24 @@ class SU2Interface(SolverInterface):
         # The indices of the local nodes that are owned by this processor
         self.local_nodes = {}
 
-        # The halo nodes that belong to this processor
-        self.halo_nodes = []
-
         # Set the local surface numbering for all the nodes on the surface
         self.num_local_nodes = 0
         for surf_id in self.moving_surface_ids:
             nverts = su2.GetNumberVertices(surf_id)
             for vert in range(nverts):
-                # Get the global vertex number
-                global_index = su2.GetVertexGlobalIndex(surf_id, vert)
-
                 # Check if this is a halo node or not
-                if su2.IsAHaloNode(surf_id, vert):
-                    self.halo_nodes.append(global_index)
-                else:
+                if not su2.IsAHaloNode(surf_id, vert):
+                    # Get the global vertex number
+                    global_index = su2.GetVertexGlobalIndex(surf_id, vert)
+
                     # This is not a halo node, but check if it is already stored
                     # in the local_nodes dictionary
                     if not global_index in self.local_nodes:
                         self.local_nodes[global_index] = self.num_local_nodes
                         self.num_local_nodes += 1
 
-        # Make the list of halo nodes unique
-        self.halo_nodes = np.unique(self.halo_nodes).tolist()
-
-        # Gather the nodes to all processors
-        halo_nodes = self.comm.allgather(self.halo_nodes)
-
-        # Extend the lists
-        self.all_halo_nodes = []
-        for nodes in halo_nodes:
-            self.all_halo_nodes.extend(nodes)
-        self.all_halo_nodes = np.unique(self.all_halo_nodes)
-
         # The number of unique owned nodes
         self.num_owned_nodes = len(self.local_nodes)
-
-        # Store the index into the global halo node array for all halo nodes contributed
-        # from this processor
-        self.owned_halo_nodes = {}
-
-        # Store where my halo nodes are coming from
-        self.my_halo_nodes = {}
-        for node in self.halo_nodes:
-            self.my_halo_nodes[node] = np.where(self.all_halo_nodes == node)[0][0]
-
-        # Find the locally owned halo nodes
-        for i, index in enumerate(self.all_halo_nodes):
-            if index in self.local_nodes:
-                self.owned_halo_nodes[index] = i
 
         # Get the coordinates associated with the surface nodes
         bodies[0].aero_nnodes = self.num_owned_nodes
@@ -146,6 +115,50 @@ class SU2Interface(SolverInterface):
                         body.aero_X[3*index+2] = z
 
         return
+
+    def _initialize_halo_nodes(self, su2):
+        # The halo nodes that belong to this processor
+         self.halo_nodes = []
+
+         # Set the local surface numbering for all the nodes on the surface
+         self.num_local_nodes = 0
+         for surf_id in self.moving_surface_ids:
+             nverts = su2.GetNumberVertices(surf_id)
+             for vert in range(nverts):
+                 # Get the global vertex number
+                 global_index = su2.GetVertexGlobalIndex(surf_id, vert)
+
+                 # Check if this is a halo node or not
+                 if su2.IsAHaloNode(surf_id, vert):
+                     self.halo_nodes.append(global_index)
+
+         # Make the list of halo nodes unique
+         self.halo_nodes = np.unique(self.halo_nodes).tolist()
+
+         # Gather the nodes to all processors
+         halo_nodes = self.comm.allgather(self.halo_nodes)
+
+         # Extend the lists
+         self.all_halo_nodes = []
+         for nodes in halo_nodes:
+             self.all_halo_nodes.extend(nodes)
+         self.all_halo_nodes = np.unique(self.all_halo_nodes)
+
+         # Store the index into the global halo node array for all halo nodes contributed
+         # from this processor
+         self.owned_halo_nodes = {}
+
+         # Store where my halo nodes are coming from
+         self.my_halo_nodes = {}
+         for node in self.halo_nodes:
+             self.my_halo_nodes[node] = np.where(self.all_halo_nodes == node)[0][0]
+
+         # Find the locally owned halo nodes
+         for i, index in enumerate(self.all_halo_nodes):
+             if index in self.local_nodes:
+                 self.owned_halo_nodes[index] = i
+
+         return
 
     def _distribute_values(self, su2, owned, nvals=1):
         """
@@ -213,25 +226,27 @@ class SU2Interface(SolverInterface):
         """
 
         for body in bodies:
-            if body.transfer is not None:
-                local_aero_disps = self._distribute_values(self.su2, body.aero_disps, nvals=3)
-            if body.thermal_transfer is not None:
-                local_aero_temps = self._distribute_values(self.su2, body.aero_temps)
-
-            for index, surf_id in enumerate(self.moving_surface_ids):
+            for surf_id in self.moving_surface_ids:
                 nverts = self.su2.GetNumberVertices(surf_id)
 
                 if body.transfer is not None:
                     for vert in range(nverts):
-                        u = local_aero_disps[index][3*vert]
-                        v = local_aero_disps[index][3*vert+1]
-                        w = local_aero_disps[index][3*vert+2]
-                        self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            global_index = self.su2.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_index]
+
+                            u = body.aero_disps[3*local_index]
+                            v = body.aero_disps[3*local_index+1]
+                            w = body.aero_disps[3*local_index+2]
+                            self.su2.SetMeshDisplacement(surf_id, vert, u, v, w)
 
                 if body.thermal_transfer is not None:
                     for vert in range(nverts):
-                        Twall = local_aero_temps[index][vert]
-                        self.su2.SetVertexTemperature(surf_id, vert, Twall)
+                        if not self.su2.IsAHaloNode(surf_id, vert):
+                            global_index = self.su2.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_index]
+                            Twall = body.aero_temps[local_index]
+                            self.su2.SetVertexTemperature(surf_id, vert, Twall)
 
         # If this is an unsteady computation than we will need this:
         self.su2.ResetConvergence()
@@ -267,10 +282,9 @@ class SU2Interface(SolverInterface):
                 if body.thermal_transfer is not None:
                     for vert in range(nverts):
                         if not self.su2.IsAHaloNode(surf_id, vert):
-                            global_vertex = su2.GetVertexGlobalIndex(surf_id, vert)
+                            global_vertex = self.su2.GetVertexGlobalIndex(surf_id, vert)
                             local_index = self.local_nodes[global_vertex]
 
-                            idx = vert + offset
                             hmag = self.su2.GetVertexNormalHeatFlux(surf_id, vert)
                             body.aero_heat_flux_mag[local_index] = hmag
 
@@ -318,28 +332,33 @@ class SU2Interface(SolverInterface):
 
         func = 0
 
-        for ibody, body in enumerate(bodies):
-            # Distribute the contributions from the adjoint
-            if body.transfer is not None:
-                local_psi_F = self._distribute_values(self.su2ad, body.dLdfa[:, func], nvals=3)
-            if body.thermal_transfer is not None:
-                local_psi_Q = self._distribute_values(self.su2ad, body.dQfdfta[:, func])
-
-            # Extract the adjoint terms for the vertex forces
-            for index, surf_id in enumerate(self.moving_surface_ids):
+        for body in bodies:
+            for surf_id in self.moving_surface_ids:
                 nverts = self.su2ad.GetNumberVertices(surf_id)
 
                 if body.transfer is not None:
+                    psi_F = body.dLdfa[:, func]
+
                     for vert in range(nverts):
-                        fx_adj = -self.qinf * local_psi_F[index][3*vert]
-                        fy_adj = -self.qinf * local_psi_F[index][3*vert+1]
-                        fz_adj = -self.qinf * local_psi_F[index][3*vert+2]
-                        self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
+                        if not self.su2ad.IsAHaloNode(surf_id, vert):
+                            global_vertex = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_vertex]
+
+                            fx_adj = self.qinf * psi_F[3*local_index]
+                            fy_adj = self.qinf * psi_F[3*local_index+1]
+                            fz_adj = self.qinf * psi_F[3*local_index+2]
+                            self.su2ad.SetFlowLoad_Adjoint(surf_id, vert, fx_adj, fy_adj, fz_adj)
 
                 if body.thermal_transfer is not None:
+                    psi_Q = body.dQdfta[:, func]
+
                     for vert in range(nverts):
-                        hmag_adj = -local_psi_Q[index][vert]
-                        self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
+                        if not self.su2ad.IsAHaloNode(surf_id, vert):
+                            global_vertex = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_vertex]
+
+                            hmag_adj = psi_Q[local_index]
+                            self.su2ad.SetVertexNormalHeatFlux_Adjoint(surf_id, vert, hmag_adj)
 
         self.su2ad.ResetConvergence()
         self.su2ad.Preprocess(0)
@@ -350,66 +369,38 @@ class SU2Interface(SolverInterface):
         self.su2ad.Output(0)
 
         for ibody, body in enumerate(bodies):
-            send_halo_dGdua = None
-            send_halo_dAdta = None
             if body.transfer is not None:
                 body.dGdua[:, func] = 0.0
-                send_halo_dGdua = np.zeros(3*len(self.all_halo_nodes))
             if body.thermal_transfer:
                 body.dAdta[:, func] = 0.0
-                send_halo_dAdta = np.zeros(len(self.all_halo_nodes))
 
-            for index, surf_id in enumerate(self.moving_surface_ids):
+            for surf_id in self.moving_surface_ids:
                 nverts = self.su2ad.GetNumberVertices(surf_id)
 
                 if body.transfer is not None:
                     for vert in range(nverts):
-                        global_index = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
-                        u_adj, v_adj, w_adj = self.su2ad.GetMeshDisp_Sensitivity(surf_id, vert)
-
-                        # Over-write entries in dGdua. If a node appears twice or more in the list of
-                        # boundary nodes, we don't want to double-count its contribution.
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            index = self.local_nodes[global_index]
-                            body.dGdua[3*index, func] = u_adj
-                            body.dGdua[3*index+1, func] = v_adj
-                            body.dGdua[3*index+2, func] = w_adj
-                        else:
-                            index = self.my_halo_nodes[global_index]
-                            send_halo_dGdua[3*index] = u_adj
-                            send_halo_dGdua[3*index+1] = v_adj
-                            send_halo_dGdua[3*index+2] = w_adj
+                            global_index = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_index]
+
+                            u_adj, v_adj, w_adj = self.su2ad.GetMeshDisp_Sensitivity(surf_id, vert)
+
+                            # Over-write entries in dGdua. If a node
+                            # appears twice or more in the list of
+                            # boundary nodes, we don't want to
+                            # double-count its contribution.
+                            body.dGdua[3*local_index, func] = u_adj
+                            body.dGdua[3*local_index+1, func] = v_adj
+                            body.dGdua[3*local_index+2, func] = w_adj
 
                 if body.thermal_transfer is not None:
                     for vert in range(nverts):
-                        global_index = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
-                        Twall_adj = self.su2ad.GetVertexTemperature_Adjoint(surf_id, vert)
-
                         if not self.su2ad.IsAHaloNode(surf_id, vert):
-                            index = self.local_nodes[global_index]
-                            body.dAdta[index, func] = Twall_adj
-                        else:
-                            index = self.my_halo_nodes[global_index]
-                            send_halo_dAdta[index] = Twall_adj
+                            global_index = self.su2ad.GetVertexGlobalIndex(surf_id, vert)
+                            local_index = self.local_nodes[global_index]
 
-            # # Now, add up the contributions from the halo nodes
-            # if body.transfer is not None:
-            #     recv_halo_dGdua = np.zeros(3*len(self.all_halo_nodes))
-            #     self.comm.Allreduce(send_halo_dGdua, recv_halo_dGdua, op=MPI.SUM)
-
-            #     for global_index in self.owned_halo_nodes:
-            #         local_index = self.local_nodes[global_index]
-            #         index = self.owned_halo_nodes[global_index]
-            #         body.dGdua[3*local_index:3*(local_index+1), func] += recv_halo_dGdua[3*index:3*(index+1)]
-
-            # if body.thermal_transfer:
-            #     recv_halo_dAdta = np.zeros(len(self.all_halo_nodes))
-            #     self.comm.Allreduce(send_halo_dAdta, recv_halo_dAdta, op=MPI.SUM)
-
-            #     for global_index in self.owned_halo_nodes:
-            #         local_index = self.local_nodes[global_index]
-            #         index = self.owned_halo_nodes[global_index]
-            #         body.dAdta[local_index, func] += recv_halo_dAdta[index]
+                            Twall_adj = self.su2ad.GetVertexTemperature_Adjoint(surf_id, vert)
+                            body.dAdta[local_index, func] = Twall_adj
 
         return 0
 

@@ -95,7 +95,7 @@ if 'test' in sys.argv:
     solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
 else:
     # Perform a finite difference check
-    dh = 1e-8
+    dh = 1e-6
     x0 = np.array([0.025])
 
     # Get the function value
