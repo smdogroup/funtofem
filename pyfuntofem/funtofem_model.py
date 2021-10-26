@@ -34,7 +34,7 @@ class FUNtoFEMmodel(object):
     --------
     :mod:`body`, :mod:`scenario`
     """
-    def __init__(self,name,id=0):
+    def __init__(self, name, id=0):
         """
 
         Parameters
@@ -51,7 +51,7 @@ class FUNtoFEMmodel(object):
         self.scenarios = []
         self.bodies = []
 
-    def add_body(self,body):
+    def add_body(self, body):
         """
         Add a body to the model. The body must be completely defined before adding to the model
 
@@ -69,10 +69,10 @@ class FUNtoFEMmodel(object):
                 print("Assigning a new body id")
                 body.update_id(max(body_ids)+1)
 
-        body.group_master = True
+        body.group_root = True
         for by in self.bodies:
             if by.group == body.group:
-                body.group_master = False
+                body.group_root = False
                 break
 
         for scenario in self.scenarios:
@@ -81,7 +81,7 @@ class FUNtoFEMmodel(object):
 
         self.bodies.append(body)
 
-    def add_scenario(self,scenario):
+    def add_scenario(self, scenario):
         """
         Add a scenario to model. The scenario must be completely defined before adding to the model
 
@@ -93,10 +93,10 @@ class FUNtoFEMmodel(object):
 
         scenario.update_id(len(self.scenarios)+1)
 
-        scenario.group_master = True
+        scenario.group_root = True
         for scen in self.scenarios:
             if scen.group == scenario.group:
-                scenario.group_master = False
+                scenario.group_root = False
                 break
 
         for scen in self.scenarios:
@@ -112,7 +112,7 @@ class FUNtoFEMmodel(object):
 
         self.scenarios.append(scenario)
 
-    def print_summary(self, print_level = 0):
+    def print_summary(self, print_level=0):
         """
         Print out a summary of the assembled model for inspection
 
@@ -173,18 +173,18 @@ class FUNtoFEMmodel(object):
 
     def _enforce_coupling(self):
         """
-        Set the coupled variables in each group to the value in the group master
+        Set the coupled variables in each group to the value in the group root
         """
         for body in self.bodies:
-            if body.group_master:
+            if body.group_root:
                 for body2 in self.bodies:
-                    if body.group == body2.group and not body2.group_master:
+                    if body.group == body2.group and not body2.group_root:
                         body2.couple_variables(body)
 
         for scenario in self.scenarios:
-            if scenario.group_master:
+            if scenario.group_root:
                 for scenario2 in self.scenarios:
-                    if scenario.group == scenario2.group and not scenario2.group_master:
+                    if scenario.group == scenario2.group and not scenario2.group_root:
                         scenario2.couple_variables(scenario)
 
     def get_variables(self):
@@ -200,13 +200,13 @@ class FUNtoFEMmodel(object):
 
         dv = []
         for scenario in self.scenarios:
-            if scenario.group_master:
+            if scenario.group_root:
                 dv.extend(scenario.active_variables())
             else:
                 dv.extend(scenario.uncoupled_variables())
 
         for body in self.bodies:
-            if body.group_master:
+            if body.group_root:
                 dv.extend(body.active_variables())
             else:
                 dv.extend(body.uncoupled_variables())
@@ -286,13 +286,13 @@ class FUNtoFEMmodel(object):
         for n,func in enumerate(funcs):
             func_list = []
             for scenario in self.scenarios:
-                if scenario.group_master:
+                if scenario.group_root:
                     func_list.extend(scenario.active_derivatives(n))
                 else:
                     func_list.extend(scenario.uncoupled_derivatives(n))
 
             for body in self.bodies:
-                if body.group_master:
+                if body.group_root:
                     func_list.extend(body.active_derivatives(n))
                 else:
                     func_list.extend(body.uncoupled_derivatives(n))
@@ -305,24 +305,24 @@ class FUNtoFEMmodel(object):
         **[driver call]** Sum the coupled variable derivatives in each group.
         """
         for body in self.bodies:
-            if body.group_master:
-                # Sum and store in the group master
+            if body.group_root:
+                # Sum and store in the group root
                 for body2 in self.bodies:
-                    if body.group == body2.group and not body2.group_master:
+                    if body.group == body2.group and not body2.group_root:
                         body.add_coupled_derivatives(body2)
                 # now pass the totals back to the other bodies
                 for body2 in self.bodies:
-                    if body.group == body2.group and not body2.group_master:
+                    if body.group == body2.group and not body2.group_root:
                         body2.set_coupled_derivatives(body)
 
         for scenario in self.scenarios:
-            if scenario.group_master:
-                # Sum and store in the group master
+            if scenario.group_root:
+                # Sum and store in the group root
                 for scenario2 in self.scenarios:
-                    if scenario.group == scenario2.group and not scenario2.group_master:
+                    if scenario.group == scenario2.group and not scenario2.group_root:
                         scenario.add_coupled_derivatives(scenario2)
                 # now pass the totals back to the other bodies
                 for scenario2 in self.scenarios:
-                    if scenario.group == scenario2.group and not scenario2.group_master:
+                    if scenario.group == scenario2.group and not scenario2.group_root:
                         scenario2.set_coupled_derivatives(scenario)
 

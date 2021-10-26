@@ -15,7 +15,7 @@ x = np.linspace(x_min, x_max, num = nx)
 y = np.linspace(y_min, y_max, num = ny)
 z = np.linspace(z_min, z_max, num = nz)
 theta = np.radians(0.0)
-nodes = np.arange(1, nx*ny*nz+1, dtype=np.int).reshape(nx, ny, nz)
+nodes = np.arange(1, nx*ny*nz+1, dtype=int).reshape(nx, ny, nz)
 
 fp = open('tacs_aero.bdf', 'w')
 fp.write('$ Input file for a rectangular plate\n')
