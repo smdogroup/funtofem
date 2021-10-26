@@ -19,14 +19,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from __future__ import print_function
 
 class Base(object):
     """
     Base class for FUNtoFEM bodies and scenarios
     """
-    def __init__(self,name,id=0,group=None):
+    def __init__(self, name, id=0, group=None):
         """
 
         Parameters
@@ -51,7 +50,7 @@ class Base(object):
             self.group = group
         else:
             self.group = -1
-        self.group_master = False
+        self.group_root = False
         self.variables = {}
         self.derivatives = {}
 

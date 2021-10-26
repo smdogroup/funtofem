@@ -3,6 +3,7 @@ Makefile.in
 *.pyc
 doc/build
 funtofem/TransferScheme.cpp
+lib/libtransfer_schemes.a
 *.pxi
 *.so
 *.out
@@ -16,6 +17,6 @@ funtofem/TransferScheme.cpp
 *.bdf
 *.job
 fake_interface*
-
 build/
 funtofem.egg-info/
+*~

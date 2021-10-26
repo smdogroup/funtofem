@@ -30,8 +30,7 @@ from tacs_model import wedgeTACS
 from mpi4py import MPI
 import os
 
-
-class wedge_adjoint(object):
+class AdjointTest(object):
     def __init__(self):
         # cruise conditions
         self.v_inf = 171.5                  # freestream velocity [m/s]
@@ -74,8 +73,8 @@ class wedge_adjoint(object):
             'npts': 5}
 
         # instantiate the driver
-        self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0, transfer_options, model=self.model)
-        #self.driver = FUNtoFEMnlbgs_aerothermal(solvers, self.comm, self.tacs_comm, 0, self.comm, 0, transfer_options, model=self.model)
+        self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0,
+                                    transfer_options, model=self.model)
 
         # Set up some variables and constants related to the problem
         self.cruise_lift = None
@@ -89,20 +88,22 @@ class wedge_adjoint(object):
     def _build_model(self):
 
         thickness = 0.015
+
         # Build the model
         model = FUNtoFEMmodel('wedge')
-        plate = Body('plate', 'aeroelastic', group=0, boundary=1)
-        plate.add_variable('structural', Variable('thickness', value=thickness, lower=0.01, upper=0.1))
+        plate = Body('plate', 'aerothermoelastic', group=0, boundary=1)
+
+        svar = Variable('thickness', value=thickness, lower=0.01, upper=0.1)
+        plate.add_variable('structural', svar)
         model.add_body(plate)
 
         steady = Scenario('steady', group=0, steps=100)
 
-        temp = Function('temperature', analysis_type='structural')
+        temp = Function('mass', analysis_type='structural')
         steady.add_function(temp)
-#        lift = Function('cl',analysis_type='aerodynamic')
-#        steady.add_function(lift)
-#        lift_drag = Function('clp',analysis_type='aerodynamic')
-#        steady.add_function(lift_drag)
+
+        failure = Function('ksfailure', analysis_type='structural')
+        steady.add_function(failure)
 
         model.add_scenario(steady)
 
@@ -122,42 +123,41 @@ class wedge_adjoint(object):
         functions = self.model.get_functions()
 
         # Set the temperature as the objective and constraint
-        temp = functions[0].value
-        print('Temperature = ',temp)
-        con = temp
-        obj = temp
+        obj = functions[0].value
+        con = []
+        for func in functions[1:]:
+            con.append(func.value)
 
         return obj, con, fail
 
     def eval_objcon_grad(self, x):
-
         var = x*self.var_scale
         self.model.set_variables(var)
 
         fail = self.driver.solve_adjoint()
-        grads = self.model.get_function_gradients()
         funcs = self.model.get_functions()
+        grads = self.model.get_function_gradients()
 
-        temp = funcs[0].value
-        print('Temperature = ',temp)
-        temp_grad = np.array(grads[0][:])
-
-        g = temp_grad
-        A = temp_grad
+        g = grads[0]
+        A = []
+        for i, func in enumerate(funcs[1:], 1):
+            A.append(grads[i])
 
         return g, A, fail
 
-
 h = 1e-30
 x = np.array([0.015 +1j*h], dtype=TransferScheme.dtype)
-dp = wedge_adjoint()
+xreal = np.array([0.015], dtype=TransferScheme.dtype)
 
-for i in range(2):
-    obj1, con1, fail = dp.eval_objcon(x)
-    print('Forward Grad = ', con1.imag/h)
+dp = AdjointTest()
 
-x = np.array([0.015], dtype=TransferScheme.dtype)
-obj1, con1, fail = dp.eval_objcon(x)
-g, A, fail = dp.eval_objcon_grad(x)
-print('Adjoint Grad = ', A)
-# print('Adjoint Grad = ', g[0,0])
+obj1, con1, fail = dp.eval_objcon(xreal)
+g, A, fail = dp.eval_objcon_grad(xreal)
+print('Adjoint objective gradient ', g)
+for ac in A:
+    print('Adjoint constraint gradient ', ac)
+
+obj, con, fail = dp.eval_objcon(x)
+print('Forward objective gradient ', obj.imag/h)
+for c in con:
+    print('Forward constraint gradient = ', c.imag/h)

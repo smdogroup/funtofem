@@ -61,7 +61,7 @@ jobs:
           conda install -c conda-forge matplotlib  -q -y;
           conda install -c conda-forge git -q -y;
           pip install cython;
-          git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs -b develop;
+          git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
           export TACS_DIR=/home/runner/work/tacs;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
