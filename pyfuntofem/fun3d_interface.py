@@ -187,14 +187,12 @@ class Fun3dInterface(SolverInterface):
                 for ibody, body in enumerate(bodies):
                     if body.aero_nnodes > 0:
                         if body.transfer is not None:
-                            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                                body.aero_loads = self.force_save[scenario.id][ibody]
-                                body.aero_disps = self.disps_save[scenario.id][ibody]
+                            body.aero_loads = self.force_save[scenario.id][ibody]
+                            body.aero_disps = self.disps_save[scenario.id][ibody]
 
                         if body.thermal_transfer is not None:
-                            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                                body.aero_heat_flux = self.heat_flux_save[scenario.id][ibody]
-                                body.aero_temps = self.temps_save[scenario.id][ibody]
+                            body.aero_heat_flux = self.heat_flux_save[scenario.id][ibody]
+                            body.aero_temps = self.temps_save[scenario.id][ibody]
 
             # Initialize FUN3D adjoint - special order for static adjoint
             if self.adjoint_options is None:
@@ -221,15 +219,13 @@ class Fun3dInterface(SolverInterface):
             if body.aero_nnodes > 0:
                 for ibody, body in enumerate(bodies,1):
                     if body.transfer is not None:
-                        if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                            dx = np.asfortranarray(body.aero_disps[0::3])
-                            dy = np.asfortranarray(body.aero_disps[1::3])
-                            dz = np.asfortranarray(body.aero_disps[2::3])
-                            self.fun3d_adjoint.input_deformation(dx, dy, dz,body=ibody)
+                        dx = np.asfortranarray(body.aero_disps[0::3])
+                        dy = np.asfortranarray(body.aero_disps[1::3])
+                        dz = np.asfortranarray(body.aero_disps[2::3])
+                        self.fun3d_adjoint.input_deformation(dx, dy, dz,body=ibody)
                     if body.thermal_transfer is not None:
-                        if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                            temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
-                            self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
+                        temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                        self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
             self.fun3d_adjoint.initialize_solution()
         else:
             if self.adjoint_options is None:
@@ -454,13 +450,11 @@ class Fun3dInterface(SolverInterface):
 
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             if 'rigid' in body.motion_type and body.transfer is not None:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    transform = np.asfortranarray(body.rigid_transform)
-                    self.fun3d_flow.input_rigid_transform(transform,body=ibody)
+                transform = np.asfortranarray(body.rigid_transform)
+                self.fun3d_flow.input_rigid_transform(transform,body=ibody)
             if body.thermal_transfer is not None and body.aero_nnodes > 0:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
-                    self.fun3d_flow.input_wall_temperature(temps, body=ibody)
+                temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
         self.comm.Barrier()
@@ -476,27 +470,23 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies,1):
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes,body=ibody)
+                    fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes,body=ibody)
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes,body=ibody)
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes,body=ibody)
 
             body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
             body.aero_heat_flux = np.zeros(4*body.aero_nnodes, dtype=TransferScheme.dtype)
 
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        body.aero_loads[0::3] = self.qinf * fx[:]
-                        body.aero_loads[1::3] = self.qinf * fy[:]
-                        body.aero_loads[2::3] = self.qinf * fz[:]
+                    body.aero_loads[0::3] = self.qinf * fx[:]
+                    body.aero_loads[1::3] = self.qinf * fy[:]
+                    body.aero_loads[2::3] = self.qinf * fz[:]
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        body.aero_heat_flux[0::4] = self.thermal_scale * cqx[:]
-                        body.aero_heat_flux[1::4] = self.thermal_scale * cqy[:]
-                        body.aero_heat_flux[2::4] = self.thermal_scale * cqz[:]
-                        body.aero_heat_flux[3::4] = self.thermal_scale * cq_mag[:]
+                    body.aero_heat_flux[0::4] = self.thermal_scale * cqx[:]
+                    body.aero_heat_flux[1::4] = self.thermal_scale * cqy[:]
+                    body.aero_heat_flux[2::4] = self.thermal_scale * cqz[:]
+                    body.aero_heat_flux[3::4] = self.thermal_scale * cq_mag[:]
 
         if not scenario.steady:
             # save this steps forces for the adjoint
@@ -505,12 +495,10 @@ class Fun3dInterface(SolverInterface):
             self.aero_temps_hist[scenario.id][step] = {}
             for ibody, body in enumerate(bodies,1):
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
+                    self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
-                        self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
+                    self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
+                    self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
         return 0
 
     def post(self,scenario,bodies,first_pass=False):
@@ -540,13 +528,11 @@ class Fun3dInterface(SolverInterface):
             for ibody, body in enumerate(bodies):
                 if body.aero_nnodes > 0:
                     if body.transfer is not None:
-                        if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                            self.force_save[scenario.id][ibody] = body.aero_loads
-                            self.disps_save[scenario.id][ibody] = body.aero_disps
+                        self.force_save[scenario.id][ibody] = body.aero_loads
+                        self.disps_save[scenario.id][ibody] = body.aero_disps
                     if body.thermal_transfer is not None:
-                        if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                            self.heat_flux_save[scenario.id][ibody] = body.aero_heat_flux
-                            self.temps_save[scenario.id][ibody] = body.aero_temps
+                        self.heat_flux_save[scenario.id][ibody] = body.aero_heat_flux
+                        self.temps_save[scenario.id][ibody] = body.aero_temps
 
     def set_states(self,scenario,bodies,step):
         """
@@ -563,12 +549,10 @@ class Fun3dInterface(SolverInterface):
         """
         for ibody, body in enumerate(bodies,1):
             if body.transfer is not None:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_loads = self.force_hist[scenario.id][step][ibody]
+                body.aero_loads = self.force_hist[scenario.id][step][ibody]
             if body.thermal_transfer is not None:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    body.aero_heat_flux = self.heat_flux_hist[scenario.id][step][ibody]
-                    body.aero_temps = self.aero_temps_hist[scenario.id][step][ibody]
+                body.aero_heat_flux = self.heat_flux_hist[scenario.id][step][ibody]
+                body.aero_temps = self.aero_temps_hist[scenario.id][step][ibody]
 
     def iterate_adjoint(self,scenario,bodies,step):
         """
@@ -598,15 +582,15 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies,1):
             if body.aero_nnodes > 0:
 
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    # Solve the force adjoint equation
+                # Solve the force adjoint equation
+                if body.transfer is not None:
                     psi_F = - body.dLdfa
                     lam_x = np.zeros((body.aero_nnodes,nfunctions), dtype=TransferScheme.dtype)
                     lam_y = np.zeros((body.aero_nnodes,nfunctions), dtype=TransferScheme.dtype)
                     lam_z = np.zeros((body.aero_nnodes,nfunctions), dtype=TransferScheme.dtype)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    # Solve the heat flux adjoint equation
+                # Solve the heat flux adjoint equation
+                if body.thermal_transfer is not None:
                     psi_Q = - body.dQdfta
 
                     lam_x_thermal = np.zeros((body.aero_nnodes,nfunctions), dtype=TransferScheme.dtype)
@@ -622,30 +606,27 @@ class Fun3dInterface(SolverInterface):
                     if step > 0:
                         if body.transfer is not None:
                             for i in range(3*body.aero_nnodes):
-                                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                                    self.dFdqinf[func] +=  - body.aero_loads[i] / self.qinf * psi_F[i,func]
+                                self.dFdqinf[func] +=  - body.aero_loads[i] / self.qinf * psi_F[i,func]
                         if body.thermal_transfer is not None:
                             for i in range(4*body.aero_nnodes):
-                                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                                    self.dHdq[func] +=  - body.aero_heat_flux[i] / self.thermal_scale * psi_Q[i,func]
+                                self.dHdq[func] +=  - body.aero_heat_flux[i] / self.thermal_scale * psi_Q[i,func]
                     # Set up the load integration adjoint variables for FUN3D
                     if body.transfer is not None:
-                        if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                            lam_x[:,func] = self.qinf * psi_F[0::3,func]/self.flow_dt
-                            lam_y[:,func] = self.qinf * psi_F[1::3,func]/self.flow_dt
-                            lam_z[:,func] = self.qinf * psi_F[2::3,func]/self.flow_dt
+                        lam_x[:,func] = self.qinf * psi_F[0::3,func]/self.flow_dt
+                        lam_y[:,func] = self.qinf * psi_F[1::3,func]/self.flow_dt
+                        lam_z[:,func] = self.qinf * psi_F[2::3,func]/self.flow_dt
 
                     if body.thermal_transfer is not None:
-                        if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                            lam_x_thermal[:,func]   = self.thermal_scale * psi_Q[0::4,func] /self.flow_dt
-                            lam_y_thermal[:,func]   = self.thermal_scale * psi_Q[1::4,func] /self.flow_dt
-                            lam_z_thermal[:,func]   = self.thermal_scale * psi_Q[2::4,func] /self.flow_dt
-                            lam_mag_thermal[:,func] = self.thermal_scale * psi_Q[3::4,func] /self.flow_dt
-                
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                        lam_x_thermal[:,func]   = self.thermal_scale * psi_Q[0::4,func] /self.flow_dt
+                        lam_y_thermal[:,func]   = self.thermal_scale * psi_Q[1::4,func] /self.flow_dt
+                        lam_z_thermal[:,func]   = self.thermal_scale * psi_Q[2::4,func] /self.flow_dt
+                        lam_mag_thermal[:,func] = self.thermal_scale * psi_Q[3::4,func] /self.flow_dt
+
+                if body.transfer is not None:
                     self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z,body=ibody)
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     self.fun3d_adjoint.input_heat_flux_adjoint(lam_x_thermal, lam_y_thermal, lam_z_thermal, lam_mag_thermal, body=ibody)
+                
                 if not scenario.steady:
                     temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
                     self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
@@ -660,24 +641,22 @@ class Fun3dInterface(SolverInterface):
             # Extract dG/du_a^T psi_G from FUN3D
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(body.aero_nnodes,nfunctions,body=ibody)
-                        for func in range(nfunctions):
-                            lam_x_temp = lam_x[:,func]*self.flow_dt
-                            lam_y_temp = lam_y[:,func]*self.flow_dt
-                            lam_z_temp = lam_z[:,func]*self.flow_dt
+                    lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(body.aero_nnodes,nfunctions,body=ibody)
+                    for func in range(nfunctions):
+                        lam_x_temp = lam_x[:,func]*self.flow_dt
+                        lam_y_temp = lam_y[:,func]*self.flow_dt
+                        lam_z_temp = lam_z[:,func]*self.flow_dt
 
-                            lam_x_temp = lam_x_temp.reshape((-1,1))
-                            lam_y_temp = lam_y_temp.reshape((-1,1))
-                            lam_z_temp = lam_z_temp.reshape((-1,1))
-                            body.dGdua[:,func]=np.hstack((lam_x_temp, lam_y_temp, lam_z_temp)).flatten(order='c')
+                        lam_x_temp = lam_x_temp.reshape((-1,1))
+                        lam_y_temp = lam_y_temp.reshape((-1,1))
+                        lam_z_temp = lam_z_temp.reshape((-1,1))
+                        body.dGdua[:,func]=np.hstack((lam_x_temp, lam_y_temp, lam_z_temp)).flatten(order='c')
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(body.aero_nnodes,nfunctions,body=ibody)
+                    lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(body.aero_nnodes,nfunctions,body=ibody)
 
-                        for func in range(nfunctions):
-                            lam_t_temp = lam_t[:,func] / body.T_ref * self.flow_dt
-                            body.dAdta[:,func] = lam_t_temp
+                    for func in range(nfunctions):
+                        lam_t_temp = lam_t[:,func] / body.T_ref * self.flow_dt
+                        body.dAdta[:,func] = lam_t_temp
 
             if 'rigid' in body.motion_type:
                 body.dGdT = self.fun3d_adjoint.extract_rigid_adjoint_product(nfunctions) * self.flow_dt
@@ -732,12 +711,10 @@ class Fun3dInterface(SolverInterface):
                 dz = np.asfortranarray(body.aero_disps[2::3])
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             if 'rigid' in body.motion_type and body.transfer is not None:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    self.fun3d_flow.input_rigid_transform(body.rigid_transform,body=ibody)
+                self.fun3d_flow.input_rigid_transform(body.rigid_transform,body=ibody)
             if body.thermal_transfer is not None:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
-                    self.fun3d_flow.input_wall_temperature(temps, body=ibody)
+                temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
         self.comm.Barrier()
@@ -753,27 +730,23 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies,1):
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes,body=ibody)
+                    fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes,body=ibody)
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes,body=ibody)
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes,body=ibody)
 
             body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
             body.aero_heat_flux = np.zeros(4*body.aero_nnodes, dtype=TransferScheme.dtype)
 
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                        body.aero_loads[0::3] = fx[:]
-                        body.aero_loads[1::3] = fy[:]
-                        body.aero_loads[2::3] = fz[:]
+                    body.aero_loads[0::3] = fx[:]
+                    body.aero_loads[1::3] = fy[:]
+                    body.aero_loads[2::3] = fz[:]
                 if body.thermal_transfer is not None:
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        body.aero_heat_flux[0::4] = self.thermal_scale * cqx[:]
-                        body.aero_heat_flux[1::4] = self.thermal_scale * cqy[:]
-                        body.aero_heat_flux[2::4] = self.thermal_scale * cqz[:]
-                        body.aero_heat_flux[3::4] = self.thermal_scale * cq_mag[:]
+                    body.aero_heat_flux[0::4] = self.thermal_scale * cqx[:]
+                    body.aero_heat_flux[1::4] = self.thermal_scale * cqy[:]
+                    body.aero_heat_flux[2::4] = self.thermal_scale * cqz[:]
+                    body.aero_heat_flux[3::4] = self.thermal_scale * cq_mag[:]
         return 0
 
     def step_post(self,scenario,bodies,step):
@@ -783,10 +756,8 @@ class Fun3dInterface(SolverInterface):
         self.force_hist[scenario.id][step] = {}
         for ibody, body in enumerate(bodies,1):
             if body.transfer is not None:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
+                self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
             if body.thermal_transfer is not None:
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
-                    self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
+                self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
+                self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
         return 0
