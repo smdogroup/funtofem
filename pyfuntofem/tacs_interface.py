@@ -416,24 +416,16 @@ class TacsSteadyInterface(SolverInterface):
                                                  dtype=TACS.dtype)
                     body.struct_temps[:] = ans_array[self.thermal_index::ndof]
 
-            # Check if this is thermoelastic analysis
-            aerothermoelastic_flag = True
-            for body in bodies:
-                if body.analysis_type == 'aerothermoelastic':
-                    aerothermoelastic_flag = True
-                    break
-
-            if aerothermoelastic_flag:
-                # Assemble the transpose of the Jacobian matrix for the adjoint
-                # computations. Note that for thermoelastic computations, the Jacobian
-                # matrix is non-symmetric due to the temperature-deformation coupling.
-                # The transpose must be used here to get the right result.
-                alpha = 1.0 # Jacobian coefficient for the state variables
-                beta = 0.0 # Jacobian coeff. for the first time derivative of the state variables
-                gamma = 0.0 # Coeff. for the second time derivative of the state variables
-                self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat,
+            # Assemble the transpose of the Jacobian matrix for the adjoint
+            # computations. Note that for thermoelastic computations, the Jacobian
+            # matrix is non-symmetric due to the temperature-deformation coupling.
+            # The transpose must be used here to get the right result.
+            alpha = 1.0 # Jacobian coefficient for the state variables
+            beta = 0.0 # Jacobian coeff. for the first time derivative of the state variables
+            gamma = 0.0 # Coeff. for the second time derivative of the state variables
+            self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat,
                                                 matOr=TACS.TRANSPOSE)
-                self.pc.factor()
+            self.pc.factor()
 
             # Evaluate the functions in preparation for evaluating the derivative
             # of the functions w.r.t. the state variables. Some TACS functions
@@ -467,6 +459,12 @@ class TacsSteadyInterface(SolverInterface):
 
     def iterate_adjoint(self, scenario, bodies, step):
         fail = 0
+
+        for body in bodies:
+            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                body.psi_S[:,:] = 0.0
+            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                body.psi_T_S[:,:] = 0.0
 
         if self.tacs_proc:
             # Evaluate state variable sensitivities and scale to get right-hand side
