@@ -320,7 +320,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print('Structural solver returned fail flag')
                 return fail
 
-            self._aitken_adjoint_relax(scenario)
+            #self._aitken_adjoint_relax(scenario)
 
         # end of solve loop
 

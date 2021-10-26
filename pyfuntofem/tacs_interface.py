@@ -407,9 +407,9 @@ class TacsSteadyInterface(SolverInterface):
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
-                        struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
+                        body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
 
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
@@ -417,7 +417,7 @@ class TacsSteadyInterface(SolverInterface):
                     body.struct_temps[:] = ans_array[self.thermal_index::ndof]
 
             # Check if this is thermoelastic analysis
-            aerothermoelastic_flag = False
+            aerothermoelastic_flag = True
             for body in bodies:
                 if body.analysis_type == 'aerothermoelastic':
                     aerothermoelastic_flag = True
@@ -460,16 +460,13 @@ class TacsSteadyInterface(SolverInterface):
                     self.svsenslist[func].zeroEntries()
         else:
             for body in bodies:
-                struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof)
+                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof)
                 body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof)
 
         return 0
 
     def iterate_adjoint(self, scenario, bodies, step):
         fail = 0
-
-        for body in bodies:
-            body.psi_S[:, :] = 0.0
 
         if self.tacs_proc:
             # Evaluate state variable sensitivities and scale to get right-hand side
@@ -514,7 +511,8 @@ class TacsSteadyInterface(SolverInterface):
                             body.psi_S[i::body.xfer_ndof, func] = psi_S_array[i::ndof]
 
                     if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                        body.psi_T_S[:, func] = psi_S_array[self.thermal_index]
+                        body.psi_T_S[:, func] = psi_S_array[self.thermal_index::ndof]
+                        print('body.psi_T_S = ', body.psi_T_S)
 
         return fail
 

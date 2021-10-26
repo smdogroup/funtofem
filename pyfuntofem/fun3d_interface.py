@@ -89,7 +89,7 @@ class Fun3dInterface(SolverInterface):
         # unsteady scenarios
         self.force_hist = {}
         self.heat_flux_hist = {}
-        self.aero_heat_flux_mag_hist = {}
+        self.heat_flux_mag_hist = {}
         self.aero_temps_hist = {}
         for scenario in model.scenarios:
             self.force_hist[scenario.id] = {}
@@ -603,6 +603,7 @@ class Fun3dInterface(SolverInterface):
                 # Solve the force adjoint equation
                 if body.transfer is not None:
                     psi_F = - body.dLdfa
+
                     lam_x = np.zeros((body.aero_nnodes, nfunctions),
                                      dtype=TransferScheme.dtype)
                     lam_y = np.zeros((body.aero_nnodes, nfunctions),
@@ -625,9 +626,10 @@ class Fun3dInterface(SolverInterface):
                         if step > 0:
                             self.dFdqinf[func] -= np.dot(body.aero_loads, psi_F[:, func])/self.qinf
 
+
                 # Solve the heat flux adjoint equation
                 if body.thermal_transfer is not None:
-                    psi_Q = - body.dQdfta
+                    psi_Q = body.dQdfta
 
                     lam_x_thermal = np.zeros((body.aero_nnodes, nfunctions),
                                              dtype=TransferScheme.dtype)
@@ -639,12 +641,13 @@ class Fun3dInterface(SolverInterface):
                                                dtype=TransferScheme.dtype)
 
                     for func in range(nfunctions):
-                        lam_x_thermal[:, func] = self.thermal_scale * psi_Q_flux[0::3, func]/self.flow_dt
-                        lam_y_thermal[:, func] = self.thermal_scale * psi_Q_flux[1::3, func]/self.flow_dt
-                        lam_z_thermal[:, func] = self.thermal_scale * psi_Q_flux[2::3, func]/self.flow_dt
+                        #lam_x_thermal[:, func] = self.thermal_scale * psi_Q_flux[0::3, func]/self.flow_dt
+                        #lam_y_thermal[:, func] = self.thermal_scale * psi_Q_flux[1::3, func]/self.flow_dt
+                        #lam_z_thermal[:, func] = self.thermal_scale * psi_Q_flux[2::3, func]/self.flow_dt
 
-                        lam_mag_thermal[:, func] = self.thermal_scale * psi_Q_mag[:, func]/self.flow_dt
+                        lam_mag_thermal[:, func] = self.thermal_scale * psi_Q[:, func]/self.flow_dt
 
+                    print('lam_mag_thermal = ', lam_mag_thermal)
                     self.fun3d_adjoint.input_heat_flux_adjoint(lam_x_thermal, lam_y_thermal, lam_z_thermal,
                                                                lam_mag_thermal, body=ibody)
 
@@ -652,7 +655,7 @@ class Fun3dInterface(SolverInterface):
                         if scenario.steady and ibody == 1:
                             self.dHdq[func] = 0.0
                         if step > 0:
-                            self.dHdq[func] -= np.dot(body.aero_heat_flux, psi_Q_mag[:, func)/ self.thermal_scale
+                            self.dHdq[func] -= np.dot(body.aero_heat_flux_mag, psi_Q[:, func])/ self.thermal_scale
 
                 if 'rigid' in body.motion_type:
                     self.fun3d_adjoint.input_rigid_transform(body.rigid_transform,body=ibody)
@@ -769,7 +772,7 @@ class Fun3dInterface(SolverInterface):
                     body.aero_heat_flux[0::3] = self.thermal_scale * cqx[:]
                     body.aero_heat_flux[1::3] = self.thermal_scale * cqy[:]
                     body.aero_heat_flux[2::3] = self.thermal_scale * cqz[:]
-                    body.aero_heat_flux[:] = self.thermal_scale * cq_mag[:]
+                    body.aero_heat_flux_mag[:] = self.thermal_scale * cq_mag[:]
         return 0
 
     def step_post(self,scenario,bodies,step):
