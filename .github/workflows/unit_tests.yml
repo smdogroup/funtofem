@@ -75,7 +75,7 @@ jobs:
           cd $F2F_DIR;
           mkdir build
           cd build
-          if ["${{ 'matrix.NAME' }}" = "Complex"]; then
+          if [ "${{ matrix.NAME }}" = "Complex" ]; then
             cmake -DUSE_MKL=OFF -DUSE_COMPLEX=ON ..
           else
             cmake -DUSE_MKL=OFF -DUSE_COMPLEX=OFF ..
@@ -89,7 +89,7 @@ jobs:
           echo "Build python interface";
           echo "=============================================================";
           cd ..
-          if ["${{ 'matrix.NAME' }}" = "Complex"]; then
+          if [ "${{ matrix.NAME }}" = "Complex" ]; then
             python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
           else
             python3 setup.py build_ext --inplace
