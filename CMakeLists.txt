@@ -46,7 +46,7 @@ INSTALL(TARGETS transfer_schemes DESTINATION ${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(test_schemes examples/functionality/stand_alone/test/test_schemes.cpp)
 TARGET_LINK_LIBRARIES(test_schemes transfer_schemes)
 ENABLE_TESTING()
-ADD_TEST(NAME test COMMAND test_schemes)
+ADD_TEST(NAME test_schemes COMMAND test_schemes)
 
 # Add definitions
 IF(${USE_COMPLEX})
