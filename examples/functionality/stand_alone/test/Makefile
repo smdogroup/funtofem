@@ -1,9 +1,9 @@
 # Makefile for test_schemes example
-include ../../../Makefile.in
+include ../../../../Makefile.in
 
 default:
 	${CXX} ${F2F_INCLUDE} ${CCFLAGS} -o test_schemes.o -c test_schemes.cpp
-	${CXX} ${CCFLAGS} -o test_schemes test_schemes.o -L${F2F_DIR}/lib -Wl,-rpath,${F2F_DIR}/lib -ltransfer_schemes ${LAPACK_LIBS}
+	${CXX} ${CCFLAGS} -o test_schemes test_schemes.o ${F2F_DIR}/lib/libtransfer_schemes.a ${LAPACK_LIBS}
 
 
 debug: CCFLAGS=${CCFLAGS_DEBUG}

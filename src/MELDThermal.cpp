@@ -269,7 +269,6 @@ void MELDThermal::setAeroStructConn(int *conn) {
   // Copy or duplicate and reflect the unique structural nodes
   F2FScalar *Xs_dup = NULL;
   int num_locate_nodes = 0;
-  int *locate_to_reflected_index = NULL;
 
   if (isymm > -1) {
     Xs_dup = new F2FScalar[6*ns];
@@ -470,8 +469,8 @@ void MELDThermal::transferFlux(const F2FScalar *aero_flux,
     }
   }
 
-  // distribute the structural loads
-  distributeStructuralVector(struct_flux_global, struct_flux, 1); // set vars_per_node = 1 for flux
+  // set vars_per_node = 1 for flux
+  distributeStructuralVector(struct_flux_global, struct_flux, 1);
   delete [] struct_flux_global;
 }
 
@@ -516,7 +515,7 @@ void MELDThermal::applydTdtS(const F2FScalar *vecs, F2FScalar *prods) {
       // Compute each component of the Jacobian vector product as follows:
       // Jv[k] = w*v[k]
       F2FScalar w = global_W[nn*i+j];
-      prods[i] +=  w*v;
+      prods[i] -= w*v;
     }
   }
 
@@ -553,11 +552,11 @@ void MELDThermal::applydTdtSTrans( const F2FScalar *vecs, F2FScalar *prods ) {
       F2FScalar w = global_W[nn*i+j];
 
       if (indx < ns) {
-         prods_global[indx] += w*vecs[i];
+        prods_global[indx] -= w*vecs[i];
       }
       else {
         indx -= ns;
-        prods_global[indx] += w*vecs[i];
+        prods_global[indx] -= w*vecs[i];
       }
     }
   }
@@ -617,10 +616,10 @@ void MELDThermal::applydQdqATrans( const F2FScalar *vecs, F2FScalar *prods ) {
   h            : step size
 
 */
-void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
-                                      const F2FScalar *aero_flux,
-                                      const F2FScalar *pert,
-                                      const F2FScalar h) {
+void MELDThermal::testFluxTransfer( const F2FScalar *struct_temps,
+                                    const F2FScalar *aero_flux,
+                                    const F2FScalar *pert,
+                                    const F2FScalar h ){
 
   // Transfer the structural temperatures
   F2FScalar *aero_temps = new F2FScalar[na];
@@ -716,9 +715,9 @@ void MELDThermal::testFluxTransfer(const F2FScalar *struct_temps,
 
 */
 void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps,
-                                            const F2FScalar *test_vec_a,
-                                            const F2FScalar *test_vec_s,
-                                            const F2FScalar h) {
+                                         const F2FScalar *test_vec_a,
+                                         const F2FScalar *test_vec_s,
+                                         const F2FScalar h) {
   // Transfer the structural temperatures
   F2FScalar *aero_temps = new F2FScalar[na];
   transferTemp(struct_temps, aero_temps);
@@ -757,7 +756,7 @@ void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps,
     F2FScalar Psi = Xa[i] + aero_temps[i];
     VPsi += test_vec_a[i]*Psi;
   }
-  F2FScalar deriv1_approx = 1.0*F2FImagPart(VPsi)/h;
+  F2FScalar deriv1_approx = -1.0*F2FImagPart(VPsi)/h;
 
   delete [] Us_cs;
 
@@ -861,9 +860,8 @@ void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  printf("complex\n");
   F2FScalar *Us_cs = new F2FScalar[ns];
-  memset(Us_cs, 0.0, ns*sizeof(F2FScalar)); //added
+  memset(Us_cs, 0.0, ns*sizeof(F2FScalar));
   for (int j = 0; j < ns; j++ ) {
     Us_cs[j] += struct_temps[j] +
                F2FScalar(0.0, F2FRealPart(h)*F2FRealPart(test_vec_s[j]));
@@ -877,15 +875,11 @@ void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
     F2FScalar Phi = Xa[j] + aero_temps[j];
     VPhi += test_vec_a[j]*Phi;
   }
-  printf("VPhi real: %e\n", F2FRealPart(VPhi));
-  printf("VPhi imag: %e\n", F2FImagPart(VPhi));
-  F2FScalar deriv_approx = 1.0*F2FImagPart(VPhi)/h;
-  printf("Deriv Approx: %e\n", F2FRealPart(deriv_approx));
+  F2FScalar deriv_approx = -1.0*F2FImagPart(VPhi)/h;
   delete [] Us_cs;
 
   // Approximate using finite difference (central)
 #else
-  printf("Finite Difference\n");
   F2FScalar *Us_pos = new F2FScalar[ns];
   F2FScalar *Us_neg = new F2FScalar[ns];
   for (int j = 0; j < ns; j++) {
@@ -938,5 +932,3 @@ void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
   delete [] grad1;
   delete [] grad2;
 }
-
-
