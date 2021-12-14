@@ -378,7 +378,7 @@ class TacsSteadyInterface(SolverInterface):
                 if body.thermal_transfer is not None:
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[self.thermal_index::ndof]
+                    body.struct_temps[:] = ans_array[self.thermal_index::ndof] + body.T_ref
         else:
             for body in bodies:
                 body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
