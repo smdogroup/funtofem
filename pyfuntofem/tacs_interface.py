@@ -455,8 +455,8 @@ class TacsSteadyInterface(SolverInterface):
                     self.svsenslist[func].zeroEntries()
         else:
             for body in bodies:
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof)
-                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof)
+                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
 
         return 0
 
