@@ -170,7 +170,7 @@ class TacsSteadyInterface(SolverInterface):
                         ksweight = func.options['ksweight'] if 'ksweight' in func.options else 50.0
                     else:
                         ksweight = 50.0
-                    self.funclist.append(functions.KSFailure(self.assembler, ksweight))
+                    self.funclist.append(functions.KSFailure(self.assembler, ksWeight=ksweight))
                     self.functag.append(1)
 
                 elif func.name.lower() == 'compliance':
@@ -178,7 +178,7 @@ class TacsSteadyInterface(SolverInterface):
                     self.functag.append(1)
 
                 elif func.name.lower() == 'temperature':
-                    self.funclist.append(functions.AverageTemperature(self.assembler, self.vol))
+                    self.funclist.append(functions.AverageTemperature(self.assembler, volume=self.vol))
                     self.functag.append(1)
 
                 elif func.name.lower() == 'heatflux':
@@ -300,6 +300,9 @@ class TacsSteadyInterface(SolverInterface):
         for body in bodies:
             if self.first_pass:
                 self.get_mesh(body)
+
+                # During the first pass, the transfer and thermal_transfer objects are
+                # not defined, so used the flags
                 if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                 if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
@@ -339,10 +342,10 @@ class TacsSteadyInterface(SolverInterface):
             # Add the external load and heat fluxes on the structure
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     for i in range(body.xfer_ndof):
                         ext_force_array[i::ndof] += body.struct_loads[i::body.xfer_ndof]
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     ext_force_array[self.thermal_index::ndof] += body.struct_heat_flux[:]
 
             # Zero the contributions at the DOF associated with boundary
@@ -366,16 +369,16 @@ class TacsSteadyInterface(SolverInterface):
             # Extract displacements and temperatures for each body
             ans_array = self.ans.getArray()
             for body in bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
                         body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[self.thermal_index::ndof]
+                    body.struct_temps[:] = ans_array[self.thermal_index::ndof] + body.T_ref
         else:
             for body in bodies:
                 body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
@@ -406,12 +409,12 @@ class TacsSteadyInterface(SolverInterface):
             # Extract the displacements and temperatures for each body
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
                     for i in range(body.xfer_ndof):
                         body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TACS.dtype)
                     body.struct_temps[:] = ans_array[self.thermal_index::ndof]
@@ -424,7 +427,7 @@ class TacsSteadyInterface(SolverInterface):
             beta = 0.0 # Jacobian coeff. for the first time derivative of the state variables
             gamma = 0.0 # Coeff. for the second time derivative of the state variables
             self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat,
-                                                matOr=TACS.TRANSPOSE)
+                                            matOr=TACS.TRANSPOSE)
             self.pc.factor()
 
             # Evaluate the functions in preparation for evaluating the derivative
@@ -452,8 +455,8 @@ class TacsSteadyInterface(SolverInterface):
                     self.svsenslist[func].zeroEntries()
         else:
             for body in bodies:
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof)
-                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof)
+                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
 
         return 0
 
@@ -461,9 +464,9 @@ class TacsSteadyInterface(SolverInterface):
         fail = 0
 
         for body in bodies:
-            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+            if body.transfer is not None:
                 body.psi_S[:,:] = 0.0
-            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+            if body.thermal_transfer is not None:
                 body.psi_T_S[:,:] = 0.0
 
         if self.tacs_proc:
@@ -482,11 +485,11 @@ class TacsSteadyInterface(SolverInterface):
                     # Form new right-hand side of structural adjoint equation using state
                     # variable sensitivites and the transformed temperature transfer
                     # adjoint variables
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         for i in range(body.xfer_ndof):
                             struct_rhs_array[i::ndof] += body.struct_rhs[i::body.xfer_ndof, func]
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         for i in range(body.therm_xfer_ndof):
                             struct_rhs_array[self.thermal_index::ndof] += \
                                 body.struct_rhs_T[i::body.therm_xfer_ndof, func]
@@ -504,13 +507,12 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Set the adjoint variables for each body
                 for body in bodies:
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         for i in range(body.xfer_ndof):
                             body.psi_S[i::body.xfer_ndof, func] = psi_S_array[i::ndof]
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         body.psi_T_S[:, func] = psi_S_array[self.thermal_index::ndof]
-                        print('body.psi_T_S = ', body.psi_T_S)
 
         return fail
 

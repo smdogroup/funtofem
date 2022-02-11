@@ -14,9 +14,9 @@
   consistent and conservative manner, derived from the principle of virtual
   work.
 
-  Users must specify symmetry in the constructor 
-  isymm = -1 for no symmetry 
-        =  0 for symmetry across x = 0 
+  Users must specify symmetry in the constructor
+  isymm = -1 for no symmetry
+        =  0 for symmetry across x = 0
         =  1 for symmetry across y = 0
         =  2 for symmetry across z = 0
 
@@ -54,20 +54,20 @@ class MELDThermal : public TransferScheme {
   void applydQdqA(const F2FScalar *vecs, F2FScalar *prods);
   void applydQdqATrans(const F2FScalar *vecs, F2FScalar *prods);
 
-  //Test Functions
+  // Test Functions
   void testFluxTransfer(const F2FScalar *struct_temps,
-                                      const F2FScalar *aero_flux,
-                                      const F2FScalar *pert, 
-                                      const F2FScalar h);
-  void testTempJacVecProducts(const F2FScalar *struct_temps, 
-                                            const F2FScalar *test_vec_a, 
-                                            const F2FScalar *test_vec_s,
-                                            const F2FScalar h);
-  void testFluxJacVecProducts(const F2FScalar *struct_temps, 
-                                            const F2FScalar *aero_flux,
-                                            const F2FScalar *test_vec_s1, 
-                                            const F2FScalar *test_vec_s2,
-                                            const F2FScalar h);
+                        const F2FScalar *aero_flux,
+                        const F2FScalar *pert,
+                        const F2FScalar h);
+  void testTempJacVecProducts(const F2FScalar *struct_temps,
+                              const F2FScalar *test_vec_a,
+                              const F2FScalar *test_vec_s,
+                              const F2FScalar h);
+  void testFluxJacVecProducts(const F2FScalar *struct_temps,
+                              const F2FScalar *aero_flux,
+                              const F2FScalar *test_vec_s1,
+                              const F2FScalar *test_vec_s2,
+                              const F2FScalar h);
 
   // Inherited Displacement and Load Transfer functions (NOT implemented for Thermal MELD scheme)
   void transferDisps(const F2FScalar*, F2FScalar*){}
@@ -80,7 +80,7 @@ class MELDThermal : public TransferScheme {
   void applydDdxS0(const F2FScalar*, F2FScalar*){}
   void applydLdxA0(const F2FScalar*, F2FScalar*){}
   void applydLdxS0(const F2FScalar*, F2FScalar*){}
- 
+
  protected:
   // Local structural data
   int ns_local;
@@ -107,7 +107,7 @@ class MELDThermal : public TransferScheme {
   void distributeStructuralMesh();
   void collectStructuralVector(const F2FScalar *local, F2FScalar *global, int vars_per_node=3);
   void distributeStructuralVector(F2FScalar *global, F2FScalar *local, int vars_per_node=3);
-  
+
   // Auxiliary functions for creating connectivity and weighting
   void setAeroStructConn(int *aerostruct_conn);
   void computeWeights(F2FScalar *W);

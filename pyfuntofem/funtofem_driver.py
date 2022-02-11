@@ -124,6 +124,7 @@ class FUNtoFEMDriver(object):
 
         for ibody, body in enumerate(self.model.bodies):
             body.transfer = None
+            body.thermal_transfer = None
 
             body_analysis_type = 'aeroelastic'
             if 'analysis_type' in transfer_options[ibody]:
@@ -213,7 +214,7 @@ class FUNtoFEMDriver(object):
             if body_analysis_type == 'aerothermal' or body_analysis_type == 'aerothermoelastic':
                 # Set up the load and displacement transfer schemes
 
-                if transfer_options[ibody]['thermal_scheme'].lower()== 'meld':
+                if transfer_options[ibody]['thermal_scheme'].lower() == 'meld':
                     # defaults
                     isym = -1
                     beta = 0.5
@@ -249,7 +250,6 @@ class FUNtoFEMDriver(object):
                         body.aero_nnodes = 0
                 else:
                     if self.struct_comm != MPI.COMM_NULL:
-                        body.transfer.setStructNodes(body.struct_X)
                         body.transfer.setStructNodes(body.struct_X)
                     else:
                         body.struct_nnodes = 0
@@ -288,7 +288,6 @@ class FUNtoFEMDriver(object):
                 else:
                     if self.struct_comm != MPI.COMM_NULL:
                         body.thermal_transfer.setStructNodes(body.struct_X)
-                        body.thermal_transfer.setStructNodes(body.struct_X)
                     else:
                         body.struct_nnodes = 0
 
@@ -311,6 +310,7 @@ class FUNtoFEMDriver(object):
                     else:
                         body.aero_nnodes = 0
 
+        return
 
     def _update_transfer(self):
         """
