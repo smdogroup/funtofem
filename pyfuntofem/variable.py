@@ -48,7 +48,7 @@ class Variable(object):
 
         Examples
         --------
-        thickness = Variable(name='thickness 0', value = 0.004, lower = 0.001, upper 0.1)
+        thickness = Variable(name='thickness 0', value=0.004, lower=0.001, upper=0.1)
         """
 
         self.name       = name

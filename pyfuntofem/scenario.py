@@ -63,14 +63,14 @@ class Scenario(Base):
         self.steps  = steps
 
         if fun3d:
-            self.add_variable('aerodynamic',dv('Mach' ,id=1,upper=5.0,active=False))
-            self.add_variable('aerodynamic',dv('AOA'  ,id=2,lower=-15.0,upper=15.0,active=False))
-            self.add_variable('aerodynamic',dv('Yaw'  ,id=3,lower=-10.0,upper=10.0,active=False))
-            self.add_variable('aerodynamic',dv('xrate',id=4,upper=0.0,active=False))
-            self.add_variable('aerodynamic',dv('yrate',id=5,upper=0.0,active=False))
-            self.add_variable('aerodynamic',dv('zrate',id=6,upper=0.0,active=False))
+            self.add_variable('aerodynamic', dv('Mach', id=1, upper=5.0, active=False))
+            self.add_variable('aerodynamic', dv('AOA', id=2, lower=-15.0, upper=15.0, active=False))
+            self.add_variable('aerodynamic', dv('Yaw', id=3, lower=-10.0, upper=10.0, active=False))
+            self.add_variable('aerodynamic', dv('xrate', id=4, upper=0.0, active=False))
+            self.add_variable('aerodynamic', dv('yrate', id=5, upper=0.0, active=False))
+            self.add_variable('aerodynamic', dv('zrate', id=6, upper=0.0, active=False))
 
-    def add_function(self,function):
+    def add_function(self, function):
         """
         Add a new function to the scenario's function list
 

@@ -433,14 +433,14 @@ class FUNtoFEMDriver(object):
         self.model.enforce_coupling_derivatives()
         return fail
 
-    def _initialize_forward(self,scenario,bodies):
+    def _initialize_forward(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize(scenario, bodies)
             if fail!=0:
                 return fail
         return 0
 
-    def _initialize_adjoint(self,scenario,bodies):
+    def _initialize_adjoint(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
             if fail!=0:

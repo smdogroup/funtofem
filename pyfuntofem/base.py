@@ -43,7 +43,6 @@ class Base(object):
         :mod:`body`,:mod:`scenario` : subclass the Base class
         """
 
-
         self.name = name
         self.id   = id
         if group:
@@ -54,7 +53,7 @@ class Base(object):
         self.variables = {}
         self.derivatives = {}
 
-    def add_variable(self,vartype,var):
+    def add_variable(self, vartype, var):
         """
         Add a new variable to the body's or scenario's variable dictionary
 
@@ -76,7 +75,9 @@ class Base(object):
         var.analysis_type = vartype
         self.variables[vartype].append(var)
 
-    def set_variable(self, vartype, name=None, index=None, value=None, lower=None, upper=None, scaling=None, active=True, coupled=None):
+    def set_variable(self, vartype, name=None, index=None,
+                     value=None, lower=None, upper=None, scaling=None,
+                     active=True, coupled=None):
         """
         Set one or more properties of a variable given the vartype and either the variable name or a list of id's
 
@@ -113,14 +114,17 @@ class Base(object):
         if name is not None:
             for variable in self.variables[vartype]:
                 if variable.name == name:
-                    variable.assign(value=value,upper=upper,lower=lower,scaling=scaling,active=active,coupled=coupled)
+                    variable.assign(value=value, upper=upper, lower=lower,
+                        scaling=scaling, active=active, coupled=coupled)
                     break
         elif index is not None:
             if type(index) == list:
                 for ndx in index:
-                    self.variables[vartype][ndx].assign(value=value,upper=upper,lower=lower,scaling=scaling,active=active,coupled=coupled)
+                    self.variables[vartype][ndx].assign(value=value, upper=upper,
+                        lower=lower, scaling=scaling, active=active, coupled=coupled)
             elif type(index) == int:
-                self.variables[vartype][index].assign(value=value,upper=upper,lower=lower,scaling=scaling,active=active,coupled=coupled)
+                self.variables[vartype][index].assign(value=value, upper=upper,
+                    lower=lower, scaling=scaling, active=active, coupled=coupled)
             else:
                 print("Warning unknown type for index. Variable not set")
         else:
@@ -136,7 +140,7 @@ class Base(object):
             number of active variables in the variable dictionary
 
         """
-        is_active = lambda var: var.active ==True
+        is_active = lambda var: var.active == True
         count = 0
         for vartype in self.variables:
             count += len(list(filter(is_active, self.variables[vartype])))
@@ -193,7 +197,7 @@ class Base(object):
 
         return full_list
 
-    def couple_variables(self,base):
+    def couple_variables(self, base):
         """
         **[model call]**
         Updates coupled variables in the body or scenario based on the input's variables
@@ -211,7 +215,7 @@ class Base(object):
                                                     for v1,v2 in zip(base.variables[vartype],
                                                                      self.variables[vartype]) ]
 
-    def update_id(self,id):
+    def update_id(self, id):
         """
         **[model call]**
         Update the id number of the body or scenario
@@ -223,7 +227,7 @@ class Base(object):
         """
         self.id = id
 
-    def add_coupled_derivatives(self,base):
+    def add_coupled_derivatives(self, base):
         """
         **[model call]**
         Adds coupled derivatives in the body or scenario based on the input's derivatives
@@ -242,7 +246,7 @@ class Base(object):
                         for func in range(len(self.derivatives[vartype])):
                             self.derivatives[vartype][func][i]+= base.derivatives[vartype][func][i]
 
-    def set_coupled_derivatives(self,base):
+    def set_coupled_derivatives(self, base):
         """
         **[model call]**
         Updates coupled derivatives in the body or scenario based on the input's derivatives
@@ -269,7 +273,7 @@ class Base(object):
         for vartype in self.derivatives:
             self.derivatives[vartype].append( len(self.variables[vartype]) * [0.0] )
 
-    def active_derivatives(self,n):
+    def active_derivatives(self, n):
         """
         **[model call]**
         Get the derivatives of a function, n, with respect to all the active variables in this body or scenario
@@ -292,11 +296,11 @@ class Base(object):
             for i, var in enumerate(self.variables[vartype]):
                 if not var.active:
                     der_list.pop(i-offset)
-                    offset+=1
+                    offset += 1
             full_list.extend(der_list)
         return full_list
 
-    def uncoupled_derivatives(self,n):
+    def uncoupled_derivatives(self, n):
         """
         **[model call]**
         Get the derivatives of a function, n, with respect to all the uncoupled, active variables in this body or scenario

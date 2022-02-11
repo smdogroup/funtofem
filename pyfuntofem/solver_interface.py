@@ -23,7 +23,7 @@ class SolverInterface(object):
     """
     A base class to define what functions solver interfaces in FUNtoFEM need
     """
-    def set_variables(self,scenario,bodies):
+    def set_variables(self, scenario, bodies):
         """
         Set the design variables into the solver.
         The scenario and bodies objects have dictionaries of :class:`~variable.Variable` objects.
@@ -59,7 +59,7 @@ class SolverInterface(object):
         """
         pass
 
-    def set_functions(self,scenario,bodies):
+    def set_functions(self, scenario, bodies):
         """
         Set the function definitions into the solver.
         The scenario has a list of function objects.
@@ -96,7 +96,7 @@ class SolverInterface(object):
         """
         pass
 
-    def get_functions(self,scenario,bodies):
+    def get_functions(self, scenario, bodies):
         """
         Put the function values from the solver in the value attribute of the scneario's functions.
         The scenario has the list of function objects where the function's owned by this solver will be set.
@@ -132,7 +132,7 @@ class SolverInterface(object):
         """
         pass
 
-    def get_function_gradients(self,scenario,bodies,offset):
+    def get_function_gradients(self, scenario, bodies, offset):
         """
         Get the derivatives of all the functions with respect to design variables associated with this solver.
         The derivatives in the scenario and body objects are a Python dictionary where the keys are the type of variable.
@@ -175,7 +175,7 @@ class SolverInterface(object):
         """
         pass
 
-    def get_coordinate_derivatives(self,scenario,bodies,step):
+    def get_coordinate_derivatives(self, scenario, bodies, step):
         """
         Add the solver's contributions to the coordinate derivatives for this time step or the total value for the steady case.
         The coordinate derivatives are stored in the body objects in the aero_shape_term and struct_shape_term attributes.
@@ -227,7 +227,7 @@ class SolverInterface(object):
         """
         pass
 
-    def initialize(self,scenario,bodies):
+    def initialize(self, scenario, bodies):
         """
         This function allows the solver to set up anything that is necessary before the scenario is simulated (forward analysis), e.g., load in the mesh which has been updated by the shape parameterization, allocate arrays, set initial conditions, etc.
 
@@ -254,7 +254,7 @@ class SolverInterface(object):
         """
         return 0
 
-    def iterate(self,scenario,bodies,step):
+    def iterate(self, scenario, bodies, step):
         """
         Advance the solver's residual(s).
         Called in NLBGS solver.
@@ -311,7 +311,7 @@ class SolverInterface(object):
         """
         return 0
 
-    def post(self,scenario,bodies):
+    def post(self, scenario, bodies):
         """
         Perform any tasks the solver needs to do after the forward steps are complete, e.g., evaluate functions, post-process, deallocate unneeded memory.
 
@@ -324,7 +324,7 @@ class SolverInterface(object):
         """
         pass
 
-    def initialize_adjoint(self,scenario,bodies):
+    def initialize_adjoint(self, scenario, bodies):
         """
         Perform any tasks the solver needs to do before taking adjoint steps
 
@@ -337,7 +337,7 @@ class SolverInterface(object):
         """
         return 0
 
-    def set_states(self,scenario,bodies,step):
+    def set_states(self, scenario, bodies, step):
         """
         Load the states (aero_loads, struct_disps) associated with this step either from memory or the disk for the transfer scheme to linearize about.
         This function is called at the beginning of each adjoint step in time dependent problems.
@@ -369,7 +369,7 @@ class SolverInterface(object):
         """
         pass
 
-    def iterate_adjoint(self,scenario,bodies,step):
+    def iterate_adjoint(self, scenario, bodies, step):
         """
         Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an adjoint or adjoint-product.
         Called in NLBGS solver.
@@ -421,13 +421,13 @@ class SolverInterface(object):
         """
         return 0
 
-    def post_adjoint(self,scenario,bodies):
+    def post_adjoint(self, scenario, bodies):
         """
         Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.
         """
         pass
 
-    def step_pre(self,scenario,bodies,step):
+    def step_pre(self, scenario, bodies, step):
         """
         Operations before at a step in an FSI subiteration case.
         Called in NLBGS with FSI subiterations.
@@ -443,7 +443,7 @@ class SolverInterface(object):
         """
         return 0
 
-    def step_solver(self,scenario,bodies,step,fsi_subiter):
+    def step_solver(self, scenario, bodies, step, fsi_subiter):
         """
         Step in an FSI subiteration case.
         Called in NLBGS with FSI subiterations.
@@ -460,7 +460,8 @@ class SolverInterface(object):
             The FSI subiteration number
         """
         return 0
-    def step_post(self,scenario,bodies,step):
+
+    def step_post(self, scenario, bodies, step):
         """
         Operations after at a step in an FSI subiteration case.
         Called in NLBGS with FSI subiterations.
