@@ -371,7 +371,7 @@ class FUNtoFEMmodel(object):
                 data += '{}\n'.format(func.name)
 
                 # Print the number of coordinates
-                data += '{}\n'.count(format)
+                data += '{}\n'.format(count)
 
                 for ibody in range(len(self.bodies)):
                     id = ids[ibody]
@@ -381,10 +381,11 @@ class FUNtoFEMmodel(object):
                         data += '{} {} {} {}\n'.format(
                             id[i],
                             deriv[3 * i, n],
-                            deriv[3 * i + 1, 1],
-                            deriv[3 * i + 2, 2])
+                            deriv[3 * i + 1, n],
+                            deriv[3 * i + 2, n])
 
             with open(filename, "w") as fp:
                 fp.write(data)
 
         return
+

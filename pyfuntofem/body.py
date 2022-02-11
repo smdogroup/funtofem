@@ -19,6 +19,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+import numpy as np
 from .base import Base
 
 class Body(Base):
@@ -179,8 +181,8 @@ class Body(Base):
             all_aero_ids = comm.gather(self.aero_id, root=root)
             all_aero_shape = comm.gather(self.aero_shape_term, root=root)
 
-            aero_ids = None
-            aero_shape = None
+            aero_ids = []
+            aero_shape = []
 
             if comm.rank == root:
                 # Discard any entries that are None
@@ -210,8 +212,8 @@ class Body(Base):
             all_struct_ids = comm.gather(self.struct_id, root=root)
             all_struct_shape = comm.gather(self.struct_shape_term, root=root)
 
-            struct_ids = None
-            struct_shape = None
+            struct_ids = []
+            struct_shape = []
 
             if comm.rank == root:
                 # Discard any entries that are None
@@ -236,5 +238,44 @@ class Body(Base):
                     struct_ids = np.concatenate(struct_ids)
 
             return struct_ids, struct_shape
+
+        return
+
+
+    def initialize_shape_parameterization(self):
+        """
+        **[driver call]**
+        Create the map of structural node locations since TACS doesn't give us global id numbers
+
+        """
+
+        return
+
+    def update_shape(self, complex_run=False):
+        """
+        **[driver call]**
+        perturbs the shape of the body based on the body's shape variables and update the meshes
+
+        Parameters
+        ----------
+        complex_run: bool
+            whether or not the run is complex mode
+
+        """
+
+        return
+
+    def shape_derivative(self, scenario, offset):
+        """
+        **[driver call]**
+        Calculates the shape derivative given the coordinate derivatives
+
+        Parameters
+        ----------
+        scenario: scenario object
+            The current scenario
+        offset: int
+            function offset number
+        """
 
         return
