@@ -163,3 +163,88 @@ class Body(Base):
         var.body = self.id
 
         super(Body,self).add_variable(vartype,var)
+
+    def write_sens_files(self, comm, aero_filename, struct_filename):
+        """
+        Write the sensitivity files for the aerodynamic and structural meshes on
+        the root processor.
+
+        This code collects the sensitivities from each processor and collects the
+        result to the root node.
+        """
+
+        aero_comm = comm
+        struct_comm = comm
+
+        aero_proc = True
+        struct_proc = True
+
+        if aero_proc:
+            all_aero_ids = aero_comm.gather(self.aero_id, root=0)
+            all_aero_shape = aero_comm.gather(self.aero_shape_term, root=0)
+
+            if aero_comm.rank == 0:
+                # Discard any entries that are None
+                aero_ids = []
+                for d in all_aero_ids:
+                    if d is not None:
+                        aero_ids.append(d)
+
+                aero_shape = []
+                for d in all_aero_shape:
+                    if d is not None:
+                        aero_shape.append(d)
+
+                aero_ids = np.concatenate(aero_ids)
+                aero_shape = np.concatenate(aero_shape)
+
+                with open(aero_filename, "w") as fp:
+                    # the number of functions and number of nodes
+                    num_funcs = aero_shape.shape[1]
+                    num_nodes = aero_ids.shape[0]
+                    fp.write("{} {}\n".format(num_funcs, num_nodes))
+
+                    for func in range(num_funcs):
+                        for i in range(num_nodes):
+                            fp.write('{} {} {} {}\n'.format(
+                                aero_ids[i],
+                                aero_shape[3 * i, func],
+                                aero_shape[3 * i + 1, func],
+                                aero_shape[3 * i + 2, func]))
+
+        '''
+        if struct_proc:
+            all_struct_ids = struct_comm.gather(self.struct_id, root=0)
+            all_struct_shape = struct_comm.gather(self.struct_shape_term, root=0)
+
+            if struct_comm.rank == 0:
+                # Discard any entries that are None
+                struct_ids = []
+                for d in all_struct_ids:
+                    if d is not None:
+                        struct_ids.append(d)
+
+                struct_shape = []
+                for d in all_struct_shape:
+                    if d is not None:
+                        struct_shape.append(d)
+
+                struct_ids = np.concatenate(struct_ids)
+                struct_shape = np.concatenate(struct_shape)
+
+                with open(struct_filename, "w") as fp:
+                    # the number of functions and number of nodes
+                    num_funcs = struct_shape.shape[1]
+                    num_nodes = struct_ids.shape[0]
+                    fp.write("{} {}\n".format(num_funcs, num_nodes))
+
+                    for func in range(num_funcs):
+                        for i in range(num_nodes):
+                            fp.write('{} {} {} {}\n'.format(
+                                struct_ids[i],
+                                struct_shape[3 * i, func],
+                                struct_shape[3 * i + 1, func],
+                                struct_shape[3 * i + 2, func]))
+        '''            
+
+        return        
