@@ -200,7 +200,7 @@ class Fun3dInterface(SolverInterface):
 
             # Initialize FUN3D adjoint - special order for static adjoint
             if self.adjoint_options is None:
-                options = {'getgrad':True}
+                options = {'getgrad': True}
             else:
                 options = self.adjoint_options
             self.fun3d_adjoint.initialize_project(comm=self.comm)
@@ -233,7 +233,7 @@ class Fun3dInterface(SolverInterface):
             self.fun3d_adjoint.initialize_solution()
         else:
             if self.adjoint_options is None:
-                options = {'timedep_adj_frozen':True}
+                options = {'timedep_adj_frozen': True}
             else:
                 options = self.adjoint_options
             self.fun3d_adjoint.initialize_project(comm=self.comm)
@@ -242,7 +242,7 @@ class Fun3dInterface(SolverInterface):
             interface.design_initialize()
             for ibody, body in enumerate(bodies,1):
                 if body.shape and body.aero_nnodes > 0:
-                    aero_X = np.reshape(body.aero_X,(3,-1),order='F')
+                    aero_X = np.reshape(body.aero_X,(3,-1), order='F')
                     interface.design_push_body_mesh(ibody, aero_X, body.aero_id)
                     interface.design_push_body_name(ibody, body.name)
                 else:
@@ -289,7 +289,6 @@ class Fun3dInterface(SolverInterface):
                     boundary = 0
                 else:
                     boundary = bodies[function.body].boundary
-
 
                 # The funtofem function in FUN3D acts as any adjoint function
                 # that isn't dependent on FUN3D variables
@@ -473,7 +472,7 @@ class Fun3dInterface(SolverInterface):
         self.comm.Barrier()
         bcont = self.fun3d_flow.iterate()
         if bcont == 0:
-            if self.comm.Get_rank()==0:
+            if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             fail = 1
             os.chdir("../..")
