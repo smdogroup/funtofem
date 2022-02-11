@@ -119,12 +119,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.psi_T = np.zeros((body.aero_nnodes, nfunctions),
                                       dtype=TransferScheme.dtype)
 
-            if body.shape:
-                body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
-                                                dtype=TransferScheme.dtype)
-                body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
-                                                  dtype=TransferScheme.dtype)
-
+            body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
+                                            dtype=TransferScheme.dtype)
+            body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
+                                              dtype=TransferScheme.dtype)
+        
+        return
 
     def _solve_steady_forward(self, scenario, steps=None):
         """
@@ -583,7 +583,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.struct_rhs_T[:,func] = -psi_T_product
 
             # extract and accumulate coordinate derivative every step
-            self._extract_coordinate_derivatives(scenario,self.model.bodies,step)
+            self._extract_coordinate_derivatives(scenario, self.model.bodies, step)
 
         # end of solve loop
 

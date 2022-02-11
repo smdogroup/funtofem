@@ -213,7 +213,7 @@ class FUNtoFEMmodel(object):
 
         return dv
 
-    def set_variables(self,dv,scale=False):
+    def set_variables(self, dv, scale=False):
         """
         Set the variable values of the entire model given a list of values
         in the same order as get_variables
@@ -283,7 +283,7 @@ class FUNtoFEMmodel(object):
         funcs = self.get_functions()
         gradients = []
 
-        for n,func in enumerate(funcs):
+        for n, func in enumerate(funcs):
             func_list = []
             for scenario in self.scenarios:
                 if scenario.group_root:
@@ -325,4 +325,67 @@ class FUNtoFEMmodel(object):
                 for scenario2 in self.scenarios:
                     if scenario.group == scenario2.group and not scenario2.group_root:
                         scenario2.set_coupled_derivatives(scenario)
+
+    def write_sensitivity_file(self, comm, filename, discipline='aero', root=0):
+        """
+        Write the sensitivity file.
+
+        This file contains the following information:
+
+        Number of functionals
+
+        Functional name
+        Number of surface nodes
+        for node in surface_nodes:
+            node, dfdx, dfdy, dfdz
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        discipline: str
+            The name of the discipline sensitivity data to be written
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        funcs = self.get_functions()
+
+        count = 0
+        ids = []
+        derivs = []
+        for body in self.bodies:
+            id, deriv = body.collect_coordinate_derivatives(comm, discipline, root=root)
+            count += len(id)
+            ids.append(id)
+            derivs.append(deriv)
+
+        if comm.rank == root:
+            # Number of functionals
+            data = '{}\n\n'.format(len(funcs))
+
+            for n, func in enumerate(funcs):
+                # Print the function name
+                data += '{}\n'.format(func.name)
+
+                # Print the number of coordinates
+                data += '{}\n'.format(count)
+
+                for ibody in range(len(self.bodies)):
+                    id = ids[ibody]
+                    deriv = derivs[ibody]
+
+                    for i in range(len(id)):
+                        data += '{} {} {} {}\n'.format(
+                            id[i],
+                            deriv[3 * i, n],
+                            deriv[3 * i + 1, n],
+                            deriv[3 * i + 2, n])
+
+            with open(filename, "w") as fp:
+                fp.write(data)
+
+        return
 

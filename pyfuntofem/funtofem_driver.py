@@ -88,8 +88,7 @@ class FUNtoFEMDriver(object):
 
         # Initialize the shape parameterization
         for body in self.model.bodies:
-            if body.shape:
-                body.initialize_shape_parameterization()
+            body.initialize_shape_parameterization()
 
     def update_model(self, model):
         """
@@ -352,10 +351,9 @@ class FUNtoFEMDriver(object):
 
         # update the shapes first
         for body in self.model.bodies:
-            if body.shape:
-                complex_run = True if (TransferScheme.dtype == np.complex128 or
-                                       TransferScheme.dtype == complex) else False
-                body.update_shape(complex_run)
+            complex_run = True if (TransferScheme.dtype == np.complex128 or
+                                   TransferScheme.dtype == complex) else False
+            body.update_shape(complex_run)
 
         # loop over the forward problem for the different scenarios
         for scenario in self.model.scenarios:
@@ -433,14 +431,14 @@ class FUNtoFEMDriver(object):
         self.model.enforce_coupling_derivatives()
         return fail
 
-    def _initialize_forward(self,scenario,bodies):
+    def _initialize_forward(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize(scenario, bodies)
             if fail!=0:
                 return fail
         return 0
 
-    def _initialize_adjoint(self,scenario,bodies):
+    def _initialize_adjoint(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
             if fail!=0:
@@ -473,8 +471,7 @@ class FUNtoFEMDriver(object):
             self.solvers[solver].get_function_gradients(scenario, self.model.bodies, offset)
 
         for body in self.model.bodies:
-            if body.shape:
-                body.shape_derivative(scenario, offset)
+            body.shape_derivative(scenario, offset)
 
     def _get_scenario_function_offset(self, scenario):
         """
@@ -496,8 +493,7 @@ class FUNtoFEMDriver(object):
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:
             for body in self.model.bodies:
-                if body.shape and body.transfer:
-
+                if body.transfer:
                     # Aerodynamic coordinate derivatives
                     temp = np.zeros((3*body.aero_nnodes), dtype=TransferScheme.dtype)
                     for func in range(nfunctions):
