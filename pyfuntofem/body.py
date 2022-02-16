@@ -57,7 +57,7 @@ class Body(Base):
 
         from .variable import Variable as dv
 
-        super(Body,self).__init__(name, id, group)
+        super(Body, self).__init__(name, id, group)
 
         self.name = name
         self.analysis_type = analysis_type
@@ -137,7 +137,7 @@ class Body(Base):
         self.aero_temps  = None
         self.aero_heat_flux = None
 
-    def update_id(self,id):
+    def update_id(self, id):
         """
         **[model call]**
         Update the id number of the body or scenario
@@ -153,7 +153,7 @@ class Body(Base):
             for var in self.variables[vartype]:
                 var.body = self.id
 
-    def add_variable(self,vartype,var):
+    def add_variable(self, vartype, var):
         """
         Add a new variable to the body's variable dictionary
 
@@ -166,7 +166,7 @@ class Body(Base):
         """
         var.body = self.id
 
-        super(Body,self).add_variable(vartype, var)
+        super(Body, self).add_variable(vartype, var)
 
     def collect_coordinate_derivatives(self, comm, discipline, root=0):
         """
