@@ -33,7 +33,7 @@ class wedgeTACS(TacsSteadyInterface):
         gmres = None
 
         self.T_ref = 300.0
-
+        self.struct_id = None
         if comm.Get_rank() < n_tacs_procs:
             # Set constitutive properties
             rho = 4540.0  # density, kg/m^3
