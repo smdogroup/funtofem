@@ -364,11 +364,14 @@ class FUNtoFEMmodel(object):
 
         if comm.rank == root:
             # Number of functionals
-            data = '{}\n\n'.format(len(funcs))
+            data = '{}\n'.format(len(funcs))
 
             for n, func in enumerate(funcs):
                 # Print the function name
                 data += '{}\n'.format(func.name)
+
+                # Print the function value
+                data += '{}\n'.format(func.value)
 
                 # Print the number of coordinates
                 data += '{}\n'.format(count)
