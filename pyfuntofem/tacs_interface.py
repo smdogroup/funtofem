@@ -47,7 +47,7 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
-    def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None,
+    def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None,struct_id=None,
                               thermal_index=0):
         """
         Initialize the variables required for analysis and
@@ -68,6 +68,7 @@ class TacsSteadyInterface(SolverInterface):
         self.pc = None
         self.gmres = None
         self.thermal_index = thermal_index
+        self.struct_id = struct_id
 
         self.struct_X_vec = None
         self.struct_nnodes = None
@@ -290,6 +291,7 @@ class TacsSteadyInterface(SolverInterface):
         if self.tacs_proc:
             body.struct_X = self.struct_X_vec.getArray().copy()
             body.struct_nnodes = body.struct_X.size//3
+            body.struct_id = self.struct_id
         else:
             body.struct_nnodes = 0
             body.struct_X = np.array([], dtype=TACS.dtype)
