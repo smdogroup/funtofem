@@ -65,7 +65,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         self.theta = []
 
         self.aitken_init = None
-        self.aitken_therm_init = None
         self.aitken_vec = None
         self.aitken_therm_vec = None
         self.up_prev = None
@@ -140,7 +139,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         """
 
         self.aitken_init = True
-        self.aitken_therm_init = True
         fail = 0
 
         # Determine if we're using the scenario's number of steps or the argument
@@ -231,7 +229,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         fail = 0
         self.aitken_init = True
-        self.aitken_therm_init = True
 
         # how many steps to take
         steps = scenario.steps
@@ -320,7 +317,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print('Structural solver returned fail flag')
                 return fail
 
-            #self._aitken_adjoint_relax(scenario)
+            self._aitken_adjoint_relax(scenario)
 
         # end of solve loop
 
@@ -615,7 +612,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         if self.aitken_init:
             self.aitken_init = False
-            self.aitken_therm_init = False
 
             # initialize the 'previous update' to zero
             self.up_prev = []
@@ -627,7 +623,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.theta = []
 
             for ind, body in enumerate(self.model.bodies):
-
                 if body.transfer is not None:
                     self.up_prev.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TransferScheme.dtype))
@@ -636,10 +631,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     self.theta.append(self.theta_init)
 
                 if body.thermal_transfer is not None:
-                    self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
-                                                                 dtype=TransferScheme.dtype))
-                    self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
-                                                                    dtype=TransferScheme.dtype))
+                    self.therm_up_prev.append(np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                       dtype=TransferScheme.dtype))
+                    self.aitken_therm_vec.append(np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                          dtype=TransferScheme.dtype))
                     self.theta.append(self.theta_init)
 
         # do the Aitken update
@@ -693,6 +688,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.aitken_vec = []
             self.theta = []
 
+            # initialize the 'previous update' to zero
+            self.therm_up_prev = []
+            self.aitken_therm_vec = []
+            self.theta_therm = []
+
             for ibody, body in enumerate(self.model.bodies):
                 if body.transfer is not None:
                     up_prev_body = []
@@ -708,15 +708,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     self.aitken_vec.append(aitken_vec_body)
                     self.theta.append(theta_body)
 
-        if self.aitken_therm_init:
-            self.aitken_therm_init = False
-
-            # initialize the 'previous update' to zero
-            self.therm_up_prev = []
-            self.aitken_therm_vec = []
-            self.theta_therm = []
-
-            for ibody, body in enumerate(self.model.bodies):
                 if body.thermal_transfer is not None:
                     up_prev_body = []
                     aitken_therm_vec_body = []
@@ -733,8 +724,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
-            if body.transfer is not None:
-                if body.struct_nnodes > 0:
+            if body.struct_nnodes > 0:
+                if body.transfer is not None:
                     for func in range(nfunctions):
                         up = body.psi_S[:,func] - self.aitken_vec[ibody][func]
                         norm2 = np.linalg.norm(up - self.up_prev[ibody][func])**2.0
@@ -747,8 +738,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         self.up_prev[ibody][func] =up[:]
                         body.psi_S[:,func] = self.aitken_vec[ibody][func][:]
 
-            if body.thermal_transfer is not None:
-                if body.struct_nnodes > 0:
+                if body.thermal_transfer is not None:
                     for func in range(nfunctions):
                         up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
                         norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
@@ -762,76 +752,3 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
 
         return
-
-
-    # def _aitken_relax_thermal(self):
-    #     if self.aitken_therm_init:
-    #         self.aitken_therm_init = False
-
-    #         # initialize the 'previous update' to zero
-    #         self.therm_up_prev = []
-    #         self.aitken_therm_vec = []
-    #         self.theta = []
-
-    #         for ind, body in enumerate(self.model.bodies):
-    #             self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #             self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #             self.theta.append(self.theta_init)
-
-    #     # do the Aitken update
-    #     for ibody, body in enumerate(self.model.bodies):
-    #         if body.struct_nnodes > 0:
-    #             up = body.struct_temps - self.aitken_therm_vec[ibody]
-    #             norm2 = (np.linalg.norm(up - self.therm_up_prev[ibody])**2.0)
-
-    #             # Only update theta if the displacements changed
-    #             if norm2 > 1e-13:
-    #                 self.theta[ibody] *= 1.0 - (up - self.therm_up_prev[ibody]).dot(up)/norm2
-    #                 self.theta[ibody] = np.max((np.min((self.theta[ibody],self.theta_max)),self.theta_min))
-
-    #             # handle the min/max for complex step
-    #             if type(self.theta[ibody]) == np.complex128 or type(self.theta[ibody]) == complex:
-    #                 self.theta[ibody] = self.theta[ibody].real + 0.0j
-
-    #             self.aitken_therm_vec[ibody] += self.theta[ibody] * up
-    #             self.therm_up_prev[ibody] = up[:]
-    #             body.struct_temps = self.aitken_therm_vec[ibody]
-    #     return
-
-    # def _aitken_adjoint_relax_thermal(self,scenario):
-    #     nfunctions =  scenario.count_adjoint_functions()
-    #     if self.aitken_therm_init:
-    #         self.aitken_therm_init = False
-
-    #         # initialize the 'previous update' to zero
-    #         self.therm_up_prev = []
-    #         self.aitken_therm_vec = []
-    #         self.theta = []
-
-    #         for ibody, body in enumerate(self.model.bodies):
-    #             up_prev_body = []
-    #             aitken_therm_vec_body = []
-    #             theta_body = []
-    #             for func in range(nfunctions):
-    #                 up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #                 aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #                 theta_body.append(self.theta_init)
-    #             self.therm_up_prev.append(up_prev_body)
-    #             self.aitken_therm_vec.append(aitken_therm_vec_body)
-    #             self.theta.append(theta_body)
-
-    #     # do the Aitken update
-    #     for ibody, body in enumerate(self.model.bodies):
-    #         if body.struct_nnodes > 0:
-    #             for func in range(nfunctions):
-    #                 up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
-    #                 norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-
-    #                 # Only update theta if the vector changed
-    #                 if norm2 > 1e-13:
-    #                     self.theta[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-    #                     self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],self.theta_max)),self.theta_min))
-    #                 self.aitken_therm_vec[ibody][func] += self.theta[ibody][func] * up
-    #                 self.therm_up_prev[ibody][func] =up[:]
-    #                 body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
-    #     return self.aitken_therm_vec
