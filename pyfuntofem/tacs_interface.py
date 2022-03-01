@@ -296,6 +296,7 @@ class TacsSteadyInterface(SolverInterface):
         else:
             body.struct_nnodes = 0
             body.struct_X = np.array([], dtype=TACS.dtype)
+            body.struct_id = np.array([],dtype = TACS.dtype)
 
         return
 
