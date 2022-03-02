@@ -241,7 +241,6 @@ class Body(Base):
 
         return
 
-
     def initialize_shape_parameterization(self):
         """
         **[driver call]**
