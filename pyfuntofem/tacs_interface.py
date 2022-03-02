@@ -288,13 +288,15 @@ class TacsSteadyInterface(SolverInterface):
         return
 
     def get_mesh(self, body):
+        oneBased = True
         if self.tacs_proc:
             body.struct_X = self.struct_X_vec.getArray().copy()
             body.struct_nnodes = body.struct_X.size//3
-            body.struct_id = self.struct_id
+            body.struct_id = self.struct_id + 1 * oneBased
         else:
             body.struct_nnodes = 0
             body.struct_X = np.array([], dtype=TACS.dtype)
+            body.struct_id = np.array([],dtype = TACS.dtype)
 
         return
 
