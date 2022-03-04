@@ -362,6 +362,7 @@ class FUNtoFEMmodel(object):
             ids.append(id)
             derivs.append(deriv)
 
+
         if comm.rank == root:
             # Number of functionals
             data = '{}\n'.format(len(funcs))
@@ -382,7 +383,7 @@ class FUNtoFEMmodel(object):
 
                     for i in range(len(id)):
                         data += '{} {} {} {}\n'.format(
-                            id[i],
+                            int(id[i]),
                             deriv[3 * i, n],
                             deriv[3 * i + 1, n],
                             deriv[3 * i + 2, n])

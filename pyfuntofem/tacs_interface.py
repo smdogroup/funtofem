@@ -294,7 +294,8 @@ class TacsSteadyInterface(SolverInterface):
             if self.struct_id is None:
                 body.struct_id = None
             else:
-                body.struct_id = self.struct_id + 1
+                #body.struct_id = self.struct_id + 1
+                body.struct_id = self.struct_id
         else:
             body.struct_nnodes = 0
             body.struct_X = np.array([], dtype=TACS.dtype)
