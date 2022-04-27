@@ -97,7 +97,7 @@ class wedge_adjoint(object):
         self.mass          = None
         self.steady_lift   = None
         self.steady_drag   = None
-        
+
         self.num_con = 1
 
         self.var_scale = np.ones(self.ndv,dtype=TransferScheme.dtype)
@@ -108,22 +108,22 @@ class wedge_adjoint(object):
         thickness = 0.5
         # Build the model
         model = FUNtoFEMmodel('wedge')
-        plate = Body('plate',group=0,boundary=1)
+        plate = Body('plate', group=0, boundary=1)
         #plate.add_variable('structural',Variable('thickness',value=thickness,lower = 0.001, upper = 1.0))
         for i in range(self.num_tacs_dvs):
-            plate.add_variable('structural',Variable('thickness '+ str(i),value=thickness,lower = 1e-5, upper = 1e4))
+            plate.add_variable('structural', Variable('thickness '+ str(i), value=thickness, lower=1e-5, upper=1e4))
 
         model.add_body(plate)
 
-        steady = Scenario('steady',group=0,steps=self.steps)
+        steady = Scenario('steady', group=0, steps=self.steps)
 
-        steady.add_variable('aerodynamic',Variable(name='dynamic pressure',value=self.steady_q,lower=1.0,upper=150000.0))
-        steady.add_variable('aerodynamic',Variable(name='thermal scale',value=self.thermal_scale,lower=1.0,upper=1e10))
+        steady.add_variable('aerodynamic', Variable(name='dynamic pressure', value=self.steady_q, lower=1.0, upper=150000.0))
+        steady.add_variable('aerodynamic', Variable(name='thermal scale', value=self.thermal_scale, lower=1.0, upper=1e10))
 
-        temp = Function('temperature',analysis_type='structural') #temperature
+        temp = Function('temperature', analysis_type='structural') #temperature
         steady.add_function(temp)
 
-        mass = Function('mass',analysis_type='structural',adjoint=False)
+        mass = Function('mass', analysis_type='structural', adjoint=False)
         steady.add_function(mass)
 
         model.add_scenario(steady)

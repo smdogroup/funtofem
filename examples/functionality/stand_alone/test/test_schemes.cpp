@@ -23,6 +23,7 @@
 #include "MELD.h"
 #include "LinearizedMELD.h"
 #include "RBF.h"
+#include "MELDThermal.h"
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
     XS0[j] = (1.0*rand())/RAND_MAX;
     US[j] = (1.0*rand())/RAND_MAX;
   }
-  
+
   // Create random testing data
   F2FScalar *test_vec_a1 = new F2FScalar[3*aero_nnodes];
   F2FScalar *test_vec_a2 = new F2FScalar[3*aero_nnodes];
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
     test_vec_a1[i] = (1.0*rand())/RAND_MAX;
     test_vec_a2[i] = (1.0*rand())/RAND_MAX;
   }
-  
+
   F2FScalar *US_pert = new F2FScalar[3*struct_nnodes];
   F2FScalar *test_vec_s1 = new F2FScalar[3*struct_nnodes];
   F2FScalar *test_vec_s2 = new F2FScalar[3*struct_nnodes];
@@ -92,6 +93,16 @@ int main(int argc, char *argv[]) {
   meld->testdLdxS0Products(US, FA, test_vec_s1, test_vec_s2, h);
   delete meld;
 
+  MELDThermal *meld_thermal = new MELDThermal(comm, comm, 0, comm, 0, symmetry, nn, beta);
+  meld_thermal->setAeroNodes(XA0, aero_nnodes);
+  meld_thermal->setStructNodes(XS0, struct_nnodes);
+  meld_thermal->initialize();
+
+  meld_thermal->testFluxTransfer(US, FA, US_pert, h);
+  meld_thermal->testTempJacVecProducts(US, test_vec_a1, test_vec_s1, h);
+  meld_thermal->testFluxJacVecProducts(US, FA, test_vec_s1, test_vec_s2, h);
+  delete meld_thermal;
+
   // Create transfer scheme of type linearizedMELD
   //TransferScheme *linmeld = new LinearizedMELD(comm, comm, 0, comm, 0, nn, beta);
   //linmeld->setAeroNodes(XA0, aero_nnodes);
@@ -125,7 +136,7 @@ int main(int argc, char *argv[]) {
   rbf->testdLdxA0Products(US, FA, test_vec_a1, test_vec_s1, h);
   rbf->testdLdxS0Products(US, FA, test_vec_s1, test_vec_s2, h);
   delete rbf;
-  
+
   // Free allocated memory
   delete [] XA0;
   delete [] FA;

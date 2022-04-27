@@ -23,7 +23,7 @@
 class Function(object):
     """holds component function information in FUNtoFEM"""
     def __init__(self, name, id=0, value=0.0, start=0, stop=-1, analysis_type=None,
-                 body=-1, adjoint=True,options=None,averaging=None):
+                 body=-1, adjoint=True, options=None, averaging=None):
         """
 
         Parameters
@@ -48,8 +48,6 @@ class Function(object):
             any options associated with the function and pass to the solvers
         averaging: bool
             whether the function is averaged or integrated or the function window. Ignored for steady functions
-
-
 
         Examples
         --------

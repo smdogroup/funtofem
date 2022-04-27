@@ -88,8 +88,7 @@ class FUNtoFEMDriver(object):
 
         # Initialize the shape parameterization
         for body in self.model.bodies:
-            if body.shape:
-                body.initialize_shape_parameterization()
+            body.initialize_shape_parameterization()
 
     def update_model(self, model):
         """
@@ -124,6 +123,7 @@ class FUNtoFEMDriver(object):
 
         for ibody, body in enumerate(self.model.bodies):
             body.transfer = None
+            body.thermal_transfer = None
 
             body_analysis_type = 'aeroelastic'
             if 'analysis_type' in transfer_options[ibody]:
@@ -213,7 +213,7 @@ class FUNtoFEMDriver(object):
             if body_analysis_type == 'aerothermal' or body_analysis_type == 'aerothermoelastic':
                 # Set up the load and displacement transfer schemes
 
-                if transfer_options[ibody]['thermal_scheme'].lower()== 'meld':
+                if transfer_options[ibody]['thermal_scheme'].lower() == 'meld':
                     # defaults
                     isym = -1
                     beta = 0.5
@@ -249,7 +249,6 @@ class FUNtoFEMDriver(object):
                         body.aero_nnodes = 0
                 else:
                     if self.struct_comm != MPI.COMM_NULL:
-                        body.transfer.setStructNodes(body.struct_X)
                         body.transfer.setStructNodes(body.struct_X)
                     else:
                         body.struct_nnodes = 0
@@ -288,7 +287,6 @@ class FUNtoFEMDriver(object):
                 else:
                     if self.struct_comm != MPI.COMM_NULL:
                         body.thermal_transfer.setStructNodes(body.struct_X)
-                        body.thermal_transfer.setStructNodes(body.struct_X)
                     else:
                         body.struct_nnodes = 0
 
@@ -311,6 +309,7 @@ class FUNtoFEMDriver(object):
                     else:
                         body.aero_nnodes = 0
 
+        return
 
     def _update_transfer(self):
         """
@@ -352,10 +351,9 @@ class FUNtoFEMDriver(object):
 
         # update the shapes first
         for body in self.model.bodies:
-            if body.shape:
-                complex_run = True if (TransferScheme.dtype == np.complex128 or
-                                       TransferScheme.dtype == complex) else False
-                body.update_shape(complex_run)
+            complex_run = True if (TransferScheme.dtype == np.complex128 or
+                                   TransferScheme.dtype == complex) else False
+            body.update_shape(complex_run)
 
         # loop over the forward problem for the different scenarios
         for scenario in self.model.scenarios:
@@ -433,14 +431,14 @@ class FUNtoFEMDriver(object):
         self.model.enforce_coupling_derivatives()
         return fail
 
-    def _initialize_forward(self,scenario,bodies):
+    def _initialize_forward(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize(scenario, bodies)
             if fail!=0:
                 return fail
         return 0
 
-    def _initialize_adjoint(self,scenario,bodies):
+    def _initialize_adjoint(self, scenario, bodies):
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
             if fail!=0:
@@ -473,8 +471,7 @@ class FUNtoFEMDriver(object):
             self.solvers[solver].get_function_gradients(scenario, self.model.bodies, offset)
 
         for body in self.model.bodies:
-            if body.shape:
-                body.shape_derivative(scenario, offset)
+            body.shape_derivative(scenario, offset)
 
     def _get_scenario_function_offset(self, scenario):
         """
@@ -496,8 +493,7 @@ class FUNtoFEMDriver(object):
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:
             for body in self.model.bodies:
-                if body.shape and body.transfer:
-
+                if body.transfer:
                     # Aerodynamic coordinate derivatives
                     temp = np.zeros((3*body.aero_nnodes), dtype=TransferScheme.dtype)
                     for func in range(nfunctions):

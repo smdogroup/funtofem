@@ -65,7 +65,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         self.theta = []
 
         self.aitken_init = None
-        self.aitken_therm_init = None
         self.aitken_vec = None
         self.aitken_therm_vec = None
         self.up_prev = None
@@ -86,7 +85,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         nfunctions_total = len(scenario.functions)
 
         for body in bodies:
-            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+            if body.transfer is not None:
                 body.psi_L = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
                 body.psi_S = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
@@ -101,7 +100,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.psi_D = np.zeros((body.aero_nnodes*3, nfunctions),
                                       dtype=TransferScheme.dtype)
 
-            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+            if body.thermal_transfer is not None:
                 # Thermal terms
                 body.psi_Q = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
                                       dtype=TransferScheme.dtype)
@@ -119,12 +118,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.psi_T = np.zeros((body.aero_nnodes, nfunctions),
                                       dtype=TransferScheme.dtype)
 
-            if body.shape:
-                body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
-                                                dtype=TransferScheme.dtype)
-                body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
-                                                  dtype=TransferScheme.dtype)
-
+            body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
+                                            dtype=TransferScheme.dtype)
+            body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
+                                              dtype=TransferScheme.dtype)
+        
+        return
 
     def _solve_steady_forward(self, scenario, steps=None):
         """
@@ -140,7 +139,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         """
 
         self.aitken_init = True
-        self.aitken_therm_init = True
         fail = 0
 
         # Determine if we're using the scenario's number of steps or the argument
@@ -156,12 +154,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for step in range(1, steps+1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.aero_disps = np.zeros(3*body.aero_nnodes,
                                                dtype=TransferScheme.dtype)
                     body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.aero_temps = np.zeros(body.aero_nnodes,
                                                dtype=TransferScheme.dtype)
                     body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
@@ -177,12 +175,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Transfer the loads and heat flux
             for body in self.model.bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TransferScheme.dtype)
                     body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.struct_heat_flux = np.zeros(body.struct_nnodes,
                                                      dtype=TransferScheme.dtype)
                     # FUN3D returns x,y,z, and magnitude of the surface normal heat flux
@@ -205,12 +203,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.aero_disps = np.zeros(body.aero_nnodes*3,
                                                dtype=TransferScheme.dtype)
                     body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.aero_temps = np.zeros(body.aero_nnodes,
                                                dtype=TransferScheme.dtype)
                     body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
@@ -231,14 +229,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         fail = 0
         self.aitken_init = True
-        self.aitken_therm_init = True
 
         # how many steps to take
         steps = scenario.steps
 
         # Load the current state
         for body in self.model.bodies:
-            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+            if body.transfer is not None:
                 aero_disps = np.zeros(body.aero_disps.size,
                                       dtype=TransferScheme.dtype)
                 body.transfer.transferDisps(body.struct_disps, aero_disps)
@@ -257,7 +254,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             for body in self.model.bodies:
                 for func in range(nfunctions):
 
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         # Transform load transfer adjoint variables using transpose Jacobian from
                         # funtofem: dLdfA^T * psi_L = dDdus * psi_S
                         psi_L_r = np.zeros(body.aero_nnodes*3,
@@ -265,7 +262,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.transfer.applydDduS(body.psi_S[:, func].copy(order='C'), psi_L_r)
                         body.dLdfa[:,func] = psi_L_r
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         # Transform heat flux transfer adjoint variables using transpose Jacobian from
                         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
                         psi_Q_r = np.zeros(body.aero_nnodes,
@@ -289,7 +286,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             for body in self.model.bodies:
                 for func in range(nfunctions):
 
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         # calculate dDdu_s^T * psi_D
                         psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TransferScheme.dtype)
@@ -303,13 +300,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         # structural elastic rhs
                         body.struct_rhs[:,func] = -psi_D_product - psi_L_product
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         # calculate dTdt_s^T * psi_T
                         psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TransferScheme.dtype)
                         body.psi_T = body.dAdta
                         body.thermal_transfer.applydTdtSTrans(body.psi_T[:, func].copy(order='C'), psi_T_product)
-                        body.struct_rhs_T[:,func] = -psi_T_product
+                        body.struct_rhs_T[:,func] = psi_T_product
 
             # take a step in the structural adjoint
             fail = self.solvers['structural'].iterate_adjoint(scenario, self.model.bodies, step)
@@ -358,11 +355,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Transfer structural displacements and temperatures to aerodynamic surface
             for body in self.model.bodies:
 
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
                     body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.aero_temps = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
                     body.thermal_transfer.transferTemp(body.struct_temps, body.aero_temps)
 
@@ -396,11 +393,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Transfer loads and heat flux from fluid and get loads and temps on structure
             for body in self.model.bodies:
 
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TransferScheme.dtype)
                     body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     body.struct_heat_flux = np.zeros(body.struct_nnodes, dtype=TransferScheme.dtype)
                     heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order='C')
                     body.thermal_transfer.transferFlux(heat_flux_magnitude, body.struct_heat_flux)
@@ -454,25 +451,25 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.solvers['structural'].set_states(scenario,self.model.bodies,step-1)
 
             for body in self.model.bodies:
+                if body.transfer is not None:
 
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+
                     body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
                     body.transfer.transferDisps(body.struct_disps,body.aero_disps)
 
                     struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
                     body.transfer.transferLoads(body.aero_loads,struct_loads)
 
-                if ('rigid'  in body.motion_type and
-                    'deform' in body.motion_type):
-                    rotation = np.zeros(9,dtype=TransferScheme.dtype)
-                    translation = np.zeros(3,dtype=TransferScheme.dtype)
-                    u = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                if 'rigid'  in body.motion_type and 'deform' in body.motion_type:
+                    rotation = np.zeros(9, dtype=TransferScheme.dtype)
+                    translation = np.zeros(3, dtype=TransferScheme.dtype)
+                    u = np.zeros(body.aero_nnodes*3, dtype=TransferScheme.dtype)
 
-                    body.rigid_transform = np.zeros((4,4),dtype=TransferScheme.dtype)
+                    body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
 
-                    body.transfer.transformEquivRigidMotion(body.aero_disps,rotation,translation,u)
+                    body.transfer.transformEquivRigidMotion(body.aero_disps, rotation, translation, u)
 
-                    body.rigid_transform[:3,:3] = rotation.reshape((3,3,),order='F')
+                    body.rigid_transform[:3,:3] = rotation.reshape((3, 3), order='F')
                     body.rigid_transform[:3, 3] = translation
                     body.rigid_transform[-1,-1] = 1.0
 
@@ -491,15 +488,14 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Get load and heat flux terms for the flow solver
             for body in self.model.bodies:
                 for func in range(nfunctions):
-
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         # Transform load transfer adjoint variables using transpose Jacobian from
                         # funtofem: dLdfA^T * psi_L
-                        psi_L_r = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                        psi_L_r = np.zeros(body.aero_nnodes*3, dtype=TransferScheme.dtype)
                         body.transfer.applydDduS(body.psi_S[:, func].copy(order='C'), psi_L_r)
                         body.dLdfa[:,func] = psi_L_r
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         # Transform heat flux transfer adjoint variables using transpose Jacobian from
                         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
                         psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
@@ -516,7 +512,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # From the flow grid adjoint, get to the displacement adjoint
             for body in self.model.bodies:
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     for func in range(nfunctions):
                         if body.motion_type == 'deform':
                             # displacement adjoint equation
@@ -563,7 +559,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 # form the RHS for the structural adjoint equation on the next reverse step
                 for func in range(nfunctions):
 
-                    if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                    if body.transfer is not None:
                         # calculate dDdu_s^T * psi_D
                         psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TransferScheme.dtype)
@@ -575,7 +571,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.transfer.applydLduSTrans(body.psi_L[:,func].copy(order='C'), psi_L_product)
                         body.struct_rhs[:,func] = -psi_D_product - psi_L_product
 
-                    if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                    if body.thermal_transfer is not None:
                         # calculate dTdt_s^T * psi_T
                         psi_T_product = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TransferScheme.dtype)
@@ -584,7 +580,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.struct_rhs_T[:,func] = -psi_T_product
 
             # extract and accumulate coordinate derivative every step
-            self._extract_coordinate_derivatives(scenario,self.model.bodies,step)
+            self._extract_coordinate_derivatives(scenario, self.model.bodies, step)
 
         # end of solve loop
 
@@ -616,7 +612,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         if self.aitken_init:
             self.aitken_init = False
-            self.aitken_therm_init = False
 
             # initialize the 'previous update' to zero
             self.up_prev = []
@@ -628,25 +623,24 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.theta = []
 
             for ind, body in enumerate(self.model.bodies):
-
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     self.up_prev.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                  dtype=TransferScheme.dtype))
                     self.aitken_vec.append(np.zeros(body.struct_nnodes*body.xfer_ndof,
                                                     dtype=TransferScheme.dtype))
                     self.theta.append(self.theta_init)
 
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                    self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
-                                                                 dtype=TransferScheme.dtype))
-                    self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,
-                                                                    dtype=TransferScheme.dtype))
+                if body.thermal_transfer is not None:
+                    self.therm_up_prev.append(np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                       dtype=TransferScheme.dtype))
+                    self.aitken_therm_vec.append(np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
+                                                          dtype=TransferScheme.dtype))
                     self.theta.append(self.theta_init)
 
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
 
-            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+            if body.transfer is not None:
                 if body.struct_nnodes > 0:
                     up = body.struct_disps - self.aitken_vec[ibody]
                     norm2 = (np.linalg.norm(up - self.up_prev[ibody])**2.0)
@@ -664,7 +658,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     self.up_prev[ibody] = up[:]
                     body.struct_disps = self.aitken_vec[ibody]
 
-            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+            if body.thermal_transfer is not None:
                 if body.struct_nnodes > 0:
                     up = body.struct_temps - self.aitken_therm_vec[ibody]
                     norm2 = (np.linalg.norm(up - self.therm_up_prev[ibody])**2.0)
@@ -694,8 +688,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             self.aitken_vec = []
             self.theta = []
 
+            # initialize the 'previous update' to zero
+            self.therm_up_prev = []
+            self.aitken_therm_vec = []
+            self.theta_therm = []
+
             for ibody, body in enumerate(self.model.bodies):
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
+                if body.transfer is not None:
                     up_prev_body = []
                     aitken_vec_body = []
                     theta_body = []
@@ -709,16 +708,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     self.aitken_vec.append(aitken_vec_body)
                     self.theta.append(theta_body)
 
-        if self.aitken_therm_init:
-            self.aitken_therm_init = False
-
-            # initialize the 'previous update' to zero
-            self.therm_up_prev = []
-            self.aitken_therm_vec = []
-            self.theta_therm = []
-
-            for ibody, body in enumerate(self.model.bodies):
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if body.thermal_transfer is not None:
                     up_prev_body = []
                     aitken_therm_vec_body = []
                     theta_body = []
@@ -734,8 +724,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
-            if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                if body.struct_nnodes > 0:
+            if body.struct_nnodes > 0:
+                if body.transfer is not None:
                     for func in range(nfunctions):
                         up = body.psi_S[:,func] - self.aitken_vec[ibody][func]
                         norm2 = np.linalg.norm(up - self.up_prev[ibody][func])**2.0
@@ -748,8 +738,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         self.up_prev[ibody][func] =up[:]
                         body.psi_S[:,func] = self.aitken_vec[ibody][func][:]
 
-            if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
-                if body.struct_nnodes > 0:
+                if body.thermal_transfer is not None:
                     for func in range(nfunctions):
                         up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
                         norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
@@ -763,76 +752,3 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
 
         return
-
-
-    # def _aitken_relax_thermal(self):
-    #     if self.aitken_therm_init:
-    #         self.aitken_therm_init = False
-
-    #         # initialize the 'previous update' to zero
-    #         self.therm_up_prev = []
-    #         self.aitken_therm_vec = []
-    #         self.theta = []
-
-    #         for ind, body in enumerate(self.model.bodies):
-    #             self.therm_up_prev.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #             self.aitken_therm_vec.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #             self.theta.append(self.theta_init)
-
-    #     # do the Aitken update
-    #     for ibody, body in enumerate(self.model.bodies):
-    #         if body.struct_nnodes > 0:
-    #             up = body.struct_temps - self.aitken_therm_vec[ibody]
-    #             norm2 = (np.linalg.norm(up - self.therm_up_prev[ibody])**2.0)
-
-    #             # Only update theta if the displacements changed
-    #             if norm2 > 1e-13:
-    #                 self.theta[ibody] *= 1.0 - (up - self.therm_up_prev[ibody]).dot(up)/norm2
-    #                 self.theta[ibody] = np.max((np.min((self.theta[ibody],self.theta_max)),self.theta_min))
-
-    #             # handle the min/max for complex step
-    #             if type(self.theta[ibody]) == np.complex128 or type(self.theta[ibody]) == complex:
-    #                 self.theta[ibody] = self.theta[ibody].real + 0.0j
-
-    #             self.aitken_therm_vec[ibody] += self.theta[ibody] * up
-    #             self.therm_up_prev[ibody] = up[:]
-    #             body.struct_temps = self.aitken_therm_vec[ibody]
-    #     return
-
-    # def _aitken_adjoint_relax_thermal(self,scenario):
-    #     nfunctions =  scenario.count_adjoint_functions()
-    #     if self.aitken_therm_init:
-    #         self.aitken_therm_init = False
-
-    #         # initialize the 'previous update' to zero
-    #         self.therm_up_prev = []
-    #         self.aitken_therm_vec = []
-    #         self.theta = []
-
-    #         for ibody, body in enumerate(self.model.bodies):
-    #             up_prev_body = []
-    #             aitken_therm_vec_body = []
-    #             theta_body = []
-    #             for func in range(nfunctions):
-    #                 up_prev_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #                 aitken_therm_vec_body.append(body.T_ref*np.ones(body.struct_nnodes*body.therm_xfer_ndof,dtype=TransferScheme.dtype))
-    #                 theta_body.append(self.theta_init)
-    #             self.therm_up_prev.append(up_prev_body)
-    #             self.aitken_therm_vec.append(aitken_therm_vec_body)
-    #             self.theta.append(theta_body)
-
-    #     # do the Aitken update
-    #     for ibody, body in enumerate(self.model.bodies):
-    #         if body.struct_nnodes > 0:
-    #             for func in range(nfunctions):
-    #                 up = body.psi_T_S[:,func] - self.aitken_therm_vec[ibody][func]
-    #                 norm2 = np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-
-    #                 # Only update theta if the vector changed
-    #                 if norm2 > 1e-13:
-    #                     self.theta[ibody][func] *= 1.0 - (up - self.therm_up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.therm_up_prev[ibody][func])**2.0
-    #                     self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],self.theta_max)),self.theta_min))
-    #                 self.aitken_therm_vec[ibody][func] += self.theta[ibody][func] * up
-    #                 self.therm_up_prev[ibody][func] =up[:]
-    #                 body.psi_T_S[:,func] = self.aitken_therm_vec[ibody][func][:]
-    #     return self.aitken_therm_vec
