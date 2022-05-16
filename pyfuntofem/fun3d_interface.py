@@ -38,8 +38,8 @@ class Fun3dInterface(SolverInterface):
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
     """
-    def __init__(self, comm, model, flow_dt=1.0,
-                 forward_options=None, adjoint_options=None):
+    def __init__(self, comm, model, flow_dt=1.0, qinf=1.0,thermal_scale=1.0,
+                 fun3d_dir=None, forward_options=None, adjoint_options=None):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
         The surface mesh on each processor only holds it's owned nodes. Transfer of that data to other processors is handled inside the FORTRAN side of FUN3D's FUNtoFEM interface.
@@ -60,6 +60,13 @@ class Fun3dInterface(SolverInterface):
         self.fun3d_flow = Flow()
         self.fun3d_adjoint = Adjoint()
 
+        # Root and FUN3D directories
+        self.root_dir = os.getcwd()
+        if (fun3d_dir is None):
+            self.fun3d_dir = self.root_dir
+        else:
+            self.fun3d_dir = fun3d_dir
+
         # command line options
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
@@ -72,11 +79,11 @@ class Fun3dInterface(SolverInterface):
         self.flow_dt = flow_dt
 
         # dynamic pressure
-        self.qinf = 1.0
+        self.qinf = qinf
         self.dFdqinf = []
 
         # heat flux
-        self.thermal_scale = 1.0 # = 1/2 * rho_inf * (V_inf)^3
+        self.thermal_scale = thermal_scale # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
 
         # multiple steady scenarios
@@ -116,8 +123,10 @@ class Fun3dInterface(SolverInterface):
         fail: int
             If the grid deformation failed, the intiialization will return 1
         """
-        os.chdir("./" + scenario.name)
-        os.chdir("./Flow")
+
+        flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
+        os.chdir(flow_dir)
+
         # Do the steps to initialize FUN3D
         self.fun3d_flow.initialize_project(comm=self.comm)
 
@@ -184,8 +193,10 @@ class Fun3dInterface(SolverInterface):
         fail: int
             If the grid deformation failed, the intiialization will return 1
         """
-        os.chdir("./" + scenario.name)
-        os.chdir("./Adjoint")
+
+        adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
+        os.chdir(adjoint_dir)
+        
         if scenario.steady:
             # load the forces and displacements
             for ibody, body in enumerate(bodies, 1):
@@ -480,7 +491,7 @@ class Fun3dInterface(SolverInterface):
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             fail = 1
-            os.chdir("../..")
+            os.chdir(self.root_dir)
             return fail
 
         # Pull out the forces from FUN3D
@@ -540,7 +551,7 @@ class Fun3dInterface(SolverInterface):
         """
 
         self.fun3d_flow.post()
-        os.chdir("../..")
+        os.chdir(self.root_dir)
 
         # save the forces for multiple scenarios if steady
         if scenario.steady and not first_pass:
@@ -712,7 +723,7 @@ class Fun3dInterface(SolverInterface):
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
-        os.chdir("../..")
+        os.chdir(self.root_dir)
 
     def step_pre(self, scenario, bodies, step):
         self.fun3d_flow.step_pre(step)
@@ -757,7 +768,7 @@ class Fun3dInterface(SolverInterface):
             if self.comm.Get_rank()==0:
                 print("Negative volume returning fail")
             fail = 1
-            os.chdir("../..")
+            os.chdir(self.root_dir)
             return fail
 
         # Pull out the forces from FUN3D
