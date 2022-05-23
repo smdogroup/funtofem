@@ -33,43 +33,43 @@ cdef extern from "TransferScheme.h":
     void applydLdxS0(const F2FScalar *vecs, F2FScalar *prods)
 
     # Convert aero displacements into equivalent rigid + elastic deformation
-    void transformEquivRigidMotion(const F2FScalar *aero_disps, 
+    void transformEquivRigidMotion(const F2FScalar *aero_disps,
                                    F2FScalar *R, F2FScalar *t, F2FScalar *u)
     void applydRduATrans(const F2FScalar *vecs, F2FScalar *prods)
-    void applydRdxA0Trans(const F2FScalar *aero_disps, const F2FScalar *vecs, 
+    void applydRdxA0Trans(const F2FScalar *aero_disps, const F2FScalar *vecs,
                           F2FScalar *prods)
 
     # Routines to test necessary functionality of transfer scheme
     void testLoadTransfer(const F2FScalar *struct_disps,
                           const F2FScalar *aero_loads,
-                          const F2FScalar *pert, 
+                          const F2FScalar *pert,
                           const F2FScalar h)
-    void testDispJacVecProducts(const F2FScalar *struct_disps, 
-                                const F2FScalar *test_vec_a, 
+    void testDispJacVecProducts(const F2FScalar *struct_disps,
+                                const F2FScalar *test_vec_a,
                                 const F2FScalar *test_vec_s,
                                 const F2FScalar h)
-    void testLoadJacVecProducts(const F2FScalar *struct_disps, 
+    void testLoadJacVecProducts(const F2FScalar *struct_disps,
                                 const F2FScalar *aero_loads,
-                                const F2FScalar *test_vec_s1, 
+                                const F2FScalar *test_vec_s1,
                                 const F2FScalar *test_vec_s2,
                                 const F2FScalar h)
     void testdDdxA0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *test_vec_a1, 
-                            const F2FScalar *test_vec_a2, 
+                            const F2FScalar *test_vec_a1,
+                            const F2FScalar *test_vec_a2,
                             const F2FScalar h)
     void testdDdxS0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *test_vec_a, 
-                            const F2FScalar *test_vec_s, 
+                            const F2FScalar *test_vec_a,
+                            const F2FScalar *test_vec_s,
                             const F2FScalar h)
     void testdLdxA0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *aero_loads, 
-                            const F2FScalar *test_vec_a, 
-                            const F2FScalar *test_vec_s, 
+                            const F2FScalar *aero_loads,
+                            const F2FScalar *test_vec_a,
+                            const F2FScalar *test_vec_s,
                             const F2FScalar h)
-    void testdLdxS0Products(const F2FScalar *struct_disps, 
-                            const F2FScalar *aero_loads, 
-                            const F2FScalar *test_vec_s1, 
-                            const F2FScalar *test_vec_s2, 
+    void testdLdxS0Products(const F2FScalar *struct_disps,
+                            const F2FScalar *aero_loads,
+                            const F2FScalar *test_vec_s1,
+                            const F2FScalar *test_vec_s2,
                             const F2FScalar h)
 
 cdef extern from "MELD.h":
@@ -102,15 +102,15 @@ cdef extern from "MELDThermal.h":
     # Routines to test necessary functionality of transfer scheme
     void testFluxTransfer(const F2FScalar *struct_temps,
                           const F2FScalar *aero_flux,
-                          const F2FScalar *pert, 
+                          const F2FScalar *pert,
                           const F2FScalar h)
-    void testTempJacVecProducts(const F2FScalar *struct_temps, 
-                                const F2FScalar *test_vec_a, 
+    void testTempJacVecProducts(const F2FScalar *struct_temps,
+                                const F2FScalar *test_vec_a,
                                 const F2FScalar *test_vec_s,
                                 const F2FScalar h)
-    void testFluxJacVecProducts(const F2FScalar *struct_temps, 
+    void testFluxJacVecProducts(const F2FScalar *struct_temps,
                                 const F2FScalar *aero_flux,
-                                const F2FScalar *test_vec_s1, 
+                                const F2FScalar *test_vec_s1,
                                 const F2FScalar *test_vec_s2,
                                 const F2FScalar h)
 
@@ -135,3 +135,12 @@ cdef extern from "RBF.h":
         MPI_Comm structure, int struct_root,
         MPI_Comm aero, int aero_root,
         RbfType rbf_type, int sampling_ratio)
+
+cdef extern from "BeamTransfer.h":
+  cppclass BeamTransfer(TransferScheme):
+    # Constructor
+    BeamTransfer(MPI_Comm all,
+                 MPI_Comm structure, int struct_root,
+                 MPI_Comm aero, int aero_root,
+                 const int *_conn, int _nelems, int _order,
+                 int _dof_per_node)
