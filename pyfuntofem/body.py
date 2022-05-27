@@ -29,7 +29,7 @@ class Body(Base):
     parent class for bodies with shape parameterization.
     """
     def __init__(self, name, analysis_type, id=0, group=None,
-                 boundary=0, T_ref=300.0, fun3d=True, motion_type='deform'):
+                 boundary=0, fun3d=True, motion_type='deform'):
         """
 
         Parameters
@@ -109,8 +109,8 @@ class Body(Base):
 
         # Number of degrees of freedom on the thermal structural side of the transfer
         self.therm_xfer_ndof = 1
-        self.thermal_index = 3 #0,1,2 for xyz and 3 for temp mod 4
-        self.T_ref = T_ref # reference temperature in Kelvin
+        self.thermal_index = 3 #0,1,2 for xyz and 3 for temp (mod 4) see tacs_interface.py
+        self.T_ref = 300.0 # reference temperature in Kelvin
 
         # Node locations u
         self.struct_X = None

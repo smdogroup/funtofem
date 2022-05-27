@@ -207,13 +207,6 @@ class TacsSteadyInterface(SolverInterface):
             for i, func in enumerate(scenario.functions):
                 if func.analysis_type == 'structural':
                     func.value = feval[i]
-                if func.name == "temperature":
-                    #read the reference temperature if one body
-                    T_ref = 0.0
-                    for body in bodies:
-                        T_ref = body.T_ref
-                    #add the reference temperature to convert to absolute temp
-                    func.value += body.T_ref
 
         for func in scenario.functions:
             func.value = self.comm.bcast(func.value, root=0)
