@@ -109,7 +109,8 @@ class Body(Base):
 
         # Number of degrees of freedom on the thermal structural side of the transfer
         self.therm_xfer_ndof = 1
-        self.T_ref = 300 # reference temperature in Kelvin
+        self.thermal_index = 3 #0,1,2 for xyz and 3 for temp (mod 4) see tacs_interface.py
+        self.T_ref = 300.0 # reference temperature in Kelvin
 
         # Node locations u
         self.struct_X = None
