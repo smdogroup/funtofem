@@ -1,7 +1,7 @@
 import numpy as np
 import openmdao.api as om
 from funtofem import TransferScheme
-from builder_class import Builder
+from mphys import Builder
 
 """ builder and components to wrap meld thermal to transfert temperature and
 heat transfer rate between the convective and conductive analysis."""
