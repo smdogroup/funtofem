@@ -23,6 +23,39 @@ class SolverInterface(object):
     """
     A base class to define what functions solver interfaces in FUNtoFEM need
     """
+    def __init__(self, *args, **kwargs):
+        """
+        The solver constructor is required to set discipline node locations (either :math:`x_a` or :math:`x_s`) in the funtofem body class as ``body.aero_X`` or ``body.struct_X``. The constructor can be used flexibly for other discipline solver specific activities (e.g. solver instantiation, reading mesh, allocating solver data).
+
+        Examples
+        --------
+        Notional aerodynamic solver implementation ``solver``:
+
+        .. code-block:: python
+
+            # Set aerodynamic surface meshes
+            for ibody, body in enumerate(bodies):
+                body.aero_X = solver.get_mesh(ibody)
+
+        Notional structural solver implementation ``solver``:
+
+        .. code-block:: python
+
+            # Set structural meshes
+            for ibody, body in enumerate(bodies):
+                body.struc_X = solver.get_mesh(ibody)
+        """
+        pass
+
+
+
+
+
+
+
+    """
+    A base class to define what functions solver interfaces in FUNtoFEM need
+    """
     def set_variables(self, scenario, bodies):
         """
         Set the design variables into the solver.
@@ -229,8 +262,11 @@ class SolverInterface(object):
 
     def initialize(self, scenario, bodies):
         """
-        This function allows the solver to set up anything that is necessary before the scenario is simulated (forward analysis), e.g., load in the mesh which has been updated by the shape parameterization, allocate arrays, set initial conditions, etc.
+        Set up anything that is necessary for a specific scenario prior to calls to ``iterate``. A requirement is that discipline solvers update their mesh representations to be consistent with ``body.aero_X`` (:math:`x_a`) or ``body.struct_X`` (:math:`x_s`) respectively due to fact that they may have been updated as a result of design changes.
 
+        Note, it is possible that a discipline solver mesh representation is updated by reading a mesh file instead of accepting the funtofem body representation. Ultimately, the requirement is that the funtofem body mesh representations ``body.aero_X`` and ``body.struct_X`` and their corresponding discipline solver mesh representations are consistent.
+
+        The initialize step may accomodate other useful activities such as data allocation, setting initial conditions, etc.
 
         Parameters
         ----------
@@ -247,24 +283,42 @@ class SolverInterface(object):
 
             # Set in the new aerodynamic surface meshes
             for ibody, body in enumerate(bodies):
-                solver.set_mesh(ibody, body.aero_X)
+                solver.set_surface_mesh(ibody, body.aero_X)
 
            # Initialize the flow field
            solver.initialize()
+
+        Structural Solver:
+
+        .. code-block:: python
+
+            # Set the new structural surface mesh
+            for ibody, body in enumerate(bodies):
+                solver.set_mesh(ibody, body.struct_X)
+
+           # Initialize the flow field
+           solver.initialize()
+
+
         """
         return 0
 
     def iterate(self, scenario, bodies, step):
         """
-        Advance the solver's residual(s).
-        Called in NLBGS solver.
+        Iterate on the primal residual equation for the present discipline solver. Called in NLBGS solver.
 
         For an aerodynamic solver, this might include:
-        #. Deforming the meshes
-        #. Solving for the new flow state
-        #. Integrating to get new aerodynamic surface forces and putting them in the body objects
 
-        For a structural solver, the structural forces should be applied and new structural displacements should be put into the body objects
+        #. Obtain displacements at aerodynamic surface nodes :math:`u_a` from funtofem body objects ``body.aero_disps``
+        #. Deform the meshes
+        #. Solve for the new aerodynamic state :math:`q`
+        #. Integrate and localize aerodynamic surface forces :math:`f_a` at aerodynamic surface node locations and set in the funtofem body object ``body.aero_loads``
+
+        For a structural solver: 
+
+        #. Obtain the forces at structural nodes :math:`f_s` from funtofem body objects ``body.struct_loads``
+        #. Solve for new displacement state :math:`u_s`
+        #. Set new structural displacements :math:`u_s` in the body objects ``body.struct_disps``
 
         Parameters
         ----------
