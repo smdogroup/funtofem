@@ -564,6 +564,8 @@ class Fun3dInterface(SolverInterface):
                     body.aero_loads[1::3] = self.qinf * fy[:]
                     body.aero_loads[2::3] = self.qinf * fz[:]
 
+                    if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads)), flush=True)
+
                 if body.thermal_transfer is not None:
                     cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
                         body.aero_nnodes, body=ibody
@@ -573,6 +575,8 @@ class Fun3dInterface(SolverInterface):
                     body.aero_heat_flux[1::3] = self.thermal_scale * cqy[:]
                     body.aero_heat_flux[2::3] = self.thermal_scale * cqz[:]
                     body.aero_heat_flux_mag[:] = self.thermal_scale * cq_mag[:]
+
+                    if (self.comm.Get_rank() == 0): print("Mean heat_flux = {}\n".format(np.mean(body.aero_heat_flux_mag)), flush=True)
 
         if not scenario.steady:
             # save this steps forces for the adjoint

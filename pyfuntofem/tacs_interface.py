@@ -76,7 +76,7 @@ class TacsSteadyInterface(SolverInterface):
         self.mat = None
         self.pc = None
         self.gmres = None
-        self.thermal_index = thermal_index
+        # self.thermal_index = thermal_index
         self.struct_id = struct_id
 
         self.struct_X_vec = None
