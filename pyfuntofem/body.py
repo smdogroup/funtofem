@@ -101,15 +101,11 @@ class Body(Base):
         self.thermal_transfer = None
 
         # Number of nodes
-        self.struct_nnodes = None
-        self.aero_nnodes = None
-
-        # Number of degrees of freedom on the structures side of the transfer
-        self.xfer_ndof = 3
+        self.struct_nnodes = {}
+        self.aero_nnodes = {}
 
         # Number of degrees of freedom on the thermal structural side of the transfer
-        self.therm_xfer_ndof = 1
-        self.T_ref = 300 # reference temperature in Kelvin
+        self.T_ref = 300.0 # Reference temperature
 
         # Node locations u
         self.struct_X = None
@@ -120,22 +116,308 @@ class Body(Base):
         self.aero_id = None
 
         # forward variables
-        self.struct_disps = None
-        self.struct_forces = None
-        self.struct_loads = None
-        self.struct_shape_term = None
+        self.struct_disps = {}
+        self.struct_loads = {}
+        self.struct_temps  = {}
+        self.struct_heat_flux = {}
+        self.struct_shape_term = {}
 
-        self.rigid_transform = None
-        self.aero_disps  = None
-        self.aero_forces = None
-        self.aero_loads = None
-        self.aero_shape_term = None
+        self.rigid_transform = {}
+        self.aero_disps = {}
+        self.aero_loads = {}
+        self.aero_shape_term = {}
 
-        self.struct_temps  = None
-        self.struct_heat_flux = None
+        self.aero_temps  = {}
+        self.aero_heat_flux = {}
 
-        self.aero_temps  = None
-        self.aero_heat_flux = None
+        return
+
+    def initialize_struct_mesh(self, scenario):
+
+        self.struct_nnodes[scenario]
+
+        pass
+
+    def initialize_aero_mesh(self, scenario):
+        pass
+
+    def initialize_variables(self, scenario):
+
+        if self.transfer is not None:
+            if scenario.steady:
+                self.struct_loads[scenario.id] = np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
+                self.aero_loads[scenario.id] = np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
+
+                self.struct_disps[scenario.id] = np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
+                self.aero_disps[scenario.id] = np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
+            else:
+                for time_index in range(scenario.steps):
+                    self.struct_loads[scenario.id] = []
+                    self.aero_loads[scenario.id] = []
+
+                    np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
+                    np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
+
+                    self.struct_disps[scenario.id] = np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
+                    self.aero_disps[scenario.id] = np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
+
+
+
+        if self.thermal_transfer is not None:
+            if scenario.steady:
+                self.struct_temps[scenario.id] = np.zeros(self.struct_nnodes[scenario.id], dtype=self.dtype)
+                self.aero_temps[scenario.id] = np.zeros(self.aero_nnodes[scenario.id], dtype=self.dtype)
+
+
+                    body.struct_temps = np.zeros(
+                        body.struct_nnodes * body.therm_xfer_ndof, dtype=TACS.dtype
+                    )
+                    body.struct_temps = np.zeros(
+                        body.struct_nnodes * body.therm_xfer_ndof, dtype=TACS.dtype
+                    )
+            body.struct_disps = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TACS.dtype
+                    )
+
+    def _initialize_transfer(self, transfer_options):
+        """
+        Initialize the transfer scheme
+
+        Parameters
+        ----------
+        transfer_options: dictionary or list of dictionaries
+            options for the load and displacement transfer scheme for the bodies
+        """
+
+        # If the user did not specify a transfer scheme default to MELD
+        if transfer_options is None:
+            transfer_options = []
+            for body in self.model.bodies:
+                transfer_options.append({'scheme': 'meld', 'isym': -1, 'beta': 0.5, 'npts': 200})
+
+        # if the user gave a dictionary instead of a list of
+        # dictionaries, assume all bodies use the same settings
+        if type(transfer_options) is dict:
+            transfer_options = len(self.model.bodies) * [ transfer_options ]
+
+        for ibody, body in enumerate(self.model.bodies):
+            body.transfer = None
+            body.thermal_transfer = None
+
+            body_analysis_type = 'aeroelastic'
+            if 'analysis_type' in transfer_options[ibody]:
+                body_analysis_type = transfer_options[ibody]['analysis_type'].lower()
+
+            # Set up the transfer schemes based on the type of analysis set for this body
+            if body_analysis_type == 'aeroelastic' or body_analysis_type == 'aerothermoelastic':
+
+                # Set up the load and displacement transfer schemes
+                if transfer_options[ibody]['scheme'].lower() == 'hermes':
+
+                    body.transfer = HermesTransfer(self.comm, self.struct_comm, self.aero_comm)
+
+                elif transfer_options[ibody]['scheme'].lower() == 'rbf':
+                    basis = TransferScheme.PY_THIN_PLATE_SPLINE
+
+                    if 'basis function' in transfer_options[ibody]:
+                        if transfer_options[ibody]['basis function'].lower() == 'thin plate spline':
+                            basis = TransferScheme.PY_THIN_PLATE_SPLINE
+                        elif transfer_options[ibody]['basis function'].lower() == 'gaussian':
+                            basis = TransferScheme.PY_GAUSSIAN
+                        elif transfer_options[ibody]['basis function'].lower() == 'multiquadric':
+                            basis = TransferScheme.PY_MULTIQUADRIC
+                        elif transfer_options[ibody]['basis function'].lower() == 'inverse multiquadric':
+                            basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
+                        else:
+                            print('Unknown RBF basis function for body number', ibody)
+                            quit()
+
+                    body.transfer = TransferScheme.pyRBF(self.comm, self.struct_comm,
+                                                         self.struct_root, self.aero_comm,
+                                                         self.aero_root, basis, 1)
+
+                elif transfer_options[ibody]['scheme'].lower() == 'meld':
+                    # defaults
+                    isym = -1 # No symmetry
+                    beta = 0.5 # Decay factor
+                    num_nearest = 200 # Number of nearest neighbours
+
+                    if 'isym' in transfer_options[ibody]:
+                        isym = transfer_options[ibody]['isym']
+                    if 'beta' in transfer_options[ibody]:
+                        beta = transfer_options[ibody]['beta']
+                    if 'npts' in transfer_options[ibody]:
+                        num_nearest = transfer_options[ibody]['npts']
+
+                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm,
+                                                          self.struct_root, self.aero_comm,
+                                                          self.aero_root,
+                                                          isym, num_nearest, beta)
+
+                elif transfer_options[ibody]['scheme'].lower() == 'linearized meld':
+                    # defaults
+                    isym = -1
+                    beta = 0.5
+                    num_nearest = 200
+
+                    if 'isym' in transfer_options[ibody]:
+                        isym = transfer_options[ibody]['isym']
+                    if 'beta' in transfer_options[ibody]:
+                        beta = transfer_options[ibody]['beta']
+                    if 'npts' in transfer_options[ibody]:
+                        num_nearest = transfer_options[ibody]['npts']
+
+
+                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.struct_comm,
+                                                                    self.struct_root, self.aero_comm,
+                                                                    self.aero_root,
+                                                                    isym, num_nearest, beta)
+
+                elif transfer_options[ibody]['scheme'].lower()== 'beam':
+                    conn = transfer_options[ibody]['conn']
+                    nelems = transfer_options[ibody]['nelems']
+                    order = transfer_options[ibody]['order']
+                    ndof = transfer_options[ibody]['ndof']
+
+                    body.xfer_ndof = ndof
+                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm,
+                                                                  self.struct_root, self.aero_comm,
+                                                                  self.aero_root, conn, nelems,
+                                                                  order, ndof)
+                else:
+                    print("Error: Unknown transfer scheme for body", ibody)
+                    quit()
+
+            # Set up the transfer schemes based on the type of analysis set for this body
+            if body_analysis_type == 'aerothermal' or body_analysis_type == 'aerothermoelastic':
+                # Set up the load and displacement transfer schemes
+
+                if transfer_options[ibody]['thermal_scheme'].lower() == 'meld':
+                    # defaults
+                    isym = -1
+                    beta = 0.5
+                    num_nearest = 200
+
+                    if 'isym' in transfer_options[ibody]:
+                        isym = transfer_options[ibody]['isym']
+                    if 'beta' in transfer_options[ibody]:
+                        beta = transfer_options[ibody]['beta']
+                    if 'npts' in transfer_options[ibody]:
+                        num_nearest = transfer_options[ibody]['npts']
+
+                    body.thermal_transfer = TransferScheme.pyMELDThermal(self.comm, self.struct_comm,
+                                                                         self.struct_root, self.aero_comm,
+                                                                         self.aero_root,
+                                                                         isym, num_nearest, beta)
+                else:
+                    print("Error: Unknown thermal transfer scheme for body", ibody)
+                    quit()
+
+            # Load structural and aerodynamic meshes into FUNtoFEM
+            # Only want real part for the initialization
+            if body.transfer is not None:
+                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.transfer.setStructNodes(body.struct_X.real + 0.0j)
+                    else:
+                        body.struct_nnodes = 0
+
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.transfer.setAeroNodes(body.aero_X.real + 0.0j)
+                    else:
+                        body.aero_nnodes = 0
+                else:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.transfer.setStructNodes(body.struct_X)
+                    else:
+                        body.struct_nnodes = 0
+
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.transfer.setAeroNodes(body.aero_X)
+                    else:
+                        body.aero_nnodes = 0
+
+                # Initialize FUNtoFEM
+                body.transfer.initialize()
+
+                # Load structural and aerodynamic meshes into FUNtoFEM
+                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.transfer.setStructNodes(body.struct_X)
+                    else:
+                        body.struct_nnodes = 0
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.transfer.setAeroNodes(body.aero_X)
+                    else:
+                        body.aero_nnodes = 0
+
+            # Initialize the thermal problem
+            if body.thermal_transfer is not None:
+                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setStructNodes(body.struct_X.real + 0.0j)
+                    else:
+                        body.struct_nnodes = 0
+
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setAeroNodes(body.aero_X.real + 0.0j)
+                    else:
+                        body.aero_nnodes = 0
+                else:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setStructNodes(body.struct_X)
+                    else:
+                        body.struct_nnodes = 0
+
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setAeroNodes(body.aero_X)
+                    else:
+                        body.aero_nnodes = 0
+
+                # Initialize FUNtoFEM
+                body.thermal_transfer.initialize()
+
+                # Load structural and aerodynamic meshes into FUNtoFEM
+                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
+                    if self.struct_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setStructNodes(body.struct_X)
+                    else:
+                        body.struct_nnodes = 0
+                    if self.aero_comm != MPI.COMM_NULL:
+                        body.thermal_transfer.setAeroNodes(body.aero_X)
+                    else:
+                        body.aero_nnodes = 0
+
+        return
+
+    def _update_transfer(self):
+        """
+        Update the positions of the nodes in transfer schemes
+        """
+        self.struct_disps = []
+        self.struct_temps = []
+        for body in self.model.bodies:
+            if body.transfer is not None:
+                if self.struct_comm != MPI.COMM_NULL:
+                    body.transfer.setStructNodes(body.struct_X)
+                else:
+                    body.struct_nnodes = 0
+                if self.aero_comm != MPI.COMM_NULL:
+                    body.transfer.setAeroNodes(body.aero_X)
+                else:
+                    body.aero_nnodes = 0
+
+            if body.thermal_transfer is not None:
+                if self.struct_comm != MPI.COMM_NULL:
+                    body.thermal_transfer.setStructNodes(body.struct_X)
+                else:
+                    body.struct_nnodes = 0
+                if self.aero_comm != MPI.COMM_NULL:
+                    body.thermal_transfer.setAeroNodes(body.aero_X)
+                else:
+                    body.aero_nnodes = 0
+
+        return
 
     def update_id(self, id):
         """
@@ -167,6 +449,312 @@ class Body(Base):
         var.body = self.id
 
         super(Body, self).add_variable(vartype, var)
+
+
+    def initalize_adjoint_variables(self, scenario):
+        """
+        Initialize the adjoint variables for the body
+        """
+
+        if body.transfer is not None:
+            body.psi_L = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.psi_S = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.struct_rhs = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions),
+                                        dtype=TransferScheme.dtype)
+
+            body.dLdfa = np.zeros((body.aero_nnodes*3, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.dGdua = np.zeros((body.aero_nnodes*3, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.psi_D = np.zeros((body.aero_nnodes*3, nfunctions),
+                                    dtype=TransferScheme.dtype)
+
+        if body.thermal_transfer is not None:
+            # Thermal terms
+            body.psi_Q = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.psi_T_S = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.struct_rhs_T = np.zeros((body.struct_nnodes*body.therm_xfer_ndof, nfunctions),
+                                            dtype=TransferScheme.dtype)
+
+            body.dQdfta = np.zeros((body.aero_nnodes, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.dQfluxdfta = np.zeros((body.aero_nnodes*3, nfunctions),
+                                        dtype=TransferScheme.dtype)
+            body.dAdta = np.zeros((body.aero_nnodes, nfunctions),
+                                    dtype=TransferScheme.dtype)
+            body.psi_T = np.zeros((body.aero_nnodes, nfunctions),
+                                    dtype=TransferScheme.dtype)
+
+        body.aero_shape_term = np.zeros((body.aero_nnodes*3, nfunctions_total),
+                                        dtype=TransferScheme.dtype)
+        body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof, nfunctions_total),
+                                            dtype=TransferScheme.dtype)
+
+
+    def get_aero_disps(self, scenario, time_index=0):
+        """
+        Get the displacements on the aerodynamic surface for the given scenario
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.aero_disps[scenario.id]
+            else:
+                return self.aero_disps[scenario.id][time_index]
+        else:
+            return None
+
+    def get_struct_disps(self, scenario, time_index=0):
+        """
+        Get the displacements on the aerodynamic surface for the given scenario
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.struct_disps[scenario.id]
+            else:
+                return self.struct_disps[scenario.id][time_index]
+        else:
+            return None
+
+    def get_aero_loads(self, scenario, time_index=0):
+        """
+        Get the displacements on the aerodynamic surface for the given scenario
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.aero_loads[scenario.id]
+            else:
+                return self.aero_loads[scenario.id][time_index]
+        else:
+            return None
+
+    def get_struct_loads(self, scenario, time_index=0):
+        """
+        Get the displacements on the aerodynamic surface for the given scenario
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.struct_loads[scenario.id]
+            else:
+                return self.struct_loads[scenario.id][time_index]
+        else:
+            return None
+
+    def transfer_disps(self, scenario, time_index=0):
+        """
+        Transfer the displacements on the structural mesh to the aerodynamic mesh
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                aero_disps = self.aero_disps[scenario.id]
+                struct_disps = self.struct_disps[scenario.id]
+            else:
+                aero_disps = self.aero_disps[scenario.id][time_index]
+                struct_disps = self.struct_disps[scenario.id][time_index]
+            self.transfer.transferDisps(struct_disps, aero_disps)
+
+        return
+
+    def transfer_loads(self, scenario, time_index=0):
+        """
+        Transfer the aerodynamic loads on the aero surface mesh to loads on the
+        structural mesh for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                aero_loads = self.aero_loads[scenario.id]
+                struct_loads = self.struct_loads[scenario.id]
+            else:
+                aero_loads = self.aero_loads[scenario.id][time_index]
+                struct_loads = self.struct_loads[scenario.id][time_index]
+            self.transfer.transferLoads(aero_loads, struct_loads)
+
+        return
+
+    def transfer_temp(self, scenario, time_index=0):
+        """
+        Transfer the temperatures on the structural mesh to the aerodynamic mesh
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.thermal_transfer is not None:
+            if scenario.steady:
+                struct_temps = self.struct_temps[scenario.id]
+                aero_temps = self.aero_temps[scenario.id]
+            else:
+                struct_temps = self.struct_temps[scenario.id][time_index]
+                aero_temps = self.aero_temps[scenario.id][time_index]
+            self.thermal_transfer.transferTemp(struct_temps, aero_temps)
+
+    def transfer_heat_flux(self, scenario, time_index=0):
+        """
+        Transfer the aerodynamic heat flux on the aero surface mesh to the heat flux on the
+        structural mesh for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.thermal_transfer is not None:
+            if scenario.steady:
+                aero_flux = self.aero_heat_flux[scenario.id]
+                struct_flux = self.struct_heat_flux[scenario.id]
+            else:
+                aero_flux = self.aero_heat_flux[scenario.id][time_index]
+                struct_flux = self.struct_heat_flux[scenario.id][time_index]
+            self.thermal_transfer.transferFlux(aero_flux, struct_flux)
+
+        return
+
+    def transfer_loads_adjoint(self, scenario, time_index=0):
+        nfunctions = scenario.get_num_functions()
+
+        if self.transfer is not None:
+            # Solve for psi_L - the load transfer adjoint
+            adjL_rhs = self.adjL_rhs[scenario.id]
+            psi_L = self.psi_L[scenario.id]
+            adjF_rhs = self.adjF_rhs[scenario.id]
+            adjS_rhs = self.adjS_rhs[scenario.id]
+
+            # Solve for psi_L
+            psi_L[:] = adjL_rhs[:]
+
+            # Contribute to the force integration and structural adjoint right-hand-sides
+            # from the load transfer adjoint
+            temp_fa = np.zeros(3 * self.aero_nnodes, dtype=self.dtype)
+            temp_us = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            for k in range(nfunctions):
+                # Copy the values into contiguous memory
+                psi_Lk = psi_L[:, k].copy()
+
+                # Contribute adjF_rhs -= dL/dfa^{T} * psi_L
+                self.transfer.applydLdfaTrans(psi_Lk, temp_fa)
+                adjF_rhs[:, k] -= temp_fa
+
+                # Contribute adjS_rhs -= dL/dus^{T} * psi_L
+                self.transfer.applydLdusTrans(psi_Lk, temp_us)
+                adjS_rhs[:, k] -= temp_us
+
+        return
+
+    def transfer_disps_adjoint(self, scenario, step):
+        nfunctions = scenario.get_num_functions()
+
+        if self.transfer is not None:
+            # Solve for psi_D - the displacement transfer adjoint
+            psi_D = self.psi_D[scenario.id]
+            adjD_rhs = self.adjD_rhs[scenario.id]
+            adjS_rhs = self.adjS_rhs[scenario.id]
+
+            # Solve for psi_D
+            psi_D[:] = adjD_rhs[:]
+
+            temp = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            for k in range(nfunctions):
+                # Copy the values into contiguous memory
+                psi_Dk = psi_D[:, k].copy()
+
+                # Contribute adjS_rhs -= dD/dus^{T} * psi_D
+                self.transfer.applydDdusTrans(psi_Dk, temp)
+                adjS_rhs[:, k] -= temp
+
+        return
+
+    def transfer_heat_flux_adjoint(self, scenario, step):
+        nfunctions = scenario.get_num_functions()
+
+        if self.thermal_transfer is not None:
+            self.psi_T = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+
+        # for func in range(nfunctions):
+        #     if body.thermal_transfer is not None:
+        #         # Transform heat flux transfer adjoint variables using transpose Jacobian from
+        #         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
+        #         psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+        #         body.thermal_transfer.applydQdqATrans(
+        #             body.psi_T_S[:, func].copy(order="C"), psi_Q_r
+        #         )
+
+        #         # Only set heat flux magnitude component of thermal adjoint in FUN3D
+        #         # Can either use surface normal magnitude OR x,y,z components, not both
+        #         body.dQdfta[:, func] = psi_Q_r
+
+        return
+
+    def transfer_temps_adjoint(self, scenario, step):
+
+
+        # for func in range(nfunctions):
+        #     if body.thermal_transfer is not None:
+        #         # calculate dTdt_s^T * psi_T
+        #         psi_T_product = np.zeros(
+        #             body.struct_nnodes * body.therm_xfer_ndof,
+        #             dtype=TransferScheme.dtype,
+        #         )
+        #         body.psi_T = body.dAdta
+        #         body.thermal_transfer.applydTdtSTrans(
+        #             body.psi_T[:, func].copy(order="C"), psi_T_product
+        #         )
+        #         body.struct_rhs_T[:, func] = psi_T_product
+        return
+
+    def add_coord_derivative(self, scenario, step):
+
+        if self.transfer is not None:
+            nfunctions = scenario.count_adjoint_functions()
+
+            psi_L = self.psi_L[scenario.id]
+            psi_D = self.psi_D[scenario.id]
+
+            # Aerodynamic coordinate derivatives
+            temp_xa = np.zeros(3 * self..aero_nnodes, dtype=self.dtype)
+            temp_xs = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            for k in range(nfunctions):
+                # Load transfer term
+                psi_Lk = psi_L[:, k].copy()
+                self.transfer.applydLdxA0(psi_Lk, temp_xa)
+                self.aero_shape_term[:, k] += temp_xa
+
+                self.transfer.applydLdxS0(psi_Lk, temp_xs)
+                self.struct_shape_term[:, k] += temp_xs
+
+                # Displacement transfer term
+                psi_Dk = psi_D[:, k].copy()
+                self.transfer.applydDdxA0(psi_Dk, temp_xa)
+                body.aero_shape_term[:, k] += temp_xa
+
+                self.transfer.applydDdxS0(psi_Dk, temp_xs)
+                self.struct_shape_term[:, k] += temp_xs
+
+        return
+
 
     def collect_coordinate_derivatives(self, comm, discipline, root=0):
         """

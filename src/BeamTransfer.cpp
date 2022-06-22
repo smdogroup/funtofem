@@ -34,7 +34,7 @@ BeamTransfer::BeamTransfer( MPI_Comm comm,
                             MPI_Comm comm_struct, int _struct_root,
                             MPI_Comm comm_aero, int _aero_root,
                             const int *_conn, int _nelems, int _order,
-                            int _dof_per_node ){
+                            int _dof_per_node ) : TransferScheme(_dof_per_node) {
   // Initialize parallelization info
   global_comm = comm;
   struct_comm = comm_struct;
@@ -59,8 +59,6 @@ BeamTransfer::BeamTransfer( MPI_Comm comm,
   aero_pt_to_elem = NULL;
   aero_pt_to_param = NULL;
 
-  dof_per_node = _dof_per_node;
-
   // Create the connectivity
   nelems = _nelems;
   order = _order;
@@ -81,7 +79,7 @@ BeamTransfer::~BeamTransfer(){
 /*
   Set the initial structural node locations
 */
-void BeamTransfer::setStructNodes( const F2FScalar *struct_X, 
+void BeamTransfer::setStructNodes( const F2FScalar *struct_X,
                                    int struct_nnodes ){
   ns = struct_nnodes;
 
@@ -107,7 +105,7 @@ void BeamTransfer::initialize(){
   // Set up the node to element data
   int *node_to_beam_ptr = new int[ ns+1 ];
   memset(node_to_beam_ptr, 0, (ns+1)*sizeof(int));
-  
+
   // Count up all the times each element refers to each node
   for ( int i = 0; i < order*nelems; i++ ){
     node_to_beam_ptr[conn[i]+1]++;
@@ -121,9 +119,9 @@ void BeamTransfer::initialize(){
 
   // Allocate the array of nodes
   int *node_to_beam = new int[ node_to_beam_ptr[ns] ];
-  
+
   for ( int i = 0; i < nelems; i++ ){
-    // Set the reference to the i-th element 
+    // Set the reference to the i-th element
     for ( int j = 0; j < order; j++ ){
       node_to_beam[node_to_beam_ptr[conn[order*i + j]]] = i;
       node_to_beam_ptr[conn[order*i + j]]++;
@@ -157,11 +155,11 @@ void BeamTransfer::initialize(){
 
     for ( int j = node_to_beam_ptr[node];
           j < node_to_beam_ptr[node+1]; j++ ){
-      int elem = node_to_beam[j];      
+      int elem = node_to_beam[j];
 
       double xi;
       F2FScalar dist = findParametricPoint(&Xs[3*conn[order*elem]],
-                                           &Xs[3*conn[order*(elem+1)-1]], 
+                                           &Xs[3*conn[order*(elem+1)-1]],
                                            &Xa[3*i], &xi);
       if (dist < min_dist){
         min_dist = dist;
@@ -183,7 +181,7 @@ void BeamTransfer::initialize(){
 /*
   Find the closest parametric point to the line
 */
-F2FScalar BeamTransfer::findParametricPoint( const F2FScalar X1[], 
+F2FScalar BeamTransfer::findParametricPoint( const F2FScalar X1[],
                                              const F2FScalar X2[],
                                              const F2FScalar Xa[],
                                              double *xi ){
@@ -204,9 +202,9 @@ F2FScalar BeamTransfer::findParametricPoint( const F2FScalar X1[],
   d[0] = Linv*d[0];
   d[1] = Linv*d[1];
   d[2] = Linv*d[2];
-  
+
   // Compute the projection on to the line
-  F2FScalar proj = 
+  F2FScalar proj =
     d[0]*(Xa[0] - X1[0]) + d[1]*(Xa[1] - X1[1]) + d[2]*(Xa[2] - X1[2]);
 
   if (proj < 0.0){
@@ -224,10 +222,10 @@ F2FScalar BeamTransfer::findParametricPoint( const F2FScalar X1[],
 
   // Based on the projection value, compute the parametric location
   *xi = -1.0 + 2.0*F2FRealPart(proj/L);
-  
+
   // Compute the weight
   F2FScalar u = 0.5*(1.0 - *xi);
-  
+
   F2FScalar X[3];
   X[0] = u*X1[0] + (1.0 - u)*X2[0];
   X[1] = u*X1[1] + (1.0 - u)*X2[1];
@@ -240,7 +238,7 @@ F2FScalar BeamTransfer::findParametricPoint( const F2FScalar X1[],
 
 /*
   Compute the rotational part of the load and displacement transfer.
-  
+
   The input d is the vector between the aerodynamic node and its
   corresponding structural node location, such that d = Xa - Xs.  The
   output r is computed as: r = (C^{T} - I)*d which provides the
@@ -254,7 +252,7 @@ void BeamTransfer::computeRotation( const F2FScalar *q,
   R[0] =-2.0*(q[2]*q[2] + q[3]*q[3]);
   R[1] = 2.0*(q[1]*q[2] + q[3]*q[0]);
   R[2] = 2.0*(q[1]*q[3] - q[2]*q[0]);
-  
+
   R[3] = 2.0*(q[2]*q[1] - q[3]*q[0]);
   R[4] =-2.0*(q[1]*q[1] + q[3]*q[3]);
   R[5] = 2.0*(q[2]*q[3] + q[1]*q[0]);
@@ -280,7 +278,7 @@ void BeamTransfer::computeRotationTranspose( const F2FScalar *q,
   R[0] =-2.0*(q[2]*q[2] + q[3]*q[3]);
   R[1] = 2.0*(q[1]*q[2] + q[3]*q[0]);
   R[2] = 2.0*(q[1]*q[3] - q[2]*q[0]);
-  
+
   R[3] = 2.0*(q[2]*q[1] - q[3]*q[0]);
   R[4] =-2.0*(q[1]*q[1] + q[3]*q[3]);
   R[5] = 2.0*(q[2]*q[3] + q[1]*q[0]);
@@ -297,7 +295,7 @@ void BeamTransfer::computeRotationTranspose( const F2FScalar *q,
 
 
 /*
-  Compute the derivative of 
+  Compute the derivative of
 */
 void BeamTransfer::computeRotationDerivProduct( const F2FScalar *v,
                                                 const F2FScalar *q,
@@ -314,7 +312,7 @@ void BeamTransfer::computeRotationDerivProduct( const F2FScalar *v,
   R[5] = 2.0*(q[2]*v[3] + v[2]*q[3] + q[1]*v[0] + v[1]*q[0]);
 
   R[6] = 2.0*(q[3]*v[1] + v[3]*q[1] + q[2]*v[0] + v[2]*q[0]);
-  R[7] = 2.0*(q[3]*v[2] + v[3]*q[2] - q[1]*v[0] - v[1]*q[0]);  
+  R[7] = 2.0*(q[3]*v[2] + v[3]*q[2] - q[1]*v[0] - v[1]*q[0]);
   R[8] =-4.0*(q[1]*v[1] + q[2]*v[2]);
 
   // Compute r = R^{T}*d
@@ -342,11 +340,11 @@ void BeamTransfer::addTransposeRotationDeriv( const double scale,
   R[0] = 0.0;
   R[1] = 2.0*q[3];
   R[2] =-2.0*q[2];
-  
+
   R[3] =-2.0*q[3];
   R[4] = 0.0;
   R[5] = 2.0*q[1];
-  
+
   R[6] = 2.0*q[2];
   R[7] =-2.0*q[1];
   R[8] = 0.0;
@@ -356,20 +354,20 @@ void BeamTransfer::addTransposeRotationDeriv( const double scale,
   r[2] = R[2]*d[0] + R[5]*d[1] + R[8]*d[2];
 
   fs[0] += scale*(r[0]*fa[0] + r[1]*fa[1] + r[2]*fa[2]);
-  
+
   // Derivative w.r.t. q[1]
   R[0] = 0.0;
   R[1] = 2.0*q[2];
   R[2] = 2.0*q[3];
-  
+
   R[3] = 2.0*q[2];
   R[4] =-4.0*q[1];
   R[5] = 2.0*q[0];
-  
+
   R[6] = 2.0*q[3];
   R[7] =-2.0*q[0];
   R[8] =-4.0*q[1];
-  
+
   r[0] = R[0]*d[0] + R[3]*d[1] + R[6]*d[2];
   r[1] = R[1]*d[0] + R[4]*d[1] + R[7]*d[2];
   r[2] = R[2]*d[0] + R[5]*d[1] + R[8]*d[2];
@@ -380,11 +378,11 @@ void BeamTransfer::addTransposeRotationDeriv( const double scale,
   R[0] =-4.0*q[2];
   R[1] = 2.0*q[1];
   R[2] =-2.0*q[0];
-  
+
   R[3] = 2.0*q[1];
   R[4] = 0.0;
   R[5] = 2.0*q[3];
-  
+
   R[6] = 2.0*q[0];
   R[7] = 2.0*q[3];
   R[8] =-4.0*q[2];
@@ -399,15 +397,15 @@ void BeamTransfer::addTransposeRotationDeriv( const double scale,
   R[0] =-4.0*q[3];
   R[1] = 2.0*q[0];
   R[2] = 2.0*q[1];
-  
+
   R[3] =-2.0*q[0];
   R[4] =-4.0*q[3];
   R[5] = 2.0*q[2];
-  
+
   R[6] = 2.0*q[1];
   R[7] = 2.0*q[2];
   R[8] = 0.0;
-  
+
   r[0] = R[0]*d[0] + R[3]*d[1] + R[6]*d[2];
   r[1] = R[1]*d[0] + R[4]*d[1] + R[7]*d[2];
   r[2] = R[2]*d[0] + R[5]*d[1] + R[8]*d[2];
@@ -426,11 +424,11 @@ void BeamTransfer::addTransposeRotationDerivAdjoint( const double scale,
   R[0] = 0.0;
   R[1] = 2.0*q[3];
   R[2] =-2.0*q[2];
-  
+
   R[3] =-2.0*q[3];
   R[4] = 0.0;
   R[5] = 2.0*q[1];
-  
+
   R[6] = 2.0*q[2];
   R[7] =-2.0*q[1];
   R[8] = 0.0;
@@ -439,20 +437,20 @@ void BeamTransfer::addTransposeRotationDerivAdjoint( const double scale,
   psi[0] += scale*fs[0]*(R[0]*fa[0] + R[1]*fa[1] + R[2]*fa[2]);
   psi[1] += scale*fs[0]*(R[3]*fa[0] + R[4]*fa[1] + R[5]*fa[2]);
   psi[2] += scale*fs[0]*(R[6]*fa[0] + R[7]*fa[1] + R[8]*fa[2]);
-  
+
   // Derivative w.r.t. q[1]
   R[0] = 0.0;
   R[1] = 2.0*q[2];
   R[2] = 2.0*q[3];
-  
+
   R[3] = 2.0*q[2];
   R[4] =-4.0*q[1];
   R[5] = 2.0*q[0];
-  
+
   R[6] = 2.0*q[3];
   R[7] =-2.0*q[0];
   R[8] =-4.0*q[1];
-  
+
   psi[0] += scale*fs[1]*(R[0]*fa[0] + R[1]*fa[1] + R[2]*fa[2]);
   psi[1] += scale*fs[1]*(R[3]*fa[0] + R[4]*fa[1] + R[5]*fa[2]);
   psi[2] += scale*fs[1]*(R[6]*fa[0] + R[7]*fa[1] + R[8]*fa[2]);
@@ -461,11 +459,11 @@ void BeamTransfer::addTransposeRotationDerivAdjoint( const double scale,
   R[0] =-4.0*q[2];
   R[1] = 2.0*q[1];
   R[2] =-2.0*q[0];
-  
+
   R[3] = 2.0*q[1];
   R[4] = 0.0;
   R[5] = 2.0*q[3];
-  
+
   R[6] = 2.0*q[0];
   R[7] = 2.0*q[3];
   R[8] =-4.0*q[2];
@@ -478,11 +476,11 @@ void BeamTransfer::addTransposeRotationDerivAdjoint( const double scale,
   R[0] =-4.0*q[3];
   R[1] = 2.0*q[0];
   R[2] = 2.0*q[1];
-  
+
   R[3] =-2.0*q[0];
   R[4] =-4.0*q[3];
   R[5] = 2.0*q[2];
-  
+
   R[6] = 2.0*q[1];
   R[7] = 2.0*q[2];
   R[8] = 0.0;
@@ -518,7 +516,7 @@ void BeamTransfer::transferDisps( const F2FScalar *struct_disps,
       N[1] = 1.0 - xi*xi;
       N[2] = 0.5*xi*(xi + 1.0);
     }
-    
+
     // Evaluate the average of the structural displacements
     const int *nodes = &conn[order*elem];
 
@@ -544,7 +542,7 @@ void BeamTransfer::transferDisps( const F2FScalar *struct_disps,
       F2FScalar dr[3];
       computeRotation(&u[3], d, dr);
       ua[0] += N[k]*dr[0];
-      ua[1] += N[k]*dr[1];      
+      ua[1] += N[k]*dr[1];
       ua[2] += N[k]*dr[2];
     }
   }
@@ -626,7 +624,7 @@ void BeamTransfer::applydDduS( const F2FScalar *vecs,
       N[1] = 1.0 - xi*xi;
       N[2] = 0.5*xi*(xi + 1.0);
     }
-    
+
     // Evaluate the average of the structural displacements
     const int *nodes = &conn[order*elem];
 
@@ -653,7 +651,7 @@ void BeamTransfer::applydDduS( const F2FScalar *vecs,
       F2FScalar dr[3];
       computeRotationDerivProduct(&v[3], &u[3], d, dr);
       ua[0] -= N[k]*dr[0];
-      ua[1] -= N[k]*dr[1];      
+      ua[1] -= N[k]*dr[1];
       ua[2] -= N[k]*dr[2];
     }
   }
@@ -668,10 +666,10 @@ void BeamTransfer::applydDduS( const F2FScalar *vecs,
   aerodynamic node vector while the output is the size of the structural node
   locations
 */
-void BeamTransfer::applydDduSTrans( const F2FScalar *vecs, 
+void BeamTransfer::applydDduSTrans( const F2FScalar *vecs,
                                     F2FScalar *prods ){
   memset(prods, 0, dof_per_node*ns*sizeof(F2FScalar));
-  
+
   for ( int i = 0; i < na; i++ ){
     // Get the element and parametric location within the element
     // where the aerodynamic node is attached.
@@ -690,7 +688,7 @@ void BeamTransfer::applydDduSTrans( const F2FScalar *vecs,
       N[1] = 1.0 - xi*xi;
       N[2] = 0.5*xi*(xi + 1.0);
     }
-    
+
     // Evaluate the average of the structural displacements
     const int *nodes = &conn[order*elem];
 
@@ -700,8 +698,8 @@ void BeamTransfer::applydDduSTrans( const F2FScalar *vecs,
     // Compute the displacement
     for ( int k = 0; k < order; k++, nodes++ ){
       const F2FScalar *u = &Us[dof_per_node*nodes[0]];
-      
-      // Get the output 
+
+      // Get the output
       F2FScalar *p = &prods[dof_per_node*nodes[0]];
       p[0] -= N[k]*ua[0];
       p[1] -= N[k]*ua[1];
@@ -720,7 +718,7 @@ void BeamTransfer::applydDduSTrans( const F2FScalar *vecs,
   }
 }
 
-void BeamTransfer::applydLduS( const F2FScalar *vecs, 
+void BeamTransfer::applydLduS( const F2FScalar *vecs,
                                F2FScalar *prods ){
   // Zero the output
   memset(prods, 0, ns*dof_per_node*sizeof(F2FScalar));
@@ -820,7 +818,7 @@ void BeamTransfer::applydLduSTrans( const F2FScalar *vecs,
 void BeamTransfer::applydDdxA0( const F2FScalar *vecs,
                                 F2FScalar *prods ){
   memset(prods, 0, 3*na*sizeof(F2FScalar));
-  
+
   for ( int i = 0; i < na; i++ ){
     // Get the element and parametric location within the element
     // where the aerodynamic node is attached.
@@ -839,7 +837,7 @@ void BeamTransfer::applydDdxA0( const F2FScalar *vecs,
       N[1] = 1.0 - xi*xi;
       N[2] = 0.5*xi*(xi + 1.0);
     }
-    
+
     // Evaluate the average of the structural displacements
     const int *nodes = &conn[order*elem];
 
@@ -862,7 +860,7 @@ void BeamTransfer::applydDdxA0( const F2FScalar *vecs,
 
 void BeamTransfer::applydDdxS0( const F2FScalar *vecs, F2FScalar *prods ){
   memset(prods, 0, 3*ns*sizeof(F2FScalar));
-  
+
   for ( int i = 0; i < na; i++ ){
     // Get the element and parametric location within the element
     // where the aerodynamic node is attached.
@@ -881,7 +879,7 @@ void BeamTransfer::applydDdxS0( const F2FScalar *vecs, F2FScalar *prods ){
       N[1] = 1.0 - xi*xi;
       N[2] = 0.5*xi*(xi + 1.0);
     }
-    
+
     // Evaluate the average of the structural displacements
     const int *nodes = &conn[order*elem];
 
