@@ -20,7 +20,7 @@ In the following code excerpt, modelTACS refers to a Python class which defines 
    from mpi4py import MPI
 
 MPI
----
+===
 FUNtoFEM employs MPI to enable multiple processes to run in parallel.
 The next section of the Python script handles the MPI set-up.
 

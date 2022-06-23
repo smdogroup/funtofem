@@ -64,7 +64,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: 3.8
-        run: |
+      - run: |
           echo "=============================================================";
           echo "Create conda environment";
           echo "=============================================================";
