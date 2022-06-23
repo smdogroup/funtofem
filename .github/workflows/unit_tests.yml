@@ -64,7 +64,8 @@ jobs:
         with:
           auto-update-conda: true
           python-version: 3.8
-      - run: |
+      - name: Setup conda environment
+        run: |
           echo "=============================================================";
           echo "Create conda environment";
           echo "=============================================================";
@@ -81,7 +82,7 @@ jobs:
           echo "=============================================================";
           pip install testflo;
           conda install -c anaconda openmpi -q -y;
-          conda install gxx_linux-64 -q -y;
+          conda install gxx_linux-64=9.3.0 -q -y;
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis -q -y;
