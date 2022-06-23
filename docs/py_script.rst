@@ -102,8 +102,8 @@ Driver Call
 ===========
 In order to run simulations, calls to the driver are used. 
 In this example, a value for the design variable (thickness) is set.
-Then the .solve_forward() member function is called to run the forward analysis and 
-the .solver_adjoint() member function is called to run the adjoint analysis.
+Then :func:`~funtofem_driver.FUNtoFEMDriver.solve_forward` is called to run the forward analysis and 
+:func:`~funtofem_driver.FUNtoFEMDriver.solve_adjoint` is called to run the adjoint analysis.
 
 .. code-block:: python
 
