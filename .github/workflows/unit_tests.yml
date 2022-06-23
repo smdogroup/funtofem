@@ -68,6 +68,7 @@ jobs:
 
       - name: Install TACS
         run: |
+          git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
           export TACS_DIR=/home/runner/work/tacs;
           conda install zlib=1.2.11;
           conda install -c anaconda openmpi -q -y;
