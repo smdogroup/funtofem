@@ -20,6 +20,7 @@ If you wish to create a new interface or a new driver, see the :doc:`programmers
    driver
    transfer_scheme
    programmers_guide
+   py_script
    fun3d_config
    install
 
