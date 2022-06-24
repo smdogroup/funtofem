@@ -104,3 +104,22 @@ jobs:
           python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermoelastic_adjoint_test/gen_TACS_bdf_aero.py;
           python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/unsteady_aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
           testflo ${GITHUB_WORKSPACE}/tests/;
+
+      - name: Build docs
+        run: |
+          cd $F2F_DIR/docs;
+          make html BUILDDIR=.;
+          cd html;
+          zip -r ../f2f_docs.zip .;
+      - name: Upload docs
+        if: ${{ matrix.PUBLISH_DOCS }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: f2f-docs
+          path: docs/f2f-docs.zip
+      - name: Deploy docs
+        if: ${{ github.event_name == 'push' && matrix.PUBLISH_DOCS }}
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages # The branch the action should deploy to
+          folder: docs/html/ # The folder the action should deploy
