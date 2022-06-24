@@ -110,7 +110,7 @@ jobs:
           cd $F2F_DIR/docs;
           make html BUILDDIR=.;
           cd html;
-          zip -r ../f2f_docs.zip .;
+          zip -r ../f2f-docs.zip .;
       - name: Upload docs
         if: ${{ matrix.PUBLISH_DOCS }}
         uses: actions/upload-artifact@v2
