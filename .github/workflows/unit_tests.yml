@@ -19,6 +19,8 @@ on:
 jobs:
   # This job is called test_docs.
   unit_test_and_docs:
+    # Recommended if you intend to make multiple deployments in quick succession
+    concurrency: ci-${{ github.ref }}
     # Run on Ubuntu
     runs-on: ubuntu-latest
     # Necessary to prevent mpi tests failing due to lack of slots
@@ -89,6 +91,7 @@ jobs:
           echo "Install FUNtoFEM";
           echo "=============================================================";
           export F2F_DIR=${GITHUB_WORKSPACE};
+          echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} F2F_DIR=$F2F_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
@@ -107,10 +110,12 @@ jobs:
 
       - name: Build docs
         run: |
-          cd $F2F_DIR/docs;
+          pwd;
+          ls;
+          cd ${GITHUB_WORKSPACE}/docs;
           make html BUILDDIR=.;
           cd html;
-          zip -r ../f2f_docs.zip .;
+          zip -r ../f2f-docs.zip .;
       - name: Upload docs
         if: ${{ matrix.PUBLISH_DOCS }}
         uses: actions/upload-artifact@v2
