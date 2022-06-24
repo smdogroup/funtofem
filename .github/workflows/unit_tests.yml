@@ -19,6 +19,8 @@ on:
 jobs:
   # This job is called test_docs.
   unit_test_and_docs:
+    # Recommended if you intend to make multiple deployments in quick succession
+    concurrency: ci-${{ github.ref }}
     # Run on Ubuntu
     runs-on: ubuntu-latest
     # Necessary to prevent mpi tests failing due to lack of slots
@@ -107,6 +109,8 @@ jobs:
 
       - name: Build docs
         run: |
+          pwd;
+          ls;
           cd $F2F_DIR/docs;
           make html BUILDDIR=.;
           cd html;
