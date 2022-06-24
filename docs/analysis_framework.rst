@@ -3,6 +3,25 @@ Analysis Framework
 
 .. automodule:: AnalysisFramework
 
+Aeroelastic Framework
+---------------------
+
+Aeroelastic Adjoint
+===================
+Lagrangian:
+
+.. math:: 
+	\mathcal{L}(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S) = &
+          f(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S)
+           +\mathbf{\psi}_{G}^{T} {\mathbf{G}} (\mathbf{x}, \mathbf{u}_{A}, \mathbf{x}_{G} )         \\
+          &+\mathbf{\psi}_{A}^{T} {\mathbf{A}} (\mathbf{x}, \mathbf{q}, \mathbf{x}_{G})
+           +\mathbf{\psi}_{F}^{T} {\mathbf{F}} (\mathbf{x}, \mathbf{x}_{G}, \mathbf{q}, \mathbf{f}_{A}) \\
+          &+\mathbf{\psi}_{L}^{T} {\mathbf{L}} (\mathbf{x}, \mathbf{u}_S, \mathbf{f}_{A}, \mathbf{f}_{S})
+           +\mathbf{\psi}_{S}^{T} {\mathbf{S}} (\mathbf{x}, \mathbf{u}_S, \mathbf{f}_{S})             \\
+          &+\mathbf{\psi}_{D}^{T} {\mathbf{D}} (\mathbf{x}, \mathbf{u}_S, \mathbf{u}_{A})
+
+
+
 Aerothermal Framework
 ---------------------
 
