@@ -19,10 +19,10 @@ Steps to compile
 #. To compile the real version, from the base directory, run *make* then *make interface*
 #. Add funtofem to your bashrc script:
 
-.. code-block:: python
+.. code-block:: 
 
     export PYTHONPATH=$PYTHONPATH:~/git/funtofem
-    export PYTHONPATH=$PYTHONPATH:~/git/funtofem
+    export PYTHONPATH=$PYTHONPATH:~/git/funtofem/pyfuntofem
 
 FUN3D
 -----
