@@ -1,8 +1,8 @@
 Transfer Scheme
 ***************
 
-.. automodule:: TransferScheme
-.. .. currentmodule:: funtofem.TransferScheme
+.. .. automodule:: TransferScheme
+.. currentmodule:: funtofem.TransferScheme
 
 .. autoclass:: pyTransferScheme
     :members:
