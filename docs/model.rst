@@ -225,7 +225,7 @@ allows the user to change attributes of existing `variables`_ in the body or sce
 For example, if the shape parameterization created a specific number of variables, but you do not want to use all 
 of them in the optimization, you can set the variable to be inactive.
 
-.. automodule:: base
+.. currentmodule:: pyfuntofem.base
 
 .. autoclass:: Base
    :members:
@@ -245,7 +245,7 @@ the variable but it won't be returned when calling :func:`~funtofem_model.FUNtoF
 When the variable is added to a :class:`~scenario.Scenario` or :class:`~body.Body` using :func:`~base.Base.add_variable`, 
 the vartype argument specifies what discipline the variable is associated with.
 
-.. automodule:: variable
+.. currentmodule:: pyfuntofem.variable
 
 .. autoclass:: Variable
    :members:
@@ -265,7 +265,7 @@ For functions that do not need an adjoint, such as structural mass, the boolean,
 Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor 
 without including that of the sting model, you can use the body argument to pass that information to the solver.
 
-.. automodule:: function
+.. currentmodule:: pyfuntofem.function
 
 .. autoclass:: Function
    :members:
