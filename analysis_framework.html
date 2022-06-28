@@ -148,13 +148,13 @@ transfer scheme, which transfers displacements, loads, and heat flux.</p>
 <h3>Heat Flux Integration Residual<a class="headerlink" href="#heat-flux-integration-residual" title="Permalink to this heading">¶</a></h3>
 <div class="math notranslate nohighlight">
 \[\mathbf{\color{blue}H}(\mathbf{h}_A, \mathbf{q}, \mathbf{x}, \mathbf{x}_G) \triangleq
-\mathbf{h}_A - \psi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0\]</div>
+\mathbf{h}_A - \varphi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0\]</div>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(\mathbf{h}_A\)</span> - nodal forces on aerodynamic surface</p></li>
 <li><p><span class="math notranslate nohighlight">\(\mathbf{x}\)</span> - design variable vector</p></li>
 <li><p><span class="math notranslate nohighlight">\(\mathbf{x}_G\)</span> - aerodynamic volume mesh</p></li>
 <li><p><span class="math notranslate nohighlight">\(\mathbf{q}\)</span> - flow state vector</p></li>
-<li><p><span class="math notranslate nohighlight">\(\psi\)</span> - action of the heat flux integration</p></li>
+<li><p><span class="math notranslate nohighlight">\(\varphi\)</span> - action of the heat flux integration</p></li>
 </ul>
 </section>
 </section>
@@ -176,11 +176,20 @@ transfer scheme, which transfers displacements, loads, and heat flux.</p>
 <section id="aeroelastic-framework">
 <h2>Aeroelastic Framework<a class="headerlink" href="#aeroelastic-framework" title="Permalink to this heading">¶</a></h2>
 <p>The forward solve path in FUNtoFEM goes through several steps.
-First the surface displacements are computed, taking the displacement
-of structural nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_S\)</span>, as an input and solving for the discplacements of
-aerodynamic surface nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_A\)</span>.
-The grid deformation residual is then computed with the displacement of the aerodynamic surface nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_A\)</span>,
-as an input and solving for <span class="math notranslate nohighlight">\(\mathbf{x}_G\)</span>, the aerodynamic volume mesh.</p>
+First, the surface displacements are computed inside FUNtoFEM, taking the displacement
+of structural nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_S\)</span>, as an input and solving for the displacements of
+aerodynamic surface nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_A\)</span>, in the displacement
+transfer residual, <span class="math notranslate nohighlight">\(\mathbf{\color{green}D}\)</span>.
+The grid deformation residual, <span class="math notranslate nohighlight">\(\mathbf{\color{blue}G}\)</span>, is then
+computed with the displacement of the aerodynamic surface nodes, <span class="math notranslate nohighlight">\(\mathbf{u}_A\)</span>,
+as an input and solving for <span class="math notranslate nohighlight">\(\mathbf{x}_G\)</span>, the aerodynamic volume mesh.
+This is then followed by the flow residual, <span class="math notranslate nohighlight">\(\mathbf{\color{blue}A}\)</span>,
+and the force integration residual, <span class="math notranslate nohighlight">\(\mathbf{\color{blue}F}\)</span>.
+These three residuals are internal to FUN3D.
+The load transfer residual, <span class="math notranslate nohighlight">\(\mathbf{\color{green}L}\)</span>, is then solved inside FUNtoFEM.
+Finally, the structural residual, <span class="math notranslate nohighlight">\(\mathbf{\color{orange}S}\)</span>, is computed in TACS.</p>
+<p>The order of execution in the forward solve follows the list shown below.
+The underlined value is solved for at each step.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align}
 \mathbf{\color{green}D}(\underline{\mathbf{u}_A}, \mathbf{u}_S) &amp;= 0 \\
@@ -203,7 +212,7 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 \frac{\partial \mathbf{S}^T}{\partial \mathbf{u}_S}\psi_S + \frac{\partial \mathbf{D}^T}{\partial \mathbf{u}_S}\psi_D +
 \frac{\partial \mathbf{L}^T}{\partial \mathbf{u}_S}\psi_L &amp;= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{u}_S} \\
 \end{align}\end{split}\]</div>
-<p>Lagrangian:</p>
+<p>The corresponding Lagrangian in the areoelastic framework is given by:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\mathcal{L}(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S) = &amp;
   f(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S)
@@ -222,8 +231,12 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 </figure>
 <p>The residuals for the aerodynamic governing equations are obtained using a discrete approximation of the following integral over each finite volume</p>
 <div class="math notranslate nohighlight">
-\[{A}\left({x}, {q}, {\dot{q}}, {x}_G, {\dot{x}}_G, {t}_{A}, t\right) \triangleq \dfrac{\partial \left( V {q} \right)} {\partial t} + \oint_{\partial V} \left( {\overline{\overline{F}}}^* - {\overline{\overline{F}}_v} \right) \cdot { \hat{n}} dS = 0\]</div>
-<p>An interface has been added to FUN3D for aerothermoelastic analysis using the FUNtoFEM framework. This interface provides routines for both force and heat flux integration, as well as the terms needed for the adjoint equations. Furthermore, the interface adds the required multidisciplinary components to the right-hand-side of the aerodynamic adjoint equations. The force integration is a function of the aerodynamic state variables and the node locations and constitutes a system of residuals written as</p>
+\[{A}\left({x}, {q}, {\dot{q}}, {x}_G, {\dot{x}}_G, {t}_{A}, t\right) \triangleq \dfrac{\partial \left( V {q} \right)}
+{\partial t} + \oint_{\partial V} \left( {\overline{\overline{F}}}^* - {\overline{\overline{F}}_v} \right) \cdot { \hat{n}} dS = 0\]</div>
+<p>An interface has been added to FUN3D for aerothermoelastic analysis using the FUNtoFEM framework.
+This interface provides routines for both force and heat flux integration, as well as the terms needed for the adjoint equations.
+Furthermore, the interface adds the required multidisciplinary components to the right-hand-side of the aerodynamic adjoint equations.
+The force integration is a function of the aerodynamic state variables and the node locations and constitutes a system of residuals written as:</p>
 <div class="math notranslate nohighlight">
 \[{F} \left( {x}, {x}_G, {q}, {f}_A \right) \triangleq {\phi} \left( {x}, {x}_G, {q} \right) - {f}_A = 0\]</div>
 <p>The heat flux integration is also a function of the aerodynamic state variables and node locations and is written as</p>
@@ -231,7 +244,8 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 \[{H} \left( {x}, {x}_G, {q}, {f}_{T,A} \right) \triangleq {\varphi} \left( {x}, {x}_G, {q} \right) - {f}_{T,A} = 0\]</div>
 <section id="aerothermal-adjoint">
 <h3>Aerothermal Adjoint<a class="headerlink" href="#aerothermal-adjoint" title="Permalink to this heading">¶</a></h3>
-<p>The Lagrangian for the aerothermal problem is formed by summing the function of interest with the products of the residuals for each analysis component combined with their corresponding adjoint, giving the following expression</p>
+<p>The Lagrangian for the aerothermal problem is formed by summing the function of interest with the products of the
+residuals for each analysis component combined with their corresponding adjoint, giving the following expression:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}    \mathbf{\mathcal{L}}_{AT} \triangleq \; &amp; f(\mathbf{x},\mathbf{q},\mathbf{t}_{A},\mathbf{f}_{T,A},\mathbf{f}_{T,S},\mathbf{t}_{S})
 + \mathbf{\psi}_{A}^{T} \mathbf{A}(\mathbf{x},\mathbf{q},{t}_{A})
@@ -239,7 +253,8 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 + \mathbf{\psi}_{Q}^{T} \mathbf{Q}(\mathbf{f}_{T,A},\mathbf{f}_{T,S})\\
 &amp; + \mathbf{\psi}_{T,S}^{T} \mathbf{S}(\mathbf{x},\mathbf{t}_{S},\mathbf{f}_{T,S})
 + \mathbf{\psi}_{T}^{T} \mathbf{T}(\mathbf{t}_{S},{t}_{A})\end{split}\]</div>
-<p>The adjoint equations are obtained by taking the derivative of the Lagrangian with respect to the state variables and setting it to zero. This results in the following coupled system of equations</p>
+<p>The adjoint equations are obtained by taking the derivative of the Lagrangian with respect to the state variables and
+setting it to zero. This results in the following coupled system of equations:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{bmatrix}
 \frac{\partial \mathbf{A}}{\partial \mathbf{q}}^{T} &amp;
@@ -286,7 +301,11 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 <p>To obtain a consistent and conservative load transfer, the load transfer is derived based on the method of virtual work. The residual of the load transfer scheme is:</p>
 <div class="math notranslate nohighlight">
 \[{L}({x}, {u}_{S}, {f}_{A}, {f}_{S}) \triangleq {\eta}({x}, {u}_{S}, {f}_{A}) - {f}_{S} = 0\]</div>
-<p>MELDThermal links each aerodynamic surface node, where a wall temperature will be specified, to a fixed number of the nearest structural nodes from which the structural temperature will be interpolated. This approach is analogous to the localization property of MELD such that each aerodynamic surface node receives temperature information from a limited number of structural nodes. The temperature of the aerodynamic surface node is then computed from the temperatures of the set of linked structural nodes:</p>
+<p>MELDThermal links each aerodynamic surface node, where a wall temperature will be specified, to a fixed number of the nearest
+structural nodes from which the structural temperature will be interpolated.
+This approach is analogous to the localization property of MELD such that each aerodynamic surface node receives temperature
+information from a limited number of structural nodes. The temperature of the aerodynamic surface node is then computed from the
+temperatures of the set of linked structural nodes:</p>
 <div class="math notranslate nohighlight">
 \[T_{A} = \sum_{i=1}^{N} w_{i} {T_{S}}_{i}\]</div>
 <p>The weights are computed based on the Euclidean distance between the aerodynamic node and the corresponding structural surface nodes:</p>
@@ -295,12 +314,16 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 <p>The interpolation is repeated for all aerodynamic surface nodes, giving the temperature transfer residual:</p>
 <div class="math notranslate nohighlight">
 \[{T}({t}_{S}, {t}_{A}) \triangleq  {W} {t}_{S} - {t}_{A} = 0,\]</div>
-<p>The relationship between the area-weighted heat flux at the aerodynamic surface nodes and the resulting heat flux on the structural nodes is calculated in the same manner as the loads. Based on virtual work, the flux produced at a structural node by the force at an aerodynamic surface node is:</p>
+<p>The relationship between the area-weighted heat flux at the aerodynamic surface nodes and the resulting heat flux on the
+structural nodes is calculated in the same manner as the loads. Based on virtual work, the flux produced at a structural
+node by the force at an aerodynamic surface node is:</p>
 <div class="math notranslate nohighlight">
 \[{Q}({f}_{T,A}, {f}_{T,S}) \triangleq {W}^{T} {f}_{T,A} - {f}_{T,S} = 0\]</div>
 <section id="aerothermoelastic-adjoint">
 <h3>Aerothermoelastic Adjoint<a class="headerlink" href="#aerothermoelastic-adjoint" title="Permalink to this heading">¶</a></h3>
-<p>The aerothermoelastic adjoint equations are derived to be discretely consistent with the forward governing equations. The Lagrangian for the aerothermoelastic problem is formed by summing the function of interest with the products of the residuals for each analysis component combined with their corresponding adjoint, giving the following expression</p>
+<p>The aerothermoelastic adjoint equations are derived to be discretely consistent with the forward governing equations.
+The Lagrangian for the aerothermoelastic problem is formed by summing the function of interest with the products of the residuals
+for each analysis component combined with their corresponding adjoint, giving the following expression:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}    \mathbf{\mathcal{L}}_{ATE} \triangleq \; &amp; f({x}, {q}, {x}_{G}, {f}_{A}, {f}_{S}, {f}_{T,A}, {f}_{T,S}, {u}_{S}, {t}_{S}, {u}_{A}, {t}_{A})
 + \psi_{A}^{T} {A}({x}, {q}, {x}_G, {t}_{A} )
@@ -312,7 +335,8 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 &amp; + \psi_{S}^{T} \mathbf{S}(\mathbf{x},{u}_{S},\mathbf{t}_{S},{f}_{S},\mathbf{f}_{T,S})
 + \psi_{D}^{T} {D}({x}, {u}_{S}, {u}_{A})
 + \psi_{T}^{T} \mathbf{T}(\mathbf{t}_{S},{t}_{A})\end{split}\]</div>
-<p>The adjoint equations are obtained by taking the derivative of the aerothermoelastic Lagrangian with respect to the state variables and setting it to zero. This results in the following coupled system of equations</p>
+<p>The adjoint equations are obtained by taking the derivative of the aerothermoelastic Lagrangian with respect to the state
+variables and setting it to zero. This results in the following coupled system of equations:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{bmatrix}
 \frac{\partial \mathbf{A}}{\partial \mathbf{q}}^{T} &amp; 0 &amp;
@@ -370,7 +394,8 @@ as an input and solving for <span class="math notranslate nohighlight">\(\mathbf
 \frac{\partial f}{\partial {u}_{A}} \\
 \frac{\partial f}{\partial {t}_{A}}
 \end{bmatrix}\end{split}\]</div>
-<p>Once the solution for the adjoint equations has been obtained, the total derivative for the function of interest is computed as the derivative of the Lagrangian</p>
+<p>Once the solution for the adjoint equations has been obtained, the total derivative for the function of
+interest is computed as the derivative of the Lagrangian.</p>
 <div class="math notranslate nohighlight">
 \[\nabla_{{x}}f \triangleq \frac{\partial \mathcal{L}_{ATE}}{\partial {x}}\]</div>
 </section>
