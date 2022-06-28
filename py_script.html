@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>pyFUNtoFEM &#8212; FUNtoFEM .0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="FUN3D Configuration Requirements" href="fun3d_config.html" />
+    <link rel="prev" title="Programmer’s Guide" href="programmers_guide.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="fun3d_config.html" title="FUN3D Configuration Requirements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="programmers_guide.html" title="Programmer’s Guide"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyFUNtoFEM</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="pyfuntofem">
+<h1>pyFUNtoFEM<a class="headerlink" href="#pyfuntofem" title="Permalink to this heading">¶</a></h1>
+<p>FUNtoFEM can be executed by writing a Python script.
+Tha main components are the import section, MPI set-up, model creation, instantiation of discipline solvers, and calling the relevant routines.</p>
+<section id="import-modules">
+<h2>Import Modules<a class="headerlink" href="#import-modules" title="Permalink to this heading">¶</a></h2>
+<p>At the beginning of your Python script, it is important to import the appropriate modules.
+In the following code excerpt, modelTACS refers to a Python class which defines the structural model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">pyfuntofem.model</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyfuntofem.driver</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyfuntofem.fun3d_interface</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">tacs_model</span> <span class="kn">import</span> <span class="n">modelTACS</span>
+<span class="kn">from</span> <span class="nn">pyOpt</span> <span class="kn">import</span> <span class="n">Optimization</span>
+<span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
+</pre></div>
+</div>
+</section>
+<section id="mpi">
+<h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this heading">¶</a></h2>
+<p>FUNtoFEM employs MPI to enable multiple processes to run in parallel.
+The next section of the Python script handles the MPI set-up.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">n_tacs_procs</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+
+<span class="n">world_rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">world_rank</span> <span class="o">&lt;</span> <span class="n">n_tacs_procs</span><span class="p">:</span>
+     <span class="n">color</span> <span class="o">=</span> <span class="mi">55</span>
+     <span class="n">key</span> <span class="o">=</span> <span class="n">world_rank</span>
+<span class="k">else</span><span class="p">:</span>
+     <span class="n">color</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">UNDEFINED</span>
+     <span class="n">key</span> <span class="o">=</span> <span class="n">world_rank</span>
+<span class="n">tacs_comm</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Split</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-architecture">
+<h2>Model Architecture<a class="headerlink" href="#model-architecture" title="Permalink to this heading">¶</a></h2>
+<p>FUNtoFEM uses model classes to organize the design and coupling data related to a given problem.
+The model is made up of bodies and scenarios. A model is first created by calling the FUNtoFEMmodel function.
+Bodies, scenarios, and design variables can then be added to the model. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">&#39;myModel&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create a body called &#39;body0&#39;</span>
+<span class="n">body0</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="s1">&#39;body0&#39;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Add thickness as a structural design variable to the body</span>
+<span class="n">t</span> <span class="o">=</span> <span class="mf">0.025</span>
+<span class="n">svar</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s1">&#39;thickness&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">body0</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;structural&#39;</span><span class="p">,</span> <span class="n">svar</span><span class="p">)</span>
+
+<span class="c1"># Set number of iterations (steps)</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="c1"># Add a &#39;cruise&#39; scenario</span>
+<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="p">(</span><span class="s1">&#39;cruise&#39;</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">add_scenario</span><span class="p">(</span><span class="n">cruise</span><span class="p">)</span>
+
+<span class="c1"># Add a &#39;drag&#39; function</span>
+<span class="n">drag</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;cd&#39;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">)</span>
+<span class="n">cruise</span><span class="o">.</span><span class="n">add_function</span><span class="p">(</span><span class="n">drag</span><span class="p">)</span>
+
+<span class="c1"># Add the body to the model after the variables</span>
+<span class="n">model</span><span class="o">.</span><span class="n">add_body</span><span class="p">(</span><span class="n">body0</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="discipline-solvers">
+<h2>Discipline Solvers<a class="headerlink" href="#discipline-solvers" title="Permalink to this heading">¶</a></h2>
+<p>After the model has been defined, instantiate the specific discipline solvers with a call to
+Fun3dInterface for the fluid solver and a call to your structural model (e.g., modelTACS ) for the structural solver.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instantiate the flow and structural solvers</span>
+<span class="n">solvers</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fun3dInterface</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">modelTACS</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">tacs_comm</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">n_tacs_procs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="driver-set-up">
+<h2>Driver Set-up<a class="headerlink" href="#driver-set-up" title="Permalink to this heading">¶</a></h2>
+<p>The problem driver is instantiated with a call to FUNtoFEMnlbgs.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the transfer scheme options</span>
+<span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span> <span class="s1">&#39;meld&#39;</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;npts&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;isym&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+
+<span class="c1"># Instantiate the driver</span>
+<span class="n">struct_master</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">aero_master</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">tacs_comm</span><span class="p">,</span> <span class="n">struct_master</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span>
+               <span class="n">aero_master</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">transfer_options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+               <span class="n">theta_init</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta_min</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="driver-call">
+<h2>Driver Call<a class="headerlink" href="#driver-call" title="Permalink to this heading">¶</a></h2>
+<p>In order to run simulations, calls to the driver are used.
+In this example, a value for the design variable (thickness) is set.
+Then <code class="xref py py-func docutils literal notranslate"><span class="pre">solve_forward()</span></code> is called to run the forward analysis and
+<code class="xref py py-func docutils literal notranslate"><span class="pre">solve_adjoint()</span></code> is called to run the adjoint analysis.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set variable value</span>
+<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.025</span><span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">set_variables</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+
+<span class="c1"># Get the function value</span>
+<span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+<span class="n">funcs0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
+<span class="n">f0vals</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs0</span><span class="p">:</span>
+     <span class="n">f0vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+     <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Function value: &#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+<span class="c1"># Evaluate the function gradient</span>
+<span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
+<span class="n">grads</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_function_gradients</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adjoint gradient: &#39;</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">pyFUNtoFEM</a><ul>
+<li><a class="reference internal" href="#import-modules">Import Modules</a></li>
+<li><a class="reference internal" href="#mpi">MPI</a></li>
+<li><a class="reference internal" href="#model-architecture">Model Architecture</a></li>
+<li><a class="reference internal" href="#discipline-solvers">Discipline Solvers</a></li>
+<li><a class="reference internal" href="#driver-set-up">Driver Set-up</a></li>
+<li><a class="reference internal" href="#driver-call">Driver Call</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="programmers_guide.html"
+                          title="previous chapter">Programmer’s Guide</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="fun3d_config.html"
+                          title="next chapter">FUN3D Configuration Requirements</a></p>
+  </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="fun3d_config.html" title="FUN3D Configuration Requirements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="programmers_guide.html" title="Programmer’s Guide"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyFUNtoFEM</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, FUNtoFEM Developers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    </div>
+  </body>
+</html>

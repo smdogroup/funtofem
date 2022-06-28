@@ -1,20 +1,19 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
     <title>FUNtoFEM Model &#8212; FUNtoFEM .0 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="FUNtoFEM Driver" href="driver.html" />
@@ -35,81 +34,36 @@
         <li class="right" >
           <a href="analysis_framework.html" title="Analysis Framework"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FUNtoFEM Model</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">FUNtoFEM Model</a><ul>
-<li><a class="reference internal" href="#assembling-the-model">Assembling the model</a></li>
-<li><a class="reference internal" href="#exchanging-the-model-data-with-an-optimizer">Exchanging the model data with an optimizer</a><ul>
-<li><a class="reference internal" href="#design-variables">Design variables</a></li>
-<li><a class="reference internal" href="#function-values">Function values</a></li>
-<li><a class="reference internal" href="#gradients">Gradients</a></li>
-<li><a class="reference internal" href="#funtofem-model-class">FUNtoFEM Model Class</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#bodies-and-scenarios">Bodies and Scenarios</a><ul>
-<li><a class="reference internal" href="#scenarios">Scenarios</a></li>
-<li><a class="reference internal" href="#bodies">Bodies</a></li>
-<li><a class="reference internal" href="#base-class">Base class</a></li>
-<li><a class="reference internal" href="#massoudbody">MassoudBody</a></li>
-<li><a class="reference internal" href="#variables">Variables</a></li>
-<li><a class="reference internal" href="#functions">Functions</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="analysis_framework.html"
-                        title="previous chapter">Analysis Framework</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="driver.html"
-                        title="next chapter">FUNtoFEM Driver</a></p>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="funtofem-model">
-<h1>FUNtoFEM Model<a class="headerlink" href="#funtofem-model" title="Permalink to this headline">¶</a></h1>
+  <section id="funtofem-model">
+<h1>FUNtoFEM Model<a class="headerlink" href="#funtofem-model" title="Permalink to this heading">¶</a></h1>
 <p>The model classes are used to stored design and coupling data related to the aeroelastic problem.
 The model is made up of <a class="reference internal" href="#bodies-and-scenarios">bodies and scenarios</a> .</p>
-<div class="figure">
+<figure class="align-default">
 <img alt="_images/funtofem_model.png" src="_images/funtofem_model.png" />
-</div>
+</figure>
 <p>The bodies are the different bodies in the simulations, such as the blades of a rotor.
 The scenarios are the different points of a multipoint optimization.</p>
 <p>Methods on this page with <strong>[driver call]</strong> and <strong>[model call]</strong> are calls that the user does not make directly and can be ignored.</p>
-<div class="section" id="assembling-the-model">
-<h2>Assembling the model<a class="headerlink" href="#assembling-the-model" title="Permalink to this headline">¶</a></h2>
+<section id="assembling-the-model">
+<h2>Assembling the model<a class="headerlink" href="#assembling-the-model" title="Permalink to this heading">¶</a></h2>
 <p>A model is assembled using the <code class="xref py py-func docutils literal notranslate"><span class="pre">add_body()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">add_scenario()</span></code> calls. See <a class="reference internal" href="#bodies-and-scenarios">bodies and scenarios</a> for details about their creation.</p>
 <p>The bodies and scenarios are kept in lists in the same order that they are input.</p>
-</div>
-<div class="section" id="exchanging-the-model-data-with-an-optimizer">
-<h2>Exchanging the model data with an optimizer<a class="headerlink" href="#exchanging-the-model-data-with-an-optimizer" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="exchanging-the-model-data-with-an-optimizer">
+<h2>Exchanging the model data with an optimizer<a class="headerlink" href="#exchanging-the-model-data-with-an-optimizer" title="Permalink to this heading">¶</a></h2>
 <p>The model object provides a convenient way to exchange data with a python-based optimizer.</p>
-<div class="section" id="design-variables">
-<h3>Design variables<a class="headerlink" href="#design-variables" title="Permalink to this headline">¶</a></h3>
+<section id="design-variables">
+<h3>Design variables<a class="headerlink" href="#design-variables" title="Permalink to this heading">¶</a></h3>
 <p>The assembled model contains all the design variables information that an optimizer such as PyOpt needs.
 A list of the active design for the entire model is returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code>.
 The output list contains the <a class="reference internal" href="#module-variable" title="variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">variable</span></code></a> type. Here is an example of passing the variable information from the model to a PyOpt optimizer:</p>
@@ -129,10 +83,10 @@ The output list contains the <a class="reference internal" href="#module-variabl
 </div>
 <p>Optimizers such as PyOpt will typically provide a list of new values at each design point. These can be set back into model type using <code class="xref py py-func docutils literal notranslate"><span class="pre">set_variables()</span></code>.
 The variables can be pre-scaled and passed directing into this call, or with the scale argument set to True, the scaling will be done automatically.</p>
-</div>
-<div class="section" id="function-values">
-<h3>Function values<a class="headerlink" href="#function-values" title="Permalink to this headline">¶</a></h3>
-<p>Once the driver has been run, <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_forward" title="funtofem_driver.FUNtoFEMDriver.solve_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_forward()</span></code></a>, the functions can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_functions()</span></code>.
+</section>
+<section id="function-values">
+<h3>Function values<a class="headerlink" href="#function-values" title="Permalink to this heading">¶</a></h3>
+<p>Once the driver has been run, <code class="xref py py-func docutils literal notranslate"><span class="pre">solve_forward()</span></code>, the functions can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_functions()</span></code>.
 The output list contains the <a class="reference internal" href="#module-function" title="function"><code class="xref py py-class docutils literal notranslate"><span class="pre">function</span></code></a> type. The following code prints the function values:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 <span class="n">functions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
@@ -157,10 +111,10 @@ The output list contains the <a class="reference internal" href="#module-functio
     <span class="k">return</span> <span class="n">obj</span><span class="p">,</span> <span class="n">con</span><span class="p">,</span> <span class="n">fail</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="gradients">
-<h3>Gradients<a class="headerlink" href="#gradients" title="Permalink to this headline">¶</a></h3>
-<p>The derivatives in the model class are populated by <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver.solve_adjoint" title="funtofem_driver.FUNtoFEMDriver.solve_adjoint"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_adjoint()</span></code></a>. Gradients can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_function_gradients()</span></code>.</p>
+</section>
+<section id="gradients">
+<h3>Gradients<a class="headerlink" href="#gradients" title="Permalink to this heading">¶</a></h3>
+<p>The derivatives in the model class are populated by <code class="xref py py-func docutils literal notranslate"><span class="pre">solve_adjoint()</span></code>. Gradients can be retrieved using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_function_gradients()</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
 
 <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
@@ -195,492 +149,453 @@ The output list contains the <a class="reference internal" href="#module-functio
     <span class="k">return</span> <span class="n">g</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">fail</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="funtofem-model-class">
-<h3>FUNtoFEM Model Class<a class="headerlink" href="#funtofem-model-class" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
-<div class="section" id="bodies-and-scenarios">
-<h2>Bodies and Scenarios<a class="headerlink" href="#bodies-and-scenarios" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="funtofem-model-class">
+<h3>FUNtoFEM Model Class<a class="headerlink" href="#funtofem-model-class" title="Permalink to this heading">¶</a></h3>
+</section>
+</section>
+<section id="bodies-and-scenarios">
+<h2>Bodies and Scenarios<a class="headerlink" href="#bodies-and-scenarios" title="Permalink to this heading">¶</a></h2>
 <p>Bodies and scenarios organize the data associated for the coupling and design.
 Additionally, the body class holds the shape parameterization and transfer scheme.
 Shape parameterization is added by creating a new body class that subclasses the <code class="xref py py-class docutils literal notranslate"><span class="pre">body</span></code> class. See <code class="xref py py-class docutils literal notranslate"><span class="pre">MassoudBody</span></code> for an example.
-The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
-<div class="section" id="scenarios">
-<h3>Scenarios<a class="headerlink" href="#scenarios" title="Permalink to this headline">¶</a></h3>
+The driver adds the details for the transfer scheme. See <code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code>.</p>
+<section id="scenarios">
+<h3>Scenarios<a class="headerlink" href="#scenarios" title="Permalink to this heading">¶</a></h3>
 <p>Scenarios hold <a class="reference internal" href="#variables">variables</a> and <a class="reference internal" href="#functions">functions</a> in lists.
 Variables and functions are added using <code class="xref py py-func docutils literal notranslate"><span class="pre">add_function()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">add_variable()</span></code>.</p>
 <p>An example of a scenario variable could be flow variables such as angle of attack or Mach number.</p>
-<div class="figure">
+<figure class="align-default">
 <img alt="_images/scenario.png" src="_images/scenario.png" />
-</div>
-</div>
-<div class="section" id="bodies">
-<h3>Bodies<a class="headerlink" href="#bodies" title="Permalink to this headline">¶</a></h3>
+</figure>
+</section>
+<section id="bodies">
+<h3>Bodies<a class="headerlink" href="#bodies" title="Permalink to this heading">¶</a></h3>
 <p>Shape parameterization is added by creating a new body class that subclasses the <code class="xref py py-class docutils literal notranslate"><span class="pre">body</span></code> class. See <code class="xref py py-class docutils literal notranslate"><span class="pre">MassoudBody</span></code> for an example.
-The driver adds the details for the transfer scheme. See <a class="reference internal" href="driver.html#funtofem_driver.FUNtoFEMDriver" title="funtofem_driver.FUNtoFEMDriver"><code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code></a>.</p>
-<div class="figure">
+The driver adds the details for the transfer scheme. See <code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code>.</p>
+<figure class="align-default">
 <img alt="_images/body.png" src="_images/body.png" />
-</div>
-<table border="1" class="colwidths-given docutils align-center" id="id1">
+</figure>
+<table class="docutils align-center" id="id1">
 <caption><span class="caption-text">Body Member List</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
 <colgroup>
-<col width="33%" />
-<col width="33%" />
-<col width="33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Name</th>
-<th class="head">Default Value</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Default Value</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>self.name</td>
-<td>Required Input</td>
-<td>Name</td>
+<tbody>
+<tr class="row-even"><td><p>self.name</p></td>
+<td><p>Required Input</p></td>
+<td><p>Name</p></td>
 </tr>
-<tr class="row-odd"><td>self.analysis_type</td>
-<td>Required Input</td>
-<td>Analysis type (aeroelastic, aerothermal, aerothermoelastic)</td>
+<tr class="row-odd"><td><p>self.analysis_type</p></td>
+<td><p>Required Input</p></td>
+<td><p>Analysis type (aeroelastic, aerothermal, aerothermoelastic)</p></td>
 </tr>
-<tr class="row-even"><td>self.id</td>
-<td>Required Input</td>
-<td>ID</td>
+<tr class="row-even"><td><p>self.id</p></td>
+<td><p>Required Input</p></td>
+<td><p>ID</p></td>
 </tr>
-<tr class="row-odd"><td>self.group</td>
-<td>Required Input</td>
-<td>Group categorization</td>
+<tr class="row-odd"><td><p>self.group</p></td>
+<td><p>Required Input</p></td>
+<td><p>Group categorization</p></td>
 </tr>
-<tr class="row-even"><td>self.group_master</td>
-<td>False</td>
-<td>Top-level body group</td>
+<tr class="row-even"><td><p>self.group_master</p></td>
+<td><p>False</p></td>
+<td><p>Top-level body group</p></td>
 </tr>
-<tr class="row-odd"><td>self.boundary</td>
-<td>0.0</td>
-<td>Body boundary</td>
+<tr class="row-odd"><td><p>self.boundary</p></td>
+<td><p>0.0</p></td>
+<td><p>Body boundary</p></td>
 </tr>
-<tr class="row-even"><td>self.motion_type</td>
-<td>deform</td>
-<td>Motion type</td>
+<tr class="row-even"><td><p>self.motion_type</p></td>
+<td><p>deform</p></td>
+<td><p>Motion type</p></td>
 </tr>
-<tr class="row-odd"><td>self.variables</td>
-<td>{}</td>
-<td>Owned variables</td>
+<tr class="row-odd"><td><p>self.variables</p></td>
+<td><p>{}</p></td>
+<td><p>Owned variables</p></td>
 </tr>
-<tr class="row-even"><td>self.derivatives</td>
-<td>{}</td>
-<td>Owned derivatives</td>
+<tr class="row-even"><td><p>self.derivatives</p></td>
+<td><p>{}</p></td>
+<td><p>Owned derivatives</p></td>
 </tr>
-<tr class="row-odd"><td>self.parent</td>
-<td>None</td>
-<td>Body parent</td>
+<tr class="row-odd"><td><p>self.parent</p></td>
+<td><p>None</p></td>
+<td><p>Body parent</p></td>
 </tr>
-<tr class="row-even"><td>self.children</td>
-<td>[]</td>
-<td>Owned bodies</td>
+<tr class="row-even"><td><p>self.children</p></td>
+<td><p>[]</p></td>
+<td><p>Owned bodies</p></td>
 </tr>
-<tr class="row-odd"><td>self.shape</td>
-<td>None</td>
-<td>Shape</td>
+<tr class="row-odd"><td><p>self.shape</p></td>
+<td><p>None</p></td>
+<td><p>Shape</p></td>
 </tr>
-<tr class="row-even"><td>self.parameterization</td>
-<td>1.0</td>
-<td>Geometry type</td>
+<tr class="row-even"><td><p>self.parameterization</p></td>
+<td><p>1.0</p></td>
+<td><p>Geometry type</p></td>
 </tr>
-<tr class="row-odd"><td>self.transfer</td>
-<td>None</td>
-<td>Transfer method</td>
+<tr class="row-odd"><td><p>self.transfer</p></td>
+<td><p>None</p></td>
+<td><p>Transfer method</p></td>
 </tr>
-<tr class="row-even"><td>self.thermal_transfer</td>
-<td>None</td>
-<td>Thermal transfer method</td>
+<tr class="row-even"><td><p>self.thermal_transfer</p></td>
+<td><p>None</p></td>
+<td><p>Thermal transfer method</p></td>
 </tr>
-<tr class="row-odd"><td>self.struct_nnodes</td>
-<td>None</td>
-<td>Number of structural nodes</td>
+<tr class="row-odd"><td><p>self.struct_nnodes</p></td>
+<td><p>None</p></td>
+<td><p>Number of structural nodes</p></td>
 </tr>
-<tr class="row-even"><td>self.aero_nnodes</td>
-<td>None</td>
-<td>Number of aerodynamic nodes</td>
+<tr class="row-even"><td><p>self.aero_nnodes</p></td>
+<td><p>None</p></td>
+<td><p>Number of aerodynamic nodes</p></td>
 </tr>
-<tr class="row-odd"><td>self.xfer_ndof</td>
-<td>3.0</td>
-<td>Variable degree of freedom</td>
+<tr class="row-odd"><td><p>self.xfer_ndof</p></td>
+<td><p>3.0</p></td>
+<td><p>Variable degree of freedom</p></td>
 </tr>
-<tr class="row-even"><td>self.therm_xfer_ndof</td>
-<td>1.0</td>
-<td>Thermal variable degree of freedom</td>
+<tr class="row-even"><td><p>self.therm_xfer_ndof</p></td>
+<td><p>1.0</p></td>
+<td><p>Thermal variable degree of freedom</p></td>
 </tr>
-<tr class="row-odd"><td>self.T_ref</td>
-<td>300</td>
-<td>Reference temperature</td>
+<tr class="row-odd"><td><p>self.T_ref</p></td>
+<td><p>300</p></td>
+<td><p>Reference temperature</p></td>
 </tr>
-<tr class="row-even"><td>self.struct_X</td>
-<td>None</td>
-<td>Structural variables</td>
+<tr class="row-even"><td><p>self.struct_X</p></td>
+<td><p>None</p></td>
+<td><p>Structural variables</p></td>
 </tr>
-<tr class="row-odd"><td>self.aero_X</td>
-<td>None</td>
-<td>Aerodynamic variables</td>
+<tr class="row-odd"><td><p>self.aero_X</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic variables</p></td>
 </tr>
-<tr class="row-even"><td>self.struct_id</td>
-<td>None</td>
-<td>Structural ID</td>
+<tr class="row-even"><td><p>self.struct_id</p></td>
+<td><p>None</p></td>
+<td><p>Structural ID</p></td>
 </tr>
-<tr class="row-odd"><td>self.aero_id</td>
-<td>None</td>
-<td>Aerodynamic ID</td>
+<tr class="row-odd"><td><p>self.aero_id</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic ID</p></td>
 </tr>
-<tr class="row-even"><td>self.struct_disps</td>
-<td>None</td>
-<td>Structural displacements</td>
+<tr class="row-even"><td><p>self.struct_disps</p></td>
+<td><p>None</p></td>
+<td><p>Structural displacements</p></td>
 </tr>
-<tr class="row-odd"><td>self.struct_forces</td>
-<td>None</td>
-<td>Structural forces</td>
+<tr class="row-odd"><td><p>self.struct_forces</p></td>
+<td><p>None</p></td>
+<td><p>Structural forces</p></td>
 </tr>
-<tr class="row-even"><td>self.struct_loads</td>
-<td>None</td>
-<td>Structural loads</td>
+<tr class="row-even"><td><p>self.struct_loads</p></td>
+<td><p>None</p></td>
+<td><p>Structural loads</p></td>
 </tr>
-<tr class="row-odd"><td>self.rigid_transform</td>
-<td>None</td>
-<td>Body transformation scheme</td>
+<tr class="row-odd"><td><p>self.rigid_transform</p></td>
+<td><p>None</p></td>
+<td><p>Body transformation scheme</p></td>
 </tr>
-<tr class="row-even"><td>self.aero_disps</td>
-<td>None</td>
-<td>Aerodynamic displacements</td>
+<tr class="row-even"><td><p>self.aero_disps</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic displacements</p></td>
 </tr>
-<tr class="row-odd"><td>self.aero_forces</td>
-<td>None</td>
-<td>Aerodynamic forces</td>
+<tr class="row-odd"><td><p>self.aero_forces</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic forces</p></td>
 </tr>
-<tr class="row-even"><td>self.struct_temps</td>
-<td>None</td>
-<td>Structural temperature</td>
+<tr class="row-even"><td><p>self.struct_temps</p></td>
+<td><p>None</p></td>
+<td><p>Structural temperature</p></td>
 </tr>
-<tr class="row-odd"><td>self.struct_heat_flux</td>
-<td>None</td>
-<td>Structural heat flux</td>
+<tr class="row-odd"><td><p>self.struct_heat_flux</p></td>
+<td><p>None</p></td>
+<td><p>Structural heat flux</p></td>
 </tr>
-<tr class="row-even"><td>self.aero_temps</td>
-<td>None</td>
-<td>Aerodynamic temperature</td>
+<tr class="row-even"><td><p>self.aero_temps</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic temperature</p></td>
 </tr>
-<tr class="row-odd"><td>self.aero_heat_flux</td>
-<td>None</td>
-<td>Aerodynamic heat flux</td>
+<tr class="row-odd"><td><p>self.aero_heat_flux</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic heat flux</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="base-class">
-<h3>Base class<a class="headerlink" href="#base-class" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="base-class">
+<h3>Base class<a class="headerlink" href="#base-class" title="Permalink to this heading">¶</a></h3>
 <p>The body and scenario classes subclass the <a class="reference internal" href="#base-class">base class</a>.</p>
 <p>Although most of the methods in the base class are used internally in the model, <a class="reference internal" href="#base.Base.set_variable" title="base.Base.set_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_variable()</span></code></a> allows the user to change attributes of existing <a class="reference internal" href="#variables">variables</a> in the body or scenario.
 For example, if the shape parameterization created a specific number of variables, but you do not want to use all of them in the optimization, you can set the variable to be inactive.</p>
-<span class="target" id="module-base"></span><dl class="class">
-<dt id="base.Base">
-<em class="property">class </em><code class="descclassname">base.</code><code class="descname">Base</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em>, <em>group=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-base"></span><dl class="py class">
+<dt class="sig sig-object py" id="base.Base">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">base.</span></span><span class="sig-name descname"><span class="pre">Base</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for FUNtoFEM bodies and scenarios</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the body or scenario</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number in list of bodies or scenarios in the model</li>
-<li><strong>group</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – group number for the body or scenario. Coupled variables defined in the body/scenario will be coupled with
-bodies/scenarios in the same group</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – name of the body or scenario</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number in list of bodies or scenarios in the model</p></li>
+<li><p><strong>group</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – group number for the body or scenario. Coupled variables defined in the body/scenario will be coupled with
+bodies/scenarios in the same group</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <div class="admonition seealso">
-<p class="first admonition-title">See also</p>
-<p class="last"><code class="xref py py-mod docutils literal notranslate"><span class="pre">body</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">scenario</span></code></p>
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-mod docutils literal notranslate"><span class="pre">body</span></code>,:mod:<cite>scenario</cite></dt><dd><p>subclass the Base class</p>
+</dd>
+</dl>
 </div>
-<dl class="method">
-<dt id="base.Base.add_variable">
-<code class="descname">add_variable</code><span class="sig-paren">(</span><em>vartype</em>, <em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.add_variable" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.add_variable">
+<span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.add_variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a new variable to the body’s or scenario’s variable dictionary</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of variable</li>
-<li><strong>var</strong> (<em>Variable object</em>) – variable to be added</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of variable</p></li>
+<li><p><strong>var</strong> (<em>Variable object</em>) – variable to be added</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.set_variable">
-<code class="descname">set_variable</code><span class="sig-paren">(</span><em>vartype</em>, <em>name=None</em>, <em>index=None</em>, <em>value=None</em>, <em>lower=None</em>, <em>upper=None</em>, <em>scaling=None</em>, <em>active=True</em>, <em>coupled=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.set_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.set_variable" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.set_variable">
+<span class="sig-name descname"><span class="pre">set_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.set_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.set_variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set one or more properties of a variable given the vartype and either the variable name or a list of id’s</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of variable</li>
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the variable</li>
-<li><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a><em> or </em><em>list of ints</em>) – list of id numbers for the variables to modify</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.9)"><em>complex</em></a>) – value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound for the variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound for the variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the variable is coupled</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of variable</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – name of the variable</p></li>
+<li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em> or </em><em>list of ints</em>) – list of id numbers for the variables to modify</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.10)"><em>complex</em></a>) – value of the variable</p></li>
+<li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound for the variable</p></li>
+<li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound for the variable</p></li>
+<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
+<li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the variable is active</p></li>
+<li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the variable is coupled</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <p class="rubric">Examples</p>
 <p>base.set_variable(‘aerodynamic’,name=’AOA’,value=3.0)</p>
 <p>base.set_variable(‘structural’,index=2,active=False)</p>
 <p>base.set_variable(‘structural’,index=[0,1,2,3,4],active=False)</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.count_active_variables">
-<code class="descname">count_active_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.count_active_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.count_active_variables" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.count_active_variables">
+<span class="sig-name descname"><span class="pre">count_active_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.count_active_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.count_active_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Counts the number of active variables in this body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of active variables in the variable dictionary</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>count</strong> – number of active variables in the variable dictionary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)">int</a></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.count_uncoupled_variables">
-<code class="descname">count_uncoupled_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.count_uncoupled_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.count_uncoupled_variables" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.count_uncoupled_variables">
+<span class="sig-name descname"><span class="pre">count_uncoupled_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.count_uncoupled_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.count_uncoupled_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Counts the number of variables in this body or scenario that are both uncoupled and active
 This is the number of unique variables to this object</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>count</strong> – number of uncoupled, active variables in the variable dictionary</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>count</strong> – number of uncoupled, active variables in the variable dictionary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)">int</a></p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.active_variables">
-<code class="descname">active_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.active_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.active_variables" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.active_variables">
+<span class="sig-name descname"><span class="pre">active_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.active_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.active_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the list of active variables in body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of active variables</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of variables</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active_list</strong> – list of active variables</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of variables</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.uncoupled_variables">
-<code class="descname">uncoupled_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.uncoupled_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.uncoupled_variables" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.uncoupled_variables">
+<span class="sig-name descname"><span class="pre">uncoupled_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.uncoupled_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.uncoupled_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the list of uncoupled, active variables in body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of uncoupled, active variables</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of variables</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active_list</strong> – list of uncoupled, active variables</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of variables</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.couple_variables">
-<code class="descname">couple_variables</code><span class="sig-paren">(</span><em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.couple_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.couple_variables" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.couple_variables">
+<span class="sig-name descname"><span class="pre">couple_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.couple_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.couple_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Updates coupled variables in the body or scenario based on the input’s variables</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.update_id">
-<code class="descname">update_id</code><span class="sig-paren">(</span><em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.update_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.update_id" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.update_id">
+<span class="sig-name descname"><span class="pre">update_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.update_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.update_id" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Update the id number of the body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of the scenario</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number of the scenario</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.add_coupled_derivatives">
-<code class="descname">add_coupled_derivatives</code><span class="sig-paren">(</span><em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_coupled_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.add_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.add_coupled_derivatives">
+<span class="sig-name descname"><span class="pre">add_coupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_coupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.add_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Adds coupled derivatives in the body or scenario based on the input’s derivatives</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.set_coupled_derivatives">
-<code class="descname">set_coupled_derivatives</code><span class="sig-paren">(</span><em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.set_coupled_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.set_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.set_coupled_derivatives">
+<span class="sig-name descname"><span class="pre">set_coupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.set_coupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.set_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Updates coupled derivatives in the body or scenario based on the input’s derivatives</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.add_function_derivatives">
-<code class="descname">add_function_derivatives</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_function_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.add_function_derivatives" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.add_function_derivatives">
+<span class="sig-name descname"><span class="pre">add_function_derivatives</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.add_function_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.add_function_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 For each variable, add a new derivative value for a single new function</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.active_derivatives">
-<code class="descname">active_derivatives</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.active_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.active_derivatives" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.active_derivatives">
+<span class="sig-name descname"><span class="pre">active_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.active_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.active_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Get the derivatives of a function, n, with respect to all the active variables in this body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – the function number</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of derivative values for each active variable in this object</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of float</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – the function number</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>active_list</strong> – list of derivative values for each active variable in this object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of float</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="base.Base.uncoupled_derivatives">
-<code class="descname">uncoupled_derivatives</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.uncoupled_derivatives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#base.Base.uncoupled_derivatives" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="base.Base.uncoupled_derivatives">
+<span class="sig-name descname"><span class="pre">uncoupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/base.html#Base.uncoupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#base.Base.uncoupled_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Get the derivatives of a function, n, with respect to all the uncoupled, active variables in this body or scenario</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – the function number</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>active_list</strong> – list of derivative values for each uncoupled, active variable in this object</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of float</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – the function number</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>active_list</strong> – list of derivative values for each uncoupled, active variable in this object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of float</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
-</div>
-<div class="section" id="massoudbody">
-<h3>MassoudBody<a class="headerlink" href="#massoudbody" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="variables">
-<h3>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="massoudbody">
+<h3>MassoudBody<a class="headerlink" href="#massoudbody" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="variables">
+<h3>Variables<a class="headerlink" href="#variables" title="Permalink to this heading">¶</a></h3>
 <p>Some solvers like FUN3D require some design variables to be defined, whether or not it is being used in design.
 The active attribute of the <a class="reference internal" href="#variable.Variable" title="variable.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a> class. Setting it to False, allows you to still define the variable but it won’t be returned when calling <code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code>.
 When the variable is added to a <code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> using <a class="reference internal" href="#base.Base.add_variable" title="base.Base.add_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_variable()</span></code></a>, the vartype argument specifies what discipline the variable is associated with.</p>
-<span class="target" id="module-variable"></span><dl class="class">
-<dt id="variable.Variable">
-<em class="property">class </em><code class="descclassname">variable.</code><code class="descname">Variable</code><span class="sig-paren">(</span><em>name='unknown'</em>, <em>value=0.0</em>, <em>lower=0.0</em>, <em>upper=1.0</em>, <em>scaling=1.0</em>, <em>active=True</em>, <em>coupled=False</em>, <em>id=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/variable.html#Variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variable.Variable" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-variable"></span><dl class="py class">
+<dt class="sig sig-object py" id="variable.Variable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">variable.</span></span><span class="sig-name descname"><span class="pre">Variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unknown'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/variable.html#Variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#variable.Variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Design variable type for FUNtoFEM</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the variable</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – current value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound of the design variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound of the design variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of the design variable</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – name of the variable</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – current value of the variable</p></li>
+<li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound of the design variable</p></li>
+<li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound of the design variable</p></li>
+<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
+<li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is active</p></li>
+<li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is coupled</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number of the design variable</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <p class="rubric">Examples</p>
-<p>thickness = Variable(name=’thickness 0’, value = 0.004, lower = 0.001, upper 0.1)</p>
-<dl class="method">
-<dt id="variable.Variable.assign">
-<code class="descname">assign</code><span class="sig-paren">(</span><em>value=None</em>, <em>lower=None</em>, <em>upper=None</em>, <em>scaling=None</em>, <em>active=None</em>, <em>coupled=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/variable.html#Variable.assign"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variable.Variable.assign" title="Permalink to this definition">¶</a></dt>
+<p>thickness = Variable(name=’thickness 0’, value=0.004, lower=0.001, upper=0.1)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="variable.Variable.assign">
+<span class="sig-name descname"><span class="pre">assign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/variable.html#Variable.assign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#variable.Variable.assign" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the one or more of the attributes of the design variable</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – new value of the variable</li>
-<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – lower bound of the design variable</li>
-<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – upper bound of the design variable</li>
-<li><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – scaling of the variable for an optimizer</li>
-<li><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is active</li>
-<li><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not the design variable is coupled</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – new value of the variable</p></li>
+<li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound of the design variable</p></li>
+<li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound of the design variable</p></li>
+<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
+<li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is active</p></li>
+<li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is coupled</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
-</div>
-<div class="section" id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h3>
 <p>Functions in the FUNtoFEM framework are single discipline functions.
 The <em>analysis_type</em> argument specifics which discipline the function is associated with.
 Currently the options are ‘aerodynamic’ and ‘structural’.</p>
@@ -689,42 +604,89 @@ Although the function values could be accessed from the model type, <code class=
 <p>When FUNtoFEM is used with FUN3D, the name of any function that would be defined in the rubber.data can be used.
 For functions that do not need an adjoint, such as structural mass, the boolean, adjoint, should be set to false.
 Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor without including that of the sting model, you can use the body argument to pass that information to the solver.</p>
-<span class="target" id="module-function"></span><dl class="class">
-<dt id="function.Function">
-<em class="property">class </em><code class="descclassname">function.</code><code class="descname">Function</code><span class="sig-paren">(</span><em>name</em>, <em>id=0</em>, <em>value=0.0</em>, <em>start=0</em>, <em>stop=-1</em>, <em>analysis_type=None</em>, <em>body=-1</em>, <em>adjoint=True</em>, <em>options=None</em>, <em>averaging=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/function.html#Function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#function.Function" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-function"></span><dl class="py class">
+<dt class="sig sig-object py" id="function.Function">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">function.</span></span><span class="sig-name descname"><span class="pre">Function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averaging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/function.html#Function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#function.Function" title="Permalink to this definition">¶</a></dt>
 <dd><p>holds component function information in FUNtoFEM</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the function</li>
-<li><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – id number of function</li>
-<li><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – value of the function</li>
-<li><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – time step that the function window starts. If steady, then ignore</li>
-<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – time step that the function window ends. If steady, set to -1 (the default)</li>
-<li><strong>analysis_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – type of analysis this function is associated with: ‘aerodynamic’,’structural’</li>
-<li><strong>body</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – body number that the function is associated with. The default is 0 which is all bodies</li>
-<li><strong>adjoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether or not an adjoint is required for a function</li>
-<li><strong>options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – any options associated with the function and pass to the solvers</li>
-<li><strong>averaging</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – whether the function is averaged or integrated or the function window. Ignored for steady functions</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – name of the function</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number of function</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – value of the function</p></li>
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – time step that the function window starts. If steady, then ignore</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – time step that the function window ends. If steady, set to -1 (the default)</p></li>
+<li><p><strong>analysis_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of analysis this function is associated with: ‘aerodynamic’,’structural’</p></li>
+<li><p><strong>body</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – body number that the function is associated with. The default is 0 which is all bodies</p></li>
+<li><p><strong>adjoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not an adjoint is required for a function</p></li>
+<li><p><strong>options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – any options associated with the function and pass to the solvers</p></li>
+<li><p><strong>averaging</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether the function is averaged or integrated or the function window. Ignored for steady functions</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <p class="rubric">Examples</p>
-<p>lift = Function(‘lift’,analysis_type=’aerodynamic’)</p>
-<p>mass = Function(‘mass’,analysis_type=’structural’,adjoint=False)</p>
-<p>ks = Function(‘ksFailure’,analysis_type=’structural’,options={‘ksweight’:50.0})</p>
+<p>lift = Function(‘lift’, analysis_type=’aerodynamic’)</p>
+<p>mass = Function(‘mass’, analysis_type=’structural’, adjoint=False)</p>
+<p>ks = Function(‘ksFailure’, analysis_type=’structural’, options={‘ksweight’:50.0})</p>
 </dd></dl>
 
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">FUNtoFEM Model</a><ul>
+<li><a class="reference internal" href="#assembling-the-model">Assembling the model</a></li>
+<li><a class="reference internal" href="#exchanging-the-model-data-with-an-optimizer">Exchanging the model data with an optimizer</a><ul>
+<li><a class="reference internal" href="#design-variables">Design variables</a></li>
+<li><a class="reference internal" href="#function-values">Function values</a></li>
+<li><a class="reference internal" href="#gradients">Gradients</a></li>
+<li><a class="reference internal" href="#funtofem-model-class">FUNtoFEM Model Class</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bodies-and-scenarios">Bodies and Scenarios</a><ul>
+<li><a class="reference internal" href="#scenarios">Scenarios</a></li>
+<li><a class="reference internal" href="#bodies">Bodies</a></li>
+<li><a class="reference internal" href="#base-class">Base class</a></li>
+<li><a class="reference internal" href="#massoudbody">MassoudBody</a></li>
+<li><a class="reference internal" href="#variables">Variables</a></li>
+<li><a class="reference internal" href="#functions">Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="analysis_framework.html"
+                          title="previous chapter">Analysis Framework</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="driver.html"
+                          title="next chapter">FUNtoFEM Driver</a></p>
+  </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -744,12 +706,13 @@ Some functions are associated with particular bodies, for instance, if you wante
         <li class="right" >
           <a href="analysis_framework.html" title="Analysis Framework"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FUNtoFEM Model</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2021, FUNtoFEM Developers.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>
