@@ -40,11 +40,13 @@ jobs:
           - NAME: Real
             OPTIONAL: 'default'
             INTERFACE: 'interface'
+            PUBLISH_DOCS: true
 
           # complex versions
           - NAME: Complex
             OPTIONAL: 'complex'
             INTERFACE: 'complex_interface'
+            PUBLISH_DOCS: false
 
     name: FUNtoFEM ${{ matrix.NAME }} Build/Test
 
