@@ -134,7 +134,8 @@ The following is a pseudo code would be a gradient evaluation for pyOpt.
 
 FUNtoFEM Model Class
 ====================
-.. automodule:: funtofem_model
+
+.. currentmodule:: pyfuntofem.funtofem_model
 
 .. autoclass:: FUNtoFEMmodel
     :members:
@@ -157,7 +158,7 @@ An example of a scenario variable could be flow variables such as angle of attac
 
 .. figure:: images/scenario.png
 
-.. automodule:: scenario
+.. currentmodule:: pyfuntofem.scenario
 
 .. autoclass:: Scenario
    :members:
@@ -170,12 +171,12 @@ The driver adds the details for the transfer scheme. See :class:`~funtofem_drive
 
 .. figure:: images/body.png
 
-.. automodule:: body
+.. currentmodule:: pyfuntofem.body
 
 .. autoclass:: Body
    :members:
 
-.. csv-table:: Body Member List
+.. csv-table:: **Body Member List**
    :header: "Name", "Default Value","Description"
    :widths: 20, 20, 20
    :align: center
@@ -231,9 +232,9 @@ of them in the optimization, you can set the variable to be inactive.
 
 MassoudBody
 ===========
-.. automodule:: massoud_body
+.. .. automodule:: massoud_body
 
-.. autoclass:: MassoudBody
+.. .. autoclass:: MassoudBody
    :members:
 
 Variables

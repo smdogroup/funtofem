@@ -125,14 +125,14 @@ Driver Classes
 
 FUNtoFEM Driver Class
 =====================
-.. automodule:: funtofem_driver
+.. currentmodule:: pyfuntofem.funtofem_driver
 
 .. autoclass:: FUNtoFEMDriver
     :members:
 
 FUNtoFEM NLBGS Driver Class
 ===========================
-.. automodule:: funtofem_nlbgs_driver
+.. currentmodule:: pyfuntofem.funtofem_nlbgs_driver
 
 .. autoclass:: FUNtoFEMnlbgs
     :members:

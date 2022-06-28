@@ -112,8 +112,6 @@ jobs:
 
       - name: Build docs
         run: |
-          pwd;
-          ls;
           cd ${GITHUB_WORKSPACE}/docs;
           make html BUILDDIR=.;
           cd html;

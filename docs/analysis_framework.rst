@@ -98,13 +98,13 @@ Heat Flux Integration Residual
 ==============================
 .. math:: 
 	\mathbf{\color{blue}H}(\mathbf{h}_A, \mathbf{q}, \mathbf{x}, \mathbf{x}_G) \triangleq
-	\mathbf{h}_A - \psi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0
+	\mathbf{h}_A - \varphi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0
 
 * :math:`\mathbf{h}_A` - nodal forces on aerodynamic surface
 * :math:`\mathbf{x}` - design variable vector
 * :math:`\mathbf{x}_G` - aerodynamic volume mesh
 * :math:`\mathbf{q}` - flow state vector
-* :math:`\psi` - action of the heat flux integration
+* :math:`\varphi` - action of the heat flux integration
 
 TACS, Structure Solver
 ---------------------------------------------------
@@ -122,11 +122,21 @@ Structural Residual
 Aeroelastic Framework
 ---------------------
 The forward solve path in FUNtoFEM goes through several steps. 
-First the surface displacements are computed, taking the displacement 
-of structural nodes, :math:`\mathbf{u}_S`, as an input and solving for the discplacements of
-aerodynamic surface nodes, :math:`\mathbf{u}_A`.
-The grid deformation residual is then computed with the displacement of the aerodynamic surface nodes, :math:`\mathbf{u}_A`, 
+First, the surface displacements are computed inside FUNtoFEM, taking the displacement 
+of structural nodes, :math:`\mathbf{u}_S`, as an input and solving for the displacements of
+aerodynamic surface nodes, :math:`\mathbf{u}_A`, in the displacement 
+transfer residual, :math:`\mathbf{\color{green}D}`.
+The grid deformation residual, :math:`\mathbf{\color{blue}G}`, is then 
+computed with the displacement of the aerodynamic surface nodes, :math:`\mathbf{u}_A`, 
 as an input and solving for :math:`\mathbf{x}_G`, the aerodynamic volume mesh. 
+This is then followed by the flow residual, :math:`\mathbf{\color{blue}A}`, 
+and the force integration residual, :math:`\mathbf{\color{blue}F}`. 
+These three residuals are internal to FUN3D. 
+The load transfer residual, :math:`\mathbf{\color{green}L}`, is then solved inside FUNtoFEM.
+Finally, the structural residual, :math:`\mathbf{\color{orange}S}`, is computed in TACS.
+
+The order of execution in the forward solve follows the list shown below. 
+The underlined value is solved for at each step.
 
 .. math:: 
 	\begin{align}
@@ -154,7 +164,7 @@ The order of execution in the code follows:
 	\frac{\partial \mathbf{L}^T}{\partial \mathbf{u}_S}\psi_L &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{u}_S} \\
 	\end{align}
 
-Lagrangian:
+The corresponding Lagrangian in the areoelastic framework is given by:
 
 .. math:: 
 	\mathcal{L}(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S) = &
