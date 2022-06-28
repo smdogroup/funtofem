@@ -59,7 +59,8 @@ Return to FUNtoFEM GitHub Repository `here <https://github.com/smdogroup/funtofe
 Acknowledgements
 ==================
 
-FUNtoFEM was developed with funding from NASA through the Transformational Tools and Technologies program with grant number NNX15AU22A and funding from the US Air Force Research Laboratory (AFRL), contract number FA8650-18-2-2227.
+FUNtoFEM was developed with funding from NASA through the Transformational Tools and Technologies program 
+with grant number NNX15AU22A and funding from the US Air Force Research Laboratory (AFRL), contract number FA8650-18-2-2227.
 
 
 

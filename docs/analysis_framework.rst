@@ -177,9 +177,13 @@ The residuals for the aerodynamic governing equations are obtained using a discr
 
 .. math::
 
-	{A}\left({x}, {q}, {\dot{q}}, {x}_G, {\dot{x}}_G, {t}_{A}, t\right) \triangleq \dfrac{\partial \left( V {q} \right)} {\partial t} + \oint_{\partial V} \left( {\overline{\overline{F}}}^* - {\overline{\overline{F}}_v} \right) \cdot { \hat{n}} dS = 0
+	{A}\left({x}, {q}, {\dot{q}}, {x}_G, {\dot{x}}_G, {t}_{A}, t\right) \triangleq \dfrac{\partial \left( V {q} \right)} 
+	{\partial t} + \oint_{\partial V} \left( {\overline{\overline{F}}}^* - {\overline{\overline{F}}_v} \right) \cdot { \hat{n}} dS = 0
 
-An interface has been added to FUN3D for aerothermoelastic analysis using the FUNtoFEM framework. This interface provides routines for both force and heat flux integration, as well as the terms needed for the adjoint equations. Furthermore, the interface adds the required multidisciplinary components to the right-hand-side of the aerodynamic adjoint equations. The force integration is a function of the aerodynamic state variables and the node locations and constitutes a system of residuals written as
+An interface has been added to FUN3D for aerothermoelastic analysis using the FUNtoFEM framework. 
+This interface provides routines for both force and heat flux integration, as well as the terms needed for the adjoint equations. 
+Furthermore, the interface adds the required multidisciplinary components to the right-hand-side of the aerodynamic adjoint equations. 
+The force integration is a function of the aerodynamic state variables and the node locations and constitutes a system of residuals written as:
 
 .. math::
 
@@ -194,7 +198,8 @@ The heat flux integration is also a function of the aerodynamic state variables 
 Aerothermal Adjoint
 ===================
 
-The Lagrangian for the aerothermal problem is formed by summing the function of interest with the products of the residuals for each analysis component combined with their corresponding adjoint, giving the following expression
+The Lagrangian for the aerothermal problem is formed by summing the function of interest with the products of the 
+residuals for each analysis component combined with their corresponding adjoint, giving the following expression:
 
 .. math::
 
@@ -205,7 +210,8 @@ The Lagrangian for the aerothermal problem is formed by summing the function of 
     & + \mathbf{\psi}_{T,S}^{T} \mathbf{S}(\mathbf{x},\mathbf{t}_{S},\mathbf{f}_{T,S})
     + \mathbf{\psi}_{T}^{T} \mathbf{T}(\mathbf{t}_{S},{t}_{A})
 
-The adjoint equations are obtained by taking the derivative of the Lagrangian with respect to the state variables and setting it to zero. This results in the following coupled system of equations
+The adjoint equations are obtained by taking the derivative of the Lagrangian with respect to the state variables and 
+setting it to zero. This results in the following coupled system of equations:
 
 .. math::
 
@@ -263,7 +269,11 @@ To obtain a consistent and conservative load transfer, the load transfer is deri
 
 	{L}({x}, {u}_{S}, {f}_{A}, {f}_{S}) \triangleq {\eta}({x}, {u}_{S}, {f}_{A}) - {f}_{S} = 0
 
-MELDThermal links each aerodynamic surface node, where a wall temperature will be specified, to a fixed number of the nearest structural nodes from which the structural temperature will be interpolated. This approach is analogous to the localization property of MELD such that each aerodynamic surface node receives temperature information from a limited number of structural nodes. The temperature of the aerodynamic surface node is then computed from the temperatures of the set of linked structural nodes:
+MELDThermal links each aerodynamic surface node, where a wall temperature will be specified, to a fixed number of the nearest 
+structural nodes from which the structural temperature will be interpolated. 
+This approach is analogous to the localization property of MELD such that each aerodynamic surface node receives temperature 
+information from a limited number of structural nodes. The temperature of the aerodynamic surface node is then computed from the 
+temperatures of the set of linked structural nodes:
 
 .. math::
 
@@ -281,7 +291,9 @@ The interpolation is repeated for all aerodynamic surface nodes, giving the temp
 
 	{T}({t}_{S}, {t}_{A}) \triangleq  {W} {t}_{S} - {t}_{A} = 0,
 
-The relationship between the area-weighted heat flux at the aerodynamic surface nodes and the resulting heat flux on the structural nodes is calculated in the same manner as the loads. Based on virtual work, the flux produced at a structural node by the force at an aerodynamic surface node is:
+The relationship between the area-weighted heat flux at the aerodynamic surface nodes and the resulting heat flux on the 
+structural nodes is calculated in the same manner as the loads. Based on virtual work, the flux produced at a structural 
+node by the force at an aerodynamic surface node is:
 
 .. math::
 
@@ -291,7 +303,9 @@ The relationship between the area-weighted heat flux at the aerodynamic surface 
 Aerothermoelastic Adjoint
 =========================
 
-The aerothermoelastic adjoint equations are derived to be discretely consistent with the forward governing equations. The Lagrangian for the aerothermoelastic problem is formed by summing the function of interest with the products of the residuals for each analysis component combined with their corresponding adjoint, giving the following expression
+The aerothermoelastic adjoint equations are derived to be discretely consistent with the forward governing equations. 
+The Lagrangian for the aerothermoelastic problem is formed by summing the function of interest with the products of the residuals 
+for each analysis component combined with their corresponding adjoint, giving the following expression:
 
 .. math::
 
@@ -306,7 +320,8 @@ The aerothermoelastic adjoint equations are derived to be discretely consistent 
     + \psi_{D}^{T} {D}({x}, {u}_{S}, {u}_{A})
     + \psi_{T}^{T} \mathbf{T}(\mathbf{t}_{S},{t}_{A})
 
-The adjoint equations are obtained by taking the derivative of the aerothermoelastic Lagrangian with respect to the state variables and setting it to zero. This results in the following coupled system of equations
+The adjoint equations are obtained by taking the derivative of the aerothermoelastic Lagrangian with respect to the state 
+variables and setting it to zero. This results in the following coupled system of equations:
 
 .. math::
 
@@ -368,7 +383,8 @@ The adjoint equations are obtained by taking the derivative of the aerothermoela
 	\end{bmatrix} 
 
 
-Once the solution for the adjoint equations has been obtained, the total derivative for the function of interest is computed as the derivative of the Lagrangian
+Once the solution for the adjoint equations has been obtained, the total derivative for the function of 
+interest is computed as the derivative of the Lagrangian.
 
 .. math::
 
