@@ -1,12 +1,13 @@
-# Makefile.in configures TransferScheme 
+# Makefile.in configures TransferScheme
 
-# Where the funtofem directory is 
+# Where the funtofem directory is
 F2F_DIR=${HOME}/git/funtofem
 
 # Compilers and other programs
 CXX = mpicxx
 CYTHON = cython
 MAKE = make
+PIP = pip
 RM = rm -f
 
 # Compiler flags
