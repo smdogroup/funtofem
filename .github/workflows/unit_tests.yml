@@ -1,38 +1,57 @@
-name: Build and unit tests
+name: Build, unit tests
 
-on: [push, pull_request]
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch.
+  # Remove push when finally merging.
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 
 jobs:
   # This job is called test_docs.
   unit_test_and_docs:
+    # Recommended if you intend to make multiple deployments in quick succession
+    concurrency: ci-${{ github.ref }}
     # Run on Ubuntu
     runs-on: ubuntu-latest
-
+    # Necessary to prevent mpi tests failing due to lack of slots
+    env:
+      OMPI_MCA_btl: self,tcp
+      OMPI_MCA_rmaps_base_oversubscribe: 1
+    # Ensures conda environment is initialized for all steps
+    defaults:
+      run:
+        shell: bash -l {0}
+    
     strategy:
       fail-fast: false
       matrix:
         include:
           # real versions
-          #- NAME: Real
-          #  OPTIONAL: 'default'
-          #  INTERFACE: 'interface'
+          - NAME: Real
+            OPTIONAL: 'default'
+            INTERFACE: 'interface'
+            PUBLISH_DOCS: true
 
           # complex versions
           - NAME: Complex
             OPTIONAL: 'complex'
             INTERFACE: 'complex_interface'
+            PUBLISH_DOCS: false
 
     name: FUNtoFEM ${{ matrix.NAME }} Build/Test
 
     steps:
-
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Install and run unit tests
+      - name: Display run details
         run: |
           echo "=============================================================";
           echo "Run #${GITHUB_RUN_NUMBER}";
@@ -41,42 +60,48 @@ jobs:
           echo "Triggered by: ${GITHUB_EVENT_NAME}";
           echo "Initiated by: ${GITHUB_ACTOR}";
           echo "=============================================================";
-          echo "=============================================================";
-          echo "Create conda environment";
-          echo "=============================================================";
-          source $CONDA/etc/profile.d/conda.sh;
-          echo $CONDA/bin >> $GITHUB_PATH;
-          conda create -n FUNtoFEM python=3.8 numpy=1.18 scipy=1.4 -q -y;
-          conda activate FUNtoFEM;
-          echo "=============================================================";
-          echo "Install TACS";
-          echo "=============================================================";
-          pip install testflo;
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
+      - uses: actions/checkout@v2
+
+      - name: Setup conda environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: 3.8
+
+      - name: Install TACS
+        run: |
+          git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
+          export TACS_DIR=/home/runner/work/tacs;
+          conda install zlib=1.2.11;
           conda install -c anaconda openmpi -q -y;
-          conda install gxx_linux-64 -q -y;
+          conda install gxx_linux-64=9.3.0 -q -y;
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis -q -y;
-          conda install -c conda-forge mpi4py -q -y;
-          conda install -c conda-forge matplotlib  -q -y;
-          conda install -c conda-forge git -q -y;
           pip install cython;
-          git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
-          export TACS_DIR=/home/runner/work/tacs;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} TACS_DIR=$TACS_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
           cd $TACS_DIR;
-          make ${{ matrix.INTERFACE }};
+          make ${{ matrix.INTERFACE }}; 
+
+      - name: Install FUNtoFEM
+        run: |
           echo "=============================================================";
           echo "Install FUNtoFEM";
           echo "=============================================================";
           export F2F_DIR=${GITHUB_WORKSPACE};
+          echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} F2F_DIR=$F2F_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
           cd $F2F_DIR;
           make ${{ matrix.INTERFACE }};
+
+      - name: Run unit tests
+        run: |
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";
@@ -84,3 +109,22 @@ jobs:
           python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermoelastic_adjoint_test/gen_TACS_bdf_aero.py;
           python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/unsteady_aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
           testflo ${GITHUB_WORKSPACE}/tests/;
+
+      - name: Build docs
+        run: |
+          cd ${GITHUB_WORKSPACE}/docs;
+          make html BUILDDIR=.;
+          cd html;
+          zip -r ../f2f-docs.zip .;
+      - name: Upload docs
+        if: ${{ matrix.PUBLISH_DOCS }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: f2f-docs
+          path: docs/f2f-docs.zip
+      - name: Deploy docs
+        if: ${{ github.event_name == 'push' && matrix.PUBLISH_DOCS }}
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages # The branch the action should deploy to
+          folder: docs/html/ # The folder the action should deploy

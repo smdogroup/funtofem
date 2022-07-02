@@ -13,7 +13,9 @@ To use the driver:
 
 Creating the solver dictionary
 -------------------------------
-The disciplinary solvers in FUNtoFEM are a dictionary of the solver interface objects. The solver interface objects exchange data and ask the disciplinary solvers to do tasks like taking forward and adjoint interations and calculating coordinate derivatives.
+The disciplinary solvers in FUNtoFEM are a dictionary of the solver interface objects. 
+The solver interface objects exchange data and ask the disciplinary solvers to do tasks like 
+taking forward and adjoint interations and calculating coordinate derivatives.
 
 
 Here's some pseudocode to create the solvers for the NLBGS driver.
@@ -97,7 +99,8 @@ Beam
 ====
 The beam transfer scheme can transfer data when all of structural nodes are colinear.
 The implemented version is based on the method of Brown.
-Unlike the other transfer schemes, the beam transfer has six degrees of freedom at each structural node where the additional degrees of freedom are the Euler parameter vector for the rotation.
+Unlike the other transfer schemes, the beam transfer has six degrees of freedom at each structural node where the 
+additional degrees of freedom are the Euler parameter vector for the rotation.
 For the aerodynamic nodes, the force integration and displacement transfer still only three degrees of freedom.
 
 Running the driver
@@ -122,14 +125,14 @@ Driver Classes
 
 FUNtoFEM Driver Class
 =====================
-.. automodule:: funtofem_driver
+.. currentmodule:: pyfuntofem.funtofem_driver
 
 .. autoclass:: FUNtoFEMDriver
     :members:
 
 FUNtoFEM NLBGS Driver Class
 ===========================
-.. automodule:: funtofem_nlbgs_driver
+.. currentmodule:: pyfuntofem.funtofem_nlbgs_driver
 
 .. autoclass:: FUNtoFEMnlbgs
     :members:

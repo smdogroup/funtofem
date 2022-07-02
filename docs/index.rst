@@ -20,6 +20,7 @@ If you wish to create a new interface or a new driver, see the :doc:`programmers
    driver
    transfer_scheme
    programmers_guide
+   py_script
    fun3d_config
    install
 
@@ -41,23 +42,25 @@ Authors
 * Graeme Kennedy
 * Liam Smith
 * Lenard Halim
-* Sejal Sahu 
+* Sejal Sahu
+* Brian Burke
 
 
 
 External Resources
 ==================
 
-Access publications by the SMDO Group `here <http://gkennedy.gatech.edu/publications/>`_.
+Access publications by the SMDO Group `here <http://gkennedy.gatech.edu/publications/>`__.
 
-Return to FUNtoFEM GitHub Repository `here <https://github.com/smdogroup/funtofem>`_.
+Return to FUNtoFEM GitHub Repository `here <https://github.com/smdogroup/funtofem>`__.
 
 
 
 Acknowledgements
 ==================
 
-FUNtoFEM was developed with funding from NASA through the Transformational Tools and Technologies program with grant number NNX15AU22A and funding from the US Air Force Research Laboratory (AFRL), contract number FA8650-18-2-2227.
+FUNtoFEM was developed with funding from NASA through the Transformational Tools and Technologies program 
+with grant number NNX15AU22A and funding from the US Air Force Research Laboratory (AFRL), contract number FA8650-18-2-2227.
 
 
 
@@ -66,7 +69,7 @@ License
 
 FUNtoFEM is licensed under the Apache License, Version 2.0 (the "License");
 you may not use this software except in compliance with the License.
-You may obtain a copy of the License `here <http://www.apache.org/licenses/LICENSE-2.0>`_.
+You may obtain a copy of the License `here <http://www.apache.org/licenses/LICENSE-2.0>`__.
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
