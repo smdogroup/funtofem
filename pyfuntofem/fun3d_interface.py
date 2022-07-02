@@ -24,10 +24,11 @@ from __future__ import print_function
 
 import numpy as np
 import os
-from fun3d.solvers      import Flow, Adjoint
-from fun3d              import interface
-from funtofem           import TransferScheme
-from .solver_interface   import SolverInterface
+from fun3d.solvers import Flow, Adjoint
+from fun3d import interface
+from funtofem import TransferScheme
+from .solver_interface import SolverInterface
+
 
 class Fun3dInterface(SolverInterface):
     """
@@ -38,8 +39,18 @@ class Fun3dInterface(SolverInterface):
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
     """
-    def __init__(self, comm, model, flow_dt=1.0, qinf=1.0,thermal_scale=1.0,
-                 fun3d_dir=None, forward_options=None, adjoint_options=None):
+
+    def __init__(
+        self,
+        comm,
+        model,
+        flow_dt=1.0,
+        qinf=1.0,
+        thermal_scale=1.0,
+        fun3d_dir=None,
+        forward_options=None,
+        adjoint_options=None,
+    ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
         The surface mesh on each processor only holds it's owned nodes. Transfer of that data to other processors is handled inside the FORTRAN side of FUN3D's FUNtoFEM interface.
@@ -62,7 +73,7 @@ class Fun3dInterface(SolverInterface):
 
         # Root and FUN3D directories
         self.root_dir = os.getcwd()
-        if (fun3d_dir is None):
+        if fun3d_dir is None:
             self.fun3d_dir = self.root_dir
         else:
             self.fun3d_dir = fun3d_dir
@@ -83,7 +94,7 @@ class Fun3dInterface(SolverInterface):
         self.dFdqinf = []
 
         # heat flux
-        self.thermal_scale = thermal_scale # = 1/2 * rho_inf * (V_inf)^3
+        self.thermal_scale = thermal_scale  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
 
         # multiple steady scenarios
@@ -144,7 +155,7 @@ class Fun3dInterface(SolverInterface):
         if not first_pass:
             for ibody, body in enumerate(bodies, 1):
                 if body.aero_nnodes > 0:
-                    aero_X = np.reshape(body.aero_X, (3,-1), order='F')
+                    aero_X = np.reshape(body.aero_X, (3, -1), order="F")
                     interface.design_push_body_mesh(ibody, aero_X, body.aero_id)
                     interface.design_push_body_name(ibody, body.name)
                 else:
@@ -154,23 +165,27 @@ class Fun3dInterface(SolverInterface):
         bcont = self.fun3d_flow.initialize_solution()
 
         if bcont == 0:
-            if self.comm.Get_rank()==0:
+            if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             return 1
 
         if first_pass:
             for ibody, body in enumerate(bodies, 1):
                 body.aero_nnodes = self.fun3d_flow.extract_surface_num(body=ibody)
-                body.aero_X = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
+                body.aero_X = np.zeros(3 * body.aero_nnodes, dtype=TransferScheme.dtype)
                 if body.aero_nnodes > 0:
-                    x, y, z = self.fun3d_flow.extract_surface(body.aero_nnodes, body=ibody)
-                    body.aero_id = self.fun3d_flow.extract_surface_id(body.aero_nnodes, body=ibody)
+                    x, y, z = self.fun3d_flow.extract_surface(
+                        body.aero_nnodes, body=ibody
+                    )
+                    body.aero_id = self.fun3d_flow.extract_surface_id(
+                        body.aero_nnodes, body=ibody
+                    )
 
-                    body.aero_X[ ::3] = x[:]
+                    body.aero_X[::3] = x[:]
                     body.aero_X[1::3] = y[:]
                     body.aero_X[2::3] = z[:]
                 else:
-                    body.aero_id = np.zeros(3*body.aero_nnodes, dtype=int)
+                    body.aero_id = np.zeros(3 * body.aero_nnodes, dtype=int)
 
                 body.rigid_transform = np.identity(4, dtype=TransferScheme.dtype)
 
@@ -196,7 +211,7 @@ class Fun3dInterface(SolverInterface):
 
         adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
         os.chdir(adjoint_dir)
-        
+
         if scenario.steady:
             # load the forces and displacements
             for ibody, body in enumerate(bodies, 1):
@@ -206,12 +221,14 @@ class Fun3dInterface(SolverInterface):
 
                 if body.thermal_transfer is not None:
                     body.aero_heat_flux = self.heat_flux_save[scenario.id][ibody]
-                    body.aero_heat_flux_mag = self.heat_flux_mag_save[scenario.id][ibody]
+                    body.aero_heat_flux_mag = self.heat_flux_mag_save[scenario.id][
+                        ibody
+                    ]
                     body.aero_temps = self.temps_save[scenario.id][ibody]
 
             # Initialize FUN3D adjoint - special order for static adjoint
             if self.adjoint_options is None:
-                options = {'getgrad': True}
+                options = {"getgrad": True}
             else:
                 options = self.adjoint_options
             self.fun3d_adjoint.initialize_project(comm=self.comm)
@@ -220,7 +237,7 @@ class Fun3dInterface(SolverInterface):
             interface.design_initialize()
             for ibody, body in enumerate(bodies, 1):
                 if body.aero_nnodes > 0:
-                    aero_X = np.reshape(body.aero_X, (3,-1), order='F')
+                    aero_X = np.reshape(body.aero_X, (3, -1), order="F")
                     interface.design_push_body_mesh(ibody, aero_X, body.aero_id)
                     interface.design_push_body_name(ibody, body.name)
                 else:
@@ -239,13 +256,13 @@ class Fun3dInterface(SolverInterface):
                         dz = np.asfortranarray(body.aero_disps[2::3])
                         self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
                     if body.thermal_transfer is not None:
-                        temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                        temps = np.asfortranarray(body.aero_temps[:]) / body.T_ref
                         self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
 
             self.fun3d_adjoint.initialize_solution()
         else:
             if self.adjoint_options is None:
-                options = {'timedep_adj_frozen': True}
+                options = {"timedep_adj_frozen": True}
             else:
                 options = self.adjoint_options
             self.fun3d_adjoint.initialize_project(comm=self.comm)
@@ -254,7 +271,7 @@ class Fun3dInterface(SolverInterface):
             interface.design_initialize()
             for ibody, body in enumerate(bodies, 1):
                 if body.aero_nnodes > 0:
-                    aero_X = np.reshape(body.aero_X, (3,-1), order='F')
+                    aero_X = np.reshape(body.aero_X, (3, -1), order="F")
                     interface.design_push_body_mesh(ibody, aero_X, body.aero_id)
                     interface.design_push_body_name(ibody, body.name)
                 else:
@@ -282,38 +299,39 @@ class Fun3dInterface(SolverInterface):
         """
         for function in scenario.functions:
             if function.adjoint:
-                start =  1 if function.stop==-1 else function.start
-                stop  =  1 if function.stop==-1 else function.stop
+                start = 1 if function.stop == -1 else function.start
+                stop = 1 if function.stop == -1 else function.stop
                 ftype = -1 if function.averaging else 1
-                interface.design_push_composite_func(function.id,
-                                                     1,
-                                                     start,
-                                                     stop,
-                                                     1.0,
-                                                     0.0,
-                                                     1.0,
-                                                     function.value,
-                                                     ftype,
-                                                     100.0,
-                                                     -100.0)
+                interface.design_push_composite_func(
+                    function.id,
+                    1,
+                    start,
+                    stop,
+                    1.0,
+                    0.0,
+                    1.0,
+                    function.value,
+                    ftype,
+                    100.0,
+                    -100.0,
+                )
 
-                if function.body ==-1:
+                if function.body == -1:
                     boundary = 0
                 else:
                     boundary = bodies[function.body].boundary
 
                 # The funtofem function in FUN3D acts as any adjoint function
                 # that isn't dependent on FUN3D variables
-                name = function.name if function.analysis_type == 'aerodynamic' else 'funtofem'
+                name = (
+                    function.name
+                    if function.analysis_type == "aerodynamic"
+                    else "funtofem"
+                )
 
-                interface.design_push_component_func(function.id,
-                                                     1,
-                                                     boundary,
-                                                     name,
-                                                     function.value,
-                                                     1.0,
-                                                     0.0,
-                                                     1.0)
+                interface.design_push_component_func(
+                    function.id, 1, boundary, name, function.value, 1.0, 0.0, 1.0
+                )
 
         return
 
@@ -335,27 +353,30 @@ class Fun3dInterface(SolverInterface):
         interface.design_set_design(len(bodies), scenario.count_adjoint_functions())
 
         # push the global aerodynamic variables to fun3d
-        for var in scenario.variables['aerodynamic']:
+        for var in scenario.variables["aerodynamic"]:
             if var.id <= 6:
-                interface.design_push_global_var(var.id, var.active, var.value,
-                                                 var.lower, var.upper)
-            elif 'dynamic pressure' == var.name.lower():
+                interface.design_push_global_var(
+                    var.id, var.active, var.value, var.lower, var.upper
+                )
+            elif "dynamic pressure" == var.name.lower():
                 self.qinf = var.value
-            elif 'thermal scale' == var.name.lower():
+            elif "thermal scale" == var.name.lower():
                 self.thermal_scale = var.value
 
         # push the push the shape and rigid motion variables
         for ibody, body in enumerate(bodies, 1):
-            num = len(body.variables['shape']) if 'shape' in body.variables else 1
+            num = len(body.variables["shape"]) if "shape" in body.variables else 1
             interface.design_set_body(ibody, body.parameterization, num)
-            if 'shape' in body.variables:
-                for var in body.variables['shape']:
-                    interface.design_push_body_shape_var(ibody, var.id, var.active,
-                                                         var.value, var.lower, var.upper)
+            if "shape" in body.variables:
+                for var in body.variables["shape"]:
+                    interface.design_push_body_shape_var(
+                        ibody, var.id, var.active, var.value, var.lower, var.upper
+                    )
 
-            for var in body.variables['rigid_motion']:
-                interface.design_push_body_rigid_var(ibody, var.id, var.name, var.active,
-                                                     var.value, var.lower, var.upper)
+            for var in body.variables["rigid_motion"]:
+                interface.design_push_body_rigid_var(
+                    ibody, var.id, var.name, var.active, var.value, var.lower, var.upper
+                )
 
         return
 
@@ -371,10 +392,12 @@ class Fun3dInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
         for function in scenario.functions:
-            if function.analysis_type == 'aerodynamic':
+            if function.analysis_type == "aerodynamic":
                 # the [6] index returns the value
                 if self.comm.Get_rank() == 0:
-                    function.value = interface.design_pull_composite_func(function.id)[6]
+                    function.value = interface.design_pull_composite_func(function.id)[
+                        6
+                    ]
                 function.value = self.comm.bcast(function.value, root=0)
 
         return
@@ -396,27 +419,38 @@ class Fun3dInterface(SolverInterface):
         for func, function in enumerate(scenario.functions):
             # Do the scenario variables first
             for vartype in scenario.variables:
-                if vartype == 'aerodynamic':
+                if vartype == "aerodynamic":
                     for i, var in enumerate(scenario.variables[vartype]):
                         if var.active:
                             if function.adjoint:
                                 if var.id <= 6:
-                                    scenario.derivatives[vartype][offset+func][i] = interface.design_pull_global_derivative(function.id,var.id)
-                                elif var.name.lower() == 'dynamic pressure':
-                                    scenario.derivatives[vartype][offset+func][i] = self.comm.reduce(self.dFdqinf[func])
-                                    scenario.derivatives[vartype][offset+func][i] = self.comm.reduce(self.dHdq[func])
+                                    scenario.derivatives[vartype][offset + func][
+                                        i
+                                    ] = interface.design_pull_global_derivative(
+                                        function.id, var.id
+                                    )
+                                elif var.name.lower() == "dynamic pressure":
+                                    scenario.derivatives[vartype][offset + func][
+                                        i
+                                    ] = self.comm.reduce(self.dFdqinf[func])
+                                    scenario.derivatives[vartype][offset + func][
+                                        i
+                                    ] = self.comm.reduce(self.dHdq[func])
                             else:
-                                scenario.derivatives[vartype][offset+func][i] = 0.0
-                            scenario.derivatives[vartype][offset+func][i] = self.comm.bcast(scenario.derivatives[vartype][offset+func][i],root=0)
-
+                                scenario.derivatives[vartype][offset + func][i] = 0.0
+                            scenario.derivatives[vartype][offset + func][
+                                i
+                            ] = self.comm.bcast(
+                                scenario.derivatives[vartype][offset + func][i], root=0
+                            )
 
             for body in bodies:
                 for vartype in body.variables:
-                    if vartype == 'rigid_motion':
+                    if vartype == "rigid_motion":
                         for i, var in enumerate(body.variables[vartype]):
                             if var.active:
                                 # rigid motion variables are not active in funtofem path
-                                body.derivatives[vartype][offset+func][i] = 0.0
+                                body.derivatives[vartype][offset + func][i] = 0.0
 
         return scenario, bodies
 
@@ -438,14 +472,21 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             if body.aero_nnodes > 0:
                 # Aero solver contribution = dGdxa0^T psi_G
-                body.aero_id = self.fun3d_adjoint.extract_surface_id(body.aero_nnodes, body=ibody)
+                body.aero_id = self.fun3d_adjoint.extract_surface_id(
+                    body.aero_nnodes, body=ibody
+                )
 
-                dGdxa0_x, dGdxa0_y, dGdxa0_z = self.fun3d_adjoint.extract_grid_adjoint_product(body.aero_nnodes,
-                                                                                               nfunctions,body=ibody)
+                (
+                    dGdxa0_x,
+                    dGdxa0_y,
+                    dGdxa0_z,
+                ) = self.fun3d_adjoint.extract_grid_adjoint_product(
+                    body.aero_nnodes, nfunctions, body=ibody
+                )
 
-                body.aero_shape_term[ ::3,:nfunctions] += dGdxa0_x[:,:] * self.flow_dt
-                body.aero_shape_term[1::3,:nfunctions] += dGdxa0_y[:,:] * self.flow_dt
-                body.aero_shape_term[2::3,:nfunctions] += dGdxa0_z[:,:] * self.flow_dt
+                body.aero_shape_term[::3, :nfunctions] += dGdxa0_x[:, :] * self.flow_dt
+                body.aero_shape_term[1::3, :nfunctions] += dGdxa0_y[:, :] * self.flow_dt
+                body.aero_shape_term[2::3, :nfunctions] += dGdxa0_z[:, :] * self.flow_dt
 
         return
 
@@ -471,17 +512,21 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            if 'deform' in body.motion_type and body.aero_nnodes > 0 and body.transfer is not None:
+            if (
+                "deform" in body.motion_type
+                and body.aero_nnodes > 0
+                and body.transfer is not None
+            ):
                 dx = np.asfortranarray(body.aero_disps[0::3])
                 dy = np.asfortranarray(body.aero_disps[1::3])
                 dz = np.asfortranarray(body.aero_disps[2::3])
 
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
-            if 'rigid' in body.motion_type and body.transfer is not None:
+            if "rigid" in body.motion_type and body.transfer is not None:
                 transform = np.asfortranarray(body.rigid_transform)
-                self.fun3d_flow.input_rigid_transform(transform,body=ibody)
+                self.fun3d_flow.input_rigid_transform(transform, body=ibody)
             if body.thermal_transfer is not None and body.aero_nnodes > 0:
-                temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                temps = np.asfortranarray(body.aero_temps[:]) / body.T_ref
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
@@ -497,15 +542,23 @@ class Fun3dInterface(SolverInterface):
         # Pull out the forces from FUN3D
         for ibody, body in enumerate(bodies, 1):
             if body.transfer is not None:
-                body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
+                body.aero_loads = np.zeros(
+                    3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                )
 
             if body.thermal_transfer is not None:
-                body.aero_heat_flux = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
-                body.aero_heat_flux_mag = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+                body.aero_heat_flux = np.zeros(
+                    3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                )
+                body.aero_heat_flux_mag = np.zeros(
+                    body.aero_nnodes, dtype=TransferScheme.dtype
+                )
 
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes, body=ibody)
+                    fx, fy, fz = self.fun3d_flow.extract_forces(
+                        body.aero_nnodes, body=ibody
+                    )
 
                     body.aero_loads[0::3] = self.qinf * fx[:]
                     body.aero_loads[1::3] = self.qinf * fy[:]
@@ -514,8 +567,9 @@ class Fun3dInterface(SolverInterface):
                     if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads)), flush=True)
 
                 if body.thermal_transfer is not None:
-                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes,
-                                                                              body=ibody)
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
+                        body.aero_nnodes, body=ibody
+                    )
 
                     body.aero_heat_flux[0::3] = self.thermal_scale * cqx[:]
                     body.aero_heat_flux[1::3] = self.thermal_scale * cqy[:]
@@ -534,9 +588,15 @@ class Fun3dInterface(SolverInterface):
                 if body.transfer is not None:
                     self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
                 if body.thermal_transfer is not None:
-                    self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
-                    self.heat_flux_mag_hist[scenario.id][step][ibody] = body.aero_heat_flux_mag.copy()
-                    self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
+                    self.heat_flux_hist[scenario.id][step][
+                        ibody
+                    ] = body.aero_heat_flux.copy()
+                    self.heat_flux_mag_hist[scenario.id][step][
+                        ibody
+                    ] = body.aero_heat_flux_mag.copy()
+                    self.aero_temps_hist[scenario.id][step][
+                        ibody
+                    ] = body.aero_temps.copy()
         return 0
 
     def post(self, scenario, bodies, first_pass=False):
@@ -571,7 +631,9 @@ class Fun3dInterface(SolverInterface):
                     self.disps_save[scenario.id][ibody] = body.aero_disps
                 if body.thermal_transfer is not None:
                     self.heat_flux_save[scenario.id][ibody] = body.aero_heat_flux
-                    self.heat_flux_mag_save[scenario.id][ibody] = body.aero_heat_flux_mag
+                    self.heat_flux_mag_save[scenario.id][
+                        ibody
+                    ] = body.aero_heat_flux_mag
                     self.temps_save[scenario.id][ibody] = body.aero_temps
 
         return
@@ -594,7 +656,9 @@ class Fun3dInterface(SolverInterface):
                 body.aero_loads = self.force_hist[scenario.id][step][ibody]
             if body.thermal_transfer is not None:
                 body.aero_heat_flux = self.heat_flux_hist[scenario.id][step][ibody]
-                body.aero_heat_flux_mag = self.heat_flux_hist_mag[scenario.id][step][ibody]
+                body.aero_heat_flux_mag = self.heat_flux_hist_mag[scenario.id][step][
+                    ibody
+                ]
                 body.aero_temps = self.aero_temps_hist[scenario.id][step][ibody]
 
         return
@@ -628,21 +692,26 @@ class Fun3dInterface(SolverInterface):
             if body.aero_nnodes > 0:
                 # Solve the force adjoint equation
                 if body.transfer is not None:
-                    psi_F = - body.dLdfa
+                    psi_F = -body.dLdfa
 
-                    lam_x = np.zeros((body.aero_nnodes, nfunctions),
-                                     dtype=TransferScheme.dtype)
-                    lam_y = np.zeros((body.aero_nnodes, nfunctions),
-                                     dtype=TransferScheme.dtype)
-                    lam_z = np.zeros((body.aero_nnodes, nfunctions),
-                                     dtype=TransferScheme.dtype)
+                    lam_x = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
+                    lam_y = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
+                    lam_z = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
 
                     for func in range(nfunctions):
-                        lam_x[:, func] = self.qinf * psi_F[0::3, func]/self.flow_dt
-                        lam_y[:, func] = self.qinf * psi_F[1::3, func]/self.flow_dt
-                        lam_z[:, func] = self.qinf * psi_F[2::3, func]/self.flow_dt
+                        lam_x[:, func] = self.qinf * psi_F[0::3, func] / self.flow_dt
+                        lam_y[:, func] = self.qinf * psi_F[1::3, func] / self.flow_dt
+                        lam_z[:, func] = self.qinf * psi_F[2::3, func] / self.flow_dt
 
-                    self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
+                    self.fun3d_adjoint.input_force_adjoint(
+                        lam_x, lam_y, lam_z, body=ibody
+                    )
 
                     # Add the contributions to the derivative of the dynamic pressure
                     for func in range(nfunctions):
@@ -650,35 +719,53 @@ class Fun3dInterface(SolverInterface):
                         if scenario.steady and ibody == 1:
                             self.dFdqinf[func] = 0.0
                         if step > 0:
-                            self.dFdqinf[func] -= np.dot(body.aero_loads, psi_F[:, func])/self.qinf
+                            self.dFdqinf[func] -= (
+                                np.dot(body.aero_loads, psi_F[:, func]) / self.qinf
+                            )
 
                 # Solve the heat flux adjoint equation
                 if body.thermal_transfer is not None:
-                    psi_Q = - body.dQdfta
+                    psi_Q = -body.dQdfta
 
-                    lam_x_thermal = np.zeros((body.aero_nnodes, nfunctions),
-                                             dtype=TransferScheme.dtype)
-                    lam_y_thermal = np.zeros((body.aero_nnodes, nfunctions),
-                                             dtype=TransferScheme.dtype)
-                    lam_z_thermal = np.zeros((body.aero_nnodes, nfunctions),
-                                             dtype=TransferScheme.dtype)
-                    lam_mag_thermal = np.zeros((body.aero_nnodes, nfunctions),
-                                               dtype=TransferScheme.dtype)
+                    lam_x_thermal = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
+                    lam_y_thermal = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
+                    lam_z_thermal = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
+                    lam_mag_thermal = np.zeros(
+                        (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+                    )
 
                     for func in range(nfunctions):
-                        lam_mag_thermal[:, func] = self.thermal_scale * psi_Q[:, func]/self.flow_dt
+                        lam_mag_thermal[:, func] = (
+                            self.thermal_scale * psi_Q[:, func] / self.flow_dt
+                        )
 
-                    self.fun3d_adjoint.input_heat_flux_adjoint(lam_x_thermal, lam_y_thermal, lam_z_thermal,
-                                                               lam_mag_thermal, body=ibody)
+                    self.fun3d_adjoint.input_heat_flux_adjoint(
+                        lam_x_thermal,
+                        lam_y_thermal,
+                        lam_z_thermal,
+                        lam_mag_thermal,
+                        body=ibody,
+                    )
 
                     for func in range(nfunctions):
                         if scenario.steady and ibody == 1:
                             self.dHdq[func] = 0.0
                         if step > 0:
-                            self.dHdq[func] -= np.dot(body.aero_heat_flux_mag, psi_Q[:, func])/ self.thermal_scale
+                            self.dHdq[func] -= (
+                                np.dot(body.aero_heat_flux_mag, psi_Q[:, func])
+                                / self.thermal_scale
+                            )
 
-                if 'rigid' in body.motion_type:
-                    self.fun3d_adjoint.input_rigid_transform(body.rigid_transform, body=ibody)
+                if "rigid" in body.motion_type:
+                    self.fun3d_adjoint.input_rigid_transform(
+                        body.rigid_transform, body=ibody
+                    )
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
@@ -687,28 +774,35 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             # Extract dG/du_a^T psi_G from FUN3D
             if body.transfer is not None:
-                lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(body.aero_nnodes,
-                                                                                      nfunctions, body=ibody)
+                lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(
+                    body.aero_nnodes, nfunctions, body=ibody
+                )
                 for func in range(nfunctions):
-                    lam_x_temp = lam_x[:,func]*self.flow_dt
-                    lam_y_temp = lam_y[:,func]*self.flow_dt
-                    lam_z_temp = lam_z[:,func]*self.flow_dt
+                    lam_x_temp = lam_x[:, func] * self.flow_dt
+                    lam_y_temp = lam_y[:, func] * self.flow_dt
+                    lam_z_temp = lam_z[:, func] * self.flow_dt
 
-                    lam_x_temp = lam_x_temp.reshape((-1 ,1))
+                    lam_x_temp = lam_x_temp.reshape((-1, 1))
                     lam_y_temp = lam_y_temp.reshape((-1, 1))
                     lam_z_temp = lam_z_temp.reshape((-1, 1))
-                    body.dGdua[:,func] = np.hstack((lam_x_temp, lam_y_temp, lam_z_temp)).flatten(order='c')
+                    body.dGdua[:, func] = np.hstack(
+                        (lam_x_temp, lam_y_temp, lam_z_temp)
+                    ).flatten(order="c")
 
             if body.thermal_transfer is not None:
-                lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(body.aero_nnodes,
-                                                                           nfunctions, body=ibody)
+                lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
+                    body.aero_nnodes, nfunctions, body=ibody
+                )
 
                 for func in range(nfunctions):
                     lam_t_temp = (lam_t[:, func] / body.T_ref) * self.flow_dt
                     body.dAdta[:, func] = lam_t_temp
 
-            if 'rigid' in body.motion_type:
-                body.dGdT = self.fun3d_adjoint.extract_rigid_adjoint_product(nfunctions) * self.flow_dt
+            if "rigid" in body.motion_type:
+                body.dGdT = (
+                    self.fun3d_adjoint.extract_rigid_adjoint_product(nfunctions)
+                    * self.flow_dt
+                )
 
         return fail
 
@@ -754,22 +848,26 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            if 'deform' in body.motion_type and body.aero_nnodes > 0 and body.transfer is not None:
+            if (
+                "deform" in body.motion_type
+                and body.aero_nnodes > 0
+                and body.transfer is not None
+            ):
                 dx = np.asfortranarray(body.aero_disps[0::3])
                 dy = np.asfortranarray(body.aero_disps[1::3])
                 dz = np.asfortranarray(body.aero_disps[2::3])
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
-            if 'rigid' in body.motion_type and body.transfer is not None:
+            if "rigid" in body.motion_type and body.transfer is not None:
                 self.fun3d_flow.input_rigid_transform(body.rigid_transform, body=ibody)
             if body.thermal_transfer is not None:
-                temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
+                temps = np.asfortranarray(body.aero_temps[:]) / body.T_ref
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
         self.comm.Barrier()
         bcont = self.fun3d_flow.step_solver()
         if bcont == 0:
-            if self.comm.Get_rank()==0:
+            if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             fail = 1
             os.chdir(self.root_dir)
@@ -779,16 +877,26 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             if body.aero_nnodes > 0:
                 if body.transfer is not None:
-                    fx, fy, fz = self.fun3d_flow.extract_forces(body.aero_nnodes, body=ibody)
-                    body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
+                    fx, fy, fz = self.fun3d_flow.extract_forces(
+                        body.aero_nnodes, body=ibody
+                    )
+                    body.aero_loads = np.zeros(
+                        3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                    )
                     body.aero_loads[0::3] = fx[:]
                     body.aero_loads[1::3] = fy[:]
                     body.aero_loads[2::3] = fz[:]
 
                 if body.thermal_transfer is not None:
-                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(body.aero_nnodes, body=ibody)
-                    body.aero_heat_flux = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
-                    body.aero_heat_flux_mag = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
+                        body.aero_nnodes, body=ibody
+                    )
+                    body.aero_heat_flux = np.zeros(
+                        3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                    )
+                    body.aero_heat_flux_mag = np.zeros(
+                        body.aero_nnodes, dtype=TransferScheme.dtype
+                    )
                     body.aero_heat_flux[0::3] = self.thermal_scale * cqx[:]
                     body.aero_heat_flux[1::3] = self.thermal_scale * cqy[:]
                     body.aero_heat_flux[2::3] = self.thermal_scale * cqz[:]
@@ -805,7 +913,11 @@ class Fun3dInterface(SolverInterface):
                 self.force_hist[scenario.id][step][ibody] = body.aero_loads.copy()
 
             if body.thermal_transfer is not None:
-                self.heat_flux_hist[scenario.id][step][ibody] = body.aero_heat_flux.copy()
-                self.heat_flux_mag_hist[scenario.id][step][ibody] = body.aero_heat_flux_mag.copy()
+                self.heat_flux_hist[scenario.id][step][
+                    ibody
+                ] = body.aero_heat_flux.copy()
+                self.heat_flux_mag_hist[scenario.id][step][
+                    ibody
+                ] = body.aero_heat_flux_mag.copy()
                 self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
         return 0

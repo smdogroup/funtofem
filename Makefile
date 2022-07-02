@@ -26,16 +26,10 @@ complex_debug:
 	@cd lib && ${MAKE} || exit 1
 
 interface:
-	@python3 setup.py build_ext --inplace
-
-debug_interface:
-	@python3 setup.py build_ext --inplace
+	${PIP} install -e .
 
 complex_interface:
-	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
-
-complex_debug_interface:
-	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+	CFLAGS=-DFUNTOFEM_USE_COMPLEX ${PIP} install -e .
 
 clean:
 	@cd src && ${MAKE} $@ || exit 1
