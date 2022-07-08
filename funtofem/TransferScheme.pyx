@@ -995,3 +995,24 @@ cdef class pyRBF(pyTransferScheme):
 
     def __dealloc__(self):
         del self.ptr
+
+cdef class pyBeamTransfer(pyTransferScheme):
+    """
+    Interpolation of loads and displacements for beam elements
+    """
+    def __cinit__(self, MPI.Comm comm,
+                  MPI.Comm struct, int struct_root,
+                  MPI.Comm aero, int aero_root,
+                  np.ndarray[int, ndim=1, mode='c'] _conn,
+                  int _nelems, int _order,
+                  int _dof_per_node):
+        cdef MPI_Comm c_comm = comm.ob_mpi
+        cdef MPI_Comm struct_comm = struct.ob_mpi
+        cdef MPI_Comm aero_comm = aero.ob_mpi
+
+        self.ptr = new BeamTransfer(c_comm, struct_comm, struct_root,
+                                    aero_comm, aero_root,
+                                    <int*>_conn.data, _nelems, _order,
+                                    _dof_per_node)
+
+        return

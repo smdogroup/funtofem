@@ -24,10 +24,12 @@ from tacs import TACS, functions
 from .solver_interface import SolverInterface
 import numpy as np
 
+
 class TacsSteadyInterface(SolverInterface):
     """
     A base class to do coupled steady simulations with TACS
     """
+
     def __init__(self, comm, tacs_comm, model=None):
 
         self.comm = comm
@@ -42,13 +44,20 @@ class TacsSteadyInterface(SolverInterface):
         self.funclist = None
         self.functag = None
 
-        self.struct_vars_all = {} # saved displacements and temps
+        self.struct_vars_all = {}  # saved displacements and temps
         self.first_pass = True
 
         return
 
-    def _initialize_variables(self, assembler=None, mat=None, pc=None, gmres=None,
-                              struct_id=None, thermal_index=0):
+    def _initialize_variables(
+        self,
+        assembler=None,
+        mat=None,
+        pc=None,
+        gmres=None,
+        struct_id=None,
+        thermal_index=0,
+    ):
         """
         Initialize the variables required for analysis and
         optimization using TACS. This initialization takes in optional
@@ -67,7 +76,7 @@ class TacsSteadyInterface(SolverInterface):
         self.mat = None
         self.pc = None
         self.gmres = None
-        #self.thermal_index = thermal_index
+        # self.thermal_index = thermal_index
         self.struct_id = struct_id
 
         self.struct_X_vec = None
@@ -112,9 +121,9 @@ class TacsSteadyInterface(SolverInterface):
             # Get and set the structural node locations
             self.struct_X_vec = assembler.createNodeVec()
             assembler.getNodes(self.struct_X_vec)
-            self.struct_nnodes = len(self.struct_X_vec.getArray())//3
+            self.struct_nnodes = len(self.struct_X_vec.getArray()) // 3
 
-            self.struct_X = np.zeros(3*self.struct_nnodes, dtype=TACS.dtype)
+            self.struct_X = np.zeros(3 * self.struct_nnodes, dtype=TACS.dtype)
             self.struct_X[:] = self.struct_X_vec.getArray()[:]
             self.dvsenslist = []
             self.svsenslist = []
@@ -149,8 +158,8 @@ class TacsSteadyInterface(SolverInterface):
 
             if self.tacs_comm.rank == 0:
                 for body in bodies:
-                    if 'structural' in body.variables:
-                        for i, var in enumerate(body.variables['structural']):
+                    if "structural" in body.variables:
+                        for i, var in enumerate(body.variables["structural"]):
                             xarray[i] = var.value
 
             self.assembler.setDesignVars(xvec)
@@ -162,36 +171,44 @@ class TacsSteadyInterface(SolverInterface):
             self.funclist = []
             self.functag = []
             for func in scenario.functions:
-                if func.analysis_type != 'structural':
+                if func.analysis_type != "structural":
                     self.funclist.append(None)
                     self.functag.append(0)
 
-                elif func.name.lower() == 'ksfailure':
+                elif func.name.lower() == "ksfailure":
                     if func.options:
-                        ksweight = func.options['ksweight'] if 'ksweight' in func.options else 50.0
+                        ksweight = (
+                            func.options["ksweight"]
+                            if "ksweight" in func.options
+                            else 50.0
+                        )
                     else:
                         ksweight = 50.0
-                    self.funclist.append(functions.KSFailure(self.assembler, ksWeight=ksweight))
+                    self.funclist.append(
+                        functions.KSFailure(self.assembler, ksWeight=ksweight)
+                    )
                     self.functag.append(1)
 
-                elif func.name.lower() == 'compliance':
+                elif func.name.lower() == "compliance":
                     self.funclist.append(functions.Compliance(self.assembler))
                     self.functag.append(1)
 
-                elif func.name.lower() == 'temperature':
-                    self.funclist.append(functions.AverageTemperature(self.assembler, volume=self.vol))
+                elif func.name.lower() == "temperature":
+                    self.funclist.append(
+                        functions.AverageTemperature(self.assembler, volume=self.vol)
+                    )
                     self.functag.append(1)
 
-                elif func.name.lower() == 'heatflux':
+                elif func.name.lower() == "heatflux":
                     self.funclist.append(functions.HeatFlux(self.assembler))
                     self.functag.append(1)
 
-                elif func.name == 'mass':
+                elif func.name == "mass":
                     self.funclist.append(functions.StructuralMass(self.assembler))
                     self.functag.append(-1)
 
                 else:
-                    print('WARNING: Unknown function being set into TACS set to mass')
+                    print("WARNING: Unknown function being set into TACS set to mass")
                     self.funclist.append(functions.StructuralMass(self.assembler))
                     self.functag.append(-1)
 
@@ -205,12 +222,11 @@ class TacsSteadyInterface(SolverInterface):
             feval = self.assembler.evalFunctions(self.funclist)
 
             for i, func in enumerate(scenario.functions):
-                if func.analysis_type == 'structural':
+                if func.analysis_type == "structural":
                     func.value = feval[i]
 
         for func in scenario.functions:
             func.value = self.comm.bcast(func.value, root=0)
-            
 
         return
 
@@ -221,20 +237,26 @@ class TacsSteadyInterface(SolverInterface):
         for ifunc, func in enumerate(scenario.functions):
             for body in bodies:
                 for vartype in body.variables:
-                    if vartype == 'structural':
+                    if vartype == "structural":
                         for i, var in enumerate(body.variables[vartype]):
                             if var.active:
                                 if self.tacs_proc and self.tacs_comm.rank == 0:
-                                    body.derivatives[vartype][offset + ifunc][i] = self.func_grad[ifunc][i]
+                                    body.derivatives[vartype][offset + ifunc][
+                                        i
+                                    ] = self.func_grad[ifunc][i]
 
                                 # Do we have to broadcast for every single variable? This
                                 # should be in an outer loop.
-                                body.derivatives[vartype][offset + ifunc][i] = self.comm.bcast(body.derivatives[vartype][offset+ifunc][i], root=0)
+                                body.derivatives[vartype][offset + ifunc][
+                                    i
+                                ] = self.comm.bcast(
+                                    body.derivatives[vartype][offset + ifunc][i], root=0
+                                )
 
         return
 
     def eval_gradients(self, scenario, bodies):
-        """ Evaluate gradients with respect to structural design variables"""
+        """Evaluate gradients with respect to structural design variables"""
         if self.tacs_proc:
             self.func_grad = []
 
@@ -256,7 +278,7 @@ class TacsSteadyInterface(SolverInterface):
         return
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
-        """ Evaluate gradients with respect to structural design variables"""
+        """Evaluate gradients with respect to structural design variables"""
 
         if self.tacs_proc:
             for func, xptsens in enumerate(self.xptsenslist):
@@ -291,11 +313,11 @@ class TacsSteadyInterface(SolverInterface):
     def get_mesh(self, body):
         if self.tacs_proc:
             body.struct_X = self.struct_X_vec.getArray().copy()
-            body.struct_nnodes = body.struct_X.size//3
+            body.struct_nnodes = body.struct_X.size // 3
             if self.struct_id is None:
                 body.struct_id = None
             else:
-                #body.struct_id = self.struct_id + 1
+                # body.struct_id = self.struct_id + 1
                 body.struct_id = self.struct_id
         else:
             body.struct_nnodes = 0
@@ -304,19 +326,37 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
+    def initialize_mesh(self, scenario, bodies):
+        for body in bodies:
+            body.initialize_struct_mesh(X)
+
     def initialize(self, scenario, bodies):
         for body in bodies:
+
             if self.first_pass:
                 self.get_mesh(body)
 
                 # During the first pass, the transfer and thermal_transfer objects are
                 # not defined, so used the flags
-                if body.analysis_type == 'aeroelastic' or body.analysis_type == 'aerothermoelastic':
-                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
-                if body.analysis_type == 'aerothermal' or body.analysis_type == 'aerothermoelastic':
+                if (
+                    body.analysis_type == "aeroelastic"
+                    or body.analysis_type == "aerothermoelastic"
+                ):
+                    body.struct_disps = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TACS.dtype
+                    )
+                if (
+                    body.analysis_type == "aerothermal"
+                    or body.analysis_type == "aerothermoelastic"
+                ):
                     # FIXME need initial temperatures defined to pass to fluid solver
                     # currently initializing to the TACS reference temperature
-                    body.struct_temps = np.ones(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype) * body.T_ref
+                    body.struct_temps = (
+                        np.ones(
+                            body.struct_nnodes * body.therm_xfer_ndof, dtype=TACS.dtype
+                        )
+                        * body.T_ref
+                    )
                 self.first_pass = False
             else:
                 self.set_mesh(body)
@@ -350,11 +390,14 @@ class TacsSteadyInterface(SolverInterface):
             # Add the external load and heat fluxes on the structure
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                if body.transfer is not None:
-                    for i in range(body.xfer_ndof):
-                        ext_force_array[i::ndof] += body.struct_loads[i::body.xfer_ndof]
-                if body.thermal_transfer is not None:
-                    ext_force_array[body.thermal_index::ndof] += body.struct_heat_flux[:]
+                struct_loads = body.get_struct_loads(scenario)
+                if struct_loads is not None:
+                    for i in range(3):
+                        ext_force_array[i::ndof] += struct_loads[i::3]
+
+                struct_flux = body.get_struct_heat_flux(scenario)
+                if struct_flux is not None:
+                    ext_force_array[self.thermal_index :: ndof] += struct_flux[:]
 
             # Zero the contributions at the DOF associated with boundary
             # conditions so that it doesn't interfere with Dirichlet BCs
@@ -377,24 +420,19 @@ class TacsSteadyInterface(SolverInterface):
             # Extract displacements and temperatures for each body
             ans_array = self.ans.getArray()
             for body in bodies:
-                if body.transfer is not None:
-                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof,
-                                                 dtype=TACS.dtype)
-                    for i in range(body.xfer_ndof):
-                        body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
+                struct_disps = body.get_struct_disps(scenario)
+                if struct_disps is not None:
+                    for i in range(3):
+                        body.struct_disps[i::3] = ans_array[i::ndof]
 
-                if body.thermal_transfer is not None:
-                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
-                                                 dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[body.thermal_index::ndof] + body.T_ref
-        else:
-            for body in bodies:
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
-                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
+                # Set the structural temperature
+                struct_temps = body.get_struct_temps(scenario)
+                if struct_temps is not None:
+                    struct_temps[:] = ans_array[self.thermal_index :: ndof] + body.T_ref
 
         return fail
 
-    def post(self,scenario,bodies):
+    def post(self, scenario, bodies):
         if self.tacs_proc:
             self.struct_vars_all[scenario.id] = self.ans.getArray().copy()
 
@@ -404,7 +442,7 @@ class TacsSteadyInterface(SolverInterface):
             except:
                 print("No f5 export set up")
 
-    def initialize_adjoint(self,scenario,bodies):
+    def initialize_adjoint(self, scenario, bodies):
 
         nfunctions = scenario.count_adjoint_functions()
         if self.tacs_proc:
@@ -418,24 +456,28 @@ class TacsSteadyInterface(SolverInterface):
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
                 if body.transfer is not None:
-                    body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
+                    body.struct_disps = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TACS.dtype
+                    )
                     for i in range(body.xfer_ndof):
-                        body.struct_disps[i::body.xfer_ndof] = ans_array[i::ndof]
+                        body.struct_disps[i :: body.xfer_ndof] = ans_array[i::ndof]
 
                 if body.thermal_transfer is not None:
-                    body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
-                                                 dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[body.thermal_index::ndof]
+                    body.struct_temps = np.zeros(
+                        body.struct_nnodes * body.therm_xfer_ndof, dtype=TACS.dtype
+                    )
+                    body.struct_temps[:] = ans_array[self.thermal_index :: ndof]
 
             # Assemble the transpose of the Jacobian matrix for the adjoint
             # computations. Note that for thermoelastic computations, the Jacobian
             # matrix is non-symmetric due to the temperature-deformation coupling.
             # The transpose must be used here to get the right result.
-            alpha = 1.0 # Jacobian coefficient for the state variables
-            beta = 0.0 # Jacobian coeff. for the first time derivative of the state variables
-            gamma = 0.0 # Coeff. for the second time derivative of the state variables
-            self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat,
-                                            matOr=TACS.TRANSPOSE)
+            alpha = 1.0  # Jacobian coefficient for the state variables
+            beta = 0.0  # Jacobian coeff. for the first time derivative of the state variables
+            gamma = 0.0  # Coeff. for the second time derivative of the state variables
+            self.assembler.assembleJacobian(
+                alpha, beta, gamma, self.res, self.mat, matOr=TACS.TRANSPOSE
+            )
             self.pc.factor()
 
             # Evaluate the functions in preparation for evaluating the derivative
@@ -463,8 +505,12 @@ class TacsSteadyInterface(SolverInterface):
                     self.svsenslist[func].zeroEntries()
         else:
             for body in bodies:
-                body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
-                body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof, dtype=TACS.dtype)
+                body.struct_disps = np.zeros(
+                    body.struct_nnodes * body.xfer_ndof, dtype=TACS.dtype
+                )
+                body.struct_temps = np.zeros(
+                    body.struct_nnodes * body.therm_xfer_ndof, dtype=TACS.dtype
+                )
 
         return 0
 
@@ -473,9 +519,9 @@ class TacsSteadyInterface(SolverInterface):
 
         for body in bodies:
             if body.transfer is not None:
-                body.psi_S[:,:] = 0.0
+                body.psi_S[:, :] = 0.0
             if body.thermal_transfer is not None:
-                body.psi_T_S[:,:] = 0.0
+                body.psi_T_S[:, :] = 0.0
 
         if self.tacs_proc:
             # Evaluate state variable sensitivities and scale to get right-hand side
@@ -495,12 +541,15 @@ class TacsSteadyInterface(SolverInterface):
                     # adjoint variables
                     if body.transfer is not None:
                         for i in range(body.xfer_ndof):
-                            struct_rhs_array[i::ndof] += body.struct_rhs[i::body.xfer_ndof, func]
+                            struct_rhs_array[i::ndof] += body.struct_rhs[
+                                i :: body.xfer_ndof, func
+                            ]
 
                     if body.thermal_transfer is not None:
                         for i in range(body.therm_xfer_ndof):
-                            struct_rhs_array[body.thermal_index::ndof] += \
-                                body.struct_rhs_T[i::body.therm_xfer_ndof, func]
+                            struct_rhs_array[
+                                self.thermal_index :: ndof
+                            ] += body.struct_rhs_T[i :: body.therm_xfer_ndof, func]
 
                 # Zero the adjoint right-hand-side conditions at DOF locations
                 # where the boundary conditions are applied. This is consistent with
@@ -517,10 +566,10 @@ class TacsSteadyInterface(SolverInterface):
                 for body in bodies:
                     if body.transfer is not None:
                         for i in range(body.xfer_ndof):
-                            body.psi_S[i::body.xfer_ndof, func] = psi_S_array[i::ndof]
+                            body.psi_S[i :: body.xfer_ndof, func] = psi_S_array[i::ndof]
 
                     if body.thermal_transfer is not None:
-                        body.psi_T_S[:, func] = psi_S_array[body.thermal_index::ndof]
+                        body.psi_T_S[:, func] = psi_S_array[self.thermal_index :: ndof]
 
         return fail
 
@@ -578,7 +627,7 @@ class TacsSteadyInterface(SolverInterface):
         for ibody, body in enumerate(bodies):
             if body.transfer is not None:
                 body.struct_loads_pert = np.random.uniform(size=body.struct_loads.shape)
-                body.struct_loads += epsilon*body.struct_loads_pert
+                body.struct_loads += epsilon * body.struct_loads_pert
 
                 # Compute the adjoint product. Note that the
                 # negative sign is from convention due to the
@@ -597,14 +646,14 @@ class TacsSteadyInterface(SolverInterface):
         fd_product = 0.0
         for ibody, body in enumerate(bodies):
             if body.transfer is not None:
-                fd = (body.struct_disps - body.struct_disps_copy)/epsilon
+                fd = (body.struct_disps - body.struct_disps_copy) / epsilon
                 fd_product += np.dot(fd, body.struct_rhs[:, 0])
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)
 
         if self.comm.rank == 0:
-            print('TACS FUNtoFEM adjoint result:           ', adjoint_product)
-            print('TACS FUNtoFEM finite-difference result: ', fd_product)
+            print("TACS FUNtoFEM adjoint result:           ", adjoint_product)
+            print("TACS FUNtoFEM finite-difference result: ", fd_product)
 
         return
