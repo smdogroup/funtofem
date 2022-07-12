@@ -1,0 +1,2 @@
+F2F_NPY_SCALAR = np.${F2F_NPY_TYPE}
+dtype = np.${F2F_TYPE}

@@ -1,6 +1,5 @@
-import os
+import os, sys, platform
 from subprocess import check_output
-import sys
 
 # Numpy/mpi4py must be installed prior to installing FUNtoFEM
 import numpy
@@ -8,6 +7,7 @@ import mpi4py
 
 # Import distutils
 from setuptools import setup
+from setuptools.command.build_ext import build_ext
 from distutils.core import Extension as Ext
 from Cython.Build import cythonize
 
@@ -20,25 +20,50 @@ def get_global_dir(files):
     return new
 
 def get_mpi_flags():
-    # Split the output from the mpicxx command
-    args = check_output(['mpicxx', '-show']).decode('utf-8').split()
-
-    # Determine whether the output is an include/link/lib command
     inc_dirs, lib_dirs, libs = [], [], []
-    for flag in args:
-        if flag[:2] == '-I':
-            inc_dirs.append(flag[2:])
-        elif flag[:2] == '-L':
-            lib_dirs.append(flag[2:])
-        elif flag[:2] == '-l':
-            libs.append(flag[2:])
+    # Linux/Mac -> openMPI
+    if platform.system() == 'Linux' or platform.system() == 'Darwin':
+        # Split the output from the mpicxx command
+        args = check_output(['mpicxx', '-show']).decode('utf-8').split()
+        # Determine whether the output is an include/link/lib command
+        for flag in args:
+            if flag[:2] == '-I':
+                inc_dirs.append(flag[2:])
+            elif flag[:2] == '-L':
+                lib_dirs.append(flag[2:])
+            elif flag[:2] == '-l':
+                libs.append(flag[2:])
+    # Windows -> MS-MPI
+    elif platform.system() == 'Windows':
+        inc_dirs.append(os.environ['MSMPI_INC'].rstrip('\\')) # removes trainling "\"
+        lib_dirs.append(os.environ['MSMPI_LIB64'].rstrip('\\')) # assuming x64 architecture
+        libs.extend(['msmpi', 'msmpifec', 'msmpifmc'])
+    else:
+        raise Exception('Unsupported OS!\n')
 
     return inc_dirs, lib_dirs, libs
 
+class custom_build_ext(build_ext):
+    def build_extensions(self):
+        if platform.system() == 'Windows':
+            # Apparently, this is not needed anymore...
+            #self.compiler.initialize()
+            #self.compiler.cc = '"' + self.compiler.cc + '"' # add double quotes around compiler name
+            #self.compiler.linker = '"' + self.compiler.linker + '"' # add double quotes around compiler name
+            build_ext.build_extensions(self)
+        else:
+            build_ext.build_extensions(self)
+
+# Get include dirs and libs
 inc_dirs, lib_dirs, libs = get_mpi_flags()
 
-# Add funtofem-dev/lib as a runtime directory
-runtime_lib_dirs = get_global_dir(['lib'])
+# Add funtofem-dev/lib...
+# ... as a runtime directory for linux/mac
+if platform.system() == 'Linux' or platform.system() == 'Darwin':
+    runtime_lib_dirs = get_global_dir(['lib'])
+# ... not for windows, this will be taken care of at runtime (see funtofem/__init__.py)
+else:
+    runtime_lib_dirs = None
 
 # Relative paths for the include/library directories
 rel_inc_dirs = ['src', 'include']
@@ -67,4 +92,7 @@ setup(name='funtofem',
       description='Aeroelastic coupling framework and transfer schemes',
       author='Graeme J. Kennedy',
       author_email='graeme.kennedy@ae.gatech.edu',
-      ext_modules=cythonize(exts, include_path=inc_dirs))
+      ext_modules=cythonize(exts, include_path=inc_dirs),
+      cmdclass={"build_ext": custom_build_ext},
+      packages=['funtofem'],
+      package_data={'funtofem': ['__init__.py', 'mphys/*.py']})

@@ -8,10 +8,59 @@ This repository contains the FUNtoFEM coupling framework and load and displaceme
 
 ### Installation ###
 
-* Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
-* In the funtofem/ directory, copy Makefile.in.info to Makefile.in and edit
-* For real mode: `make` and `make interface` (Python interface) in the funtofem/ directory
-* For complex mode: `make complex` and `make complex_interface` in the funtofem/ directory
+#### Dependencies and options
+Dependencies:
+* CMake
+* MPI and mpi4py
+* Cython
+* Lapack/BLAS
+
+Options:
+* USE_COMPLEX: whether to compile with complex numbers
+* USE_MKL: whether to look for Intel MKL instead of openBLAS
+
+#### UNIX (GCC-openMPI)
+In the funtofem directory,
+```sh
+# Configure and build
+mkdir build && cd build
+cmake [-DCMAKE_BUILD_TYPE=Release|Debug] [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
+make install
+ctest
+```
+
+#### Windows (MSVC-MSMPI)
+In the funtofem directory,
+```bat
+REM Setup env
+call "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.dat" amd64 REM VS build tools
+call "C:\Program Files\Intel\oneAPI\setvars.bat" intel64 vs2019 REM if Intel MKL are used
+REM Configure and build
+mkdir build
+cd build
+cmake -A x64 [-DUSE_COMPLEX=ON|OFF] [-DUSE_MKL=ON|OFF] ..
+cmake --build . --target install --config Release|Debug
+ctest -C Release|Debug
+```
+
+#### Python interface
+To build the python interface, from the funtofem directory,
+```sh
+python -m pip install [-e] . [--user]
+```
+
+**Warning - temporary fix**  
+If the interface build fails on winodws, try to replace:
+```python
+rc = os.spawnv(os.P_WAIT, executable, cmd)
+```
+by,
+```python
+import subprocess
+cp = subprocess.run(' '.join([executable] + cmd[1:]))
+rc = cp.returncode
+```
+in `/Python_install_dir/Lib/distutils/spawn.py` (around line 69).
 
 ### License ###
 

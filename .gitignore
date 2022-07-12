@@ -7,9 +7,16 @@ lib/libtransfer_schemes.a
 *.pxi
 *.so
 *.out
+*.exp
+*.lib
+*.dll
+*.dll.a
+*.pyd
 *ugrid
 *mapbc
 *.bdf
 *.job
 fake_interface*
+build/
+funtofem.egg-info/
 *~

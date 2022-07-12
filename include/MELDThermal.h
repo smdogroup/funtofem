@@ -23,7 +23,7 @@
   Users must also specify number of nearest nodes in initialize(num_nearest)
 */
 
-class MELDThermal : public TransferScheme {
+class F2F_API MELDThermal : public TransferScheme {
  public:
   // Constructor
   MELDThermal( MPI_Comm all,

@@ -11,7 +11,7 @@
   Not for commercial purposes.
 */
 
-class LocatePoint {
+class F2F_API LocatePoint {
  public:
   LocatePoint( const F2FScalar * _Xpts, int _npts, int _max_num_points );
   ~LocatePoint();

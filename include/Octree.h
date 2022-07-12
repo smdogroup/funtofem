@@ -6,7 +6,7 @@
 /*
   A class implementing a matrix-based octree
 */
-class Octree {
+class F2F_API Octree {
  public:
   Octree(F2FScalar *points, int num_points, 
          int min_point_count, double min_edge_length, int max_tree_depth);

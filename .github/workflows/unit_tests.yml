@@ -90,18 +90,32 @@ jobs:
       - name: Install FUNtoFEM
         run: |
           echo "=============================================================";
-          echo "Install FUNtoFEM";
+          echo "Build FUNtoFEM";
           echo "=============================================================";
           export F2F_DIR=${GITHUB_WORKSPACE};
           echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           cd $F2F_DIR;
-          cp Makefile.in.info Makefile.in;
-          make ${{ matrix.OPTIONAL }} F2F_DIR=$F2F_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
-          cd $F2F_DIR;
-          make ${{ matrix.INTERFACE }};
-
-      - name: Run unit tests
-        run: |
+          mkdir build
+          cd build
+          if [ "${{ matrix.NAME }}" = "Complex" ]; then
+            cmake -DUSE_MKL=OFF -DUSE_COMPLEX=ON ..
+          else
+            cmake -DUSE_MKL=OFF -DUSE_COMPLEX=OFF ..
+          fi
+          make install
+          echo "=============================================================";
+          echo "Run CTest";
+          echo "=============================================================";
+          ctest
+          echo "=============================================================";
+          echo "Build python interface";
+          echo "=============================================================";
+          cd ..
+          if [ "${{ matrix.NAME }}" = "Complex" ]; then
+            python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+          else
+            python3 setup.py build_ext --inplace
+          fi
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";

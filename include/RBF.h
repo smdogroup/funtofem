@@ -12,7 +12,7 @@
   "Unified fluid–structure interpolation and mesh motion using radial basis
   functions" by T. C. S. Rendall and C. B. Allen.
 */
-class RBF : public TransferScheme {
+class F2F_API RBF : public TransferScheme {
  public:
   // RBF type
   enum RbfType {GAUSSIAN, 
