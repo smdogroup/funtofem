@@ -12,7 +12,8 @@ Methods on this page with **[driver call]** and **[model call]** are calls that 
 
 Assembling the model
 --------------------
-A model is assembled using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and :func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. See `bodies and scenarios`_ for details about their creation.
+A model is assembled using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
+:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. See `bodies and scenarios`_ for details about their creation.
 
 The bodies and scenarios are kept in lists in the same order that they are input.
 
@@ -25,10 +26,14 @@ Design variables
 ================
 The assembled model contains all the design variables information that an optimizer such as PyOpt needs.
 A list of the active design for the entire model is returned by :func:`~funtofem_model.FUNtoFEMmodel.get_variables`.
-The output list contains the :class:`variable` type. Here is an example of passing the variable information from the model to a PyOpt optimizer:
+The output list contains the :class:`variable` type. Here is an example of passing the 
+variable information from the model to a PyOpt optimizer:
 
 **The variables are stored in the model as a dictionary.**
-**They return in of ordered list of scenarios in the order they were added to the model, then the bodies in the order that they were added. Within each scenario and body, the order is alphabetical by variable type. Within each variable type, the variables are in the order added to the body/scenario.**
+**They return in of ordered list of scenarios in the order they were added to the model, 
+then the bodies in the order that they were added. Within each scenario and body, 
+the order is alphabetical by variable type. Within each variable type, the variables are 
+in the order added to the body/scenario.**
 
 .. code-block:: python
 
@@ -43,12 +48,15 @@ The output list contains the :class:`variable` type. Here is an example of passi
                                          lower=var.lower/var.scaling,
                                          upper=var.upper/var.scaling)
 
-Optimizers such as PyOpt will typically provide a list of new values at each design point. These can be set back into model type using :func:`~funtofem_model.FUNtoFEMmodel.set_variables`.
-The variables can be pre-scaled and passed directing into this call, or with the scale argument set to True, the scaling will be done automatically.
+Optimizers such as PyOpt will typically provide a list of new values at each design point. 
+These can be set back into model type using :func:`~funtofem_model.FUNtoFEMmodel.set_variables`.
+The variables can be pre-scaled and passed directing into this call, or with the scale argument set to 
+True, the scaling will be done automatically.
 
 Function values
 ===============
-Once the driver has been run, :func:`~funtofem_driver.FUNtoFEMDriver.solve_forward`, the functions can be retrieved using :func:`~funtofem_model.FUNtoFEMmodel.get_functions`.
+Once the driver has been run, :func:`~funtofem_driver.FUNtoFEMDriver.solve_forward`, the functions can be 
+retrieved using :func:`~funtofem_model.FUNtoFEMmodel.get_functions`.
 The output list contains the :class:`function` type. The following code prints the function values:
 
 .. code-block:: python
@@ -60,7 +68,8 @@ The output list contains the :class:`function` type. The following code prints t
    for function in enumerate(variables):
        print function.name, '=', function.value
 
-The functions in the FUNtoFEM model need to be single discipline functions to maintain modularity. The following pseudo code lays out a function that can be used as an objective evaluation with PyObj:
+The functions in the FUNtoFEM model need to be single discipline functions to maintain modularity. 
+The following pseudo code lays out a function that can be used as an objective evaluation with PyObj:
 
 .. code-block:: python
 
@@ -80,7 +89,8 @@ The functions in the FUNtoFEM model need to be single discipline functions to ma
 Gradients
 =========
 
-The derivatives in the model class are populated by :func:`~funtofem_driver.FUNtoFEMDriver.solve_adjoint`. Gradients can be retrieved using :func:`~funtofem_model.FUNtoFEMmodel.get_function_gradients`.
+The derivatives in the model class are populated by :func:`~funtofem_driver.FUNtoFEMDriver.solve_adjoint`. 
+Gradients can be retrieved using :func:`~funtofem_model.FUNtoFEMmodel.get_function_gradients`.
 
 .. code-block:: python
 
@@ -124,7 +134,8 @@ The following is a pseudo code would be a gradient evaluation for pyOpt.
 
 FUNtoFEM Model Class
 ====================
-.. automodule:: funtofem_model
+
+.. currentmodule:: pyfuntofem.funtofem_model
 
 .. autoclass:: FUNtoFEMmodel
     :members:
@@ -134,7 +145,8 @@ Bodies and Scenarios
 
 Bodies and scenarios organize the data associated for the coupling and design.
 Additionally, the body class holds the shape parameterization and transfer scheme.
-Shape parameterization is added by creating a new body class that subclasses the :class:`body` class. See :class:`~massoud_body.MassoudBody` for an example.
+Shape parameterization is added by creating a new body class that subclasses the :class:`body` class. 
+See :class:`~massoud_body.MassoudBody` for an example.
 The driver adds the details for the transfer scheme. See :class:`~funtofem_driver.FUNtoFEMDriver`.
 
 Scenarios
@@ -146,24 +158,25 @@ An example of a scenario variable could be flow variables such as angle of attac
 
 .. figure:: images/scenario.png
 
-.. automodule:: scenario
+.. currentmodule:: pyfuntofem.scenario
 
 .. autoclass:: Scenario
    :members:
 
 Bodies
 ======
-Shape parameterization is added by creating a new body class that subclasses the :class:`body` class. See :class:`~massoud_body.MassoudBody` for an example.
+Shape parameterization is added by creating a new body class that subclasses the :class:`body` class. 
+See :class:`~massoud_body.MassoudBody` for an example.
 The driver adds the details for the transfer scheme. See :class:`~funtofem_driver.FUNtoFEMDriver`.
 
 .. figure:: images/body.png
 
-.. automodule:: body
+.. currentmodule:: pyfuntofem.body
 
 .. autoclass:: Body
    :members:
 
-.. csv-table:: Body Member List
+.. csv-table:: **Body Member List**
    :header: "Name", "Default Value","Description"
    :widths: 20, 20, 20
    :align: center
@@ -207,28 +220,32 @@ Base class
 ==========
 The body and scenario classes subclass the `base class`_.
 
-Although most of the methods in the base class are used internally in the model, :func:`~base.Base.set_variable` allows the user to change attributes of existing `variables`_ in the body or scenario.
-For example, if the shape parameterization created a specific number of variables, but you do not want to use all of them in the optimization, you can set the variable to be inactive.
+Although most of the methods in the base class are used internally in the model, :func:`~base.Base.set_variable` 
+allows the user to change attributes of existing `variables`_ in the body or scenario.
+For example, if the shape parameterization created a specific number of variables, but you do not want to use all 
+of them in the optimization, you can set the variable to be inactive.
 
-.. automodule:: base
+.. currentmodule:: pyfuntofem.base
 
 .. autoclass:: Base
    :members:
 
 MassoudBody
 ===========
-.. automodule:: massoud_body
+.. .. automodule:: massoud_body
 
-.. autoclass:: MassoudBody
+.. .. autoclass:: MassoudBody
    :members:
 
 Variables
 =========
 Some solvers like FUN3D require some design variables to be defined, whether or not it is being used in design.
-The active attribute of the :class:`~variable.Variable` class. Setting it to False, allows you to still define the variable but it won't be returned when calling :func:`~funtofem_model.FUNtoFEMmodel.get_variables`.
-When the variable is added to a :class:`~scenario.Scenario` or :class:`~body.Body` using :func:`~base.Base.add_variable`, the vartype argument specifies what discipline the variable is associated with.
+The active attribute of the :class:`~variable.Variable` class. Setting it to False, allows you to still define 
+the variable but it won't be returned when calling :func:`~funtofem_model.FUNtoFEMmodel.get_variables`.
+When the variable is added to a :class:`~scenario.Scenario` or :class:`~body.Body` using :func:`~base.Base.add_variable`, 
+the vartype argument specifies what discipline the variable is associated with.
 
-.. automodule:: variable
+.. currentmodule:: pyfuntofem.variable
 
 .. autoclass:: Variable
    :members:
@@ -240,13 +257,15 @@ The *analysis_type* argument specifics which discipline the function is associat
 Currently the options are 'aerodynamic' and 'structural'.
 
 Once the function is instantiated, :class:`~scenario.Scenario.add_function` is used to add it to a scenario.
-Although the function values could be accessed from the model type, :func:`~funtofem_model.FUNtoFEMmodel.get_functions` will return all the `functions`_ defined in the model.
+Although the function values could be accessed from the model type, :func:`~funtofem_model.FUNtoFEMmodel.get_functions` 
+will return all the `functions`_ defined in the model.
 
 When FUNtoFEM is used with FUN3D, the name of any function that would be defined in the rubber.data can be used.
 For functions that do not need an adjoint, such as structural mass, the boolean, adjoint, should be set to false.
-Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor without including that of the sting model, you can use the body argument to pass that information to the solver.
+Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor 
+without including that of the sting model, you can use the body argument to pass that information to the solver.
 
-.. automodule:: function
+.. currentmodule:: pyfuntofem.function
 
 .. autoclass:: Function
    :members:

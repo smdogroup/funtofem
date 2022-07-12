@@ -18,8 +18,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../pyfuntofem'))
-sys.path.insert(0, os.path.abspath('../funtofem'))
+sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, os.path.abspath('../pyfuntofem'))
+# sys.path.insert(0, os.path.abspath('../funtofem'))
 
 
 # -- General configuration ------------------------------------------------
@@ -83,6 +84,8 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+autodoc_mock_imports = ['numpy', 'TransferScheme', 'funtofem', 'mpi4py']
 
 
 # -- Options for HTML output ----------------------------------------------

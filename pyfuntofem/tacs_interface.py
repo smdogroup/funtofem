@@ -67,7 +67,7 @@ class TacsSteadyInterface(SolverInterface):
         self.mat = None
         self.pc = None
         self.gmres = None
-        self.thermal_index = thermal_index
+        #self.thermal_index = thermal_index
         self.struct_id = struct_id
 
         self.struct_X_vec = None
@@ -210,6 +210,7 @@ class TacsSteadyInterface(SolverInterface):
 
         for func in scenario.functions:
             func.value = self.comm.bcast(func.value, root=0)
+            
 
         return
 
@@ -353,7 +354,7 @@ class TacsSteadyInterface(SolverInterface):
                     for i in range(body.xfer_ndof):
                         ext_force_array[i::ndof] += body.struct_loads[i::body.xfer_ndof]
                 if body.thermal_transfer is not None:
-                    ext_force_array[self.thermal_index::ndof] += body.struct_heat_flux[:]
+                    ext_force_array[body.thermal_index::ndof] += body.struct_heat_flux[:]
 
             # Zero the contributions at the DOF associated with boundary
             # conditions so that it doesn't interfere with Dirichlet BCs
@@ -385,7 +386,7 @@ class TacsSteadyInterface(SolverInterface):
                 if body.thermal_transfer is not None:
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[self.thermal_index::ndof] + body.T_ref
+                    body.struct_temps[:] = ans_array[body.thermal_index::ndof] + body.T_ref
         else:
             for body in bodies:
                 body.struct_disps = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TACS.dtype)
@@ -424,7 +425,7 @@ class TacsSteadyInterface(SolverInterface):
                 if body.thermal_transfer is not None:
                     body.struct_temps = np.zeros(body.struct_nnodes*body.therm_xfer_ndof,
                                                  dtype=TACS.dtype)
-                    body.struct_temps[:] = ans_array[self.thermal_index::ndof]
+                    body.struct_temps[:] = ans_array[body.thermal_index::ndof]
 
             # Assemble the transpose of the Jacobian matrix for the adjoint
             # computations. Note that for thermoelastic computations, the Jacobian
@@ -498,7 +499,7 @@ class TacsSteadyInterface(SolverInterface):
 
                     if body.thermal_transfer is not None:
                         for i in range(body.therm_xfer_ndof):
-                            struct_rhs_array[self.thermal_index::ndof] += \
+                            struct_rhs_array[body.thermal_index::ndof] += \
                                 body.struct_rhs_T[i::body.therm_xfer_ndof, func]
 
                 # Zero the adjoint right-hand-side conditions at DOF locations
@@ -519,7 +520,7 @@ class TacsSteadyInterface(SolverInterface):
                             body.psi_S[i::body.xfer_ndof, func] = psi_S_array[i::ndof]
 
                     if body.thermal_transfer is not None:
-                        body.psi_T_S[:, func] = psi_S_array[self.thermal_index::ndof]
+                        body.psi_T_S[:, func] = psi_S_array[body.thermal_index::ndof]
 
         return fail
 

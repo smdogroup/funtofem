@@ -10,12 +10,19 @@ The following items are needed to use FUNtoFEM:
 * an MPI compiler and mpi4py
 * Cython
 
+Furthermore, FUN3D requires PARMETIS and METIS (which must be installed inside PARMETIS). TACS requires METIS.
+
 Steps to compile
 ----------------
 #. Clone the FUNtoFEM git repository
 #. In the base 'funtofem' directory, copy the Makefile.in.info to Makefile.in. Edit the Makefile.in to match your compilers, lapack location, etc.
 #. To compile the real version, from the base directory, run *make* then *make interface*
+#. Add funtofem to your bashrc script:
 
+.. code-block:: 
+
+    export PYTHONPATH=$PYTHONPATH:~/git/funtofem
+    export PYTHONPATH=$PYTHONPATH:~/git/funtofem/pyfuntofem
 
 FUN3D
 -----

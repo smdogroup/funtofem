@@ -46,10 +46,7 @@ ctest -C Release|Debug
 #### Python interface
 To build the python interface, from the funtofem directory,
 ```sh
-# Build the python interface for the first time
-python setup.py develop --user
-# Update the python interface after it has been installed once, if changes are made
-python setup.py build_ext --inplace [--define FUNTOFEM_USE_COMPLEX]
+python -m pip install [-e] . [--user]
 ```
 
 **Warning - temporary fix**  
@@ -87,3 +84,4 @@ limitations under the License.
 * Liam Smith
 * Lenard Halim (lenard.halim@gatech.edu)
 * Sejal Sahu (ssahu32@gatech.edu)
+* Brian Burke

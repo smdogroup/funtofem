@@ -1,7 +1,9 @@
 Transfer Scheme
 ***************
 
-.. automodule:: TransferScheme
+.. .. automodule:: TransferScheme
+.. currentmodule:: funtofem.TransferScheme
 
 .. autoclass:: pyTransferScheme
     :members:
+    :undoc-members:

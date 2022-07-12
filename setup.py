@@ -46,9 +46,10 @@ def get_mpi_flags():
 class custom_build_ext(build_ext):
     def build_extensions(self):
         if platform.system() == 'Windows':
-            self.compiler.initialize()
-            self.compiler.cc = '"' + self.compiler.cc + '"' # add double quotes around compiler name
-            self.compiler.linker = '"' + self.compiler.linker + '"' # add double quotes around compiler name
+            # Apparently, this is not needed anymore...
+            #self.compiler.initialize()
+            #self.compiler.cc = '"' + self.compiler.cc + '"' # add double quotes around compiler name
+            #self.compiler.linker = '"' + self.compiler.linker + '"' # add double quotes around compiler name
             build_ext.build_extensions(self)
         else:
             build_ext.build_extensions(self)
@@ -92,4 +93,6 @@ setup(name='funtofem',
       author='Graeme J. Kennedy',
       author_email='graeme.kennedy@ae.gatech.edu',
       ext_modules=cythonize(exts, include_path=inc_dirs),
-      cmdclass={"build_ext": custom_build_ext})
+      cmdclass={"build_ext": custom_build_ext},
+      packages=['funtofem'],
+      package_data={'funtofem': ['__init__.py', 'mphys/*.py']})
