@@ -549,7 +549,7 @@ class Fun3dInterface(SolverInterface):
         # Pull out the forces from FUN3D
         for ibody, body in enumerate(bodies, 1):
             if body.transfer is not None:
-                body.aero_loads = np.zeros(
+                body.aero_loads[scenario.id] = np.zeros(
                     3 * body.aero_nnodes, dtype=TransferScheme.dtype
                 )
 
@@ -567,11 +567,11 @@ class Fun3dInterface(SolverInterface):
                         body.aero_nnodes, body=ibody
                     )
 
-                    body.aero_loads[0::3] = self.qinf * fx[:]
-                    body.aero_loads[1::3] = self.qinf * fy[:]
-                    body.aero_loads[2::3] = self.qinf * fz[:]
+                    body.aero_loads[scenario.id][0::3] = self.qinf * fx[:]
+                    body.aero_loads[scenario.id][1::3] = self.qinf * fy[:]
+                    body.aero_loads[scenario.id][2::3] = self.qinf * fz[:]
 
-                    if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads)), flush=True)
+                    if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads[scenario.id])), flush=True)
 
                 if body.thermal_transfer is not None:
                     cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
@@ -860,9 +860,9 @@ class Fun3dInterface(SolverInterface):
                 and body.aero_nnodes > 0
                 and body.transfer is not None
             ):
-                dx = np.asfortranarray(body.aero_disps[0::3])
-                dy = np.asfortranarray(body.aero_disps[1::3])
-                dz = np.asfortranarray(body.aero_disps[2::3])
+                dx = np.asfortranarray(body.aero_disps[scenario.id][0::3])
+                dy = np.asfortranarray(body.aero_disps[scenario.id][1::3])
+                dz = np.asfortranarray(body.aero_disps[scenario.id][2::3])
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             if "rigid" in body.motion_type and body.transfer is not None:
                 self.fun3d_flow.input_rigid_transform(body.rigid_transform, body=ibody)
@@ -890,9 +890,9 @@ class Fun3dInterface(SolverInterface):
                     body.aero_loads = np.zeros(
                         3 * body.aero_nnodes, dtype=TransferScheme.dtype
                     )
-                    body.aero_loads[0::3] = fx[:]
-                    body.aero_loads[1::3] = fy[:]
-                    body.aero_loads[2::3] = fz[:]
+                    body.aero_loads[scenario.id][0::3] = fx[:]
+                    body.aero_loads[scenario.id][1::3] = fy[:]
+                    body.aero_loads[scenario.id][2::3] = fz[:]
 
                 if body.thermal_transfer is not None:
                     cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
