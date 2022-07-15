@@ -169,6 +169,8 @@ Shape parameterization is added by creating a new body class that subclasses the
 See :class:`~massoud_body.MassoudBody` for an example.
 The driver adds the details for the transfer scheme. See :class:`~funtofem_driver.FUNtoFEMDriver`.
 
+The aero_loads array is of size 3 x aero_nnodes.
+
 .. figure:: images/body.png
 
 .. currentmodule:: pyfuntofem.body
@@ -211,6 +213,7 @@ The driver adds the details for the transfer scheme. See :class:`~funtofem_drive
    "self.rigid_transform", "None", "Body transformation scheme"
    "self.aero_disps", "None", "Aerodynamic displacements"
    "self.aero_forces", "None", "Aerodynamic forces"
+   "self.aero_loads", "None", "Aerodynamic loads"
    "self.struct_temps", "None", "Structural temperature"
    "self.struct_heat_flux", "None", "Structural heat flux"
    "self.aero_temps", "None", "Aerodynamic temperature"

@@ -34,7 +34,8 @@ class Fun3dInterface(SolverInterface):
     """
     FUNtoFEM interface class for FUN3D. Works for both steady and unsteady analysis.
     Requires the FUN3D directory structure.
-    During the forward analysis, the FUN3D interface will operate in the scenario.name/Flow directory and scenario.name/Adjoint directory for the adjoint.
+    During the forward analysis, the FUN3D interface will operate in the scenario.name/Flow directory and 
+    scenario.name/Adjoint directory for the adjoint.
 
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
@@ -52,8 +53,10 @@ class Fun3dInterface(SolverInterface):
         adjoint_options=None,
     ):
         """
-        The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
-        The surface mesh on each processor only holds it's owned nodes. Transfer of that data to other processors is handled inside the FORTRAN side of FUN3D's FUNtoFEM interface.
+        The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface 
+        mesh, body.aero_X and body.aero_nnodes.
+        The surface mesh on each processor only holds it's owned nodes. Transfer of that data to other processors 
+        is handled inside the FORTRAN side of FUN3D's FUNtoFEM interface.
 
         Parameters
         ----------
@@ -62,7 +65,8 @@ class Fun3dInterface(SolverInterface):
         model: :class:`FUNtoFEMmodel`
             FUNtoFEM model. This instantiatio
         flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since 
+            FUN3D currently uses a different adjoint formulation than FUNtoFEM.
         """
 
         self.comm = comm
@@ -127,7 +131,8 @@ class Fun3dInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies to either get new surface meshes from or to set the original mesh in
         first_pass: bool
-            When extracting the mesh, first_pass is set to True. Otherwise, the new mesh will be set in for bodies with shape parameterizations
+            When extracting the mesh, first_pass is set to True. Otherwise, the new mesh will be set in 
+            for bodies with shape parameterizations
 
         Returns
         -------
@@ -288,7 +293,8 @@ class Fun3dInterface(SolverInterface):
     def set_functions(self, scenario, bodies):
         """
         Set the function definitions into FUN3D using the design interface.
-        Since FUNtoFEM only allows single discipline functions, the FUN3D composite function is the same as the component.
+        Since FUNtoFEM only allows single discipline functions, the FUN3D composite 
+        function is the same as the component.
 
         Parameters
         ----------
@@ -340,7 +346,8 @@ class Fun3dInterface(SolverInterface):
         Set the aerodynamic variable definitions into FUN3D using the design interface.
         FUN3D expects 6 global variables (Mach number, AOA, yaw, etc.) that are stored in the scenario.
         It also expects a set of rigid motion variables for each body that are stored in the body.
-        If the body has been specific as *motion_driver(i)='funtofem'*, the rigid motion variables will not affect the body's movement but must be passed regardless.
+        If the body has been specific as *motion_driver(i)='funtofem'*, the rigid motion variables will 
+        not affect the body's movement but must be passed regardless.
 
         Parameters
         ----------
@@ -517,9 +524,9 @@ class Fun3dInterface(SolverInterface):
                 and body.aero_nnodes > 0
                 and body.transfer is not None
             ):
-                dx = np.asfortranarray(body.aero_disps[0::3])
-                dy = np.asfortranarray(body.aero_disps[1::3])
-                dz = np.asfortranarray(body.aero_disps[2::3])
+                dx = np.asfortranarray(body.aero_disps[scenario.id][0::3])
+                dy = np.asfortranarray(body.aero_disps[scenario.id][1::3])
+                dz = np.asfortranarray(body.aero_disps[scenario.id][2::3])
 
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             if "rigid" in body.motion_type and body.transfer is not None:
@@ -542,7 +549,7 @@ class Fun3dInterface(SolverInterface):
         # Pull out the forces from FUN3D
         for ibody, body in enumerate(bodies, 1):
             if body.transfer is not None:
-                body.aero_loads = np.zeros(
+                body.aero_loads[scenario.id] = np.zeros(
                     3 * body.aero_nnodes, dtype=TransferScheme.dtype
                 )
 
@@ -560,11 +567,11 @@ class Fun3dInterface(SolverInterface):
                         body.aero_nnodes, body=ibody
                     )
 
-                    body.aero_loads[0::3] = self.qinf * fx[:]
-                    body.aero_loads[1::3] = self.qinf * fy[:]
-                    body.aero_loads[2::3] = self.qinf * fz[:]
+                    body.aero_loads[scenario.id][0::3] = self.qinf * fx[:]
+                    body.aero_loads[scenario.id][1::3] = self.qinf * fy[:]
+                    body.aero_loads[scenario.id][2::3] = self.qinf * fz[:]
 
-                    if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads)), flush=True)
+                    if (self.comm.Get_rank() == 0): print("Mean aero_loads = {}\n".format(np.mean(body.aero_loads[scenario.id])), flush=True)
 
                 if body.thermal_transfer is not None:
                     cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
@@ -853,9 +860,9 @@ class Fun3dInterface(SolverInterface):
                 and body.aero_nnodes > 0
                 and body.transfer is not None
             ):
-                dx = np.asfortranarray(body.aero_disps[0::3])
-                dy = np.asfortranarray(body.aero_disps[1::3])
-                dz = np.asfortranarray(body.aero_disps[2::3])
+                dx = np.asfortranarray(body.aero_disps[scenario.id][0::3])
+                dy = np.asfortranarray(body.aero_disps[scenario.id][1::3])
+                dz = np.asfortranarray(body.aero_disps[scenario.id][2::3])
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             if "rigid" in body.motion_type and body.transfer is not None:
                 self.fun3d_flow.input_rigid_transform(body.rigid_transform, body=ibody)
@@ -883,9 +890,9 @@ class Fun3dInterface(SolverInterface):
                     body.aero_loads = np.zeros(
                         3 * body.aero_nnodes, dtype=TransferScheme.dtype
                     )
-                    body.aero_loads[0::3] = fx[:]
-                    body.aero_loads[1::3] = fy[:]
-                    body.aero_loads[2::3] = fz[:]
+                    body.aero_loads[scenario.id][0::3] = fx[:]
+                    body.aero_loads[scenario.id][1::3] = fy[:]
+                    body.aero_loads[scenario.id][2::3] = fz[:]
 
                 if body.thermal_transfer is not None:
                     cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(

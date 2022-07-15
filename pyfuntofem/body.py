@@ -434,7 +434,7 @@ class Body(Base):
 
     def add_variable(self, vartype, var):
         """
-        Add a new variable to the body's variable dictionary
+        Add a new variable to the body's variable dictionary.
 
         Parameters
         ----------
@@ -449,7 +449,12 @@ class Body(Base):
 
     def initialize_variables(self, scenario):
         """
-        Initialie the variables each time we run an analysis
+        Initialie the variables each time we run an analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
 
         # We re-initialize aitken acceleration every time
@@ -504,7 +509,12 @@ class Body(Base):
 
     def initalize_adjoint_variables(self, scenario):
         """
-        Initialize the adjoint variables for the body
+        Initialize the adjoint variables for the body.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
 
         if body.transfer is not None:
@@ -569,7 +579,14 @@ class Body(Base):
 
     def get_aero_disps(self, scenario, time_index=0):
         """
-        Get the displacements on the aerodynamic surface for the given scenario
+        Get the displacements on the aerodynamic surface for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
         """
         if self.transfer is not None:
             if scenario.steady:
@@ -581,7 +598,14 @@ class Body(Base):
 
     def get_struct_disps(self, scenario, time_index=0):
         """
-        Get the displacements on the aerodynamic surface for the given scenario
+        Get the displacements on the structure for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
         """
         if self.transfer is not None:
             if scenario.steady:
@@ -593,7 +617,14 @@ class Body(Base):
 
     def get_aero_loads(self, scenario, time_index=0):
         """
-        Get the displacements on the aerodynamic surface for the given scenario
+        Get the loads on the aerodynamic surface for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
         """
         if self.transfer is not None:
             if scenario.steady:
@@ -605,7 +636,14 @@ class Body(Base):
 
     def get_struct_loads(self, scenario, time_index=0):
         """
-        Get the displacements on the aerodynamic surface for the given scenario
+        Get the loads on the structure for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
         """
         if self.transfer is not None:
             if scenario.steady:
@@ -616,16 +654,80 @@ class Body(Base):
             return None
 
     def get_aero_temps(self, scenario, time_index=0):
-        return None
+        """
+        Get the temperatures on the aerodynamic surface for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.aero_temps[scenario.id]
+            else:
+                return self.aero_temps[scenario.id][time_index]
+        else:
+            return None
 
     def get_aero_heat_flux(self, scenario, time_index=0):
-        return None
+        """
+        Get the heat flux on the aerodynamic surface for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.aero_heat_flux[scenario.id]
+            else:
+                return self.aero_heat_flux[scenario.id][time_index]
+        else:
+            return None
 
     def get_struct_temps(self, scenario, time_index=0):
-        return None
+        """
+        Get the temperatures on the structure for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.struct_temps[scenario.id]
+            else:
+                return self.struct_temps[scenario.id][time_index]
+        else:
+            return None
 
     def get_struct_heat_flux(self, scenario, time_index=0):
-        return None
+        """
+        Get the heat flux on the structure for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+        if self.transfer is not None:
+            if scenario.steady:
+                return self.struct_heat_flux[scenario.id]
+            else:
+                return self.struct_heat_flux[scenario.id][time_index]
+        else:
+            return None
 
     def transfer_disps(self, scenario, time_index=0):
         """

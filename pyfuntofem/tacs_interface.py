@@ -423,7 +423,7 @@ class TacsSteadyInterface(SolverInterface):
                 struct_disps = body.get_struct_disps(scenario)
                 if struct_disps is not None:
                     for i in range(3):
-                        body.struct_disps[i::3] = ans_array[i::ndof]
+                        body.struct_disps[scenario.id][i::3] = ans_array[i::ndof]
 
                 # Set the structural temperature
                 struct_temps = body.get_struct_temps(scenario)
