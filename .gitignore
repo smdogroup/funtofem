@@ -13,3 +13,4 @@ lib/libtransfer_schemes.a
 *.job
 fake_interface*
 *~
+.vscode/settings.json

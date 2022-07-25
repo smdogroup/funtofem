@@ -143,7 +143,7 @@ The underlined value is solved for at each step.
 	\mathbf{\color{green}D}(\underline{\mathbf{u}_A}, \mathbf{u}_S) &= 0 \\
 	\mathbf{\color{blue}G}(\mathbf{u}_A, \underline{\mathbf{x}_G}) &= 0 \\
 	\mathbf{\color{blue}A}(\underline{\mathbf{q}}, \mathbf{x}_G) &= 0 \\
-	\mathbf{\color{blue}F}(\underline{\mathbf{f}_A}, \mathbf{q}) &= 0 \\
+	\mathbf{\color{blue}F}(\underline{\mathbf{f}_A}, \mathbf{q}, \mathbf{x}_G) &= 0 \\
 	\mathbf{\color{green}L}(\mathbf{f}_A, \underline{\mathbf{f}_S}, \mathbf{u}_S) &= 0 \\
 	\mathbf{\color{orange}S}(\mathbf{f}_S, \underline{\mathbf{u}_S}) &= 0
 	\end{align}
@@ -158,7 +158,7 @@ The order of execution in the code follows:
 	\frac{\partial \mathbf{L}^T}{\partial \mathbf{f}_S} {\psi_L} + \frac{\partial \mathbf{S}^T}{\partial \mathbf{f}_S}\psi_S &= 0 \\
 	\frac{\partial \mathbf{F}^T}{\partial \mathbf{f}_A}\psi_F + \frac{\partial \mathbf{L}^T}{\partial \mathbf{f}_A}\psi_L &= 0 \\
 	\frac{\partial \mathbf{A}^T}{\partial \mathbf{q}}\psi_A + \frac{\partial \mathbf{F}^T}{\partial \mathbf{q}}\psi_F &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{q}} \\
-	\frac{\partial \mathbf{G}^T}{\partial \mathbf{x}_G}\psi_G + \frac{\partial \mathbf{A}^T}{\partial \mathbf{x}_G}\psi_A &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{x}_G} \\
+	\frac{\partial \mathbf{G}^T}{\partial \mathbf{x}_G}\psi_G + \frac{\partial \mathbf{A}^T}{\partial \mathbf{x}_G}\psi_A + \frac{\partial \mathbf{F}^T}{\partial \mathbf{x}_G}\psi_F &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{x}_G} \\
 	\frac{\partial \mathbf{D}^T}{\partial \mathbf{u}_A}\psi_D + \frac{\partial \mathbf{G}^T}{\partial \mathbf{u}_A}\psi_G &= 0 \\
 	\frac{\partial \mathbf{S}^T}{\partial \mathbf{u}_S}\psi_S + \frac{\partial \mathbf{D}^T}{\partial \mathbf{u}_S}\psi_D + 
 	\frac{\partial \mathbf{L}^T}{\partial \mathbf{u}_S}\psi_L &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{u}_S} \\
