@@ -664,7 +664,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.aero_temps[scenario.id]
             else:
@@ -683,7 +683,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.aero_heat_flux[scenario.id]
             else:
@@ -702,7 +702,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.struct_temps[scenario.id]
             else:
@@ -721,7 +721,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.struct_heat_flux[scenario.id]
             else:
