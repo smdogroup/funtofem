@@ -99,11 +99,20 @@ jobs:
           cd $F2F_DIR;
           make ${{ matrix.INTERFACE }};
 
-      - name: Run unit tests
+      - name: Run framework test
         run: |
           echo "=============================================================";
-          echo "Running Tests";
+          echo "Running framework test";
           echo "=============================================================";
-          python3 ${GITHUB_WORKSPACE}/tests/framework/no_solver/test_framework.py;
-          python3 ${GITHUB_WORKSPACE}/tests/framework/test_with_tacs/tacs_alone.py;
-          testflo ${GITHUB_WORKSPACE}/tests/;
+          cd ${GITHUB_WORKSPACE}/tests/framework/no_solver;
+          python3 test_framework.py;
+
+      - name: Run TACS test
+        run: |
+          echo "=============================================================";
+          echo "Running framework test";
+          echo "=============================================================";
+          cd ${GITHUB_WORKSPACE}/tests/framework/test_with_tacs;
+          python3 tacs_alone.py;
+          testflo ${GITHUB_WORKSPACE}/tests/; 
+          
