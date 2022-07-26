@@ -104,5 +104,6 @@ jobs:
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";
-          python3 ${GITHUB_WORKSPACE}/tests/framework/test_framework.py;
+          python3 ${GITHUB_WORKSPACE}/tests/framework/no_solver/test_framework.py;
+          python3 ${GITHUB_WORKSPACE}/tests/framework/test_with_tacs/tacs_alone.py;
           testflo ${GITHUB_WORKSPACE}/tests/;
