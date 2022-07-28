@@ -191,6 +191,19 @@ class Body(Base):
 
         return
 
+    def set_struct_nodes(self, struct_X):
+        """
+        Set the structural node locations without changing the number of nodes or structural connectivity
+
+        Parameters
+        ----------
+        struct_X: np.ndarray
+            The structural node locations
+        """
+
+        self.struct_X[:] = struct_X[:]
+        return
+
     def initialize_aero_mesh(self, aero_X, aero_id=None):
         """
         Initialize the aerodynamic surface mesh on any processors that have an
@@ -212,6 +225,19 @@ class Body(Base):
         self.aero_nnodes = len(aero_X) // 3
         self.aero_id = aero_id
 
+        return
+
+    def set_aero_nodes(self, aero_X):
+        """
+        Set the aerodynamic node locations without changing the number of nodes or aerodynamic mesh connectivity
+
+        Parameters
+        ----------
+        aero_X: np.ndarray
+            The aerodynamic node locations
+        """
+
+        self.aero_X[:] = aero_X[:]
         return
 
     def initialize_transfer(
@@ -416,7 +442,7 @@ class Body(Base):
 
         return
 
-    def update_id(self, id):
+    def set_id(self, id):
         """
         **[model call]**
         Update the id number of the body or scenario
@@ -461,55 +487,60 @@ class Body(Base):
         self.aitken_is_initialized = False
 
         if self.transfer is not None:
+            ns = 3 * self.struct_nnodes
+            na = 3 * self.aero_nnodes
+
             if scenario.steady:
-                self.struct_loads[scenario.id] = np.zeros(
-                    3 * self.struct_nnodes, dtype=self.dtype
-                )
-                self.aero_loads[scenario.id] = np.zeros(
-                    3 * self.aero_nnodes, dtype=self.dtype
-                )
-
-                self.struct_disps[scenario.id] = np.zeros(
-                    3 * self.struct_nnodes, dtype=self.dtype
-                )
-                self.aero_disps[scenario.id] = np.zeros(
-                    3 * self.aero_nnodes, dtype=self.dtype
-                )
+                self.struct_loads[scenario.id] = np.zeros(ns, dtype=self.dtype)
+                self.aero_loads[scenario.id] = np.zeros(na, dtype=self.dtype)
+                self.struct_disps[scenario.id] = np.zeros(ns, dtype=self.dtype)
+                self.aero_disps[scenario.id] = np.zeros(na, dtype=self.dtype)
             else:
-                pass
-                # for time_index in range(scenario.steps):
-                #     self.struct_loads[scenario.id] = []
-                #     self.aero_loads[scenario.id] = []
+                id = scenario.id
+                self.struct_loads[id] = []
+                self.aero_loads[id] = []
+                self.struct_disps[id] = []
+                self.aero_disps[id] = []
 
-                #     np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
-                #     np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
-
-                #     self.struct_disps[scenario.id] = np.zeros(3 * self.struct_nnodes[scenario.id], dtype=self.dtype)
-                #     self.aero_disps[scenario.id] = np.zeros(3 * self.aero_nnodes[scenario.id], dtype=self.dtype)
+                for time_index in range(scenario.steps + 1):
+                    self.struct_loads[id].append(np.zeros(ns, dtype=self.dtype))
+                    self.aero_loads[id].append(np.zeros(na, dtype=self.dtype))
+                    self.struct_disps[id].append(np.zeros(ns, dtype=self.dtype))
+                    self.aero_disps[id].append(np.zeros(na, dtype=self.dtype))
 
         if self.thermal_transfer is not None:
-            if scenario.steady:
-                self.struct_temps[scenario.id] = np.zeros(
-                    self.struct_nnodes, dtype=self.dtype
-                )
-                self.aero_temps[scenario.id] = np.zeros(
-                    self.aero_nnodes, dtype=self.dtype
-                )
+            ns = self.struct_nnodes
+            na = self.aero_nnodes
 
-                self.struct_heat_flux[scenario.id] = np.zeros(
-                    self.struct_nnodes, dtype=self.dtype
-                )
-                self.aero_heat_flux[scenario.id] = np.zeros(
-                    self.aero_nnodes, dtype=self.dtype
-                )
+            if scenario.steady:
+                self.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=self.dtype)
+                self.aero_heat_flux[scenario.id] = np.zeros(na, dtype=self.dtype)
+                self.struct_temps[scenario.id] = np.zeros(ns, dtype=self.dtype)
+                self.aero_temps[scenario.id] = np.zeros(na, dtype=self.dtype)
             else:
-                pass
+                id = scenario.id
+                self.struct_heat_flux[id] = []
+                self.aero_heat_flux[id] = []
+                self.struct_temps[id] = []
+                self.aero_temps[id] = []
+
+                for time_index in range(scenario.steps + 1):
+                    self.struct_heat_flux[id].append(np.zeros(ns, dtype=self.dtype))
+                    self.aero_heat_flux[id].append(np.zeros(na, dtype=self.dtype))
+                    self.struct_temps[id].append(np.zeros(ns, dtype=self.dtype))
+                    self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
 
         return
 
-    def initalize_adjoint_variables(self, scenario):
+    def initialize_adjoint_variables(self, scenario):
         """
         Initialize the adjoint variables for the body.
+
+        The adjoint variables in the body are not indexed by scenario.
+        The variables are initialized once for each scenario and used until the
+        adjoint computation is completed. For each new scenario a new set of
+        adjoint variables are initialized. You cannot solve multiple adjoints for different
+        scenarios at the same time.
 
         Parameters
         ----------
@@ -517,65 +548,91 @@ class Body(Base):
             The current scenario
         """
 
-        if body.transfer is not None:
-            body.psi_L = np.zeros(
-                (body.struct_nnodes * body.xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
-            body.psi_S = np.zeros(
-                (body.struct_nnodes * body.xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
-            body.struct_rhs = np.zeros(
-                (body.struct_nnodes * body.xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
+        # Count up the number of functions for this scenario
+        nfunctions = scenario.count_adjoint_functions()
 
-            body.dLdfa = np.zeros(
-                (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-            )
-            body.dGdua = np.zeros(
-                (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-            )
-            body.psi_D = np.zeros(
-                (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-            )
+        # Allocate the adjoint variables and internal body variables required
+        ns = 3 * self.struct_nnodes
+        na = 3 * self.aero_nnodes
+        self.aero_shape_term = np.zeros((na, nfunctions), dtype=self.dtype)
+        self.struct_shape_term = np.zeros((ns, nfunctions), dtype=self.dtype)
 
-        if body.thermal_transfer is not None:
-            # Thermal terms
-            body.psi_Q = np.zeros(
-                (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
-            body.psi_T_S = np.zeros(
-                (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
-            body.struct_rhs_T = np.zeros(
-                (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-                dtype=TransferScheme.dtype,
-            )
+        if self.transfer is not None:
+            ns = 3 * self.struct_nnodes
+            na = 3 * self.aero_nnodes
 
-            body.dQdfta = np.zeros(
-                (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-            )
-            body.dQfluxdfta = np.zeros(
-                (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-            )
-            body.dAdta = np.zeros(
-                (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-            )
-            body.psi_T = np.zeros(
-                (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-            )
+            # Load transfer adjoint and right-hand-side
+            self.psi_L = np.zeros((ns, nfunctions), dtype=self.dtype)
+            self.adjL_rhs = np.zeros((ns, nfunctions), dtype=self.dtype)
 
-        body.aero_shape_term = np.zeros(
-            (body.aero_nnodes * 3, nfunctions_total), dtype=TransferScheme.dtype
-        )
-        body.struct_shape_term = np.zeros(
-            (body.struct_nnodes * body.xfer_ndof, nfunctions_total),
-            dtype=TransferScheme.dtype,
-        )
+            # Aero forces adjoint right-hand-side
+            self.psi_F = np.zeros((na, nfunctions), dtype=self.dtype)
+            self.adjF_rhs = np.zeros((na, nfunctions), dtype=self.dtype)
+
+            # Structural adjoint right-hand-side
+            self.adjS_rhs = np.zeros((ns, nfunctions), dtype=self.dtype)
+
+            # Displacement transfer adjoint and right-hand-side
+            self.psi_D = np.zeros((na, nfunctions), dtype=self.dtype)
+            self.adjD_rhs = np.zeros((na, nfunctions), dtype=self.dtype)
+
+        if self.thermal_transfer is not None:
+            ns = self.struct_nnodes
+            na = self.aero_nnodes
+
+        # if body.transfer is not None:
+        #     body.psi_L = np.zeros(
+        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+        #     body.psi_S = np.zeros(
+        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+        #     body.struct_rhs = np.zeros(
+        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+
+        #     body.dLdfa = np.zeros(
+        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+        #     )
+        #     body.dGdua = np.zeros(
+        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+        #     )
+        #     body.psi_D = np.zeros(
+        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+        #     )
+
+        # if body.thermal_transfer is not None:
+        #     # Thermal terms
+        #     body.psi_Q = np.zeros(
+        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+        #     body.psi_T_S = np.zeros(
+        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+        #     body.struct_rhs_T = np.zeros(
+        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
+        #         dtype=TransferScheme.dtype,
+        #     )
+
+        #     body.dQdfta = np.zeros(
+        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+        #     )
+        #     body.dQfluxdfta = np.zeros(
+        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+        #     )
+        #     body.dAdta = np.zeros(
+        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+        #     )
+        #     body.psi_T = np.zeros(
+        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
+        #     )
+
+        return
 
     def get_aero_disps(self, scenario, time_index=0):
         """
@@ -664,7 +721,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.aero_temps[scenario.id]
             else:
@@ -683,7 +740,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.aero_heat_flux[scenario.id]
             else:
@@ -702,7 +759,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.struct_temps[scenario.id]
             else:
@@ -721,7 +778,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.transfer is not None:
+        if self.thermal_transfer is not None:
             if scenario.steady:
                 return self.struct_heat_flux[scenario.id]
             else:
@@ -819,18 +876,28 @@ class Body(Base):
 
         return
 
+    def get_aero_loads_adjoint(self, scenario):
+        """
+        Get the aerodynamic load adjoint psi_F
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer:
+            return self.psi_F[scenario.id]
+
+        return None
+
     def transfer_loads_adjoint(self, scenario, time_index=0):
-        nfunctions = scenario.get_num_functions()
+        nfunctions = scenario.count_adjoint_functions()
 
         if self.transfer is not None:
-            # Solve for psi_L - the load transfer adjoint
-            adjL_rhs = self.adjL_rhs[scenario.id]
-            psi_L = self.psi_L[scenario.id]
-            adjF_rhs = self.adjF_rhs[scenario.id]
-            adjS_rhs = self.adjS_rhs[scenario.id]
-
             # Solve for psi_L - Note that dL/dfs is the identity matrix
-            psi_L[:] = adjL_rhs[:]
+            self.psi_L[:] = self.adjL_rhs[:]
+            self.adjL_rhs[:] = 0.0
 
             # Contribute to the force integration and structural adjoint right-hand-sides
             # from the load transfer adjoint
@@ -838,46 +905,41 @@ class Body(Base):
             temp_us = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             for k in range(nfunctions):
                 # Copy the values into contiguous memory
-                psi_Lk = psi_L[:, k].copy()
+                psi_Lk = self.psi_L[:, k].copy()
 
                 # Contribute adjF_rhs -= dL/dfa^{T} * psi_L
-                self.transfer.applydLdfaTrans(psi_Lk, temp_fa)
-                adjF_rhs[:, k] -= temp_fa
+                self.transfer.applydLdfATrans(psi_Lk, temp_fa)
+                self.adjF_rhs[:, k] -= temp_fa
 
                 # Contribute adjS_rhs -= dL/dus^{T} * psi_L
-                self.transfer.applydLdusTrans(psi_Lk, temp_us)
-                adjS_rhs[:, k] -= temp_us
+                self.transfer.applydLduSTrans(psi_Lk, temp_us)
+                self.adjS_rhs[:, k] -= temp_us
 
         return
 
     def transfer_disps_adjoint(self, scenario, step):
-        nfunctions = scenario.get_num_functions()
+        nfunctions = scenario.count_adjoint_functions()
 
         if self.transfer is not None:
-            # Solve for psi_D - the displacement transfer adjoint
-            psi_D = self.psi_D[scenario.id]
-            adjD_rhs = self.adjD_rhs[scenario.id]
-            adjS_rhs = self.adjS_rhs[scenario.id]
-
             # Solve for psi_D - Note that dD/dua is the identity matrix
-            psi_D[:] = adjD_rhs[:]
+            self.psi_D[:] = self.adjD_rhs[:]
+            self.adjD_rhs[:] = 0.0
 
-            temp = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            temp_us = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             for k in range(nfunctions):
                 # Copy the values into contiguous memory
-                psi_Dk = psi_D[:, k].copy()
+                psi_Dk = self.psi_D[:, k].copy()
 
                 # Contribute adjS_rhs -= dD/dus^{T} * psi_D
-                self.transfer.applydDdusTrans(psi_Dk, temp)
-                adjS_rhs[:, k] -= temp
+                self.transfer.applydDduSTrans(psi_Dk, temp_us)
+                self.adjS_rhs[:, k] -= temp_us
 
         return
 
     def transfer_heat_flux_adjoint(self, scenario, step):
-        nfunctions = scenario.get_num_functions()
+        nfunctions = scenario.count_adjoint_functions()
 
-        if self.thermal_transfer is not None:
-            self.psi_T = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
+        #        if self.thermal_transfer is not None:
 
         # for func in range(nfunctions):
         #     if body.thermal_transfer is not None:
@@ -910,30 +972,37 @@ class Body(Base):
         #         body.struct_rhs_T[:, func] = psi_T_product
         return
 
-    def add_coord_derivative(self, scenario, step):
+    def add_aero_coordinate_derivative(self, scenario, step, dfdx):
+        self.aero_shape_term[:] += dfdx[:]
+
+    def add_struct_coordinate_derivative(self, scenario, step, dfdx):
+        self.struct_shape_term[:] += dfdx[:]
+
+    def add_coordinate_derivative(self, scenario, step):
+        """
+        Add the coordinate derivatives for each function of interest to the aerodynamic
+        and structural surface nodes - stored in aero_shape_term and struct_shape_term, respectively.
+        """
 
         if self.transfer is not None:
             nfunctions = scenario.count_adjoint_functions()
-
-            psi_L = self.psi_L[scenario.id]
-            psi_D = self.psi_D[scenario.id]
 
             # Aerodynamic coordinate derivatives
             temp_xa = np.zeros(3 * self.aero_nnodes, dtype=self.dtype)
             temp_xs = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             for k in range(nfunctions):
-                # Load transfer term
-                psi_Lk = psi_L[:, k].copy()
+                # Load transfer terms
+                psi_Lk = self.psi_L[:, k].copy()
                 self.transfer.applydLdxA0(psi_Lk, temp_xa)
                 self.aero_shape_term[:, k] += temp_xa
 
                 self.transfer.applydLdxS0(psi_Lk, temp_xs)
                 self.struct_shape_term[:, k] += temp_xs
 
-                # Displacement transfer term
-                psi_Dk = psi_D[:, k].copy()
+                # Displacement transfer terms
+                psi_Dk = self.psi_D[:, k].copy()
                 self.transfer.applydDdxA0(psi_Dk, temp_xa)
-                body.aero_shape_term[:, k] += temp_xa
+                self.aero_shape_term[:, k] += temp_xa
 
                 self.transfer.applydDdxS0(psi_Dk, temp_xs)
                 self.struct_shape_term[:, k] += temp_xs
@@ -941,6 +1010,9 @@ class Body(Base):
         return
 
     def aitken_relax(self, scenario, tol=1e-13):
+        """
+        Perform Aitken relaxation for the displacements set in the
+        """
 
         if not self.aitken_is_initialized:
             self.theta = self.theta_init
@@ -970,6 +1042,9 @@ class Body(Base):
             self.prev_update[:] = up[:]
             struct_disps[:] = self.aitken_vec
 
+        return
+
+    def aitken_adjoint_relax(self, scenario, tol=1e-13):
         return
 
     def collect_coordinate_derivatives(self, comm, discipline, root=0):

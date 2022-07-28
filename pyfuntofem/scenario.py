@@ -99,7 +99,7 @@ class Scenario(Base):
 
         self.functions.append(function)
 
-        self.add_function_derivatives()
+        return
 
     def count_functions(self):
         """
@@ -144,7 +144,7 @@ class Scenario(Base):
         for index, _ in enumerate(self.functions):
             self.derivatives[vartype][index].append(0.0)
 
-    def update_id(self, id):
+    def set_id(self, id):
         """
         **[model call]**
         Update the id number of the scenario

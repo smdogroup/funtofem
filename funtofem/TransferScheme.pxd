@@ -25,6 +25,8 @@ cdef extern from "TransferScheme.h":
     void applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods)
     void applydLduS(const F2FScalar *vecs, F2FScalar *prods)
     void applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods)
+    void applydLdfA(const F2FScalar *vecs, F2FScalar *prods)
+    void applydLdfATrans(const F2FScalar *vecs, F2FScalar *prods)
 
     # Action of Jacobians needed for assembling gradient from adjoint variables
     void applydDdxA0(const F2FScalar *vecs, F2FScalar *prods)

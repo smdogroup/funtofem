@@ -22,8 +22,20 @@
 
 class Function(object):
     """holds component function information in FUNtoFEM"""
-    def __init__(self, name, id=0, value=0.0, start=0, stop=-1, analysis_type=None,
-                 body=-1, adjoint=True, options=None, averaging=None):
+
+    def __init__(
+        self,
+        name,
+        id=0,
+        value=0.0,
+        start=0,
+        stop=-1,
+        analysis_type=None,
+        body=-1,
+        adjoint=True,
+        options=None,
+        averaging=None,
+    ):
         """
 
         Parameters
@@ -57,19 +69,14 @@ class Function(object):
 
         ks = Function('ksFailure', analysis_type='structural', options={'ksweight':50.0})
         """
-        self.name  = name
-        self.id    = id
+        self.name = name
+        self.id = id
         self.start = start
-        self.stop  = stop
-
+        self.stop = stop
         self.averaging = averaging
 
-        self.value = value
-
-        self.scenario = None
-
         self.analysis_type = analysis_type
-
+        self.scenario = None
         self.body = body
 
         # whether or not an adjoint is required
@@ -77,3 +84,55 @@ class Function(object):
 
         # any function options or parameters to pass to the solver
         self.options = options
+
+        # Store the value of the function here
+        self.value = value
+
+        # Store the values of the derivatives w.r.t. this function
+        self.derivatives = {}
+
+        return
+
+    def zero_derivatives(self):
+        """
+        Zero all the derivative values that are currently set
+        """
+
+        for var in self.derivatives:
+            self.derivatives[var] = 0.0
+
+        return
+
+    def add_derivative(self, var, value):
+        """
+        Add the derivative value for the given variable into the array of derivative values
+
+        Parameter
+        ---------
+        var: Variable object
+            Derivative of this function w.r.t. the given variable
+        value: scalar value
+            Value of the derivative contribution
+        """
+
+        if var in self.derivatives:
+            self.derivatives[var] += value
+        else:
+            self.derivatives[var] = value
+
+        return
+
+    def get_derivative(self, var):
+        """
+        Get the derivative value stored - return 0 if not defined
+
+        Parameter
+        ---------
+        var: Variable object
+            Derivative of this function w.r.t. the given variable
+        """
+
+        if var in self.derivatives:
+            return self.derivatives[var]
+
+        return 0.0

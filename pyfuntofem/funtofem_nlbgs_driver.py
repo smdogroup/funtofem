@@ -91,8 +91,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         bodies: :class:`~body.Body`
             List of FUNtoFEM bodies.
         """
-        nfunctions = scenario.count_adjoint_functions()
-        nfunctions_total = len(scenario.functions)
 
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
@@ -282,51 +280,14 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     )
                 steps = 1000
 
-        for step in range(1, steps + 1):
-            # Transfer structural displacements and temperatures to aerodynamic surface
+        for time_index in range(1, steps + 1):
+            # Transfer displacements and temperatures
             for body in self.model.bodies:
+                body.transfer_disps(scenario, time_index)
+                body.transfer_temps(scenario, time_index)
 
-                if body.transfer is not None:
-                    body.aero_disps = np.zeros(
-                        body.aero_nnodes * 3, dtype=TransferScheme.dtype
-                    )
-                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
-
-                if body.thermal_transfer is not None:
-                    body.aero_temps = np.zeros(
-                        body.aero_nnodes, dtype=TransferScheme.dtype
-                    )
-                    body.thermal_transfer.transferTemp(
-                        body.struct_temps, body.aero_temps
-                    )
-
-                if "rigid" in body.motion_type and "deform" in body.motion_type:
-                    rotation = np.zeros(9, dtype=TransferScheme.dtype)
-                    translation = np.zeros(3, dtype=TransferScheme.dtype)
-                    u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
-                    body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
-
-                    body.transfer.transformEquivRigidMotion(
-                        body.aero_disps, rotation, translation, u
-                    )
-
-                    body.rigid_transform[:3, :3] = rotation.reshape(
-                        (
-                            3,
-                            3,
-                        ),
-                        order="F",
-                    )
-                    body.rigid_transform[:3, 3] = translation
-                    body.rigid_transform[-1, -1] = 1.0
-
-                    body.aero_disps = u.copy()
-
-                elif "rigid" in body.motion_type:
-                    transform = self.solvers["structural"].get_rigid_transform(body)
-
-            # Take a time step for the flow solver
-            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
+            # Take a step in the flow solver
+            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, time_index)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -334,26 +295,15 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print("Flow solver returned fail flag")
                 return fail
 
-            # Transfer loads and heat flux from fluid and get loads and temps on structure
+            # Transfer the loads and heat flux
             for body in self.model.bodies:
-
-                if body.transfer is not None:
-                    body.struct_loads = np.zeros(
-                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
-                    )
-                    body.transfer.transferLoads(body.aero_loads, body.struct_loads)
-
-                if body.thermal_transfer is not None:
-                    body.struct_heat_flux = np.zeros(
-                        body.struct_nnodes, dtype=TransferScheme.dtype
-                    )
-                    heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order="C")
-                    body.thermal_transfer.transferFlux(
-                        heat_flux_magnitude, body.struct_heat_flux
-                    )
+                body.transfer_loads(scenario, time_index)
+                body.transfer_heat_flux(scenario, time_index)
 
             # Take a step in the FEM model
-            fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
+            fail = self.solvers["structural"].iterate(
+                scenario, self.model.bodies, time_index
+            )
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -361,9 +311,87 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print("Structural solver returned fail flag")
                 return fail
 
-        # end solve loop
-
         return fail
+
+        #     # Transfer structural displacements and temperatures to aerodynamic surface
+        #     for body in self.model.bodies:
+
+        #         if body.transfer is not None:
+        #             body.aero_disps = np.zeros(
+        #                 body.aero_nnodes * 3, dtype=TransferScheme.dtype
+        #             )
+        #             body.transfer.transferDisps(body.struct_disps, body.aero_disps)
+
+        #         if body.thermal_transfer is not None:
+        #             body.aero_temps = np.zeros(
+        #                 body.aero_nnodes, dtype=TransferScheme.dtype
+        #             )
+        #             body.thermal_transfer.transferTemp(
+        #                 body.struct_temps, body.aero_temps
+        #             )
+
+        #         if "rigid" in body.motion_type and "deform" in body.motion_type:
+        #             rotation = np.zeros(9, dtype=TransferScheme.dtype)
+        #             translation = np.zeros(3, dtype=TransferScheme.dtype)
+        #             u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+        #             body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
+
+        #             body.transfer.transformEquivRigidMotion(
+        #                 body.aero_disps, rotation, translation, u
+        #             )
+
+        #             body.rigid_transform[:3, :3] = rotation.reshape(
+        #                 (
+        #                     3,
+        #                     3,
+        #                 ),
+        #                 order="F",
+        #             )
+        #             body.rigid_transform[:3, 3] = translation
+        #             body.rigid_transform[-1, -1] = 1.0
+
+        #             body.aero_disps = u.copy()
+
+        #         elif "rigid" in body.motion_type:
+        #             transform = self.solvers["structural"].get_rigid_transform(body)
+
+        #     # Take a time step for the flow solver
+        #     fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
+
+        #     fail = self.comm.allreduce(fail)
+        #     if fail != 0:
+        #         if self.comm.Get_rank() == 0:
+        #             print("Flow solver returned fail flag")
+        #         return fail
+
+        #     # Transfer loads and heat flux from fluid and get loads and temps on structure
+        #     for body in self.model.bodies:
+
+        #         if body.transfer is not None:
+        #             body.struct_loads = np.zeros(
+        #                 body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+        #             )
+        #             body.transfer.transferLoads(body.aero_loads, body.struct_loads)
+
+        #         if body.thermal_transfer is not None:
+        #             body.struct_heat_flux = np.zeros(
+        #                 body.struct_nnodes, dtype=TransferScheme.dtype
+        #             )
+        #             heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order="C")
+        #             body.thermal_transfer.transferFlux(
+        #                 heat_flux_magnitude, body.struct_heat_flux
+        #             )
+
+        #     # Take a step in the FEM model
+        #     fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
+
+        #     fail = self.comm.allreduce(fail)
+        #     if fail != 0:
+        #         if self.comm.Get_rank() == 0:
+        #             print("Structural solver returned fail flag")
+        #         return fail
+
+        # # end solve loop
 
     def _solve_unsteady_adjoint(self, scenario):
         """
