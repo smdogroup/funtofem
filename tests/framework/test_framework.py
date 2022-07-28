@@ -73,5 +73,4 @@ print("deriv = ", deriv)
 driver.solve_adjoint()
 
 grads = model.get_function_gradients()
-
 print(grads)
