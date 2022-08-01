@@ -887,8 +887,32 @@ class Body(Base):
         """
 
         if self.transfer:
-            return self.psi_F[scenario.id]
+            return self.psi_F
 
+        return None
+
+    def get_disp_transfer_adjoint_rhs(self, scenario):
+
+        if self.transfer:
+            return self.adjD_rhs
+
+        return None
+
+    def get_load_adjoint_rhs(self, scenario):
+
+        if self.transfer:
+            return self.adjL_rhs
+
+        return None
+
+    def get_struct_adjoint_rhs(self, scenario):
+
+        if self.transfer:
+            return self.adjS_rhs
+
+        return None
+
+    def get_struct_flux_adjoint_rhs(self, scenario):
         return None
 
     def transfer_loads_adjoint(self, scenario, time_index=0):
@@ -914,6 +938,9 @@ class Body(Base):
                 # Contribute adjS_rhs -= dL/dus^{T} * psi_L
                 self.transfer.applydLduSTrans(psi_Lk, temp_us)
                 self.adjS_rhs[:, k] -= temp_us
+
+            # Solve for the aerodynamic force adjoint
+            self.psi_F[:] = self.adjF_rhs[:]
 
         return
 

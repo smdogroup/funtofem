@@ -44,7 +44,7 @@ solvers["structural"] = TestStructuralSolver(comm, model)
 
 # L&D transfer options
 transfer_options = {
-    "analysis_type": "aerothermoelastic",
+    "analysis_type": "aeroelastic",
     "scheme": "meld",
     "thermal_scheme": "meld",
     "npts": 5,
@@ -60,6 +60,9 @@ driver.solve_forward()
 functions = model.get_functions()
 variables = model.get_variables()
 
+driver.solve_adjoint()
+grads = model.get_function_gradients()
+
 # Set the new variable values
 dh = 1e-30
 variables[0].value = variables[0].value + 1j * dh
@@ -68,9 +71,5 @@ model.set_variables(variables)
 driver.solve_forward()
 deriv = functions[0].value.imag / dh
 
-print("deriv = ", deriv)
-
-driver.solve_adjoint()
-
-grads = model.get_function_gradients()
-print(grads)
+print("complex step = ", deriv)
+print("adjoint      = ", grads[0][0])

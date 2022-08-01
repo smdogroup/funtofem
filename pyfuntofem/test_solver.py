@@ -155,10 +155,14 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for func in scenario.functions:
-            for var in self.aero_variables:
-                value = 0.0
-                func.add_derivative(var, value)
+        for findex, func in enumerate(scenario.functions):
+            for vindex, var in enumerate(self.aero_variables):
+                for body in bodies:
+                    psi_F = body.get_aero_loads_adjoint(scenario)
+
+                    if psi_F is not None:
+                        value = np.dot(psi_F[:, findex], self.c1[:, vindex])
+                        func.add_derivative(var, value)
 
         return
 
@@ -223,47 +227,14 @@ class TestAerodynamicSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
-        # We solve for all the adjoints simultaneously
-        nfunctions = scenario.count_adjoint_functions()
-
-        # if self.solver == "aerodynamic":
-        #     # Solve for the flow adjoint
-        #     for body in bodies:
-        #         psi_F = body.get_aero_loads_adjoint(scenario)
-        #         adjD_rhs = body.get
-        #         adjD_rhs = - np.dot(self.Jac1.T, psi_F)
-
-        # if self.solver == "structural":
-        #     for body in bodies:
-
-        # if self.solver == "aerodynamic":
-        #     for body in bodies:
-        #         # Perform the "analysis"
-        #         # Note that the body class expects that you will write the new
-        #         # aerodynamic loads into the aero_loads array.
-        #         aero_disps = body.get_aero_disps(scenario)
-        #         aero_loads = body.get_aero_loads(scenario)
-        #         if aero_disps is not None:
-        #             aero_loads[:] = np.dot(self.Jac1, aero_disps) + self.b1
-
-        #         # Perform the heat transfer "analysis"
-        #         aero_temps = body.get_aero_temps(scenario)
-        #         aero_flux = body.get_aero_heat_flux(scenario)
-        #         if aero_temps is not None:
-        #             aero_flux[:] = np.dot(self.Jac2, aero_temps) + self.b2
-        # else:  # The solver is a structural solver
-        #     for body in bodies:
-        #         # Perform the "analysis"
-        #         struct_loads = body.get_struct_loads(scenario)
-        #         struct_disps = body.get_struct_disps(scenario)
-        #         if struct_loads is not None:
-        #             struct_disps[:] = np.dot(self.Jac1, struct_loads) + self.b1
-
-        #         # Perform the heat transfer "analysis"
-        #         struct_flux = body.get_struct_heat_flux(scenario)
-        #         struct_temps = body.get_struct_temps(scenario)
-        #         if struct_flux is not None:
-        #             struct_temps[:] = np.dot(self.Jac2, struct_flux) + self.b2
+        for body in bodies:
+            psi_F = body.get_aero_loads_adjoint(scenario)
+            adjD_rhs = body.get_disp_transfer_adjoint_rhs(scenario)
+            if psi_F is not None:
+                for k, func in enumerate(scenario.functions):
+                    adjD_rhs[:, k] = -np.dot(self.Jac1.T, psi_F[:, k])
+                    if func.analysis_type == "aerodynamic":
+                        adjD_rhs[:, k] += self.func_coefs1
 
         fail = 0
         return fail
@@ -408,10 +379,14 @@ class TestStructuralSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for func in scenario.functions:
-            for var in self.struct_variables:
-                value = 0.0
-                func.add_derivative(var, value)
+        for findex, func in enumerate(scenario.functions):
+            for vindex, var in enumerate(self.struct_variables):
+                for body in bodies:
+                    adjS_rhs = body.get_struct_adjoint_rhs(scenario)
+
+                    if adjS_rhs is not None:
+                        value = -np.dot(adjS_rhs[:, findex], self.c1[:, vindex])
+                        func.add_derivative(var, value)
 
         return
 
@@ -474,47 +449,17 @@ class TestStructuralSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
-        # We solve for all the adjoints simultaneously
-        nfunctions = scenario.count_adjoint_functions()
+        for body in bodies:
+            adjS_rhs = body.get_struct_adjoint_rhs(scenario)
+            adjL_rhs = body.get_load_adjoint_rhs(scenario)
+            if adjS_rhs is not None:
+                for k, func in enumerate(scenario.functions):
+                    psi_S = np.dot(self.Jac1.T, adjS_rhs[:, k])
+                    if func.analysis_type == "structural":
+                        psi_S -= self.func_coefs1
 
-        # if self.solver == "aerodynamic":
-        #     # Solve for the flow adjoint
-        #     for body in bodies:
-        #         psi_F = body.get_aero_loads_adjoint(scenario)
-        #         adjD_rhs = body.get
-        #         adjD_rhs = - np.dot(self.Jac1.T, psi_F)
-
-        # if self.solver == "structural":
-        #     for body in bodies:
-
-        # if self.solver == "aerodynamic":
-        #     for body in bodies:
-        #         # Perform the "analysis"
-        #         # Note that the body class expects that you will write the new
-        #         # aerodynamic loads into the aero_loads array.
-        #         aero_disps = body.get_aero_disps(scenario)
-        #         aero_loads = body.get_aero_loads(scenario)
-        #         if aero_disps is not None:
-        #             aero_loads[:] = np.dot(self.Jac1, aero_disps) + self.b1
-
-        #         # Perform the heat transfer "analysis"
-        #         aero_temps = body.get_aero_temps(scenario)
-        #         aero_flux = body.get_aero_heat_flux(scenario)
-        #         if aero_temps is not None:
-        #             aero_flux[:] = np.dot(self.Jac2, aero_temps) + self.b2
-        # else:  # The solver is a structural solver
-        #     for body in bodies:
-        #         # Perform the "analysis"
-        #         struct_loads = body.get_struct_loads(scenario)
-        #         struct_disps = body.get_struct_disps(scenario)
-        #         if struct_loads is not None:
-        #             struct_disps[:] = np.dot(self.Jac1, struct_loads) + self.b1
-
-        #         # Perform the heat transfer "analysis"
-        #         struct_flux = body.get_struct_heat_flux(scenario)
-        #         struct_temps = body.get_struct_temps(scenario)
-        #         if struct_flux is not None:
-        #             struct_temps[:] = np.dot(self.Jac2, struct_flux) + self.b2
+                    adjS_rhs[:, k] = 0.0
+                    adjL_rhs[:, k] = -psi_S
 
         fail = 0
         return fail
