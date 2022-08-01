@@ -31,6 +31,39 @@ class TestAerodynamicSolver(SolverInterface):
         A test solver that provides the functionality that FUNtoFEM expects from
         an aerodynamic solver.
 
+        Any aerodynamic solver must provide the aerodynamic forces and area-weighted
+        heat flux at the aerodynmic surface node locations as a function of the displacements
+        and wall temperatures at those same aerodynamic surface nodes. For
+        the aerodynamic forces, this relationship is
+
+        fA = fA(uA, tA, xA0, x)
+
+        or in terms of the variable names within the code
+
+        aero_forces =  fA(aero_disps, aero_temps, aero_X, aero_dvs).
+
+        Note that there are 3 components of the force for each aerodynamic surface node.
+        For the area-weighted normal component of the heat flux, this relationship is
+
+        hA = hA(uA, tA, xA0, x)
+
+        or in terms of the variable names within the code
+
+        aero_flux = hA(aero_disps, aero_temps, aero_X, aero_dvs).
+
+        For this test solver, we substitute artifical relationships that are randomly
+        generated. These relationships have no physical significance, but reflect the
+        dependence between variables in a true solver. For the aerodynamic forces we set
+
+        aero_forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs
+
+        and for the aerodynamic heat flux we set
+
+        aero_flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs.
+
+        For the adjoint, the aerodynamic solver takes in the adjoint variables associated
+        with the force computation psi_F and returns adjD_rhs.
+
         Parameters
         ----------
         comm: MPI.comm
@@ -233,8 +266,8 @@ class TestAerodynamicSolver(SolverInterface):
             if psi_F is not None:
                 for k, func in enumerate(scenario.functions):
                     adjD_rhs[:, k] = -np.dot(self.Jac1.T, psi_F[:, k])
-                    if func.analysis_type == "aerodynamic":
-                        adjD_rhs[:, k] += self.func_coefs1
+                    # if func.analysis_type == "aerodynamic":
+                    #     adjD_rhs[:, k] += self.func_coefs1
 
         fail = 0
         return fail
@@ -247,6 +280,83 @@ class TestAerodynamicSolver(SolverInterface):
 
     def step_post(self, scenario, bodies, step):
         return 0
+
+    def test_iterate_adjoint(self, scenario, bodies, step=0, epsilon=1e-6):
+        """
+        Test to see if the adjoint methods are implemented correctly
+        """
+
+        for body in bodies:
+            body.initialize_variables(scenario)
+
+        # Comptue one step of the forward solution
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Store the output forces
+        aero_loads_list = []
+        for body in bodies:
+            # Set random values for the adjoint
+            aero_loads = body.get_aero_loads(scenario)
+            if aero_loads is not None:
+                aero_loads_list.append(aero_loads.copy())
+
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
+
+            psi_F = body.get_aero_loads_adjoint(scenario)
+            if psi_F is not None:
+                psi_F[:] = np.random.uniform(size=psi_F.shape).astype(psi_F.dtype)
+
+        # Compute one step of the adjoint
+        self.initialize_adjoint(scenario, bodies)
+        self.iterate_adjoint(scenario, bodies, step)
+        self.post_adjoint(scenario, bodies)
+
+        for body in bodies:
+            body.initialize_variables(scenario)
+
+        # Perturb the displacements
+        adjoint_product = 0.0
+        pert_list = []
+        for index, body in enumerate(bodies):
+            aero_disps = body.get_aero_disps(scenario)
+            if aero_disps is not None:
+                pert = np.random.uniform(size=aero_disps.shape)
+                aero_disps[:] += epsilon * pert
+                pert_list.append(pert)
+
+            adjD_rhs = body.get_disp_transfer_adjoint_rhs(scenario)
+            if adjD_rhs is not None:
+                adjoint_product += np.dot(adjD_rhs[:, 0], pert_list[-1])
+
+        # Sum up the result across all processors
+        adjoint_product = self.comm.allreduce(adjoint_product)
+
+        # Run the perturbed aerodynamic simulation
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Compute the finite-difference approximation
+        fd_product = 0.0
+        for body in bodies:
+            aero_loads = body.get_aero_loads(scenario)
+            psi_F = body.get_aero_loads_adjoint(scenario)
+            if aero_loads is not None and psi_F is not None:
+                aero_loads_copy = aero_loads_list.pop(0)
+                fd = (aero_loads - aero_loads_copy) / epsilon
+                fd_product -= np.dot(fd, psi_F)
+
+        # Compute the finite-differenc approximation
+        fd_product = self.comm.allreduce(fd_product)
+
+        if self.comm.rank == 0:
+            print("FUNtoFEM adjoint result:           ", adjoint_product)
+            print("FUNtoFEM finite-difference result: ", fd_product)
+
+        return
 
 
 class TestStructuralSolver(SolverInterface):
@@ -472,3 +582,80 @@ class TestStructuralSolver(SolverInterface):
 
     def step_post(self, scenario, bodies, step):
         return 0
+
+    def test_iterate_adjoint(self, scenario, bodies, step=0, epsilon=1e-6):
+        """
+        Test to see if the adjoint methods are implemented correctly
+        """
+
+        for body in bodies:
+            body.initialize_variables(scenario)
+
+        # Comptue one step of the forward solution
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Store the output forces
+        aero_loads_list = []
+        for body in bodies:
+            # Set random values for the adjoint
+            aero_loads = body.get_aero_loads(scenario)
+            if aero_loads is not None:
+                aero_loads_list.append(aero_loads.copy())
+
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
+
+            psi_F = body.get_aero_loads_adjoint(scenario)
+            if psi_F is not None:
+                psi_F[:] = np.random.uniform(size=psi_F.shape).astype(psi_F.dtype)
+
+        # Compute one step of the adjoint
+        self.initialize_adjoint(scenario, bodies)
+        self.iterate_adjoint(scenario, bodies, step)
+        self.post_adjoint(scenario, bodies)
+
+        for body in bodies:
+            body.initialize_variables(scenario)
+
+        # Perturb the displacements
+        adjoint_product = 0.0
+        pert_list = []
+        for index, body in enumerate(bodies):
+            aero_disps = body.get_aero_disps(scenario)
+            if aero_disps is not None:
+                pert = np.random.uniform(size=aero_disps.shape)
+                aero_disps[:] += epsilon * pert
+                pert_list.append(pert)
+
+            adjD_rhs = body.get_disp_transfer_adjoint_rhs(scenario)
+            if adjD_rhs is not None:
+                adjoint_product += np.dot(adjD_rhs[:, 0], pert_list[-1])
+
+        # Sum up the result across all processors
+        adjoint_product = self.comm.allreduce(adjoint_product)
+
+        # Run the perturbed aerodynamic simulation
+        self.initialize(scenario, bodies)
+        self.iterate(scenario, bodies, step)
+        self.post(scenario, bodies)
+
+        # Compute the finite-difference approximation
+        fd_product = 0.0
+        for body in bodies:
+            aero_loads = body.get_aero_loads(scenario)
+            psi_F = body.get_aero_loads_adjoint(scenario)
+            if aero_loads is not None and psi_F is not None:
+                aero_loads_copy = aero_loads_list.pop(0)
+                fd = (aero_loads - aero_loads_copy) / epsilon
+                fd_product -= np.dot(fd, psi_F)
+
+        # Compute the finite-differenc approximation
+        fd_product = self.comm.allreduce(fd_product)
+
+        if self.comm.rank == 0:
+            print("FUNtoFEM adjoint result:           ", adjoint_product)
+            print("FUNtoFEM finite-difference result: ", fd_product)
+
+        return
