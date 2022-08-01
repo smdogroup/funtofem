@@ -1,8 +1,8 @@
 #ifndef MELDTHERMAL_H
 #define MELDTHERMAL_H
 
-#include "mpi.h"
 #include "TransferScheme.h"
+#include "mpi.h"
 
 /*
   MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
@@ -26,11 +26,8 @@
 class MELDThermal : public TransferScheme {
  public:
   // Constructor
-  MELDThermal( MPI_Comm all,
-	       MPI_Comm structure, int _struct_root,
-	       MPI_Comm aero, int _aero_root,
-	       int _isymm, int num_nearest,
-	       F2FScalar beta );
+  MELDThermal(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
+              int _aero_root, int _isymm, int num_nearest, F2FScalar beta);
 
   // Destructor
   ~MELDThermal();
@@ -43,10 +40,8 @@ class MELDThermal : public TransferScheme {
   void setAeroNodes(const F2FScalar *aero_X, int aero_nnodes);
 
   // Temperature and flux transfers
-  void transferTemp(const F2FScalar *struct_temp,
-                     F2FScalar *aero_temp);
-  void transferFlux(const F2FScalar *aero_flux,
-                    F2FScalar *struct_flux);
+  void transferTemp(const F2FScalar *struct_temp, F2FScalar *aero_temp);
+  void transferFlux(const F2FScalar *aero_flux, F2FScalar *struct_flux);
 
   // Action of transpose Jacobians needed for solving adjoint system
   void applydTdtS(const F2FScalar *vecs, F2FScalar *prods);
@@ -56,35 +51,33 @@ class MELDThermal : public TransferScheme {
 
   // Test Functions
   void testFluxTransfer(const F2FScalar *struct_temps,
-                        const F2FScalar *aero_flux,
-                        const F2FScalar *pert,
+                        const F2FScalar *aero_flux, const F2FScalar *pert,
                         const F2FScalar h);
   void testTempJacVecProducts(const F2FScalar *struct_temps,
                               const F2FScalar *test_vec_a,
-                              const F2FScalar *test_vec_s,
-                              const F2FScalar h);
+                              const F2FScalar *test_vec_s, const F2FScalar h);
   void testFluxJacVecProducts(const F2FScalar *struct_temps,
                               const F2FScalar *aero_flux,
                               const F2FScalar *test_vec_s1,
-                              const F2FScalar *test_vec_s2,
-                              const F2FScalar h);
+                              const F2FScalar *test_vec_s2, const F2FScalar h);
 
-  // Inherited Displacement and Load Transfer functions (NOT implemented for Thermal MELD scheme)
-  void transferDisps(const F2FScalar*, F2FScalar*){}
-  void transferLoads(const F2FScalar*, F2FScalar*){}
-  void applydDduS(const F2FScalar*, F2FScalar*){}
-  void applydDduSTrans(const F2FScalar*, F2FScalar*){}
-  void applydLduS(const F2FScalar*, F2FScalar*){}
-  void applydLduSTrans(const F2FScalar*, F2FScalar*){}
-  void applydDdxA0(const F2FScalar*, F2FScalar*){}
-  void applydDdxS0(const F2FScalar*, F2FScalar*){}
-  void applydLdxA0(const F2FScalar*, F2FScalar*){}
-  void applydLdxS0(const F2FScalar*, F2FScalar*){}
+  // Inherited Displacement and Load Transfer functions (NOT implemented for
+  // Thermal MELD scheme)
+  void transferDisps(const F2FScalar *, F2FScalar *) {}
+  void transferLoads(const F2FScalar *, F2FScalar *) {}
+  void applydDduS(const F2FScalar *, F2FScalar *) {}
+  void applydDduSTrans(const F2FScalar *, F2FScalar *) {}
+  void applydLduS(const F2FScalar *, F2FScalar *) {}
+  void applydLduSTrans(const F2FScalar *, F2FScalar *) {}
+  void applydDdxA0(const F2FScalar *, F2FScalar *) {}
+  void applydDdxS0(const F2FScalar *, F2FScalar *) {}
+  void applydLdxA0(const F2FScalar *, F2FScalar *) {}
+  void applydLdxS0(const F2FScalar *, F2FScalar *) {}
 
  protected:
   // Local structural data
   int ns_local;
-  F2FScalar* Xs_local;
+  F2FScalar *Xs_local;
 
   // Symmetry specifier
   int isymm;
@@ -93,9 +86,9 @@ class MELDThermal : public TransferScheme {
   int mesh_update;
 
   // Data for the connectivity and weighting
-  int nn; // number of nearest nodes
-  F2FScalar global_beta; // weighting decay parameter
-  int *global_conn; // Connectivity for each thermal node
+  int nn;                 // number of nearest nodes
+  F2FScalar global_beta;  // weighting decay parameter
+  int *global_conn;       // Connectivity for each thermal node
 
   // Data for thermal transfer
   F2FScalar *global_W;
@@ -105,12 +98,14 @@ class MELDThermal : public TransferScheme {
 
   // Parallel movement of structural vectors
   void distributeStructuralMesh();
-  void collectStructuralVector(const F2FScalar *local, F2FScalar *global, int vars_per_node=3);
-  void distributeStructuralVector(F2FScalar *global, F2FScalar *local, int vars_per_node=3);
+  void collectStructuralVector(const F2FScalar *local, F2FScalar *global,
+                               int vars_per_node = 3);
+  void distributeStructuralVector(F2FScalar *global, F2FScalar *local,
+                                  int vars_per_node = 3);
 
   // Auxiliary functions for creating connectivity and weighting
   void setAeroStructConn(int *aerostruct_conn);
   void computeWeights(F2FScalar *W);
 };
 
-#endif //MELDTHERMAL_H
+#endif  // MELDTHERMAL_H

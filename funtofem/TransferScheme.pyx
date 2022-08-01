@@ -187,6 +187,43 @@ cdef class pyTransferScheme:
         self.ptr.applydLduSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
         return
 
+    def applydLdfA(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the load
+        transfer residuals with respect to the aerodynamic forces to an
+        input vector and store the products in empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of aerodynamic forces
+        p: ndarray
+            One-dimensional empty array of size of structural loads
+
+        """
+        self.ptr.applydLdfA(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydLdfATrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the load transfer residuals with respect to the
+        aerodynamic forces to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural loads
+        p: ndarray
+            One-dimensional empty array of size of aerodynamic forces
+
+        """
+        self.ptr.applydLdfATrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
     def applydDdxA0(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
                     np.ndarray[F2FScalar, ndim=1, mode='c'] p):
         """

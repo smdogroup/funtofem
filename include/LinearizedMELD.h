@@ -11,8 +11,7 @@ class LinearizedMELD : public MELD {
  public:
   // Constructor
   LinearizedMELD(MPI_Comm all, MPI_Comm structure, int struct_root,
-                 MPI_Comm aero, int aero_root, int num_nearest, 
-                 F2FScalar beta);
+                 MPI_Comm aero, int aero_root, int num_nearest, F2FScalar beta);
 
   // Destructor
   ~LinearizedMELD();
@@ -21,10 +20,8 @@ class LinearizedMELD : public MELD {
   void initialize();
 
   // Load and displacement transfers
-  void transferDisps(const F2FScalar *struct_disps,
-                             F2FScalar *aero_disps);
-  void transferLoads(const F2FScalar *aero_loads,
-                             F2FScalar *struct_loads);
+  void transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps);
+  void transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads);
 
   // Action of transpose Jacobians needed for solving adjoint system
   void applydDduS(const F2FScalar *vecs, F2FScalar *prods);
@@ -46,11 +43,9 @@ class LinearizedMELD : public MELD {
   void computePointInertiaInverse(const F2FScalar *H, F2FScalar *Hinv);
   void computeDispContribution(const F2FScalar w, const F2FScalar *r,
                                const F2FScalar *Hinv, const F2FScalar *q,
-                               const F2FScalar *us,
-                               F2FScalar *ua);
-  void computeLoadContribution(const F2FScalar w, const F2FScalar *q, 
-                               const F2FScalar *Hinv, const F2FScalar *r, 
-                               const F2FScalar *fa,
-                               F2FScalar *fj);
+                               const F2FScalar *us, F2FScalar *ua);
+  void computeLoadContribution(const F2FScalar w, const F2FScalar *q,
+                               const F2FScalar *Hinv, const F2FScalar *r,
+                               const F2FScalar *fa, F2FScalar *fj);
 };
-#endif //LINEARIZEDMELD_H
+#endif  // LINEARIZEDMELD_H

@@ -230,28 +230,22 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
-    def get_function_gradients(self, scenario, bodies, offset):
+    def eval_function_gradients(self, scenario, bodies, offset):
         """
         Get the gradients of the functions of interest
         """
+
+        # Broadcast the gradients to all processors
+        self.func_grad = self.comm.bcast(self.func_grad, root=0)
+
         for ifunc, func in enumerate(scenario.functions):
             for body in bodies:
-                for vartype in body.variables:
-                    if vartype == "structural":
-                        for i, var in enumerate(body.variables[vartype]):
-                            if var.active:
-                                if self.tacs_proc and self.tacs_comm.rank == 0:
-                                    body.derivatives[vartype][offset + ifunc][
-                                        i
-                                    ] = self.func_grad[ifunc][i]
-
-                                # Do we have to broadcast for every single variable? This
-                                # should be in an outer loop.
-                                body.derivatives[vartype][offset + ifunc][
-                                    i
-                                ] = self.comm.bcast(
-                                    body.derivatives[vartype][offset + ifunc][i], root=0
-                                )
+                if not strtype in body.variables:
+                    continue
+                for i, var in enumerate(body.variables[strtype]):
+                    if not var.active:
+                        continue
+                    body.set_derivative(func, strtype, var, self.func_grad[ifunc][i])
 
         return
 
@@ -294,10 +288,12 @@ class TacsSteadyInterface(SolverInterface):
                 xptsens.beginSetValues(TACS.ADD_VALUES)
                 xptsens.endSetValues(TACS.ADD_VALUES)
 
+            # Need to clean up the use of body.struct_shape_term here -
+            # it should be accessed via an accessor or added using a member function
             for func, xptsens in enumerate(self.xptsenslist):
                 for body in bodies:
-                    if body.shape:
-                        body.struct_shape_term[:, func] = xptsens.getArray()
+                    if body.shape is not None:
+                        body.struct_shape_term[:, func] += xptsens.getArray()
 
         return
 

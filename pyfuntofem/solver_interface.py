@@ -19,10 +19,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class SolverInterface(object):
     """
     A base class to define what functions solver interfaces in FUNtoFEM need
     """
+
     def __init__(self, *args, **kwargs):
         """
         The solver constructor is required to set discipline node locations (either :math:`x_a` or :math:`x_s`) in the funtofem body class as ``body.aero_X`` or ``body.struct_X``. The constructor can be used flexibly for other discipline solver specific activities (e.g. solver instantiation, reading mesh, allocating solver data).
@@ -47,15 +49,10 @@ class SolverInterface(object):
         """
         pass
 
-
-
-
-
-
-
     """
     A base class to define what functions solver interfaces in FUNtoFEM need
     """
+
     def set_variables(self, scenario, bodies):
         """
         Set the design variables into the solver.
@@ -76,7 +73,7 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-           for ibody,body in enumerate(bodies):
+           for ibody, body in enumerate(bodies):
                if 'structural' in body.variables:
                    for var in body.variables['structural']:
                        solver.set_body_variable(ibody, var.value)
@@ -132,7 +129,7 @@ class SolverInterface(object):
     def get_functions(self, scenario, bodies):
         """
         Put the function values from the solver in the value attribute of the scneario's functions.
-        The scenario has the list of function objects where the function's owned by this solver will be set.
+        The scenario has the list of function objects where the functions owned by this solver will be set.
         You can evaluate the functions based on the name or based on the functions set during :func:`~solver_interface.SolverInterface.set_functions`.
         The solver is only responsible for returning the values of functions it owns.
 
@@ -152,14 +149,14 @@ class SolverInterface(object):
            for func in scenario.functions:
 
                # Set the structural functions in
-               if function.analysis_type=='structural':
-                   if function.name == 'mass':
-                       function.value = solver.evaluate_mass()
-                   elif function.name == 'ksfailure':
-                       function.value = solver.get_ksfailure()
-                   elif function.name == 'ksfailure':
-                       function.value = solver.get_ksfailure()
-                   else function.name == 'ksfailure':
+               if func.analysis_type == 'structural':
+                   if func.name == 'mass':
+                       func.value = solver.evaluate_mass()
+                   elif func.name == 'ksfailure':
+                       func.value = solver.get_ksfailure()
+                   elif func.name == 'ksfailure':
+                       func.value = solver.get_ksfailure()
+                   else:
                        print("Unknown structural function in get_functions")
 
         """
@@ -192,7 +189,7 @@ class SolverInterface(object):
                     if vartype == 'aerodynamic':
                         for i, var in enumerate(scenario.variables[vartype]):
                             if var.active:
-                                scenario.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id,var.id)
+                                scenario.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id, var.id)
 
         Structural Solver:
 
@@ -204,7 +201,7 @@ class SolverInterface(object):
                         if vartype == 'structural':
                             for i, var in enumerate(body.variables[vartype]):
                                 if var.active:
-                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(func,ibody,i)
+                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(func, ibody, i)
         """
         pass
 
@@ -314,7 +311,7 @@ class SolverInterface(object):
         #. Solve for the new aerodynamic state :math:`q`
         #. Integrate and localize aerodynamic surface forces :math:`f_a` at aerodynamic surface node locations and set in the funtofem body object ``body.aero_loads``
 
-        For a structural solver: 
+        For a structural solver:
 
         #. Obtain the forces at structural nodes :math:`f_s` from funtofem body objects ``body.struct_loads``
         #. Solve for new displacement state :math:`u_s`
