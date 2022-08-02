@@ -203,14 +203,14 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
-            for vindex, var in enumerate(self.aero_variables):
-                for body in bodies:
-                    psi_F = body.get_aero_loads_adjoint(scenario)
+        # for findex, func in enumerate(scenario.functions):
+        #     for vindex, var in enumerate(self.aero_variables):
+        # for body in bodies:
+        #     psi_F = body.get_aero_loads_adjoint(scenario)
 
-                    if psi_F is not None:
-                        value = np.dot(psi_F[:, findex], self.c1[:, vindex])
-                        func.add_derivative(var, value)
+        #     if psi_F is not None:
+        #         value = np.dot(psi_F[:, findex], self.c1[:, vindex])
+        #         func.add_derivative(var, value)
 
         return
 
@@ -541,14 +541,14 @@ class TestStructuralSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
-            for vindex, var in enumerate(self.struct_variables):
-                for body in bodies:
-                    adjS_rhs = body.get_struct_adjoint_rhs(scenario)
+        # for findex, func in enumerate(scenario.functions):
+        #     for vindex, var in enumerate(self.struct_variables):
+        #         for body in bodies:
+        #             adjS_rhs = body.get_struct_adjoint_rhs(scenario)
 
-                    if adjS_rhs is not None:
-                        value = -np.dot(adjS_rhs[:, findex], self.c1[:, vindex])
-                        func.add_derivative(var, value)
+        #             if adjS_rhs is not None:
+        #                 value = -np.dot(adjS_rhs[:, findex], self.c1[:, vindex])
+        #                 func.add_derivative(var, value)
 
         return
 
