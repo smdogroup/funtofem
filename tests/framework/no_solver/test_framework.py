@@ -44,7 +44,7 @@ solvers["structural"] = TestStructuralSolver(comm, model)
 
 # L&D transfer options
 transfer_options = {
-    "analysis_type": "aeroelastic",
+    "analysis_type": "aerothermal",
     "scheme": "meld",
     "thermal_scheme": "meld",
     "npts": 5,
@@ -53,29 +53,30 @@ transfer_options = {
 # instantiate the driver
 driver = FUNtoFEMnlbgs(solvers, comm, comm, 0, comm, 0, transfer_options, model=model)
 
-# Solve the forward analysis
-# driver.solve_forward()
-# driver.solve_adjoint()
-
+# Manual test of the disciplinary solvers
 scenario = model.scenarios[0]
 bodies = model.bodies
 solvers["flow"].test_iterate_adjoint(scenario, bodies)
 solvers["structural"].test_iterate_adjoint(scenario, bodies)
 
-# # Get the functions
-# functions = model.get_functions()
-# variables = model.get_variables()
+# Solve the forward analysis
+driver.solve_forward()
+driver.solve_adjoint()
 
-# driver.solve_adjoint()
-# grads = model.get_function_gradients()
+# Get the functions
+functions = model.get_functions()
+variables = model.get_variables()
 
-# # Set the new variable values
-# dh = 1e-30
-# variables[0].value = variables[0].value + 1j * dh
-# model.set_variables(variables)
+driver.solve_adjoint()
+grads = model.get_function_gradients()
 
-# driver.solve_forward()
-# deriv = functions[0].value.imag / dh
+# Set the new variable values
+dh = 1e-30
+variables[0].value = variables[0].value + 1j * dh
+model.set_variables(variables)
 
-# print("complex step = ", deriv)
-# print("adjoint      = ", grads[0][0])
+driver.solve_forward()
+deriv = functions[0].value.imag / dh
+
+print("complex step = ", deriv)
+print("adjoint      = ", grads[0][0])
