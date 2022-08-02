@@ -294,42 +294,62 @@ class TestAerodynamicSolver(SolverInterface):
         self.iterate(scenario, bodies, step)
         self.post(scenario, bodies)
 
-        # Store the output forces
+        # Save the output forces and heat fluxes
         aero_loads_list = []
+        aero_flux_list = []
         for body in bodies:
-            # Set random values for the adjoint
             aero_loads = body.get_aero_loads(scenario)
             if aero_loads is not None:
                 aero_loads_list.append(aero_loads.copy())
 
+            aero_flux = body.get_aero_heat_flux(scenario)
+            if aero_loads is not None:
+                aero_flux_list.append(aero_flux.copy())
+
+        # Initialize the bodies for the adjoint computation
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
-            psi_F = body.get_aero_loads_adjoint(scenario)
-            if psi_F is not None:
-                psi_F[:] = np.random.uniform(size=psi_F.shape).astype(psi_F.dtype)
+            psi_L = body.get_aero_loads_adjoint(scenario)
+            if psi_L is not None:
+                psi_L[:] = np.random.uniform(size=psi_L.shape).astype(psi_L.dtype)
+
+            psi_Q = body.get_aero_flux_adjoint(scenario)
+            if psi_Q is not None:
+                psi_Q[:] = np.random.uniform(size=psi_Q.shape).astype(psi_Q.dtype)
 
         # Compute one step of the adjoint
         self.initialize_adjoint(scenario, bodies)
         self.iterate_adjoint(scenario, bodies, step)
         self.post_adjoint(scenario, bodies)
 
+        # Perturb the displacements and surface temperatures
+        adjoint_product = 0.0
+        disp_pert_list = []
+        temp_pert_list = []
         for body in bodies:
             body.initialize_variables(scenario)
 
-        # Perturb the displacements
-        adjoint_product = 0.0
-        pert_list = []
-        for index, body in enumerate(bodies):
             aero_disps = body.get_aero_disps(scenario)
             if aero_disps is not None:
                 pert = np.random.uniform(size=aero_disps.shape)
                 aero_disps[:] += epsilon * pert
-                pert_list.append(pert)
+                disp_pert_list.append(pert)
 
-            adjD_rhs = body.get_disp_transfer_adjoint_rhs(scenario)
-            if adjD_rhs is not None:
-                adjoint_product += np.dot(adjD_rhs[:, 0], pert_list[-1])
+            aero_temps = body.get_aero_temps(scenario)
+            if aero_flux is not None:
+                pert = np.random.uniform(size=aero_temps.shape)
+                aero_temps[:] += epsilon * pert
+                temp_pert_list.append(pert)
+
+            # Take the dot-product with the exact adjoint computation
+            dfdxA0 = body.get_aero_coordinate_sensitivity(scenario)
+            if dfdxA0 is not None:
+                adjoint_product += np.dot(dfdxA0[:, 0], disp_pert_list[-1])
+
+            dfdtA = body.get_aero_temp_sensitivity(scenario)
+            if dfdtA is not None:
+                adjoint_product += np.dot(dfdtA[:, 0], temp_pert_list[-1])
 
         # Sum up the result across all processors
         adjoint_product = self.comm.allreduce(adjoint_product)
@@ -343,11 +363,18 @@ class TestAerodynamicSolver(SolverInterface):
         fd_product = 0.0
         for body in bodies:
             aero_loads = body.get_aero_loads(scenario)
-            psi_F = body.get_aero_loads_adjoint(scenario)
-            if aero_loads is not None and psi_F is not None:
+            psi_L = body.get_aero_loads_adjoint(scenario)
+            if aero_loads is not None and psi_L is not None:
                 aero_loads_copy = aero_loads_list.pop(0)
                 fd = (aero_loads - aero_loads_copy) / epsilon
-                fd_product -= np.dot(fd, psi_F)
+                fd_product -= np.dot(fd, psi_L)
+
+            aero_flux = body.get_aero_flux(scenario)
+            psi_Q = body.get_aero_heat_flux(scenario)
+            if aero_flux is not None and psi_Q is not None:
+                aero_flux_copy = aero_flux_list.pop(0)
+                fd = (aero_flux - aero_flux_copy) / epsilon
+                fd_product -= np.dot(fd, psi_L)
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)

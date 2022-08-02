@@ -580,6 +580,8 @@ class Body(Base):
             ns = self.struct_nnodes
             na = self.aero_nnodes
 
+            psi_H = np.zeros((na, nfunctions), dtype=self.dtype)
+
         # if body.transfer is not None:
         #     body.psi_L = np.zeros(
         #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
@@ -888,6 +890,18 @@ class Body(Base):
 
         if self.transfer:
             return self.psi_F
+
+        return None
+
+    def get_aero_coordinate_sensitivity(self, scenario):
+        if self.transfer:
+            return self.adjD_rhs
+
+        return None
+
+    def get_aero_temp_sensitivity(self, scenario):
+        if self.thermal_transfer is not None:
+            return something
 
         return None
 
