@@ -44,7 +44,7 @@ solvers["structural"] = TestStructuralSolver(comm, model)
 
 # L&D transfer options
 transfer_options = {
-    "analysis_type": "aeroelastic",
+    "analysis_type": "aerothermoelastic",
     "scheme": "meld",
     "thermal_scheme": "meld",
     "npts": 5,
@@ -53,8 +53,15 @@ transfer_options = {
 # instantiate the driver
 driver = FUNtoFEMnlbgs(solvers, comm, comm, 0, comm, 0, transfer_options, model=model)
 
+# Manual test of the disciplinary solvers
+scenario = model.scenarios[0]
+bodies = model.bodies
+solvers["flow"].test_iterate_adjoint(scenario, bodies)
+solvers["structural"].test_iterate_adjoint(scenario, bodies)
+
 # Solve the forward analysis
 driver.solve_forward()
+driver.solve_adjoint()
 
 # Get the functions
 functions = model.get_functions()

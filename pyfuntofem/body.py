@@ -549,88 +549,40 @@ class Body(Base):
         """
 
         # Count up the number of functions for this scenario
-        nfunctions = scenario.count_adjoint_functions()
+        nf = scenario.count_adjoint_functions()
 
         # Allocate the adjoint variables and internal body variables required
         ns = 3 * self.struct_nnodes
         na = 3 * self.aero_nnodes
-        self.aero_shape_term = np.zeros((na, nfunctions), dtype=self.dtype)
-        self.struct_shape_term = np.zeros((ns, nfunctions), dtype=self.dtype)
+        self.aero_shape_term = np.zeros((na, nf), dtype=self.dtype)
+        self.struct_shape_term = np.zeros((ns, nf), dtype=self.dtype)
 
         if self.transfer is not None:
             ns = 3 * self.struct_nnodes
             na = 3 * self.aero_nnodes
 
-            # Load transfer adjoint and right-hand-side
-            self.psi_L = np.zeros((ns, nfunctions), dtype=self.dtype)
-            self.adjL_rhs = np.zeros((ns, nfunctions), dtype=self.dtype)
+            self.struct_loads_ajp = np.zeros((ns, nf), dtype=self.dtype)
+            self.aero_loads_ajp = np.zeros((na, nf), dtype=self.dtype)
+            self.struct_disps_ajp = np.zeros((ns, nf), dtype=self.dtype)
+            self.aero_disps_ajp = np.zeros((na, nf), dtype=self.dtype)
 
-            # Aero forces adjoint right-hand-side
-            self.psi_F = np.zeros((na, nfunctions), dtype=self.dtype)
-            self.adjF_rhs = np.zeros((na, nfunctions), dtype=self.dtype)
-
-            # Structural adjoint right-hand-side
-            self.adjS_rhs = np.zeros((ns, nfunctions), dtype=self.dtype)
-
-            # Displacement transfer adjoint and right-hand-side
-            self.psi_D = np.zeros((na, nfunctions), dtype=self.dtype)
-            self.adjD_rhs = np.zeros((na, nfunctions), dtype=self.dtype)
+            # There are two contributions to the term struct_disps_ajp. We compute and
+            # store them separately and then add the contributions. These two contributions
+            # are from the displacement and load transfer, respectively and are computed in
+            # the transfer_disps_adjoint and transfer_loads_adjoint. Since they are computed
+            # at different times and we don't impose a calling order/requirement we have to
+            # store them separately.
+            self.struct_disps_ajp_disps = np.zeros((ns, nf), dtype=self.dtype)
+            self.struct_disps_ajp_loads = np.zeros((ns, nf), dtype=self.dtype)
 
         if self.thermal_transfer is not None:
             ns = self.struct_nnodes
             na = self.aero_nnodes
 
-        # if body.transfer is not None:
-        #     body.psi_L = np.zeros(
-        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-        #     body.psi_S = np.zeros(
-        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-        #     body.struct_rhs = np.zeros(
-        #         (body.struct_nnodes * body.xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-
-        #     body.dLdfa = np.zeros(
-        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-        #     )
-        #     body.dGdua = np.zeros(
-        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-        #     )
-        #     body.psi_D = np.zeros(
-        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-        #     )
-
-        # if body.thermal_transfer is not None:
-        #     # Thermal terms
-        #     body.psi_Q = np.zeros(
-        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-        #     body.psi_T_S = np.zeros(
-        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-        #     body.struct_rhs_T = np.zeros(
-        #         (body.struct_nnodes * body.therm_xfer_ndof, nfunctions),
-        #         dtype=TransferScheme.dtype,
-        #     )
-
-        #     body.dQdfta = np.zeros(
-        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-        #     )
-        #     body.dQfluxdfta = np.zeros(
-        #         (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
-        #     )
-        #     body.dAdta = np.zeros(
-        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-        #     )
-        #     body.psi_T = np.zeros(
-        #         (body.aero_nnodes, nfunctions), dtype=TransferScheme.dtype
-        #     )
+            self.struct_flux_ajp = np.zeros((ns, nf), dtype=self.dtype)
+            self.aero_flux_ajp = np.zeros((na, nf), dtype=self.dtype)
+            self.struct_temps_ajp = np.zeros((ns, nf), dtype=self.dtype)
+            self.aero_temps_ajp = np.zeros((na, nf), dtype=self.dtype)
 
         return
 
@@ -876,9 +828,15 @@ class Body(Base):
 
         return
 
-    def get_aero_loads_adjoint(self, scenario):
+    def get_aero_loads_ajp(self, scenario):
         """
-        Get the aerodynamic load adjoint psi_F
+        Get the product of the load transfer adjoint variables with the derivative
+        of the load transfer residuals with respect to the aerodynamic forces
+
+        aero_loads_ajp = dL/dfA^{T} * psi_L
+
+        The value of this product is computed during the adjoint load
+        transfer call.
 
         Parameters
         ----------
@@ -886,117 +844,260 @@ class Body(Base):
             The current scenario
         """
 
-        if self.transfer:
-            return self.psi_F
+        if self.transfer is not None:
+            return self.aero_loads_ajp
 
         return None
 
-    def get_disp_transfer_adjoint_rhs(self, scenario):
+    def get_aero_disps_ajp(self, scenario):
+        """
+        Get the product of the adjoint variables with the grid residuals with the
+        derivative of the displacement at the aerodynamic surface nodes
 
-        if self.transfer:
-            return self.adjD_rhs
+        aero_disps_ajp = dG/duA^{T} * psi_G
+
+        Note that this term is typically just the shape sensitivity
+
+        dG/duA^{T} * psi_G = dG/dxA0 * psi_G
+
+        This term must be set by the aerodynamic analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is not None:
+            return self.aero_disps_ajp
 
         return None
 
-    def get_load_adjoint_rhs(self, scenario):
+    def get_struct_loads_ajp(self, scenario):
+        """
+        Get the product of the structural adjoint variables
 
-        if self.transfer:
-            return self.adjL_rhs
+        struct_loads_ajp = dS/dfS^{T} * psi_S
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is not None:
+            return self.struct_loads_ajp
 
         return None
 
-    def get_struct_adjoint_rhs(self, scenario):
+    def get_struct_disps_ajp(self, scenario):
+        """
+        Get the product of the displacement transfer adjoint variables with the derivative
+        of the displacement transfer residuals w.r.t. the structural displacements.
 
-        if self.transfer:
-            return self.adjS_rhs
+        struct_disps_ajp = dD/duS^{T} * psi_D + dL/duS^{T} * psi_L
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is not None:
+            return self.struct_disps_ajp
 
         return None
 
-    def get_struct_flux_adjoint_rhs(self, scenario):
+    def get_struct_loads_self_ajp(self, scenario):
+        """
+
+        struct_loads_disp_ajp = dL/duS^{T} * psi_L
+        """
+
+        if self.transfer is not None:
+            return self.struct_loads_self_ajp
+
+        return None
+
+    def get_aero_flux_ajp(self, scenario):
+
+        if self.thermal_transfer is not None:
+            return self.aero_flux_ajp
+
+        return None
+
+    def get_struct_flux_ajp(self, scenario):
+
+        if self.thermal_transfer is not None:
+            return self.struct_flux_ajp
+
+        return None
+
+    def get_aero_temps_ajp(self, scenario):
+
+        if self.thermal_transfer is not None:
+            return self.aero_temps_ajp
+
+        return None
+
+    def get_struct_temps_ajp(self, scenario):
+
+        if self.thermal_transfer is not None:
+            return self.struct_temps_ajp
+
         return None
 
     def transfer_loads_adjoint(self, scenario, time_index=0):
+        """
+        Perform the adjoint computation for the load transfer operation. This code
+        computes and stores the required Jacobian-adjoint products.
+
+        Find the load transfer adjoint variables, psi_L, by solving the equation
+
+        dL/dfS^{T} * psi_L = - dS/dfS^{T} * psi_S
+
+        The right-hand-side term is stored as
+
+        struct_loads_ajp = dS/dfS^{T} * psi_S
+
+        and the Jacobian dL/dfS = I. After computing psi_L, the code computes the
+        Jacobian-adjoint products
+
+        aero_loads_ajp = dL/dfA^{T} * psi_L
+        struct_disps_ajp_loads = dL/duS^{T} * psi_L
+        """
         nfunctions = scenario.count_adjoint_functions()
 
         if self.transfer is not None:
-            # Solve for psi_L - Note that dL/dfs is the identity matrix
-            self.psi_L[:] = self.adjL_rhs[:]
-            self.adjL_rhs[:] = 0.0
-
             # Contribute to the force integration and structural adjoint right-hand-sides
             # from the load transfer adjoint
             temp_fa = np.zeros(3 * self.aero_nnodes, dtype=self.dtype)
             temp_us = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             for k in range(nfunctions):
-                # Copy the values into contiguous memory
-                psi_Lk = self.psi_L[:, k].copy()
+                # Solve for psi_L - Note that dL/dfS is the identity matrix. Ensure that
+                # the vector is in contiguous memory.
+                psi_L = -self.struct_loads_ajp[:, k].copy()
 
-                # Contribute adjF_rhs -= dL/dfa^{T} * psi_L
-                self.transfer.applydLdfATrans(psi_Lk, temp_fa)
-                self.adjF_rhs[:, k] -= temp_fa
+                # Compute aero_loads_ajp = dL/dfa^{T} * psi_L
+                self.transfer.applydLdfATrans(psi_L, temp_fa)
+                self.aero_loads_ajp[:, k] = temp_fa
 
-                # Contribute adjS_rhs -= dL/dus^{T} * psi_L
-                self.transfer.applydLduSTrans(psi_Lk, temp_us)
-                self.adjS_rhs[:, k] -= temp_us
+                # Compute struct_disps_ajp_loads = dL/dus^{T} * psi_L
+                self.transfer.applydLduSTrans(psi_L, temp_us)
+                self.struct_disps_ajp_loads[:, k] = temp_us
 
-            # Solve for the aerodynamic force adjoint
-            self.psi_F[:] = self.adjF_rhs[:]
+            # Compute the update to the struct_disps_ajp
+            self.struct_disps_ajp[:] = (
+                self.struct_disps_ajp_disps[:] + self.struct_disps_ajp_loads[:]
+            )
 
         return
 
     def transfer_disps_adjoint(self, scenario, step):
+        """
+        Perform the adjoint computation for the displacement transfer operations. This code
+        computes and stores required Jacobian-adjoint products.
+
+        Find the displacement transfer adjoint variables, psi_D, by solving the equation:
+
+        dD/duA^{T} * psi_D = - dG/duA^{T} * psi_G
+
+        Here the right-hand-side term is stored as
+
+        aero_disps_ajp = dG/duA^{T} * psi_G
+
+        The Jacobian dD/duA = I. After computing psi_D, the code computes the Jacobian-adjoint
+        products
+
+        struct_disps_ajp_disps = dD/duS^{T} * psi_D
+        """
         nfunctions = scenario.count_adjoint_functions()
 
         if self.transfer is not None:
-            # Solve for psi_D - Note that dD/dua is the identity matrix
-            self.psi_D[:] = self.adjD_rhs[:]
-            self.adjD_rhs[:] = 0.0
-
             temp_us = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
-            for k in range(nfunctions):
-                # Copy the values into contiguous memory
-                psi_Dk = self.psi_D[:, k].copy()
 
-                # Contribute adjS_rhs -= dD/dus^{T} * psi_D
-                self.transfer.applydDduSTrans(psi_Dk, temp_us)
-                self.adjS_rhs[:, k] -= temp_us
+            for k in range(nfunctions):
+                # Solve for psi_D - Note that dD/dua is the identity matrix
+                # Copy the values into contiguous memory.
+                psi_D = -self.aero_disps_ajp[:, k].copy()
+
+                # Set the dD/duS^{T} * psi_D product
+                self.transfer.applydDduSTrans(psi_D, temp_us)
+                self.struct_disps_ajp_disps[:, k] = temp_us
+
+            # Compute the update to the struct_disps_ajp
+            self.struct_disps_ajp[:] = (
+                self.struct_disps_ajp_disps[:] + self.struct_disps_ajp_loads[:]
+            )
 
         return
 
     def transfer_heat_flux_adjoint(self, scenario, step):
+        """
+        Perform the adjoint computation for the heat flux transfer operations.
+
+        This function first solves for the heat flux transfer adjoint, psi_Q by solving
+        the equation
+
+        dQ/dhS^{T} * psi_Q = - dS/dhS^{T} * psi_S
+
+        Here the right-hand-side is stored as
+
+        struct_flux_ajp = dS/dhS^{T} * psi_S
+
+        Since dQ/dhS = I, the adjoint variables are psi_Q = - struct_flux_ajp.
+
+        The code then computes
+
+        aero_flux_ajp = dQ/dhA^{T} * psi_Q
+        """
+
         nfunctions = scenario.count_adjoint_functions()
 
-        #        if self.thermal_transfer is not None:
+        if self.thermal_transfer is not None:
+            temp = np.zeros(self.aero_nnodes, dtype=self.dtype)
 
-        # for func in range(nfunctions):
-        #     if body.thermal_transfer is not None:
-        #         # Transform heat flux transfer adjoint variables using transpose Jacobian from
-        #         # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
-        #         psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
-        #         body.thermal_transfer.applydQdqATrans(
-        #             body.psi_T_S[:, func].copy(order="C"), psi_Q_r
-        #         )
+            for k in range(nfunctions):
+                psi_Q = -self.struct_flux_ajp[:, k].copy()
 
-        #         # Only set heat flux magnitude component of thermal adjoint in FUN3D
-        #         # Can either use surface normal magnitude OR x,y,z components, not both
-        #         body.dQdfta[:, func] = psi_Q_r
+                # In the MELD interface code qA = hA so applydQdqATrans could/should?
+                # be called applydQdhATrans
+                self.thermal_transfer.applydQdqATrans(psi_Q, temp)
+                self.aero_flux_ajp[:, k] = temp
 
         return
 
     def transfer_temps_adjoint(self, scenario, step):
+        """
+        Perform the adjoint computations for the thermal transfer operation.
 
-        # for func in range(nfunctions):
-        #     if body.thermal_transfer is not None:
-        #         # calculate dTdt_s^T * psi_T
-        #         psi_T_product = np.zeros(
-        #             body.struct_nnodes * body.therm_xfer_ndof,
-        #             dtype=TransferScheme.dtype,
-        #         )
-        #         body.psi_T = body.dAdta
-        #         body.thermal_transfer.applydTdtSTrans(
-        #             body.psi_T[:, func].copy(order="C"), psi_T_product
-        #         )
-        #         body.struct_rhs_T[:, func] = psi_T_product
+        This function first solves for the temperature transfer adjoint psi_T, by solving
+        the equation
+
+        dT/dtA^{T} * psi_T = - dA/dtA^{T} * psi_A
+
+        Here the right-hand-side is stored as
+
+        aero_temps_ajp = dA/dtA^{T} * psi_A
+
+        Since dT/dtA = I, then psi_T = - aero_temps_ajp.
+
+        The code then computes
+
+        struct_temps_ajp = dT/dtS^{T} * psi_T
+        """
+
+        nfunctions = scenario.count_adjoint_functions()
+
+        if self.thermal_transfer is not None:
+            temp = np.zeros(self.struct_nnodes, dtype=self.dtype)
+
+            for k in range(nfunctions):
+                psi_T = -self.aero_temps_ajp[:, k].copy()
+
+                self.thermal_transfer.applydTdtSTrans(psi_T, temp)
+                self.struct_temps_ajp[:, k] = temp
+
         return
 
     def add_aero_coordinate_derivative(self, scenario, step, dfdx):
@@ -1018,20 +1119,22 @@ class Body(Base):
             temp_xa = np.zeros(3 * self.aero_nnodes, dtype=self.dtype)
             temp_xs = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             for k in range(nfunctions):
-                # Load transfer terms
-                psi_Lk = self.psi_L[:, k].copy()
-                self.transfer.applydLdxA0(psi_Lk, temp_xa)
+                # Solve for psi_L - Note that dL/dfS is the identity matrix. Ensure that
+                # the vector is in contiguous memory.
+                psi_L = -self.struct_loads_ajp[:, k].copy()
+                self.transfer.applydLdxA0(psi_L, temp_xa)
                 self.aero_shape_term[:, k] += temp_xa
 
-                self.transfer.applydLdxS0(psi_Lk, temp_xs)
+                self.transfer.applydLdxS0(psi_L, temp_xs)
                 self.struct_shape_term[:, k] += temp_xs
 
-                # Displacement transfer terms
-                psi_Dk = self.psi_D[:, k].copy()
-                self.transfer.applydDdxA0(psi_Dk, temp_xa)
+                # Solve for psi_D - Note that dD/dua is the identity matrix
+                # Copy the values into contiguous memory.
+                psi_D = -self.aero_disps_ajp[:, k].copy()
+                self.transfer.applydDdxA0(psi_D, temp_xa)
                 self.aero_shape_term[:, k] += temp_xa
 
-                self.transfer.applydDdxS0(psi_Dk, temp_xs)
+                self.transfer.applydDdxS0(psi_D, temp_xs)
                 self.struct_shape_term[:, k] += temp_xs
 
         return
