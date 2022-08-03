@@ -33,13 +33,41 @@ except:
     pass
 
 class SU2Interface(SolverInterface):
-    """FUNtoFEM interface class for SU2."""
+    """
+    FUNtoFEM interface class for SU2.
+    """
 
     def __init__(self, comm, model, su2_config, su2ad_config=None, qinf=1.0,
                  restart_file='restart_flow.dat',
                  solution_file='solution_flow.dat',
                  forward_options=None, adjoint_options=None):
-        """Initialize the SU2 interface"""
+        """
+        Initialize the SU2 interface.
+
+        Parameters
+        ----------
+        comm: MPI.comm
+            MPI communicator
+        model: :class:`FUNtoFEMmodel`
+            FUNtoFEM model
+        su2_config: string
+            Name of the main configuration file for SU2.
+        su2ad_config: string
+            Name of the configuration file for adjoint computation in SU2. The contents should match
+            the main config file except for those settings specific to the adjoint.
+        qinf: float
+            Dynamic pressure of the freestream flow.
+        restart_file: string
+            Name of the restart file, including filetype. Name of the file containing the flow state
+            from which SU2 restarts its run.
+        solution_file: string
+            Name of the solution file, including filetype. SU2 writes the flow state to the solution file.
+            Can then be read from to restart a future run.
+        forward_options:
+
+        adjoint_options:
+        
+        """
         self.comm = comm
         self.qinf = qinf
         self.su2_config = su2_config

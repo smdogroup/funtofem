@@ -264,7 +264,7 @@ setting it to zero. This results in the following coupled system of equations:
 Aerothermoelastic Framework
 ---------------------------
 
-.. figure:: images/aerothermoelastic_framework.png
+.. figure:: images/atePath.svg
 
 The surface displacements are computed by solving the displacement transfer residuals and preserving rigid-body motion. The displacement transfer scheme is given by:
 
