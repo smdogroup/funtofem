@@ -835,8 +835,7 @@ class Body(Base):
 
         aero_loads_ajp = dL/dfA^{T} * psi_L
 
-        The value of this product is computed during the adjoint load
-        transfer call.
+        The value of this product is computed
 
         Parameters
         ----------
@@ -875,7 +874,8 @@ class Body(Base):
 
     def get_struct_loads_ajp(self, scenario):
         """
-        Get the product of the structural adjoint variables
+        Get the product of the structural adjoint variables with the derivative of the
+        structural residuals with respect to the structural loads.
 
         struct_loads_ajp = dS/dfS^{T} * psi_S
 
@@ -893,7 +893,9 @@ class Body(Base):
     def get_struct_disps_ajp(self, scenario):
         """
         Get the product of the displacement transfer adjoint variables with the derivative
-        of the displacement transfer residuals w.r.t. the structural displacements.
+        of the displacement transfer residuals w.r.t. the structural displacements plus the
+        product of the load transfer adjoint variables with the derivative of the load
+        transfer residuals w.r.t. the structural displacements.
 
         struct_disps_ajp = dD/duS^{T} * psi_D + dL/duS^{T} * psi_L
 
@@ -908,18 +910,16 @@ class Body(Base):
 
         return None
 
-    def get_struct_loads_self_ajp(self, scenario):
-        """
-
-        struct_loads_disp_ajp = dL/duS^{T} * psi_L
-        """
-
-        if self.transfer is not None:
-            return self.struct_loads_self_ajp
-
-        return None
-
     def get_aero_flux_ajp(self, scenario):
+        """
+
+        aero_flux_ajp = dQ/dhA^{T} * psi_Q
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
 
         if self.thermal_transfer is not None:
             return self.aero_flux_ajp
@@ -927,6 +927,15 @@ class Body(Base):
         return None
 
     def get_struct_flux_ajp(self, scenario):
+        """
+
+        struct_flux_ajp = dS/dhS^{T} * psi_S
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
 
         if self.thermal_transfer is not None:
             return self.struct_flux_ajp
@@ -934,6 +943,19 @@ class Body(Base):
         return None
 
     def get_aero_temps_ajp(self, scenario):
+        """
+        Get the
+
+
+        aero_temps_ajp = dA/dtA^{T} * psi_A
+
+        This variable must be set in an aerodynamic analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
 
         if self.thermal_transfer is not None:
             return self.aero_temps_ajp
@@ -941,6 +963,15 @@ class Body(Base):
         return None
 
     def get_struct_temps_ajp(self, scenario):
+        """
+
+        struct_temps_ajp = dT/dtS^{T} * psi_T
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
 
         if self.thermal_transfer is not None:
             return self.struct_temps_ajp
@@ -965,6 +996,11 @@ class Body(Base):
 
         aero_loads_ajp = dL/dfA^{T} * psi_L
         struct_disps_ajp_loads = dL/duS^{T} * psi_L
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
         nfunctions = scenario.count_adjoint_functions()
 
@@ -1010,6 +1046,11 @@ class Body(Base):
         products
 
         struct_disps_ajp_disps = dD/duS^{T} * psi_D
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
         nfunctions = scenario.count_adjoint_functions()
 
@@ -1050,6 +1091,11 @@ class Body(Base):
         The code then computes
 
         aero_flux_ajp = dQ/dhA^{T} * psi_Q
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
 
         nfunctions = scenario.count_adjoint_functions()
@@ -1085,6 +1131,11 @@ class Body(Base):
         The code then computes
 
         struct_temps_ajp = dT/dtS^{T} * psi_T
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
 
         nfunctions = scenario.count_adjoint_functions()
@@ -1100,16 +1151,39 @@ class Body(Base):
 
         return
 
-    def add_aero_coordinate_derivative(self, scenario, step, dfdx):
-        self.aero_shape_term[:] += dfdx[:]
+    def get_aero_coordinate_derivatives(self, scenario):
+        """
+        Get the coordinate derivatives for the functions with respect to the
+        aerodynamic surface nodes
 
-    def add_struct_coordinate_derivative(self, scenario, step, dfdx):
-        self.struct_shape_term[:] += dfdx[:]
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        return self.aero_shape_term
+
+    def get_struct_coordinate_derivatives(self, scenario):
+        """
+        Get the coordinate derivatives for the functions with respect to the
+        structural nodes
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        return self.struct_shape_term
 
     def add_coordinate_derivative(self, scenario, step):
         """
         Add the coordinate derivatives for each function of interest to the aerodynamic
-        and structural surface nodes - stored in aero_shape_term and struct_shape_term, respectively.
+        and structural surface nodes - stored in aero_shape_term and struct_shape_term, respectively
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
         """
 
         if self.transfer is not None:
@@ -1287,116 +1361,6 @@ class Body(Base):
         """
 
         return
-
-    # def _aitken_relax(self):
-    #     """
-    #     Solves the aitken relaxation
-
-    #     """
-
-    #     if self.aitken_init:
-    #         self.aitken_init = False
-
-    #         # initialize the 'previous update' to zero
-    #         self.up_prev = []
-    #         self.aitken_vec = []
-    #         self.theta = []
-
-    #         self.therm_up_prev = []
-    #         self.aitken_therm_vec = []
-    #         self.theta = []
-
-    #         for ind, body in enumerate(self.model.bodies):
-    #             if body.transfer is not None:
-    #                 self.up_prev.append(
-    #                     np.zeros(
-    #                         body.struct_nnodes * body.xfer_ndof,
-    #                         dtype=TransferScheme.dtype,
-    #                     )
-    #                 )
-    #                 self.aitken_vec.append(
-    #                     np.zeros(
-    #                         body.struct_nnodes * body.xfer_ndof,
-    #                         dtype=TransferScheme.dtype,
-    #                     )
-    #                 )
-    #                 self.theta.append(self.theta_init)
-
-    #             if body.thermal_transfer is not None:
-    #                 self.therm_up_prev.append(
-    #                     np.zeros(
-    #                         body.struct_nnodes * body.therm_xfer_ndof,
-    #                         dtype=TransferScheme.dtype,
-    #                     )
-    #                 )
-    #                 self.aitken_therm_vec.append(
-    #                     np.zeros(
-    #                         body.struct_nnodes * body.therm_xfer_ndof,
-    #                         dtype=TransferScheme.dtype,
-    #                     )
-    #                 )
-    #                 self.theta.append(self.theta_init)
-
-    #     # do the Aitken update
-    #     for ibody, body in enumerate(self.model.bodies):
-
-    #         if body.transfer is not None:
-    #             if body.struct_nnodes > 0:
-    #                 up = body.struct_disps - self.aitken_vec[ibody]
-    #                 norm2 = np.linalg.norm(up - self.up_prev[ibody]) ** 2.0
-
-    #                 # Only update theta if the displacements changed
-    #                 if norm2 > 1e-13:
-    #                     self.theta[ibody] *= (
-    #                         1.0 - (up - self.up_prev[ibody]).dot(up) / norm2
-    #                     )
-    #                     self.theta[ibody] = np.max(
-    #                         (
-    #                             np.min((self.theta[ibody], self.theta_max)),
-    #                             self.theta_min,
-    #                         )
-    #                     )
-
-    #                 # handle the min/max for complex step
-    #                 if (
-    #                     type(self.theta[ibody]) == np.complex128
-    #                     or type(self.theta[ibody]) == complex
-    #                 ):
-    #                     self.theta[ibody] = self.theta[ibody].real + 0.0j
-
-    #                 self.aitken_vec[ibody] += self.theta[ibody] * up
-    #                 self.up_prev[ibody] = up[:]
-    #                 body.struct_disps = self.aitken_vec[ibody]
-
-    #         if body.thermal_transfer is not None:
-    #             if body.struct_nnodes > 0:
-    #                 up = body.struct_temps - self.aitken_therm_vec[ibody]
-    #                 norm2 = np.linalg.norm(up - self.therm_up_prev[ibody]) ** 2.0
-
-    #                 # Only update theta if the displacements changed
-    #                 if norm2 > 1e-13:
-    #                     self.theta[ibody] *= (
-    #                         1.0 - (up - self.therm_up_prev[ibody]).dot(up) / norm2
-    #                     )
-    #                     self.theta[ibody] = np.max(
-    #                         (
-    #                             np.min((self.theta[ibody], self.theta_max)),
-    #                             self.theta_min,
-    #                         )
-    #                     )
-
-    #                 # handle the min/max for complex step
-    #                 if (
-    #                     type(self.theta[ibody]) == np.complex128
-    #                     or type(self.theta[ibody]) == complex
-    #                 ):
-    #                     self.theta[ibody] = self.theta[ibody].real + 0.0j
-
-    #                 self.aitken_therm_vec[ibody] += self.theta[ibody] * up
-    #                 self.therm_up_prev[ibody] = up[:]
-    #                 body.struct_temps = self.aitken_therm_vec[ibody]
-
-    #     return
 
     # def _aitken_adjoint_relax(self, scenario):
     #     nfunctions = scenario.count_adjoint_functions()

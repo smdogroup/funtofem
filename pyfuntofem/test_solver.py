@@ -28,8 +28,11 @@ from pyfuntofem.solver_interface import SolverInterface
 class TestAerodynamicSolver(SolverInterface):
     def __init__(self, comm, model):
         """
-        A test solver that provides the functionality that FUNtoFEM expects from
+        This class provides the functionality that FUNtoFEM expects from
         an aerodynamic solver.
+
+        Forward analysis
+        ----------------
 
         Any aerodynamic solver must provide the aerodynamic forces and area-weighted
         heat flux at the aerodynmic surface node locations as a function of the displacements
@@ -38,16 +41,22 @@ class TestAerodynamicSolver(SolverInterface):
 
         fA = fA(uA, tA, xA0, x)
 
-        or in terms of the variable names within the code
+        where uA are the displacements at the aerodynamic nodes, tA are the temperatures at
+        the aerodynamic nodes, xA0 are the original node locations and x are the design variable
+        values.
 
-        aero_forces =  fA(aero_disps, aero_temps, aero_X, aero_dvs).
+        Written in terms of the variable names used within the code, this expression is
+
+        aero_forces = fA(aero_disps, aero_temps, aero_X, aero_dvs).
 
         Note that there are 3 components of the force for each aerodynamic surface node.
+
         For the area-weighted normal component of the heat flux, this relationship is
 
         hA = hA(uA, tA, xA0, x)
 
-        or in terms of the variable names within the code
+        where hA is the area-weighted normal component of the heat flux. In terms of the
+        variable names used within the code, this expression is
 
         aero_flux = hA(aero_disps, aero_temps, aero_X, aero_dvs).
 
@@ -61,23 +70,49 @@ class TestAerodynamicSolver(SolverInterface):
 
         aero_flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs.
 
+        Adjoint analysis
+        ----------------
 
+        For adjoint analysis, the aerodynamic analysis must take in the adjoint contributions
+        from the aero forces and heat flux and compute the corresponding contributions to
+        the displacement and temperature adjoint terms.
 
+        The terms passed between solvers are always the product of the adjoint variables with
+        the derivative of their associated residuals with respect to a certain state variable.
+        These terms are adjoint-Jacobian products (AJPs). Our naming convention is to use the
+        name of the derivative variable as the name of variable in the code. The size of the
+        adjoint-Jacobian product corresponds to the size of the named forward variable, except
+        we solve "nfunctions" adjoints at the same time.
 
-        The input to the adjoint computation is the right-hand-side for the force
-        integration adjoint, internal to
+        For an aerodynamic analysis, the input is the contributions are the adjoint-Jacobian products
+        from the other coupling analyses. These variables within the code are the contribution from
+        the aerodynamic loads
 
-        aero_force_ajp = dL/dfA^{T} * psi_L
+        aero_loads_ajp = dL/dfA^{T} * psi_L
+
+        and the contribution from the aerodynamic heat flux
 
         aero_flux_ajp = dQ/dhA^{T} * psi_Q
 
+        For a fully-coupled CFD solver with mesh deformation, these inputs would be used in the
+        following manner
 
+        1. Solve for the force integration adjoint, psi_F
+        dF/dfA^{T} * psi_F = - aero_loads_ajp
 
+        2. Solve for the heat flux integration adjoint, psi_H
+        dH/dhA^{T} * psi_H = - aero_flux_ajp
 
+        3. Solve for the aerodynamic adjoint variables
+        dA/dq^{T} * psi_A = -df/dq - dF/dq^{T} * psi_F - dH/dq * psi_H
 
+        4. Solve for the grid adjoint variables
+        dG/dxG^{T} * psi_G = -df/dxG - dA/dxG^{T} * psi_A - dF/dxG^{T} * psi_F - dH/dxG^{T} * psi_H
 
-        For the adjoint, the aerodynamic solver takes in the adjoint variables associated
-        with the force computation psi_F and returns adjD_rhs.
+        5. Compute the adjoint-Jacobian products required for the output
+
+        aero_disps_ajp = dG/duA^{T} * psi_G
+        aero_temps_ajp = dA/dtA^{T} * psi_A
 
         Parameters
         ----------
@@ -220,6 +255,24 @@ class TestAerodynamicSolver(SolverInterface):
         return
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
+        """
+        Add the contributions to the gradient w.r.t. the aerodynamic coordinates
+        """
+
+        for findex, func in enumerate(scenario.functions):
+            for body in bodies:
+                aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
+                aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                if aero_loads_ajp is not None:
+                    aero_shape_term[:, findex] += np.dot(
+                        aero_loads_ajp[:, findex], self.b1
+                    )
+
+                aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                if aero_flux_ajp is not None:
+                    aero_shape_term[:, findex] += np.dot(
+                        aero_flux_ajp[:, findex], self.b2
+                    )
 
         return
 
@@ -422,6 +475,14 @@ class TestStructuralSolver(SolverInterface):
         A test solver that provides the functionality that FUNtoFEM expects from
         a structural solver.
 
+        Forward analysis
+        ----------------
+
+
+        Adjoint analysis
+        ----------------
+
+
         Parameters
         ----------
         comm: MPI.comm
@@ -563,6 +624,24 @@ class TestStructuralSolver(SolverInterface):
         return
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
+        """
+        Add the contributions to the gradient w.r.t. the structural coordinates
+        """
+
+        for findex, func in enumerate(scenario.functions):
+            for body in bodies:
+                struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
+                struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                if struct_disps_ajp is not None:
+                    struct_shape_term[:, findex] += np.dot(
+                        struct_disps_ajp[:, findex], self.b1
+                    )
+
+                struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                if struct_temps_ajp is not None:
+                    struct_shape_term[:, findex] += np.dot(
+                        struct_temps_ajp[:, findex], self.b2
+                    )
 
         return
 
