@@ -44,7 +44,7 @@ solvers["structural"] = TestStructuralSolver(comm, model)
 
 # L&D transfer options
 transfer_options = {
-    "analysis_type": "aeroelastic",
+    "analysis_type": "aerothermoelastic",
     "scheme": "meld",
     "thermal_scheme": "meld",
     "npts": 5,

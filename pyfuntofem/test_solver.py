@@ -67,9 +67,9 @@ class TestAerodynamicSolver(SolverInterface):
         The input to the adjoint computation is the right-hand-side for the force
         integration adjoint, internal to
 
-        aero_force_adj_prod = dL/dfA^{T} * psi_L
+        aero_force_ajp = dL/dfA^{T} * psi_L
 
-        aero_flux_adj_proc = dQ/dhA^{T} * psi_Q
+        aero_flux_ajp = dQ/dhA^{T} * psi_Q
 
 
 
@@ -203,14 +203,19 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        # for findex, func in enumerate(scenario.functions):
-        #     for vindex, var in enumerate(self.aero_variables):
-        # for body in bodies:
-        #     psi_F = body.get_aero_loads_adjoint(scenario)
+        for findex, func in enumerate(scenario.functions):
+            for vindex, var in enumerate(self.aero_variables):
 
-        #     if psi_F is not None:
-        #         value = np.dot(psi_F[:, findex], self.c1[:, vindex])
-        #         func.add_derivative(var, value)
+                for body in bodies:
+                    aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                    if aero_loads_ajp is not None:
+                        value = np.dot(aero_loads_ajp[:, findex], self.c1[:, vindex])
+                        func.add_derivative(var, value)
+
+                    aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                    if aero_flux_ajp is not None:
+                        value = np.dot(aero_flux_ajp[:, findex], self.c2[:, vindex])
+                        func.add_derivative(var, value)
 
         return
 
@@ -276,21 +281,21 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         for body in bodies:
-            aero_loads_ap = body.get_aero_loads_adj_product(scenario)
-            aero_disps_ap = body.get_aero_disps_adj_product(scenario)
-            if aero_loads_ap is not None:
+            aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+            aero_disps_ajp = body.get_aero_disps_ajp(scenario)
+            if aero_loads_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    aero_disps_ap[:, k] = np.dot(self.Jac1.T, aero_loads_ap[:, k])
-                    # if func.analysis_type == "aerodynamic":
-                    #     adjD_rhs[:, k] += self.func_coefs1
+                    aero_disps_ajp[:, k] = np.dot(self.Jac1.T, aero_loads_ajp[:, k])
+                    if func.analysis_type == "aerodynamic":
+                        aero_disps_ajp[:, k] += self.func_coefs1
 
-            aero_flux_ap = body.get_aero_flux_adj_product(scenario)
-            aero_temps_ap = body.get_aero_temps_adj_product(scenario)
-            if aero_flux_ap is not None:
+            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            aero_temps_ajp = body.get_aero_temps_ajp(scenario)
+            if aero_flux_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    aero_temps_ap[:, k] = np.dot(self.Jac2.T, aero_flux_ap[:, k])
-                    # if func.analysis_type == "aerodynamic":
-                    #     adjD_rhs[:, k] += self.func_coefs1
+                    aero_temps_ajp[:, k] = np.dot(self.Jac2.T, aero_flux_ajp[:, k])
+                    if func.analysis_type == "aerodynamic":
+                        aero_temps_ajp[:, k] += self.func_coefs2
 
         fail = 0
         return fail
@@ -333,15 +338,15 @@ class TestAerodynamicSolver(SolverInterface):
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
-            aero_loads_ap = body.get_aero_loads_adj_product(scenario)
-            if aero_loads_ap is not None:
-                shape = aero_loads_ap.shape
-                aero_loads_ap[:] = np.random.uniform(size=shape).astype(body.dtype)
+            aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+            if aero_loads_ajp is not None:
+                shape = aero_loads_ajp.shape
+                aero_loads_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
 
-            aero_flux_ap = body.get_aero_flux_adj_product(scenario)
-            if aero_flux_ap is not None:
-                shape = aero_flux_ap.shape
-                aero_flux_ap[:] = np.random.uniform(size=shape).astype(body.dtype)
+            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            if aero_flux_ajp is not None:
+                shape = aero_flux_ajp.shape
+                aero_flux_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
 
         # Compute one step of the adjoint
         self.initialize_adjoint(scenario, bodies)
@@ -368,13 +373,13 @@ class TestAerodynamicSolver(SolverInterface):
                 temp_pert_list.append(pert)
 
             # Take the dot-product with the exact adjoint computation
-            aero_disps_ap = body.get_aero_disps_adj_product(scenario)
-            if aero_disps_ap is not None:
-                adjoint_product += np.dot(aero_disps_ap[:, 0], disp_pert_list[-1])
+            aero_disps_ajp = body.get_aero_disps_ajp(scenario)
+            if aero_disps_ajp is not None:
+                adjoint_product += np.dot(aero_disps_ajp[:, 0], disp_pert_list[-1])
 
-            aero_temps_ap = body.get_aero_temps_adj_product(scenario)
-            if aero_temps_ap is not None:
-                adjoint_product += np.dot(aero_temps_ap[:, 0], temp_pert_list[-1])
+            aero_temps_ajp = body.get_aero_temps_ajp(scenario)
+            if aero_temps_ajp is not None:
+                adjoint_product += np.dot(aero_temps_ajp[:, 0], temp_pert_list[-1])
 
         # Sum up the result across all processors
         adjoint_product = self.comm.allreduce(adjoint_product)
@@ -388,18 +393,18 @@ class TestAerodynamicSolver(SolverInterface):
         fd_product = 0.0
         for body in bodies:
             aero_loads = body.get_aero_loads(scenario)
-            aero_loads_ap = body.get_aero_loads_adj_product(scenario)
-            if aero_loads is not None and aero_loads_ap is not None:
+            aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+            if aero_loads is not None and aero_loads_ajp is not None:
                 aero_loads_copy = aero_loads_list.pop(0)
                 fd = (aero_loads - aero_loads_copy) / epsilon
-                fd_product += np.dot(fd, aero_loads_ap)
+                fd_product += np.dot(fd, aero_loads_ajp)
 
             aero_flux = body.get_aero_heat_flux(scenario)
-            aero_flux_ap = body.get_aero_flux_adj_product(scenario)
-            if aero_flux is not None and aero_flux_ap is not None:
+            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            if aero_flux is not None and aero_flux_ajp is not None:
                 aero_flux_copy = aero_flux_list.pop(0)
                 fd = (aero_flux - aero_flux_copy) / epsilon
-                fd_product += np.dot(fd, aero_flux_ap)
+                fd_product += np.dot(fd, aero_flux_ajp)
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)
@@ -541,14 +546,19 @@ class TestStructuralSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        # for findex, func in enumerate(scenario.functions):
-        #     for vindex, var in enumerate(self.struct_variables):
-        #         for body in bodies:
-        #             adjS_rhs = body.get_struct_adjoint_rhs(scenario)
+        for findex, func in enumerate(scenario.functions):
+            for vindex, var in enumerate(self.struct_variables):
 
-        #             if adjS_rhs is not None:
-        #                 value = -np.dot(adjS_rhs[:, findex], self.c1[:, vindex])
-        #                 func.add_derivative(var, value)
+                for body in bodies:
+                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                    if struct_disps_ajp is not None:
+                        value = np.dot(struct_disps_ajp[:, findex], self.c1[:, vindex])
+                        func.add_derivative(var, value)
+
+                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                    if struct_temps_ajp is not None:
+                        value = np.dot(struct_temps_ajp[:, findex], self.c2[:, vindex])
+                        func.add_derivative(var, value)
 
         return
 
@@ -612,21 +622,21 @@ class TestStructuralSolver(SolverInterface):
         """
 
         for body in bodies:
-            struct_disps_ap = body.get_struct_disps_adj_product(scenario)
-            struct_loads_ap = body.get_struct_loads_adj_product(scenario)
-            if struct_disps_ap is not None:
+            struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+            struct_loads_ajp = body.get_struct_loads_ajp(scenario)
+            if struct_disps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    struct_loads_ap[:, k] = np.dot(self.Jac1.T, struct_disps_ap[:, k])
-                    # if func.analysis_type == "structural":
-                    #     adjD_rhs[:, k] += self.func_coefs1
+                    struct_loads_ajp[:, k] = np.dot(self.Jac1.T, struct_disps_ajp[:, k])
+                    if func.analysis_type == "structural":
+                        struct_loads_ajp[:, k] += self.func_coefs1
 
-            struct_temps_ap = body.get_struct_temps_adj_product(scenario)
-            struct_flux_ap = body.get_struct_flux_adj_product(scenario)
-            if struct_temps_ap is not None:
+            struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+            struct_flux_ajp = body.get_struct_flux_ajp(scenario)
+            if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    struct_flux_ap[:, k] = np.dot(self.Jac2.T, struct_temps_ap[:, k])
-                    # if func.analysis_type == "structural":
-                    #     adjD_rhs[:, k] += self.func_coefs1
+                    struct_flux_ajp[:, k] = np.dot(self.Jac2.T, struct_temps_ajp[:, k])
+                    if func.analysis_type == "structural":
+                        struct_flux_ajp[:, k] += self.func_coefs2
 
         fail = 0
         return fail
@@ -669,15 +679,15 @@ class TestStructuralSolver(SolverInterface):
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
-            struct_disps_ap = body.get_struct_disps_adj_product(scenario)
-            if struct_disps_ap is not None:
-                shape = struct_disps_ap.shape
-                struct_disps_ap[:] = np.random.uniform(size=shape).astype(body.dtype)
+            struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+            if struct_disps_ajp is not None:
+                shape = struct_disps_ajp.shape
+                struct_disps_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
 
-            struct_temps_ap = body.get_struct_temps_adj_product(scenario)
-            if struct_temps_ap is not None:
-                shape = struct_temps_ap.shape
-                struct_temps_ap[:] = np.random.uniform(size=shape).astype(body.dtype)
+            struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+            if struct_temps_ajp is not None:
+                shape = struct_temps_ajp.shape
+                struct_temps_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
 
         # Compute one step of the adjoint
         self.initialize_adjoint(scenario, bodies)
@@ -704,13 +714,13 @@ class TestStructuralSolver(SolverInterface):
                 flux_pert_list.append(pert)
 
             # Take the dot-product with the exact adjoint computation
-            struct_loads_ap = body.get_struct_loads_adj_product(scenario)
-            if struct_loads_ap is not None:
-                adjoint_product += np.dot(struct_loads_ap[:, 0], load_pert_list[-1])
+            struct_loads_ajp = body.get_struct_loads_ajp(scenario)
+            if struct_loads_ajp is not None:
+                adjoint_product += np.dot(struct_loads_ajp[:, 0], load_pert_list[-1])
 
-            struct_flux_ap = body.get_struct_flux_adj_product(scenario)
-            if struct_flux_ap is not None:
-                adjoint_product += np.dot(struct_flux_ap[:, 0], flux_pert_list[-1])
+            struct_flux_ajp = body.get_struct_flux_ajp(scenario)
+            if struct_flux_ajp is not None:
+                adjoint_product += np.dot(struct_flux_ajp[:, 0], flux_pert_list[-1])
 
         # Sum up the result across all processors
         adjoint_product = self.comm.allreduce(adjoint_product)
@@ -724,18 +734,18 @@ class TestStructuralSolver(SolverInterface):
         fd_product = 0.0
         for body in bodies:
             struct_disps = body.get_struct_disps(scenario)
-            struct_disps_ap = body.get_struct_disps_adj_product(scenario)
-            if struct_disps is not None and struct_disps_ap is not None:
+            struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+            if struct_disps is not None and struct_disps_ajp is not None:
                 struct_disps_copy = struct_disps_list.pop(0)
                 fd = (struct_disps - struct_disps_copy) / epsilon
-                fd_product += np.dot(fd, struct_disps_ap)
+                fd_product += np.dot(fd, struct_disps_ajp)
 
             struct_temps = body.get_struct_temps(scenario)
-            struct_temps_ap = body.get_struct_temps_adj_product(scenario)
-            if struct_temps is not None and struct_temps_ap is not None:
+            struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+            if struct_temps is not None and struct_temps_ajp is not None:
                 struct_temps_copy = struct_temps_list.pop(0)
                 fd = (struct_temps - struct_temps_copy) / epsilon
-                fd_product += np.dot(fd, struct_temps_ap)
+                fd_product += np.dot(fd, struct_temps_ajp)
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)
