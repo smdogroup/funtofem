@@ -103,6 +103,24 @@ class Function(object):
 
         return
 
+    def set_derivative(self, var, value):
+        """
+        Set the derivative value for the given variable into the array of derivative values
+
+        This call overwrites the derivative value stored by the function.
+
+        Parameter
+        ---------
+        var: Variable object
+            Derivative of this function w.r.t. the given variable
+        value: scalar value
+            Value of the derivative contribution
+        """
+
+        self.derivatives[var] = value
+
+        return
+
     def add_derivative(self, var, value):
         """
         Add the derivative value for the given variable into the array of derivative values

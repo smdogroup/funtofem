@@ -104,10 +104,10 @@ class TestAerodynamicSolver(SolverInterface):
         dH/dhA^{T} * psi_H = - aero_flux_ajp
 
         3. Solve for the aerodynamic adjoint variables
-        dA/dq^{T} * psi_A = -df/dq - dF/dq^{T} * psi_F - dH/dq * psi_H
+        dA/dq^{T} * psi_A = -df/dq^{T} - dF/dq^{T} * psi_F - dH/dq * psi_H
 
         4. Solve for the grid adjoint variables
-        dG/dxG^{T} * psi_G = -df/dxG - dA/dxG^{T} * psi_A - dF/dxG^{T} * psi_F - dH/dxG^{T} * psi_H
+        dG/dxG^{T} * psi_G = -df/dxG^{T} - dA/dxG^{T} * psi_A - dF/dxG^{T} * psi_F - dH/dxG^{T} * psi_H
 
         5. Compute the adjoint-Jacobian products required for the output
 
@@ -165,14 +165,6 @@ class TestAerodynamicSolver(SolverInterface):
             body.initialize_aero_mesh(self.aero_X)
 
         return
-
-    def initialize(self, scenario, bodies):
-        """Note that this function must return a fail flag of zero on success"""
-        return 0
-
-    def initialize_adjoint(self, scenario, bodies):
-        """Note that this function must return a fail flag of zero on success"""
-        return 0
 
     def set_variables(self, scenario, bodies):
         """Set the design variables for the solver"""
@@ -276,6 +268,10 @@ class TestAerodynamicSolver(SolverInterface):
 
         return
 
+    def initialize(self, scenario, bodies):
+        """Note that this function must return a fail flag of zero on success"""
+        return 0
+
     def iterate(self, scenario, bodies, step):
         """
         Iterate for the aerodynamic or structural solver
@@ -316,8 +312,9 @@ class TestAerodynamicSolver(SolverInterface):
     def post(self, scenario, bodies):
         pass
 
-    def set_states(self, scenario, bodies, step):
-        pass
+    def initialize_adjoint(self, scenario, bodies):
+        """Note that this function must return a fail flag of zero on success"""
+        return 0
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
@@ -355,118 +352,6 @@ class TestAerodynamicSolver(SolverInterface):
 
     def post_adjoint(self, scenario, bodies):
         pass
-
-    def step_pre(self, scenario, bodies, step):
-        return 0
-
-    def step_post(self, scenario, bodies, step):
-        return 0
-
-    def test_iterate_adjoint(self, scenario, bodies, step=0, epsilon=1e-6):
-        """
-        Test to see if the adjoint methods are implemented correctly
-        """
-
-        for body in bodies:
-            body.initialize_variables(scenario)
-
-        # Comptue one step of the forward solution
-        self.initialize(scenario, bodies)
-        self.iterate(scenario, bodies, step)
-        self.post(scenario, bodies)
-
-        # Save the output forces and heat fluxes
-        aero_loads_list = []
-        aero_flux_list = []
-        for body in bodies:
-            aero_loads = body.get_aero_loads(scenario)
-            if aero_loads is not None:
-                aero_loads_list.append(aero_loads.copy())
-
-            aero_flux = body.get_aero_heat_flux(scenario)
-            if aero_flux is not None:
-                aero_flux_list.append(aero_flux.copy())
-
-        # Initialize the bodies for the adjoint computation
-        for body in bodies:
-            body.initialize_adjoint_variables(scenario)
-
-            aero_loads_ajp = body.get_aero_loads_ajp(scenario)
-            if aero_loads_ajp is not None:
-                shape = aero_loads_ajp.shape
-                aero_loads_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
-
-            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
-            if aero_flux_ajp is not None:
-                shape = aero_flux_ajp.shape
-                aero_flux_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
-
-        # Compute one step of the adjoint
-        self.initialize_adjoint(scenario, bodies)
-        self.iterate_adjoint(scenario, bodies, step)
-        self.post_adjoint(scenario, bodies)
-
-        # Perturb the displacements and surface temperatures
-        adjoint_product = 0.0
-        disp_pert_list = []
-        temp_pert_list = []
-        for body in bodies:
-            body.initialize_variables(scenario)
-
-            aero_disps = body.get_aero_disps(scenario)
-            if aero_disps is not None:
-                pert = np.random.uniform(size=aero_disps.shape)
-                aero_disps[:] += epsilon * pert
-                disp_pert_list.append(pert)
-
-            aero_temps = body.get_aero_temps(scenario)
-            if aero_temps is not None:
-                pert = np.random.uniform(size=aero_temps.shape)
-                aero_temps[:] += epsilon * pert
-                temp_pert_list.append(pert)
-
-            # Take the dot-product with the exact adjoint computation
-            aero_disps_ajp = body.get_aero_disps_ajp(scenario)
-            if aero_disps_ajp is not None:
-                adjoint_product += np.dot(aero_disps_ajp[:, 0], disp_pert_list[-1])
-
-            aero_temps_ajp = body.get_aero_temps_ajp(scenario)
-            if aero_temps_ajp is not None:
-                adjoint_product += np.dot(aero_temps_ajp[:, 0], temp_pert_list[-1])
-
-        # Sum up the result across all processors
-        adjoint_product = self.comm.allreduce(adjoint_product)
-
-        # Run the perturbed aerodynamic simulation
-        self.initialize(scenario, bodies)
-        self.iterate(scenario, bodies, step)
-        self.post(scenario, bodies)
-
-        # Compute the finite-difference approximation
-        fd_product = 0.0
-        for body in bodies:
-            aero_loads = body.get_aero_loads(scenario)
-            aero_loads_ajp = body.get_aero_loads_ajp(scenario)
-            if aero_loads is not None and aero_loads_ajp is not None:
-                aero_loads_copy = aero_loads_list.pop(0)
-                fd = (aero_loads - aero_loads_copy) / epsilon
-                fd_product += np.dot(fd, aero_loads_ajp)
-
-            aero_flux = body.get_aero_heat_flux(scenario)
-            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
-            if aero_flux is not None and aero_flux_ajp is not None:
-                aero_flux_copy = aero_flux_list.pop(0)
-                fd = (aero_flux - aero_flux_copy) / epsilon
-                fd_product += np.dot(fd, aero_flux_ajp)
-
-        # Compute the finite-differenc approximation
-        fd_product = self.comm.allreduce(fd_product)
-
-        if self.comm.rank == 0:
-            print("FUNtoFEM adjoint result:           ", adjoint_product)
-            print("FUNtoFEM finite-difference result: ", fd_product)
-
-        return
 
 
 class TestStructuralSolver(SolverInterface):
@@ -534,14 +419,6 @@ class TestStructuralSolver(SolverInterface):
             body.initialize_struct_mesh(self.struct_X)
 
         return
-
-    def initialize(self, scenario, bodies):
-        """Note that this function must return a fail flag of zero on success"""
-        return 0
-
-    def initialize_adjoint(self, scenario, bodies):
-        """Note that this function must return a fail flag of zero on success"""
-        return 0
 
     def set_variables(self, scenario, bodies):
         """Set the design variables for the solver"""
@@ -645,6 +522,10 @@ class TestStructuralSolver(SolverInterface):
 
         return
 
+    def initialize(self, scenario, bodies):
+        """Note that this function must return a fail flag of zero on success"""
+        return 0
+
     def iterate(self, scenario, bodies, step):
         """
         Iterate for the aerodynamic or structural solver
@@ -683,8 +564,9 @@ class TestStructuralSolver(SolverInterface):
     def post(self, scenario, bodies):
         pass
 
-    def set_states(self, scenario, bodies, step):
-        pass
+    def initialize_adjoint(self, scenario, bodies):
+        """Note that this function must return a fail flag of zero on success"""
+        return 0
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
@@ -721,116 +603,4 @@ class TestStructuralSolver(SolverInterface):
         return fail
 
     def post_adjoint(self, scenario, bodies):
-        pass
-
-    def step_pre(self, scenario, bodies, step):
-        return 0
-
-    def step_post(self, scenario, bodies, step):
-        return 0
-
-    def test_iterate_adjoint(self, scenario, bodies, step=0, epsilon=1e-6):
-        """
-        Test to see if the adjoint methods are implemented correctly
-        """
-
-        for body in bodies:
-            body.initialize_variables(scenario)
-
-        # Comptue one step of the forward solution
-        self.initialize(scenario, bodies)
-        self.iterate(scenario, bodies, step)
-        self.post(scenario, bodies)
-
-        # Save the output forces and heat fluxes
-        struct_disps_list = []
-        struct_temps_list = []
-        for body in bodies:
-            struct_disps = body.get_struct_disps(scenario)
-            if struct_disps is not None:
-                struct_disps_list.append(struct_disps.copy())
-
-            struct_temps = body.get_struct_temps(scenario)
-            if struct_temps is not None:
-                struct_temps_list.append(struct_temps.copy())
-
-        # Initialize the bodies for the adjoint computation
-        for body in bodies:
-            body.initialize_adjoint_variables(scenario)
-
-            struct_disps_ajp = body.get_struct_disps_ajp(scenario)
-            if struct_disps_ajp is not None:
-                shape = struct_disps_ajp.shape
-                struct_disps_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
-
-            struct_temps_ajp = body.get_struct_temps_ajp(scenario)
-            if struct_temps_ajp is not None:
-                shape = struct_temps_ajp.shape
-                struct_temps_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
-
-        # Compute one step of the adjoint
-        self.initialize_adjoint(scenario, bodies)
-        self.iterate_adjoint(scenario, bodies, step)
-        self.post_adjoint(scenario, bodies)
-
-        # Perturb the displacements and surface temperatures
-        adjoint_product = 0.0
-        load_pert_list = []
-        flux_pert_list = []
-        for body in bodies:
-            body.initialize_variables(scenario)
-
-            struct_loads = body.get_struct_loads(scenario)
-            if struct_loads is not None:
-                pert = np.random.uniform(size=struct_loads.shape)
-                struct_loads[:] += epsilon * pert
-                load_pert_list.append(pert)
-
-            struct_flux = body.get_struct_heat_flux(scenario)
-            if struct_flux is not None:
-                pert = np.random.uniform(size=struct_flux.shape)
-                struct_flux[:] += epsilon * pert
-                flux_pert_list.append(pert)
-
-            # Take the dot-product with the exact adjoint computation
-            struct_loads_ajp = body.get_struct_loads_ajp(scenario)
-            if struct_loads_ajp is not None:
-                adjoint_product += np.dot(struct_loads_ajp[:, 0], load_pert_list[-1])
-
-            struct_flux_ajp = body.get_struct_flux_ajp(scenario)
-            if struct_flux_ajp is not None:
-                adjoint_product += np.dot(struct_flux_ajp[:, 0], flux_pert_list[-1])
-
-        # Sum up the result across all processors
-        adjoint_product = self.comm.allreduce(adjoint_product)
-
-        # Run the perturbed aerodynamic simulation
-        self.initialize(scenario, bodies)
-        self.iterate(scenario, bodies, step)
-        self.post(scenario, bodies)
-
-        # Compute the finite-difference approximation
-        fd_product = 0.0
-        for body in bodies:
-            struct_disps = body.get_struct_disps(scenario)
-            struct_disps_ajp = body.get_struct_disps_ajp(scenario)
-            if struct_disps is not None and struct_disps_ajp is not None:
-                struct_disps_copy = struct_disps_list.pop(0)
-                fd = (struct_disps - struct_disps_copy) / epsilon
-                fd_product += np.dot(fd, struct_disps_ajp)
-
-            struct_temps = body.get_struct_temps(scenario)
-            struct_temps_ajp = body.get_struct_temps_ajp(scenario)
-            if struct_temps is not None and struct_temps_ajp is not None:
-                struct_temps_copy = struct_temps_list.pop(0)
-                fd = (struct_temps - struct_temps_copy) / epsilon
-                fd_product += np.dot(fd, struct_temps_ajp)
-
-        # Compute the finite-differenc approximation
-        fd_product = self.comm.allreduce(fd_product)
-
-        if self.comm.rank == 0:
-            print("FUNtoFEM adjoint result:           ", adjoint_product)
-            print("FUNtoFEM finite-difference result: ", fd_product)
-
         return

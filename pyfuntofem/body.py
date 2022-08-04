@@ -191,7 +191,7 @@ class Body(Base):
 
         return
 
-    def set_struct_nodes(self, struct_X):
+    def get_struct_nodes(self, struct_X):
         """
         Set the structural node locations without changing the number of nodes or structural connectivity
 
@@ -201,8 +201,7 @@ class Body(Base):
             The structural node locations
         """
 
-        self.struct_X[:] = struct_X[:]
-        return
+        return self.struct_X
 
     def initialize_aero_mesh(self, aero_X, aero_id=None):
         """
@@ -1029,7 +1028,7 @@ class Body(Base):
 
         return
 
-    def transfer_disps_adjoint(self, scenario, step):
+    def transfer_disps_adjoint(self, scenario, time_index=0):
         """
         Perform the adjoint computation for the displacement transfer operations. This code
         computes and stores required Jacobian-adjoint products.
@@ -1073,7 +1072,7 @@ class Body(Base):
 
         return
 
-    def transfer_heat_flux_adjoint(self, scenario, step):
+    def transfer_heat_flux_adjoint(self, scenario, time_index=0):
         """
         Perform the adjoint computation for the heat flux transfer operations.
 
@@ -1113,7 +1112,7 @@ class Body(Base):
 
         return
 
-    def transfer_temps_adjoint(self, scenario, step):
+    def transfer_temps_adjoint(self, scenario, time_index=0):
         """
         Perform the adjoint computations for the thermal transfer operation.
 

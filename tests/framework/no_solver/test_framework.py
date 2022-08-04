@@ -56,8 +56,10 @@ driver = FUNtoFEMnlbgs(solvers, comm, comm, 0, comm, 0, transfer_options, model=
 # Manual test of the disciplinary solvers
 scenario = model.scenarios[0]
 bodies = model.bodies
-solvers["flow"].test_iterate_adjoint(scenario, bodies)
-solvers["structural"].test_iterate_adjoint(scenario, bodies)
+solvers["flow"].test_adjoint("flow", scenario, bodies, epsilon=1e-30, complex_step=True)
+solvers["structural"].test_adjoint(
+    "structural", scenario, bodies, epsilon=1e-30, complex_step=True
+)
 
 # Solve the forward analysis
 driver.solve_forward()

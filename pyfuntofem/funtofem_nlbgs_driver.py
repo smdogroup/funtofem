@@ -165,30 +165,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
 
-        Solve for the load-transfer adjoint
-        (1) dL/dfs^{T} psi_L + dS/dfs^{T} * psi_S = 0
-
-        Solve for the force-integration adjoint
-        (2) dF/dfa^{T} psi_F + dL/dfa^{T} * psi_L = 0
-
-        Contribute to the structural adjoint right-hand-side:
-        (3) adjS_rhs -= dL/dus^{T} * psi_L
-
-        (4) Aerodynamic adjoint takes in psi_F and computes the surface mesh sensitivity and contributes it
-        to the term adjD_rhs. Note that the contribution is to the right-hand-side and so may be negative,
-        depending on the conventions used in the aerodynamic adjoint.
-
-        Solve for the displacement-transfer adjoint
-        (5) psi_D = adjD_rhs
-
-        For FUN3D adjD_rhs is computed: adjD_rhs = - dG/dua^{T} * psi_G
-
-        Contribute to the structural adjoint right-hand-side:
-        (6) adjS_rhs -= dD/dus^{T} * psi_D
-
-        Solve for the structures adjoint
-        dS/dus^{T} * psi_S = adjS_rhs - df/dus
-
         Parameters
         ----------
         scenario: :class:`~scenario.Scenario`
@@ -198,15 +174,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         fail = 0
         self.aitken_init = True
 
-        # how many steps to take for the nonlinear block Gauss Seidel
+        # how many steps to take for the block Gauss Seidel
         steps = scenario.steps
-
-        time_index = 0
 
         # Load the current state
         for body in self.model.bodies:
-            body.transfer_disps(scenario, time_index)
-            body.transfer_loads(scenario, time_index)
+            body.transfer_disps(scenario)
+            body.transfer_loads(scenario)
 
         # Initialize the adjoint variables
         self._initialize_adjoint_variables(scenario, self.model.bodies)
@@ -215,8 +189,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for step in range(1, steps + 1):
             # Get force and heat flux terms for the flow solver
             for body in self.model.bodies:
-                body.transfer_loads_adjoint(scenario, time_index)
-                body.transfer_heat_flux_adjoint(scenario, time_index)
+                body.transfer_loads_adjoint(scenario)
+                body.transfer_heat_flux_adjoint(scenario)
 
             # Iterate over the aerodynamic adjoint
             fail = self.solvers["flow"].iterate_adjoint(
@@ -231,8 +205,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Get the structural adjoint rhs
             for body in self.model.bodies:
-                body.transfer_disps_adjoint(scenario, time_index)
-                body.transfer_temps_adjoint(scenario, time_index)
+                body.transfer_disps_adjoint(scenario)
+                body.transfer_temps_adjoint(scenario)
 
             # take a step in the structural adjoint
             fail = self.solvers["structural"].iterate_adjoint(
