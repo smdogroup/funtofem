@@ -7,7 +7,7 @@ default:
 	@cd funtofem; \
 	echo "ctypedef double F2FScalar" > FuntofemTypedefs.pxi; \
 	echo "F2F_NPY_SCALAR = np.NPY_DOUBLE" > FuntofemDefs.pxi; \
-	echo "dtype = double" >> FuntofemDefs.pxi;
+	echo "dtype = np.double" >> FuntofemDefs.pxi;
 
 debug:
 	@cd src && ${MAKE} $@ || exit 1
