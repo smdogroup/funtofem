@@ -19,7 +19,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import print_function
 
 import numpy as np
 from mpi4py import MPI
@@ -91,8 +90,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         bodies: :class:`~body.Body`
             List of FUNtoFEM bodies.
         """
-        nfunctions = scenario.count_adjoint_functions()
-        nfunctions_total = len(scenario.functions)
 
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
@@ -167,30 +164,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
 
-        Solve for the load-transfer adjoint
-        (1) dL/dfs^{T} psi_L + dS/dfs^{T} * psi_S = 0
-
-        Solve for the force-integration adjoint
-        (2) dF/dfa^{T} psi_F + dL/dfa^{T} * psi_L = 0
-
-        Contribute to the structural adjoint right-hand-side:
-        (3) adjS_rhs -= dL/dus^{T} * psi_L
-
-        (4) Aerodynamic adjoint takes in psi_F and computes the surface mesh sensitivity and contributes it
-        to the term adjD_rhs. Note that the contribution is to the right-hand-side and so may be negative,
-        depending on the conventions used in the aerodynamic adjoint.
-
-        Solve for the displacement-transfer adjoint
-        (5) psi_D = adjD_rhs
-
-        For FUN3D adjD_rhs is computed: adjD_rhs = - dG/dua^{T} * psi_G
-
-        Contribute to the structural adjoint right-hand-side:
-        (6) adjS_rhs -= dD/dus^{T} * psi_D
-
-        Solve for the structures adjoint
-        dS/dus^{T} * psi_S = adjS_rhs - df/dus
-
         Parameters
         ----------
         scenario: :class:`~scenario.Scenario`
@@ -200,15 +173,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         fail = 0
         self.aitken_init = True
 
-        # how many steps to take for the nonlinear block Gauss Seidel
+        # how many steps to take for the block Gauss Seidel
         steps = scenario.steps
-
-        time_index = 0
 
         # Load the current state
         for body in self.model.bodies:
-            body.transfer_disps(scenario, time_index)
-            body.transfer_loads(scenario, time_index)
+            body.transfer_disps(scenario)
+            body.transfer_loads(scenario)
 
         # Initialize the adjoint variables
         self._initialize_adjoint_variables(scenario, self.model.bodies)
@@ -217,8 +188,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for step in range(1, steps + 1):
             # Get force and heat flux terms for the flow solver
             for body in self.model.bodies:
-                body.transfer_loads_adjoint(scenario, time_index)
-                body.transfer_heat_flux_adjoint(scenario, time_index)
+                body.transfer_loads_adjoint(scenario)
+                body.transfer_heat_flux_adjoint(scenario)
 
             # Iterate over the aerodynamic adjoint
             fail = self.solvers["flow"].iterate_adjoint(
@@ -233,8 +204,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Get the structural adjoint rhs
             for body in self.model.bodies:
-                body.transfer_disps_adjoint(scenario, time_index)
-                body.transfer_temps_adjoint(scenario, time_index)
+                body.transfer_disps_adjoint(scenario)
+                body.transfer_temps_adjoint(scenario)
 
             # take a step in the structural adjoint
             fail = self.solvers["structural"].iterate_adjoint(
@@ -282,51 +253,14 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     )
                 steps = 1000
 
-        for step in range(1, steps + 1):
-            # Transfer structural displacements and temperatures to aerodynamic surface
+        for time_index in range(1, steps + 1):
+            # Transfer displacements and temperatures
             for body in self.model.bodies:
+                body.transfer_disps(scenario, time_index)
+                body.transfer_temps(scenario, time_index)
 
-                if body.transfer is not None:
-                    body.aero_disps = np.zeros(
-                        body.aero_nnodes * 3, dtype=TransferScheme.dtype
-                    )
-                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
-
-                if body.thermal_transfer is not None:
-                    body.aero_temps = np.zeros(
-                        body.aero_nnodes, dtype=TransferScheme.dtype
-                    )
-                    body.thermal_transfer.transferTemp(
-                        body.struct_temps, body.aero_temps
-                    )
-
-                if "rigid" in body.motion_type and "deform" in body.motion_type:
-                    rotation = np.zeros(9, dtype=TransferScheme.dtype)
-                    translation = np.zeros(3, dtype=TransferScheme.dtype)
-                    u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
-                    body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
-
-                    body.transfer.transformEquivRigidMotion(
-                        body.aero_disps, rotation, translation, u
-                    )
-
-                    body.rigid_transform[:3, :3] = rotation.reshape(
-                        (
-                            3,
-                            3,
-                        ),
-                        order="F",
-                    )
-                    body.rigid_transform[:3, 3] = translation
-                    body.rigid_transform[-1, -1] = 1.0
-
-                    body.aero_disps = u.copy()
-
-                elif "rigid" in body.motion_type:
-                    transform = self.solvers["structural"].get_rigid_transform(body)
-
-            # Take a time step for the flow solver
-            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
+            # Take a step in the flow solver
+            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, time_index)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -334,26 +268,15 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print("Flow solver returned fail flag")
                 return fail
 
-            # Transfer loads and heat flux from fluid and get loads and temps on structure
+            # Transfer the loads and heat flux
             for body in self.model.bodies:
-
-                if body.transfer is not None:
-                    body.struct_loads = np.zeros(
-                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
-                    )
-                    body.transfer.transferLoads(body.aero_loads, body.struct_loads)
-
-                if body.thermal_transfer is not None:
-                    body.struct_heat_flux = np.zeros(
-                        body.struct_nnodes, dtype=TransferScheme.dtype
-                    )
-                    heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order="C")
-                    body.thermal_transfer.transferFlux(
-                        heat_flux_magnitude, body.struct_heat_flux
-                    )
+                body.transfer_loads(scenario, time_index)
+                body.transfer_heat_flux(scenario, time_index)
 
             # Take a step in the FEM model
-            fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
+            fail = self.solvers["structural"].iterate(
+                scenario, self.model.bodies, time_index
+            )
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -361,9 +284,87 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print("Structural solver returned fail flag")
                 return fail
 
-        # end solve loop
-
         return fail
+
+        #     # Transfer structural displacements and temperatures to aerodynamic surface
+        #     for body in self.model.bodies:
+
+        #         if body.transfer is not None:
+        #             body.aero_disps = np.zeros(
+        #                 body.aero_nnodes * 3, dtype=TransferScheme.dtype
+        #             )
+        #             body.transfer.transferDisps(body.struct_disps, body.aero_disps)
+
+        #         if body.thermal_transfer is not None:
+        #             body.aero_temps = np.zeros(
+        #                 body.aero_nnodes, dtype=TransferScheme.dtype
+        #             )
+        #             body.thermal_transfer.transferTemp(
+        #                 body.struct_temps, body.aero_temps
+        #             )
+
+        #         if "rigid" in body.motion_type and "deform" in body.motion_type:
+        #             rotation = np.zeros(9, dtype=TransferScheme.dtype)
+        #             translation = np.zeros(3, dtype=TransferScheme.dtype)
+        #             u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+        #             body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
+
+        #             body.transfer.transformEquivRigidMotion(
+        #                 body.aero_disps, rotation, translation, u
+        #             )
+
+        #             body.rigid_transform[:3, :3] = rotation.reshape(
+        #                 (
+        #                     3,
+        #                     3,
+        #                 ),
+        #                 order="F",
+        #             )
+        #             body.rigid_transform[:3, 3] = translation
+        #             body.rigid_transform[-1, -1] = 1.0
+
+        #             body.aero_disps = u.copy()
+
+        #         elif "rigid" in body.motion_type:
+        #             transform = self.solvers["structural"].get_rigid_transform(body)
+
+        #     # Take a time step for the flow solver
+        #     fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
+
+        #     fail = self.comm.allreduce(fail)
+        #     if fail != 0:
+        #         if self.comm.Get_rank() == 0:
+        #             print("Flow solver returned fail flag")
+        #         return fail
+
+        #     # Transfer loads and heat flux from fluid and get loads and temps on structure
+        #     for body in self.model.bodies:
+
+        #         if body.transfer is not None:
+        #             body.struct_loads = np.zeros(
+        #                 body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+        #             )
+        #             body.transfer.transferLoads(body.aero_loads, body.struct_loads)
+
+        #         if body.thermal_transfer is not None:
+        #             body.struct_heat_flux = np.zeros(
+        #                 body.struct_nnodes, dtype=TransferScheme.dtype
+        #             )
+        #             heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order="C")
+        #             body.thermal_transfer.transferFlux(
+        #                 heat_flux_magnitude, body.struct_heat_flux
+        #             )
+
+        #     # Take a step in the FEM model
+        #     fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
+
+        #     fail = self.comm.allreduce(fail)
+        #     if fail != 0:
+        #         if self.comm.Get_rank() == 0:
+        #             print("Structural solver returned fail flag")
+        #         return fail
+
+        # # end solve loop
 
     def _solve_unsteady_adjoint(self, scenario):
         """

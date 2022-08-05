@@ -22,16 +22,28 @@ limitations under the License.
 from pyfuntofem.model import Function
 import unittest
 
+
 class FunctionTest(unittest.TestCase):
-   def test_function(self):
-       func = Function(name='test', id = 1, value=2.0, start=3, stop=4, analysis_type='aerodynamic', body=5, adjoint=False, options={'opt':6}, averaging=True)
-       assert func.name == 'test'
-       assert func.id == 1
-       assert func.value == 2.0
-       assert func.start == 3
-       assert func.stop  == 4
-       assert func.analysis_type == 'aerodynamic'
-       assert func.body == 5
-       assert func.adjoint == False
-       assert func.options['opt'] == 6
-       assert func.averaging == True
+    def test_function(self):
+        func = Function(
+            name="test",
+            id=1,
+            value=2.0,
+            start=3,
+            stop=4,
+            analysis_type="aerodynamic",
+            body=5,
+            adjoint=False,
+            options={"opt": 6},
+            averaging=True,
+        )
+        assert func.name == "test"
+        assert func.id == 1
+        assert func.value == 2.0
+        assert func.start == 3
+        assert func.stop == 4
+        assert func.analysis_type == "aerodynamic"
+        assert func.body == 5
+        assert func.adjoint == False
+        assert func.options["opt"] == 6
+        assert func.averaging == True

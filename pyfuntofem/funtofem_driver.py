@@ -20,9 +20,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from __future__ import print_function
-
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
@@ -78,15 +75,14 @@ class FUNtoFEMDriver(object):
         if model is not None:
             self.fakemodel = False
         else:
-            print("FUNtoFEM driver: generating fake model")
+            print("FUNtoFEM driver: generating a default model")
             from pyfuntofem.model import FUNtoFEMmodel, Body, Scenario, Function
 
-            model = FUNtoFEMmodel("fakemodel")
-
-            fakebody = Body("fakebody")
+            model = FUNtoFEMmodel("model")
+            fakebody = Body("body")
             model.add_body(fakebody)
 
-            fakescenario = Scenario("fakescenario")
+            fakescenario = Scenario("scenario")
             function = Function("cl", analysis_type="aerodynamic")
             fakescenario.add_function(function)
             model.add_scenario(fakescenario)
@@ -109,6 +105,8 @@ class FUNtoFEMDriver(object):
         # Initialize the shape parameterization
         for body in self.model.bodies:
             body.initialize_shape_parameterization()
+
+        return
 
     def update_model(self, model):
         """
@@ -171,7 +169,7 @@ class FUNtoFEMDriver(object):
             # Perform any operations after the forward solve
             self._post_forward(scenario, self.model.bodies)
             if fail == 0:
-                self._eval_functions(scenario, self.model.bodies)
+                self._get_functions(scenario, self.model.bodies)
 
         return fail
 
@@ -181,15 +179,23 @@ class FUNtoFEMDriver(object):
         """
 
         fail = 0
+
+        # Get the list of functions
+        functions = self.model.get_functions()
+
         # Make sure we have functions defined before we start the adjoint
         if self.fakemodel:
             print("Aborting: attempting to run FUNtoFEM adjoint with no model defined")
             quit()
-        elif not self.model.get_functions():
+        elif len(functions) == 0:
             print(
                 "Aborting: attempting to run FUNtoFEM adjoint with no functions defined"
             )
             quit()
+
+        # Zero the derivative values stored in the function
+        for func in functions:
+            func.zero_derivatives()
 
         # Set the functions into the solvers
         for scenario in self.model.scenarios:
@@ -213,12 +219,14 @@ class FUNtoFEMDriver(object):
             # Perform any operations after the adjoint solve
             self._post_adjoint(scenario, self.model.bodies)
 
-            self._eval_function_grads(scenario)
+            self._get_function_grads(scenario)
 
-        self.model.enforce_coupling_derivatives()
         return fail
 
     def _initialize_forward(self, scenario, bodies):
+        """
+        Initialize the variables and solver data for a forward analysis
+        """
         for body in bodies:
             body.initialize_variables(scenario)
 
@@ -229,6 +237,9 @@ class FUNtoFEMDriver(object):
         return 0
 
     def _initialize_adjoint(self, scenario, bodies):
+        """
+        Initialize the variables and solver data for an adjoint solve
+        """
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
@@ -254,18 +265,18 @@ class FUNtoFEMDriver(object):
         for solver in self.solvers.keys():
             self.solvers[solver].set_variables(scenario, bodies)
 
-    def _eval_functions(self, scenario, bodies):
+    def _get_functions(self, scenario, bodies):
         for solver in self.solvers.keys():
             self.solvers[solver].get_functions(scenario, self.model.bodies)
 
-    def _eval_function_grads(self, scenario):
-        offset = self._get_scenario_function_offset(scenario)
+    def _get_function_grads(self, scenario):
+        # Set the function gradients into the scenario and body classes
+        bodies = self.model.bodies
         for solver in self.solvers.keys():
-            self.solvers[solver].get_function_gradients(
-                scenario, self.model.bodies, offset
-            )
+            self.solvers[solver].get_function_gradients(scenario, bodies)
 
-        for body in self.model.bodies:
+        offset = self._get_scenario_function_offset(scenario)
+        for body in bodies:
             body.shape_derivative(scenario, offset)
 
     def _get_scenario_function_offset(self, scenario):
@@ -290,38 +301,7 @@ class FUNtoFEMDriver(object):
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:
             for body in self.model.bodies:
-                if body.transfer:
-                    # Aerodynamic coordinate derivatives
-                    temp = np.zeros((3 * body.aero_nnodes), dtype=TransferScheme.dtype)
-                    for func in range(nfunctions):
-                        # Load transfer term
-                        body.transfer.applydLdxA0(
-                            body.psi_L[:, func].copy(order="C"), temp
-                        )
-                        body.aero_shape_term[:, func] += temp.copy()
-
-                        # Displacement transfer term
-                        body.transfer.applydDdxA0(
-                            body.psi_D[:, func].copy(order="C"), temp
-                        )
-                        body.aero_shape_term[:, func] += temp.copy()
-
-                    # Structural coordinate derivatives
-                    temp = np.zeros(
-                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
-                    )
-                    for func in range(nfunctions):
-                        # Load transfer term
-                        body.transfer.applydLdxS0(
-                            body.psi_L[:, func].copy(order="C"), temp
-                        )
-                        body.struct_shape_term[:, func] += temp.copy()
-
-                        # Displacement transfer term
-                        body.transfer.applydDdxS0(
-                            body.psi_D[:, func].copy(order="C"), temp
-                        )
-                        body.struct_shape_term[:, func] += temp.copy()
+                body.add_coordinate_derivative(scenario, step)
 
         return
 

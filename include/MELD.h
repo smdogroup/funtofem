@@ -1,8 +1,8 @@
 #ifndef MELD_H
 #define MELD_H
 
-#include "mpi.h"
 #include "TransferScheme.h"
+#include "mpi.h"
 
 /*
   MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
@@ -14,9 +14,9 @@
   consistent and conservative manner, derived from the principle of virtual
   work.
 
-  Users must specify symmetry in the constructor 
-  isymm = -1 for no symmetry 
-        =  0 for symmetry across x = 0 
+  Users must specify symmetry in the constructor
+  isymm = -1 for no symmetry
+        =  0 for symmetry across x = 0
         =  1 for symmetry across y = 0
         =  2 for symmetry across z = 0
 
@@ -25,11 +25,8 @@
 class MELD : public TransferScheme {
  public:
   // Constructor
-  MELD(MPI_Comm all,
-       MPI_Comm structure, int _struct_root,
-       MPI_Comm aero, int _aero_root,
-       int _isymm, int num_nearest,
-       F2FScalar beta);
+  MELD(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
+       int _aero_root, int _isymm, int num_nearest, F2FScalar beta);
 
   // Destructor
   ~MELD();
@@ -60,7 +57,7 @@ class MELD : public TransferScheme {
  protected:
   // Local structural data
   int ns_local;
-  F2FScalar* Xs_local;
+  F2FScalar *Xs_local;
 
   // Symmetry specifier
   int isymm;
@@ -69,8 +66,8 @@ class MELD : public TransferScheme {
   int mesh_update;
 
   // Data for aerostructural connectivity and weighting
-  int nn; // number of nearest nodes
-  F2FScalar global_beta; // weighting decay parameter
+  int nn;                 // number of nearest nodes
+  F2FScalar global_beta;  // weighting decay parameter
   int *global_conn;
 
   // Data for load and displacement transfers
@@ -93,17 +90,15 @@ class MELD : public TransferScheme {
   void computeWeights(F2FScalar *W);
 
   // Auxiliary functions for displacement transfer
-  void computeCentroid(const int *local_conn, const F2FScalar *W, 
-                       const F2FScalar *X, 
-                       F2FScalar *xsbar );
-  void computeCovariance(const F2FScalar *X, const F2FScalar *Xd, 
-                         const int *local_conn, const F2FScalar *W, 
+  void computeCentroid(const int *local_conn, const F2FScalar *W,
+                       const F2FScalar *X, F2FScalar *xsbar);
+  void computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
+                         const int *local_conn, const F2FScalar *W,
                          const F2FScalar *xs0bar, const F2FScalar *xsbar,
                          F2FScalar *H);
 
   // Auxiliary functions for Jacobian-vector products
-  void assembleM3( const F2FScalar *R, const F2FScalar *S,
-                   F2FScalar *A );
+  void assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *A);
 };
 
-#endif //MELD_H
+#endif  // MELD_H
