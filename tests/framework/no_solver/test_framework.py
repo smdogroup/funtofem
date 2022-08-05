@@ -107,13 +107,15 @@ if complex_step:
     deriv = fvals[0].imag / epsilon
 
     rel_error = (deriv - grads[0][0]) / deriv
-    print("Approximate gradient  = ", deriv.real)
-    print("Adjoint gradient      = ", grads[0][0].real)
-    print("Relative error        = ", rel_error.real)
+    if comm.rank == 0:
+        print("Approximate gradient  = ", deriv.real)
+        print("Adjoint gradient      = ", grads[0][0].real)
+        print("Relative error        = ", rel_error.real)
 else:
     deriv = (fvals[0] - fvals_init[0]) / epsilon
 
     rel_error = (deriv - grads[0][0]) / deriv
-    print("Approximate gradient  = ", deriv)
-    print("Adjoint gradient      = ", grads[0][0])
-    print("Relative error        = ", rel_error)
+    if comm.rank == 0:
+        print("Approximate gradient  = ", deriv)
+        print("Adjoint gradient      = ", grads[0][0])
+        print("Relative error        = ", rel_error)

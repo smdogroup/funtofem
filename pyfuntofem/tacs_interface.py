@@ -386,8 +386,8 @@ class TacsSteadyInterface(SolverInterface):
                 # node locations across TACS processors)
                 self.assembler.setNodes(self.struct_X)
 
-            # Copy over the solution variables
-            self.ans.copyValues(self.scenario_data[scenario].u)
+            # Set the solution to zero
+            self.ans.zeroEntries()
 
             # Set the boundary conditions
             self.assembler.setBCs(self.ans)
@@ -507,8 +507,7 @@ class TacsSteadyInterface(SolverInterface):
         """
         if self.tacs_proc:
             # Save the solution vector
-            u = self.scenario_data[scenario].u
-            u.copyValues(self.ans)
+            self.scenario_data[scenario].u.copyValues(self.ans)
 
             if self.gen_output is not None:
                 self.gen_output()
@@ -764,7 +763,7 @@ class TacsSteadyInterface(SolverInterface):
 
             # Add the derivative to the body
             for body in bodies:
-                struct_shape_term = body.get_struct_coordinate_derivatives()
+                struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
                 for ifunc, vec in enumerate(dfdXpts):
                     struct_shape_term[:, ifunc] += vec.getArray()
 

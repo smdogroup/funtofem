@@ -226,7 +226,7 @@ class SolverInterface(object):
             for ibody, body in enumerate(bodies):
                 lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(ibody, step)
 
-                aero_shape_term = body.get_aero_coordinate_derivatives()
+                aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 aero_shape_term[ ::3,:nfunctions] += lam_x[:,:]
                 aero_shape_term[1::3,:nfunctions] += lam_y[:,:]
                 aero_shape_term[2::3,:nfunctions] += lam_z[:,:]
@@ -239,7 +239,7 @@ class SolverInterface(object):
                 # Add the derivatives to the body
                 lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(ibody, step)
 
-                struct_shape_term = body.get_struct_coordinate_derivatives()
+                struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
                 struct_shape_term[ ::3,:nfunctions] += lam_x[:,:]
                 struct_shape_term[1::3,:nfunctions] += lam_y[:,:]
                 struct_shape_term[2::3,:nfunctions] += lam_z[:,:]
@@ -787,6 +787,20 @@ class SolverInterface(object):
         for body in bodies:
             body.initialize_variables(scenario)
 
+        # Set random loads and heat fluxes
+        for body in bodies:
+            struct_loads = body.get_struct_loads(scenario)
+            if struct_loads is not None:
+                shape = struct_loads.shape
+                body.struct_loads_saved = np.random.uniform(size=shape)
+                struct_loads[:] = body.struct_loads_saved
+
+            struct_flux = body.get_struct_heat_flux(scenario)
+            if struct_flux is not None:
+                shape = struct_flux.shape
+                body.struct_flux_saved = np.random.uniform(size=shape)
+                struct_flux[:] = body.struct_flux_saved
+
         # Comptue one step of the forward solution
         self.initialize(scenario, bodies)
         self.iterate(scenario, bodies, step)
@@ -836,6 +850,16 @@ class SolverInterface(object):
         for body in bodies:
             body.initialize_variables(scenario)
 
+            # Reset the structural loads and heat fluxes
+            struct_loads = body.get_struct_loads(scenario)
+            if struct_loads is not None:
+                struct_loads[:] = body.struct_loads_saved
+
+            struct_flux = body.get_struct_heat_flux(scenario)
+            if struct_flux is not None:
+                struct_flux[:] = body.struct_flux_saved
+
+            # Perturb the structural loads and heat fluxes
             struct_loads = body.get_struct_loads(scenario)
             if struct_loads is not None:
                 pert = np.random.uniform(size=struct_loads.shape)
