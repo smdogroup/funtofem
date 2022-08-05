@@ -285,7 +285,7 @@ class FUNtoFEMmodel(object):
         for func in functions:
             grad = []
             for var in variables:
-                grad.append(func.get_derivative(var))
+                grad.append(func.get_gradient_component(var))
             gradients.append(grad)
 
         return gradients

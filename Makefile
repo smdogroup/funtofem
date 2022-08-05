@@ -7,7 +7,7 @@ default:
 	@cd funtofem; \
 	echo "ctypedef double F2FScalar" > FuntofemTypedefs.pxi; \
 	echo "F2F_NPY_SCALAR = np.NPY_DOUBLE" > FuntofemDefs.pxi; \
-	echo "dtype = np.double" >> FuntofemDefs.pxi;
+	echo "dtype = double" >> FuntofemDefs.pxi;
 
 debug:
 	@cd src && ${MAKE} $@ || exit 1
@@ -19,7 +19,7 @@ complex:
 	@cd funtofem; \
 	echo "ctypedef complex F2FScalar" > FuntofemTypedefs.pxi; \
 	echo "F2F_NPY_SCALAR = np.NPY_CDOUBLE" > FuntofemDefs.pxi; \
-	echo "dtype = np.complex" >> FuntofemDefs.pxi;
+	echo "dtype = complex" >> FuntofemDefs.pxi;
 
 complex_debug:
 	@cd src && ${MAKE} $@ || exit 1

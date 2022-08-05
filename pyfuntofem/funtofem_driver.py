@@ -20,9 +20,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from __future__ import print_function
-
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
@@ -172,7 +169,7 @@ class FUNtoFEMDriver(object):
             # Perform any operations after the forward solve
             self._post_forward(scenario, self.model.bodies)
             if fail == 0:
-                self._eval_functions(scenario, self.model.bodies)
+                self._get_functions(scenario, self.model.bodies)
 
         return fail
 
@@ -222,7 +219,7 @@ class FUNtoFEMDriver(object):
             # Perform any operations after the adjoint solve
             self._post_adjoint(scenario, self.model.bodies)
 
-            self._eval_function_grads(scenario)
+            self._get_function_grads(scenario)
 
         return fail
 
@@ -268,15 +265,15 @@ class FUNtoFEMDriver(object):
         for solver in self.solvers.keys():
             self.solvers[solver].set_variables(scenario, bodies)
 
-    def _eval_functions(self, scenario, bodies):
+    def _get_functions(self, scenario, bodies):
         for solver in self.solvers.keys():
             self.solvers[solver].get_functions(scenario, self.model.bodies)
 
-    def _eval_function_grads(self, scenario):
+    def _get_function_grads(self, scenario):
         # Set the function gradients into the scenario and body classes
         bodies = self.model.bodies
         for solver in self.solvers.keys():
-            self.solvers[solver].eval_function_gradients(scenario, bodies)
+            self.solvers[solver].get_function_gradients(scenario, bodies)
 
         offset = self._get_scenario_function_offset(scenario)
         for body in bodies:

@@ -154,7 +154,7 @@ class TestAerodynamicSolver(SolverInterface):
         self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
 
         # Set random initial node locations
-        self.aero_X = np.random.rand(3 * self.npts)
+        self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
         # Data for generating functional output values
         self.func_coefs1 = np.random.rand(3 * self.npts)
@@ -162,7 +162,7 @@ class TestAerodynamicSolver(SolverInterface):
 
         # Initialize the coordinates of the aerodynamic or structural mesh
         for body in model.bodies:
-            body.initialize_aero_mesh(self.aero_X)
+            body.initialize_aero_nodes(self.aero_X)
 
         return
 
@@ -224,7 +224,7 @@ class TestAerodynamicSolver(SolverInterface):
 
         return
 
-    def eval_function_gradients(self, scenario, bodies):
+    def get_function_gradients(self, scenario, bodies):
         """
         Return the function gradients
         """
@@ -237,12 +237,12 @@ class TestAerodynamicSolver(SolverInterface):
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                     if aero_loads_ajp is not None:
                         value = np.dot(aero_loads_ajp[:, findex], self.c1[:, vindex])
-                        func.add_derivative(var, value)
+                        func.add_gradient_component(var, value)
 
                     aero_flux_ajp = body.get_aero_flux_ajp(scenario)
                     if aero_flux_ajp is not None:
                         value = np.dot(aero_flux_ajp[:, findex], self.c2[:, vindex])
-                        func.add_derivative(var, value)
+                        func.add_gradient_component(var, value)
 
         return
 
@@ -270,6 +270,10 @@ class TestAerodynamicSolver(SolverInterface):
 
     def initialize(self, scenario, bodies):
         """Note that this function must return a fail flag of zero on success"""
+
+        for body in bodies:
+            self.aero_X[:] = body.get_aero_nodes()
+
         return 0
 
     def iterate(self, scenario, bodies, step):
@@ -408,7 +412,7 @@ class TestStructuralSolver(SolverInterface):
         self.c2 = 0.01 * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
 
         # Set random initial node locations
-        self.struct_X = np.random.rand(3 * self.npts)
+        self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
         # Data for output functional values
         self.func_coefs1 = np.random.rand(3 * self.npts)
@@ -416,7 +420,7 @@ class TestStructuralSolver(SolverInterface):
 
         # Initialize the coordinates of the structural mesh
         for body in model.bodies:
-            body.initialize_struct_mesh(self.struct_X)
+            body.initialize_struct_nodes(self.struct_X)
 
         return
 
@@ -478,9 +482,13 @@ class TestStructuralSolver(SolverInterface):
 
         return
 
-    def eval_function_gradients(self, scenario, bodies):
+    def get_function_gradients(self, scenario, bodies):
         """
-        Return the function gradients
+        Evaluate the function gradients and set them into the function classes.
+
+        Note: The function gradients can be evaluated elsewhere (for instance in
+        post_adjoint(). This function must get these values and place them into the
+        associated function.)
         """
 
         # Set the derivatives of the functions for the given scenario
@@ -491,12 +499,12 @@ class TestStructuralSolver(SolverInterface):
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         value = np.dot(struct_disps_ajp[:, findex], self.c1[:, vindex])
-                        func.add_derivative(var, value)
+                        func.add_gradient_component(var, value)
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
                         value = np.dot(struct_temps_ajp[:, findex], self.c2[:, vindex])
-                        func.add_derivative(var, value)
+                        func.add_gradient_component(var, value)
 
         return
 
@@ -524,6 +532,11 @@ class TestStructuralSolver(SolverInterface):
 
     def initialize(self, scenario, bodies):
         """Note that this function must return a fail flag of zero on success"""
+
+        # Initialize the coordinates of the aerodynamic or structural mesh
+        for body in bodies:
+            self.struct_X[:] = body.get_struct_nodes()
+
         return 0
 
     def iterate(self, scenario, bodies, step):
@@ -592,7 +605,7 @@ class TestStructuralSolver(SolverInterface):
                         struct_loads_ajp[:, k] += self.func_coefs1
 
             struct_temps_ajp = body.get_struct_temps_ajp(scenario)
-            struct_flux_ajp = body.get_struct_flux_ajp(scenario)
+            struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
             if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
                     struct_flux_ajp[:, k] = np.dot(self.Jac2.T, struct_temps_ajp[:, k])

@@ -1,31 +1,20 @@
-
-from __future__ import print_function
-
+import os
+from mpi4py import MPI
+from funtofem import TransferScheme
 from pyfuntofem.funtofem_model import FUNtoFEMmodel
 from pyfuntofem.variable import Variable
 from pyfuntofem.scenario import Scenario
 from pyfuntofem.body import Body
 from pyfuntofem.function import Function
+from pyfuntofem.test_solver import TestAerodynamicSolver
 from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
-from pyfuntofem.test_solver import TestSolver
+from pyfuntofem.tacs_interface import createTacsInterfaceFromBDF
+from test_bdf_utils import generateBDF, callback
 
-from tacs_model import wedgeTACS
-from mpi4py import MPI
-import os, sys
-import time
-
-# Split the communicator
-n_tacs_procs = 1
-comm = MPI.COMM_WORLD
-
-world_rank = comm.Get_rank()
-if world_rank < n_tacs_procs:
-    color = 55
-    key = world_rank
-else:
-    color = MPI.UNDEFINED
-    key = world_rank
-tacs_comm = comm.Split(color, key)
+# Generate the BDF file if required
+bdf_file = "test_bdf_file.bdf"
+if not os.path.exists(bdf_file):
+    generateBDF(bdf_file)
 
 # Build the model
 model = FUNtoFEMmodel("wedge")
@@ -47,10 +36,18 @@ steady.add_function(temp)
 
 model.add_scenario(steady)
 
-# Instantiate a test solver for the flow and structures
+# Instantiate the solvers we'll use here
 solvers = {}
-solvers["flow"] = TestSolver(comm, model, solver="flow")
-solvers["structural"] = wedgeTACS(comm, tacs_comm, model, n_tacs_procs)
+
+# Build the TACS interface
+nprocs = 1
+comm = MPI.COMM_WORLD
+tacs_comm = None
+
+solvers["structural"] = createTacsInterfaceFromBDF(
+    model, comm, nprocs, bdf_file, callback=callback
+)
+solvers["flow"] = TestAerodynamicSolver(comm, model)
 
 # L&D transfer options
 transfer_options = {
@@ -61,8 +58,70 @@ transfer_options = {
 }
 
 # instantiate the driver
-driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, 0, comm, 0, transfer_options, model=model)
+driver = FUNtoFEMnlbgs(
+    solvers, comm, tacs_comm, 0, comm, 0, transfer_options, model=model
+)
 
-fail = driver.solve_forward()
-if fail == 1:
-    print("\nSimulation failed.\n")
+# Check whether to use the complex-step method or now
+complex_step = False
+epsilon = 1e-6
+if TransferScheme.dtype == complex:
+    complex_step = True
+    epsilon = 1e-30
+
+# Manual test of the disciplinary solvers
+scenario = model.scenarios[0]
+bodies = model.bodies
+solvers["flow"].test_adjoint(
+    "flow", scenario, bodies, epsilon=epsilon, complex_step=complex_step
+)
+solvers["structural"].test_adjoint(
+    "structural", scenario, bodies, epsilon=epsilon, complex_step=complex_step
+)
+
+# Solve the forward analysis
+driver.solve_forward()
+driver.solve_adjoint()
+
+# Get the functions
+functions = model.get_functions()
+variables = model.get_variables()
+
+# Store the function values
+fvals_init = []
+for func in functions:
+    fvals_init.append(func.value)
+
+# Solve the adjoint and get the function gradients
+driver.solve_adjoint()
+grads = model.get_function_gradients()
+
+# Set the new variable values
+if complex_step:
+    variables[0].value = variables[0].value + 1j * epsilon
+    model.set_variables(variables)
+else:
+    variables[0].value = variables[0].value + epsilon
+    model.set_variables(variables)
+
+driver.solve_forward()
+
+# Store the function values
+fvals = []
+for func in functions:
+    fvals.append(func.value)
+
+if complex_step:
+    deriv = fvals[0].imag / epsilon
+
+    rel_error = (deriv - grads[0][0]) / deriv
+    print("Approximate gradient  = ", deriv.real)
+    print("Adjoint gradient      = ", grads[0][0].real)
+    print("Relative error        = ", rel_error.real)
+else:
+    deriv = (fvals[0] - fvals_init[0]) / epsilon
+
+    rel_error = (deriv - grads[0][0]) / deriv
+    print("Approximate gradient  = ", deriv)
+    print("Adjoint gradient      = ", grads[0][0])
+    print("Relative error        = ", rel_error)

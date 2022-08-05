@@ -103,34 +103,34 @@ class Function(object):
 
         return
 
-    def set_derivative(self, var, value):
+    def set_gradient_component(self, var, value):
         """
-        Set the derivative value for the given variable into the array of derivative values
+        Set the gradient value for the given variable into the dictionary of gradient values
 
-        This call overwrites the derivative value stored by the function.
+        This call will overwrite the gradient value stored by the function.
 
         Parameter
         ---------
         var: Variable object
             Derivative of this function w.r.t. the given variable
         value: scalar value
-            Value of the derivative contribution
+            Value of the gradient
         """
 
         self.derivatives[var] = value
 
         return
 
-    def add_derivative(self, var, value):
+    def add_gradient_component(self, var, value):
         """
-        Add the derivative value for the given variable into the array of derivative values
+        Add the gradient value for the given variable into the dictionary of gradient values
 
         Parameter
         ---------
         var: Variable object
             Derivative of this function w.r.t. the given variable
         value: scalar value
-            Value of the derivative contribution
+            Value of the gradient contribution
         """
 
         if var in self.derivatives:
@@ -140,9 +140,9 @@ class Function(object):
 
         return
 
-    def get_derivative(self, var):
+    def get_gradient_component(self, var):
         """
-        Get the derivative value stored - return 0 if not defined
+        Get the gradient value stored - return 0 if not defined
 
         Parameter
         ---------

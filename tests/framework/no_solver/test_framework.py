@@ -1,5 +1,6 @@
 import numpy as np
 from mpi4py import MPI
+from funtofem import TransferScheme
 from pyfuntofem.funtofem_model import FUNtoFEMmodel
 from pyfuntofem.variable import Variable
 from pyfuntofem.scenario import Scenario
@@ -53,12 +54,21 @@ transfer_options = {
 # instantiate the driver
 driver = FUNtoFEMnlbgs(solvers, comm, comm, 0, comm, 0, transfer_options, model=model)
 
+# Check whether to use the complex-step method or now
+complex_step = False
+epsilon = 1e-6
+if TransferScheme.dtype == complex:
+    complex_step = True
+    epsilon = 1e-30
+
 # Manual test of the disciplinary solvers
 scenario = model.scenarios[0]
 bodies = model.bodies
-solvers["flow"].test_adjoint("flow", scenario, bodies, epsilon=1e-30, complex_step=True)
+solvers["flow"].test_adjoint(
+    "flow", scenario, bodies, epsilon=epsilon, complex_step=complex_step
+)
 solvers["structural"].test_adjoint(
-    "structural", scenario, bodies, epsilon=1e-30, complex_step=True
+    "structural", scenario, bodies, epsilon=epsilon, complex_step=complex_step
 )
 
 # Solve the forward analysis
@@ -69,16 +79,41 @@ driver.solve_adjoint()
 functions = model.get_functions()
 variables = model.get_variables()
 
+# Store the function values
+fvals_init = []
+for func in functions:
+    fvals_init.append(func.value)
+
+# Solve the adjoint and get the function gradients
 driver.solve_adjoint()
 grads = model.get_function_gradients()
 
 # Set the new variable values
-dh = 1e-30
-variables[0].value = variables[0].value + 1j * dh
-model.set_variables(variables)
+if complex_step:
+    variables[0].value = variables[0].value + 1j * epsilon
+    model.set_variables(variables)
+else:
+    variables[0].value = variables[0].value + epsilon
+    model.set_variables(variables)
 
 driver.solve_forward()
-deriv = functions[0].value.imag / dh
 
-print("complex step = ", deriv)
-print("adjoint      = ", grads[0][0])
+# Store the function values
+fvals = []
+for func in functions:
+    fvals.append(func.value)
+
+if complex_step:
+    deriv = fvals[0].imag / epsilon
+
+    rel_error = (deriv - grads[0][0]) / deriv
+    print("Approximate gradient  = ", deriv.real)
+    print("Adjoint gradient      = ", grads[0][0].real)
+    print("Relative error        = ", rel_error.real)
+else:
+    deriv = (fvals[0] - fvals_init[0]) / epsilon
+
+    rel_error = (deriv - grads[0][0]) / deriv
+    print("Approximate gradient  = ", deriv)
+    print("Adjoint gradient      = ", grads[0][0])
+    print("Relative error        = ", rel_error)

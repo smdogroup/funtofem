@@ -30,8 +30,10 @@ class SolverInterface(object):
     def __init__(self, *args, **kwargs):
         """
         The solver constructor is required to set discipline node locations (either :math:`x_a` or :math:`x_s`)
-        in the funtofem body class as ``body.aero_X`` or ``body.struct_X``. The constructor can be used flexibly
-        for other discipline solver specific activities (e.g. solver instantiation, reading mesh, allocating solver data).
+        in the funtofem body class. These values are passed via a call to either
+        ``body.initialize_struct_nodes(struct_X)`` or ``body.initialize_aero_nodes(aero_X)``.
+        The constructor can be used flexibly for other discipline solver specific activities (e.g. solver
+        instantiation, reading mesh, allocating solver data).
 
         Examples
         --------
@@ -41,7 +43,8 @@ class SolverInterface(object):
 
             # Set aerodynamic surface meshes
             for ibody, body in enumerate(bodies):
-                body.aero_X = solver.get_mesh(ibody)
+                aero_X = solver.get_mesh(ibody)
+                body.initialize_aero_nodes(aero_X)
 
         Notional structural solver implementation ``solver``:
 
@@ -49,7 +52,8 @@ class SolverInterface(object):
 
             # Set structural meshes
             for ibody, body in enumerate(bodies):
-                body.struc_X = solver.get_mesh(ibody)
+                struct_X = solver.get_mesh(ibody)
+                body.initialize_struct_nodes(struct_X)
         """
         pass
 
@@ -76,19 +80,17 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-           for ibody, body in enumerate(bodies):
-               if 'structural' in body.variables:
-                   for var in body.variables['structural']:
-                       solver.set_body_variable(ibody, var.value)
+            for ibody, body in enumerate(bodies):
+                for i, var in enumerate(self.variables):
+                    solver.set_variable(i, var.value)
 
         Aerodynamic Solver:
 
         .. code-block:: python
 
-           if 'aerodynamic' in scenario.variables:
-               for var in scenario.variables['aerodynamic']:
-                   if var.active:
-                       solver.set_body_variable(var.name, var.value)
+            for ibody, body in enumerate(bodies):
+                for i, var in enumerate(self.variables):
+                    solver.set_variable(i, var.value)
         """
         pass
 
@@ -110,19 +112,20 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-           for func in scenario.functions:
+            for func in scenario.functions:
 
-               # Set the structural functions in
-               if function.adjoint and function.analysis_type=='structural':
-                   solver.set_adjoint_function(function.name, function.start, function,stop)
+                # Set the structural functions in
+                if function.adjoint and function.analysis_type == "structural":
+                    solver.set_adjoint_function(function.name, function.start, function,stop)
 
-               # Tell the solver that an adjoint is needed, but the function is not explicitly dependent on structural states
-               elif function.adjoint and function.analysis_type !='structural':
-                   solver.set_dummy_function()
+                # Tell the solver that an adjoint is needed, but the function is
+                # not explicitly dependent on structural states
+                elif function.adjoint and function.analysis_type != "structural":
+                    solver.set_dummy_function()
 
-               # Functions such as structural mass do not need and adjoint
-               elif not function.adjoint and function.analysis_type=='structural':
-                   solver.set_nonadjoint_function(function.name)
+                # Functions such as structural mass do not need and adjoint
+                elif not function.adjoint and function.analysis_type == "structural":
+                    solver.set_nonadjoint_function(function.name)
         """
         pass
 
@@ -147,28 +150,31 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-           for func in scenario.functions:
+            for func in scenario.functions:
 
-               # Set the structural functions in
-               if func.analysis_type == 'structural':
-                   if func.name == 'mass':
-                       func.value = solver.evaluate_mass()
-                   elif func.name == 'ksfailure':
-                       func.value = solver.get_ksfailure()
-                   elif func.name == 'ksfailure':
-                       func.value = solver.get_ksfailure()
-                   else:
-                       print("Unknown structural function in get_functions")
-
+                # Set the structural functions in
+                if func.analysis_type == "structural":
+                    if func.name == "mass":
+                        func.value = solver.evaluate_mass()
+                    elif func.name == "ksfailure":
+                        func.value = solver.get_ksfailure()
+                    else:
+                        print("Unknown structural function in get_functions")
         """
         pass
 
     def get_function_gradients(self, scenario, bodies):
         """
         Get the derivatives of all the functions with respect to design variables associated with this solver.
-        The derivatives in the scenario and body objects are a Python dictionary where the keys are the type of variable.
-        Each entry in the dictionary a list where each entry is associated with a function in the model. Finally, there
-        is a list where each index is associated with a particular design variable.
+
+        Each solver sets the function gradients for its own variables into the function objects using either
+        ``function.set_gradient(var, value)`` or ``function.add_gradient(var, vaule)``. Note that before
+        this function is called, all gradient components are zeroed.
+
+        The derivatives are stored in a dictionary in each function class. As a result, the gradients are
+        stored in an unordered format. The gradients returned by ``model.get_function_gradients()`` are
+        flattened into a list of lists whose order is determined by the variable list stored in the model
+        class.
 
         Parameters
         ----------
@@ -176,8 +182,6 @@ class SolverInterface(object):
             The current scenario
         bodies: list of :class:`~body.Body` objects
             The bodies in the model
-        offset: int
-            offset of the scenario's function index w.r.t the full list of functions in the model.
 
         Examples
         --------
@@ -185,24 +189,13 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-            for func, function in enumerate(scenario.functions):
-                for vartype in scenario.variables:
-                    if vartype == 'aerodynamic':
-                        for i, var in enumerate(scenario.variables[vartype]):
-                            if var.active:
-                                scenario.derivatives[vartype][offset+func][i] = solver.get_derivative(function.id, var.id)
+            # Make sure the gradient is consistent across all processors before setting
+            # the values
+            grad = self.comm.allreduce(grad)
 
-        Structural Solver:
-
-        .. code-block:: python
-
-            for func, function in enumerate(scenario.functions):
-                for ibody, body in enumerate(bodies):
-                    for vartype in body.variables:
-                        if vartype == 'structural':
-                            for i, var in enumerate(body.variables[vartype]):
-                                if var.active:
-                                    body.derivatives[vartype][offset+func][i] = solver.get_derivative(func, ibody, i)
+            for i, func in enumerate(scenario.functions):
+                for j, var in enumerate(self.variables):
+                    func.set_derivatives(var, grad[i, j])
         """
         pass
 
@@ -213,7 +206,6 @@ class SolverInterface(object):
         and struct_shape_term attributes.
 
         For time dependent problems, this is called at the end of every time step during reverse marching.
-
 
         Parameters
         ----------
@@ -232,30 +224,25 @@ class SolverInterface(object):
 
             nfunctions = scenario.count_adjoint_functions()
             for ibody, body in enumerate(bodies):
-                if body.shape and body.aero_nnodes > 0:
+                lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(ibody, step)
 
-                    lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(step)
-
-                    # Add (don't overwrite) the solver's contribution
-                    body.aero_shape_term[ ::3,:nfunctions] += lam_x[:,:]
-                    body.aero_shape_term[1::3,:nfunctions] += lam_y[:,:]
-                    body.aero_shape_term[2::3,:nfunctions] += lam_z[:,:]
+                aero_shape_term = body.get_aero_coordinate_derivatives()
+                aero_shape_term[ ::3,:nfunctions] += lam_x[:,:]
+                aero_shape_term[1::3,:nfunctions] += lam_y[:,:]
+                aero_shape_term[2::3,:nfunctions] += lam_z[:,:]
 
         Structural Solver:
 
         .. code-block:: python
 
             for ibody, body in enumerate(bodies):
-                if body.shape:
+                # Add the derivatives to the body
+                lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(ibody, step)
 
-                    lam_x, lam_y, lam_Z = solver.extract_coordinate_derivatives(step)
-
-                    # Add (don't overwrite) the solver's contribution
-                    body.struct_shape_term[ ::3,:nfunctions] += lam_x[:,:]
-                    body.struct_shape_term[1::3,:nfunctions] += lam_y[:,:]
-                    body.struct_shape_term[2::3,:nfunctions] += lam_z[:,:]
-
-
+                struct_shape_term = body.get_struct_coordinate_derivatives()
+                struct_shape_term[ ::3,:nfunctions] += lam_x[:,:]
+                struct_shape_term[1::3,:nfunctions] += lam_y[:,:]
+                struct_shape_term[2::3,:nfunctions] += lam_z[:,:]
         """
         pass
 
@@ -263,15 +250,17 @@ class SolverInterface(object):
         """
         Set up anything that is necessary for a specific scenario prior to calls to ``iterate``.
         A requirement is that discipline solvers update their mesh representations to be consistent
-        with ``body.aero_X`` (:math:`x_a`) or ``body.struct_X`` (:math:`x_s`) respectively due to fact
-        that they may have been updated as a result of design changes.
+        with the coordinates in the bodies. These coordinate locations can be obtained by
+        calling ``body.get_aero_nodes`` (:math:`x_a`) or ``body.get_struct_nodes`` (:math:`x_s`),
+        respectively. These coordinates may be updated as a result of design changes.
 
         Note, it is possible that a discipline solver mesh representation is updated by reading a mesh file
         instead of accepting the funtofem body representation. Ultimately, the requirement is that the funtofem
         body mesh representations ``body.aero_X`` and ``body.struct_X`` and their corresponding discipline solver
         mesh representations are consistent.
 
-        The initialize step may accomodate other useful activities such as data allocation, setting initial conditions, etc.
+        The initialize step may accomodate other useful activities such as data allocation,
+        setting initial conditions, etc.
 
         Parameters
         ----------
@@ -288,9 +277,10 @@ class SolverInterface(object):
 
             # Set in the new aerodynamic surface meshes
             for ibody, body in enumerate(bodies):
-                solver.set_surface_mesh(ibody, body.aero_X)
+                aero_X = body.get_aero_nodes()
+                solver.set_surface_node_locations(ibody, aero_X)
 
-           # Initialize the flow field
+           # Initialize internal solver data in preparation for a flow solver iterations
            solver.initialize()
 
         Structural Solver:
@@ -299,12 +289,8 @@ class SolverInterface(object):
 
             # Set the new structural surface mesh
             for ibody, body in enumerate(bodies):
-                solver.set_mesh(ibody, body.struct_X)
-
-           # Initialize the flow field
-           solver.initialize()
-
-
+                struct_X = body.get_struct_nodes()
+                solver.set_structural_node_locations(ibody, struct_X)
         """
         return 0
 
@@ -314,16 +300,16 @@ class SolverInterface(object):
 
         For an aerodynamic solver, this might include:
 
-        #. Obtain displacements at aerodynamic surface nodes :math:`u_a` from funtofem body objects ``body.aero_disps``
+        #. Obtain displacements at aerodynamic surface nodes :math:`u_a` from funtofem body objects
         #. Deform the meshes
         #. Solve for the new aerodynamic state :math:`q`
-        #. Integrate and localize aerodynamic surface forces :math:`f_a` at aerodynamic surface node locations and set in the funtofem body object ``body.aero_loads``
+        #. Integrate and localize aerodynamic surface forces :math:`f_a` at aerodynamic surface node locations
 
         For a structural solver:
 
-        #. Obtain the forces at structural nodes :math:`f_s` from funtofem body objects ``body.struct_loads``
+        #. Obtain the forces at structural nodes :math:`f_s`
         #. Solve for new displacement state :math:`u_s`
-        #. Set new structural displacements :math:`u_s` in the body objects ``body.struct_disps``
+        #. Set new structural displacements :math:`u_s`
 
         Parameters
         ----------
@@ -338,35 +324,55 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-            # Input the surface deflections
+            # Get the surface node locations and temperatures
             for ibody, body in enumerate(bodies):
-                if body.aero_nnodes > 0:
-                    solver.input_surface_deformation(ibody, body.aero_disps)
+                aero_disps = body.get_aero_disps(scenario) # May return None if not aeroelastic
+                if aero_disps is not None:
+                    solver.input_surface_deformation(ibody, aero_disps)
+
+                aero_temps = body.get_aero_temps(scenario) # May return None if not aerothermal
+                if aero_temps is not None:
+                    solver.input_surface_temperatures(ibody, aero_temps)
 
             # Advance the solver
             solver.iterate()
 
-            # Extract the surface forces
+            # Extract the aerodynamic forces at the nodes and the corresponding
+            # area-weighted normal component of the heat flux
             for ibody, body in enumerate(bodies):
-                if body.aero_nnodes > 0:
-                    body.aero_loads = solver.extract_forces(ibody)
+                aero_loads = body.get_aero_loads(scenario)
+                if aero_loads is not None:
+                    aero_loads[:] = solver.get_surface_forces(ibody)
+
+                aero_flux = body.get_aero_heat_flux(scenario)
+                if aero_flux is not None:
+                    aero_flux[:] = solver.get_surface_heat_flux(ibody)
 
         Structural Solver:
 
         .. code-block:: python
 
-            # Input the forces on the structure
+            # Input the forces and/or heat flux to the structure
             for ibody, body in enumerate(bodies):
-                if body.aero_nnodes > 0:
-                    solver.input_forces(ibody, body.struct_loads)
+                struct_loads = body.get_struct_loads(scenario)
+                if struct_loads is not None:
+                    solver.input_forces(ibody, struct_loads)
 
-            # Advance the solver
+                struct_flux = body.get_struct_heat_flux(scenario)
+                if struct_flux is not None:
+                    solver.input_heat_flux(ibody, struct_flux)
+
+            # Solve the problem with the forces/heat loads
             solver.iterate()
 
             # Extract the displacemets
-            for ibody, body in enumerate(bodies):
-                if body.aero_nnodes > 0:
-                    body.struct_disps = solver.extract_displacements(ibody)
+                struct_disps = body.get_struct_disps(scenario)
+                if struct_disps is not None:
+                    struct_disps[:] = solver.get_displacements(ibody)
+
+                struct_temps = body.get_struct_temps(scenario)
+                if struct_temps is not None:
+                    struct_disps[:] = solver.get_temperatures(ibody)
         """
         return 0
 
@@ -399,8 +405,28 @@ class SolverInterface(object):
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
-        Adjoint iteration for the solver. Typical involves the solver reading in a RHS term then returning an
-        adjoint or adjoint-product. Called in NLBGS solver.
+        Adjoint iteration for the solver.
+
+        For an aerodynamic solver this will include:
+
+        #. Obtain the adjoint-Jacobian product of the surface forces from the body classes
+        #. Obtain the adjoint-Jacobian product of the surface heat fluxes from the body classes
+        #. Set these values into the adjoint solver
+        #. Solve for the aerodynamic adjoint
+        #. Solve the grid adjoint
+        #. Compute the output adjoint-Jacobian products
+        #. Set the adjoint-Jacobian product of the aerodynamic displacements into the body classes
+        #. Set the adjoint-Jacobian product of the aerodynamic surface temperatures into the body classes
+
+        For a structural solver this will include:
+
+        #. Get the displacement adjoint-Jacobian product from the body classes
+        #. Get the temperature adjoint-Jacobian product from the body classes
+        #. Set the adjoint-Jacobian products into the right-hand-side of the structural solver
+        #. Solve the structural or thermomechanical adjoint equations
+        #. Compute the output adjoint-Jacobian products
+        #. Set the adjoint-Jacobian product of the structural forces into the body classes
+        #. Set the adjoint-Jacobian product of the structural heat flux into the body classes
 
         Parameters
         ----------
@@ -417,37 +443,97 @@ class SolverInterface(object):
 
         .. code-block:: python
 
-            # Read in the force adjoint
+            # Set the inputs to the aerodynamic adjoint
             for ibody, body in enumerate(bodies):
-                solver.set_force_adjoint(body.psi_F)
+                # Get the adjoint-Jacobian product for the aero_loads. This may be None
+                # if it is not defined
+                aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                if aero_loads_ajp is not None:
+                    # Note: This part may or may not be in the solver itself. This
+                    # hypothetical code is like FUN3D where the integration adjoint
+                    # terms are solved externally and then set into the solver.
 
-                # take a reverse step in the adjoint solver
-                solver.iterate_adjoint(step)
+                    # Solve the aero force integration adjoint equation
+                    # dF/dfA^{T} * psi_{F} = - dL/dfA^{T} * psi_L = - aero_loads_ajp.
+                    # Note that in this case dF/dfA = I.
+                    psi_F = -aero_loads_ajp
 
-                # pull out the grid adjoint value
-                for ibody, body in enumerate(bodies):
-                    psi_G = solver.get_grid_adjoint(ibody)
+                    for ifunc, func in enumerate(scenario.functions):
+                        solver.set_aero_forces_adjoint(ibody, psi_F[:, ifunc])
 
-                    # 'solve' for the displacement adjoint
-                    body.psi_D = -psi_G
+                # Get the adjoint-Jacobian product for the aero_flux. This may be
+                # None if it is not defined
+                aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                if aero_flux_ajp is not None:
+                    # Solve the aero heat flux integration
+                    # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
+                    psi_H = -aero_flux_ajp
 
+                    for ifunc, func in enumerate(scenario.functions):
+                        solver.set_aero_flux_adjoint(ibody, psi_H[:, ifunc])
+
+            # Iterate on the adjoint equations
+            solver.iterate_adjoint()
+
+            # Extract the output adjoint-Jacobian products from the solver
+            for ibody, body in enumerate(bodies):
+                aero_disps_ajp = body.get_aero_disps_ajp(scenario)
+                if aero_disps_ajp is not None:
+                    for ifunc, func in enumerate(scenario.functions):
+                        dfdxA = solver.get_mesh_sensitivity(ibody, ifunc)
+                        aero_disps_ajp[:, ifunc] = dfdxA
+
+                aero_temps_ajp = body.get_aero_temps_ajp(scenario)
+                if aero_temps_ajp is not None:
+                    for ifunc, func in enumerate(scenario.functions):
+                        dfdtA = solver.get_temp_adjoint_product(ibody, ifunc)
+                        aero_temps_ajp[:, ifunc] = dfdtA
 
         Structural Solver:
 
         .. code-block:: python
 
-            # put the body RHS's into the solver bvec
-            for ibody, body in enumerate(bodies):
-                solver.add_body_rhs_term(ibody, body.struct_rhs)
+            # Outer loop over the number of functions of interest
+            for ifunc, func in enumerate(scenario.functions):
+                rhs[:] = -dfdu[ifunc] # Set the right-hand-side
 
-            # take a reverse step in the adjoint solver
-            solver.iterate_adjoint(step)
+                # Set the inputs to the structural adjoint
+                for ibody, body in enumerate(bodies):
+                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                    if struct_disps_ajp is not None:
+                        # Add the contributions to the adjoint right-hand-side
+                        rhs[load_locations] -= struct_disps_ajp
 
-            # pull out the structural adjoint value
-            for ibody, body in enumerate(bodies):
-                body.psi_S = solver.get_struct_adjoint(ibody)
+                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                    if struct_temps_ajp is not None:
+                        rhs[temp_locations] -= struct_temps_ajp
+
+                # Solve the adjoint
+                solver.solve_adjoint(rhs)
+
+                # Extract the load and heat-flux ajdoint-vector products
+                psi_S = solver.get_adjoint()
+
+                # Here the required adjoint vector products are
+                # struct_loads_ajp = psi_S^{T} * dS/dfS
+                # struct_flux_ajp = psi_S^{T} * dS/fhS
+                # We use the residual S = r(u) - fS - hS
+                for ibody, body in enumerate(bodies):
+                    struct_loads_ajp = body.get_struct_loads_ajp(scenario)
+                    if struct_loads_ajp is not None:
+                        struct_loads_ajp[:] = -psi_S[load_locations]
+
+                    struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
+                    if struct_flux_ajp is not None:
+                        struct_flux_ajp[:] = -psi_S[temp_locations]
         """
         return 0
+
+    def post_adjoint(self, scenario, bodies):
+        """
+        Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.
+        """
+        pass
 
     def set_states(self, scenario, bodies, step):
         """
@@ -480,12 +566,6 @@ class SolverInterface(object):
             # Set the structural displacements for the transfer scheme residuals to linearize about
             for ibody,body in enumerate(bodies):
                 body.struct_disps = disps_hist[ibody]
-        """
-        pass
-
-    def post_adjoint(self, scenario, bodies):
-        """
-        Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.
         """
         pass
 
@@ -560,6 +640,9 @@ class SolverInterface(object):
         """
         Test to see if the adjoint methods are implemented correctly
         """
+
+        self.set_functions(scenario, bodies)
+        self.set_variables(scenario, bodies)
 
         for body in bodies:
             body.initialize_variables(scenario)
@@ -698,6 +781,9 @@ class SolverInterface(object):
         Test to see if the adjoint methods are implemented correctly
         """
 
+        self.set_functions(scenario, bodies)
+        self.set_variables(scenario, bodies)
+
         for body in bodies:
             body.initialize_variables(scenario)
 
@@ -773,7 +859,7 @@ class SolverInterface(object):
             if struct_loads_ajp is not None:
                 adjoint_product += np.dot(struct_loads_ajp[:, 0], load_pert_list[-1])
 
-            struct_flux_ajp = body.get_struct_flux_ajp(scenario)
+            struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
             if struct_flux_ajp is not None:
                 adjoint_product += np.dot(struct_flux_ajp[:, 0], flux_pert_list[-1])
 

@@ -168,7 +168,7 @@ class Body(Base):
 
         return
 
-    def initialize_struct_mesh(self, struct_X, struct_id=None):
+    def initialize_struct_nodes(self, struct_X, struct_id=None):
         """
         Initialize the structural mesh on any processors that have an instance
         of the structural solver.
@@ -191,19 +191,14 @@ class Body(Base):
 
         return
 
-    def get_struct_nodes(self, struct_X):
+    def get_struct_nodes(self):
         """
-        Set the structural node locations without changing the number of nodes or structural connectivity
-
-        Parameters
-        ----------
-        struct_X: np.ndarray
-            The structural node locations
+        Get the structural node locations associated with this body
         """
 
         return self.struct_X
 
-    def initialize_aero_mesh(self, aero_X, aero_id=None):
+    def initialize_aero_nodes(self, aero_X, aero_id=None):
         """
         Initialize the aerodynamic surface mesh on any processors that have an
         instance of the aerodynamic solver
@@ -226,18 +221,12 @@ class Body(Base):
 
         return
 
-    def set_aero_nodes(self, aero_X):
+    def get_aero_nodes(self):
         """
-        Set the aerodynamic node locations without changing the number of nodes or aerodynamic mesh connectivity
-
-        Parameters
-        ----------
-        aero_X: np.ndarray
-            The aerodynamic node locations
+        Get the aerodynamic node locations associated with this body
         """
 
-        self.aero_X[:] = aero_X[:]
-        return
+        return self.aero_X
 
     def initialize_transfer(
         self,
@@ -249,7 +238,7 @@ class Body(Base):
         transfer_options=None,
     ):
         """
-        Initialize the transfer scheme
+        Initialize the load and displacement and/or thermal transfer scheme for this body
 
         Parameters
         ----------
@@ -925,7 +914,7 @@ class Body(Base):
 
         return None
 
-    def get_struct_flux_ajp(self, scenario):
+    def get_struct_heat_flux_ajp(self, scenario):
         """
 
         struct_flux_ajp = dS/dhS^{T} * psi_S
