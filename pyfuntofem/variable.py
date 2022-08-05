@@ -38,8 +38,6 @@ class Variable(object):
         """
         Variable object for FUNtoFEM
 
-
-
         Parameters
         ----------
         name: str
