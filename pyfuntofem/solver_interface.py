@@ -617,25 +617,47 @@ class SolverInterface(object):
         return 0
 
     def test_adjoint(
-        self, solver_type, scenario, bodies, step=0, epsilon=1e-6, complex_step=False
+        self,
+        solver_type,
+        scenario,
+        bodies,
+        step=0,
+        epsilon=1e-6,
+        complex_step=False,
+        rtol=1e-6,
     ):
-        """ """
+        """
+        Test the adjoint implementation depending on the solver type.
+
+        This test evaluates the consistency between the forward and adjoint modes.
+        """
 
         if solver_type == "flow" or solver_type == "aerodynamic":
-            self._test_flow_adjoint(
-                scenario, bodies, step=step, epsilon=epsilon, complex_step=complex_step
+            return self._test_flow_adjoint(
+                scenario,
+                bodies,
+                step=step,
+                epsilon=epsilon,
+                complex_step=complex_step,
+                rtol=rtol,
             )
         elif solver_type == "structural":
-            self._test_struct_adjoint(
-                scenario, bodies, step=step, epsilon=epsilon, complex_step=complex_step
+            return self._test_struct_adjoint(
+                scenario,
+                bodies,
+                step=step,
+                epsilon=epsilon,
+                complex_step=complex_step,
+                rtol=rtol,
             )
         else:
             print("Unrecognized solver type in test_adjoint")
 
-        return
+        # Return true if no test has been performed
+        return True
 
     def _test_flow_adjoint(
-        self, scenario, bodies, step=0, epsilon=1e-6, complex_step=False
+        self, scenario, bodies, step=0, epsilon=1e-6, complex_step=False, rtol=1e-6
     ):
         """
         Test to see if the adjoint methods are implemented correctly
@@ -751,7 +773,7 @@ class SolverInterface(object):
                     fd = aero_loads.imag / epsilon
                 else:
                     fd = (aero_loads - aero_loads_copy) / epsilon
-                fd_product += np.dot(fd, aero_loads_ajp)
+                fd_product += np.dot(fd, aero_loads_ajp[:, 0])
 
             aero_flux = body.get_aero_heat_flux(scenario)
             aero_flux_ajp = body.get_aero_flux_ajp(scenario)
@@ -761,21 +783,26 @@ class SolverInterface(object):
                     fd = aero_flux.imag / epsilon
                 else:
                     fd = (aero_flux - aero_flux_copy) / epsilon
-                fd_product += np.dot(fd, aero_flux_ajp)
+                fd_product += np.dot(fd, aero_flux_ajp[:, 0])
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)
 
+        fail = False
         if self.comm.rank == 0:
             rel_err = (adjoint_product - fd_product) / fd_product
+            fail = abs(rel_err) >= rtol
             print("Flow solver adjoint result:           ", adjoint_product)
             print("Flow solver finite-difference result: ", fd_product)
             print("Flow solver relative error:           ", rel_err)
+            print("Flow solver fail flag:                ", fail)
 
-        return
+        fail = self.comm.bcast(fail, root=0)
+
+        return fail
 
     def _test_struct_adjoint(
-        self, scenario, bodies, step=0, epsilon=1e-6, complex_step=False
+        self, scenario, bodies, step=0, epsilon=1e-6, complex_step=False, rtol=1e-6
     ):
         """
         Test to see if the adjoint methods are implemented correctly
@@ -915,7 +942,7 @@ class SolverInterface(object):
                     fd = struct_disps.imag / epsilon
                 else:
                     fd = (struct_disps - struct_disps_copy) / epsilon
-                fd_product += np.dot(fd, struct_disps_ajp)
+                fd_product += np.dot(fd, struct_disps_ajp[:, 0])
 
             struct_temps = body.get_struct_temps(scenario)
             struct_temps_ajp = body.get_struct_temps_ajp(scenario)
@@ -925,15 +952,20 @@ class SolverInterface(object):
                     fd = struct_temps.imag / epsilon
                 else:
                     fd = (struct_temps - struct_temps_copy) / epsilon
-                fd_product += np.dot(fd, struct_temps_ajp)
+                fd_product += np.dot(fd, struct_temps_ajp[:, 0])
 
         # Compute the finite-differenc approximation
         fd_product = self.comm.allreduce(fd_product)
 
+        fail = False
         if self.comm.rank == 0:
             rel_err = (adjoint_product - fd_product) / fd_product
+            fail = abs(rel_err) >= rtol
             print("Structural solver adjoint result:           ", adjoint_product)
             print("Structural solver finite-difference result: ", fd_product)
             print("Structural solver relative error:           ", rel_err)
+            print("Structural solver fail flag:                ", fail)
 
-        return
+        fail = self.comm.bcast(fail, root=0)
+
+        return fail
