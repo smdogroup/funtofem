@@ -156,3 +156,9 @@ class TacsFrameworkTest(unittest.TestCase):
             print("Relative error        = ", rel_error)
 
         return
+
+
+if __name__ == "__main__":
+    test = TacsFrameworkTest()
+    test.test_solver_coupling()
+    test.test_coupled_derivatives()

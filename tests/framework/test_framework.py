@@ -151,3 +151,9 @@ class CoupledFrameworkTest(unittest.TestCase):
                 print("Relative error        = ", rel_error)
 
         return
+
+
+if __name__ == "__main__":
+    test = CoupledFrameworkTest()
+    test.test_model_derivatives()
+    test.test_coupled_derivatives()

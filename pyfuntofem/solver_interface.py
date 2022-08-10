@@ -480,7 +480,7 @@ class SolverInterface(object):
                 aero_disps_ajp = body.get_aero_disps_ajp(scenario)
                 if aero_disps_ajp is not None:
                     for ifunc, func in enumerate(scenario.functions):
-                        dfdxA = solver.get_mesh_sensitivity(ibody, ifunc)
+                        dfdxA = solver.get_disp_adjoint_product(ibody, ifunc)
                         aero_disps_ajp[:, ifunc] = dfdxA
 
                 aero_temps_ajp = body.get_aero_temps_ajp(scenario)
