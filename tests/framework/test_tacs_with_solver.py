@@ -1,4 +1,5 @@
 import os
+from tacs import TACS
 from mpi4py import MPI
 from funtofem import TransferScheme
 from pyfuntofem.funtofem_model import FUNtoFEMmodel
@@ -78,9 +79,9 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-6
-        rtol = 1e-6
-        if TransferScheme.dtype == complex:
+        epsilon = 1e-5
+        rtol = 1e-5
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
             rtol = 1e-9
@@ -118,9 +119,9 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-6
+        epsilon = 1e-5
         rtol = 1e-5
-        if TransferScheme.dtype == complex:
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
             rtol = 1e-9

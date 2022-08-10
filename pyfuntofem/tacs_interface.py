@@ -453,11 +453,15 @@ class TacsSteadyInterface(SolverInterface):
                 struct_loads = body.get_struct_loads(scenario)
                 if struct_loads is not None:
                     for i in range(3):
-                        ext_force_array[i::ndof] += struct_loads[i::3]
+                        ext_force_array[i::ndof] += struct_loads[i::3].astype(
+                            TACS.dtype
+                        )
 
                 struct_flux = body.get_struct_heat_flux(scenario)
                 if struct_flux is not None:
-                    ext_force_array[self.thermal_index :: ndof] += struct_flux[:]
+                    ext_force_array[self.thermal_index :: ndof] += struct_flux[
+                        :
+                    ].astype(TACS.dtype)
 
             # Zero the contributions at the DOF associated with boundary
             # conditions so that it doesn't interfere with Dirichlet BCs
@@ -483,12 +487,15 @@ class TacsSteadyInterface(SolverInterface):
                 struct_disps = body.get_struct_disps(scenario)
                 if struct_disps is not None:
                     for i in range(3):
-                        struct_disps[i::3] = ans_array[i::ndof]
+                        struct_disps[i::3] = ans_array[i::ndof].astype(body.dtype)
 
                 # Set the structural temperature
                 struct_temps = body.get_struct_temps(scenario)
                 if struct_temps is not None:
-                    struct_temps[:] = ans_array[self.thermal_index :: ndof] + body.T_ref
+                    struct_temps[:] = (
+                        ans_array[self.thermal_index :: ndof].astype(body.dtype)
+                        + body.T_ref
+                    )
 
         return fail
 
@@ -648,11 +655,15 @@ class TacsSteadyInterface(SolverInterface):
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         for i in range(3):
-                            array[i::ndof] -= struct_disps_ajp[i::3, ifunc]
+                            array[i::ndof] -= struct_disps_ajp[i::3, ifunc].astype(
+                                TACS.dtype
+                            )
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
-                        array[self.thermal_index :: ndof] -= struct_temps_ajp[:, ifunc]
+                        array[self.thermal_index :: ndof] -= struct_temps_ajp[
+                            :, ifunc
+                        ].astype(TACS.dtype)
 
                 # Zero the adjoint right-hand-side conditions at DOF locations
                 # where the boundary conditions are applied. This is consistent with
@@ -674,14 +685,16 @@ class TacsSteadyInterface(SolverInterface):
                     struct_loads_ajp = body.get_struct_loads_ajp(scenario)
                     if struct_loads_ajp is not None:
                         for i in range(3):
-                            struct_loads_ajp[i::3, ifunc] = -psi_array[i::ndof]
+                            struct_loads_ajp[i::3, ifunc] = -psi_array[i::ndof].astype(
+                                body.dtype
+                            )
 
                     # struct_flux_ajp = psi_S^{T} * dS/dfS
                     struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
                     if struct_flux_ajp is not None:
                         struct_flux_ajp[:, ifunc] = -psi_array[
                             self.thermal_index :: ndof
-                        ]
+                        ].astype(body.dtype)
 
         return fail
 
@@ -765,7 +778,11 @@ class TacsSteadyInterface(SolverInterface):
             for body in bodies:
                 struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
                 for ifunc, vec in enumerate(dfdXpts):
-                    struct_shape_term[:, ifunc] += vec.getArray()
+                    # Treat the sensitivity array as the same type as the body, even
+                    # if there is a mismatch. This will allow TACS/FUNtoFEM to operate in
+                    # mixed complex/real mode
+                    array = vec.getArray()
+                    struct_shape_term[:, ifunc] += array.astype(body.dtype)
 
         return
 

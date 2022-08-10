@@ -62,6 +62,11 @@ class TransferScheme {
   // Initialization
   virtual void initialize() = 0;
 
+  // Get information from the transfer object
+  int getStructDofPerNode() { return dof_per_node; }
+  int getNumAeroNodes() { return na; }
+  int getNumStructNodes() { return ns; }
+
   // Load and displacement transfers
   virtual void transferDisps(const F2FScalar *struct_disps,
                              F2FScalar *aero_disps) = 0;
