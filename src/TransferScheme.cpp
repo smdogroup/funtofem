@@ -520,6 +520,60 @@ void TransferScheme::applydRdxA0Trans(const F2FScalar *aero_disps,
 }
 
 /*
+  Run all of the tests for the transfer scheme.
+
+  Create random vectors for the
+*/
+int TransferScheme::testAllDerivatives(const F2FScalar *struct_disps,
+                                       const F2FScalar *aero_loads,
+                                       const F2FScalar h, const double rtol,
+                                       const double atol) {
+  const int aero_nnodes = getNumAeroNodes();
+  const int struct_nnodes = getNumStructNodes();
+
+  // Create random testing data
+  F2FScalar *test_vec_a1 = new F2FScalar[3 * aero_nnodes];
+  F2FScalar *test_vec_a2 = new F2FScalar[3 * aero_nnodes];
+  for (int i = 0; i < 3 * aero_nnodes; i++) {
+    test_vec_a1[i] = (1.0 * rand()) / RAND_MAX;
+    test_vec_a2[i] = (1.0 * rand()) / RAND_MAX;
+  }
+
+  F2FScalar *uS_pert = new F2FScalar[dof_per_node * struct_nnodes];
+  F2FScalar *test_vec_s1 = new F2FScalar[dof_per_node * struct_nnodes];
+  F2FScalar *test_vec_s2 = new F2FScalar[dof_per_node * struct_nnodes];
+  for (int j = 0; j < dof_per_node * struct_nnodes; j++) {
+    uS_pert[j] = (1.0 * rand()) / RAND_MAX;
+    test_vec_s1[j] = (1.0 * rand()) / RAND_MAX;
+    test_vec_s2[j] = (1.0 * rand()) / RAND_MAX;
+  }
+
+  int fail = 0;
+  fail = fail ||
+         testLoadTransfer(struct_disps, aero_loads, uS_pert, h, rtol, atol);
+  fail = fail || testDispJacVecProducts(struct_disps, test_vec_a1, test_vec_s1,
+                                        h, rtol, atol);
+  fail = fail || testLoadJacVecProducts(struct_disps, aero_loads, test_vec_s1,
+                                        test_vec_s2, h, rtol, atol);
+  fail = fail || testdDdxA0Products(struct_disps, test_vec_a1, test_vec_a2, h,
+                                    rtol, atol);
+  fail = fail || testdDdxS0Products(struct_disps, test_vec_a1, test_vec_s1, h,
+                                    rtol, atol);
+  fail = fail || testdLdxA0Products(struct_disps, aero_loads, test_vec_a1,
+                                    test_vec_s1, h, rtol, atol);
+  fail = fail || testdLdxS0Products(struct_disps, aero_loads, test_vec_s1,
+                                    test_vec_s2, h, rtol, atol);
+
+  delete[] uS_pert;
+  delete[] test_vec_a1;
+  delete[] test_vec_a2;
+  delete[] test_vec_s1;
+  delete[] test_vec_s2;
+
+  return fail;
+}
+
+/*
   Tests load transfer by computing derivative of product of loads on and
   displacements of aerodynamic surface nodes with respect to structural node
   displacements and comparing with results from finite difference and complex
@@ -532,11 +586,12 @@ void TransferScheme::applydRdxA0Trans(const F2FScalar *aero_disps,
   pert         : direction of perturbation of structural node displacements
   h            : step size
   rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
 int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
                                      const F2FScalar *aero_loads,
                                      const F2FScalar *pert, const F2FScalar h,
-                                     const double rtol) {
+                                     const double rtol, const double atol) {
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -602,10 +657,11 @@ int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   delete[] Ua_neg;
 #endif  // FUNTOFEM_USE_COMPLEX
   // Compute relative error
+  double abs_error = F2FRealPart(deriv - deriv_approx);
   double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print results
-  double printf("\n");
+  printf("\n");
   printf("Load transfer test with step: %e\n", F2FRealPart(h));
   printf("deriv          = %22.15e\n", F2FRealPart(deriv));
   printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
@@ -618,7 +674,7 @@ int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
 
   // Check if the test failed
   int fail = 0;
-  if (fabs(rel_error) >= rtol) {
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= atol) {
     fail = 1;
   }
 
@@ -636,13 +692,14 @@ int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   test_vec_a   : test vector the length of the aero nodes
   test_vec_s   : test vector the length of the struct nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
 int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
                                            const F2FScalar *test_vec_a,
                                            const F2FScalar *test_vec_s,
-                                           const F2FScalar h,
-                                           const double rtol) {
+                                           const F2FScalar h, const double rtol,
+                                           const double atol) {
   // Transfer the structural displacements to get rotations
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -682,7 +739,7 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     F2FScalar Psi = Xa[i] + aero_disps[i];
     VPsi += test_vec_a[i] * Psi;
   }
-  F2FScalar deriv1_approx = -1.0 * F2FImagPart(VPsi) / h;
+  F2FScalar deriv_approx = -1.0 * F2FImagPart(VPsi) / h;
 
   delete[] Us_cs;
 
@@ -690,7 +747,7 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
 #else
   F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns];
   F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     Us_pos[j] = struct_disps[j] + h * test_vec_s[j];
     Us_neg[j] = struct_disps[j] - h * test_vec_s[j];
   }
@@ -709,25 +766,27 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     VPsi_neg += test_vec_a[i] * Psi;
   }
 
-  F2FScalar deriv1_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
+  F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
 
   delete[] Us_pos;
   delete[] Us_neg;
 #endif
   // Compute relative error
-  double rel_error1 = F2FRealPart((deriv1 - deriv1_approx) / deriv1_approx);
-  double rel_error2 = F2FRealPart((deriv2 - deriv1_approx) / deriv1_approx);
+  double rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
+  double rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
+  double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
   // Print out results of test
   printf("V2^{T}*dD/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
   printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv1_approx));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
   printf("relative error = %22.15e\n", rel_error1);
   printf("\n");
 
   printf("V1^{T}*(dD/du_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
   printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv1_approx));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
   printf("relative error = %22.15e\n", rel_error2);
   printf("\n");
 
@@ -737,8 +796,15 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   delete[] grad2;
 
   int fail = 0;
-  if (fabs(rel_error1) >= rtol || fabs(rel_error2) >= rtol) {
+  if (fabs(rel_error1) >= rtol && fabs(abs_error1) >= rtol) {
     fail = 1;
+  }
+  if (fabs(rel_error2) >= rtol && fabs(abs_error2) >= rtol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testDispJacVecProducts failed\n");
   }
 
   return fail;
@@ -756,14 +822,15 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   test_vec_s1  : test vector the size of struct nodes
   test_vec_s2  : test vector the size of struct nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
 int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
                                            const F2FScalar *aero_loads,
                                            const F2FScalar *test_vec_s1,
                                            const F2FScalar *test_vec_s2,
-                                           const F2FScalar h,
-                                           const double rtol) {
+                                           const F2FScalar h, const double rtol,
+                                           const double atol) {
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -845,6 +912,8 @@ int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
   // Compute relative error
   double rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
   double rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
+  double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
   // Print out results of test
   printf("V2^{T}*dL/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
@@ -867,8 +936,15 @@ int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
   delete[] grad2;
 
   int fail = 0;
-  if (fabs(rel_error1) >= rtol || fabs(rel_error2) >= rtol) {
+  if (fabs(rel_error1) >= rtol && fabs(abs_error1) >= rtol) {
     fail = 1;
+  }
+  if (fabs(rel_error2) >= rtol && fabs(abs_error2) >= rtol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testLoadJacVecProducts failed\n");
   }
 
   return fail;
@@ -885,12 +961,14 @@ int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
   test_vec_a1  : test vector of size aero nodes
   test_vec_a2  : test vector of size aero nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
-void TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
-                                        const F2FScalar *test_vec_a1,
-                                        const F2FScalar *test_vec_a2,
-                                        const F2FScalar h) {
+int TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
+                                       const F2FScalar *test_vec_a1,
+                                       const F2FScalar *test_vec_a2,
+                                       const F2FScalar h, const double rtol,
+                                       const double atol) {
   // Copy original unperturbed node locations
   F2FScalar *Xa_copy = new F2FScalar[3 * na];
   memcpy(Xa_copy, Xa, 3 * na * sizeof(F2FScalar));
@@ -960,13 +1038,14 @@ void TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   delete[] XA0_neg;
 #endif
   // Compute relative error
-  F2FScalar rel_error = (deriv - deriv_approx) / deriv_approx;
+  double abs_error = F2FRealPart(deriv - deriv_approx);
+  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print out results of test
   printf("lambda^{T}*dD/dx_{A0} test with step: %e\n", F2FRealPart(h));
   printf("deriv          = %22.15e\n", F2FRealPart(deriv));
   printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", F2FRealPart(rel_error));
+  printf("relative error = %22.15e\n", rel_error);
   printf("\n");
 
   // Reset to unperturbed, original node locations
@@ -976,6 +1055,18 @@ void TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   delete[] Xa_copy;
   delete[] aero_disps;
   delete[] grad;
+
+  // Check if the test failed
+  int fail = 0;
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= atol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testdDdxA0Products failed\n");
+  }
+
+  return fail;
 }
 
 /*
@@ -989,12 +1080,14 @@ void TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   test_vec_a   : test vector of size aero nodes
   test_vec_s   : test vector of size struct nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
-void TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
-                                        const F2FScalar *test_vec_a,
-                                        const F2FScalar *test_vec_s,
-                                        const F2FScalar h) {
+int TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
+                                       const F2FScalar *test_vec_a,
+                                       const F2FScalar *test_vec_s,
+                                       const F2FScalar h, const double rtol,
+                                       const double atol) {
   // Copy the original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns];
   memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
@@ -1004,7 +1097,7 @@ void TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
 
   // Compute the adjoint-residual products using the function
-  F2FScalar *grad = new F2FScalar[3 * ns];
+  F2FScalar *grad = new F2FScalar[dof_per_node * ns];
   applydDdxS0(test_vec_a, grad);
 
   // Compute directional derivative
@@ -1064,13 +1157,14 @@ void TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   delete[] XS0_neg;
 #endif
   // Compute relative error
-  F2FScalar rel_error = (deriv - deriv_approx) / deriv_approx;
+  double abs_error = F2FRealPart(deriv - deriv_approx);
+  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print out results of test
   printf("lambda^{T}*dD/dx_{S0} test with step: %e\n", F2FRealPart(h));
   printf("deriv          = %22.15e\n", F2FRealPart(deriv));
   printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", F2FRealPart(rel_error));
+  printf("relative error = %22.15e\n", rel_error);
   printf("\n");
 
   // Reset the original, unperturbed nodes
@@ -1080,6 +1174,18 @@ void TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   delete[] Xs_copy;
   delete[] aero_disps;
   delete[] grad;
+
+  // Check if the test failed
+  int fail = 0;
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= atol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testdDdxS0Products failed\n");
+  }
+
+  return fail;
 }
 
 /*
@@ -1094,13 +1200,15 @@ void TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   test_vec_a   : test vector of size aero nodes
   test_vec_s   : test vector of size struct nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
-void TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
-                                        const F2FScalar *aero_loads,
-                                        const F2FScalar *test_vec_a,
-                                        const F2FScalar *test_vec_s,
-                                        const F2FScalar h) {
+int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
+                                       const F2FScalar *aero_loads,
+                                       const F2FScalar *test_vec_a,
+                                       const F2FScalar *test_vec_s,
+                                       const F2FScalar h, const double rtol,
+                                       const double atol) {
   // Copy original, unperturbed nodes
   F2FScalar *Xa_copy = new F2FScalar[3 * na];
   memcpy(Xa_copy, Xa, 3 * na * sizeof(F2FScalar));
@@ -1179,7 +1287,8 @@ void TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   delete[] XA0_neg;
 #endif
   // Compute relative error
-  F2FScalar rel_error = (deriv - deriv_approx) / deriv_approx;
+  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print out results of test
   printf("lambda^{T}*dL/dx_{A0} test with step: %e\n", F2FRealPart(h));
@@ -1196,6 +1305,17 @@ void TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   delete[] aero_disps;
   delete[] struct_loads;
   delete[] grad;
+
+  int fail = 0;
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= rtol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testdLdxA0Products failed\n");
+  }
+
+  return fail;
 }
 
 /*
@@ -1210,13 +1330,15 @@ void TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   test_vec_s1  : test vector of size struct nodes
   test_vec_s2  : test vector of size struct nodes
   h            : step size
-
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
 */
-void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
-                                        const F2FScalar *aero_loads,
-                                        const F2FScalar *test_vec_s1,
-                                        const F2FScalar *test_vec_s2,
-                                        const F2FScalar h) {
+int TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
+                                       const F2FScalar *aero_loads,
+                                       const F2FScalar *test_vec_s1,
+                                       const F2FScalar *test_vec_s2,
+                                       const F2FScalar h, const double rtol,
+                                       const double atol) {
   // Copy original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns];
   memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
@@ -1226,7 +1348,7 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads
-  F2FScalar *struct_loads = new F2FScalar[3 * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
   transferLoads(aero_loads, struct_loads);
 
   // Compute the derivatives of the adjoint-residual products using the function
@@ -1252,7 +1374,7 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi += test_vec_s1[j] * Phi;
   }
@@ -1273,7 +1395,7 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar lamPhi_pos = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_pos += test_vec_s1[j] * Phi;
   }
@@ -1282,7 +1404,7 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar lamPhi_neg = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_neg += test_vec_s1[j] * Phi;
   }
@@ -1293,7 +1415,8 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   delete[] XS0_neg;
 #endif
   // Compute relative error
-  F2FScalar rel_error = (deriv - deriv_approx) / deriv_approx;
+  double abs_error = F2FRealPart(deriv - deriv_approx);
+  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print out results of test
   printf("lambda^{T}*dL/dx_{S0} test with step: %e\n", F2FRealPart(h));
@@ -1307,6 +1430,18 @@ void TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   delete[] aero_disps;
   delete[] struct_loads;
   delete[] grad;
+
+  // Check if the test failed
+  int fail = 0;
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= atol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testdLdxS0Products failed\n");
+  }
+
+  return fail;
 }
 
 /*

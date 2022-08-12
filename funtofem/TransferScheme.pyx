@@ -299,11 +299,35 @@ cdef class pyTransferScheme:
         self.ptr.applydLdxS0(<F2FScalar*>v.data, <F2FScalar*>p.data)
         return
 
+    def testAllDerivatives(self,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
+        """
+        Test the output of :meth:`transferLoads` by comparison with results from
+        finite difference approximation or complex step approximation
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural displacements
+        aero_loads: ndarray
+            One-dimensional array of aerodynamic loads
+        h: float
+            Step size (for finite difference or complex step)
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
+        """
+        return self.ptr.testAllDerivatives(<F2FScalar*>struct_disps.data,
+                                  <F2FScalar*>aero_loads.data, h, rtol, atol)
+
     def testLoadTransfer(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test the output of :meth:`transferLoads` by comparison with results from
         finite difference approximation or complex step approximation
@@ -319,19 +343,20 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testLoadTransfer(<F2FScalar*>struct_disps.data,
+        return self.ptr.testLoadTransfer(<F2FScalar*>struct_disps.data,
                                   <F2FScalar*>aero_loads.data,
-                                  <F2FScalar*>test_vec_s.data, h)
-
-        return
+                                  <F2FScalar*>test_vec_s.data, h, rtol, atol)
 
     def testDispJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydDduS` and :meth:`applydDduSTrans` by
         comparison with results from finite difference approximation or
@@ -351,18 +376,16 @@ cdef class pyTransferScheme:
             Step size (for finite difference or complex step)
 
         """
-        self.ptr.testDispJacVecProducts(<F2FScalar*>struct_disps.data,
+        return self.ptr.testDispJacVecProducts(<F2FScalar*>struct_disps.data,
                                         <F2FScalar*>test_vec_a.data,
-                                        <F2FScalar*>test_vec_s.data, h)
-
-        return
+                                        <F2FScalar*>test_vec_s.data, h, rtol, atol)
 
     def testLoadJacVecProducts(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydLduS` and :meth:`applydLduSTrans` by
         comparison with results from finite difference approximation or
@@ -382,20 +405,21 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testLoadJacVecProducts(<F2FScalar*>struct_disps.data,
+        return self.ptr.testLoadJacVecProducts(<F2FScalar*>struct_disps.data,
                                         <F2FScalar*>aero_loads.data,
                                         <F2FScalar*>test_vec_s1.data,
-                                        <F2FScalar*>test_vec_s2.data, h)
-
-        return
+                                        <F2FScalar*>test_vec_s2.data, h, rtol, atol)
 
     def testdDdxA0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a1,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a2,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydDdxA0` by comparison with results from
         finite difference approximation or complex step approximation
@@ -412,19 +436,20 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testdDdxA0Products(<F2FScalar*>struct_disps.data,
+        return self.ptr.testdDdxA0Products(<F2FScalar*>struct_disps.data,
                                     <F2FScalar*>test_vec_a1.data,
-                                    <F2FScalar*>test_vec_a2.data, h)
-
-        return
+                                    <F2FScalar*>test_vec_a2.data, h, rtol, atol)
 
     def testdDdxS0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydDdxS0` by comparison with results from
         finite difference approximation or complex step approximation
@@ -441,34 +466,21 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testdDdxS0Products(<F2FScalar*>struct_disps.data,
+        return self.ptr.testdDdxS0Products(<F2FScalar*>struct_disps.data,
                                     <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
+                                    <F2FScalar*>test_vec_s.data, h, rtol, atol)
 
     def testdLdxA0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        """
-        self.ptr.testdDdxS0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testdLdxA0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydLdxA0` by comparison with results from
         finite difference approximation or complex step approximation
@@ -487,21 +499,22 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testdLdxA0Products(<F2FScalar*>struct_disps.data,
+        return self.ptr.testdLdxA0Products(<F2FScalar*>struct_disps.data,
                                     <F2FScalar*>aero_loads.data,
                                     <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
+                                    <F2FScalar*>test_vec_s.data, h, rtol, atol)
 
     def testdLdxS0Products(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
             np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test output of :meth:`applydLdxS0` by comparison with results from
         finite difference approximation or complex step approximation
@@ -520,14 +533,15 @@ cdef class pyTransferScheme:
             displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testdLdxS0Products(<F2FScalar*>struct_disps.data,
+        return self.ptr.testdLdxS0Products(<F2FScalar*>struct_disps.data,
                                     <F2FScalar*>aero_loads.data,
                                     <F2FScalar*>test_vec_s1.data,
-                                    <F2FScalar*>test_vec_s2.data, h)
-
-        return
+                                    <F2FScalar*>test_vec_s2.data, h, rtol, atol)
 
     def transformEquivRigidMotion(self,
         np.ndarray[F2FScalar, ndim=1, mode='c'] aero_disps,
