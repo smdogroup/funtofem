@@ -86,9 +86,11 @@ RBF::~RBF() {
     delete[] sample_ids;
   }
 
-  // The interpolation should be freed automatically by Eigen
-
-  printf("Transfer scheme [%i]: freeing RBF data...\n", object_id);
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == struct_root) {
+    printf("Transfer scheme [%i]: freeing RBF data...\n", object_id);
+  }
 }
 
 /*
@@ -344,7 +346,6 @@ void RBF::buildInterpolationMatrix() {
   Returns
   -------
   aero_disps   : aerodynamic node displacements
-
 */
 void RBF::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   // Copy prescribed displacements into displacement vector
@@ -392,7 +393,6 @@ void RBF::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   Returns
   -------
   struct_loads : loads on structural nodes
-
 */
 void RBF::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   // Copy prescribed aero loads into member variable
@@ -445,7 +445,6 @@ void RBF::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   transferDisps(vecs, prods);
@@ -467,7 +466,6 @@ void RBF::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   transferLoads(vecs, prods);
@@ -489,7 +487,6 @@ void RBF::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -506,7 +503,6 @@ void RBF::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -523,7 +519,6 @@ void RBF::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -540,7 +535,6 @@ void RBF::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -557,7 +551,6 @@ void RBF::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -574,7 +567,6 @@ void RBF::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void RBF::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -594,7 +586,6 @@ void RBF::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   -------
   phi : evaluation of radial basis function
-
 */
 F2FScalar RBF::gaussian(F2FScalar *x, F2FScalar *y) {
   F2FScalar sigma = 0.5;
@@ -620,7 +611,6 @@ F2FScalar RBF::gaussian(F2FScalar *x, F2FScalar *y) {
   Returns
   -------
   phi : evaluation of radial basis function
-
 */
 F2FScalar RBF::multiquadric(F2FScalar *x, F2FScalar *y) {
   F2FScalar r =
@@ -644,7 +634,6 @@ F2FScalar RBF::multiquadric(F2FScalar *x, F2FScalar *y) {
   Returns
   -------
   phi : evaluation of radial basis function
-
 */
 F2FScalar RBF::invMultiquadric(F2FScalar *x, F2FScalar *y) {
   F2FScalar r =
@@ -668,7 +657,6 @@ F2FScalar RBF::invMultiquadric(F2FScalar *x, F2FScalar *y) {
   Returns
   -------
   phi : evaluation of radial basis function
-
 */
 F2FScalar RBF::thinPlateSpline(F2FScalar *x, F2FScalar *y) {
   F2FScalar r =

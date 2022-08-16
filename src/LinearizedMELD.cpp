@@ -95,8 +95,11 @@ void LinearizedMELD::initialize() {
 */
 void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
                                    F2FScalar *aero_disps) {
+  // Check if struct nodes locations need to be redistributed
+  distributeStructuralMesh();
+
   // Copy prescribed displacements into displacement vector
-  memcpy(Us, struct_disps, 3 * ns * sizeof(F2FScalar));
+  collectStructuralVector(struct_disps, Us);
 
   // Zero the outputs
   memset(aero_disps, 0, 3 * na * sizeof(F2FScalar));
@@ -131,20 +134,45 @@ void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
     for (int j = 0; j < nn; j++) {
       // Get structural node location
       int indx = global_conn[nn * i + j];
-      F2FScalar *xs = &Xs[3 * indx];
 
-      // Form the vector q from the centroid of the undisplaced set to the node
-      F2FScalar q[3];
-      vec_diff(xs0bar, xs, q);
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
 
-      // Get structural node displacement
-      const F2FScalar *us = &Us[3 * indx];
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
 
-      // Compute and add contribution to aerodynamic surface node displacement
-      F2FScalar w = W[j];
-      F2FScalar uj[3];
-      computeDispContribution(w, r, Hinv, q, us, uj);
-      vec_add(uj, ua, ua);
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute and add contribution to aerodynamic surface node displacement
+        F2FScalar w = W[j];
+        F2FScalar uj[3];
+        computeDispContribution(w, r, Hinv, q, us, uj);
+        vec_add(uj, ua, ua);
+      } else {
+        indx = indx - ns;
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute and add contribution to aerodynamic surface node displacement
+        F2FScalar w = W[j];
+        F2FScalar uj[3];
+        computeDispContribution(w, r, Hinv, q, us, uj);
+        vec_add(uj, ua, ua);
+      }
     }
   }
 }
@@ -292,22 +320,49 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
     for (int j = 0; j < nn; j++) {
       // Get structural node using index from connectivity
       int indx = global_conn[nn * i + j];
-      F2FScalar *xs = &Xs[3 * indx];
 
-      // Compute vector q from centroid to structural node
-      F2FScalar q[3];
-      vec_diff(xs0bar, xs, q);
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
 
-      // Compute load contribution
-      F2FScalar *fs = &struct_loads[3 * indx];
-      F2FScalar w = global_W[nn * i + j];
-      F2FScalar fj[3];
-      computeLoadContribution(w, q, Hinv, r, fa, fj);
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
 
-      // Add load contribution into global structural load array
-      fs[0] += fj[0];
-      fs[1] += fj[1];
-      fs[2] += fj[2];
+        // Compute load contribution
+        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+        F2FScalar fj[3];
+        computeLoadContribution(w, q, Hinv, r, fa, fj);
+
+        // Add load contribution into global structural load array
+        fs[0] += fj[0];
+        fs[1] += fj[1];
+        fs[2] += fj[2];
+      } else {
+        indx = indx - ns;
+
+        // Compute vector q from centroid to structural node using the
+        // symmetry condition
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Compute load contribution
+        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+        F2FScalar fj[3];
+        computeLoadContribution(w, q, Hinv, r, fa, fj);
+
+        // Add load contribution into global structural load array
+        fs[0] += fj[0];
+        fs[1] += fj[1];
+        fs[2] += fj[2];
+      }
     }
   }
 }

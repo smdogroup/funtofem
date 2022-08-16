@@ -548,21 +548,22 @@ int TransferScheme::testAllDerivatives(const F2FScalar *struct_disps,
     test_vec_s2[j] = (1.0 * rand()) / RAND_MAX;
   }
 
-  int fail = 0;
-  fail = fail ||
-         testLoadTransfer(struct_disps, aero_loads, uS_pert, h, rtol, atol);
-  fail = fail || testDispJacVecProducts(struct_disps, test_vec_a1, test_vec_s1,
-                                        h, rtol, atol);
-  fail = fail || testLoadJacVecProducts(struct_disps, aero_loads, test_vec_s1,
-                                        test_vec_s2, h, rtol, atol);
-  fail = fail || testdDdxA0Products(struct_disps, test_vec_a1, test_vec_a2, h,
-                                    rtol, atol);
-  fail = fail || testdDdxS0Products(struct_disps, test_vec_a1, test_vec_s1, h,
-                                    rtol, atol);
-  fail = fail || testdLdxA0Products(struct_disps, aero_loads, test_vec_a1,
-                                    test_vec_s1, h, rtol, atol);
-  fail = fail || testdLdxS0Products(struct_disps, aero_loads, test_vec_s1,
-                                    test_vec_s2, h, rtol, atol);
+  int fail1 =
+      testLoadTransfer(struct_disps, aero_loads, uS_pert, h, rtol, atol);
+  int fail2 = testDispJacVecProducts(struct_disps, test_vec_a1, test_vec_s1, h,
+                                     rtol, atol);
+  int fail3 = testLoadJacVecProducts(struct_disps, aero_loads, test_vec_s1,
+                                     test_vec_s2, h, rtol, atol);
+  int fail4 =
+      testdDdxA0Products(struct_disps, test_vec_a1, test_vec_a2, h, rtol, atol);
+  int fail5 =
+      testdDdxS0Products(struct_disps, test_vec_a1, test_vec_s1, h, rtol, atol);
+  int fail6 = testdLdxA0Products(struct_disps, aero_loads, test_vec_a1,
+                                 test_vec_s1, h, rtol, atol);
+  int fail7 = testdLdxS0Products(struct_disps, aero_loads, test_vec_s1,
+                                 test_vec_s2, h, rtol, atol);
+
+  int fail = (fail1 || fail2 || fail3 || fail4 || fail5 || fail6 || fail7);
 
   delete[] uS_pert;
   delete[] test_vec_a1;
