@@ -10,6 +10,8 @@
 #define LAPACKsyevd dsyevd_
 #define LAPACKdgesvd dgesvd_
 #define LAPACKzgesvd zgesvd_
+#define LAPACKdgelss dgelss_
+#define LAPACKzgelss zgelss_
 
 #ifdef FUNTOFEM_USE_COMPLEX
 #define LAPACKgetrf zgetrf_
@@ -61,6 +63,16 @@ extern void BLASgemv(const char *c, int *m, int *n, F2FScalar *alpha,
 extern void BLASgemm(const char *ta, const char *tb, int *m, int *n, int *k,
                      F2FScalar *alpha, F2FScalar *a, int *lda, F2FScalar *b,
                      int *ldb, F2FScalar *beta, F2FScalar *c, int *ldc);
+
+// Solve an over or underdetermined system of equations
+extern void LAPACKdgelss(int *m, int *n, int *nrhs, double *a, int *lda,
+                         double *b, int *ldb, double *s, double *rcond,
+                         int *rank, double *work, int *lwork, int *info);
+
+extern void LAPACKzgelss(int *m, int *n, int *nrhs, F2FComplex *a, int *lda,
+                         F2FComplex *b, int *ldb, double *s, double *rcond,
+                         int *rank, F2FComplex *work, int *lwork, double *rwork,
+                         int *info);
 }
 
 #endif

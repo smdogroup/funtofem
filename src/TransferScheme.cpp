@@ -657,8 +657,11 @@ int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   delete[] Ua_neg;
 #endif  // FUNTOFEM_USE_COMPLEX
   // Compute relative error
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
   double abs_error = F2FRealPart(deriv - deriv_approx);
-  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print results
   printf("\n");
@@ -772,8 +775,14 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   delete[] Us_neg;
 #endif
   // Compute relative error
-  double rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
-  double rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  double rel_error1 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
+  }
+  double rel_error2 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  }
   double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
@@ -910,8 +919,14 @@ int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
   delete[] Us_neg;
 #endif
   // Compute relative error
-  double rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
-  double rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  double rel_error1 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
+  }
+  double rel_error2 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  }
   double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
@@ -1039,7 +1054,10 @@ int TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
 #endif
   // Compute relative error
   double abs_error = F2FRealPart(deriv - deriv_approx);
-  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
 
   // Print out results of test
   printf("lambda^{T}*dD/dx_{A0} test with step: %e\n", F2FRealPart(h));
@@ -1158,7 +1176,10 @@ int TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
 #endif
   // Compute relative error
   double abs_error = F2FRealPart(deriv - deriv_approx);
-  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
 
   // Print out results of test
   printf("lambda^{T}*dD/dx_{S0} test with step: %e\n", F2FRealPart(h));
@@ -1287,7 +1308,10 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   delete[] XA0_neg;
 #endif
   // Compute relative error
-  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
   double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print out results of test
@@ -1415,8 +1439,11 @@ int TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   delete[] XS0_neg;
 #endif
   // Compute relative error
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
   double abs_error = F2FRealPart(deriv - deriv_approx);
-  double rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
 
   // Print out results of test
   printf("lambda^{T}*dL/dx_{S0} test with step: %e\n", F2FRealPart(h));

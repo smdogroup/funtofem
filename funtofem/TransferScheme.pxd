@@ -133,7 +133,7 @@ cdef extern from "LinearizedMELD.h":
     LinearizedMELD(MPI_Comm all,
                    MPI_Comm structure, int struct_root,
                    MPI_Comm aero, int aero_root,
-                   int num_nearest, F2FScalar beta)
+                   int symmetry, int num_nearest, F2FScalar beta)
 
 cdef extern from "RBF.h":
   enum RbfType "RBF::RbfType":

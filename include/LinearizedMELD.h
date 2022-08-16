@@ -11,7 +11,8 @@ class LinearizedMELD : public MELD {
  public:
   // Constructor
   LinearizedMELD(MPI_Comm all, MPI_Comm structure, int struct_root,
-                 MPI_Comm aero, int aero_root, int num_nearest, F2FScalar beta);
+                 MPI_Comm aero, int aero_root, int symmetry, int num_nearest,
+                 F2FScalar beta);
 
   // Destructor
   ~LinearizedMELD();

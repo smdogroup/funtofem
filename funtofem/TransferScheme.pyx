@@ -959,6 +959,9 @@ cdef class pyLinearizedMELD(pyTransferScheme):
         MPI communicator for the aerodynamic root process
     aero_root: int
         id of the aerodynamic root process
+    symmetry: int
+        symmetry specifier (-1 for none, 0 for x-plane, 1 for y-plane,
+        2 for z-plane)
     num_nearest: int
         number of structural nodes linked to each aerodynamic node
     beta: float
@@ -968,7 +971,7 @@ cdef class pyLinearizedMELD(pyTransferScheme):
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
                   MPI.Comm aero, int aero_root,
-                  int num_nearest, F2FScalar beta):
+                  int symmetry, int num_nearest, F2FScalar beta):
         cdef MPI_Comm c_comm = comm.ob_mpi
         cdef MPI_Comm struct_comm = struct.ob_mpi
         cdef MPI_Comm aero_comm = aero.ob_mpi
@@ -976,7 +979,7 @@ cdef class pyLinearizedMELD(pyTransferScheme):
         # Allocate the underlying class
         self.ptr = new LinearizedMELD(c_comm, struct_comm, struct_root,
                                       aero_comm, aero_root,
-                                      num_nearest, beta)
+                                      symmetry, num_nearest, beta)
 
         return
 
