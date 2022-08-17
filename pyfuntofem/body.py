@@ -1248,7 +1248,7 @@ class Body(Base):
         result to the root node.
         """
 
-        if discipline == "aero":
+        if discipline == "aerodynamic" or discipline == "flow" or discipline == "aero":
             all_aero_ids = comm.gather(self.aero_id, root=root)
             all_aero_shape = comm.gather(self.aero_shape_term, root=root)
 
@@ -1279,7 +1279,11 @@ class Body(Base):
 
             return aero_ids, aero_shape
 
-        elif discipline == "struct":
+        elif (
+            discipline == "structures"
+            or discipline == "structural"
+            or discipline == "struct"
+        ):
             all_struct_ids = comm.gather(self.struct_id, root=root)
             all_struct_shape = comm.gather(self.struct_shape_term, root=root)
 

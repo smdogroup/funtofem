@@ -425,7 +425,6 @@ void MELD::computeWeights(F2FScalar *W) {
   Returns
   -------
   aero_disps   : aerodynamic node displacements
-
 */
 void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   // Check if struct nodes locations need to be redistributed
@@ -500,7 +499,6 @@ void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   Returns
   --------
   xsbar : centroid
-
 */
 void MELD::computeCentroid(const int *local_conn, const F2FScalar *W,
                            const F2FScalar *X, F2FScalar *xsbar) {
@@ -539,7 +537,6 @@ void MELD::computeCentroid(const int *local_conn, const F2FScalar *W,
   Returns
   -------
   H : covariance matrix
-
 */
 void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
                              const int *local_conn, const F2FScalar *W,
@@ -602,7 +599,6 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
   Returns
   -------
   struct_loads : loads on structural nodes
-
 */
 void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   // Copy prescribed aero loads into member variable
@@ -702,7 +698,6 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   // Make a global image of the input vector
@@ -813,7 +808,6 @@ void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   // Zero array of transpose Jacobian-vector products every call

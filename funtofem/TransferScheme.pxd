@@ -42,37 +42,48 @@ cdef extern from "TransferScheme.h":
                           F2FScalar *prods)
 
     # Routines to test necessary functionality of transfer scheme
-    void testLoadTransfer(const F2FScalar *struct_disps,
-                          const F2FScalar *aero_loads,
-                          const F2FScalar *pert,
-                          const F2FScalar h)
-    void testDispJacVecProducts(const F2FScalar *struct_disps,
-                                const F2FScalar *test_vec_a,
-                                const F2FScalar *test_vec_s,
-                                const F2FScalar h)
-    void testLoadJacVecProducts(const F2FScalar *struct_disps,
-                                const F2FScalar *aero_loads,
-                                const F2FScalar *test_vec_s1,
-                                const F2FScalar *test_vec_s2,
-                                const F2FScalar h)
-    void testdDdxA0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *test_vec_a1,
-                            const F2FScalar *test_vec_a2,
-                            const F2FScalar h)
-    void testdDdxS0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *test_vec_a,
-                            const F2FScalar *test_vec_s,
-                            const F2FScalar h)
-    void testdLdxA0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *aero_loads,
-                            const F2FScalar *test_vec_a,
-                            const F2FScalar *test_vec_s,
-                            const F2FScalar h)
-    void testdLdxS0Products(const F2FScalar *struct_disps,
-                            const F2FScalar *aero_loads,
-                            const F2FScalar *test_vec_s1,
-                            const F2FScalar *test_vec_s2,
-                            const F2FScalar h)
+    int testAllDerivatives(const F2FScalar *struct_disps,
+                           const F2FScalar *aero_loads,
+                           const F2FScalar h, const double rtol,
+                           const double atol)
+    int testLoadTransfer(const F2FScalar *struct_disps,
+                         const F2FScalar *aero_loads,
+                         const F2FScalar *pert,
+                         const F2FScalar h, const double rtol,
+                         const double atol)
+    int testDispJacVecProducts(const F2FScalar *struct_disps,
+                               const F2FScalar *test_vec_a,
+                               const F2FScalar *test_vec_s,
+                               const F2FScalar h, const double rtol,
+                               const double atol)
+    int testLoadJacVecProducts(const F2FScalar *struct_disps,
+                               const F2FScalar *aero_loads,
+                               const F2FScalar *test_vec_s1,
+                               const F2FScalar *test_vec_s2,
+                               const F2FScalar h, const double rtol,
+                               const double atol)
+    int testdDdxA0Products(const F2FScalar *struct_disps,
+                           const F2FScalar *test_vec_a1,
+                           const F2FScalar *test_vec_a2,
+                           const F2FScalar h, const double rtol,
+                           const double atol)
+    int testdDdxS0Products(const F2FScalar *struct_disps,
+                           const F2FScalar *test_vec_a,
+                           const F2FScalar *test_vec_s,
+                           const F2FScalar h, const double rtol,
+                           const double atol)
+    int testdLdxA0Products(const F2FScalar *struct_disps,
+                           const F2FScalar *aero_loads,
+                           const F2FScalar *test_vec_a,
+                           const F2FScalar *test_vec_s,
+                           const F2FScalar h, const double rtol,
+                           const double atol)
+    int testdLdxS0Products(const F2FScalar *struct_disps,
+                           const F2FScalar *aero_loads,
+                           const F2FScalar *test_vec_s1,
+                           const F2FScalar *test_vec_s2,
+                           const F2FScalar h, const double rtol,
+                           const double atol)
 
 cdef extern from "MELD.h":
   cppclass MELD(TransferScheme):
@@ -122,7 +133,7 @@ cdef extern from "LinearizedMELD.h":
     LinearizedMELD(MPI_Comm all,
                    MPI_Comm structure, int struct_root,
                    MPI_Comm aero, int aero_root,
-                   int num_nearest, F2FScalar beta)
+                   int symmetry, int num_nearest, F2FScalar beta)
 
 cdef extern from "RBF.h":
   enum RbfType "RBF::RbfType":

@@ -290,7 +290,7 @@ class FUNtoFEMmodel(object):
 
         return gradients
 
-    def write_sensitivity_file(self, comm, filename, discipline="aero", root=0):
+    def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
         """
         Write the sensitivity file.
 
@@ -351,6 +351,35 @@ class FUNtoFEMmodel(object):
                             deriv[3 * i + 1, n],
                             deriv[3 * i + 2, n],
                         )
+
+                variables = self.get_variables()
+                for var in variables:
+                    # Write the structural variables to the structural sensitivity file. All other
+                    # variables are assumed to be associated with the aerodynamics
+                    write = False
+                    if (
+                        discipline == "struct"
+                        or discipline == "structures"
+                        or discipline == "structural"
+                    ) and var.analysis_type == "structural":
+                        write = True
+                    elif (
+                        discipline == "aero"
+                        or discipline == "aerodynamic"
+                        or discipline == "flow"
+                        and var.analysis_type != "structural"
+                    ):
+                        write = True
+
+                    if write:
+                        # Check that we have a variable that belongs to this
+                        # discipline
+                        deriv = func.get_gradient_component(var)
+
+                        # Write the variable name and derivative value
+                        data += var.name + "\n"
+                        data += "1\n"
+                        data += str(deriv) + "\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)

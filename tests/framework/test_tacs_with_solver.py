@@ -1,4 +1,5 @@
 import os
+from tacs import TACS
 from mpi4py import MPI
 from funtofem import TransferScheme
 from pyfuntofem.funtofem_model import FUNtoFEMmodel
@@ -9,7 +10,7 @@ from pyfuntofem.function import Function
 from pyfuntofem.test_solver import TestAerodynamicSolver
 from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.tacs_interface import createTacsInterfaceFromBDF
-from test_bdf_utils import generateBDF, thermoelasticity_callback
+from bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
 
 
@@ -78,22 +79,37 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-6
-        if TransferScheme.dtype == complex:
+        epsilon = 1e-5
+        rtol = 1e-5
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
+            rtol = 1e-9
 
         # Manual test of the disciplinary solvers
         scenario = model.scenarios[0]
         bodies = model.bodies
         solvers = driver.solvers
 
-        solvers["flow"].test_adjoint(
-            "flow", scenario, bodies, epsilon=epsilon, complex_step=complex_step
+        fail = solvers["flow"].test_adjoint(
+            "flow",
+            scenario,
+            bodies,
+            epsilon=epsilon,
+            complex_step=complex_step,
+            rtol=rtol,
         )
-        solvers["structural"].test_adjoint(
-            "structural", scenario, bodies, epsilon=epsilon, complex_step=complex_step
+        assert fail == False
+
+        fail = solvers["structural"].test_adjoint(
+            "structural",
+            scenario,
+            bodies,
+            epsilon=epsilon,
+            complex_step=complex_step,
+            rtol=rtol,
         )
+        assert fail == False
 
         return
 
@@ -103,10 +119,12 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-6
-        if TransferScheme.dtype == complex:
+        epsilon = 1e-5
+        rtol = 1e-5
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
+            rtol = 1e-9
 
         # Solve the forward analysis
         driver.solve_forward()
@@ -147,6 +165,7 @@ class TacsFrameworkTest(unittest.TestCase):
             print("Approximate gradient  = ", deriv.real)
             print("Adjoint gradient      = ", grads[0][0].real)
             print("Relative error        = ", rel_error.real)
+            assert abs(rel_error) < rtol
         else:
             deriv = (fvals[0] - fvals_init[0]) / epsilon
 
@@ -154,5 +173,12 @@ class TacsFrameworkTest(unittest.TestCase):
             print("Approximate gradient  = ", deriv)
             print("Adjoint gradient      = ", grads[0][0])
             print("Relative error        = ", rel_error)
+            assert abs(rel_error) < rtol
 
         return
+
+
+if __name__ == "__main__":
+    test = TacsFrameworkTest()
+    test.test_solver_coupling()
+    test.test_coupled_derivatives()

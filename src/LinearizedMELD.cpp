@@ -30,8 +30,8 @@
 
 LinearizedMELD::LinearizedMELD(MPI_Comm all, MPI_Comm structure,
                                int struct_root, MPI_Comm aero, int aero_root,
-                               int num_nearest, F2FScalar beta)
-    : MELD(all, structure, struct_root, aero, aero_root, -1, num_nearest,
+                               int symmetry, int num_nearest, F2FScalar beta)
+    : MELD(all, structure, struct_root, aero, aero_root, symmetry, num_nearest,
            beta) {
   // Initialize the data for the transfers
   global_H = NULL;
@@ -58,9 +58,11 @@ LinearizedMELD::~LinearizedMELD() {
   ---------
   num_nearest : the number of struct nodes connected to each aero node
   global_beta : the weighting decay parameter
-
 */
 void LinearizedMELD::initialize() {
+  // global number of structural nodes
+  distributeStructuralMesh();
+
   // Check that user doesn't set more nearest nodes than exist in total
   if (nn > ns) {
     nn = ns;
@@ -90,15 +92,17 @@ void LinearizedMELD::initialize() {
   Returns
   -------
   aero_disps   : aerodynamic node displacements
-
 */
 void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
                                    F2FScalar *aero_disps) {
+  // Check if struct nodes locations need to be redistributed
+  distributeStructuralMesh();
+
   // Copy prescribed displacements into displacement vector
-  memcpy(Us, struct_disps, 3 * ns * sizeof(F2FScalar));
+  collectStructuralVector(struct_disps, Us);
 
   // Zero the outputs
-  memset(aero_disps, 0.0, 3 * na * sizeof(F2FScalar));
+  memset(aero_disps, 0, 3 * na * sizeof(F2FScalar));
 
   for (int i = 0; i < na; i++) {
     // Point aerodynamic surface node location into a
@@ -130,20 +134,45 @@ void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
     for (int j = 0; j < nn; j++) {
       // Get structural node location
       int indx = global_conn[nn * i + j];
-      F2FScalar *xs = &Xs[3 * indx];
 
-      // Form the vector q from the centroid of the undisplaced set to the node
-      F2FScalar q[3];
-      vec_diff(xs0bar, xs, q);
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
 
-      // Get structural node displacement
-      const F2FScalar *us = &Us[3 * indx];
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
 
-      // Compute and add contribution to aerodynamic surface node displacement
-      F2FScalar w = W[j];
-      F2FScalar uj[3];
-      computeDispContribution(w, r, Hinv, q, us, uj);
-      vec_add(uj, ua, ua);
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute and add contribution to aerodynamic surface node displacement
+        F2FScalar w = W[j];
+        F2FScalar uj[3];
+        computeDispContribution(w, r, Hinv, q, us, uj);
+        vec_add(uj, ua, ua);
+      } else {
+        indx = indx - ns;
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute and add contribution to aerodynamic surface node displacement
+        F2FScalar w = W[j];
+        F2FScalar uj[3];
+        computeDispContribution(w, r, Hinv, q, us, uj);
+        vec_add(uj, ua, ua);
+      }
     }
   }
 }
@@ -158,7 +187,6 @@ void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
   Returns
   -------
   Hinv : inverse of point inertia matrix
-
 */
 void LinearizedMELD::computePointInertiaInverse(const F2FScalar *H,
                                                 F2FScalar *Hinv) {
@@ -178,18 +206,32 @@ void LinearizedMELD::computePointInertiaInverse(const F2FScalar *H,
   Hinv[4] = 1.0;
   Hinv[8] = 1.0;
 
-  // Factor the Hcopy matrix
-  int ipiv[3];
-  int n = 3, info = 0;
-  LAPACKgetrf(&n, &n, Hcopy, &n, ipiv, &info);
-  if (info) {
-    printf("Transfer scheme error: failed LU factorization of H\n");
-  }
+#ifdef FUNTOFEM_USE_COMPLEX
+  int n = 3;             // Dimension of all the matrices
+  double s[3];           // Singular values
+  double rcond = 1e-10;  // Used to determine the effective rank
+  int rank = 0;          // Rank of the matrix that is used as output
+  F2FScalar work[15];    // Work array
+  int lwork = 5 * 3;     // = 5 * n
+  double rwork[15];
+  int info = 0;
+  LAPACKzgelss(&n, &n, &n, Hcopy, &n, Hinv, &n, s, &rcond, &rank, work, &lwork,
+               rwork, &info);
+#else
+  int n = 3;             // Dimension of all the matrices
+  double s[3];           // Singular values
+  double rcond = 1e-10;  // Used to determine the effective rank
+  int rank = 0;          // Rank of the matrix that is used as output
+  double work[15];       // Work array
+  int lwork = 5 * 3;     // = 5 * n
+  int info = 0;
+  LAPACKdgelss(&n, &n, &n, Hcopy, &n, Hinv, &n, s, &rcond, &rank, work, &lwork,
+               &info);
+#endif  // FUNTOFEM_USE_COMPLEX
 
-  // Solve Hcopy*Hinv = I
-  LAPACKgetrs("N", &n, &n, Hcopy, &n, ipiv, Hinv, &n, &info);
+  // Find the least squares inverse of the matrix
   if (info) {
-    printf("Transfer scheme error: failed inversion of Hbar\n");
+    printf("LinearizedMELD error: Least squares solution for H failed\n");
   }
 }
 
@@ -208,7 +250,6 @@ void LinearizedMELD::computePointInertiaInverse(const F2FScalar *H,
   Returns
   -------
   ua   : contribution to displacement of aerodynamic surface node
-
 */
 void LinearizedMELD::computeDispContribution(
     const F2FScalar w, const F2FScalar *r, const F2FScalar *Hinv,
@@ -251,7 +292,6 @@ void LinearizedMELD::computeDispContribution(
   Returns
   -------
   struct_loads : loads on structural nodes
-
 */
 void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
                                    F2FScalar *struct_loads) {
@@ -280,22 +320,49 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
     for (int j = 0; j < nn; j++) {
       // Get structural node using index from connectivity
       int indx = global_conn[nn * i + j];
-      F2FScalar *xs = &Xs[3 * indx];
 
-      // Compute vector q from centroid to structural node
-      F2FScalar q[3];
-      vec_diff(xs0bar, xs, q);
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
 
-      // Compute load contribution
-      F2FScalar *fs = &struct_loads[3 * indx];
-      F2FScalar w = global_W[nn * i + j];
-      F2FScalar fj[3];
-      computeLoadContribution(w, q, Hinv, r, fa, fj);
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
 
-      // Add load contribution into global structural load array
-      fs[0] += fj[0];
-      fs[1] += fj[1];
-      fs[2] += fj[2];
+        // Compute load contribution
+        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+        F2FScalar fj[3];
+        computeLoadContribution(w, q, Hinv, r, fa, fj);
+
+        // Add load contribution into global structural load array
+        fs[0] += fj[0];
+        fs[1] += fj[1];
+        fs[2] += fj[2];
+      } else {
+        indx = indx - ns;
+
+        // Compute vector q from centroid to structural node using the
+        // symmetry condition
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Compute load contribution
+        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+        F2FScalar fj[3];
+        computeLoadContribution(w, q, Hinv, r, fa, fj);
+
+        // Add load contribution into global structural load array
+        fs[0] += fj[0];
+        fs[1] += fj[1];
+        fs[2] += fj[2];
+      }
     }
   }
 }
@@ -315,7 +382,6 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
   Returns
   -------
   fj   : contribution to load on structural node
-
 */
 void LinearizedMELD::computeLoadContribution(
     const F2FScalar w, const F2FScalar *q, const F2FScalar *Hinv,
@@ -359,7 +425,6 @@ void LinearizedMELD::computeLoadContribution(
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   transferDisps(vecs, prods);
@@ -381,7 +446,6 @@ void LinearizedMELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   transferLoads(vecs, prods);
@@ -403,7 +467,6 @@ void LinearizedMELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -420,7 +483,6 @@ void LinearizedMELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -437,7 +499,6 @@ void LinearizedMELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -454,7 +515,6 @@ void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));
@@ -471,7 +531,6 @@ void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -488,7 +547,6 @@ void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void LinearizedMELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * ns * sizeof(F2FScalar));

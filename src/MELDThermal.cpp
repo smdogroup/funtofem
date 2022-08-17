@@ -96,7 +96,7 @@ MELDThermal::~MELDThermal() {
   int rank;
   MPI_Comm_rank(global_comm, &rank);
   if (rank == struct_root) {
-    printf("Transfer scheme [%i]: freeing MELD data...\n", object_id);
+    printf("Transfer scheme [%i]: freeing MELDThermal data...\n", object_id);
   }
 }
 
@@ -847,7 +847,6 @@ void MELDThermal::testTempJacVecProducts(const F2FScalar *struct_temps,
   test_vec_a  : test vector the size of aero nodes
   test_vec_s  : test vector the size of struct nodes
   h            : step size
-
 */
 void MELDThermal::testFluxJacVecProducts(const F2FScalar *struct_temps,
                                          const F2FScalar *aero_flux,

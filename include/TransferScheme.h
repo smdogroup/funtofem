@@ -62,6 +62,11 @@ class TransferScheme {
   // Initialization
   virtual void initialize() = 0;
 
+  // Get information from the transfer object
+  int getStructDofPerNode() { return dof_per_node; }
+  int getNumAeroNodes() { return na; }
+  int getNumStructNodes() { return ns; }
+
   // Load and displacement transfers
   virtual void transferDisps(const F2FScalar *struct_disps,
                              F2FScalar *aero_disps) = 0;
@@ -99,37 +104,53 @@ class TransferScheme {
                         F2FScalar *prods);
 
   // Routines to test necessary functionality of transfer scheme
-  void testLoadTransfer(const F2FScalar *struct_disps,
-                        const F2FScalar *aero_loads, const F2FScalar *pert,
-                        const F2FScalar h);
-  void testDispJacVecProducts(const F2FScalar *struct_disps,
-                              const F2FScalar *test_vec_a,
-                              const F2FScalar *test_vec_s, const F2FScalar h);
-  void testLoadJacVecProducts(const F2FScalar *struct_disps,
-                              const F2FScalar *aero_loads,
-                              const F2FScalar *test_vec_s1,
-                              const F2FScalar *test_vec_s2, const F2FScalar h);
-  void testdDdxA0Products(const F2FScalar *struct_disps,
-                          const F2FScalar *test_vec_a1,
-                          const F2FScalar *test_vec_a2, const F2FScalar h);
-  void testdDdxS0Products(const F2FScalar *struct_disps,
-                          const F2FScalar *test_vec_a,
-                          const F2FScalar *test_vec_s, const F2FScalar h);
-  void testdLdxA0Products(const F2FScalar *struct_disps,
-                          const F2FScalar *aero_loads,
-                          const F2FScalar *test_vec_a,
-                          const F2FScalar *test_vec_s, const F2FScalar h);
-  void testdLdxS0Products(const F2FScalar *struct_disps,
-                          const F2FScalar *aero_loads,
-                          const F2FScalar *test_vec_s1,
-                          const F2FScalar *test_vec_s2, const F2FScalar h);
+  int testAllDerivatives(const F2FScalar *struct_disps,
+                         const F2FScalar *aero_loads, const F2FScalar h,
+                         const double rtol, const double atol);
+  int testLoadTransfer(const F2FScalar *struct_disps,
+                       const F2FScalar *aero_loads, const F2FScalar *pert,
+                       const F2FScalar h, const double rtol, const double atol);
+  int testDispJacVecProducts(const F2FScalar *struct_disps,
+                             const F2FScalar *test_vec_a,
+                             const F2FScalar *test_vec_s, const F2FScalar h,
+                             const double rtol, const double atol);
+  int testLoadJacVecProducts(const F2FScalar *struct_disps,
+                             const F2FScalar *aero_loads,
+                             const F2FScalar *test_vec_s1,
+                             const F2FScalar *test_vec_s2, const F2FScalar h,
+                             const double rtol, const double atol);
+  int testdDdxA0Products(const F2FScalar *struct_disps,
+                         const F2FScalar *test_vec_a1,
+                         const F2FScalar *test_vec_a2, const F2FScalar h,
+                         const double rtol, const double atol);
+  int testdDdxS0Products(const F2FScalar *struct_disps,
+                         const F2FScalar *test_vec_a,
+                         const F2FScalar *test_vec_s, const F2FScalar h,
+                         const double rtol, const double atol);
+  int testdLdxA0Products(const F2FScalar *struct_disps,
+                         const F2FScalar *aero_loads,
+                         const F2FScalar *test_vec_a,
+                         const F2FScalar *test_vec_s, const F2FScalar h,
+                         const double rtol, const double atol);
+  int testdLdxS0Products(const F2FScalar *struct_disps,
+                         const F2FScalar *aero_loads,
+                         const F2FScalar *test_vec_s1,
+                         const F2FScalar *test_vec_s2, const F2FScalar h,
+                         const double rtol, const double atol);
 
  protected:
   // Transfer scheme object counter and ID
   static int object_count;
   int object_id;
 
-  // Degrees of freedom per node
+  // Degrees of freedom per node for the structural solution and load vector.
+  // Note that there are always 3 displacements for aerodynamic nodes and 3
+  // components for the aerodynamic force vector. For the structures, there may
+  // be displacements + rotations and forces + moments. If the structures uses
+  // just the u, v, w components for displacements then dof_per_node = 3,
+  // however, if the structures uses u, v, w, theta_x, theta_y, theta_z, then
+  // dof_per_node = 6. Handling this case is up to the specific transfer
+  // scheme implementation.
   int dof_per_node;
 
   // Communicators

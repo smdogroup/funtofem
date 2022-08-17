@@ -35,7 +35,6 @@
   min_point_count : minimum number of points in smallest bin
   min_edge_length : minimum edge length of bin
   max_tree_depth  : deepest allowed level of tree
-
 */
 Octree::Octree(F2FScalar *points, int num_points, int min_point_count,
                double min_edge_length, int max_tree_depth) {
@@ -124,13 +123,14 @@ void Octree::generate() {
   Returns
   -------
   divide : boolean indicating whether the bin satisfies the exit conditions
-
 */
 bool Octree::divide(int bin_id) {
   // Count points in bin
   int bin_count = 0;
   for (int i = 0; i < npts; i++) {
-    if (points_bins[i] == bin_id) bin_count++;
+    if (points_bins[i] == bin_id) {
+      bin_count++;
+    }
   }
   bool count_check = bin_count <= min_points;
 
@@ -148,7 +148,7 @@ bool Octree::divide(int bin_id) {
   bool depth_check = bin_depth >= max_depth;
 
   // Check if exit conditions are satisfied
-  if (count_check or edge_check or depth_check) {
+  if (count_check || edge_check || depth_check) {
     if (bin_count > 0) {
       return true;
     } else {
@@ -223,7 +223,9 @@ bool Octree::divide(int bin_id) {
         bool is_in_bin = x[0] >= min_corner[0] and x[0] <= max_corner[0] and
                          x[1] >= min_corner[1] and x[1] <= max_corner[1] and
                          x[2] >= min_corner[2] and x[2] <= max_corner[2];
-        if (is_in_bin) points_bins[i] = new_bin_id;
+        if (is_in_bin) {
+          points_bins[i] = new_bin_id;
+        }
       }
     }
 
