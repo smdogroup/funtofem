@@ -58,7 +58,6 @@ class Scenario(Base):
         self.group = group
         self.group_master = False
         self.variables = {}
-        self.derivatives = {}
 
         self.functions = []
         self.steady = steady
@@ -140,9 +139,6 @@ class Scenario(Base):
         var.scenario = self.id
 
         super(Scenario, self).add_variable(vartype, var)
-
-        for index, _ in enumerate(self.functions):
-            self.derivatives[vartype][index].append(0.0)
 
     def set_id(self, id):
         """
