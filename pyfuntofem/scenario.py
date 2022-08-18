@@ -23,6 +23,7 @@ limitations under the License.
 from .base import Base
 from .variable import Variable
 
+
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
 
@@ -67,7 +68,7 @@ class Scenario(Base):
             yaw = Variable("Yaw", id=3, lower=-10.0, upper=10.0, active=False)
             xrate = Variable("xrate", id=4, upper=0.0, active=False)
             yrate = Variable("yrate", id=5, upper=0.0, active=False)
-            zrate = Variable("zrate", id=6, upper=0.0, active=False
+            zrate = Variable("zrate", id=6, upper=0.0, active=False)
 
             self.add_variable("aerodynamic", mach)
             self.add_variable("aerodynamic", aoa)
