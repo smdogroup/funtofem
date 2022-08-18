@@ -21,7 +21,7 @@ limitations under the License.
 """
 
 from .base import Base
-
+from .variable import Variable
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
@@ -49,8 +49,6 @@ class Scenario(Base):
         :mod:`base` : Scenario inherits from Base
         """
 
-        from .variable import Variable as dv
-
         super(Scenario, self).__init__(name, id, group)
 
         self.name = name
@@ -64,16 +62,19 @@ class Scenario(Base):
         self.steps = steps
 
         if fun3d:
-            self.add_variable("aerodynamic", dv("Mach", id=1, upper=5.0, active=False))
-            self.add_variable(
-                "aerodynamic", dv("AOA", id=2, lower=-15.0, upper=15.0, active=False)
-            )
-            self.add_variable(
-                "aerodynamic", dv("Yaw", id=3, lower=-10.0, upper=10.0, active=False)
-            )
-            self.add_variable("aerodynamic", dv("xrate", id=4, upper=0.0, active=False))
-            self.add_variable("aerodynamic", dv("yrate", id=5, upper=0.0, active=False))
-            self.add_variable("aerodynamic", dv("zrate", id=6, upper=0.0, active=False))
+            mach = Variable("Mach", id=1, upper=5.0, active=False)
+            aoa = Variable("AOA", id=2, lower=-15.0, upper=15.0, active=False)
+            yaw = Variable("Yaw", id=3, lower=-10.0, upper=10.0, active=False)
+            xrate = Variable("xrate", id=4, upper=0.0, active=False)
+            yrate = Variable("yrate", id=5, upper=0.0, active=False)
+            zrate = Variable("zrate", id=6, upper=0.0, active=False
+
+            self.add_variable("aerodynamic", mach)
+            self.add_variable("aerodynamic", aoa)
+            self.add_variable("aerodynamic", yaw)
+            self.add_variable("aerodynamic", xrate)
+            self.add_variable("aerodynamic", yrate)
+            self.add_variable("aerodynamic", zrate)
 
     def add_function(self, function):
         """

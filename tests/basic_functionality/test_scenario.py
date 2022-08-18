@@ -37,6 +37,10 @@ class ScenarioTest(unittest.TestCase):
 
         cruise.set_variable("aerodynamic", "AOA", value=5.0)
 
+        cruise.add_variable(
+            "aerodynamic", Variable("qinf", 1e3, lower=1e2, upper=2e3, active=True)
+        )
+
         return cruise
 
     def test_build_scenario(self):
@@ -56,6 +60,9 @@ class ScenarioTest(unittest.TestCase):
         assert aoa.value == 5.0
         assert scenario.variables["aerodynamic"][5].name == "zrate"
 
+        for var in scenario.variables:
+            print(var.name)
+
         # now the functions
         assert len(scenario.functions) == 2
         assert scenario.functions[0].name == "cd"
@@ -65,3 +72,8 @@ class ScenarioTest(unittest.TestCase):
         assert scenario.functions[1].name == "mass"
         assert scenario.functions[1].analysis_type == "structural"
         assert scenario.functions[1].adjoint == False
+
+
+if __name__ == "__main__":
+    test = ScenarioTest()
+    test.test_build_scenario()

@@ -358,7 +358,6 @@ void MELD::setAeroStructConn(int *conn) {
   Returns
   --------
   W : weights
-
 */
 void MELD::computeWeights(F2FScalar *W) {
   for (int i = 0; i < na; i++) {
@@ -936,7 +935,6 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
@@ -1107,7 +1105,6 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
@@ -1280,7 +1277,6 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   M3 : matrix system
-
 */
 void MELD::assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *M3) {
   // Set the entries to zero
@@ -1409,7 +1405,6 @@ void MELD::assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *M3) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   for (int i = 0; i < na; i++) {
@@ -1437,7 +1432,6 @@ void MELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   // Set products to zero
@@ -1560,6 +1554,7 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
       }
     }
   }
+
   // distribute the results to the structural processors
   distributeStructuralVector(prods_global, prods);
 
@@ -1579,7 +1574,6 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   --------
   prods : output vector
-
 */
 void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
@@ -1676,7 +1670,6 @@ void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   Returns
   -------
   prods : output vector
-
 */
 void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];

@@ -66,6 +66,8 @@ class TransferScheme {
   int getStructDofPerNode() { return dof_per_node; }
   int getNumAeroNodes() { return na; }
   int getNumStructNodes() { return ns; }
+  int getStructArrayLen() { return dof_per_node * ns; }
+  int getAeroArrayLen() { return 3 * na; }
 
   // Load and displacement transfers
   virtual void transferDisps(const F2FScalar *struct_disps,
