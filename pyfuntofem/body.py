@@ -928,7 +928,7 @@ class Body(Base):
 
         return None
 
-    def get_aero_flux_ajp(self, scenario):
+    def get_aero_heat_flux_ajp(self, scenario):
         """
 
         aero_flux_ajp = dQ/dhA^{T} * psi_Q

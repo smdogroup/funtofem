@@ -239,7 +239,7 @@ class TestAerodynamicSolver(SolverInterface):
                         value = np.dot(aero_loads_ajp[:, findex], self.c1[:, vindex])
                         func.add_gradient_component(var, value)
 
-                    aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                    aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                     if aero_flux_ajp is not None:
                         value = np.dot(aero_flux_ajp[:, findex], self.c2[:, vindex])
                         func.add_gradient_component(var, value)
@@ -260,7 +260,7 @@ class TestAerodynamicSolver(SolverInterface):
                         aero_loads_ajp[:, findex], self.b1
                     )
 
-                aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
                     aero_shape_term[:, findex] += np.dot(
                         aero_flux_ajp[:, findex], self.b2
@@ -343,7 +343,7 @@ class TestAerodynamicSolver(SolverInterface):
                     if func.analysis_type == "aerodynamic":
                         aero_disps_ajp[:, k] += self.func_coefs1
 
-            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             if aero_flux_ajp is not None:
                 for k, func in enumerate(scenario.functions):
