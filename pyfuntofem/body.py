@@ -123,8 +123,8 @@ class Body(Base):
         self.thermal_transfer = None
 
         # Number of nodes
-        self.struct_nnodes = {}
-        self.aero_nnodes = {}
+        self.struct_nnodes = 0
+        self.aero_nnodes = 0
 
         # Number of degrees of freedom on the thermal structural side of the transfer
         self.therm_xfer_ndof = 1
