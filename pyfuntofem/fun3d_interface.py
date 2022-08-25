@@ -65,6 +65,10 @@ class Fun3dInterface(SolverInterface):
         flow_dt: float
             flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since
             FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+        qinf: float
+            Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
+        thermal_scale: float
+            TODO
         """
 
         self.comm = comm

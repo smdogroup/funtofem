@@ -463,7 +463,7 @@ class Body(Base):
 
     def initialize_variables(self, scenario):
         """
-        Initialie the variables each time we run an analysis.
+        Initialize the variables each time we run an analysis.
 
         Parameters
         ----------

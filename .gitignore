@@ -14,3 +14,4 @@ lib/libtransfer_schemes.a
 fake_interface*
 *~
 .vscode/settings.json
+docs/.DS_Store
