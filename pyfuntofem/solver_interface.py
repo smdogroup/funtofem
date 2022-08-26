@@ -463,7 +463,7 @@ class SolverInterface(object):
 
                 # Get the adjoint-Jacobian product for the aero_flux. This may be
                 # None if it is not defined
-                aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+                aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
                     # Solve the aero heat flux integration
                     # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
@@ -701,7 +701,7 @@ class SolverInterface(object):
                 shape = aero_loads_ajp.shape
                 aero_loads_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
 
-            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             if aero_flux_ajp is not None:
                 shape = aero_flux_ajp.shape
                 aero_flux_ajp[:] = np.random.uniform(size=shape).astype(body.dtype)
@@ -776,7 +776,7 @@ class SolverInterface(object):
                 fd_product += np.dot(fd, aero_loads_ajp[:, 0])
 
             aero_flux = body.get_aero_heat_flux(scenario)
-            aero_flux_ajp = body.get_aero_flux_ajp(scenario)
+            aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             if aero_flux is not None and aero_flux_ajp is not None:
                 aero_flux_copy = aero_flux_list.pop(0)
                 if complex_step:

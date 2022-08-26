@@ -16,9 +16,16 @@ cdef extern from "TransferScheme.h":
 
     # Load and displacement transfers
     void transferDisps(const F2FScalar *struct_disps,
-                               F2FScalar *aero_disps)
+                       F2FScalar *aero_disps)
     void transferLoads(const F2FScalar *aero_loads,
-                               F2FScalar *struct_loads)
+                       F2FScalar *struct_loads)
+
+    # Get the dimensions
+    int getStructDofPerNode()
+    int getNumAeroNodes()
+    int getNumStructNodes()
+    int getStructArrayLen()
+    int getAeroArrayLen()
 
     # Action of transpose Jacobians needed for solving adjoint system
     void applydDduS(const F2FScalar *vecs, F2FScalar *prods)

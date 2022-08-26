@@ -107,6 +107,8 @@ class Body(Base):
             self.add_variable("rigid_motion", dv("TrnVecy", active=False, id=14))
             self.add_variable("rigid_motion", dv("TrnVecz", active=False, id=15))
 
+        self.rigid_transform = np.identity(4, dtype=TransferScheme.dtype)
+
         # Set the data type to use
         self.dtype = TransferScheme.dtype
 
@@ -121,8 +123,8 @@ class Body(Base):
         self.thermal_transfer = None
 
         # Number of nodes
-        self.struct_nnodes = {}
-        self.aero_nnodes = {}
+        self.struct_nnodes = 0
+        self.aero_nnodes = 0
 
         # Number of degrees of freedom on the thermal structural side of the transfer
         self.therm_xfer_ndof = 1
@@ -198,6 +200,20 @@ class Body(Base):
 
         return self.struct_X
 
+    def get_num_struct_nodes(self):
+        """
+        Get the number of aerodynamic surface nodes
+        """
+
+        return self.struct_nnodes
+
+    def get_struct_node_ids(self):
+        """
+        Get the structural node ids
+        """
+
+        return self.struct_id
+
     def initialize_aero_nodes(self, aero_X, aero_id=None):
         """
         Initialize the aerodynamic surface mesh on any processors that have an
@@ -227,6 +243,20 @@ class Body(Base):
         """
 
         return self.aero_X
+
+    def get_num_aero_nodes(self):
+        """
+        Get the number of aerodynamic surface nodes
+        """
+
+        return self.aero_nnodes
+
+    def get_aero_node_ids(self):
+        """
+        Get the aerodynamic node ids
+        """
+
+        return self.aero_id
 
     def initialize_transfer(
         self,
@@ -898,7 +928,7 @@ class Body(Base):
 
         return None
 
-    def get_aero_flux_ajp(self, scenario):
+    def get_aero_heat_flux_ajp(self, scenario):
         """
 
         aero_flux_ajp = dQ/dhA^{T} * psi_Q

@@ -54,6 +54,8 @@ class Base(object):
         self.group_root = False
         self.variables = {}
 
+        return
+
     def add_variable(self, vartype, var):
         """
         Add a new variable to the body's or scenario's variable dictionary
@@ -74,6 +76,8 @@ class Base(object):
         var.id = len(self.variables[vartype]) + 1
         var.analysis_type = vartype
         self.variables[vartype].append(var)
+
+        return
 
     def set_variable(
         self,
@@ -150,6 +154,8 @@ class Base(object):
                 print("Warning unknown type for index. Variable not set")
         else:
             print("Warning no valid name or index given. Variable not set")
+
+        return
 
     def count_active_variables(self):
         """
