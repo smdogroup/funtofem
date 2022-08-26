@@ -264,7 +264,9 @@ setting it to zero. This results in the following coupled system of equations:
 Aerothermoelastic Framework
 ---------------------------
 
-.. figure:: images/aerothermoelastic_framework.png
+.. |*| replace:: :math:`\times`
+
+.. figure:: images/atePath.svg
 
 The surface displacements are computed by solving the displacement transfer residuals and preserving rigid-body motion. The displacement transfer scheme is given by:
 
@@ -309,6 +311,25 @@ node by the force at an aerodynamic surface node is:
 
 	{Q}({f}_{T,A}, {f}_{T,S}) \triangleq {W}^{T} {f}_{T,A} - {f}_{T,S} = 0
 
+.. table:: Body Class Members
+
+    =============== =================   =================== ===========
+    Symbol          Variable Name       Size                Role
+    =============== =================   =================== ===========
+    :math:`u_A`     aero_disps          3 |*| aero_nnodes   FUN3D input
+    :math:`t_A`     aero_temps          aero_nnodes         FUN3D input
+    :math:`f_A`     aero_loads          3 |*| aero_nnodes   FUN3D output
+    :math:`h_A`     aero_flux           aero_nnodes         FUN3D output
+    :math:`f_S`     struct_loads        3 |*| struct_nnodes TACS input
+    :math:`h_S`     struct_flux         struct_nnodes       TACS input
+    :math:`u_S`     struct_disps        3 |*| struct_nnodes TACS output
+    :math:`t_S`     struct_temps        struct_nnodes       TACS output
+    =============== =================   =================== ===========
+
+The body class members listed above use accessors to get them. aero_nnodes refers to the number
+of nodes on the aerodynamic surface mesh. Similarly, struct_nnodes refers to the number of nodes
+on the structural mesh. Where the size is indicated as 3 |*| nnodes, the vector is structured as concatenated
+trios of (x, y, z) values.
 
 Aerothermoelastic Adjoint
 =========================
@@ -399,3 +420,32 @@ interest is computed as the derivative of the Lagrangian.
 .. math::
 
 	\nabla_{{x}}f \triangleq \frac{\partial \mathcal{L}_{ATE}}{\partial {x}}
+
+The abbreviation "AJP" is used for the "Adjoint-Jacobian Product." The names of the AJP variables correspond to the
+off-diagonal terms of the partial derivative of the Lagrangian with respect to the variable in the forward path with the same name.
+The number of functions is abbreviated as nfuncs for a given scenario.
+
+.. |ad_ajp| replace:: :math:`\psi_G^T \frac{\partial G}{\partial u_A}`
+.. |at_ajp| replace:: :math:`\psi_A^T \frac{\partial A}{\partial t_A}`
+.. |al_ajp| replace:: :math:`\psi_L^T \frac{\partial L}{\partial f_A}`
+.. |af_ajp| replace:: :math:`\psi_Q^T \frac{\partial Q}{\partial h_A}`
+
+.. |sd_ajp| replace:: :math:`\psi_D^T \frac{\partial D}{\partial u_S} + \psi_L^T \frac{\partial L}{\partial u_S}`
+.. |st_ajp| replace:: :math:`\psi_T^T \frac{\partial T}{\partial t_S}`
+.. |sl_ajp| replace:: :math:`\psi_S^T \frac{\partial S}{\partial f_S}`
+.. |sf_ajp| replace:: :math:`\psi_S^T \frac{\partial S}{\partial h_S}`
+
+.. table:: Adjoint-Jacobian Products
+
+    ================== ====================   ================================= ===========
+    Expression         Variable Name          Size                              Role
+    ================== ====================   ================================= ===========
+    |ad_ajp|           aero_disps_ajp         3 |*| aero_nnodes |*| nfuncs      FUN3D output
+    |at_ajp|           aero_temps_ajp         aero_nnodes |*| nfuncs            FUN3D output
+    |al_ajp|           aero_loads_ajp         3 |*| aero_nnodes |*| nfuncs      FUN3D input
+    |af_ajp|           aero_flux_ajp          aero_nnodes |*| nfuncs            FUN3D input
+    |sl_ajp|           struct_loads_ajp       3 |*| struct_nnodes |*| nfuncs    TACS output
+    |sf_ajp|           struct_flux_ajp        struct_nnodes |*| nfuncs          TACS output
+    |sd_ajp|           struct_disps_ajp       3 |*| struct_nnodes |*| nfuncs    TACS input
+    |st_ajp|           struct_temps_ajp       struct_nnodes |*| nfuncs          TACS input
+    ================== ====================   ================================= ===========
