@@ -85,7 +85,6 @@ class Body(Base):
         self.motion_type = motion_type
 
         self.variables = {}
-        self.derivatives = {}
 
         self.parent = None
         self.children = []

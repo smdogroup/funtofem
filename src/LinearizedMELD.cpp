@@ -68,13 +68,31 @@ void LinearizedMELD::initialize() {
     nn = ns;
   }
 
+  if (Us) {
+    delete[] Us;
+  }
+  Us = NULL;
+  if (Fa) {
+    delete[] Fa;
+  }
+  Fa = NULL;
+
+  if (na > 0) {
+    Fa = new F2FScalar[3 * na];
+    memset(Fa, 0, 3 * na * sizeof(F2FScalar));
+  }
+  if (ns > 0) {
+    Us = new F2FScalar[3 * ns];
+    memset(Us, 0, 3 * ns * sizeof(F2FScalar));
+  }
+
   // Create aerostructural connectivity
   global_conn = new int[nn * na];
-  setAeroStructConn(global_conn);
+  computeAeroStructConn(isymm, nn, global_conn);
 
   // Allocate and compute the weights
   global_W = new F2FScalar[nn * na];
-  computeWeights(global_W);
+  computeWeights(global_beta, isymm, nn, global_conn, global_W);
 
   // Allocate transfer variables
   global_xs0bar = new F2FScalar[3 * na];
@@ -99,7 +117,7 @@ void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
   distributeStructuralMesh();
 
   // Copy prescribed displacements into displacement vector
-  collectStructuralVector(struct_disps, Us);
+  structGatherBcast(3 * ns_local, struct_disps, 3 * ns, Us);
 
   // Zero the outputs
   memset(aero_disps, 0, 3 * na * sizeof(F2FScalar));

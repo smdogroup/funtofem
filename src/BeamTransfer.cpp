@@ -32,28 +32,14 @@
   Create the beam transfer load and displacement transfer object. This
   assumes that all information stored in the transfer object.
 */
-BeamTransfer::BeamTransfer(MPI_Comm comm, MPI_Comm comm_struct,
-                           int _struct_root, MPI_Comm comm_aero, int _aero_root,
-                           const int *_conn, int _nelems, int _order,
-                           int _dof_per_node)
-    : TransferScheme(_dof_per_node) {
-  // Initialize parallelization info
-  global_comm = comm;
-  struct_comm = comm_struct;
-  aero_comm = comm_aero;
-  struct_root = _struct_root;
-  aero_root = _aero_root;
-
-  // Initialize aerodynamic data member variables
-  Xa = NULL;
-  Fa = NULL;
-  na = 0;
-
-  // Initialize structural data member variables
-  Xs = NULL;
-  Us = NULL;
-  ns = 0;
-
+BeamTransfer::BeamTransfer(MPI_Comm global_comm, MPI_Comm struct_comm,
+                           int struct_root, MPI_Comm aero_comm, int aero_root,
+                           const int *conn_, int nelems, int order,
+                           int dof_per_node)
+    : LDTransferScheme(global_comm, struct_comm, struct_root, aero_comm,
+                       aero_root, dof_per_node),
+      nelems(nelems),
+      order(order) {
   // Initialize object id
   object_id = ++TransferScheme::object_count;
 
@@ -62,10 +48,8 @@ BeamTransfer::BeamTransfer(MPI_Comm comm, MPI_Comm comm_struct,
   aero_pt_to_param = NULL;
 
   // Create the connectivity
-  nelems = _nelems;
-  order = _order;
   conn = new int[order * nelems];
-  memcpy(conn, _conn, order * nelems * sizeof(int));
+  memcpy(conn, conn_, order * nelems * sizeof(int));
 }
 
 BeamTransfer::~BeamTransfer() {
@@ -75,32 +59,6 @@ BeamTransfer::~BeamTransfer() {
   }
   if (aero_pt_to_param) {
     delete[] aero_pt_to_param;
-  }
-}
-
-/*
-  Set the initial structural node locations
-*/
-void BeamTransfer::setStructNodes(const F2FScalar *struct_X,
-                                  int struct_nnodes) {
-  ns = struct_nnodes;
-
-  // Free the structural data if any is allocated
-  if (Xs) {
-    delete[] Xs;
-  }
-  if (Us) {
-    delete[] Us;
-  }
-
-  // Allocate memory for aerodynamic data, copy in node locations, initialize
-  // displacement and load arrays
-  if (ns > 0) {
-    Xs = new F2FScalar[3 * ns];
-    memcpy(Xs, struct_X, 3 * ns * sizeof(F2FScalar));
-
-    Us = new F2FScalar[dof_per_node * ns];
-    memset(Us, 0, dof_per_node * ns * sizeof(F2FScalar));
   }
 }
 

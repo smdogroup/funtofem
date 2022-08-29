@@ -26,6 +26,7 @@
 
 #include <cstring>
 
+#include "LocatePoint.h"
 #include "funtofemlapack.h"
 
 // Initialize object counter to zero
@@ -36,16 +37,13 @@ TransferScheme::~TransferScheme() {
   if (Xa) {
     delete[] Xa;
   }
-  if (Fa) {
-    delete[] Fa;
-  }
 
   // Free the structural data
   if (Xs) {
     delete[] Xs;
   }
-  if (Us) {
-    delete[] Us;
+  if (Xs_local) {
+    delete[] Xs_local;
   }
 }
 
@@ -59,9 +57,6 @@ void TransferScheme::setAeroNodes(const F2FScalar *aero_X, int aero_nnodes) {
   if (Xa) {
     delete[] Xa;
   }
-  if (Fa) {
-    delete[] Fa;
-  }
 
   // Global number of aerodynamic nodes
   na_global = 0;
@@ -72,87 +67,9 @@ void TransferScheme::setAeroNodes(const F2FScalar *aero_X, int aero_nnodes) {
   if (na > 0) {
     Xa = new F2FScalar[3 * na];
     memcpy(Xa, aero_X, 3 * na * sizeof(F2FScalar));
-
-    Fa = new F2FScalar[3 * na];
-    memset(Fa, 0, 3 * na * sizeof(F2FScalar));
+  } else {
+    Xa = NULL;
   }
-}
-
-/*
-  Collect a aerodynamic vector to create a global image then distribute to the
-  aerodynamic processors
-*/
-void TransferScheme::collectAerodynamicVector(const F2FScalar *local,
-                                              F2FScalar *global) {
-  // Collect how many aerodynamic nodes every processor has
-  int aero_nprocs;
-  int aero_rank;
-  MPI_Comm_size(aero_comm, &aero_nprocs);
-  MPI_Comm_rank(aero_comm, &aero_rank);
-
-  int *na_list = new int[aero_nprocs];
-  memset(na_list, 0, aero_nprocs * sizeof(int));
-
-  MPI_Gather(&na, 1, MPI_INT, na_list, 1, MPI_INT, aero_root, aero_comm);
-
-  // Collect the aerodynamic nodes on the master
-  int send_size = na * 3;
-  int *disps = new int[aero_nprocs];
-  memset(disps, 0, aero_nprocs * sizeof(int));
-
-  if (aero_rank == aero_root) {
-    for (int proc = 0; proc < aero_nprocs; proc++) {
-      na_list[proc] *= 3;
-      if (proc > 0) {
-        disps[proc] = disps[proc - 1] + na_list[proc - 1];
-      }
-    }
-  }
-
-  MPI_Gatherv(local, send_size, F2F_MPI_TYPE, global, na_list, disps,
-              F2F_MPI_TYPE, aero_root, aero_comm);
-
-  // Pass the global list to all the processors
-  MPI_Bcast(global, 3 * na_global, F2F_MPI_TYPE, aero_root, aero_comm);
-
-  delete[] na_list;
-  delete[] disps;
-}
-
-/*
-  Reduce vector to get the total across all aero procs then distribute to the
-  aerodynamic processors
-*/
-void TransferScheme::distributeAerodynamicVector(F2FScalar *global,
-                                                 F2FScalar *local) {
-  // Collect how many nodes each aerodynamic processor has
-  int aero_nprocs;
-  int aero_rank;
-  MPI_Comm_size(aero_comm, &aero_nprocs);
-  MPI_Comm_rank(aero_comm, &aero_rank);
-
-  int *na_list = new int[aero_nprocs];
-
-  MPI_Gather(&na, 1, MPI_INT, na_list, 1, MPI_INT, aero_root, aero_comm);
-
-  // Distribute to the aerodynamic processors
-  int *disps = new int[aero_nprocs];
-  memset(disps, 0, aero_nprocs * sizeof(int));
-
-  if (aero_rank == aero_root) {
-    for (int proc = 0; proc < aero_nprocs; proc++) {
-      na_list[proc] *= 3;
-      if (proc > 0) {
-        disps[proc] = disps[proc - 1] + na_list[proc - 1];
-      }
-    }
-  }
-
-  MPI_Scatterv(global, na_list, disps, F2F_MPI_TYPE, local, na * 3,
-               F2F_MPI_TYPE, aero_root, aero_comm);
-
-  delete[] na_list;
-  delete[] disps;
 }
 
 /*
@@ -160,30 +77,403 @@ void TransferScheme::distributeAerodynamicVector(F2FScalar *global,
 */
 void TransferScheme::setStructNodes(const F2FScalar *struct_X,
                                     int struct_nnodes) {
-  ns = struct_nnodes;
+  ns_local = struct_nnodes;
 
   // Free the structural data if any is allocated
-  if (Xs) {
-    delete[] Xs;
-  }
-  if (Us) {
-    delete[] Us;
+  if (Xs_local) {
+    delete[] Xs_local;
   }
 
   // Allocate memory for aerodynamic data, copy in node locations, initialize
   // displacement and load arrays
-  if (ns > 0) {
-    Xs = new F2FScalar[3 * ns];
-    memcpy(Xs, struct_X, 3 * ns * sizeof(F2FScalar));
+  if (struct_nnodes > 0) {
+    Xs_local = new F2FScalar[3 * ns];
+    memcpy(Xs_local, struct_X, 3 * ns * sizeof(F2FScalar));
+  } else {
+    Xs_local = NULL;
+  }
+}
 
-    Us = new F2FScalar[dof_per_node * ns];
-    memset(Us, 0, dof_per_node * ns * sizeof(F2FScalar));
+void TransferScheme::distributeStructuralMesh() {
+  // Check if the mesh has been updated
+  MPI_Allreduce(MPI_IN_PLACE, &mesh_update, 1, MPI_INT, MPI_SUM, global_comm);
+
+  if (mesh_update > 0) {
+    mesh_update = 0;
+
+    // Compute the number of structural nodes on the structural root processor
+    if (struct_comm != MPI_COMM_NULL) {
+      MPI_Reduce(&ns_local, &ns, 1, MPI_INT, MPI_SUM, 0, struct_comm);
+    }
+
+    // Broadcast the number of nodes across all the processors
+    MPI_Bcast(&ns, 1, MPI_INT, struct_root, global_comm);
+
+    // Allocate memory for structural data, initialize displacement array
+    if (Xs) {
+      delete[] Xs;
+    }
+
+    Xs = new F2FScalar[3 * ns];
+    memset(Xs, 0, 3 * ns * sizeof(F2FScalar));
+
+    structGatherBcast(ns_local, Xs_local, ns, Xs);
   }
 }
 
 /*
-  Transform a set of aerodynamic surface displacements into a least-squares fit
-  of rotation and translation plus elastic deformations
+  This code takes data in an array that is duplicated across aero_comm, adds
+  all the values so that they are consistent and distributes the added values
+  to processors on aero_comm.
+
+  Here struct_comm and aero_comm may be overlapping or non-overlapping
+  communicators on global_comm. The ranks struct_root and aero_root are the
+  ranks in global_comm of the rank-0 processors in struct_comm and aero_comm,
+  respectively.
+
+  Here we assume that the struct_data is of length struct_len and is a global
+  duplicated array across all struct_comm processors. This data is first summed
+  via MPI_Reduce to the rank-0 struct processor.
+
+  Arguments
+  ---------
+  global_len   : length of structural data (same on all struct_comm)
+  global_data  : array of the structural data (to be added together)
+  local_len    : local length of distributed structural data
+
+  Output
+  ------
+  local_data   : local added/scattered data
+*/
+void TransferScheme::structAddScatter(int global_len, F2FScalar *global_data,
+                                      int local_len, F2FScalar *local_data) {
+  // Reduce values on global_comm to the struct_root processor
+  MPI_Reduce(MPI_IN_PLACE, global_data, global_len, F2F_MPI_TYPE, MPI_SUM,
+             struct_root, global_comm);
+
+  // Scatter the values across all aero_comm processors
+  if (struct_comm != MPI_COMM_NULL) {
+    // Gather how many values each processor has
+    int struct_nprocs, struct_rank;
+    MPI_Comm_size(struct_comm, &struct_nprocs);
+    MPI_Comm_rank(struct_comm, &struct_rank);
+
+    int *nvalues = new int[struct_nprocs];
+    memset(nvalues, 0, struct_nprocs * sizeof(int));
+
+    MPI_Gather(&local_len, 1, MPI_INT, nvalues, 1, MPI_INT, 0, struct_comm);
+
+    // Collect the values nodes on the root
+    int *disps = new int[struct_nprocs];
+    memset(disps, 0, struct_nprocs * sizeof(int));
+
+    if (struct_rank == 0) {
+      for (int proc = 0; proc < struct_nprocs; proc++) {
+        if (proc > 0) {
+          disps[proc] = disps[proc - 1] + nvalues[proc - 1];
+        }
+      }
+    }
+
+    // Scatter from the root aero processor
+    MPI_Scatterv(global_data, nvalues, disps, F2F_MPI_TYPE, local_data,
+                 local_len, F2F_MPI_TYPE, 0, struct_comm);
+
+    delete[] nvalues;
+    delete[] disps;
+  }
+}
+
+/*
+  This code takes distributed structural data and broadcasts it to all
+  processors in global_comm.
+
+  Arguments
+  ---------
+  local_len    : local length of distributed structural data
+  local_data   : local distributed array of data
+  global_len   : global length of the data
+
+  Output
+  ------
+  global_data  : global array of the structural data
+*/
+void TransferScheme::structGatherBcast(int local_len,
+                                       const F2FScalar *local_data,
+                                       int global_len, F2FScalar *global_data) {
+  // Collect how many structural nodes every processor has
+  if (struct_comm != MPI_COMM_NULL) {
+    int struct_nprocs, struct_rank;
+    MPI_Comm_size(struct_comm, &struct_nprocs);
+    MPI_Comm_rank(struct_comm, &struct_rank);
+
+    int *nvalues = new int[struct_nprocs];
+    memset(nvalues, 0, struct_nprocs * sizeof(int));
+
+    MPI_Gather(&local_len, 1, MPI_INT, nvalues, 1, MPI_INT, 0, struct_comm);
+
+    // Collect the values nodes on the root
+    int *disps = new int[struct_nprocs];
+    memset(disps, 0, struct_nprocs * sizeof(int));
+
+    if (struct_rank == 0) {
+      for (int proc = 0; proc < struct_nprocs; proc++) {
+        if (proc > 0) {
+          disps[proc] = disps[proc - 1] + nvalues[proc - 1];
+        }
+      }
+    }
+
+    MPI_Gatherv(local_data, local_len, F2F_MPI_TYPE, global_data, nvalues,
+                disps, F2F_MPI_TYPE, 0, struct_comm);
+
+    delete[] nvalues;
+    delete[] disps;
+  }
+
+  // Broadcast the global list to all the processors
+  MPI_Bcast(global_data, global_len, F2F_MPI_TYPE, struct_root, global_comm);
+}
+
+/*
+  Reduce vector to get the total across all aero procs then distribute to the
+  aerodynamic processors
+*/
+void TransferScheme::aeroScatter(int global_len, F2FScalar *global_data,
+                                 int local_len, F2FScalar *local_data) {
+  if (aero_comm != MPI_COMM_NULL) {
+    // Collect how many nodes each aerodynamic processor has
+    int aero_nprocs, aero_rank;
+    MPI_Comm_size(aero_comm, &aero_nprocs);
+    MPI_Comm_rank(aero_comm, &aero_rank);
+
+    int *nvalues = new int[aero_nprocs];
+    memset(nvalues, 0, aero_nprocs * sizeof(int));
+
+    MPI_Gather(&local_len, 1, MPI_INT, nvalues, 1, MPI_INT, 0, aero_comm);
+
+    // Collect the values nodes on the root
+    int *disps = new int[aero_nprocs];
+    memset(disps, 0, aero_nprocs * sizeof(int));
+
+    if (aero_rank == 0) {
+      for (int proc = 0; proc < aero_nprocs; proc++) {
+        if (proc > 0) {
+          disps[proc] = disps[proc - 1] + nvalues[proc - 1];
+        }
+      }
+    }
+
+    MPI_Scatterv(global_data, nvalues, disps, F2F_MPI_TYPE, local_data,
+                 local_len, F2F_MPI_TYPE, aero_root, aero_comm);
+
+    delete[] nvalues;
+    delete[] disps;
+  }
+}
+
+/*
+  Collect a aerodynamic vector to create a global image then distribute to the
+  aerodynamic processors
+*/
+void TransferScheme::aeroGatherBcast(int local_len, const F2FScalar *local_data,
+                                     int global_len, F2FScalar *global_data) {
+  // Collect how many structural nodes every processor has
+  if (aero_comm != MPI_COMM_NULL) {
+    int aero_nprocs, aero_rank;
+    MPI_Comm_size(aero_comm, &aero_nprocs);
+    MPI_Comm_rank(aero_comm, &aero_rank);
+
+    int *nvalues = new int[aero_nprocs];
+    memset(nvalues, 0, aero_nprocs * sizeof(int));
+
+    MPI_Gather(&local_len, 1, MPI_INT, nvalues, 1, MPI_INT, 0, struct_comm);
+
+    // Collect the values nodes on the root
+    int *disps = new int[aero_nprocs];
+    memset(disps, 0, aero_nprocs * sizeof(int));
+
+    if (aero_rank == 0) {
+      for (int proc = 0; proc < aero_nprocs; proc++) {
+        if (proc > 0) {
+          disps[proc] = disps[proc - 1] + nvalues[proc - 1];
+        }
+      }
+    }
+
+    MPI_Gatherv(local_data, local_len, F2F_MPI_TYPE, global_data, nvalues,
+                disps, F2F_MPI_TYPE, 0, aero_comm);
+
+    delete[] nvalues;
+    delete[] disps;
+  }
+
+  // Broadcast the global list to all the processors
+  MPI_Bcast(global_data, global_len, F2F_MPI_TYPE, aero_root, global_comm);
+}
+
+/*
+  Builds aerostructural connectivity through LocatePoint search, linking each
+  aerodynamic node with a specified number of nearest structural nodes
+
+  Arguments
+  ---------
+  isymm  : Symmetry index
+  nn     : The number of nearest neighbors
+  tol    : Symmetry plane tolerance
+
+  Returns
+  -------
+  conn   : aerostructural connectivity
+*/
+void TransferScheme::computeAeroStructConn(int isymm, int nn, int *conn,
+                                           double tol) {
+  // Copy or duplicate and reflect the unique structural nodes
+  F2FScalar *Xs_dup = NULL;
+  int num_locate_nodes = 0;
+  int *locate_to_reflected_index = NULL;
+
+  if (isymm >= 0) {
+    Xs_dup = new F2FScalar[6 * ns];
+    memcpy(Xs_dup, Xs, 3 * ns * sizeof(F2FScalar));
+
+    locate_to_reflected_index = new int[ns];
+
+    num_locate_nodes = 0;
+    for (int k = 0; k < ns; k++) {
+      if (fabs(F2FRealPart(Xs_dup[3 * k + isymm])) > tol) {
+        // Node is not on the plane of symmetry, so copy it
+        int kk = num_locate_nodes + ns;
+        memcpy(&Xs_dup[3 * kk], &Xs_dup[3 * k], 3 * sizeof(F2FScalar));
+
+        // reflect the point
+        Xs_dup[3 * kk + isymm] *= -1.0;
+
+        // Record the index
+        locate_to_reflected_index[num_locate_nodes] = k + ns;
+        num_locate_nodes++;
+      }
+    }
+    num_locate_nodes += ns;
+  } else {
+    Xs_dup = new F2FScalar[3 * ns];
+    memcpy(Xs_dup, Xs, 3 * ns * sizeof(F2FScalar));
+    num_locate_nodes = ns;
+  }
+
+  // Create instance of LocatePoint class to perform the following searches
+  int min_bin_size = 10;
+  LocatePoint *locator =
+      new LocatePoint(Xs_dup, num_locate_nodes, min_bin_size);
+
+  // Indices of nearest nodes
+  int *indx = new int[nn];
+  F2FScalar *dist = new F2FScalar[nn];
+
+  // For each aerodynamic node, copy the indices of the nearest n structural
+  // nodes into the conn array
+  for (int i = 0; i < na; i++) {
+    F2FScalar xa0[3];
+    memcpy(xa0, &Xa[3 * i], 3 * sizeof(F2FScalar));
+
+    locator->locateKClosest(nn, indx, dist, xa0);
+
+    for (int k = 0; k < nn; k++) {
+      if (indx[k] >= ns) {
+        int kk = indx[k] - ns;
+        conn[nn * i + k] = locate_to_reflected_index[kk];
+      } else {
+        conn[nn * i + k] = indx[k];
+      }
+    }
+  }
+
+  // Free the duplicate array
+  delete[] Xs_dup;
+
+  if (locate_to_reflected_index) {
+    delete[] locate_to_reflected_index;
+  }
+
+  // Delete the LocatePoint object and release memory
+  delete[] indx;
+  delete[] dist;
+  delete locator;
+}
+
+/*
+  Computes weights of structural nodes
+
+  Arguments
+  ---------
+  beta   : Exponential factor
+  isymm  : Symmetry index
+  nn     : The number of nearest neighbors
+  conn   : Connectivity array aero nodes -> structural nodes
+  tol    : Symmetry plane tolerance
+
+  Returns
+  --------
+  W : weights
+*/
+void TransferScheme::computeWeights(double beta, int isymm, int nn,
+                                    const int *conn, F2FScalar *W, double tol) {
+  for (int i = 0; i < na; i++) {
+    const F2FScalar *xa0 = &Xa[3 * i];
+    const int *local_conn = &conn[i * nn];
+    F2FScalar *w = &W[i * nn];
+
+    // Compute the weights based on the difference between the aerodynamic
+    // point location and the local undeformed structural point
+    F2FScalar wtotal = 0.0;
+    F2FScalar v[3];
+
+    // Find the average squared distance for normalization
+    F2FScalar v2_avg = 0.0;
+
+    for (int j = 0; j < nn; j++) {
+      if (local_conn[j] < ns) {
+        const F2FScalar *xs0 = &Xs[3 * local_conn[j]];
+        vec_diff(xs0, xa0, v);
+      } else {
+        F2FScalar rxs0[3];  // Reflected xs0
+        memcpy(rxs0, &Xs[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+        vec_diff(rxs0, xa0, v);
+      }
+      v2_avg += vec_dot(v, v) / (1.0 * nn);
+    }
+
+    // Make sure we don't divide by zero
+    if (F2FRealPart(v2_avg) < tol) {
+      v2_avg = tol;
+    }
+
+    for (int j = 0; j < nn; j++) {
+      if (local_conn[j] < ns) {
+        const F2FScalar *xs0 = &Xs[3 * local_conn[j]];
+        vec_diff(xs0, xa0, v);
+      } else {
+        F2FScalar rxs0[3];  // Reflected xs0
+        memcpy(rxs0, &Xs[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+        vec_diff(rxs0, xa0, v);
+      }
+      w[j] = exp(-beta * vec_dot(v, v) / v2_avg);
+      wtotal += w[j];
+    }
+
+    // Normalize the weights
+    wtotal = 1.0 / wtotal;
+    for (int j = 0; j < nn; j++) {
+      w[j] *= wtotal;
+    }
+  }
+}
+
+/*
+  Transform a set of aerodynamic surface displacements into a least-squares
+  fit of rotation and translation plus elastic deformations
 
   Arguments
   ----------
@@ -195,14 +485,15 @@ void TransferScheme::setStructNodes(const F2FScalar *struct_X,
   t          : translation
   u          : elastic deformations
 */
-void TransferScheme::transformEquivRigidMotion(const F2FScalar *aero_disps,
-                                               F2FScalar *R, F2FScalar *t,
-                                               F2FScalar *u) {
+void LDTransferScheme::transformEquivRigidMotion(const F2FScalar *aero_disps,
+                                                 F2FScalar *R, F2FScalar *t,
+                                                 F2FScalar *u) {
   // Gather aerodynamic node locations and displacements
   F2FScalar *Xa_global = new F2FScalar[3 * na_global];
-  collectAerodynamicVector(Xa, Xa_global);
+  aeroGatherBcast(3 * na, Xa, 3 * na_global, Xa_global);
+
   F2FScalar *Ua_global = new F2FScalar[3 * na_global];
-  collectAerodynamicVector(aero_disps, Ua_global);
+  aeroGatherBcast(3 * na, aero_disps, 3 * na_global, Ua_global);
 
   // Adds aerodynamic displacements to aerodynamic node locations
   F2FScalar *Xad_global = new F2FScalar[3 * na_global];
@@ -285,14 +576,14 @@ void TransferScheme::transformEquivRigidMotion(const F2FScalar *aero_disps,
     u_global[3 * j + 2] = Xad_global[3 * j + 2] - Xa_rigid[2];
   }
 
-  // Copy rotation matrix and centroid to global variables for use in computing
-  // derivatives
+  // Copy rotation matrix and centroid to global variables for use in
+  // computing derivatives
   memcpy(Raero, R, 9 * sizeof(F2FScalar));
   memcpy(xa0bar, x0_bar, 3 * sizeof(F2FScalar));
   memcpy(xabar, x_bar, 3 * sizeof(F2FScalar));
 
   // Scatter elastic deformations to aerodynamic processors
-  distributeAerodynamicVector(u_global, u);
+  aeroScatter(3 * na_global, u_global, na, u);
 
   // Free memory
   delete[] Xa_global;
@@ -313,7 +604,8 @@ void TransferScheme::transformEquivRigidMotion(const F2FScalar *aero_disps,
   -------
   prods      : output vectors
 */
-void TransferScheme::applydRduATrans(const F2FScalar *vecs, F2FScalar *prods) {
+void LDTransferScheme::applydRduATrans(const F2FScalar *vecs,
+                                       F2FScalar *prods) {
   // Compute the rotation sensitivities
   F2FScalar dR[9 * 9];
 
@@ -417,8 +709,9 @@ void TransferScheme::applydRduATrans(const F2FScalar *vecs, F2FScalar *prods) {
   prods      : output vector
 
 */
-void TransferScheme::applydRdxA0Trans(const F2FScalar *aero_disps,
-                                      const F2FScalar *vecs, F2FScalar *prods) {
+void LDTransferScheme::applydRdxA0Trans(const F2FScalar *aero_disps,
+                                        const F2FScalar *vecs,
+                                        F2FScalar *prods) {
   // Compute the rotation sensitivities
   F2FScalar dR[9 * 9];
 
@@ -521,15 +814,14 @@ void TransferScheme::applydRdxA0Trans(const F2FScalar *aero_disps,
 
 /*
   Run all of the tests for the transfer scheme.
-
-  Create random vectors for the
 */
-int TransferScheme::testAllDerivatives(const F2FScalar *struct_disps,
-                                       const F2FScalar *aero_loads,
-                                       const F2FScalar h, const double rtol,
-                                       const double atol) {
-  const int aero_nnodes = getNumAeroNodes();
-  const int struct_nnodes = getNumStructNodes();
+int LDTransferScheme::testAllDerivatives(const F2FScalar *struct_disps,
+                                         const F2FScalar *aero_loads,
+                                         const F2FScalar h, const double rtol,
+                                         const double atol) {
+  const int aero_nnodes = getNumLocalAeroNodes();
+  const int struct_nnodes = getNumLocalStructNodes();
+  const int dof_per_node = getStructNodeDof();
 
   // Create random testing data
   F2FScalar *test_vec_a1 = new F2FScalar[3 * aero_nnodes];
@@ -589,10 +881,12 @@ int TransferScheme::testAllDerivatives(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
-                                     const F2FScalar *aero_loads,
-                                     const F2FScalar *pert, const F2FScalar h,
-                                     const double rtol, const double atol) {
+int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
+                                       const F2FScalar *aero_loads,
+                                       const F2FScalar *pert, const F2FScalar h,
+                                       const double rtol, const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -699,11 +993,14 @@ int TransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
-                                           const F2FScalar *test_vec_a,
-                                           const F2FScalar *test_vec_s,
-                                           const F2FScalar h, const double rtol,
-                                           const double atol) {
+int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
+                                             const F2FScalar *test_vec_a,
+                                             const F2FScalar *test_vec_s,
+                                             const F2FScalar h,
+                                             const double rtol,
+                                             const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Transfer the structural displacements to get rotations
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -835,12 +1132,12 @@ int TransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
-                                           const F2FScalar *aero_loads,
-                                           const F2FScalar *test_vec_s1,
-                                           const F2FScalar *test_vec_s2,
-                                           const F2FScalar h, const double rtol,
-                                           const double atol) {
+int LDTransferScheme::testLoadJacVecProducts(
+    const F2FScalar *struct_disps, const F2FScalar *aero_loads,
+    const F2FScalar *test_vec_s1, const F2FScalar *test_vec_s2,
+    const F2FScalar h, const double rtol, const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
@@ -980,11 +1277,11 @@ int TransferScheme::testLoadJacVecProducts(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
-                                       const F2FScalar *test_vec_a1,
-                                       const F2FScalar *test_vec_a2,
-                                       const F2FScalar h, const double rtol,
-                                       const double atol) {
+int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
+                                         const F2FScalar *test_vec_a1,
+                                         const F2FScalar *test_vec_a2,
+                                         const F2FScalar h, const double rtol,
+                                         const double atol) {
   // Copy original unperturbed node locations
   F2FScalar *Xa_copy = new F2FScalar[3 * na];
   memcpy(Xa_copy, Xa, 3 * na * sizeof(F2FScalar));
@@ -1102,11 +1399,13 @@ int TransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
-                                       const F2FScalar *test_vec_a,
-                                       const F2FScalar *test_vec_s,
-                                       const F2FScalar h, const double rtol,
-                                       const double atol) {
+int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
+                                         const F2FScalar *test_vec_a,
+                                         const F2FScalar *test_vec_s,
+                                         const F2FScalar h, const double rtol,
+                                         const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Copy the original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns];
   memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
@@ -1225,12 +1524,14 @@ int TransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
-                                       const F2FScalar *aero_loads,
-                                       const F2FScalar *test_vec_a,
-                                       const F2FScalar *test_vec_s,
-                                       const F2FScalar h, const double rtol,
-                                       const double atol) {
+int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
+                                         const F2FScalar *aero_loads,
+                                         const F2FScalar *test_vec_a,
+                                         const F2FScalar *test_vec_s,
+                                         const F2FScalar h, const double rtol,
+                                         const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Copy original, unperturbed nodes
   F2FScalar *Xa_copy = new F2FScalar[3 * na];
   memcpy(Xa_copy, Xa, 3 * na * sizeof(F2FScalar));
@@ -1240,10 +1541,11 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads
-  F2FScalar *struct_loads = new F2FScalar[3 * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
   transferLoads(aero_loads, struct_loads);
 
-  // Compute the derivatives of the adjoint-residual products using the function
+  // Compute the derivatives of the adjoint-residual products using the
+  // function
   F2FScalar *grad = new F2FScalar[3 * na];
   applydLdxA0(test_vec_s, grad);
 
@@ -1266,7 +1568,7 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi += test_vec_s[j] * Phi;
   }
@@ -1288,7 +1590,7 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi_pos = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_pos += test_vec_s[j] * Phi;
   }
@@ -1298,7 +1600,7 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi_neg = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_neg += test_vec_s[j] * Phi;
   }
@@ -1358,12 +1660,14 @@ int TransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   rtol         : relative error tolerance for the test to pass
   atol         : absolute error tolerance for the test to pass
 */
-int TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
-                                       const F2FScalar *aero_loads,
-                                       const F2FScalar *test_vec_s1,
-                                       const F2FScalar *test_vec_s2,
-                                       const F2FScalar h, const double rtol,
-                                       const double atol) {
+int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
+                                         const F2FScalar *aero_loads,
+                                         const F2FScalar *test_vec_s1,
+                                         const F2FScalar *test_vec_s2,
+                                         const F2FScalar h, const double rtol,
+                                         const double atol) {
+  const int dof_per_node = getStructNodeDof();
+
   // Copy original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns];
   memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
@@ -1376,7 +1680,8 @@ int TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
   transferLoads(aero_loads, struct_loads);
 
-  // Compute the derivatives of the adjoint-residual products using the function
+  // Compute the derivatives of the adjoint-residual products using the
+  // function
   F2FScalar *grad = new F2FScalar[3 * ns];
   applydLdxS0(test_vec_s1, grad);
 
@@ -1485,8 +1790,8 @@ int TransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   S : symmetric matrix from polar decomposition of H
 
 */
-void TransferScheme::computeRotation(const F2FScalar *H, F2FScalar *R,
-                                     F2FScalar *S) {
+void LDTransferScheme::computeRotation(const F2FScalar *H, F2FScalar *R,
+                                       F2FScalar *S) {
   // Allocate memory for local variables
   int m = 3, n = 3, lda = 3, ldu = 3, ldvt = 3, info, lwork = 50;  // for SVD
   F2FReal work[50];     // work matrix for SVD
@@ -1622,8 +1927,8 @@ void TransferScheme::computeRotation(const F2FScalar *H, F2FScalar *R,
   M1 : matrix system
 
 */
-void TransferScheme::assembleM1(const F2FScalar *R, const F2FScalar *S,
-                                F2FScalar *A) {
+void LDTransferScheme::assembleM1(const F2FScalar *R, const F2FScalar *S,
+                                  F2FScalar *A) {
   // Set the entries to zero
   memset(A, 0, 15 * 15 * sizeof(F2FScalar));
 
@@ -1737,6 +2042,433 @@ void TransferScheme::assembleM1(const F2FScalar *R, const F2FScalar *S,
   A[8 + 15 * 11] = R[2];
   A[8 + 15 * 13] = R[5];
   A[8 + 15 * 14] = R[8];
+}
+
+// Test Functions
+int ThermalTransfer::testAllDerivatives(const F2FScalar *struct_temps,
+                                        const F2FScalar *aero_flux,
+                                        const F2FScalar h, const double rtol,
+                                        const double atol) {
+  const int aero_nnodes = getNumLocalAeroNodes();
+  const int struct_nnodes = getNumLocalStructNodes();
+
+  // Create random testing data
+  F2FScalar *test_vec_a1 = new F2FScalar[aero_nnodes];
+  for (int i = 0; i < aero_nnodes; i++) {
+    test_vec_a1[i] = (1.0 * rand()) / RAND_MAX;
+  }
+
+  F2FScalar *test_vec_s1 = new F2FScalar[struct_nnodes];
+  F2FScalar *test_vec_s2 = new F2FScalar[struct_nnodes];
+  for (int j = 0; j < struct_nnodes; j++) {
+    test_vec_s1[j] = (1.0 * rand()) / RAND_MAX;
+    test_vec_s2[j] = (1.0 * rand()) / RAND_MAX;
+  }
+
+  int fail1 =
+      testFluxTransfer(struct_temps, aero_flux, test_vec_s1, h, rtol, atol);
+  int fail2 = testTempJacVecProducts(struct_temps, test_vec_a1, test_vec_s1, h,
+                                     rtol, atol);
+  int fail3 = testFluxJacVecProducts(struct_temps, aero_flux, test_vec_s1,
+                                     test_vec_s2, h, rtol, atol);
+  int fail = (fail1 || fail2 || fail3);
+
+  delete[] test_vec_a1;
+  delete[] test_vec_s1;
+  delete[] test_vec_s2;
+
+  return fail;
+}
+
+/*
+  Tests flux transfer by computing derivative of product of heat flux on and
+  temperatures of aerodynamic surface nodes with respect to structural node
+  temperatures and comparing with results from finite difference and complex
+  step approximation
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  aero_flux    : heat flux on aerodynamic surface nodes
+  pert         : direction of perturbation of structural node heat flux
+  h            : step size
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
+*/
+int ThermalTransfer::testFluxTransfer(const F2FScalar *struct_temps,
+                                      const F2FScalar *aero_flux,
+                                      const F2FScalar *pert, const F2FScalar h,
+                                      const double rtol, const double atol) {
+  // Transfer the structural temperatures
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Transfer the aerodynamic heat flux
+  F2FScalar *struct_flux = new F2FScalar[ns];
+  transferFlux(aero_flux, struct_flux);
+
+  // Compute directional derivative (structural heat flux times perturbation)
+  F2FScalar deriv = 0.0;
+  for (int j = 0; j < ns; j++) {
+    deriv += struct_flux[j] * pert[j];
+  }
+
+  // Approximate using complex step
+#ifdef FUNTOFEM_USE_COMPLEX
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  F2FScalar *Ua_cs = new F2FScalar[na];
+
+  for (int j = 0; j < ns; j++) {
+    Us_cs[j] =
+        struct_temps[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(pert[j]));
+  }
+  transferTemp(Us_cs, Ua_cs);
+
+  F2FScalar work = 0.0;
+  for (int i = 0; i < na; i++) {
+    work += Fa[i] * Ua_cs[i];
+  }
+  F2FScalar deriv_approx = F2FImagPart(work) / h;
+
+  delete[] Us_cs;
+  delete[] Ua_cs;
+
+  // Approximate using finite difference (central)
+#else
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  F2FScalar *Ua_pos = new F2FScalar[na];
+  F2FScalar *Ua_neg = new F2FScalar[na];
+  for (int j = 0; j < ns; j++) {
+    Us_pos[j] = struct_temps[j] + h * pert[j];
+    Us_neg[j] = struct_temps[j] - h * pert[j];
+  }
+
+  transferTemp(Us_pos, Ua_pos);
+  F2FScalar work_pos = 0.0;
+  for (int i = 0; i < na; i++) {
+    work_pos += Ha[i] * Ua_pos[i];
+  }
+
+  transferTemp(Us_neg, Ua_neg);
+  F2FScalar work_neg = 0.0;
+  for (int i = 0; i < na; i++) {
+    work_neg += Ha[i] * Ua_neg[i];
+  }
+
+  F2FScalar deriv_approx = 0.5 * (work_pos - work_neg) / h;
+
+  delete[] Us_pos;
+  delete[] Us_neg;
+  delete[] Ua_pos;
+  delete[] Ua_neg;
+#endif  // FUNTOFEM_USE_COMPLEX
+  // Compute relative error
+  double rel_error = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error = F2FRealPart((deriv - deriv_approx) / deriv_approx);
+  }
+  double abs_error = F2FRealPart(deriv - deriv_approx);
+
+  // Print results
+  printf("\n");
+  printf("Heat Flux transfer test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", rel_error);
+  printf("\n");
+
+  // Free allocated memory
+  delete[] aero_temps;
+  delete[] struct_flux;
+
+  // Check if the test failed
+  int fail = 0;
+  if (fabs(rel_error) >= rtol && fabs(abs_error) >= atol) {
+    fail = 1;
+  }
+
+  return fail;
+}
+
+/*
+  Tests output of dTdtSProducts and dTdtSTransProducts by computing a product
+  test_vec_a*J*test_vec_s (where J is the Jacobian) and comparing with results
+  from finite difference and complex step
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  test_vec_a   : test vector the length of the aero nodes
+  test_vec_s   : test vector the length of the struct nodes
+  h            : step size
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
+*/
+int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
+                                            const F2FScalar *test_vec_a,
+                                            const F2FScalar *test_vec_s,
+                                            const F2FScalar h,
+                                            const double rtol,
+                                            const double atol) {
+  // Transfer the structural temperatures
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Compute the Jacobian-vector products using the function
+  F2FScalar *grad1 = new F2FScalar[na];
+  applydTdtS(test_vec_s, grad1);
+
+  // Compute product of test_vec_a with the Jacobian-vector products
+  F2FScalar deriv1 = 0.0;
+  for (int i = 0; i < na; i++) {
+    deriv1 += test_vec_a[i] * grad1[i];
+  }
+
+  // Compute the transpose Jacobian-vector products using the function
+  F2FScalar *grad2 = new F2FScalar[ns];
+  applydTdtSTrans(test_vec_a, grad2);
+
+  // Compute product of V1 with the transpose Jacobian-vector products
+  F2FScalar deriv2 = 0.0;
+  for (int j = 0; j < ns; j++) {
+    deriv2 += test_vec_s[j] * grad2[j];
+  }
+
+  // Compute complex step approximation
+#ifdef FUNTOFEM_USE_COMPLEX
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  memset(Us_cs, 0.0, ns * sizeof(F2FScalar));
+  for (int j = 0; j < ns; j++) {
+    Us_cs[j] +=
+        struct_temps[j] + F2FScalar(0.0, F2FRealPart(h * test_vec_s[j]));
+  }
+  transferTemp(Us_cs, aero_temps);
+
+  F2FScalar VPsi = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi += test_vec_a[i] * Psi;
+  }
+  F2FScalar deriv_approx = -1.0 * F2FImagPart(VPsi) / h;
+
+  delete[] Us_cs;
+
+  // Compute finite difference approximation (central)
+#else
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  for (int j = 0; j < ns; j++) {
+    Us_pos[j] = struct_temps[j] + h * test_vec_s[j];
+    Us_neg[j] = struct_temps[j] - h * test_vec_s[j];
+  }
+
+  transferTemp(Us_pos, aero_temps);
+  F2FScalar VPsi_pos = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi_pos += test_vec_a[i] * Psi;
+  }
+
+  transferTemp(Us_neg, aero_temps);
+  F2FScalar VPsi_neg = 0.0;
+  for (int i = 0; i < na; i++) {
+    F2FScalar Psi = Xa[i] + aero_temps[i];
+    VPsi_neg += test_vec_a[i] * Psi;
+  }
+
+  F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
+
+  delete[] Us_pos;
+  delete[] Us_neg;
+#endif
+  // Compute relative error
+  double rel_error1 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
+  }
+  double rel_error2 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  }
+  double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
+  double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
+
+  // Print out results of test
+  printf("V2^{T}*dT/dt_{S}*V1 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", rel_error1);
+  printf("\n");
+
+  printf("V1^{T}*(dT/dt_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", rel_error2);
+  printf("\n");
+
+  // Free allocated memory
+  delete[] aero_temps;
+  delete[] grad1;
+  delete[] grad2;
+
+  int fail = 0;
+  if (fabs(rel_error1) >= rtol && fabs(abs_error1) >= rtol) {
+    fail = 1;
+  }
+  if (fabs(rel_error2) >= rtol && fabs(abs_error2) >= rtol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testTempJacVecProducts failed\n");
+  }
+
+  return fail;
+}
+
+/*
+  Tests output of dQdqAProducts and dQdqATransProducts by computing a product
+  test_vec_a*J*test_vec_s (where J is the Jacobian) and comparing with
+  results from finite difference and complex step
+
+  Arguments
+  ---------
+  struct_temps : structural node temperatures
+  aero_flux   : aerodynamic heat flux
+  test_vec_a  : test vector the size of aero nodes
+  test_vec_s  : test vector the size of struct nodes
+  h            : step size
+  rtol         : relative error tolerance for the test to pass
+  atol         : absolute error tolerance for the test to pass
+*/
+int ThermalTransfer::testFluxJacVecProducts(
+    const F2FScalar *struct_temps, const F2FScalar *aero_flux,
+    const F2FScalar *test_vec_a, const F2FScalar *test_vec_s, const F2FScalar h,
+    const double rtol, const double atol) {
+  // Transfer the structural displacements
+  F2FScalar *aero_temps = new F2FScalar[na];
+  transferTemp(struct_temps, aero_temps);
+
+  // Transfer the aerodynamic loads to get MM, IPIV
+  F2FScalar *struct_flux = new F2FScalar[ns];
+  transferFlux(aero_flux, struct_flux);
+
+  // Compute the Jacobian-vector products using the function
+  F2FScalar *grad1 = new F2FScalar[ns];
+  applydQdqA(test_vec_a, grad1);
+
+  // Compute directional derivative
+  F2FScalar deriv1 = 0.0;
+  for (int j = 0; j < ns; j++) {
+    deriv1 += grad1[j] * test_vec_s[j];
+  }
+
+  // Compute transpose Jacobian-vector products using the function
+  F2FScalar *grad2 = new F2FScalar[na];
+  applydQdqATrans(test_vec_s, grad2);
+
+  // Compute directional derivative
+  F2FScalar deriv2 = 0.0;
+  for (int j = 0; j < na; j++) {
+    deriv2 += grad2[j] * test_vec_a[j];
+  }
+
+  // Approximate using complex step
+#ifdef FUNTOFEM_USE_COMPLEX
+  F2FScalar *Us_cs = new F2FScalar[ns];
+  memset(Us_cs, 0.0, ns * sizeof(F2FScalar));
+  for (int j = 0; j < ns; j++) {
+    Us_cs[j] += struct_temps[j] +
+                F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s[j]));
+    // F2FScalar(0.0, F2FRealPart(h*test_vec_s1[j]));
+  }
+  transferTemp(Us_cs, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+
+  F2FScalar VPhi = 0.0;
+  for (int j = 0; j < na; j++) {
+    F2FScalar Phi = Xa[j] + aero_temps[j];
+    VPhi += test_vec_a[j] * Phi;
+  }
+  F2FScalar deriv_approx = -1.0 * F2FImagPart(VPhi) / h;
+  delete[] Us_cs;
+
+  // Approximate using finite difference (central)
+#else
+  F2FScalar *Us_pos = new F2FScalar[ns];
+  F2FScalar *Us_neg = new F2FScalar[ns];
+  for (int j = 0; j < ns; j++) {
+    Us_pos[j] = struct_temps[j] + h * test_vec_a[j];
+    Us_neg[j] = struct_temps[j] - h * test_vec_a[j];
+  }
+
+  transferTemp(Us_pos, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+  F2FScalar VPhi_pos = 0.0;
+  for (int j = 0; j < ns; j++) {
+    F2FScalar Phi = struct_flux[j];
+    VPhi_pos += test_vec_s[j] * Phi;
+  }
+
+  transferTemp(Us_neg, aero_temps);
+  transferFlux(aero_flux, struct_flux);
+  F2FScalar VPhi_neg = 0.0;
+  for (int j = 0; j < ns; j++) {
+    F2FScalar Phi = struct_flux[j];
+    VPhi_neg += test_vec_s[j] * Phi;
+  }
+
+  F2FScalar deriv_approx = -0.5 * (VPhi_pos - VPhi_neg) / h;
+
+  delete[] Us_pos;
+  delete[] Us_neg;
+#endif
+  // Compute relative error
+  double rel_error1 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error1 = F2FRealPart((deriv1 - deriv_approx) / deriv_approx);
+  }
+  double rel_error2 = 0.0;
+  if (F2FRealPart(deriv_approx) != 0.0) {
+    rel_error2 = F2FRealPart((deriv2 - deriv_approx) / deriv_approx);
+  }
+  double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
+  double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
+
+  // Print out results of test
+  printf("V2^{T}*dQ/dq_{A}*V1 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", rel_error1);
+  printf("\n");
+
+  // Print out results of test
+  printf("V1^{T}*(dQ/dq_{A})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+  printf("relative error = %22.15e\n", rel_error2);
+  printf("\n");
+
+  // Free allocated memory
+  delete[] aero_temps;
+  delete[] struct_flux;
+  delete[] grad1;
+  delete[] grad2;
+
+  int fail = 0;
+  if (fabs(rel_error1) >= rtol && fabs(abs_error1) >= rtol) {
+    fail = 1;
+  }
+  if (fabs(rel_error2) >= rtol && fabs(abs_error2) >= rtol) {
+    fail = 1;
+  }
+
+  if (fail) {
+    printf("testFluxJacVecProducts failed\n");
+  }
+
+  return fail;
 }
 
 /*

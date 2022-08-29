@@ -3,11 +3,11 @@
 
 #include "TransferScheme.h"
 
-class BeamTransfer : public TransferScheme {
+class BeamTransfer : public LDTransferScheme {
  public:
-  BeamTransfer(MPI_Comm comm, MPI_Comm comm_struct, int struct_root,
-               MPI_Comm comm_aero, int aero_root, const int *_conn, int _nelems,
-               int _order, int _dof_per_node);
+  BeamTransfer(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+               MPI_Comm aero_comm, int aero_root, const int *conn_, int nelems,
+               int order, int dof_per_node);
   ~BeamTransfer();
 
   // Initialization

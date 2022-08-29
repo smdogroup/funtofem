@@ -11,7 +11,7 @@
   "Unified fluid–structure interpolation and mesh motion using radial basis
   functions" by T. C. S. Rendall and C. B. Allen.
 */
-class RBF : public TransferScheme {
+class RBF : public LDTransferScheme {
  public:
   // RBF type
   enum RbfType {
@@ -22,8 +22,8 @@ class RBF : public TransferScheme {
   };
 
   // Constructor
-  RBF(MPI_Comm all, MPI_Comm structure, int struct_root, MPI_Comm aero,
-      int aero_root, enum RbfType rbf_type, int sampling_ratio);
+  RBF(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+      MPI_Comm aero_comm, int aero_root, RbfType rbf_type, int sampling_ratio);
 
   // Destructor
   ~RBF();

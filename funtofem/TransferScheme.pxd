@@ -6,7 +6,7 @@ cimport mpi4py.MPI as MPI
 include "FuntofemTypedefs.pxi"
 
 cdef extern from "TransferScheme.h":
-  cppclass TransferScheme:
+  cppclass LDTransferScheme:
     # Mesh loading
     void setAeroNodes(const F2FScalar *aero_X, int aero_nnodes)
     void setStructNodes(const F2FScalar *struct_X, int struct_nnodes)
@@ -21,11 +21,12 @@ cdef extern from "TransferScheme.h":
                        F2FScalar *struct_loads)
 
     # Get the dimensions
-    int getStructDofPerNode()
-    int getNumAeroNodes()
-    int getNumStructNodes()
-    int getStructArrayLen()
-    int getAeroArrayLen()
+    int getStructNodeDof()
+    int getAeroNodeDof()
+    int getNumLocalAeroNodes()
+    int getNumLocalStructNodes()
+    int getLocalAeroArrayLen()
+    int getLocalStructArrayLen()
 
     # Action of transpose Jacobians needed for solving adjoint system
     void applydDduS(const F2FScalar *vecs, F2FScalar *prods)
@@ -92,26 +93,19 @@ cdef extern from "TransferScheme.h":
                            const F2FScalar h, const double rtol,
                            const double atol)
 
-cdef extern from "MELD.h":
-  cppclass MELD(TransferScheme):
-    # Constructor
-    MELD(MPI_Comm all,
-         MPI_Comm structure, int struct_root,
-         MPI_Comm aero, int aero_root,
-         int symmetry, int num_nearest, F2FScalar beta)
-
-cdef extern from "MELDThermal.h":
-  cppclass MELDThermal(TransferScheme):
-    # Constructor
-    MELDThermal(MPI_Comm all,
-                MPI_Comm structure, int struct_root,
-                MPI_Comm aero, int aero_root,
-                int symmetry, int num_nearest, F2FScalar beta)
-
+  cppclass ThermalTransfer:
     void transferTemp(const F2FScalar *struct_temp,
-                               F2FScalar *aero_temp)
+                      F2FScalar *aero_temp)
     void transferFlux(const F2FScalar *aero_flux,
-                               F2FScalar *struct_flux)
+                      F2FScalar *struct_flux)
+
+    # Get the dimensions
+    int getStructNodeDof()
+    int getAeroNodeDof()
+    int getNumLocalAeroNodes()
+    int getNumLocalStructNodes()
+    int getLocalAeroArrayLen()
+    int getLocalStructArrayLen()
 
     # Action of transpose Jacobians needed for solving adjoint system
     void applydTdtS(const F2FScalar *vecs, F2FScalar *prods)
@@ -120,19 +114,25 @@ cdef extern from "MELDThermal.h":
     void applydQdqATrans(const F2FScalar *vecs, F2FScalar *prods)
 
     # Routines to test necessary functionality of transfer scheme
-    void testFluxTransfer(const F2FScalar *struct_temps,
-                          const F2FScalar *aero_flux,
-                          const F2FScalar *pert,
-                          const F2FScalar h)
-    void testTempJacVecProducts(const F2FScalar *struct_temps,
-                                const F2FScalar *test_vec_a,
-                                const F2FScalar *test_vec_s,
-                                const F2FScalar h)
-    void testFluxJacVecProducts(const F2FScalar *struct_temps,
-                                const F2FScalar *aero_flux,
-                                const F2FScalar *test_vec_s1,
-                                const F2FScalar *test_vec_s2,
-                                const F2FScalar h)
+    int testAllDerivatives(const F2FScalar *struct_temps,
+                           const F2FScalar *aero_flux, const F2FScalar h,
+                           const double rtol, const double atol)
+
+cdef extern from "MELD.h":
+  cppclass MELD(LDTransferScheme):
+    # Constructor
+    MELD(MPI_Comm all,
+         MPI_Comm structure, int struct_root,
+         MPI_Comm aero, int aero_root,
+         int symmetry, int num_nearest, F2FScalar beta)
+
+cdef extern from "MELDThermal.h":
+  cppclass MELDThermal(ThermalTransfer):
+    # Constructor
+    MELDThermal(MPI_Comm all,
+                MPI_Comm structure, int struct_root,
+                MPI_Comm aero, int aero_root,
+                int symmetry, int num_nearest, F2FScalar beta)
 
 cdef extern from "LinearizedMELD.h":
   cppclass LinearizedMELD(MELD):
@@ -149,7 +149,7 @@ cdef extern from "RBF.h":
     INVERSE_MULTIQUADRIC "RBF::INVERSE_MULTIQUADRIC"
     THIN_PLATE_SPLINE "RBF::THIN_PLATE_SPLINE"
 
-  cppclass RBF(TransferScheme):
+  cppclass RBF(LDTransferScheme):
     # Constructor
     RBF(MPI_Comm all,
         MPI_Comm structure, int struct_root,
@@ -157,7 +157,7 @@ cdef extern from "RBF.h":
         RbfType rbf_type, int sampling_ratio)
 
 cdef extern from "BeamTransfer.h":
-  cppclass BeamTransfer(TransferScheme):
+  cppclass BeamTransfer(LDTransferScheme):
     # Constructor
     BeamTransfer(MPI_Comm all,
                  MPI_Comm structure, int struct_root,

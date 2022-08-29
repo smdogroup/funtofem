@@ -30,25 +30,11 @@
 #include "Octree.h"
 #include "funtofemlapack.h"
 
-RBF::RBF(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
-         int _aero_root, enum RbfType rbf_type, int sampling_ratio) {
-  // TODO: figure out parallelism for RBFs
-  global_comm = all;
-  struct_comm = structure;
-  aero_comm = aero;
-  struct_root = _struct_root;
-  aero_root = _aero_root;
-
-  // Initialize aerodynamic data member variables
-  Xa = NULL;
-  Fa = NULL;
-  na = 0;
-
-  // Initialize structural data member variables
-  Xs = NULL;
-  Us = NULL;
-  ns = 0;
-
+RBF::RBF(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+         MPI_Comm aero_comm, int aero_root, RbfType rbf_type,
+         int sampling_ratio)
+    : LDTransferScheme(global_comm, struct_comm, struct_root, aero_comm,
+                       aero_root) {
   // Point to the selected type of RBF
   switch (rbf_type) {
     case GAUSSIAN:
