@@ -1,5 +1,5 @@
-#ifndef TRANSFERSCHEME_H
-#define TRANSFERSCHEME_H
+#ifndef TRANSFER_SCHEME_H
+#define TRANSFER_SCHEME_H
 
 #include <complex>
 
@@ -164,7 +164,10 @@ class LDTransferScheme : public TransferScheme {
   LDTransferScheme(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
                    MPI_Comm aero_comm, int aero_root, int struct_node_dof = 3)
       : TransferScheme(global_comm, struct_comm, struct_root, aero_comm,
-                       aero_root, struct_node_dof, 3) {}
+                       aero_root, struct_node_dof, 3) {
+    Us = NULL;
+    Fa = NULL;
+  }
   virtual ~LDTransferScheme() {
     if (Us) {
       delete[] Us;
@@ -330,4 +333,4 @@ F2FScalar vec_mag(const F2FScalar *x);
 F2FScalar vec_dot(const F2FScalar *x, const F2FScalar *y);
 F2FScalar det(const F2FScalar *A);
 
-#endif  // TRANSFERSCHEME_H
+#endif  // TRANSFER_SCHEME_H

@@ -77,6 +77,7 @@ void TransferScheme::setAeroNodes(const F2FScalar *aero_X, int aero_nnodes) {
 */
 void TransferScheme::setStructNodes(const F2FScalar *struct_X,
                                     int struct_nnodes) {
+  mesh_update = 1;
   ns_local = struct_nnodes;
 
   // Free the structural data if any is allocated
@@ -87,8 +88,8 @@ void TransferScheme::setStructNodes(const F2FScalar *struct_X,
   // Allocate memory for aerodynamic data, copy in node locations, initialize
   // displacement and load arrays
   if (struct_nnodes > 0) {
-    Xs_local = new F2FScalar[3 * ns];
-    memcpy(Xs_local, struct_X, 3 * ns * sizeof(F2FScalar));
+    Xs_local = new F2FScalar[3 * ns_local];
+    memcpy(Xs_local, struct_X, 3 * ns_local * sizeof(F2FScalar));
   } else {
     Xs_local = NULL;
   }
@@ -117,7 +118,7 @@ void TransferScheme::distributeStructuralMesh() {
     Xs = new F2FScalar[3 * ns];
     memset(Xs, 0, 3 * ns * sizeof(F2FScalar));
 
-    structGatherBcast(ns_local, Xs_local, ns, Xs);
+    structGatherBcast(3 * ns_local, Xs_local, 3 * ns, Xs);
   }
 }
 
@@ -148,8 +149,16 @@ void TransferScheme::distributeStructuralMesh() {
 void TransferScheme::structAddScatter(int global_len, F2FScalar *global_data,
                                       int local_len, F2FScalar *local_data) {
   // Reduce values on global_comm to the struct_root processor
-  MPI_Reduce(MPI_IN_PLACE, global_data, global_len, F2F_MPI_TYPE, MPI_SUM,
-             struct_root, global_comm);
+  int global_rank;
+  MPI_Comm_rank(global_comm, &global_rank);
+
+  if (global_rank == struct_root) {
+    MPI_Reduce(MPI_IN_PLACE, global_data, global_len, F2F_MPI_TYPE, MPI_SUM,
+               struct_root, global_comm);
+  } else {
+    MPI_Reduce(global_data, NULL, global_len, F2F_MPI_TYPE, MPI_SUM,
+               struct_root, global_comm);
+  }
 
   // Scatter the values across all aero_comm processors
   if (struct_comm != MPI_COMM_NULL) {
@@ -892,21 +901,22 @@ int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads
-  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns_local];
   transferLoads(aero_loads, struct_loads);
 
   // Compute directional derivative (structural loads times perturbation)
   F2FScalar deriv = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     deriv += struct_loads[j] * pert[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[dof_per_node * ns];
+  F2FScalar *Us_cs = new F2FScalar[dof_per_node * ns_local];
   F2FScalar *Ua_cs = new F2FScalar[3 * na];
 
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_cs[j] =
         struct_disps[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(pert[j]));
   }
@@ -916,6 +926,7 @@ int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   for (int i = 0; i < 3 * na; i++) {
     work += Fa[i] * Ua_cs[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = F2FImagPart(work) / h;
 
   delete[] Us_cs;
@@ -923,11 +934,11 @@ int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns];
-  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns];
+  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns_local];
+  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns_local];
   F2FScalar *Ua_pos = new F2FScalar[3 * na];
   F2FScalar *Ua_neg = new F2FScalar[3 * na];
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_pos[j] = struct_disps[j] + h * pert[j];
     Us_neg[j] = struct_disps[j] - h * pert[j];
   }
@@ -937,12 +948,14 @@ int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   for (int i = 0; i < 3 * na; i++) {
     work_pos += Fa[i] * Ua_pos[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   transferDisps(Us_neg, Ua_neg);
   F2FScalar work_neg = 0.0;
   for (int i = 0; i < 3 * na; i++) {
     work_neg += Fa[i] * Ua_neg[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = 0.5 * (work_pos - work_neg) / h;
 
@@ -959,12 +972,16 @@ int LDTransferScheme::testLoadTransfer(const F2FScalar *struct_disps,
   double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print results
-  printf("\n");
-  printf("Load transfer test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("\n");
+    printf("Load transfer test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_disps;
@@ -1014,22 +1031,24 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   for (int i = 0; i < 3 * na; i++) {
     deriv1 += test_vec_a[i] * grad1[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv1, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute the transpose Jacobian-vector products using the function
-  F2FScalar *grad2 = new F2FScalar[dof_per_node * ns];
+  F2FScalar *grad2 = new F2FScalar[dof_per_node * ns_local];
   applydDduSTrans(test_vec_a, grad2);
 
   // Compute product of V1 with the transpose Jacobian-vector products
   F2FScalar deriv2 = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     deriv2 += test_vec_s[j] * grad2[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv2, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute complex step approximation
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[3 * ns];
-  memset(Us_cs, 0.0, dof_per_node * ns * sizeof(F2FScalar));
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  F2FScalar *Us_cs = new F2FScalar[3 * ns_local];
+  memset(Us_cs, 0.0, dof_per_node * ns_local * sizeof(F2FScalar));
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_cs[j] +=
         struct_disps[j] + F2FScalar(0.0, F2FRealPart(h * test_vec_s[j]));
   }
@@ -1040,15 +1059,16 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     F2FScalar Psi = Xa[i] + aero_disps[i];
     VPsi += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(VPsi) / h;
 
   delete[] Us_cs;
 
   // Compute finite difference approximation (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns];
-  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns];
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns_local];
+  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns_local];
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_pos[j] = struct_disps[j] + h * test_vec_s[j];
     Us_neg[j] = struct_disps[j] - h * test_vec_s[j];
   }
@@ -1059,6 +1079,7 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     F2FScalar Psi = Xa[i] + aero_disps[i];
     VPsi_pos += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   transferDisps(Us_neg, aero_disps);
   F2FScalar VPsi_neg = 0.0;
@@ -1066,6 +1087,7 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     F2FScalar Psi = Xa[i] + aero_disps[i];
     VPsi_neg += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
 
@@ -1085,17 +1107,21 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
   // Print out results of test
-  printf("V2^{T}*dD/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error1);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("V2^{T}*dD/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error1);
+    printf("\n");
 
-  printf("V1^{T}*(dD/du_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error2);
-  printf("\n");
+    printf("V1^{T}*(dD/du_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error2);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_disps;
@@ -1110,7 +1136,7 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testDispJacVecProducts failed\n");
   }
 
@@ -1143,34 +1169,36 @@ int LDTransferScheme::testLoadJacVecProducts(
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads to get MM, IPIV
-  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns_local];
   transferLoads(aero_loads, struct_loads);
 
   // Compute the Jacobian-vector products using the function
-  F2FScalar *grad1 = new F2FScalar[dof_per_node * ns];
+  F2FScalar *grad1 = new F2FScalar[dof_per_node * ns_local];
   applydLduS(test_vec_s1, grad1);
 
   // Compute directional derivative
   F2FScalar deriv1 = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     deriv1 += grad1[j] * test_vec_s2[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv1, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute transpose Jacobian-vector products using the function
-  F2FScalar *grad2 = new F2FScalar[dof_per_node * ns];
+  F2FScalar *grad2 = new F2FScalar[dof_per_node * ns_local];
   applydLduSTrans(test_vec_s2, grad2);
 
   // Compute directional derivative
   F2FScalar deriv2 = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     deriv2 += grad2[j] * test_vec_s1[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv2, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[dof_per_node * ns];
+  F2FScalar *Us_cs = new F2FScalar[dof_per_node * ns_local];
 
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_cs[j] = struct_disps[j] +
                F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s1[j]));
   }
@@ -1178,19 +1206,20 @@ int LDTransferScheme::testLoadJacVecProducts(
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar VPhi = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     VPhi += test_vec_s2[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(VPhi) / h;
 
   delete[] Us_cs;
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns];
-  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns];
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  F2FScalar *Us_pos = new F2FScalar[dof_per_node * ns_local];
+  F2FScalar *Us_neg = new F2FScalar[dof_per_node * ns_local];
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_pos[j] = struct_disps[j] + h * test_vec_s1[j];
     Us_neg[j] = struct_disps[j] - h * test_vec_s1[j];
   }
@@ -1198,18 +1227,20 @@ int LDTransferScheme::testLoadJacVecProducts(
   transferDisps(Us_pos, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar VPhi_pos = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     VPhi_pos += test_vec_s2[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   transferDisps(Us_neg, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar VPhi_neg = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     VPhi_neg += test_vec_s2[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = -0.5 * (VPhi_pos - VPhi_neg) / h;
 
@@ -1228,19 +1259,23 @@ int LDTransferScheme::testLoadJacVecProducts(
   double abs_error1 = F2FRealPart(deriv1 - deriv_approx);
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
-  // Print out results of test
-  printf("V2^{T}*dL/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error1);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    // Print out results of test
+    printf("V2^{T}*dL/du_{S}*V1 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error1);
+    printf("\n");
 
-  // Print out results of test
-  printf("V1^{T}*(dL/du_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error2);
-  printf("\n");
+    // Print out results of test
+    printf("V1^{T}*(dL/du_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error2);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_disps;
@@ -1256,7 +1291,7 @@ int LDTransferScheme::testLoadJacVecProducts(
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testLoadJacVecProducts failed\n");
   }
 
@@ -1299,6 +1334,7 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   for (int i = 0; i < 3 * na; i++) {
     deriv += grad[i] * test_vec_a2[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
@@ -1316,6 +1352,7 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
     F2FScalar Psi = aero_disps[i];
     lamPsi += test_vec_a1[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(lamPsi) / h;
 
   delete[] XA0_cs;
@@ -1336,6 +1373,8 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
     F2FScalar Psi = aero_disps[i];
     lamPsi_pos += test_vec_a1[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi_pos, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   setAeroNodes(XA0_neg, na);
   transferDisps(struct_disps, aero_disps);
@@ -1344,6 +1383,8 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
     F2FScalar Psi = aero_disps[i];
     lamPsi_neg += test_vec_a1[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi_neg, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   F2FScalar deriv_approx = -0.5 * (lamPsi_pos - lamPsi_neg) / h;
 
@@ -1358,11 +1399,15 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
   }
 
   // Print out results of test
-  printf("lambda^{T}*dD/dx_{A0} test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("lambda^{T}*dD/dx_{A0} test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error);
+    printf("\n");
+  }
 
   // Reset to unperturbed, original node locations
   setAeroNodes(Xa_copy, na);
@@ -1378,7 +1423,7 @@ int LDTransferScheme::testdDdxA0Products(const F2FScalar *struct_disps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testdDdxA0Products failed\n");
   }
 
@@ -1407,32 +1452,33 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   const int dof_per_node = getStructNodeDof();
 
   // Copy the original, unperturbed node locations
-  F2FScalar *Xs_copy = new F2FScalar[3 * ns];
-  memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
+  F2FScalar *Xs_copy = new F2FScalar[3 * ns_local];
+  memcpy(Xs_copy, Xs_local, 3 * ns_local * sizeof(F2FScalar));
 
   // Transfer the structural displacements to get rotations
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
 
   // Compute the adjoint-residual products using the function
-  F2FScalar *grad = new F2FScalar[dof_per_node * ns];
+  F2FScalar *grad = new F2FScalar[3 * ns_local];
   applydDdxS0(test_vec_a, grad);
 
   // Compute directional derivative
   F2FScalar deriv = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     deriv += grad[j] * test_vec_s[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *XS0_cs = new F2FScalar[3 * ns];
+  F2FScalar *XS0_cs = new F2FScalar[3 * ns_local];
 
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     XS0_cs[j] =
         Xs[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s[j]));
   }
-  setStructNodes(XS0_cs, ns);
+  setStructNodes(XS0_cs, ns_local);
   transferDisps(struct_disps, aero_disps);
 
   F2FScalar lamPsi = 0.0;
@@ -1440,34 +1486,39 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
     F2FScalar Psi = Xa[i] + aero_disps[i];
     lamPsi += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(lamPsi) / h;
 
   delete[] XS0_cs;
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *XS0_pos = new F2FScalar[3 * ns];
-  F2FScalar *XS0_neg = new F2FScalar[3 * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  F2FScalar *XS0_pos = new F2FScalar[3 * ns_local];
+  F2FScalar *XS0_neg = new F2FScalar[3 * ns_local];
+  for (int j = 0; j < 3 * ns_local; j++) {
     XS0_pos[j] = Xs[j] + h * test_vec_s[j];
     XS0_neg[j] = Xs[j] - h * test_vec_s[j];
   }
 
-  setStructNodes(XS0_pos, ns);
+  setStructNodes(XS0_pos, ns_local);
   transferDisps(struct_disps, aero_disps);
   F2FScalar lamPsi_pos = 0.0;
   for (int i = 0; i < 3 * na; i++) {
     F2FScalar Psi = Xa[i] + aero_disps[i];
     lamPsi_pos += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi_pos, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
-  setStructNodes(XS0_neg, ns);
+  setStructNodes(XS0_neg, ns_local);
   transferDisps(struct_disps, aero_disps);
   F2FScalar lamPsi_neg = 0.0;
   for (int i = 0; i < 3 * na; i++) {
     F2FScalar Psi = Xa[i] + aero_disps[i];
     lamPsi_neg += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPsi_neg, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   F2FScalar deriv_approx = -0.5 * (lamPsi_pos - lamPsi_neg) / h;
 
@@ -1482,14 +1533,18 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   }
 
   // Print out results of test
-  printf("lambda^{T}*dD/dx_{S0} test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("lambda^{T}*dD/dx_{S0} test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error);
+    printf("\n");
+  }
 
   // Reset the original, unperturbed nodes
-  setStructNodes(Xs_copy, ns);
+  setStructNodes(Xs_copy, ns_local);
 
   // Free allocated memory
   delete[] Xs_copy;
@@ -1502,7 +1557,7 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testdDdxS0Products failed\n");
   }
 
@@ -1541,7 +1596,7 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads
-  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns_local];
   transferLoads(aero_loads, struct_loads);
 
   // Compute the derivatives of the adjoint-residual products using the
@@ -1554,6 +1609,7 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   for (int i = 0; i < 3 * na; i++) {
     deriv += grad[i] * test_vec_a[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
@@ -1572,6 +1628,7 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
     F2FScalar Phi = struct_loads[j];
     lamPhi += test_vec_s[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(lamPhi) / h;
 
   delete[] XA0_cs;
@@ -1590,20 +1647,24 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi_pos = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_pos += test_vec_s[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi_pos, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   setAeroNodes(XA0_neg, na);
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi_neg = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_neg += test_vec_s[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi_neg, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   F2FScalar deriv_approx = -0.5 * (lamPhi_pos - lamPhi_neg) / h;
 
@@ -1618,11 +1679,15 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print out results of test
-  printf("lambda^{T}*dL/dx_{A0} test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", F2FRealPart(rel_error));
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("lambda^{T}*dL/dx_{A0} test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", F2FRealPart(rel_error));
+    printf("\n");
+  }
 
   // Reset to original, unperturbed nodes
   setAeroNodes(Xa_copy, na);
@@ -1638,7 +1703,7 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testdLdxA0Products failed\n");
   }
 
@@ -1669,75 +1734,81 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   const int dof_per_node = getStructNodeDof();
 
   // Copy original, unperturbed node locations
-  F2FScalar *Xs_copy = new F2FScalar[3 * ns];
-  memcpy(Xs_copy, Xs, 3 * ns * sizeof(F2FScalar));
+  F2FScalar *Xs_copy = new F2FScalar[3 * ns_local];
+  memcpy(Xs_copy, Xs, 3 * ns_local * sizeof(F2FScalar));
 
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
   transferDisps(struct_disps, aero_disps);
 
   // Transfer the aerodynamic loads
-  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns];
+  F2FScalar *struct_loads = new F2FScalar[dof_per_node * ns_local];
   transferLoads(aero_loads, struct_loads);
 
   // Compute the derivatives of the adjoint-residual products using the
   // function
-  F2FScalar *grad = new F2FScalar[3 * ns];
+  F2FScalar *grad = new F2FScalar[3 * ns_local];
   applydLdxS0(test_vec_s1, grad);
 
   // Compute directional derivative
   F2FScalar deriv = 0.0;
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     deriv += grad[j] * test_vec_s2[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *XS0_cs = new F2FScalar[3 * ns];
+  F2FScalar *XS0_cs = new F2FScalar[3 * ns_local];
 
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     XS0_cs[j] =
         Xs[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s2[j]));
   }
-  setStructNodes(XS0_cs, ns);
+  setStructNodes(XS0_cs, ns_local);
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi += test_vec_s1[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(lamPhi) / h;
 
   delete[] XS0_cs;
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *XS0_pos = new F2FScalar[3 * ns];
-  F2FScalar *XS0_neg = new F2FScalar[3 * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  F2FScalar *XS0_pos = new F2FScalar[3 * ns_local];
+  F2FScalar *XS0_neg = new F2FScalar[3 * ns_local];
+  for (int j = 0; j < 3 * ns_local; j++) {
     XS0_pos[j] = Xs[j] + h * test_vec_s2[j];
     XS0_neg[j] = Xs[j] - h * test_vec_s2[j];
   }
 
-  setStructNodes(XS0_pos, ns);
+  setStructNodes(XS0_pos, ns_local);
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar lamPhi_pos = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_pos += test_vec_s1[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi_pos, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
-  setStructNodes(XS0_neg, ns);
+  setStructNodes(XS0_neg, ns_local);
   transferDisps(struct_disps, aero_disps);
   transferLoads(aero_loads, struct_loads);
   F2FScalar lamPhi_neg = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi_neg += test_vec_s1[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &lamPhi_neg, 1, F2F_MPI_TYPE, MPI_SUM,
+                global_comm);
 
   F2FScalar deriv_approx = -0.5 * (lamPhi_pos - lamPhi_neg) / h;
 
@@ -1752,11 +1823,15 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print out results of test
-  printf("lambda^{T}*dL/dx_{S0} test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", F2FRealPart(rel_error));
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("lambda^{T}*dL/dx_{S0} test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", F2FRealPart(rel_error));
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] Xs_copy;
@@ -1770,7 +1845,7 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testdLdxS0Products failed\n");
   }
 

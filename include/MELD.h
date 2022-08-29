@@ -57,9 +57,6 @@ class MELD : public LDTransferScheme {
   int nn;                 // number of nearest nodes
   F2FScalar global_beta;  // weighting decay parameter
 
-  F2FScalar *Us;  // Structural displacements (stored on all procs)
-  F2FScalar *Fa;  // Aerodynamic forces
-
   // Data for aerostructural connectivity
   int *global_conn;
 

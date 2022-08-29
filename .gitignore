@@ -11,6 +11,7 @@ lib/libtransfer_schemes.a
 *mapbc
 *.bdf
 *.job
+*.dat
 fake_interface*
 *~
 .vscode/settings.json

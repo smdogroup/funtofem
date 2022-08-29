@@ -37,12 +37,6 @@ MELD::MELD(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
       isymm(isymm),
       nn(num_nearest),
       global_beta(beta) {
-  // Structural displacements (stored on all procs)
-  Us = NULL;
-
-  // Aerodynamic forces
-  Fa = NULL;
-
   // Initialize the aerostuctural connectivity
   global_conn = NULL;
   global_W = NULL;
@@ -729,7 +723,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
       if (indx < ns) {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
-        memcpy(v, &vecs[3 * indx], 3 * sizeof(F2FScalar));
+        memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
       } else {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -737,7 +731,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
         memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
         rxs0[isymm] *= -1.0;
         vec_diff(xs0bar, rxs0, q);
-        memcpy(v, &vecs[3 * indx], 3 * sizeof(F2FScalar));
+        memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
         v[isymm] *= -1.0;
       }
 
