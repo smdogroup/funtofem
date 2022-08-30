@@ -83,6 +83,27 @@ RBF::~RBF() {
   Sample the structural nodes and build the interpolation matrix
 */
 void RBF::initialize() {
+  // global number of structural nodes
+  distributeStructuralMesh();
+
+  if (Us) {
+    delete[] Us;
+  }
+  Us = NULL;
+  if (Fa) {
+    delete[] Fa;
+  }
+  Fa = NULL;
+
+  if (na > 0) {
+    Fa = new F2FScalar[3 * na];
+    memset(Fa, 0, 3 * na * sizeof(F2FScalar));
+  }
+  if (ns > 0) {
+    Us = new F2FScalar[3 * ns];
+    memset(Us, 0, 3 * ns * sizeof(F2FScalar));
+  }
+
   // Sample the structural nodes
   if (denominator > 1) {
     printf("Transfer scheme [%i]: attempting to sample nodes using octree...\n",

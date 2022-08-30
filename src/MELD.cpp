@@ -131,7 +131,7 @@ void MELD::initialize() {
 
   // Allocate and compute the weights
   global_W = new F2FScalar[nn * na];
-  computeWeights(global_beta, isymm, nn, global_conn, global_W);
+  computeWeights(F2FRealPart(global_beta), isymm, nn, global_conn, global_W);
 
   // Allocate and initialize load transfer variables
   global_xs0bar = new F2FScalar[3 * na];

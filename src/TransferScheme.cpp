@@ -1475,8 +1475,8 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   F2FScalar *XS0_cs = new F2FScalar[3 * ns_local];
 
   for (int j = 0; j < 3 * ns_local; j++) {
-    XS0_cs[j] =
-        Xs[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s[j]));
+    XS0_cs[j] = Xs_copy[j] +
+                F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s[j]));
   }
   setStructNodes(XS0_cs, ns_local);
   transferDisps(struct_disps, aero_disps);
@@ -1496,8 +1496,8 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
   F2FScalar *XS0_pos = new F2FScalar[3 * ns_local];
   F2FScalar *XS0_neg = new F2FScalar[3 * ns_local];
   for (int j = 0; j < 3 * ns_local; j++) {
-    XS0_pos[j] = Xs[j] + h * test_vec_s[j];
-    XS0_neg[j] = Xs[j] - h * test_vec_s[j];
+    XS0_pos[j] = Xs_copy[j] + h * test_vec_s[j];
+    XS0_neg[j] = Xs_copy[j] - h * test_vec_s[j];
   }
 
   setStructNodes(XS0_pos, ns_local);
@@ -1624,7 +1624,7 @@ int LDTransferScheme::testdLdxA0Products(const F2FScalar *struct_disps,
   transferLoads(aero_loads, struct_loads);
 
   F2FScalar lamPhi = 0.0;
-  for (int j = 0; j < dof_per_node * ns; j++) {
+  for (int j = 0; j < dof_per_node * ns_local; j++) {
     F2FScalar Phi = struct_loads[j];
     lamPhi += test_vec_s[j] * Phi;
   }
@@ -1735,7 +1735,7 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
 
   // Copy original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns_local];
-  memcpy(Xs_copy, Xs, 3 * ns_local * sizeof(F2FScalar));
+  memcpy(Xs_copy, Xs_local, 3 * ns_local * sizeof(F2FScalar));
 
   // Transfer the structural displacements
   F2FScalar *aero_disps = new F2FScalar[3 * na];
@@ -1762,8 +1762,8 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   F2FScalar *XS0_cs = new F2FScalar[3 * ns_local];
 
   for (int j = 0; j < 3 * ns_local; j++) {
-    XS0_cs[j] =
-        Xs[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s2[j]));
+    XS0_cs[j] = Xs_copy[j] +
+                F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s2[j]));
   }
   setStructNodes(XS0_cs, ns_local);
   transferDisps(struct_disps, aero_disps);
@@ -1784,8 +1784,8 @@ int LDTransferScheme::testdLdxS0Products(const F2FScalar *struct_disps,
   F2FScalar *XS0_pos = new F2FScalar[3 * ns_local];
   F2FScalar *XS0_neg = new F2FScalar[3 * ns_local];
   for (int j = 0; j < 3 * ns_local; j++) {
-    XS0_pos[j] = Xs[j] + h * test_vec_s2[j];
-    XS0_neg[j] = Xs[j] - h * test_vec_s2[j];
+    XS0_pos[j] = Xs_copy[j] + h * test_vec_s2[j];
+    XS0_neg[j] = Xs_copy[j] - h * test_vec_s2[j];
   }
 
   setStructNodes(XS0_pos, ns_local);
@@ -2144,8 +2144,8 @@ int ThermalTransfer::testAllDerivatives(const F2FScalar *struct_temps,
       testFluxTransfer(struct_temps, aero_flux, test_vec_s1, h, rtol, atol);
   int fail2 = testTempJacVecProducts(struct_temps, test_vec_a1, test_vec_s1, h,
                                      rtol, atol);
-  int fail3 = testFluxJacVecProducts(struct_temps, aero_flux, test_vec_s1,
-                                     test_vec_s2, h, rtol, atol);
+  int fail3 = testFluxJacVecProducts(struct_temps, aero_flux, test_vec_a1,
+                                     test_vec_s1, h, rtol, atol);
   int fail = (fail1 || fail2 || fail3);
 
   delete[] test_vec_a1;
@@ -2179,64 +2179,68 @@ int ThermalTransfer::testFluxTransfer(const F2FScalar *struct_temps,
   transferTemp(struct_temps, aero_temps);
 
   // Transfer the aerodynamic heat flux
-  F2FScalar *struct_flux = new F2FScalar[ns];
+  F2FScalar *struct_flux = new F2FScalar[ns_local];
   transferFlux(aero_flux, struct_flux);
 
   // Compute directional derivative (structural heat flux times perturbation)
   F2FScalar deriv = 0.0;
-  for (int j = 0; j < ns; j++) {
+  for (int j = 0; j < ns_local; j++) {
     deriv += struct_flux[j] * pert[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[ns];
-  F2FScalar *Ua_cs = new F2FScalar[na];
+  F2FScalar *Ts_cs = new F2FScalar[ns_local];
+  F2FScalar *Ta_cs = new F2FScalar[na];
 
-  for (int j = 0; j < ns; j++) {
-    Us_cs[j] =
+  for (int j = 0; j < ns_local; j++) {
+    Ts_cs[j] =
         struct_temps[j] + F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(pert[j]));
   }
-  transferTemp(Us_cs, Ua_cs);
+  transferTemp(Ts_cs, Ta_cs);
 
   F2FScalar work = 0.0;
   for (int i = 0; i < na; i++) {
-    work += Fa[i] * Ua_cs[i];
+    work += Ha[i] * Ta_cs[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = F2FImagPart(work) / h;
 
-  delete[] Us_cs;
-  delete[] Ua_cs;
+  delete[] Ts_cs;
+  delete[] Ta_cs;
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[ns];
-  F2FScalar *Us_neg = new F2FScalar[ns];
-  F2FScalar *Ua_pos = new F2FScalar[na];
-  F2FScalar *Ua_neg = new F2FScalar[na];
-  for (int j = 0; j < ns; j++) {
-    Us_pos[j] = struct_temps[j] + h * pert[j];
-    Us_neg[j] = struct_temps[j] - h * pert[j];
+  F2FScalar *Ts_pos = new F2FScalar[ns_local];
+  F2FScalar *Ts_neg = new F2FScalar[ns_local];
+  F2FScalar *Ta_pos = new F2FScalar[na];
+  F2FScalar *Ta_neg = new F2FScalar[na];
+  for (int j = 0; j < ns_local; j++) {
+    Ts_pos[j] = struct_temps[j] + h * pert[j];
+    Ts_neg[j] = struct_temps[j] - h * pert[j];
   }
 
-  transferTemp(Us_pos, Ua_pos);
+  transferTemp(Ts_pos, Ta_pos);
   F2FScalar work_pos = 0.0;
   for (int i = 0; i < na; i++) {
-    work_pos += Ha[i] * Ua_pos[i];
+    work_pos += Ha[i] * Ta_pos[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
-  transferTemp(Us_neg, Ua_neg);
+  transferTemp(Ts_neg, Ta_neg);
   F2FScalar work_neg = 0.0;
   for (int i = 0; i < na; i++) {
-    work_neg += Ha[i] * Ua_neg[i];
+    work_neg += Ha[i] * Ta_neg[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &work_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = 0.5 * (work_pos - work_neg) / h;
 
-  delete[] Us_pos;
-  delete[] Us_neg;
-  delete[] Ua_pos;
-  delete[] Ua_neg;
+  delete[] Ts_pos;
+  delete[] Ts_neg;
+  delete[] Ta_pos;
+  delete[] Ta_neg;
 #endif  // FUNTOFEM_USE_COMPLEX
   // Compute relative error
   double rel_error = 0.0;
@@ -2246,12 +2250,16 @@ int ThermalTransfer::testFluxTransfer(const F2FScalar *struct_temps,
   double abs_error = F2FRealPart(deriv - deriv_approx);
 
   // Print results
-  printf("\n");
-  printf("Heat Flux transfer test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("\n");
+    printf("Heat Flux transfer test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_temps;
@@ -2299,58 +2307,62 @@ int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
   for (int i = 0; i < na; i++) {
     deriv1 += test_vec_a[i] * grad1[i];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv1, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute the transpose Jacobian-vector products using the function
-  F2FScalar *grad2 = new F2FScalar[ns];
+  F2FScalar *grad2 = new F2FScalar[ns_local];
   applydTdtSTrans(test_vec_a, grad2);
 
   // Compute product of V1 with the transpose Jacobian-vector products
   F2FScalar deriv2 = 0.0;
-  for (int j = 0; j < ns; j++) {
+  for (int j = 0; j < ns_local; j++) {
     deriv2 += test_vec_s[j] * grad2[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv2, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute complex step approximation
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[ns];
-  memset(Us_cs, 0.0, ns * sizeof(F2FScalar));
-  for (int j = 0; j < ns; j++) {
-    Us_cs[j] +=
+  F2FScalar *Ts_cs = new F2FScalar[ns_local];
+  for (int j = 0; j < ns_local; j++) {
+    Ts_cs[j] +=
         struct_temps[j] + F2FScalar(0.0, F2FRealPart(h * test_vec_s[j]));
   }
-  transferTemp(Us_cs, aero_temps);
+  transferTemp(Ts_cs, aero_temps);
 
   F2FScalar VPsi = 0.0;
   for (int i = 0; i < na; i++) {
     F2FScalar Psi = Xa[i] + aero_temps[i];
     VPsi += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(VPsi) / h;
 
-  delete[] Us_cs;
+  delete[] Ts_cs;
 
   // Compute finite difference approximation (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[ns];
-  F2FScalar *Us_neg = new F2FScalar[ns];
-  for (int j = 0; j < ns; j++) {
-    Us_pos[j] = struct_temps[j] + h * test_vec_s[j];
-    Us_neg[j] = struct_temps[j] - h * test_vec_s[j];
+  F2FScalar *Ts_pos = new F2FScalar[ns_local];
+  F2FScalar *Ts_neg = new F2FScalar[ns_local];
+  for (int j = 0; j < ns_local; j++) {
+    Ts_pos[j] = struct_temps[j] + h * test_vec_s[j];
+    Ts_neg[j] = struct_temps[j] - h * test_vec_s[j];
   }
 
-  transferTemp(Us_pos, aero_temps);
+  transferTemp(Ts_pos, aero_temps);
   F2FScalar VPsi_pos = 0.0;
   for (int i = 0; i < na; i++) {
     F2FScalar Psi = Xa[i] + aero_temps[i];
     VPsi_pos += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
-  transferTemp(Us_neg, aero_temps);
+  transferTemp(Ts_neg, aero_temps);
   F2FScalar VPsi_neg = 0.0;
   for (int i = 0; i < na; i++) {
     F2FScalar Psi = Xa[i] + aero_temps[i];
     VPsi_neg += test_vec_a[i] * Psi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPsi_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
 
@@ -2370,17 +2382,21 @@ int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
   // Print out results of test
-  printf("V2^{T}*dT/dt_{S}*V1 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error1);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("V2^{T}*dT/dt_{S}*V1 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error1);
+    printf("\n");
 
-  printf("V1^{T}*(dT/dt_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error2);
-  printf("\n");
+    printf("V1^{T}*(dT/dt_{S})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error2);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_temps;
@@ -2395,7 +2411,7 @@ int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testTempJacVecProducts failed\n");
   }
 
@@ -2426,18 +2442,19 @@ int ThermalTransfer::testFluxJacVecProducts(
   transferTemp(struct_temps, aero_temps);
 
   // Transfer the aerodynamic loads to get MM, IPIV
-  F2FScalar *struct_flux = new F2FScalar[ns];
+  F2FScalar *struct_flux = new F2FScalar[ns_local];
   transferFlux(aero_flux, struct_flux);
 
   // Compute the Jacobian-vector products using the function
-  F2FScalar *grad1 = new F2FScalar[ns];
+  F2FScalar *grad1 = new F2FScalar[ns_local];
   applydQdqA(test_vec_a, grad1);
 
   // Compute directional derivative
   F2FScalar deriv1 = 0.0;
-  for (int j = 0; j < ns; j++) {
+  for (int j = 0; j < ns_local; j++) {
     deriv1 += grad1[j] * test_vec_s[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv1, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Compute transpose Jacobian-vector products using the function
   F2FScalar *grad2 = new F2FScalar[na];
@@ -2448,17 +2465,17 @@ int ThermalTransfer::testFluxJacVecProducts(
   for (int j = 0; j < na; j++) {
     deriv2 += grad2[j] * test_vec_a[j];
   }
+  MPI_Allreduce(MPI_IN_PLACE, &deriv2, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   // Approximate using complex step
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[ns];
-  memset(Us_cs, 0.0, ns * sizeof(F2FScalar));
-  for (int j = 0; j < ns; j++) {
-    Us_cs[j] += struct_temps[j] +
+  F2FScalar *Ts_cs = new F2FScalar[ns_local];
+  for (int j = 0; j < ns_local; j++) {
+    Ts_cs[j] += struct_temps[j] +
                 F2FScalar(0.0, F2FRealPart(h) * F2FRealPart(test_vec_s[j]));
     // F2FScalar(0.0, F2FRealPart(h*test_vec_s1[j]));
   }
-  transferTemp(Us_cs, aero_temps);
+  transferTemp(Ts_cs, aero_temps);
   transferFlux(aero_flux, struct_flux);
 
   F2FScalar VPhi = 0.0;
@@ -2466,38 +2483,41 @@ int ThermalTransfer::testFluxJacVecProducts(
     F2FScalar Phi = Xa[j] + aero_temps[j];
     VPhi += test_vec_a[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
   F2FScalar deriv_approx = -1.0 * F2FImagPart(VPhi) / h;
-  delete[] Us_cs;
+  delete[] Ts_cs;
 
   // Approximate using finite difference (central)
 #else
-  F2FScalar *Us_pos = new F2FScalar[ns];
-  F2FScalar *Us_neg = new F2FScalar[ns];
-  for (int j = 0; j < ns; j++) {
-    Us_pos[j] = struct_temps[j] + h * test_vec_a[j];
-    Us_neg[j] = struct_temps[j] - h * test_vec_a[j];
+  F2FScalar *Ts_pos = new F2FScalar[ns_local];
+  F2FScalar *Ts_neg = new F2FScalar[ns_local];
+  for (int j = 0; j < ns_local; j++) {
+    Ts_pos[j] = struct_temps[j] + h * test_vec_a[j];
+    Ts_neg[j] = struct_temps[j] - h * test_vec_a[j];
   }
 
-  transferTemp(Us_pos, aero_temps);
+  transferTemp(Ts_pos, aero_temps);
   transferFlux(aero_flux, struct_flux);
   F2FScalar VPhi_pos = 0.0;
-  for (int j = 0; j < ns; j++) {
+  for (int j = 0; j < ns_local; j++) {
     F2FScalar Phi = struct_flux[j];
     VPhi_pos += test_vec_s[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
-  transferTemp(Us_neg, aero_temps);
+  transferTemp(Ts_neg, aero_temps);
   transferFlux(aero_flux, struct_flux);
   F2FScalar VPhi_neg = 0.0;
-  for (int j = 0; j < ns; j++) {
+  for (int j = 0; j < ns_local; j++) {
     F2FScalar Phi = struct_flux[j];
     VPhi_neg += test_vec_s[j] * Phi;
   }
+  MPI_Allreduce(MPI_IN_PLACE, &VPhi_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   F2FScalar deriv_approx = -0.5 * (VPhi_pos - VPhi_neg) / h;
 
-  delete[] Us_pos;
-  delete[] Us_neg;
+  delete[] Ts_pos;
+  delete[] Ts_neg;
 #endif
   // Compute relative error
   double rel_error1 = 0.0;
@@ -2512,18 +2532,22 @@ int ThermalTransfer::testFluxJacVecProducts(
   double abs_error2 = F2FRealPart(deriv2 - deriv_approx);
 
   // Print out results of test
-  printf("V2^{T}*dQ/dq_{A}*V1 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error1);
-  printf("\n");
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == 0) {
+    printf("V2^{T}*dQ/dq_{A}*V1 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv1));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error1);
+    printf("\n");
 
-  // Print out results of test
-  printf("V1^{T}*(dQ/dq_{A})^{T}*V2 test with step: %e\n", F2FRealPart(h));
-  printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
-  printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
-  printf("relative error = %22.15e\n", rel_error2);
-  printf("\n");
+    // Print out results of test
+    printf("V1^{T}*(dQ/dq_{A})^{T}*V2 test with step: %e\n", F2FRealPart(h));
+    printf("deriv          = %22.15e\n", F2FRealPart(deriv2));
+    printf("deriv, approx  = %22.15e\n", F2FRealPart(deriv_approx));
+    printf("relative error = %22.15e\n", rel_error2);
+    printf("\n");
+  }
 
   // Free allocated memory
   delete[] aero_temps;
@@ -2539,7 +2563,7 @@ int ThermalTransfer::testFluxJacVecProducts(
     fail = 1;
   }
 
-  if (fail) {
+  if (rank == 0 && fail) {
     printf("testFluxJacVecProducts failed\n");
   }
 

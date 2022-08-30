@@ -94,6 +94,14 @@ cdef extern from "TransferScheme.h":
                            const double atol)
 
   cppclass ThermalTransfer:
+    # Mesh loading
+    void setAeroNodes(const F2FScalar *aero_X, int aero_nnodes)
+    void setStructNodes(const F2FScalar *struct_X, int struct_nnodes)
+
+    # Initialization
+    void initialize()
+
+    # Transfer temperatures and heat fluxes
     void transferTemp(const F2FScalar *struct_temp,
                       F2FScalar *aero_temp)
     void transferFlux(const F2FScalar *aero_flux,

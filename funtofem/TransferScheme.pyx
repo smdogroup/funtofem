@@ -615,6 +615,54 @@ cdef class pyThermalTransfer:
     """
     cdef ThermalTransfer *ptr
 
+    def setAeroNodes(self, np.ndarray[F2FScalar, ndim=1, mode='c'] X):
+        """
+        Set and store the aerodynamic surface node locations in memory
+
+        Parameters
+        ----------
+        X: ndarray
+            One-dimensional array of aerodynamic surface node locations
+        """
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setAeroNodes(array, nnodes)
+
+        return
+
+    def setStructNodes(self, np.ndarray[F2FScalar, ndim=1, mode='c'] X):
+        """
+        Set and store the structural node locations in memory
+
+        Parameters
+        ----------
+        X: ndarray
+            One-dimensional array of structural node locations
+        """
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setStructNodes(array, nnodes)
+
+        return
+
+    def initialize(self):
+        """
+        Run routines (e.g. building connectivity through search, assembling
+        interpolation matrix, etc.) necessary to prepare transfer scheme to
+        perform load and displacement transfer
+        """
+        self.ptr.initialize()
+
+        return
+
     def transferTemp(self,
                      np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
                      np.ndarray[F2FScalar, ndim=1, mode='c'] aero_temps):

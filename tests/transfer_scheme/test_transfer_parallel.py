@@ -81,6 +81,84 @@ class TransferSchemeTest(unittest.TestCase):
 
         return
 
+    def test_meld_thermal(self):
+        comm, struct_comm, struct_root, aero_comm, aero_root = self._get_comms(
+            MPI.COMM_WORLD
+        )
+
+        # Set typical parameter values
+        isymm = 1  # Symmetry axis (0, 1, 2 or -1 for no symmetry)
+        nn = 10  # Number of nearest neighbors to consider
+        beta = 0.5  # Relative decay factor
+        transfer = TransferScheme.pyMELDThermal(comm, comm, 0, comm, 0, isymm, nn, beta)
+
+        aero_nnodes = self._get_aero_nnodes(aero_comm)
+        aero_X = np.random.random(3 * aero_nnodes).astype(TransferScheme.dtype)
+        transfer.setAeroNodes(aero_X)
+
+        struct_nnodes = self._get_struct_nnodes(struct_comm)
+        struct_X = np.random.random(3 * struct_nnodes).astype(TransferScheme.dtype)
+        transfer.setStructNodes(struct_X)
+
+        transfer.initialize()
+
+        # Set random forces
+        tS = np.random.random(struct_nnodes).astype(TransferScheme.dtype)
+        hA = np.random.random(aero_nnodes).astype(TransferScheme.dtype)
+
+        dh = 1e-6
+        rtol = 1e-5
+        atol = 1e-30
+        if TransferScheme.dtype == complex:
+            dh = 1e-30
+            rtol = 1e-9
+            atol = 1e-30
+
+        fail = transfer.testAllDerivatives(tS, hA, dh, rtol, atol)
+
+        assert fail == 0
+
+    def test_linear_meld(self):
+        comm, struct_comm, struct_root, aero_comm, aero_root = self._get_comms(
+            MPI.COMM_WORLD
+        )
+
+        # Set typical parameter values
+        isymm = 1  # Symmetry axis (0, 1, 2 or -1 for no symmetry)
+        nn = 10  # Number of nearest neighbors to consider
+        beta = 0.5  # Relative decay factor
+        transfer = TransferScheme.pyLinearizedMELD(
+            comm, struct_comm, struct_root, aero_comm, aero_root, isymm, nn, beta
+        )
+
+        aero_nnodes = self._get_aero_nnodes(aero_comm)
+        aero_X = np.random.random(3 * aero_nnodes).astype(TransferScheme.dtype)
+        transfer.setAeroNodes(aero_X)
+
+        struct_nnodes = self._get_struct_nnodes(struct_comm)
+        struct_X = np.random.random(3 * struct_nnodes).astype(TransferScheme.dtype)
+        transfer.setStructNodes(struct_X)
+
+        transfer.initialize()
+
+        # Set random forces
+        uS = np.random.random(3 * struct_nnodes).astype(TransferScheme.dtype)
+        fA = np.random.random(3 * aero_nnodes).astype(TransferScheme.dtype)
+
+        dh = 1e-6
+        rtol = 1e-5
+        atol = 1e-30
+        if TransferScheme.dtype == complex:
+            dh = 1e-30
+            rtol = 1e-9
+            atol = 1e-30
+
+        fail = transfer.testAllDerivatives(uS, fA, dh, rtol, atol)
+
+        assert fail == 0
+
+        return
+
     def test_rbf(self):
         comm, struct_comm, struct_root, aero_comm, aero_root = self._get_comms(
             MPI.COMM_WORLD
@@ -127,50 +205,10 @@ class TransferSchemeTest(unittest.TestCase):
 
         return
 
-    def test_linear_meld(self):
-        comm, struct_comm, struct_root, aero_comm, aero_root = self._get_comms(
-            MPI.COMM_WORLD
-        )
-
-        # Set typical parameter values
-        isymm = 1  # Symmetry axis (0, 1, 2 or -1 for no symmetry)
-        nn = 10  # Number of nearest neighbors to consider
-        beta = 0.5  # Relative decay factor
-        transfer = TransferScheme.pyLinearizedMELD(
-            comm, struct_comm, struct_root, aero_comm, aero_root, isymm, nn, beta
-        )
-
-        aero_nnodes = self._get_aero_nnodes(aero_comm)
-        aero_X = np.random.random(3 * aero_nnodes).astype(TransferScheme.dtype)
-        transfer.setAeroNodes(aero_X)
-
-        struct_nnodes = self._get_struct_nnodes(struct_comm)
-        struct_X = np.random.random(3 * struct_nnodes).astype(TransferScheme.dtype)
-        transfer.setStructNodes(struct_X)
-
-        transfer.initialize()
-
-        # Set random forces
-        uS = np.random.random(3 * struct_nnodes).astype(TransferScheme.dtype)
-        fA = np.random.random(3 * aero_nnodes).astype(TransferScheme.dtype)
-
-        dh = 1e-6
-        rtol = 1e-5
-        atol = 1e-30
-        if TransferScheme.dtype == complex:
-            dh = 1e-30
-            rtol = 1e-9
-            atol = 1e-30
-
-        fail = transfer.testAllDerivatives(uS, fA, dh, rtol, atol)
-
-        assert fail == 0
-
-        return
-
 
 if __name__ == "__main__":
     test = TransferSchemeTest()
     test.test_meld()
-    test.test_rbf()
-    test.test_linear_meld()
+    test.test_meld_thermal()
+#    test.test_linear_meld()
+#    test.test_rbf()

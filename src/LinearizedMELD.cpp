@@ -37,8 +37,12 @@ LinearizedMELD::LinearizedMELD(MPI_Comm all, MPI_Comm structure,
   global_H = NULL;
 
   // Notify user of the type of transfer scheme they are using
-  printf("Transfer scheme [%i]: Creating scheme of type LinearizedMELD...\n",
-         object_id);
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == struct_root) {
+    printf("Transfer scheme [%i]: Creating scheme of type LinearizedMELD...\n",
+           object_id);
+  }
 }
 
 LinearizedMELD::~LinearizedMELD() {
@@ -47,7 +51,11 @@ LinearizedMELD::~LinearizedMELD() {
     delete[] global_H;
   }
 
-  printf("Transfer scheme [%i]: freeing LinearizedMELD data...\n", object_id);
+  int rank;
+  MPI_Comm_rank(global_comm, &rank);
+  if (rank == struct_root) {
+    printf("Transfer scheme [%i]: freeing LinearizedMELD data...\n", object_id);
+  }
 }
 
 /*
@@ -92,7 +100,7 @@ void LinearizedMELD::initialize() {
 
   // Allocate and compute the weights
   global_W = new F2FScalar[nn * na];
-  computeWeights(global_beta, isymm, nn, global_conn, global_W);
+  computeWeights(F2FRealPart(global_beta), isymm, nn, global_conn, global_W);
 
   // Allocate transfer variables
   global_xs0bar = new F2FScalar[3 * na];
@@ -317,7 +325,8 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
   memcpy(Fa, aero_loads, 3 * na * sizeof(F2FScalar));
 
   // Zero struct loads
-  memset(struct_loads, 0, 3 * ns * sizeof(F2FScalar));
+  F2FScalar *struct_loads_global = new F2FScalar[3 * ns];
+  memset(struct_loads_global, 0, 3 * ns * sizeof(F2FScalar));
 
   // Loop over aerodynamic surface nodes
   for (int i = 0; i < na; i++) {
@@ -347,7 +356,7 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
         vec_diff(xs0bar, xs, q);
 
         // Compute load contribution
-        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar *fs = &struct_loads_global[3 * indx];
         F2FScalar w = global_W[nn * i + j];
         F2FScalar fj[3];
         computeLoadContribution(w, q, Hinv, r, fa, fj);
@@ -371,7 +380,7 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
         vec_diff(xs0bar, rxs0, q);
 
         // Compute load contribution
-        F2FScalar *fs = &struct_loads[3 * indx];
+        F2FScalar *fs = &struct_loads_global[3 * indx];
         F2FScalar w = global_W[nn * i + j];
         F2FScalar fj[3];
         computeLoadContribution(w, q, Hinv, r, fa, fj);
@@ -383,6 +392,11 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
       }
     }
   }
+
+  // distribute the structural loads
+  structAddScatter(3 * ns, struct_loads_global, 3 * ns_local, struct_loads);
+
+  delete[] struct_loads_global;
 }
 
 /*
@@ -469,7 +483,7 @@ void LinearizedMELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   transferLoads(vecs, prods);
 
   // Reverse sign due to definition of diplacement transfer residual
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     prods[j] *= -1.0;
   }
 }
@@ -487,7 +501,7 @@ void LinearizedMELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -503,7 +517,7 @@ void LinearizedMELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -535,7 +549,7 @@ void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -567,5 +581,5 @@ void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }

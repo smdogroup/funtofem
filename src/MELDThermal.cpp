@@ -102,7 +102,7 @@ void MELDThermal::initialize() {
 
   // Allocate and compute the weights
   global_W = new F2FScalar[nn * na];
-  computeWeights(global_beta, isymm, nn, global_conn, global_W);
+  computeWeights(F2FRealPart(global_beta), isymm, nn, global_conn, global_W);
 }
 
 /*
