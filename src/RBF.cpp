@@ -186,159 +186,161 @@ void RBF::initialize() {
   Auxiliary function for building the interpolation matrix
 */
 void RBF::buildInterpolationMatrix() {
-  // Check how many first order polynomial terms to include
-  int npoly = 4;
-  double xsum = 0.0;
-  double ysum = 0.0;
-  double zsum = 0.0;
+  if (na > 0) {
+    // Check how many first order polynomial terms to include
+    int npoly = 4;
+    double xsum = 0.0;
+    double ysum = 0.0;
+    double zsum = 0.0;
 
-  for (int i = 0; i < nsub; i++) {
-    xsum += F2FRealPart(abs(Xs[3 * i + 0]));
-    ysum += F2FRealPart(abs(Xs[3 * i + 1]));
-    zsum += F2FRealPart(abs(Xs[3 * i + 2]));
-  }
-
-  bool x_all_zero = xsum < 1.0e-15;
-  if (x_all_zero) npoly--;
-  bool y_all_zero = ysum < 1.0e-15;
-  if (y_all_zero) npoly--;
-  bool z_all_zero = zsum < 1.0e-15;
-  if (z_all_zero) npoly--;
-
-  // Build the P matrix
-  F2FScalar *P = new F2FScalar[npoly * nsub];
-  for (int j = 0; j < nsub; j++) {
-    int indx = sample_ids[j];
-    P[0 + npoly * j] = 1.0;
-    if (npoly > 1) {
-      for (int k = 1; k < npoly; k++) {
-        P[k + npoly * j] = Xs[3 * indx + k - 1];
-      }
+    for (int i = 0; i < nsub; i++) {
+      xsum += F2FRealPart(abs(Xs[3 * i + 0]));
+      ysum += F2FRealPart(abs(Xs[3 * i + 1]));
+      zsum += F2FRealPart(abs(Xs[3 * i + 2]));
     }
-  }
 
-  // Build the M matrix
-  F2FScalar *M = new F2FScalar[nsub * nsub];
-  for (int i = 0; i < nsub; i++) {
-    for (int j = 0; j < nsub; j++) {
-      int indx1 = sample_ids[i];
-      int indx2 = sample_ids[j];
-      F2FScalar *x = &Xs[3 * indx1];
-      F2FScalar *y = &Xs[3 * indx2];
-      M[i + nsub * j] = phi(x, y);
-    }
-  }
+    bool x_all_zero = xsum < 1.0e-15;
+    if (x_all_zero) npoly--;
+    bool y_all_zero = ysum < 1.0e-15;
+    if (y_all_zero) npoly--;
+    bool z_all_zero = zsum < 1.0e-15;
+    if (z_all_zero) npoly--;
 
-  /*
-    Need to build the C_{ss}^{-1} matrix, which is composed of a top half
-    (corresponding to the polynomial coefficients) and a bottom half
-    (corresponding to and the radial basis function coefficients)
-
-    The top half is M_{p}*P*M^{-1}
-
-    The bottom half is M^{-1} - M^{-1}*P^{T}*M_{p}*P*M^{-1}
-
-    It is a bit difficult to understand the procedure for assembling these
-    matrices from the calls to BLAS, so I have tried to add clarifying
-    comments. If something remains unclear, it is best to refer back to the
-    paper cited in the header file.
-  */
-
-  // Invert the M matrix
-  F2FScalar *invM = new F2FScalar[nsub * nsub];
-  memset(invM, 0.0, nsub * nsub * sizeof(F2FScalar));
-  for (int i = 0; i < nsub; i++) invM[i + nsub * i] = 1.0;
-  int *ipiv = new int[nsub];
-  int info = 0;
-  LAPACKgetrf(&nsub, &nsub, M, &nsub, ipiv, &info);
-  LAPACKgetrs("N", &nsub, &nsub, M, &nsub, ipiv, invM, &nsub, &info);
-  delete[] ipiv;
-
-  // M_{p}^{-1} = P*M^{-1}*P^{T}
-  F2FScalar *invMp = new F2FScalar[npoly * npoly];
-  F2FScalar alpha = 1.0, beta = 0.0;
-  F2FScalar *Psized = new F2FScalar[npoly * nsub];  // work matrix
-  BLASgemm("N", "N", &npoly, &nsub, &nsub, &alpha, P, &npoly, invM, &nsub,
-           &beta, Psized, &npoly);
-#ifdef FUNTOFEM_USE_COMPLEX
-  const char *t = "C";
-#else
-  const char *t = "T";
-#endif
-  BLASgemm("N", t, &npoly, &npoly, &nsub, &alpha, Psized, &npoly, P, &npoly,
-           &beta, invMp, &npoly);
-
-  // Invert M_{p}^{-1} to obtain M_{p}
-  F2FScalar *Mp = new F2FScalar[npoly * npoly];
-  memset(Mp, 0.0, npoly * npoly * sizeof(F2FScalar));
-  for (int i = 0; i < npoly; i++) Mp[i + npoly * i] = 1.0;
-  ipiv = new int[npoly];
-  LAPACKgetrf(&npoly, &npoly, invMp, &npoly, ipiv, &info);
-  LAPACKgetrs("N", &npoly, &npoly, invMp, &npoly, ipiv, Mp, &npoly, &info);
-  delete[] ipiv;
-
-  // Build top half
-  F2FScalar *top_half = new F2FScalar[npoly * nsub];  // more work matrices
-  BLASgemm("N", "N", &npoly, &nsub, &npoly, &alpha, Mp, &npoly, Psized, &npoly,
-           &beta, top_half, &npoly);
-
-  // Use the top half to build the bottom half
-  BLASgemm(t, "N", &nsub, &nsub, &npoly, &alpha, P, &npoly, top_half, &npoly,
-           &beta, M, &nsub);
-  F2FScalar *bot_half = new F2FScalar[nsub * nsub];
-  memcpy(bot_half, invM, nsub * nsub * sizeof(F2FScalar));
-  alpha = -1.0;
-  beta = 1.0;
-  BLASgemm("N", "N", &nsub, &nsub, &nsub, &alpha, invM, &nsub, M, &nsub, &beta,
-           bot_half, &nsub);
-
-  // Copy the top and bottom halves into one matrix C_{ss}^{-1}
-  F2FScalar *invCss = new F2FScalar[(nsub + npoly) * nsub];
-  for (int i = 0; i < npoly; i++) {
-    for (int j = 0; j < nsub; j++) {
-      invCss[i + (nsub + npoly) * j] = top_half[i + npoly * j];
-    }
-  }
-  for (int i = 0; i < nsub; i++) {
-    for (int j = 0; j < nsub; j++) {
-      invCss[npoly + i + (nsub + npoly) * j] = bot_half[i + nsub * j];
-    }
-  }
-
-  // Build the A_{as} matrix, the entries of which are the evaluation of the
-  // polynomial and radial basis functions at the aerodynamic nodes
-  F2FScalar *Aas = new F2FScalar[na * (nsub + npoly)];
-  for (int i = 0; i < na; i++) {
-    Aas[i + na * 0] = 1.0;
-    Aas[i + na * 1] = Xa[3 * i + 0];
-    Aas[i + na * 2] = Xa[3 * i + 1];
-    Aas[i + na * 3] = Xa[3 * i + 2];
+    // Build the P matrix
+    F2FScalar *P = new F2FScalar[npoly * nsub];
     for (int j = 0; j < nsub; j++) {
       int indx = sample_ids[j];
-      F2FScalar *x = &Xa[3 * i];
-      F2FScalar *y = &Xs[3 * indx];
-      Aas[i + na * (j + npoly)] = phi(x, y);
+      P[0 + npoly * j] = 1.0;
+      if (npoly > 1) {
+        for (int k = 1; k < npoly; k++) {
+          P[k + npoly * j] = Xs[3 * indx + k - 1];
+        }
+      }
     }
+
+    // Build the M matrix
+    F2FScalar *M = new F2FScalar[nsub * nsub];
+    for (int i = 0; i < nsub; i++) {
+      for (int j = 0; j < nsub; j++) {
+        int indx1 = sample_ids[i];
+        int indx2 = sample_ids[j];
+        F2FScalar *x = &Xs[3 * indx1];
+        F2FScalar *y = &Xs[3 * indx2];
+        M[i + nsub * j] = phi(x, y);
+      }
+    }
+
+    /*
+      Need to build the C_{ss}^{-1} matrix, which is composed of a top half
+      (corresponding to the polynomial coefficients) and a bottom half
+      (corresponding to and the radial basis function coefficients)
+
+      The top half is M_{p}*P*M^{-1}
+
+      The bottom half is M^{-1} - M^{-1}*P^{T}*M_{p}*P*M^{-1}
+
+      It is a bit difficult to understand the procedure for assembling these
+      matrices from the calls to BLAS, so I have tried to add clarifying
+      comments. If something remains unclear, it is best to refer back to the
+      paper cited in the header file.
+    */
+
+    // Invert the M matrix
+    F2FScalar *invM = new F2FScalar[nsub * nsub];
+    memset(invM, 0.0, nsub * nsub * sizeof(F2FScalar));
+    for (int i = 0; i < nsub; i++) invM[i + nsub * i] = 1.0;
+    int *ipiv = new int[nsub];
+    int info = 0;
+    LAPACKgetrf(&nsub, &nsub, M, &nsub, ipiv, &info);
+    LAPACKgetrs("N", &nsub, &nsub, M, &nsub, ipiv, invM, &nsub, &info);
+    delete[] ipiv;
+
+    // M_{p}^{-1} = P*M^{-1}*P^{T}
+    F2FScalar *invMp = new F2FScalar[npoly * npoly];
+    F2FScalar alpha = 1.0, beta = 0.0;
+    F2FScalar *Psized = new F2FScalar[npoly * nsub];  // work matrix
+    BLASgemm("N", "N", &npoly, &nsub, &nsub, &alpha, P, &npoly, invM, &nsub,
+             &beta, Psized, &npoly);
+#ifdef FUNTOFEM_USE_COMPLEX
+    const char *t = "C";
+#else
+    const char *t = "T";
+#endif
+    BLASgemm("N", t, &npoly, &npoly, &nsub, &alpha, Psized, &npoly, P, &npoly,
+             &beta, invMp, &npoly);
+
+    // Invert M_{p}^{-1} to obtain M_{p}
+    F2FScalar *Mp = new F2FScalar[npoly * npoly];
+    memset(Mp, 0.0, npoly * npoly * sizeof(F2FScalar));
+    for (int i = 0; i < npoly; i++) Mp[i + npoly * i] = 1.0;
+    ipiv = new int[npoly];
+    LAPACKgetrf(&npoly, &npoly, invMp, &npoly, ipiv, &info);
+    LAPACKgetrs("N", &npoly, &npoly, invMp, &npoly, ipiv, Mp, &npoly, &info);
+    delete[] ipiv;
+
+    // Build top half
+    F2FScalar *top_half = new F2FScalar[npoly * nsub];  // more work matrices
+    BLASgemm("N", "N", &npoly, &nsub, &npoly, &alpha, Mp, &npoly, Psized,
+             &npoly, &beta, top_half, &npoly);
+
+    // Use the top half to build the bottom half
+    BLASgemm(t, "N", &nsub, &nsub, &npoly, &alpha, P, &npoly, top_half, &npoly,
+             &beta, M, &nsub);
+    F2FScalar *bot_half = new F2FScalar[nsub * nsub];
+    memcpy(bot_half, invM, nsub * nsub * sizeof(F2FScalar));
+    alpha = -1.0;
+    beta = 1.0;
+    BLASgemm("N", "N", &nsub, &nsub, &nsub, &alpha, invM, &nsub, M, &nsub,
+             &beta, bot_half, &nsub);
+
+    // Copy the top and bottom halves into one matrix C_{ss}^{-1}
+    F2FScalar *invCss = new F2FScalar[(nsub + npoly) * nsub];
+    for (int i = 0; i < npoly; i++) {
+      for (int j = 0; j < nsub; j++) {
+        invCss[i + (nsub + npoly) * j] = top_half[i + npoly * j];
+      }
+    }
+    for (int i = 0; i < nsub; i++) {
+      for (int j = 0; j < nsub; j++) {
+        invCss[npoly + i + (nsub + npoly) * j] = bot_half[i + nsub * j];
+      }
+    }
+
+    // Build the A_{as} matrix, the entries of which are the evaluation of the
+    // polynomial and radial basis functions at the aerodynamic nodes
+    F2FScalar *Aas = new F2FScalar[na * (nsub + npoly)];
+    for (int i = 0; i < na; i++) {
+      Aas[i + na * 0] = 1.0;
+      Aas[i + na * 1] = Xa[3 * i + 0];
+      Aas[i + na * 2] = Xa[3 * i + 1];
+      Aas[i + na * 3] = Xa[3 * i + 2];
+      for (int j = 0; j < nsub; j++) {
+        int indx = sample_ids[j];
+        F2FScalar *x = &Xa[3 * i];
+        F2FScalar *y = &Xs[3 * indx];
+        Aas[i + na * (j + npoly)] = phi(x, y);
+      }
+    }
+
+    // Multiply A_{as} and C_{ss}^{-1} to get the interpolation matrix
+    int k = nsub + npoly;
+    alpha = 1.0;
+    beta = 0.0;
+    BLASgemm("N", "N", &na, &nsub, &k, &alpha, Aas, &na, invCss, &k, &beta,
+             interp_mat, &na);
+
+    // Free allocated memory
+    delete[] P;
+    delete[] M;
+    delete[] invM;
+    delete[] invMp;
+    delete[] Psized;
+    delete[] Mp;
+    delete[] top_half;
+    delete[] bot_half;
+    delete[] invCss;
+    delete[] Aas;
   }
-
-  // Multiply A_{as} and C_{ss}^{-1} to get the interpolation matrix
-  int k = nsub + npoly;
-  alpha = 1.0;
-  beta = 0.0;
-  BLASgemm("N", "N", &na, &nsub, &k, &alpha, Aas, &na, invCss, &k, &beta,
-           interp_mat, &na);
-
-  // Free allocated memory
-  delete[] P;
-  delete[] M;
-  delete[] invM;
-  delete[] invMp;
-  delete[] Psized;
-  delete[] Mp;
-  delete[] top_half;
-  delete[] bot_half;
-  delete[] invCss;
-  delete[] Aas;
 }
 
 /*
@@ -355,38 +357,43 @@ void RBF::buildInterpolationMatrix() {
   aero_disps   : aerodynamic node displacements
 */
 void RBF::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
+  // Check if struct nodes locations need to be redistributed
+  distributeStructuralMesh();
+
   // Copy prescribed displacements into displacement vector
-  memcpy(Us, struct_disps, 3 * ns * sizeof(F2FScalar));
+  structGatherBcast(3 * ns_local, struct_disps, 3 * ns, Us);
 
   // Zero the outputs
   memset(aero_disps, 0.0, 3 * na * sizeof(F2FScalar));
 
-  // Rearrange structural displacements
-  F2FScalar *US = new F2FScalar[nsub * 3];
-  for (int i = 0; i < nsub; i++) {
-    int indx = sample_ids[i];
-    US[i + nsub * 0] = Us[3 * indx + 0];
-    US[i + nsub * 1] = Us[3 * indx + 1];
-    US[i + nsub * 2] = Us[3 * indx + 2];
+  if (na > 0) {
+    // Rearrange structural displacements
+    F2FScalar *US = new F2FScalar[nsub * 3];
+    for (int i = 0; i < nsub; i++) {
+      int indx = sample_ids[i];
+      US[i + nsub * 0] = Us[3 * indx + 0];
+      US[i + nsub * 1] = Us[3 * indx + 1];
+      US[i + nsub * 2] = Us[3 * indx + 2];
+    }
+
+    // Apply action of interpolation matrix
+    F2FScalar *UA = new F2FScalar[na * 3];
+    int n = 3;
+    F2FScalar alpha = 1.0, beta = 0.0;
+    BLASgemm("N", "N", &na, &n, &nsub, &alpha, interp_mat, &na, US, &nsub,
+             &beta, UA, &na);
+
+    // Copy aerodynamic displacements to output
+    for (int i = 0; i < na; i++) {
+      aero_disps[3 * i + 0] = UA[i + na * 0];
+      aero_disps[3 * i + 1] = UA[i + na * 1];
+      aero_disps[3 * i + 2] = UA[i + na * 2];
+    }
+
+    // Free allocated memory
+    delete[] US;
+    delete[] UA;
   }
-
-  // Apply action of interpolation matrix
-  F2FScalar *UA = new F2FScalar[na * 3];
-  int n = 3;
-  F2FScalar alpha = 1.0, beta = 0.0;
-  BLASgemm("N", "N", &na, &n, &nsub, &alpha, interp_mat, &na, US, &nsub, &beta,
-           UA, &na);
-
-  // Copy aerodynamic displacements to output
-  for (int i = 0; i < na; i++) {
-    aero_disps[3 * i + 0] = UA[i + na * 0];
-    aero_disps[3 * i + 1] = UA[i + na * 1];
-    aero_disps[3 * i + 2] = UA[i + na * 2];
-  }
-
-  // Free allocated memory
-  delete[] US;
-  delete[] UA;
 }
 
 /*
@@ -406,39 +413,47 @@ void RBF::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   memcpy(Fa, aero_loads, 3 * na * sizeof(F2FScalar));
 
   // Zero struct loads
-  memset(struct_loads, 0, 3 * ns * sizeof(F2FScalar));
+  F2FScalar *struct_loads_global = new F2FScalar[3 * ns];
+  memset(struct_loads_global, 0, 3 * ns * sizeof(F2FScalar));
 
-  // Copy Fa into matrix
-  F2FScalar *Fxyz = new F2FScalar[na * 3];
-  for (int i = 0; i < na; i++) {
-    Fxyz[i + na * 0] = Fa[3 * i + 0];
-    Fxyz[i + na * 1] = Fa[3 * i + 1];
-    Fxyz[i + na * 2] = Fa[3 * i + 2];
-  }
+  if (na > 0) {
+    // Copy Fa into matrix
+    F2FScalar *Fxyz = new F2FScalar[na * 3];
+    for (int i = 0; i < na; i++) {
+      Fxyz[i + na * 0] = Fa[3 * i + 0];
+      Fxyz[i + na * 1] = Fa[3 * i + 1];
+      Fxyz[i + na * 2] = Fa[3 * i + 2];
+    }
 
-  // Apply action of transpose of the interpolation matrix
-  F2FScalar *Fsub = new F2FScalar[nsub * 3];
-  int n = 3;
-  F2FScalar alpha = 1.0, beta = 0.0;
+    // Apply action of transpose of the interpolation matrix
+    F2FScalar *Fsub = new F2FScalar[nsub * 3];
+    int n = 3;
+    F2FScalar alpha = 1.0, beta = 0.0;
 #ifdef FUNTOFEM_USE_COMPLEX
-  const char *t = "C";
+    const char *t = "C";
 #else
-  const char *t = "T";
+    const char *t = "T";
 #endif
-  BLASgemm(t, "N", &nsub, &n, &na, &alpha, interp_mat, &na, Fxyz, &na, &beta,
-           Fsub, &nsub);
+    BLASgemm(t, "N", &nsub, &n, &na, &alpha, interp_mat, &na, Fxyz, &na, &beta,
+             Fsub, &nsub);
 
-  // Copy the structural forces to struct loads
-  for (int i = 0; i < nsub; i++) {
-    int indx = sample_ids[i];
-    struct_loads[3 * indx + 0] = Fsub[i + nsub * 0];
-    struct_loads[3 * indx + 1] = Fsub[i + nsub * 1];
-    struct_loads[3 * indx + 2] = Fsub[i + nsub * 2];
+    // Copy the structural forces to struct loads
+    for (int i = 0; i < nsub; i++) {
+      int indx = sample_ids[i];
+      struct_loads_global[3 * indx + 0] = Fsub[i + nsub * 0];
+      struct_loads_global[3 * indx + 1] = Fsub[i + nsub * 1];
+      struct_loads_global[3 * indx + 2] = Fsub[i + nsub * 2];
+    }
+
+    delete[] Fxyz;
+    delete[] Fsub;
   }
+
+  // distribute the structural loads
+  structAddScatter(3 * ns, struct_loads_global, 3 * ns_local, struct_loads);
 
   // Free allocated memory
-  delete[] Fxyz;
-  delete[] Fsub;
+  delete[] struct_loads_global;
 }
 
 /*
@@ -478,7 +493,7 @@ void RBF::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   transferLoads(vecs, prods);
 
   // Reverse sign due to definition of diplacement transfer residual
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns_local; j++) {
     prods[j] *= -1.0;
   }
 }
@@ -496,7 +511,7 @@ void RBF::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void RBF::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -512,7 +527,7 @@ void RBF::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void RBF::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -544,7 +559,7 @@ void RBF::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void RBF::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
@@ -576,7 +591,7 @@ void RBF::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void RBF::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns * sizeof(F2FScalar));
+  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
 }
 
 /*
