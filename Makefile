@@ -12,6 +12,10 @@ default:
 debug:
 	@cd src && ${MAKE} $@ || exit 1
 	@cd lib && ${MAKE} || exit 1
+	@cd funtofem; \
+	echo "ctypedef double F2FScalar" > FuntofemTypedefs.pxi; \
+	echo "F2F_NPY_SCALAR = np.NPY_DOUBLE" > FuntofemDefs.pxi; \
+	echo "dtype = np.double" >> FuntofemDefs.pxi;
 
 complex:
 	@cd src && ${MAKE} $@ || exit 1
@@ -19,23 +23,21 @@ complex:
 	@cd funtofem; \
 	echo "ctypedef complex F2FScalar" > FuntofemTypedefs.pxi; \
 	echo "F2F_NPY_SCALAR = np.NPY_CDOUBLE" > FuntofemDefs.pxi; \
-	echo "dtype = np.complex" >> FuntofemDefs.pxi;
+	echo "dtype = complex" >> FuntofemDefs.pxi;
 
 complex_debug:
 	@cd src && ${MAKE} $@ || exit 1
 	@cd lib && ${MAKE} || exit 1
+	@cd funtofem; \
+	echo "ctypedef complex F2FScalar" > FuntofemTypedefs.pxi; \
+	echo "F2F_NPY_SCALAR = np.NPY_CDOUBLE" > FuntofemDefs.pxi; \
+	echo "dtype = complex" >> FuntofemDefs.pxi;
 
 interface:
-	@python3 setup.py build_ext --inplace
-
-debug_interface:
-	@python3 setup.py build_ext --inplace
+	${PIP} install -e .
 
 complex_interface:
-	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
-
-complex_debug_interface:
-	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+	CFLAGS=-DFUNTOFEM_USE_COMPLEX ${PIP} install -e .
 
 clean:
 	@cd src && ${MAKE} $@ || exit 1

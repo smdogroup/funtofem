@@ -20,12 +20,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from __future__ import print_function
-
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
+
 try:
     from .hermes_transfer import HermesTransfer
 except:
@@ -33,12 +31,23 @@ except:
 
 np.set_printoptions(precision=15)
 
+
 class FUNtoFEMDriver(object):
     """
     The FUNtoFEM driver base class has all of the driver except for the coupling algorithms
     """
-    def __init__(self, solvers, comm, struct_comm, struct_root,
-                 aero_comm, aero_root, transfer_options=None, model=None):
+
+    def __init__(
+        self,
+        solvers,
+        comm,
+        struct_comm,
+        struct_root,
+        aero_comm,
+        aero_root,
+        transfer_options=None,
+        model=None,
+    ):
         """
         Parameters
         ----------
@@ -66,16 +75,15 @@ class FUNtoFEMDriver(object):
         if model is not None:
             self.fakemodel = False
         else:
-            print("FUNtoFEM driver: generating fake model")
+            print("FUNtoFEM driver: generating a default model")
             from pyfuntofem.model import FUNtoFEMmodel, Body, Scenario, Function
 
-            model = FUNtoFEMmodel('fakemodel')
-
-            fakebody = Body('fakebody')
+            model = FUNtoFEMmodel("model")
+            fakebody = Body("body")
             model.add_body(fakebody)
 
-            fakescenario = Scenario('fakescenario')
-            function = Function('cl',analysis_type='aerodynamic')
+            fakescenario = Scenario("scenario")
+            function = Function("cl", analysis_type="aerodynamic")
             fakescenario.add_function(function)
             model.add_scenario(fakescenario)
 
@@ -83,12 +91,22 @@ class FUNtoFEMDriver(object):
 
         self.model = model
 
-        # Initialize transfer scheme
-        self._initialize_transfer(transfer_options)
+        # Initialize transfer scheme in each body class
+        for body in self.model.bodies:
+            body.initialize_transfer(
+                comm,
+                struct_comm,
+                struct_root,
+                aero_comm,
+                aero_root,
+                transfer_options=transfer_options,
+            )
 
         # Initialize the shape parameterization
         for body in self.model.bodies:
             body.initialize_shape_parameterization()
+
+        return
 
     def update_model(self, model):
         """
@@ -99,244 +117,6 @@ class FUNtoFEMDriver(object):
         model: FUNtoFEM model type
         """
         self.model = model
-
-    def _initialize_transfer(self, transfer_options):
-        """
-        Initialize the transfer scheme
-
-        Parameters
-        ----------
-        transfer_options: dictionary or list of dictionaries
-            options for the load and displacement transfer scheme for the bodies
-        """
-
-        # If the user did not specify a transfer scheme default to MELD
-        if transfer_options is None:
-            transfer_options = []
-            for body in self.model.bodies:
-                transfer_options.append({'scheme': 'meld', 'isym': -1, 'beta': 0.5, 'npts': 200})
-
-        # if the user gave a dictionary instead of a list of
-        # dictionaries, assume all bodies use the same settings
-        if type(transfer_options) is dict:
-            transfer_options = len(self.model.bodies) * [ transfer_options ]
-
-        for ibody, body in enumerate(self.model.bodies):
-            body.transfer = None
-            body.thermal_transfer = None
-
-            body_analysis_type = 'aeroelastic'
-            if 'analysis_type' in transfer_options[ibody]:
-                body_analysis_type = transfer_options[ibody]['analysis_type'].lower()
-
-            # Set up the transfer schemes based on the type of analysis set for this body
-            if body_analysis_type == 'aeroelastic' or body_analysis_type == 'aerothermoelastic':
-
-                # Set up the load and displacement transfer schemes
-                if transfer_options[ibody]['scheme'].lower() == 'hermes':
-
-                    body.transfer = HermesTransfer(self.comm, self.struct_comm, self.aero_comm)
-
-                elif transfer_options[ibody]['scheme'].lower() == 'rbf':
-                    basis = TransferScheme.PY_THIN_PLATE_SPLINE
-
-                    if 'basis function' in transfer_options[ibody]:
-                        if transfer_options[ibody]['basis function'].lower() == 'thin plate spline':
-                            basis = TransferScheme.PY_THIN_PLATE_SPLINE
-                        elif transfer_options[ibody]['basis function'].lower() == 'gaussian':
-                            basis = TransferScheme.PY_GAUSSIAN
-                        elif transfer_options[ibody]['basis function'].lower() == 'multiquadric':
-                            basis = TransferScheme.PY_MULTIQUADRIC
-                        elif transfer_options[ibody]['basis function'].lower() == 'inverse multiquadric':
-                            basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
-                        else:
-                            print('Unknown RBF basis function for body number', ibody)
-                            quit()
-
-                    body.transfer = TransferScheme.pyRBF(self.comm, self.struct_comm,
-                                                         self.struct_root, self.aero_comm,
-                                                         self.aero_root, basis, 1)
-
-                elif transfer_options[ibody]['scheme'].lower() == 'meld':
-                    # defaults
-                    isym = -1 # No symmetry
-                    beta = 0.5 # Decay factor
-                    num_nearest = 200 # Number of nearest neighbours
-
-                    if 'isym' in transfer_options[ibody]:
-                        isym = transfer_options[ibody]['isym']
-                    if 'beta' in transfer_options[ibody]:
-                        beta = transfer_options[ibody]['beta']
-                    if 'npts' in transfer_options[ibody]:
-                        num_nearest = transfer_options[ibody]['npts']
-
-                    body.transfer = TransferScheme.pyMELD(self.comm, self.struct_comm,
-                                                          self.struct_root, self.aero_comm,
-                                                          self.aero_root,
-                                                          isym, num_nearest, beta)
-
-                elif transfer_options[ibody]['scheme'].lower() == 'linearized meld':
-                    # defaults
-                    isym = -1
-                    beta = 0.5
-                    num_nearest = 200
-
-                    if 'isym' in transfer_options[ibody]:
-                        isym = transfer_options[ibody]['isym']
-                    if 'beta' in transfer_options[ibody]:
-                        beta = transfer_options[ibody]['beta']
-                    if 'npts' in transfer_options[ibody]:
-                        num_nearest = transfer_options[ibody]['npts']
-
-
-                    body.transfer = TransferScheme.pyLinearizedMELD(self.comm, self.struct_comm,
-                                                                    self.struct_root, self.aero_comm,
-                                                                    self.aero_root,
-                                                                    isym, num_nearest, beta)
-
-                elif transfer_options[ibody]['scheme'].lower()== 'beam':
-                    conn = transfer_options[ibody]['conn']
-                    nelems = transfer_options[ibody]['nelems']
-                    order = transfer_options[ibody]['order']
-                    ndof = transfer_options[ibody]['ndof']
-
-                    body.xfer_ndof = ndof
-                    body.transfer = TransferScheme.pyBeamTransfer(self.comm, self.struct_comm,
-                                                                  self.struct_root, self.aero_comm,
-                                                                  self.aero_root, conn, nelems,
-                                                                  order, ndof)
-                else:
-                    print("Error: Unknown transfer scheme for body", ibody)
-                    quit()
-
-            # Set up the transfer schemes based on the type of analysis set for this body
-            if body_analysis_type == 'aerothermal' or body_analysis_type == 'aerothermoelastic':
-                # Set up the load and displacement transfer schemes
-
-                if transfer_options[ibody]['thermal_scheme'].lower() == 'meld':
-                    # defaults
-                    isym = -1
-                    beta = 0.5
-                    num_nearest = 200
-
-                    if 'isym' in transfer_options[ibody]:
-                        isym = transfer_options[ibody]['isym']
-                    if 'beta' in transfer_options[ibody]:
-                        beta = transfer_options[ibody]['beta']
-                    if 'npts' in transfer_options[ibody]:
-                        num_nearest = transfer_options[ibody]['npts']
-
-                    body.thermal_transfer = TransferScheme.pyMELDThermal(self.comm, self.struct_comm,
-                                                                         self.struct_root, self.aero_comm,
-                                                                         self.aero_root,
-                                                                         isym, num_nearest, beta)
-                else:
-                    print("Error: Unknown thermal transfer scheme for body", ibody)
-                    quit()
-
-            # Load structural and aerodynamic meshes into FUNtoFEM
-            # Only want real part for the initialization
-            if body.transfer is not None:
-                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.transfer.setStructNodes(body.struct_X.real + 0.0j)
-                    else:
-                        body.struct_nnodes = 0
-
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.transfer.setAeroNodes(body.aero_X.real + 0.0j)
-                    else:
-                        body.aero_nnodes = 0
-                else:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.transfer.setStructNodes(body.struct_X)
-                    else:
-                        body.struct_nnodes = 0
-
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.transfer.setAeroNodes(body.aero_X)
-                    else:
-                        body.aero_nnodes = 0
-
-                # Initialize FUNtoFEM
-                body.transfer.initialize()
-
-                # Load structural and aerodynamic meshes into FUNtoFEM
-                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.transfer.setStructNodes(body.struct_X)
-                    else:
-                        body.struct_nnodes = 0
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.transfer.setAeroNodes(body.aero_X)
-                    else:
-                        body.aero_nnodes = 0
-
-            # Initialize the thermal problem
-            if body.thermal_transfer is not None:
-                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setStructNodes(body.struct_X.real + 0.0j)
-                    else:
-                        body.struct_nnodes = 0
-
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setAeroNodes(body.aero_X.real + 0.0j)
-                    else:
-                        body.aero_nnodes = 0
-                else:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setStructNodes(body.struct_X)
-                    else:
-                        body.struct_nnodes = 0
-
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setAeroNodes(body.aero_X)
-                    else:
-                        body.aero_nnodes = 0
-
-                # Initialize FUNtoFEM
-                body.thermal_transfer.initialize()
-
-                # Load structural and aerodynamic meshes into FUNtoFEM
-                if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
-                    if self.struct_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setStructNodes(body.struct_X)
-                    else:
-                        body.struct_nnodes = 0
-                    if self.aero_comm != MPI.COMM_NULL:
-                        body.thermal_transfer.setAeroNodes(body.aero_X)
-                    else:
-                        body.aero_nnodes = 0
-
-        return
-
-    def _update_transfer(self):
-        """
-        Update the positions of the nodes in transfer schemes
-        """
-        self.struct_disps = []
-        self.struct_temps = []
-        for body in self.model.bodies:
-            if body.transfer is not None:
-                if self.struct_comm != MPI.COMM_NULL:
-                    body.transfer.setStructNodes(body.struct_X)
-                else:
-                    body.struct_nnodes = 0
-                if self.aero_comm != MPI.COMM_NULL:
-                    body.transfer.setAeroNodes(body.aero_X)
-                else:
-                    body.aero_nnodes = 0
-
-            if body.thermal_transfer is not None:
-                if self.struct_comm != MPI.COMM_NULL:
-                    body.thermal_transfer.setStructNodes(body.struct_X)
-                else:
-                    body.struct_nnodes = 0
-                if self.aero_comm != MPI.COMM_NULL:
-                    body.thermal_transfer.setAeroNodes(body.aero_X)
-                else:
-                    body.aero_nnodes = 0
 
     def solve_forward(self, steps=None):
         """
@@ -349,10 +129,12 @@ class FUNtoFEMDriver(object):
         """
         fail = 0
 
+        complex_run = False
+        if TransferScheme.dtype == np.complex128 or TransferScheme.dtype == complex:
+            complex_run = True
+
         # update the shapes first
         for body in self.model.bodies:
-            complex_run = True if (TransferScheme.dtype == np.complex128 or
-                                   TransferScheme.dtype == complex) else False
             body.update_shape(complex_run)
 
         # loop over the forward problem for the different scenarios
@@ -360,33 +142,34 @@ class FUNtoFEMDriver(object):
 
             # tell the solvers what the variable values and functions are for this scenario
             if not self.fakemodel:
-                self._distribute_variables(scenario,self.model.bodies)
-                self._distribute_functions(scenario,self.model.bodies)
+                self._distribute_variables(scenario, self.model.bodies)
+                self._distribute_functions(scenario, self.model.bodies)
 
             # Set the new meshes Initialize the forward solvers
-            fail = self._initialize_forward(scenario,self.model.bodies)
+            fail = self._initialize_forward(scenario, self.model.bodies)
             if fail != 0:
                 if self.comm.Get_rank() == 0:
                     print("Fail flag return during initialization")
 
             # Update transfer postions to the initial conditions
-            self._update_transfer()
+            for body in self.model.bodies:
+                body.update_transfer()
 
             if scenario.steady:
-                fail = self._solve_steady_forward(scenario,steps)
+                fail = self._solve_steady_forward(scenario, steps)
                 if fail != 0:
                     if self.comm.Get_rank() == 0:
                         print("Fail flag return during forward solve")
             else:
-                fail = self._solve_unsteady_forward(scenario,steps)
+                fail = self._solve_unsteady_forward(scenario, steps)
                 if fail != 0:
                     if self.comm.Get_rank() == 0:
                         print("Fail flag return during forward solve")
 
             # Perform any operations after the forward solve
-            self._post_forward(scenario,self.model.bodies)
+            self._post_forward(scenario, self.model.bodies)
             if fail == 0:
-                self._eval_functions(scenario,self.model.bodies)
+                self._get_functions(scenario, self.model.bodies)
 
         return fail
 
@@ -396,13 +179,23 @@ class FUNtoFEMDriver(object):
         """
 
         fail = 0
+
+        # Get the list of functions
+        functions = self.model.get_functions()
+
         # Make sure we have functions defined before we start the adjoint
         if self.fakemodel:
             print("Aborting: attempting to run FUNtoFEM adjoint with no model defined")
             quit()
-        elif not self.model.get_functions():
-            print("Aborting: attempting to run FUNtoFEM adjoint with no functions defined")
+        elif len(functions) == 0:
+            print(
+                "Aborting: attempting to run FUNtoFEM adjoint with no functions defined"
+            )
             quit()
+
+        # Zero the derivative values stored in the function
+        for func in functions:
+            func.zero_derivatives()
 
         # Set the functions into the solvers
         for scenario in self.model.scenarios:
@@ -426,28 +219,39 @@ class FUNtoFEMDriver(object):
             # Perform any operations after the adjoint solve
             self._post_adjoint(scenario, self.model.bodies)
 
-            self._eval_function_grads(scenario)
+            self._get_function_grads(scenario)
 
-        self.model.enforce_coupling_derivatives()
         return fail
 
     def _initialize_forward(self, scenario, bodies):
+        """
+        Initialize the variables and solver data for a forward analysis
+        """
+        for body in bodies:
+            body.initialize_variables(scenario)
+
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize(scenario, bodies)
-            if fail!=0:
+            if fail != 0:
                 return fail
         return 0
 
     def _initialize_adjoint(self, scenario, bodies):
+        """
+        Initialize the variables and solver data for an adjoint solve
+        """
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
+
         for solver in self.solvers.keys():
             fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
-            if fail!=0:
+            if fail != 0:
                 return fail
         return 0
 
     def _post_forward(self, scenario, bodies):
         for solver in self.solvers.keys():
-            self.solvers[solver].post(scenario,bodies)
+            self.solvers[solver].post(scenario, bodies)
 
     def _post_adjoint(self, scenario, bodies):
         for solver in self.solvers.keys():
@@ -461,16 +265,18 @@ class FUNtoFEMDriver(object):
         for solver in self.solvers.keys():
             self.solvers[solver].set_variables(scenario, bodies)
 
-    def _eval_functions(self, scenario, bodies):
+    def _get_functions(self, scenario, bodies):
         for solver in self.solvers.keys():
             self.solvers[solver].get_functions(scenario, self.model.bodies)
 
-    def _eval_function_grads(self, scenario):
-        offset = self._get_scenario_function_offset(scenario)
+    def _get_function_grads(self, scenario):
+        # Set the function gradients into the scenario and body classes
+        bodies = self.model.bodies
         for solver in self.solvers.keys():
-            self.solvers[solver].get_function_gradients(scenario, self.model.bodies, offset)
+            self.solvers[solver].get_function_gradients(scenario, bodies)
 
-        for body in self.model.bodies:
+        offset = self._get_scenario_function_offset(scenario)
+        for body in bodies:
             body.shape_derivative(scenario, offset)
 
     def _get_scenario_function_offset(self, scenario):
@@ -478,7 +284,7 @@ class FUNtoFEMDriver(object):
         The offset tells each scenario what is first function's index is
         """
         offset = 0
-        for i in range(scenario.id-1):
+        for i in range(scenario.id - 1):
             offset += self.model.scenarios[i].count_functions()
 
         return offset
@@ -488,33 +294,14 @@ class FUNtoFEMDriver(object):
 
         # get the contributions from the solvers
         for solver in self.solvers.keys():
-            self.solvers[solver].get_coordinate_derivatives(scenario, self.model.bodies, step)
+            self.solvers[solver].get_coordinate_derivatives(
+                scenario, self.model.bodies, step
+            )
 
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:
             for body in self.model.bodies:
-                if body.transfer:
-                    # Aerodynamic coordinate derivatives
-                    temp = np.zeros((3*body.aero_nnodes), dtype=TransferScheme.dtype)
-                    for func in range(nfunctions):
-                        # Load transfer term
-                        body.transfer.applydLdxA0(body.psi_L[:, func].copy(order='C'), temp)
-                        body.aero_shape_term[:,func] += temp.copy()
-
-                        # Displacement transfer term
-                        body.transfer.applydDdxA0(body.psi_D[:, func].copy(order='C'), temp)
-                        body.aero_shape_term[:,func] += temp.copy()
-
-                    # Structural coordinate derivatives
-                    temp = np.zeros(body.struct_nnodes*body.xfer_ndof, dtype=TransferScheme.dtype)
-                    for func in range(nfunctions):
-                        # Load transfer term
-                        body.transfer.applydLdxS0(body.psi_L[:, func].copy(order='C'), temp)
-                        body.struct_shape_term[:,func] += temp.copy()
-
-                        # Displacement transfer term
-                        body.transfer.applydDdxS0(body.psi_D[:, func].copy(order='C'), temp)
-                        body.struct_shape_term[:,func] += temp.copy()
+                body.add_coordinate_derivative(scenario, step)
 
         return
 

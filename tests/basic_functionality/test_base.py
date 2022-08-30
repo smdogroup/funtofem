@@ -19,13 +19,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 from pyfuntofem.model import Base
 import unittest
 
-class BaseTest(unittest.TestCase):
-   def test_base(self):
-       base = Base(name='test body', id = 1, group = 2)
-       assert base.name == 'test body'
-       assert base.id == 1
-       assert base.group == 2
 
+class BaseTest(unittest.TestCase):
+    def test_base(self):
+        base = Base(name="test body", id=1, group=2)
+        assert base.name == "test body"
+        assert base.id == 1
+        assert base.group == 2

@@ -21,10 +21,13 @@ limitations under the License.
 """
 
 from .base import Base
+from .variable import Variable
+
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
-    def __init__(self,name, id=0, group=None, steady=True, fun3d=True, steps=1000):
+
+    def __init__(self, name, id=0, group=None, steady=True, fun3d=True, steps=1000):
         """
         Parameters
         ----------
@@ -47,28 +50,32 @@ class Scenario(Base):
         :mod:`base` : Scenario inherits from Base
         """
 
-        from .variable import Variable as dv
-
-        super(Scenario,self).__init__(name,id,group)
+        super(Scenario, self).__init__(name, id, group)
 
         self.name = name
         self.id = id
         self.group = group
         self.group_master = False
         self.variables = {}
-        self.derivatives = {}
 
         self.functions = []
         self.steady = steady
-        self.steps  = steps
+        self.steps = steps
 
         if fun3d:
-            self.add_variable('aerodynamic', dv('Mach', id=1, upper=5.0, active=False))
-            self.add_variable('aerodynamic', dv('AOA', id=2, lower=-15.0, upper=15.0, active=False))
-            self.add_variable('aerodynamic', dv('Yaw', id=3, lower=-10.0, upper=10.0, active=False))
-            self.add_variable('aerodynamic', dv('xrate', id=4, upper=0.0, active=False))
-            self.add_variable('aerodynamic', dv('yrate', id=5, upper=0.0, active=False))
-            self.add_variable('aerodynamic', dv('zrate', id=6, upper=0.0, active=False))
+            mach = Variable("Mach", id=1, upper=5.0, active=False)
+            aoa = Variable("AOA", id=2, lower=-15.0, upper=15.0, active=False)
+            yaw = Variable("Yaw", id=3, lower=-10.0, upper=10.0, active=False)
+            xrate = Variable("xrate", id=4, upper=0.0, active=False)
+            yrate = Variable("yrate", id=5, upper=0.0, active=False)
+            zrate = Variable("zrate", id=6, upper=0.0, active=False)
+
+            self.add_variable("aerodynamic", mach)
+            self.add_variable("aerodynamic", aoa)
+            self.add_variable("aerodynamic", yaw)
+            self.add_variable("aerodynamic", xrate)
+            self.add_variable("aerodynamic", yrate)
+            self.add_variable("aerodynamic", zrate)
 
     def add_function(self, function):
         """
@@ -86,12 +93,14 @@ class Scenario(Base):
             for func in self.functions:
                 if not func.adjoint:
                     print("Cannot add an adjoint function after a non-adjoint.")
-                    print("Please reorder the functions so that all functions requiring an adjoint come first")
+                    print(
+                        "Please reorder the functions so that all functions requiring an adjoint come first"
+                    )
                     exit()
 
         self.functions.append(function)
 
-        self.add_function_derivatives()
+        return
 
     def count_functions(self):
         """
@@ -116,9 +125,9 @@ class Scenario(Base):
 
         """
         is_adjoint = lambda func: func.adjoint
-        return len(list(filter(is_adjoint,self.functions)))
+        return len(list(filter(is_adjoint, self.functions)))
 
-    def add_variable(self,vartype,var):
+    def add_variable(self, vartype, var):
         """
         Add a new variable to the scenario's variable dictionary
 
@@ -131,12 +140,9 @@ class Scenario(Base):
         """
         var.scenario = self.id
 
-        super(Scenario,self).add_variable(vartype,var)
+        super(Scenario, self).add_variable(vartype, var)
 
-        for index, _ in enumerate(self.functions):
-            self.derivatives[vartype][index].append(0.0)
-
-    def update_id(self,id):
+    def set_id(self, id):
         """
         **[model call]**
         Update the id number of the scenario

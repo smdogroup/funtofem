@@ -79,7 +79,8 @@ Fun3dInterface for the fluid solver and a call to your structural model (e.g., m
 
      # Instantiate the flow and structural solvers
      solvers = {}
-     solvers['flow'] = Fun3dInterface(comm, model)
+     solvers['flow'] = Fun3dInterface(comm, model, flow_dt=1.0, qinf=1.0, 
+          thermal_scale=1.0, fun3d_dir=None, forward_options=None, adjoint_options=None)
      solvers['structural'] = modelTACS(comm, tacs_comm, model, n_tacs_procs)
 
 Driver Set-up

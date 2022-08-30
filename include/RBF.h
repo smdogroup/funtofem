@@ -2,7 +2,6 @@
 #define RBF_H
 
 #include "TransferScheme.h"
-
 #include "mpi.h"
 
 /*
@@ -12,19 +11,19 @@
   "Unified fluid–structure interpolation and mesh motion using radial basis
   functions" by T. C. S. Rendall and C. B. Allen.
 */
-class RBF : public TransferScheme {
+class RBF : public LDTransferScheme {
  public:
   // RBF type
-  enum RbfType {GAUSSIAN, 
-                MULTIQUADRIC, 
-                INVERSE_MULTIQUADRIC,
-                THIN_PLATE_SPLINE};
+  enum RbfType {
+    GAUSSIAN,
+    MULTIQUADRIC,
+    INVERSE_MULTIQUADRIC,
+    THIN_PLATE_SPLINE
+  };
 
   // Constructor
-  RBF(MPI_Comm all,
-      MPI_Comm structure, int struct_root,
-      MPI_Comm aero, int aero_root,
-      enum RbfType rbf_type, int sampling_ratio);
+  RBF(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+      MPI_Comm aero_comm, int aero_root, RbfType rbf_type, int sampling_ratio);
 
   // Destructor
   ~RBF();
@@ -33,10 +32,8 @@ class RBF : public TransferScheme {
   void initialize();
 
   // Load and displacement transfers
-  void transferDisps(const F2FScalar *struct_disps,
-                             F2FScalar *aero_disps);
-  void transferLoads(const F2FScalar *aero_loads,
-                             F2FScalar *struct_loads);
+  void transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps);
+  void transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads);
 
   // Action of transpose Jacobians needed for solving adjoint system
   void applydDduS(const F2FScalar *vecs, F2FScalar *prods);
@@ -61,9 +58,9 @@ class RBF : public TransferScheme {
   F2FScalar (*phi)(F2FScalar *x, F2FScalar *y);
 
   // Sampling data
-  int denominator; // one point sampled for every denominator points 
-  int nsub; // number of structural points sampled
-  int *sample_ids; // IDs of the sampled points
+  int denominator;  // one point sampled for every denominator points
+  int nsub;         // number of structural points sampled
+  int *sample_ids;  // IDs of the sampled points
 
   // Functions defining types of radial basis functions
   static F2FScalar gaussian(F2FScalar *x, F2FScalar *y);
@@ -75,5 +72,4 @@ class RBF : public TransferScheme {
   void writeCloudsToTecplot();
 };
 
-
-#endif // RBF_H
+#endif  // RBF_H

@@ -29,9 +29,8 @@ cdef class pyTransferScheme:
     -----
     C++ extension must be compiled in complex mode in order to use complex
     step approximation in test functions
-
     """
-    cdef TransferScheme *ptr
+    cdef LDTransferScheme *ptr
 
     def setAeroNodes(self, np.ndarray[F2FScalar, ndim=1, mode='c'] X):
         """
@@ -41,10 +40,14 @@ cdef class pyTransferScheme:
         ----------
         X: ndarray
             One-dimensional array of aerodynamic surface node locations
-
         """
-        cdef int nnodes = int(len(X)/3)
-        self.ptr.setAeroNodes(<F2FScalar*>X.data, nnodes)
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setAeroNodes(array, nnodes)
 
         return
 
@@ -56,10 +59,14 @@ cdef class pyTransferScheme:
         ----------
         X: ndarray
             One-dimensional array of structural node locations
-
         """
-        cdef int nnodes = int(len(X)/3)
-        self.ptr.setStructNodes(<F2FScalar*>X.data, nnodes)
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setStructNodes(array, nnodes)
 
         return
 
@@ -68,7 +75,6 @@ cdef class pyTransferScheme:
         Run routines (e.g. building connectivity through search, assembling
         interpolation matrix, etc.) necessary to prepare transfer scheme to
         perform load and displacement transfer
-
         """
         self.ptr.initialize()
 
@@ -87,10 +93,25 @@ cdef class pyTransferScheme:
             One-dimensional array of structural displacements
         aero_disps: ndarray
             One-dimensional empty array of size of aerodynamic displacements
-
         """
-        self.ptr.transferDisps(<F2FScalar*>struct_disps.data,
-                               <F2FScalar*>aero_disps.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_disps is not None:
+            struct_len = len(struct_disps)
+            struct_array = <F2FScalar*>struct_disps.data
+        if aero_disps is not None:
+            aero_len = len(aero_disps)
+            aero_array = <F2FScalar*>aero_disps.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.transferDisps(struct_array, aero_array)
+
         return
 
     def transferLoads(self,
@@ -106,10 +127,25 @@ cdef class pyTransferScheme:
             One-dimensional array of aerodynamic surface loads
         struct_loads: ndarray
             One-dimensional empty array of size of structural loads
-
         """
-        self.ptr.transferLoads(<F2FScalar*>aero_loads.data,
-                               <F2FScalar*>struct_loads.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_loads is not None:
+            struct_len = len(struct_loads)
+            struct_array = <F2FScalar*>struct_loads.data
+        if aero_loads is not None:
+            aero_len = len(aero_loads)
+            aero_array = <F2FScalar*>aero_loads.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.transferLoads(aero_array, struct_array)
+
         return
 
     def applydDduS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -126,9 +162,24 @@ cdef class pyTransferScheme:
             One-dimensional array of size of structural displacements
         p: ndarray
             One-dimensional empty array of size of aerodynamic displacements
-
         """
-        self.ptr.applydDduS(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if v is not None:
+            struct_len = len(v)
+            struct_array = <F2FScalar*>v.data
+        if p is not None:
+            aero_len = len(p)
+            aero_array = <F2FScalar*>p.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.applydDduS(struct_array, aero_array)
         return
 
     def applydDduSTrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -145,9 +196,24 @@ cdef class pyTransferScheme:
             One-dimensional array of size of aerodynamic displacements
         p: ndarray
             One-dimensional empty array of size of structural displacements
-
         """
-        self.ptr.applydDduSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if p is not None:
+            struct_len = len(p)
+            struct_array = <F2FScalar*>p.data
+        if v is not None:
+            aero_len = len(v)
+            aero_array = <F2FScalar*>v.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.applydDduSTrans(aero_array, struct_array)
         return
 
     def applydLduS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -163,9 +229,24 @@ cdef class pyTransferScheme:
             One-dimensional array of size of structural displacements
         p: ndarray
             One-dimensional empty array of size of structural loads
-
         """
-        self.ptr.applydLduS(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *struct_array1 = NULL
+        cdef int struct_len1 = 0
+        cdef F2FScalar *struct_array2 = NULL
+        cdef int struct_len2 = 0
+        if v is not None:
+            struct_len1 = len(v)
+            struct_array1 = <F2FScalar*>v.data
+        if p is not None:
+            struct_len2 = len(p)
+            struct_array2 = <F2FScalar*>p.data
+
+        if struct_len1 != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Input structural array incorrect length")
+        if struct_len2 != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Output structural array incorrect length")
+
+        self.ptr.applydLduS(struct_array1, struct_array2)
         return
 
     def applydLduSTrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -182,9 +263,92 @@ cdef class pyTransferScheme:
             One-dimensional array of size of structural loads
         p: ndarray
             One-dimensional empty array of size of structural displacements
-
         """
-        self.ptr.applydLduSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+
+        cdef F2FScalar *struct_array1 = NULL
+        cdef int struct_len1 = 0
+        cdef F2FScalar *struct_array2 = NULL
+        cdef int struct_len2 = 0
+        if v is not None:
+            struct_len1 = len(v)
+            struct_array1 = <F2FScalar*>v.data
+        if p is not None:
+            struct_len2 = len(p)
+            struct_array2 = <F2FScalar*>p.data
+
+        if struct_len1 != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Input structural array incorrect length")
+        if struct_len2 != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Output structural array incorrect length")
+
+        self.ptr.applydLduSTrans(struct_array1, struct_array2)
+        return
+
+    def applydLdfA(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the load
+        transfer residuals with respect to the aerodynamic forces to an
+        input vector and store the products in empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of aerodynamic forces
+        p: ndarray
+            One-dimensional empty array of size of structural loads
+        """
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if p is not None:
+            struct_len = len(p)
+            struct_array = <F2FScalar*>p.data
+        if v is not None:
+            aero_len = len(v)
+            aero_array = <F2FScalar*>v.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.applydLdfA(aero_array, struct_array)
+        return
+
+    def applydLdfATrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the load transfer residuals with respect to the
+        aerodynamic forces to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural loads
+        p: ndarray
+            One-dimensional empty array of size of aerodynamic forces
+        """
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if v is not None:
+            struct_len = len(v)
+            struct_array = <F2FScalar*>v.data
+        if p is not None:
+            aero_len = len(p)
+            aero_array = <F2FScalar*>p.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.applydLdfATrans(struct_array, aero_array)
         return
 
     def applydDdxA0(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -200,10 +364,25 @@ cdef class pyTransferScheme:
         v: ndarray
             One-dimensional array of size of aerodynamic surface node locations
         p: ndarray
-            One-dimensional empty array of size of aerodynamic displacements
-
+            One-dimensional empty array of size of aerodynamic nodes
         """
-        self.ptr.applydDdxA0(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        cdef F2FScalar *xA0_array = NULL
+        cdef int xA0_len = 0
+        if v is not None:
+            aero_len = len(v)
+            aero_array = <F2FScalar*>v.data
+        if p is not None:
+            xA0_len = len(p)
+            xA0_array = <F2FScalar*>p.data
+
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+        if xA0_len != 3 * self.ptr.getNumLocalAeroNodes():
+            raise ValueError("Aerodynamic node array incorrect length")
+
+        self.ptr.applydDdxA0(aero_array, xA0_array)
         return
 
     def applydDdxS0(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -217,12 +396,27 @@ cdef class pyTransferScheme:
         Parameters
         ----------
         v: ndarray
-            One-dimensional array of size of structural node locations
+            One-dimensional array of size of aerodynamic surface node locations
         p: ndarray
-            One-dimensional empty array of size of aerodynamic displacements
-
+            One-dimensional empty array of size of structural nodes
         """
-        self.ptr.applydDdxS0(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        cdef F2FScalar *xA0_array = NULL
+        cdef int xA0_len = 0
+        if v is not None:
+            aero_len = len(v)
+            aero_array = <F2FScalar*>v.data
+        if p is not None:
+            xS0_len = len(p)
+            xS0_array = <F2FScalar*>p.data
+
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+        if xS0_len != 3 * self.ptr.getNumLocalStructNodes():
+            raise ValueError("Structural node array incorrect length")
+
+        self.ptr.applydDdxS0(aero_array, xS0_array)
         return
 
     def applydLdxA0(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -239,9 +433,24 @@ cdef class pyTransferScheme:
             One-dimensional array of size of structural node locations
         p: ndarray
             One-dimensional empty array of size of structural loads
-
         """
-        self.ptr.applydLdxA0(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *xA0_array = NULL
+        cdef int xA0_len = 0
+        if v is not None:
+            struct_len = len(v)
+            struct_array = <F2FScalar*>v.data
+        if p is not None:
+            xA0_len = len(p)
+            xA0_array = <F2FScalar*>p.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if xA0_len != 3 * self.ptr.getNumLocalAeroNodes():
+            raise ValueError("Aerodynamic node array incorrect length")
+
+        self.ptr.applydLdxA0(struct_array, xA0_array)
         return
 
     def applydLdxS0(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
@@ -257,16 +466,30 @@ cdef class pyTransferScheme:
             One-dimensional array of size of structural node locations
         p: ndarray
             One-dimensional empty array of size of structural loads
-
         """
-        self.ptr.applydLdxS0(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *xA0_array = NULL
+        cdef int xA0_len = 0
+        if v is not None:
+            struct_len = len(v)
+            struct_array = <F2FScalar*>v.data
+        if p is not None:
+            xS0_len = len(p)
+            xS0_array = <F2FScalar*>p.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if xS0_len != 3 * self.ptr.getNumLocalStructNodes():
+            raise ValueError("Structural node array incorrect length")
+
+        self.ptr.applydLdxS0(struct_array, xS0_array)
         return
 
-    def testLoadTransfer(self,
+    def testAllDerivatives(self,
             np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
             np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
         """
         Test the output of :meth:`transferLoads` by comparison with results from
         finite difference approximation or complex step approximation
@@ -277,220 +500,25 @@ cdef class pyTransferScheme:
             One-dimensional array of structural displacements
         aero_loads: ndarray
             One-dimensional array of aerodynamic loads
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
         h: float
             Step size (for finite difference or complex step)
-
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
         """
-        self.ptr.testLoadTransfer(<F2FScalar*>struct_disps.data,
-                                  <F2FScalar*>aero_loads.data,
-                                  <F2FScalar*>test_vec_s.data, h)
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_disps is not None:
+            struct_len = len(struct_disps)
+            struct_array = <F2FScalar*>struct_disps.data
+        if aero_loads is not None:
+            aero_len = len(aero_loads)
+            aero_array = <F2FScalar*>aero_loads.data
 
-        return
-
-    def testDispJacVecProducts(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydDduS` and :meth:`applydDduSTrans` by
-        comparison with results from finite difference approximation or
-        complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        test_vec_a: ndarray
-            One-dimensional array of perturbations of size of displacement
-            transfer residuals
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testDispJacVecProducts(<F2FScalar*>struct_disps.data,
-                                        <F2FScalar*>test_vec_a.data,
-                                        <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testLoadJacVecProducts(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydLduS` and :meth:`applydLduSTrans` by
-        comparison with results from finite difference approximation or
-        complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic loads
-        test_vec_s1: ndarray
-            One-dimensional array of perturbations of size of load transfer
-            residuals
-        test_vec_s2: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testLoadJacVecProducts(<F2FScalar*>struct_disps.data,
-                                        <F2FScalar*>aero_loads.data,
-                                        <F2FScalar*>test_vec_s1.data,
-                                        <F2FScalar*>test_vec_s2.data, h)
-
-        return
-
-    def testdDdxA0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a1,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a2,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydDdxA0` by comparison with results from
-        finite difference approximation or complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        test_vec_a1: ndarray
-            One-dimensional array of perturbations of size of displacement
-            transfer residuals
-        test_vec_a2: ndarray
-            One-dimensional array of perturbations of size of aerodynamic
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testdDdxA0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>test_vec_a1.data,
-                                    <F2FScalar*>test_vec_a2.data, h)
-
-        return
-
-    def testdDdxS0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydDdxS0` by comparison with results from
-        finite difference approximation or complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        test_vec_a: ndarray
-            One-dimensional array of perturbations of size of displacement
-            transfer residuals
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testdDdxS0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testdLdxA0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        """
-        self.ptr.testdDdxS0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testdLdxA0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydLdxA0` by comparison with results from
-        finite difference approximation or complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic loads
-        test_vec_a: ndarray
-            One-dimensional array of perturbations of size of displacement
-            transfer residuals
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testdLdxA0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>aero_loads.data,
-                                    <F2FScalar*>test_vec_a.data,
-                                    <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testdLdxS0Products(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydLdxS0` by comparison with results from
-        finite difference approximation or complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic loads
-        test_vec_s1: ndarray
-            One-dimensional array of perturbations of size of load transfer
-            residuals
-        test_vec_s2: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        self.ptr.testdLdxS0Products(<F2FScalar*>struct_disps.data,
-                                    <F2FScalar*>aero_loads.data,
-                                    <F2FScalar*>test_vec_s1.data,
-                                    <F2FScalar*>test_vec_s2.data, h)
-
-        return
+        return self.ptr.testAllDerivatives(struct_array, aero_array, h, rtol, atol)
 
     def transformEquivRigidMotion(self,
         np.ndarray[F2FScalar, ndim=1, mode='c'] aero_disps,
@@ -517,9 +545,17 @@ cdef class pyTransferScheme:
         u: ndarray
             One-dimensional array of elastic deformations of size of
             aerodynamic displacements
-
         """
-        self.ptr.transformEquivRigidMotion(<F2FScalar*>aero_disps.data,
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if aero_disps is not None:
+            aero_len = len(aero_disps)
+            aero_array = <F2FScalar*>aero_disps.data
+
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.transformEquivRigidMotion(aero_array,
                                            <F2FScalar*>R.data,
                                            <F2FScalar*>t.data,
                                            <F2FScalar*>u.data)
@@ -539,7 +575,6 @@ cdef class pyTransferScheme:
             array of rigid transform adjoint variables
         prods: ndarray
             array of Jacobian-vector products
-
         """
         self.ptr.applydRduATrans(<F2FScalar*>vecs.data,
                                  <F2FScalar*>prods.data)
@@ -561,7 +596,6 @@ cdef class pyTransferScheme:
             array of rigid transform adjoint variables
         prods: ndarray
             array of Jacobian-vector products
-
         """
         self.ptr.applydRdxA0Trans(<F2FScalar*>aero_disps.data,
                              <F2FScalar*>vecs.data,
@@ -569,7 +603,240 @@ cdef class pyTransferScheme:
 
         return
 
-# Wrap the MELD class
+# Generic thermal transfer scheme
+cdef class pyThermalTransfer:
+    """
+    Abstract class that defines the transfer scheme interface
+
+    Notes
+    -----
+    C++ extension must be compiled in complex mode in order to use complex
+    step approximation in test functions
+    """
+    cdef ThermalTransfer *ptr
+
+    def setAeroNodes(self, np.ndarray[F2FScalar, ndim=1, mode='c'] X):
+        """
+        Set and store the aerodynamic surface node locations in memory
+
+        Parameters
+        ----------
+        X: ndarray
+            One-dimensional array of aerodynamic surface node locations
+        """
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setAeroNodes(array, nnodes)
+
+        return
+
+    def setStructNodes(self, np.ndarray[F2FScalar, ndim=1, mode='c'] X):
+        """
+        Set and store the structural node locations in memory
+
+        Parameters
+        ----------
+        X: ndarray
+            One-dimensional array of structural node locations
+        """
+        cdef int nnodes = 0
+        cdef F2FScalar *array = NULL
+        if X is not None:
+            nnodes = int(len(X)//3)
+            array = <F2FScalar*>X.data
+
+        self.ptr.setStructNodes(array, nnodes)
+
+        return
+
+    def initialize(self):
+        """
+        Run routines (e.g. building connectivity through search, assembling
+        interpolation matrix, etc.) necessary to prepare transfer scheme to
+        perform load and displacement transfer
+        """
+        self.ptr.initialize()
+
+        return
+
+    def transferTemp(self,
+                     np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
+                     np.ndarray[F2FScalar, ndim=1, mode='c'] aero_temps):
+        """
+        Convert the input structural node displacements into aerodynamic
+        surface node displacements and store in empty input array
+
+        Parameters
+        ----------
+        struct_temps: ndarray
+            One-dimensional array of structural temperatures
+        aero_temps: ndarray
+            One-dimensional empty array of size of aerodynamic temperatures
+        """
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_temps is not None:
+            struct_len = len(struct_temps)
+            struct_array = <F2FScalar*>struct_temps.data
+        if aero_temps is not None:
+            aero_len = len(aero_temps)
+            aero_array = <F2FScalar*>aero_temps.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.transferTemp(struct_array, aero_array)
+        return
+
+    def transferFlux(self,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_flux):
+        """
+        Convert the input aerodynamic surface loads into structural loads and
+        store in empty input array
+
+        Parameters
+        ----------
+        aero_flux: ndarray
+            One-dimensional array of aerodynamic surface heat flux
+        struct_flux: ndarray
+            One-dimensional empty array of size of structural heat flux
+        """
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_flux is not None:
+            struct_len = len(struct_flux)
+            struct_array = <F2FScalar*>struct_flux.data
+        if aero_flux is not None:
+            aero_len = len(aero_flux)
+            aero_array = <F2FScalar*>aero_flux.data
+
+        if struct_len != self.ptr.getLocalStructArrayLen():
+            raise ValueError("Structural array incorrect length")
+        if aero_len != self.ptr.getLocalAeroArrayLen():
+            raise ValueError("Aerodynamic array incorrect length")
+
+        self.ptr.transferFlux(aero_array, struct_array)
+        return
+
+    def applydTdtS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the
+        displacement transfer residuals with respect to the structural
+        displacements to an input vector and stores the products in empty
+        input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural displacements
+        p: ndarray
+            One-dimensional empty array of size of aerodynamic displacements
+        """
+
+        self.ptr.applydTdtS(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydTdtSTrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the displacement transfer residuals with respect to the
+        structural displacements to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of aerodynamic displacements
+        p: ndarray
+            One-dimensional empty array of size of structural displacements
+
+        """
+        self.ptr.applydTdtSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydQdqA(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the Jacobian containing the derivatives of the load
+        transfer residuals with respect to the structural displacements to an
+        input vector and store the products in empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural displacements
+        p: ndarray
+            One-dimensional empty array of size of structural loads
+        """
+        self.ptr.applydQdqA(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def applydQdqATrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
+                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
+        """
+        Apply the action of the transpose of the Jacobian containing the
+        derivatives of the load transfer residuals with respect to the
+        structural displacements to an input vector and store the products in
+        empty input array
+
+        Parameters
+        ----------
+        v: ndarray
+            One-dimensional array of size of structural loads
+        p: ndarray
+            One-dimensional empty array of size of structural displacements
+        """
+        self.ptr.applydQdqATrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
+        return
+
+    def testAllDerivatives(self,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_disps,
+            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_loads,
+            F2FScalar h, double rtol=1e-6, double atol=1e-30):
+        """
+        Test the output of :meth:`transferLoads` by comparison with results from
+        finite difference approximation or complex step approximation
+
+        Parameters
+        ----------
+        struct_disps: ndarray
+            One-dimensional array of structural displacements
+        aero_loads: ndarray
+            One-dimensional array of aerodynamic loads
+        h: float
+            Step size (for finite difference or complex step)
+        rtol: float
+            Relative error tolerance used in the test
+        atol: float
+            Absolute error tolerance used in the test
+        """
+        cdef F2FScalar *struct_array = NULL
+        cdef int struct_len = 0
+        cdef F2FScalar *aero_array = NULL
+        cdef int aero_len = 0
+        if struct_disps is not None:
+            struct_len = len(struct_disps)
+            struct_array = <F2FScalar*>struct_disps.data
+        if aero_loads is not None:
+            aero_len = len(aero_loads)
+            aero_array = <F2FScalar*>aero_loads.data
+
+        return self.ptr.testAllDerivatives(struct_array, aero_array, h, rtol, atol)
+
+
 cdef class pyMELD(pyTransferScheme):
     """
     MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
@@ -600,7 +867,6 @@ cdef class pyMELD(pyTransferScheme):
         number of structural nodes linked to each aerodynamic node
     beta: float
         weighting decay parameter
-
     """
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
@@ -621,9 +887,7 @@ cdef class pyMELD(pyTransferScheme):
     def __dealloc__(self):
         del self.ptr
 
-
-# Wrap the MELD class
-cdef class pyMELDThermal(pyTransferScheme):
+cdef class pyMELDThermal(pyThermalTransfer):
     """
     MELD (Matching-based Extrapolation of Loads and Displacments) is scalable
     scheme for transferring loads and displacements between large non-matching
@@ -655,7 +919,6 @@ cdef class pyMELDThermal(pyTransferScheme):
         number of structural nodes linked to each aerodynamic node
     beta: float
         weighting decay parameter
-
     """
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
@@ -676,221 +939,6 @@ cdef class pyMELDThermal(pyTransferScheme):
     def __dealloc__(self):
         del self.ptr
 
-    def transferTemp(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temp,
-                     np.ndarray[F2FScalar, ndim=1, mode='c'] aero_temp):
-        """
-        Convert the input structural node displacements into aerodynamic
-        surface node displacements and store in empty input array
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural temperatures
-        aero_disps: ndarray
-            One-dimensional empty array of size of aerodynamic temperatures
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.transferTemp(<F2FScalar*>struct_temp.data, <F2FScalar*>aero_temp.data)
-        return
-
-    def transferFlux(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
-                     np.ndarray[F2FScalar, ndim=1, mode='c'] struct_flux):
-        """
-        Convert the input aerodynamic surface loads into structural loads and
-        store in empty input array
-
-        Parameters
-        ----------
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic surface flux
-        struct_loads: ndarray
-            One-dimensional empty array of size of structural flux
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.transferFlux(<F2FScalar*>aero_flux.data, <F2FScalar*>struct_flux.data)
-        return
-
-    def applydTdtS(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
-                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
-        """
-        Apply the action of the Jacobian containing the derivatives of the
-        displacement transfer residuals with respect to the structural
-        displacements to an input vector and stores the products in empty
-        input array
-
-        Parameters
-        ----------
-        v: ndarray
-            One-dimensional array of size of structural displacements
-        p: ndarray
-            One-dimensional empty array of size of aerodynamic displacements
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.applydTdtS(<F2FScalar*>v.data, <F2FScalar*>p.data)
-        return
-
-    def applydTdtSTrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
-                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
-        """
-        Apply the action of the transpose of the Jacobian containing the
-        derivatives of the displacement transfer residuals with respect to the
-        structural displacements to an input vector and store the products in
-        empty input array
-
-        Parameters
-        ----------
-        v: ndarray
-            One-dimensional array of size of aerodynamic displacements
-        p: ndarray
-            One-dimensional empty array of size of structural displacements
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.applydTdtSTrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
-        return
-
-    def applydQdqA(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
-                   np.ndarray[F2FScalar, ndim=1, mode='c'] p):
-        """
-        Apply the action of the Jacobian containing the derivatives of the load
-        transfer residuals with respect to the structural displacements to an
-        input vector and store the products in empty input array
-
-        Parameters
-        ----------
-        v: ndarray
-            One-dimensional array of size of structural displacements
-        p: ndarray
-            One-dimensional empty array of size of structural loads
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.applydQdqA(<F2FScalar*>v.data, <F2FScalar*>p.data)
-        return
-
-    def applydQdqATrans(self, np.ndarray[F2FScalar, ndim=1, mode='c'] v,
-                        np.ndarray[F2FScalar, ndim=1, mode='c'] p):
-        """
-        Apply the action of the transpose of the Jacobian containing the
-        derivatives of the load transfer residuals with respect to the
-        structural displacements to an input vector and store the products in
-        empty input array
-
-        Parameters
-        ----------
-        v: ndarray
-            One-dimensional array of size of structural loads
-        p: ndarray
-            One-dimensional empty array of size of structural displacements
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.applydQdqATrans(<F2FScalar*>v.data, <F2FScalar*>p.data)
-        return
-
-
-    def testFluxTransfer(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        Test the output of :meth:`transferLoads` by comparison with results from
-        finite difference approximation or complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic loads
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.testFluxTransfer(<F2FScalar*>struct_temps.data,
-                                  <F2FScalar*>aero_flux.data,
-                                  <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testTempJacVecProducts(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_a,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydDduS` and :meth:`applydDduSTrans` by
-        comparison with results from finite difference approximation or
-        complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        test_vec_a: ndarray
-            One-dimensional array of perturbations of size of displacement
-            transfer residuals
-        test_vec_s: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.testTempJacVecProducts(<F2FScalar*>struct_temps.data,
-                                        <F2FScalar*>test_vec_a.data,
-                                        <F2FScalar*>test_vec_s.data, h)
-
-        return
-
-    def testFluxJacVecProducts(self,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] struct_temps,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] aero_flux,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s1,
-            np.ndarray[F2FScalar, ndim=1, mode='c'] test_vec_s2,
-            F2FScalar h):
-        """
-        Test output of :meth:`applydLduS` and :meth:`applydLduSTrans` by
-        comparison with results from finite difference approximation or
-        complex step approximation
-
-        Parameters
-        ----------
-        struct_disps: ndarray
-            One-dimensional array of structural displacements
-        aero_loads: ndarray
-            One-dimensional array of aerodynamic loads
-        test_vec_s1: ndarray
-            One-dimensional array of perturbations of size of load transfer
-            residuals
-        test_vec_s2: ndarray
-            One-dimensional array of perturbations of size of structural
-            displacements
-        h: float
-            Step size (for finite difference or complex step)
-
-        """
-        cdef MELDThermal *mt = <MELDThermal*> self.ptr
-        mt.testFluxJacVecProducts(<F2FScalar*>struct_temps.data,
-                                        <F2FScalar*>aero_flux.data,
-                                        <F2FScalar*>test_vec_s1.data,
-                                        <F2FScalar*>test_vec_s2.data, h)
-
-        return
-
-
-# Wrap the MELD class
 cdef class pyLinearizedMELD(pyTransferScheme):
     """
     Linearized MELD is a transfer scheme developed from the MELD transfer scheme
@@ -908,16 +956,18 @@ cdef class pyLinearizedMELD(pyTransferScheme):
         MPI communicator for the aerodynamic root process
     aero_root: int
         id of the aerodynamic root process
+    symmetry: int
+        symmetry specifier (-1 for none, 0 for x-plane, 1 for y-plane,
+        2 for z-plane)
     num_nearest: int
         number of structural nodes linked to each aerodynamic node
     beta: float
         weighting decay parameter
-
     """
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
                   MPI.Comm aero, int aero_root,
-                  int num_nearest, F2FScalar beta):
+                  int symmetry, int num_nearest, F2FScalar beta):
         cdef MPI_Comm c_comm = comm.ob_mpi
         cdef MPI_Comm struct_comm = struct.ob_mpi
         cdef MPI_Comm aero_comm = aero.ob_mpi
@@ -925,14 +975,13 @@ cdef class pyLinearizedMELD(pyTransferScheme):
         # Allocate the underlying class
         self.ptr = new LinearizedMELD(c_comm, struct_comm, struct_root,
                                       aero_comm, aero_root,
-                                      num_nearest, beta)
+                                      symmetry, num_nearest, beta)
 
         return
 
     def __dealloc__(self):
         del self.ptr
 
-# Wrap the MELD class
 PY_GAUSSIAN = GAUSSIAN
 PY_MULTIQUADRIC = MULTIQUADRIC
 PY_INVERSE_MULTIQUADRIC = INVERSE_MULTIQUADRIC
@@ -960,7 +1009,6 @@ cdef class pyRBF(pyTransferScheme):
     sampling_ratio: int
         minimum number of points in leaf node of octree (one point sampled
         from each node)
-
     """
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
@@ -995,3 +1043,24 @@ cdef class pyRBF(pyTransferScheme):
 
     def __dealloc__(self):
         del self.ptr
+
+cdef class pyBeamTransfer(pyTransferScheme):
+    """
+    Interpolation of loads and displacements for beam elements
+    """
+    def __cinit__(self, MPI.Comm comm,
+                  MPI.Comm struct, int struct_root,
+                  MPI.Comm aero, int aero_root,
+                  np.ndarray[int, ndim=1, mode='c'] _conn,
+                  int _nelems, int _order,
+                  int _dof_per_node):
+        cdef MPI_Comm c_comm = comm.ob_mpi
+        cdef MPI_Comm struct_comm = struct.ob_mpi
+        cdef MPI_Comm aero_comm = aero.ob_mpi
+
+        self.ptr = new BeamTransfer(c_comm, struct_comm, struct_root,
+                                    aero_comm, aero_root,
+                                    <int*>_conn.data, _nelems, _order,
+                                    _dof_per_node)
+
+        return
