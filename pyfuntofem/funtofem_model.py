@@ -327,8 +327,34 @@ class FUNtoFEMmodel(object):
             derivs.append(deriv)
 
         if comm.rank == root:
-            # Number of functionals
-            data = "{}\n".format(len(funcs))
+            variables = self.get_variables()
+            discpline_vars = []
+            for var in variables:
+                # Write the structural variables to the structural sensitivity file. All other
+                # variables are assumed to be associated with the aerodynamics
+                owned = False
+                if (
+                    discipline == "struct"
+                    or discipline == "structures"
+                    or discipline == "structural"
+                ) and var.analysis_type == "structural":
+                    owned = True
+                elif (
+                    discipline == "aero"
+                    or discipline == "aerodynamic"
+                    or discipline == "flow"
+                    and var.analysis_type != "structural"
+                ):
+                    owned = True
+
+                if owned:
+                    discpline_vars.append(var)
+
+            # Write out the number of sets of discpline variables
+            num_dvs = len(discpline_vars)
+
+            # Write out the number of functionals and number of design variables
+            data = "{} {}\n".format(len(funcs), num_dvs)
 
             for n, func in enumerate(funcs):
                 # Print the function name
@@ -351,32 +377,6 @@ class FUNtoFEMmodel(object):
                             deriv[3 * i + 1, n],
                             deriv[3 * i + 2, n],
                         )
-
-                variables = self.get_variables()
-                discpline_vars = []
-                for var in variables:
-                    # Write the structural variables to the structural sensitivity file. All other
-                    # variables are assumed to be associated with the aerodynamics
-                    owned = False
-                    if (
-                        discipline == "struct"
-                        or discipline == "structures"
-                        or discipline == "structural"
-                    ) and var.analysis_type == "structural":
-                        owned = True
-                    elif (
-                        discipline == "aero"
-                        or discipline == "aerodynamic"
-                        or discipline == "flow"
-                        and var.analysis_type != "structural"
-                    ):
-                        owned = True
-
-                    if owned:
-                        discpline_vars.append(var)
-
-                # Write out the number of sets of discpline variables
-                data += "{}\n".format(len(discpline_vars))
 
                 for var in discpline_vars:
                     deriv = func.get_gradient_component(var)
