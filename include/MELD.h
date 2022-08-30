@@ -22,52 +22,42 @@
 
   Users must also specify number of nearest nodes in initialize(num_nearest)
 */
-class MELD : public TransferScheme {
+class MELD : public LDTransferScheme {
  public:
   // Constructor
-  MELD(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
-       int _aero_root, int _isymm, int num_nearest, F2FScalar beta);
+  MELD(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+       MPI_Comm aero_comm, int aero_root, int isymm, int num_nearest,
+       F2FScalar beta);
 
   // Destructor
   ~MELD();
 
   // Initialization
-  virtual void initialize();
-
-  void setStructNodes(const F2FScalar *struct_X, int struct_nnodes);
+  void initialize();
 
   // Load and displacement transfers
-  virtual void transferDisps(const F2FScalar *struct_disps,
-                             F2FScalar *aero_disps);
-  virtual void transferLoads(const F2FScalar *aero_loads,
-                             F2FScalar *struct_loads);
+  void transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps);
+  void transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads);
 
   // Action of transpose Jacobians needed for solving adjoint system
-  virtual void applydDduS(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydLduS(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods);
+  void applydDduS(const F2FScalar *vecs, F2FScalar *prods);
+  void applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods);
+  void applydLduS(const F2FScalar *vecs, F2FScalar *prods);
+  void applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods);
 
   // Action of Jacobians needed for assembling gradient from adjoint variables
-  virtual void applydDdxA0(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydDdxS0(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydLdxA0(const F2FScalar *vecs, F2FScalar *prods);
-  virtual void applydLdxS0(const F2FScalar *vecs, F2FScalar *prods);
+  void applydDdxA0(const F2FScalar *vecs, F2FScalar *prods);
+  void applydDdxS0(const F2FScalar *vecs, F2FScalar *prods);
+  void applydLdxA0(const F2FScalar *vecs, F2FScalar *prods);
+  void applydLdxS0(const F2FScalar *vecs, F2FScalar *prods);
 
  protected:
-  // Local structural data
-  int ns_local;
-  F2FScalar *Xs_local;
-
   // Symmetry specifier
   int isymm;
-
-  // Mesh update indicator
-  int mesh_update;
-
-  // Data for aerostructural connectivity and weighting
   int nn;                 // number of nearest nodes
   F2FScalar global_beta;  // weighting decay parameter
+
+  // Data for aerostructural connectivity
   int *global_conn;
 
   // Data for load and displacement transfers
@@ -79,15 +69,6 @@ class MELD : public TransferScheme {
   // Data for Jacobian-vector products
   F2FScalar *global_M1;
   int *global_ipiv;
-
-  // Parallel movement of structural vectors
-  void distributeStructuralMesh();
-  void collectStructuralVector(const F2FScalar *local, F2FScalar *global);
-  void distributeStructuralVector(F2FScalar *global, F2FScalar *local);
-
-  // Auxiliary functions for creating connectivity and weighting
-  void setAeroStructConn(int *aerostruct_conn);
-  void computeWeights(F2FScalar *W);
 
   // Auxiliary functions for displacement transfer
   void computeCentroid(const int *local_conn, const F2FScalar *W,

@@ -29,37 +29,14 @@
 #include "LocatePoint.h"
 #include "funtofemlapack.h"
 
-MELD::MELD(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
-           int _aero_root, int symmetry, int num_nearest, F2FScalar beta) {
-  // Initialize communicators
-  global_comm = all;
-  struct_comm = structure;
-  aero_comm = aero;
-  struct_root = _struct_root;
-  aero_root = _aero_root;
-
-  // Initialize aerodynamic data member variables
-  Xa = NULL;
-  Fa = NULL;
-  na = 0;
-
-  // Initialize structural data member variables
-  Xs = NULL;
-  Us = NULL;
-  ns = 0;
-
-  Xs_local = NULL;
-  ns_local = 0;
-
-  // Set the symmetry parameter
-  isymm = symmetry;
-
-  // Set the number of structural nodes linked to each aerodynamic node
-  nn = num_nearest;
-
-  // Set the global weighting decay parameter
-  global_beta = beta;
-
+MELD::MELD(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+           MPI_Comm aero_comm, int aero_root, int isymm, int num_nearest,
+           F2FScalar beta)
+    : LDTransferScheme(global_comm, struct_comm, struct_root, aero_comm,
+                       aero_root),
+      isymm(isymm),
+      nn(num_nearest),
+      global_beta(beta) {
   // Initialize the aerostuctural connectivity
   global_conn = NULL;
   global_W = NULL;
@@ -72,12 +49,6 @@ MELD::MELD(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
   // Initialize the Jacobian-vector product data
   global_M1 = NULL;
   global_ipiv = NULL;
-
-  // Initialize object id
-  object_id = TransferScheme::object_count++;
-
-  // Inintialize the indicator of a mesh update
-  mesh_update = 0;
 
   // Notify user of the type of transfer scheme they are using
   int rank;
@@ -123,137 +94,6 @@ MELD::~MELD() {
   }
 }
 
-void MELD::setStructNodes(const F2FScalar *struct_X, int struct_nnodes) {
-  // Free the structural data if any is allocated
-  if (Xs_local) {
-    delete[] Xs_local;
-    Xs_local = NULL;
-  }
-
-  ns_local = struct_nnodes;
-  Xs_local = new F2FScalar[3 * ns_local];
-  memcpy(Xs_local, struct_X, 3 * ns_local * sizeof(F2FScalar));
-
-  mesh_update = 1;
-}
-
-/*
-  Collect a structural vector to create a global image then distribute to the
-  aerodynamic processors
-*/
-void MELD::collectStructuralVector(const F2FScalar *local, F2FScalar *global) {
-  // Collect how many structural nodes every processor has
-  if (struct_comm != MPI_COMM_NULL) {
-    int struct_nprocs;
-    int struct_rank;
-    MPI_Comm_size(struct_comm, &struct_nprocs);
-    MPI_Comm_rank(struct_comm, &struct_rank);
-
-    int *ns_list = new int[struct_nprocs];
-    memset(ns_list, 0, struct_nprocs * sizeof(int));
-
-    MPI_Gather(&ns_local, 1, MPI_INT, ns_list, 1, MPI_INT, struct_root,
-               struct_comm);
-
-    // Collect the structural nodes on the master
-    int send_size = ns_local * 3;
-    int *disps = new int[struct_nprocs];
-    memset(disps, 0, struct_nprocs * sizeof(int));
-
-    if (struct_rank == struct_root) {
-      for (int proc = 0; proc < struct_nprocs; proc++) {
-        ns_list[proc] *= 3;
-        if (proc > 0) {
-          disps[proc] = disps[proc - 1] + ns_list[proc - 1];
-        }
-      }
-    }
-
-    MPI_Gatherv(local, send_size, F2F_MPI_TYPE, global, ns_list, disps,
-                F2F_MPI_TYPE, 0, struct_comm);
-
-    delete[] ns_list;
-    delete[] disps;
-  }
-
-  // Pass the global list to all the processors
-  MPI_Bcast(global, 3 * ns, F2F_MPI_TYPE, struct_root, global_comm);
-}
-
-/*
-  Reduce vector to get the total across all aero procs then distribute to the
-  structural processors
-*/
-void MELD::distributeStructuralVector(F2FScalar *global, F2FScalar *local) {
-  // Get the contributions from each aero processor
-  MPI_Allreduce(MPI_IN_PLACE, global, ns * 3, F2F_MPI_TYPE, MPI_SUM,
-                global_comm);
-
-  // Collect how many nodes each structural processor has
-  if (struct_comm != MPI_COMM_NULL) {
-    int struct_nprocs;
-    int struct_rank;
-    MPI_Comm_size(struct_comm, &struct_nprocs);
-    MPI_Comm_rank(struct_comm, &struct_rank);
-
-    int *ns_list = new int[struct_nprocs];
-
-    MPI_Gather(&ns_local, 1, MPI_INT, ns_list, 1, MPI_INT, 0, struct_comm);
-
-    // Distribute to the structural processors
-    int *disps = new int[struct_nprocs];
-    memset(disps, 0, struct_nprocs * sizeof(int));
-
-    if (struct_rank == 0) {
-      for (int proc = 0; proc < struct_nprocs; proc++) {
-        ns_list[proc] *= 3;
-        if (proc > 0) {
-          disps[proc] = disps[proc - 1] + ns_list[proc - 1];
-        }
-      }
-    }
-
-    MPI_Scatterv(global, ns_list, disps, F2F_MPI_TYPE, local, ns_local * 3,
-                 F2F_MPI_TYPE, 0, struct_comm);
-
-    delete[] ns_list;
-    delete[] disps;
-  }
-}
-
-void MELD::distributeStructuralMesh() {
-  MPI_Allreduce(MPI_IN_PLACE, &mesh_update, 1, MPI_INT, MPI_SUM, global_comm);
-  if (mesh_update > 0) {
-    ns = 0;
-    if (struct_comm != MPI_COMM_NULL) {
-      MPI_Reduce(&ns_local, &ns, 1, MPI_INT, MPI_SUM, 0, struct_comm);
-    }
-
-    MPI_Bcast(&ns, 1, MPI_INT, struct_root, global_comm);
-
-    // Allocate memory for structural data, initialize displacement array
-    if (Xs) {
-      delete[] Xs;
-    }
-    if (Us) {
-      delete[] Us;
-    }
-
-    Xs = new F2FScalar[3 * ns];
-    memset(Xs, 0, 3 * ns * sizeof(F2FScalar));
-
-    Us = new F2FScalar[3 * ns];
-    memset(Us, 0, 3 * ns * sizeof(F2FScalar));
-
-    collectStructuralVector(Xs_local, Xs);
-    if (Xs_local) {
-      delete[] Xs_local;
-      Xs_local = NULL;
-    }
-    mesh_update = 0;
-  }
-}
-
 /*
   Set aerostructural connectivity, compute weights, and allocate memory needed
   for transfers and products
@@ -267,13 +107,31 @@ void MELD::initialize() {
     nn = ns;
   }
 
+  if (Us) {
+    delete[] Us;
+  }
+  Us = NULL;
+  if (Fa) {
+    delete[] Fa;
+  }
+  Fa = NULL;
+
+  if (na > 0) {
+    Fa = new F2FScalar[3 * na];
+    memset(Fa, 0, 3 * na * sizeof(F2FScalar));
+  }
+  if (ns > 0) {
+    Us = new F2FScalar[3 * ns];
+    memset(Us, 0, 3 * ns * sizeof(F2FScalar));
+  }
+
   // Create aerostructural connectivity
   global_conn = new int[nn * na];
-  setAeroStructConn(global_conn);
+  computeAeroStructConn(isymm, nn, global_conn);
 
   // Allocate and compute the weights
   global_W = new F2FScalar[nn * na];
-  computeWeights(global_W);
+  computeWeights(F2FRealPart(global_beta), isymm, nn, global_conn, global_W);
 
   // Allocate and initialize load transfer variables
   global_xs0bar = new F2FScalar[3 * na];
@@ -283,133 +141,6 @@ void MELD::initialize() {
   // Allocate and initialize Jacobian-vector product variables
   global_M1 = new F2FScalar[15 * 15 * na];
   global_ipiv = new int[15 * na];
-}
-
-/*
-  Builds aerostructural connectivity through LocatePoint search, linking each
-  aerodynamic node with a specified number of nearest structural nodes
-
-  Returns
-  --------
-  conn : aerostructural connectivity
-
-*/
-void MELD::setAeroStructConn(int *conn) {
-  // Copy or duplicate and reflect the unique structural nodes
-  F2FScalar *Xs_dup = NULL;
-  int num_locate_nodes = 0;
-  int *locate_to_reflected_index = NULL;
-
-  if (isymm > -1) {
-    Xs_dup = new F2FScalar[6 * ns];
-    memcpy(Xs_dup, Xs, 3 * ns * sizeof(F2FScalar));
-
-    double tol = 1e-7;
-    for (int k = 0; k < ns; k++) {
-      if (fabs(F2FRealPart(Xs_dup[3 * k + isymm])) > tol) {
-        // Node is not on the plane of symmetry, so copy and...
-        memcpy(&Xs_dup[3 * (ns + k)], &Xs_dup[3 * k], 3 * sizeof(F2FScalar));
-        // reflect
-        Xs_dup[3 * (ns + k) + isymm] *= -1.0;
-      } else {
-        Xs_dup[3 * (ns + k) + 0] = -(k + 1) * 9.0e9;
-        Xs_dup[3 * (ns + k) + 1] = -(k + 1) * 9.0e9 + 1;
-        Xs_dup[3 * (ns + k) + 2] = -(k + 1) * 9.0e9 + 2;
-      }
-    }
-    num_locate_nodes = 2 * ns;
-  } else {
-    Xs_dup = new F2FScalar[3 * ns];
-    memcpy(Xs_dup, Xs, 3 * ns * sizeof(F2FScalar));
-    num_locate_nodes = ns;
-  }
-
-  // Create instance of LocatePoint class to perform the following searches
-  int min_bin_size = 10;
-  LocatePoint *locator =
-      new LocatePoint(Xs_dup, num_locate_nodes, min_bin_size);
-
-  // Indices of nearest nodes
-  int *indx = new int[nn];
-  F2FScalar *dist = new F2FScalar[nn];
-
-  // For each aerodynamic node, copy the indices of the nearest n structural
-  // nodes into the conn array
-  for (int i = 0; i < na; i++) {
-    F2FScalar xa0[3];
-    memcpy(xa0, &Xa[3 * i], 3 * sizeof(F2FScalar));
-
-    locator->locateKClosest(nn, indx, dist, xa0);
-    memcpy(&conn[nn * i], indx, nn * sizeof(int));
-  }
-
-  // Free the duplicate array
-  delete[] Xs_dup;
-
-  // Delete the LocatePoint object and release memory
-  delete[] indx;
-  delete[] dist;
-  delete locator;
-}
-
-/*
-  Computes weights of structural nodes
-
-  Returns
-  --------
-  W : weights
-*/
-void MELD::computeWeights(F2FScalar *W) {
-  for (int i = 0; i < na; i++) {
-    const F2FScalar *xa0 = &Xa[3 * i];
-    const int *local_conn = &global_conn[i * nn];
-    F2FScalar *w = &W[i * nn];
-
-    // Compute the weights based on the difference between the aerodynamic point
-    // location and the local undeformed structural point
-    F2FScalar wtotal = 0.0;
-    F2FScalar v[3];
-
-    // Find the average squared distance for normalization
-    F2FScalar v2_avg = 0.0;
-    F2FScalar dist;
-
-    for (int j = 0; j < nn; j++) {
-      if (local_conn[j] < ns) {
-        const F2FScalar *xs0 = &Xs[3 * local_conn[j]];
-        vec_diff(xs0, xa0, v);
-      } else {
-        F2FScalar rxs0[3];  // Reflected xs0
-        memcpy(rxs0, &Xs[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
-        rxs0[isymm] *= -1.0;
-        vec_diff(rxs0, xa0, v);
-      }
-      v2_avg += vec_dot(v, v) / (1.0 * nn);
-    }
-
-    // Make sure we don't divide by zero
-    if (F2FRealPart(v2_avg) < 1.0e-7) v2_avg = 1.0e-7;
-
-    for (int j = 0; j < nn; j++) {
-      if (local_conn[j] < ns) {
-        const F2FScalar *xs0 = &Xs[3 * local_conn[j]];
-        vec_diff(xs0, xa0, v);
-      } else {
-        F2FScalar rxs0[3];  // Reflected xs0
-        memcpy(rxs0, &Xs[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
-        rxs0[isymm] *= -1.0;
-        vec_diff(rxs0, xa0, v);
-      }
-      w[j] = exp(-global_beta * vec_dot(v, v) / v2_avg);
-      wtotal += w[j];
-    }
-
-    // Normalize the weights
-    wtotal = 1.0 / wtotal;
-    for (int j = 0; j < nn; j++) {
-      w[j] *= wtotal;
-    }
-  }
 }
 
 /*
@@ -430,7 +161,7 @@ void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   distributeStructuralMesh();
 
   // Copy prescribed displacements into displacement vector
-  collectStructuralVector(struct_disps, Us);
+  structGatherBcast(3 * ns_local, struct_disps, 3 * ns, Us);
 
   // Zero the outputs
   memset(global_xs0bar, 0.0, 3 * na * sizeof(F2FScalar));
@@ -682,7 +413,8 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   }
 
   // distribute the structural loads
-  distributeStructuralVector(struct_loads_global, struct_loads);
+  structAddScatter(3 * ns, struct_loads_global, 3 * ns_local, struct_loads);
+
   delete[] struct_loads_global;
 }
 
@@ -701,7 +433,7 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
 void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   // Make a global image of the input vector
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
-  collectStructuralVector(vecs, vecs_global);
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero array of Jacobian-vector products every call
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -918,7 +650,7 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
     }
   }
   // distribute the results to the structural processors
-  distributeStructuralVector(prods_global, prods);
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
 
   // clean up allocated memory
   delete[] prods_global;
@@ -938,7 +670,7 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
 */
 void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
-  collectStructuralVector(vecs, vecs_global);
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero products
   F2FScalar *prods_global = new F2FScalar[3 * ns];
@@ -991,7 +723,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
       if (indx < ns) {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
-        memcpy(v, &vecs[3 * indx], 3 * sizeof(F2FScalar));
+        memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
       } else {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -999,7 +731,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
         memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
         rxs0[isymm] *= -1.0;
         vec_diff(xs0bar, rxs0, q);
-        memcpy(v, &vecs[3 * indx], 3 * sizeof(F2FScalar));
+        memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
         v[isymm] *= -1.0;
       }
 
@@ -1087,7 +819,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   }
 
   // distribute the results to the structural processors
-  distributeStructuralVector(prods_global, prods);
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
 
   // clean up allocated memory
   delete[] vecs_global;
@@ -1108,7 +840,7 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
 */
 void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
-  collectStructuralVector(vecs, vecs_global);
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero products every call
   F2FScalar *prods_global = new F2FScalar[3 * ns];
@@ -1258,7 +990,7 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   }
 
   // distribute the results to the structural processors
-  distributeStructuralVector(prods_global, prods);
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
 
   // clean up allocated memory
   delete[] vecs_global;
@@ -1556,7 +1288,7 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   }
 
   // distribute the results to the structural processors
-  distributeStructuralVector(prods_global, prods);
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
 
   // clean up allocated memory
   delete[] Xsd;
@@ -1577,7 +1309,7 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
 */
 void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
-  collectStructuralVector(vecs, vecs_global);
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero products
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
@@ -1673,7 +1405,7 @@ void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
 */
 void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
-  collectStructuralVector(vecs, vecs_global);
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero products
   F2FScalar *prods_global = new F2FScalar[3 * ns];
@@ -1939,8 +1671,9 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
       }
     }
   }
+
   // distribute the results to the structural processors
-  distributeStructuralVector(prods_global, prods);
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
 
   // Free allocated memory
   delete[] Xsd;

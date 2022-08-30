@@ -30,25 +30,11 @@
 #include "Octree.h"
 #include "funtofemlapack.h"
 
-RBF::RBF(MPI_Comm all, MPI_Comm structure, int _struct_root, MPI_Comm aero,
-         int _aero_root, enum RbfType rbf_type, int sampling_ratio) {
-  // TODO: figure out parallelism for RBFs
-  global_comm = all;
-  struct_comm = structure;
-  aero_comm = aero;
-  struct_root = _struct_root;
-  aero_root = _aero_root;
-
-  // Initialize aerodynamic data member variables
-  Xa = NULL;
-  Fa = NULL;
-  na = 0;
-
-  // Initialize structural data member variables
-  Xs = NULL;
-  Us = NULL;
-  ns = 0;
-
+RBF::RBF(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
+         MPI_Comm aero_comm, int aero_root, RbfType rbf_type,
+         int sampling_ratio)
+    : LDTransferScheme(global_comm, struct_comm, struct_root, aero_comm,
+                       aero_root) {
   // Point to the selected type of RBF
   switch (rbf_type) {
     case GAUSSIAN:
@@ -97,6 +83,27 @@ RBF::~RBF() {
   Sample the structural nodes and build the interpolation matrix
 */
 void RBF::initialize() {
+  // global number of structural nodes
+  distributeStructuralMesh();
+
+  if (Us) {
+    delete[] Us;
+  }
+  Us = NULL;
+  if (Fa) {
+    delete[] Fa;
+  }
+  Fa = NULL;
+
+  if (na > 0) {
+    Fa = new F2FScalar[3 * na];
+    memset(Fa, 0, 3 * na * sizeof(F2FScalar));
+  }
+  if (ns > 0) {
+    Us = new F2FScalar[3 * ns];
+    memset(Us, 0, 3 * ns * sizeof(F2FScalar));
+  }
+
   // Sample the structural nodes
   if (denominator > 1) {
     printf("Transfer scheme [%i]: attempting to sample nodes using octree...\n",
