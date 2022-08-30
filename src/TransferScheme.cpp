@@ -1449,8 +1449,6 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
                                          const F2FScalar *test_vec_s,
                                          const F2FScalar h, const double rtol,
                                          const double atol) {
-  const int dof_per_node = getStructNodeDof();
-
   // Copy the original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns_local];
   memcpy(Xs_copy, Xs_local, 3 * ns_local * sizeof(F2FScalar));
@@ -2366,8 +2364,8 @@ int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
 
   F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
 
-  delete[] Us_pos;
-  delete[] Us_neg;
+  delete[] Ts_pos;
+  delete[] Ts_neg;
 #endif
   // Compute relative error
   double rel_error1 = 0.0;
