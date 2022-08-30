@@ -1,0 +1,69 @@
+name: Build and deploy documentation
+
+on:
+
+  # Allows you to run this workflow manually from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Method to manually build and deploy docs'
+        required: false
+        default: false
+
+jobs:
+  # This job is called test_docs.
+  unit_test_and_docs:
+    # Recommended if you intend to make multiple deployments in quick succession
+    concurrency: ci-${{ github.ref }}
+    # Run on Ubuntu
+    runs-on: ubuntu-latest
+    # Necessary to prevent mpi tests failing due to lack of slots
+    env:
+      OMPI_MCA_btl: self,tcp
+      OMPI_MCA_rmaps_base_oversubscribe: 1
+    # Ensures conda environment is initialized for all steps
+    defaults:
+      run:
+        shell: bash -l {0}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # real versions
+          - NAME: Real
+            OPTIONAL: 'default'
+            INTERFACE: 'interface'
+            PUBLISH_DOCS: true
+
+    name: FUNtoFEM ${{ matrix.NAME }} Build/Test
+
+    steps:
+      - name: Display run details
+        run: |
+          echo "=============================================================";
+          echo "Run #${GITHUB_RUN_NUMBER}";
+          echo "Run ID: ${GITHUB_RUN_ID}";
+          echo "Testing: ${GITHUB_REPOSITORY}";
+          echo "Triggered by: ${GITHUB_EVENT_NAME}";
+          echo "Initiated by: ${GITHUB_ACTOR}";
+          echo "=============================================================";
+
+      - name: Build docs
+        run: |
+          cd ${GITHUB_WORKSPACE}/docs;
+          make html BUILDDIR=.;
+          cd html;
+          zip -r ../f2f-docs.zip .;
+      - name: Upload docs
+        if: ${{ matrix.PUBLISH_DOCS }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: f2f-docs
+          path: docs/f2f-docs.zip
+      - name: Deploy docs
+        if: ${{ matrix.PUBLISH_DOCS }}
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages # The branch the action should deploy to
+          folder: docs/html/ # The folder the action should deploy
