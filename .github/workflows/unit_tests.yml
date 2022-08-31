@@ -127,7 +127,7 @@ jobs:
     strategy:
       matrix:
         include:
-          PUBLISH_DOCS: true
+          - PUBLISH_DOCS: true
     
     steps:
       - name: Display run details
