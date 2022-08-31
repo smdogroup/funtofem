@@ -59,6 +59,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
 
+
 <div class="viewcode-block" id="FUNtoFEMmodel"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel">[docs]</a><span class="k">class</span> <span class="nc">FUNtoFEMmodel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The FUNtoFEMmodel type holds all the data required for a FUNtoFEM coupled simulation.</span>
@@ -70,6 +71,7 @@
 <span class="sd">    --------</span>
 <span class="sd">    :mod:`body`, :mod:`scenario`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
@@ -97,23 +99,19 @@
 <span class="sd">            the body to be added</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">body</span><span class="o">.</span><span class="n">update_id</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">set_id</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">body_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">body_ids</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: specified body id has already been assigned&quot;</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Assigning a new body id&quot;</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">update_id</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">body_ids</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">set_id</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">body_ids</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="n">body</span><span class="o">.</span><span class="n">group_root</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">by</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">by</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">body</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
                 <span class="n">body</span><span class="o">.</span><span class="n">group_root</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">break</span>
-
-        <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">add_function_derivatives</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">body</span><span class="p">)</span></div>
 
@@ -127,24 +125,13 @@
 <span class="sd">            the scenario to be added</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">scenario</span><span class="o">.</span><span class="n">update_id</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">scenario</span><span class="o">.</span><span class="n">set_id</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">scen</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">scen</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
                 <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">break</span>
-
-        <span class="k">for</span> <span class="n">scen</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">scen</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
-                <span class="n">scenario</span><span class="o">.</span><span class="n">add_function_derivatives</span><span class="p">()</span>
-
-        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">add_function_derivatives</span><span class="p">()</span>
-
-            <span class="k">for</span> <span class="n">scen</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                <span class="n">scen</span><span class="o">.</span><span class="n">add_function_derivatives</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span></div>
 
@@ -174,12 +161,29 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    transfer scheme:&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="p">))</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    shape parameteration:&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
             <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    variable type:&#39;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      number of &#39;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="s1">&#39; variables:&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    variable type:&quot;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;      number of &quot;</span><span class="p">,</span>
+                    <span class="n">vartype</span><span class="p">,</span>
+                    <span class="s2">&quot; variables:&quot;</span><span class="p">,</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]),</span>
+                <span class="p">)</span>
                 <span class="k">if</span> <span class="n">print_level</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
-                      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        variable:&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;, active?&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">,</span><span class="s1">&#39;, coupled?&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">)</span>
-                      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;          value and bounds:&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;        variable:&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                            <span class="s2">&quot;, active?&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">,</span>
+                            <span class="s2">&quot;, coupled?&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;          value and bounds:&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span>
+                        <span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--------------------&quot;</span><span class="p">)</span>
@@ -191,65 +195,65 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    steps:&quot;</span><span class="p">,</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    steady?:&quot;</span><span class="p">,</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    function:&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;, analysis_type:&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">analysis_type</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      adjoint?&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">adjoint</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;    function:&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;, analysis_type:&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">analysis_type</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      adjoint?&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">adjoint</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      time range&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      averaging&#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">averaging</span><span class="p">)</span>
-
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      time range&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      averaging&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">averaging</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    variable type:&#39;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      number of &#39;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="s1">&#39; variables:&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    variable type:&quot;</span><span class="p">,</span> <span class="n">vartype</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;      number of &quot;</span><span class="p">,</span>
+                    <span class="n">vartype</span><span class="p">,</span>
+                    <span class="s2">&quot; variables:&quot;</span><span class="p">,</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]),</span>
+                <span class="p">)</span>
                 <span class="k">if</span> <span class="n">print_level</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      variable:&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;, active?&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">,</span><span class="s1">&#39;, coupled?&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">)</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        value and bounds:&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="p">)</span></div>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;      variable:&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                            <span class="s2">&quot;, active?&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">,</span>
+                            <span class="s2">&quot;, coupled?&quot;</span><span class="p">,</span>
+                            <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;        value and bounds:&quot;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">upper</span>
+                        <span class="p">)</span>
 
-
-    <span class="k">def</span> <span class="nf">_enforce_coupling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set the coupled variables in each group to the value in the group root</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">body2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">body2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">body2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">body2</span><span class="o">.</span><span class="n">couple_variables</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">scenario2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">scenario2</span><span class="o">.</span><span class="n">couple_variables</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMmodel.get_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the variable objects of the entire model. Coupled variables only appear one</span>
+<span class="sd">        Get all the coupled and uncoupled variable objects for the entire model.</span>
+<span class="sd">        Coupled variables only appear once.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        var_list: list of variable objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_enforce_coupling</span><span class="p">()</span>
-
         <span class="n">dv</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">active_variables</span><span class="p">())</span>
+                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">uncoupled_variables</span><span class="p">())</span>
+                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
 
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">active_variables</span><span class="p">())</span>
+                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">uncoupled_variables</span><span class="p">())</span>
+                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
 
         <span class="k">return</span> <span class="n">dv</span></div>
 
-<div class="viewcode-block" id="FUNtoFEMmodel.set_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dv</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="FUNtoFEMmodel.set_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dv</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the variable values of the entire model given a list of values</span>
 <span class="sd">        in the same order as get_variables</span>
@@ -258,24 +262,17 @@
 <span class="sd">        ----------</span>
 <span class="sd">        dv: list of float, complex, or Variable objects</span>
 <span class="sd">            The variable values in the same order as :func:`get_variables` returns them</span>
-<span class="sd">        scale: bool</span>
-<span class="sd">            If scale, then the model variables will be set to dv * scaling stored in the variable type</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">dv</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-            <span class="n">dv</span> <span class="o">=</span> <span class="n">dv</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
         <span class="n">var_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">ivar</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">var_list</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">dv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">Variable</span><span class="p">:</span>
-                <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">dv</span><span class="p">[</span><span class="n">ivar</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">var</span><span class="o">.</span><span class="n">scaling</span> <span class="k">if</span> <span class="n">scale</span> <span class="k">else</span> <span class="n">dv</span><span class="p">[</span><span class="n">ivar</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dv</span><span class="p">[</span><span class="n">ivar</span><span class="p">],</span> <span class="n">Variable</span><span class="p">):</span>
+                <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">dv</span><span class="p">[</span><span class="n">ivar</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">dv</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-                <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">var</span><span class="o">.</span><span class="n">scaling</span> <span class="k">if</span> <span class="n">scale</span> <span class="k">else</span> <span class="n">value</span>
+                <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">dv</span><span class="p">[</span><span class="n">ivar</span><span class="p">]</span>
 
-        <span class="c1"># Make sure the coupled variables get set too</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_enforce_coupling</span><span class="p">()</span></div>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMmodel.count_functions"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.count_functions">[docs]</a>    <span class="k">def</span> <span class="nf">count_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -316,53 +313,20 @@
 <span class="sd">            1st index = function number in the same order as get_functions</span>
 <span class="sd">            2st index = variable number in the same order as get_variables</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">funcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
+
+        <span class="n">functions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
+
         <span class="n">gradients</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">funcs</span><span class="p">):</span>
-            <span class="n">func_list</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                    <span class="n">func_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">active_derivatives</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">func_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">uncoupled_derivatives</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-
-            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                    <span class="n">func_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">active_derivatives</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">func_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">uncoupled_derivatives</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-            <span class="n">gradients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func_list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">functions</span><span class="p">:</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                <span class="n">grad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">get_gradient_component</span><span class="p">(</span><span class="n">var</span><span class="p">))</span>
+            <span class="n">gradients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">gradients</span></div>
 
-<div class="viewcode-block" id="FUNtoFEMmodel.enforce_coupling_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_coupling_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[driver call]** Sum the coupled variable derivatives in each group.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="c1"># Sum and store in the group root</span>
-                <span class="k">for</span> <span class="n">body2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">body2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">body2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">add_coupled_derivatives</span><span class="p">(</span><span class="n">body2</span><span class="p">)</span>
-                <span class="c1"># now pass the totals back to the other bodies</span>
-                <span class="k">for</span> <span class="n">body2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">body2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">body2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">body2</span><span class="o">.</span><span class="n">set_coupled_derivatives</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="c1"># Sum and store in the group root</span>
-                <span class="k">for</span> <span class="n">scenario2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">scenario</span><span class="o">.</span><span class="n">add_coupled_derivatives</span><span class="p">(</span><span class="n">scenario2</span><span class="p">)</span>
-                <span class="c1"># now pass the totals back to the other bodies</span>
-                <span class="k">for</span> <span class="n">scenario2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">scenario2</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                        <span class="n">scenario2</span><span class="o">.</span><span class="n">set_coupled_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="FUNtoFEMmodel.write_sensitivity_file"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_sensitivity_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">discipline</span><span class="o">=</span><span class="s1">&#39;aero&#39;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="FUNtoFEMmodel.write_sensitivity_file"><a class="viewcode-back" href="../../model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_sensitivity_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">discipline</span><span class="o">=</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Write the sensitivity file.</span>
 
@@ -398,37 +362,70 @@
             <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
             <span class="n">derivs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deriv</span><span class="p">)</span>
 
-
         <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="n">root</span><span class="p">:</span>
-            <span class="c1"># Number of functionals</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">funcs</span><span class="p">))</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
+            <span class="n">discpline_vars</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+                <span class="c1"># Write the structural variables to the structural sensitivity file. All other</span>
+                <span class="c1"># variables are assumed to be associated with the aerodynamics</span>
+                <span class="n">owned</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;struct&quot;</span>
+                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;structures&quot;</span>
+                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
+                    <span class="n">owned</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="p">(</span>
+                    <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aero&quot;</span>
+                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aerodynamic&quot;</span>
+                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;flow&quot;</span>
+                    <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">!=</span> <span class="s2">&quot;structural&quot;</span>
+                <span class="p">):</span>
+                    <span class="n">owned</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="k">if</span> <span class="n">owned</span><span class="p">:</span>
+                    <span class="n">discpline_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+            <span class="c1"># Write out the number of sets of discpline variables</span>
+            <span class="n">num_dvs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">discpline_vars</span><span class="p">)</span>
+
+            <span class="c1"># Write out the number of functionals and number of design variables</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">funcs</span><span class="p">),</span> <span class="n">num_dvs</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">funcs</span><span class="p">):</span>
                 <span class="c1"># Print the function name</span>
-                <span class="n">data</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
                 <span class="c1"># Print the function value</span>
-                <span class="n">data</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
                 <span class="c1"># Print the number of coordinates</span>
-                <span class="n">data</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
 
                 <span class="k">for</span> <span class="n">ibody</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">)):</span>
                     <span class="nb">id</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
                     <span class="n">deriv</span> <span class="o">=</span> <span class="n">derivs</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
 
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">id</span><span class="p">)):</span>
-                        <span class="n">data</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                             <span class="nb">int</span><span class="p">(</span><span class="nb">id</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
                             <span class="n">deriv</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">],</span>
                             <span class="n">deriv</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">],</span>
-                            <span class="n">deriv</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+                            <span class="n">deriv</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">],</span>
+                        <span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">discpline_vars</span><span class="p">:</span>
+                    <span class="n">deriv</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">get_gradient_component</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+                    <span class="c1"># Write the variable name and derivative value</span>
+                    <span class="n">data</span> <span class="o">+=</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;1</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="n">data</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">(</span><span class="n">deriv</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
 
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
                 <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="k">return</span></div></div>
-
 </pre></div>
 
             <div class="clearer"></div>

@@ -55,12 +55,14 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">funtofem</span> <span class="kn">import</span> <span class="n">TransferScheme</span>
+
 
 <div class="viewcode-block" id="Base"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for FUNtoFEM bodies and scenarios</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
@@ -80,14 +82,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">id</span>   <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
         <span class="k">if</span> <span class="n">group</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">group</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group_root</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">return</span>
 
 <div class="viewcode-block" id="Base.add_variable"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.add_variable">[docs]</a>    <span class="k">def</span> <span class="nf">add_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -104,16 +107,25 @@
         <span class="c1"># if it is a new vartype add it to the dictionaries</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="c1"># assign identifying properties to the variable then to the list</span>
-        <span class="n">var</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">var</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">=</span> <span class="n">vartype</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Base.set_variable"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.set_variable">[docs]</a>    <span class="k">def</span> <span class="nf">set_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                     <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                     <span class="n">active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coupled</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Base.set_variable"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.set_variable">[docs]</a>    <span class="k">def</span> <span class="nf">set_variable</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">vartype</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">lower</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">upper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">coupled</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set one or more properties of a variable given the vartype and either the variable name or a list of id&#39;s</span>
 
@@ -131,8 +143,6 @@
 <span class="sd">            lower bound for the variable</span>
 <span class="sd">        upper: float</span>
 <span class="sd">            upper bound for the variable</span>
-<span class="sd">        scaling: float</span>
-<span class="sd">            scaling of the variable for an optimizer</span>
 <span class="sd">        active: bool</span>
 <span class="sd">            whether or not the variable is active</span>
 <span class="sd">        coupled: bool</span>
@@ -140,31 +150,48 @@
 
 <span class="sd">        Examples</span>
 <span class="sd">        -------</span>
-<span class="sd">        base.set_variable(&#39;aerodynamic&#39;,name=&#39;AOA&#39;,value=3.0)</span>
+<span class="sd">        base.set_variable(&#39;aerodynamic&#39;, name=&#39;AOA&#39;, value=3.0)</span>
 
-<span class="sd">        base.set_variable(&#39;structural&#39;,index=2,active=False)</span>
+<span class="sd">        base.set_variable(&#39;structural&#39;, index=2, active=False)</span>
 
-<span class="sd">        base.set_variable(&#39;structural&#39;,index=[0,1,2,3,4],active=False)</span>
+<span class="sd">        base.set_variable(&#39;structural&#39;, index=[0,1,2,3,4], active=False)</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">variable</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
-                    <span class="n">variable</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span>
-                        <span class="n">scaling</span><span class="o">=</span><span class="n">scaling</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span> <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">)</span>
+                    <span class="n">variable</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span>
+                        <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span>
+                        <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>
+                        <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">,</span>
+                    <span class="p">)</span>
                     <span class="k">break</span>
         <span class="k">elif</span> <span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">ndx</span> <span class="ow">in</span> <span class="n">index</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">ndx</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span>
-                        <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="n">scaling</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span> <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">ndx</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span>
+                        <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span>
+                        <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>
+                        <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">,</span>
+                    <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span>
-                    <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="n">scaling</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span> <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                    <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">,</span>
+                    <span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span>
+                    <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>
+                    <span class="n">coupled</span><span class="o">=</span><span class="n">coupled</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning unknown type for index. Variable not set&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning no valid name or index given. Variable not set&quot;</span><span class="p">)</span></div>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning no valid name or index given. Variable not set&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Base.count_active_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.count_active_variables">[docs]</a>    <span class="k">def</span> <span class="nf">count_active_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -174,7 +201,6 @@
 <span class="sd">        -------</span>
 <span class="sd">        count:  int</span>
 <span class="sd">            number of active variables in the variable dictionary</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">is_active</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">var</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="kc">True</span>
         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -191,7 +217,6 @@
 <span class="sd">        -------</span>
 <span class="sd">        count:  int</span>
 <span class="sd">            number of uncoupled, active variables in the variable dictionary</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">is_coupled</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">var</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span>
         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -199,7 +224,7 @@
             <span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_coupled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])))</span>
         <span class="k">return</span> <span class="n">count</span></div>
 
-<div class="viewcode-block" id="Base.active_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.active_variables">[docs]</a>    <span class="k">def</span> <span class="nf">active_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Base.get_active_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.get_active_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the list of active variables in body or scenario</span>
 
@@ -209,14 +234,14 @@
 <span class="sd">            list of active variables</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">full_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">is_active</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">var</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span><span class="kc">True</span>
+        <span class="n">is_active</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">var</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="kc">True</span>
 
         <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_active</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])))</span>
+            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_active</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])))</span>
 
         <span class="k">return</span> <span class="n">full_list</span></div>
 
-<div class="viewcode-block" id="Base.uncoupled_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.uncoupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">uncoupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Base.get_uncoupled_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.get_uncoupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_uncoupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the list of uncoupled, active variables in body or scenario</span>
 
@@ -229,29 +254,29 @@
         <span class="n">is_coupled</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">var</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span>
 
         <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_coupled</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])))</span>
+            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_coupled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])))</span>
 
         <span class="k">return</span> <span class="n">full_list</span></div>
 
-<div class="viewcode-block" id="Base.couple_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.couple_variables">[docs]</a>    <span class="k">def</span> <span class="nf">couple_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+<div class="viewcode-block" id="Base.set_coupled_variables"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.set_coupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_coupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
-<span class="sd">        Updates coupled variables in the body or scenario based on the input&#39;s variables</span>
+<span class="sd">        Set the coupled variables in the body or scenario based on the input&#39;s variables</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        base: body or scenario object</span>
 <span class="sd">            body or scenario to copy coupled variables from</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="n">v1</span> <span class="k">if</span> <span class="n">v1</span><span class="o">.</span><span class="n">coupled</span> <span class="k">else</span> <span class="n">v2</span>
-                                                    <span class="k">for</span> <span class="n">v1</span><span class="p">,</span><span class="n">v2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">],</span>
-                                                                     <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span> <span class="p">]</span></div>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">v1</span> <span class="k">if</span> <span class="n">v1</span><span class="o">.</span><span class="n">coupled</span> <span class="k">else</span> <span class="n">v2</span>
+                    <span class="k">for</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span>
+                <span class="p">]</span></div>
 
-<div class="viewcode-block" id="Base.update_id"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.update_id">[docs]</a>    <span class="k">def</span> <span class="nf">update_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+<div class="viewcode-block" id="Base.set_id"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
 <span class="sd">        Update the id number of the body or scenario</span>
@@ -261,107 +286,7 @@
 <span class="sd">        id: int</span>
 <span class="sd">           id number of the scenario</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span></div>
-
-<div class="viewcode-block" id="Base.add_coupled_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.add_coupled_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">add_coupled_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[model call]**</span>
-<span class="sd">        Adds coupled derivatives in the body or scenario based on the input&#39;s derivatives</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        base: body or scenario object</span>
-<span class="sd">            body or scenario to copy coupled variables from</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
-                    <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">:</span>
-                        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">])):</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">+=</span> <span class="n">base</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span></div>
-
-<div class="viewcode-block" id="Base.set_coupled_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.set_coupled_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">set_coupled_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[model call]**</span>
-<span class="sd">        Updates coupled derivatives in the body or scenario based on the input&#39;s derivatives</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        base: body or scenario object</span>
-<span class="sd">            body or scenario to copy coupled variables from</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
-                    <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">:</span>
-                        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">])):</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">func</span><span class="p">][</span><span class="n">i</span><span class="p">]</span></div>
-
-<div class="viewcode-block" id="Base.add_function_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.add_function_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">add_function_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[model call]**</span>
-<span class="sd">        For each variable, add a new derivative value for a single new function</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span> <span class="o">*</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Base.active_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.active_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">active_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[model call]**</span>
-<span class="sd">        Get the derivatives of a function, n, with respect to all the active variables in this body or scenario</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        n: int</span>
-<span class="sd">            the function number</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        active_list: list of float</span>
-<span class="sd">            list of derivative values for each active variable in this object</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">full_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">:</span>
-            <span class="n">der_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">n</span><span class="p">][:]</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
-                    <span class="n">der_list</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="n">offset</span><span class="p">)</span>
-                    <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">der_list</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">full_list</span></div>
-
-<div class="viewcode-block" id="Base.uncoupled_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.uncoupled_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">uncoupled_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        **[model call]**</span>
-<span class="sd">        Get the derivatives of a function, n, with respect to all the uncoupled, active variables in this body or scenario</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        n: int</span>
-<span class="sd">            the function number</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        active_list: list of float</span>
-<span class="sd">            list of derivative values for each uncoupled, active variable in this object</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">full_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">:</span>
-            <span class="n">der_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">n</span><span class="p">][:]</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]):</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="ow">or</span> <span class="n">var</span><span class="o">.</span><span class="n">coupled</span><span class="p">:</span>
-                    <span class="n">der_list</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="n">offset</span><span class="p">)</span>
-                    <span class="n">offset</span><span class="o">+=</span><span class="mi">1</span>
-            <span class="n">full_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">der_list</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">full_list</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span></div></div>
 </pre></div>
 
             <div class="clearer"></div>

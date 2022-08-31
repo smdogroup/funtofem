@@ -55,21 +55,33 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
 <span class="kn">from</span> <span class="nn">funtofem</span> <span class="kn">import</span> <span class="n">TransferScheme</span>
 <span class="kn">from</span> <span class="nn">.funtofem_driver</span> <span class="kn">import</span> <span class="n">FUNtoFEMDriver</span>
+
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">.hermes_transfer</span> <span class="kn">import</span> <span class="n">HermesTransfer</span>
 <span class="k">except</span><span class="p">:</span>
     <span class="k">pass</span>
 
+
 <div class="viewcode-block" id="FUNtoFEMnlbgs"><a class="viewcode-back" href="../../driver.html#pyfuntofem.funtofem_nlbgs_driver.FUNtoFEMnlbgs">[docs]</a><span class="k">class</span> <span class="nc">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">FUNtoFEMDriver</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">struct_comm</span><span class="p">,</span> <span class="n">struct_root</span><span class="p">,</span>
-                 <span class="n">aero_comm</span><span class="p">,</span> <span class="n">aero_root</span><span class="p">,</span> <span class="n">transfer_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">theta_init</span><span class="o">=</span><span class="mf">0.125</span><span class="p">,</span> <span class="n">theta_min</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">theta_max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">solvers</span><span class="p">,</span>
+        <span class="n">comm</span><span class="p">,</span>
+        <span class="n">struct_comm</span><span class="p">,</span>
+        <span class="n">struct_root</span><span class="p">,</span>
+        <span class="n">aero_comm</span><span class="p">,</span>
+        <span class="n">aero_root</span><span class="p">,</span>
+        <span class="n">transfer_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">theta_init</span><span class="o">=</span><span class="mf">0.125</span><span class="p">,</span>
+        <span class="n">theta_min</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">theta_max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel</span>
 <span class="sd">        solvers for steady and unsteady coupled adjoint.</span>
@@ -90,21 +102,18 @@
 <span class="sd">            Minimum value of theta for the Aitken under-relaxation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">FUNtoFEMnlbgs</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">struct_comm</span><span class="p">,</span> <span class="n">struct_root</span><span class="p">,</span> <span class="n">aero_comm</span><span class="p">,</span>
-                                           <span class="n">aero_root</span><span class="p">,</span> <span class="n">transfer_options</span><span class="o">=</span><span class="n">transfer_options</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FUNtoFEMnlbgs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">solvers</span><span class="p">,</span>
+            <span class="n">comm</span><span class="p">,</span>
+            <span class="n">struct_comm</span><span class="p">,</span>
+            <span class="n">struct_root</span><span class="p">,</span>
+            <span class="n">aero_comm</span><span class="p">,</span>
+            <span class="n">aero_root</span><span class="p">,</span>
+            <span class="n">transfer_options</span><span class="o">=</span><span class="n">transfer_options</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Aitken acceleration settings</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span> <span class="o">=</span> <span class="n">theta_init</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm_init</span> <span class="o">=</span> <span class="n">theta_init</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span> <span class="o">=</span> <span class="n">theta_min</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span> <span class="o">=</span> <span class="n">theta_max</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">_initialize_adjoint_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -117,54 +126,16 @@
 <span class="sd">        bodies: :class:`~body.Body`</span>
 <span class="sd">            List of FUNtoFEM bodies.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
-        <span class="n">nfunctions_total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                           <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">initialize_adjoint_variables</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
-                <span class="n">body</span><span class="o">.</span><span class="n">dLdfa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># Thermal terms</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                        <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs_T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                             <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-                <span class="n">body</span><span class="o">.</span><span class="n">dQdfta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                       <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">dQfluxdfta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                           <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">dAdta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">nfunctions</span><span class="p">),</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-            <span class="n">body</span><span class="o">.</span><span class="n">aero_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">nfunctions_total</span><span class="p">),</span>
-                                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-            <span class="n">body</span><span class="o">.</span><span class="n">struct_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">nfunctions_total</span><span class="p">),</span>
-                                              <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-        
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">_solve_steady_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solve the aerothermoelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.</span>
-<span class="sd">        Aitken under-relaxation for stabilty.</span>
+<span class="sd">        Aitken under-relaxation is used here for stabilty.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -182,77 +153,49 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
                 <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No number of steps given for the coupled problem. Using default (1000)&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;No number of steps given for the coupled problem. Using default (1000)&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">steps</span> <span class="o">=</span> <span class="mi">1000</span>
 
         <span class="c1"># Loop over the NLBGS steps</span>
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
             <span class="c1"># Transfer displacements and temperatures</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span>
-                                               <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span>
-                                               <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferTemp</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_temps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_temps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
             <span class="c1"># Take a step in the flow solver</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flow solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="c1"># Transfer the loads and heat flux</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_heat_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="p">,</span>
-                                                     <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="c1"># FUN3D returns x,y,z, and magnitude of the surface normal heat flux</span>
-                    <span class="c1"># only need magnitude for TACS</span>
-                    <span class="n">heat_flux_magnitude</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_heat_flux_mag</span><span class="p">[:]</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferFlux</span><span class="p">(</span><span class="n">heat_flux_magnitude</span><span class="p">,</span>
-                                                       <span class="n">body</span><span class="o">.</span><span class="n">struct_heat_flux</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_heat_flux</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
             <span class="c1"># Take a step in the FEM model</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structural solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="c1"># Under-relaxation for solver stability</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_aitken_relax</span><span class="p">()</span>
-
-            <span class="c1"># Transfer displacements and temperatures</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span>
-                                               <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">aitken_relax</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span>
-                                               <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferTemp</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_temps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">)</span>
-
-        <span class="c1"># end solve loop</span>
         <span class="k">return</span> <span class="n">fail</span>
 
-    <span class="k">def</span> <span class="nf">_solve_steady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_solve_steady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.</span>
 <span class="sd">        Aitken under-relaxation for stabilty.</span>
@@ -266,101 +209,58 @@
         <span class="n">fail</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="c1"># how many steps to take</span>
+        <span class="c1"># how many steps to take for the block Gauss Seidel</span>
         <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
 
         <span class="c1"># Load the current state</span>
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
-                                      <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">aero_disps</span><span class="p">)</span>
-
-                <span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
-                                        <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span> <span class="n">struct_loads</span><span class="p">)</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
         <span class="c1"># Initialize the adjoint variables</span>
-        <span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_adjoint_variables</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">)</span>
 
         <span class="c1"># loop over the adjoint NLBGS solver</span>
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
             <span class="c1"># Get force and heat flux terms for the flow solver</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># Transform load transfer adjoint variables using transpose Jacobian from</span>
-                        <span class="c1"># funtofem: dLdfA^T * psi_L = dDdus * psi_S</span>
-                        <span class="n">psi_L_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span>
-                                           <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduS</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_L_r</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">dLdfa</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_L_r</span>
-
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># Transform heat flux transfer adjoint variables using transpose Jacobian from</span>
-                        <span class="c1"># funtofem: dQdftA^T * psi_Q = dTdts * psi_Q</span>
-                        <span class="n">psi_Q_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span>
-                                           <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydQdqATrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_Q_r</span><span class="p">)</span>
-
-                        <span class="c1"># Only set heat flux magnitude component of thermal adjoint in FUN3D</span>
-                        <span class="c1"># Can either use surface normal magnitude OR x,y,z components, not both</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">dQdfta</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_Q_r</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_heat_flux_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
             <span class="c1"># Iterate over the aerodynamic adjoint</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
+            <span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flow solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="c1"># Get the structural adjoint rhs</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># calculate dDdu_s^T * psi_D</span>
-                        <span class="n">psi_D_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span> <span class="o">=</span> <span class="o">-</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_D_product</span><span class="p">)</span>
-
-                        <span class="c1"># calculate dLdu_s^T * psi_L</span>
-                        <span class="n">psi_L_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLduSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_L</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_L_product</span><span class="p">)</span>
-                        <span class="c1"># structural elastic rhs</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_D_product</span> <span class="o">-</span> <span class="n">psi_L_product</span>
-
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># calculate dTdt_s^T * psi_T</span>
-                        <span class="n">psi_T_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dAdta</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydTdtSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_T_product</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs_T</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_T_product</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_temps_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
             <span class="c1"># take a step in the structural adjoint</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
+            <span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structural solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_aitken_adjoint_relax</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
-
-        <span class="c1"># end of solve loop</span>
+            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">aitken_adjoint_relax</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_extract_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_solve_unsteady_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">,</span><span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_solve_unsteady_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function solves the unsteady forward problem using NLBGS without FSI subiterations</span>
 
@@ -384,74 +284,125 @@
                 <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No number of steps given for the coupled problem. Using default (1000)&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;No number of steps given for the coupled problem. Using default (1000)&quot;</span>
+                    <span class="p">)</span>
                 <span class="n">steps</span> <span class="o">=</span> <span class="mi">1000</span>
 
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-            <span class="c1"># Transfer structural displacements and temperatures to aerodynamic surface</span>
+        <span class="k">for</span> <span class="n">time_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Transfer displacements and temperatures</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_temps</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferTemp</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_temps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;rigid&#39;</span>  <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span>
-                    <span class="s1">&#39;deform&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">):</span>
-                    <span class="n">rotation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transformEquivRigidMotion</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">translation</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-                <span class="k">elif</span><span class="p">(</span><span class="s1">&#39;rigid&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">):</span>
-                    <span class="n">transform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_rigid_transform</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
-
-            <span class="c1"># Take a time step for the flow solver</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="c1"># Take a step in the flow solver</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">time_index</span><span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flow solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
-            <span class="c1"># Transfer loads and heat flux from fluid and get loads and temps on structure</span>
+            <span class="c1"># Transfer the loads and heat flux</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_loads</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_heat_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">heat_flux_magnitude</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_heat_flux</span><span class="p">[</span><span class="mi">3</span><span class="p">::</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferFlux</span><span class="p">(</span><span class="n">heat_flux_magnitude</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_heat_flux</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_heat_flux</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="p">)</span>
 
             <span class="c1"># Take a step in the FEM model</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">time_index</span>
+            <span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structural solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
-
-        <span class="c1"># end solve loop</span>
 
         <span class="k">return</span> <span class="n">fail</span>
 
-    <span class="k">def</span> <span class="nf">_solve_unsteady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">):</span>
+        <span class="c1">#     # Transfer structural displacements and temperatures to aerodynamic surface</span>
+        <span class="c1">#     for body in self.model.bodies:</span>
+
+        <span class="c1">#         if body.transfer is not None:</span>
+        <span class="c1">#             body.aero_disps = np.zeros(</span>
+        <span class="c1">#                 body.aero_nnodes * 3, dtype=TransferScheme.dtype</span>
+        <span class="c1">#             )</span>
+        <span class="c1">#             body.transfer.transferDisps(body.struct_disps, body.aero_disps)</span>
+
+        <span class="c1">#         if body.thermal_transfer is not None:</span>
+        <span class="c1">#             body.aero_temps = np.zeros(</span>
+        <span class="c1">#                 body.aero_nnodes, dtype=TransferScheme.dtype</span>
+        <span class="c1">#             )</span>
+        <span class="c1">#             body.thermal_transfer.transferTemp(</span>
+        <span class="c1">#                 body.struct_temps, body.aero_temps</span>
+        <span class="c1">#             )</span>
+
+        <span class="c1">#         if &quot;rigid&quot; in body.motion_type and &quot;deform&quot; in body.motion_type:</span>
+        <span class="c1">#             rotation = np.zeros(9, dtype=TransferScheme.dtype)</span>
+        <span class="c1">#             translation = np.zeros(3, dtype=TransferScheme.dtype)</span>
+        <span class="c1">#             u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)</span>
+        <span class="c1">#             body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)</span>
+
+        <span class="c1">#             body.transfer.transformEquivRigidMotion(</span>
+        <span class="c1">#                 body.aero_disps, rotation, translation, u</span>
+        <span class="c1">#             )</span>
+
+        <span class="c1">#             body.rigid_transform[:3, :3] = rotation.reshape(</span>
+        <span class="c1">#                 (</span>
+        <span class="c1">#                     3,</span>
+        <span class="c1">#                     3,</span>
+        <span class="c1">#                 ),</span>
+        <span class="c1">#                 order=&quot;F&quot;,</span>
+        <span class="c1">#             )</span>
+        <span class="c1">#             body.rigid_transform[:3, 3] = translation</span>
+        <span class="c1">#             body.rigid_transform[-1, -1] = 1.0</span>
+
+        <span class="c1">#             body.aero_disps = u.copy()</span>
+
+        <span class="c1">#         elif &quot;rigid&quot; in body.motion_type:</span>
+        <span class="c1">#             transform = self.solvers[&quot;structural&quot;].get_rigid_transform(body)</span>
+
+        <span class="c1">#     # Take a time step for the flow solver</span>
+        <span class="c1">#     fail = self.solvers[&quot;flow&quot;].iterate(scenario, self.model.bodies, step)</span>
+
+        <span class="c1">#     fail = self.comm.allreduce(fail)</span>
+        <span class="c1">#     if fail != 0:</span>
+        <span class="c1">#         if self.comm.Get_rank() == 0:</span>
+        <span class="c1">#             print(&quot;Flow solver returned fail flag&quot;)</span>
+        <span class="c1">#         return fail</span>
+
+        <span class="c1">#     # Transfer loads and heat flux from fluid and get loads and temps on structure</span>
+        <span class="c1">#     for body in self.model.bodies:</span>
+
+        <span class="c1">#         if body.transfer is not None:</span>
+        <span class="c1">#             body.struct_loads = np.zeros(</span>
+        <span class="c1">#                 body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype</span>
+        <span class="c1">#             )</span>
+        <span class="c1">#             body.transfer.transferLoads(body.aero_loads, body.struct_loads)</span>
+
+        <span class="c1">#         if body.thermal_transfer is not None:</span>
+        <span class="c1">#             body.struct_heat_flux = np.zeros(</span>
+        <span class="c1">#                 body.struct_nnodes, dtype=TransferScheme.dtype</span>
+        <span class="c1">#             )</span>
+        <span class="c1">#             heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order=&quot;C&quot;)</span>
+        <span class="c1">#             body.thermal_transfer.transferFlux(</span>
+        <span class="c1">#                 heat_flux_magnitude, body.struct_heat_flux</span>
+        <span class="c1">#             )</span>
+
+        <span class="c1">#     # Take a step in the FEM model</span>
+        <span class="c1">#     fail = self.solvers[&quot;structural&quot;].iterate(scenario, self.model.bodies, step)</span>
+
+        <span class="c1">#     fail = self.comm.allreduce(fail)</span>
+        <span class="c1">#     if fail != 0:</span>
+        <span class="c1">#         if self.comm.Get_rank() == 0:</span>
+        <span class="c1">#             print(&quot;Structural solver returned fail flag&quot;)</span>
+        <span class="c1">#         return fail</span>
+
+        <span class="c1"># # end solve loop</span>
+
+    <span class="k">def</span> <span class="nf">_solve_unsteady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the unsteady adjoint problem using LBGS without FSI subiterations</span>
 
@@ -479,46 +430,52 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_adjoint_variables</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">)</span>
 
         <span class="c1"># Loop over each time step in the reverse order</span>
-        <span class="k">for</span> <span class="n">rstep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">steps</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">rstep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">step</span> <span class="o">=</span> <span class="n">steps</span> <span class="o">-</span> <span class="n">rstep</span> <span class="o">+</span> <span class="mi">1</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_states</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_states</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
             <span class="c1"># Due to the staggering, we linearize the transfer about t_s^(n-1)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_states</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span><span class="n">step</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_states</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
+                    <span class="p">)</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
 
+                    <span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
+                    <span class="p">)</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span> <span class="n">struct_loads</span><span class="p">)</span>
 
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span><span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
-
-                    <span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span><span class="n">struct_loads</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="s1">&#39;rigid&#39;</span>  <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s1">&#39;deform&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;rigid&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s2">&quot;deform&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">:</span>
                     <span class="n">rotation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
                     <span class="n">translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
                     <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transformEquivRigidMotion</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transformEquivRigidMotion</span><span class="p">(</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">u</span>
+                    <span class="p">)</span>
 
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
                     <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">translation</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
                     <span class="n">body</span><span class="o">.</span><span class="n">global_aero_disps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[:]</span>
                     <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
             <span class="c1"># take a step in the structural adjoint</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
+            <span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structural solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="c1"># Get load and heat flux terms for the flow solver</span>
@@ -527,93 +484,126 @@
                     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># Transform load transfer adjoint variables using transpose Jacobian from</span>
                         <span class="c1"># funtofem: dLdfA^T * psi_L</span>
-                        <span class="n">psi_L_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduS</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_L_r</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">dLdfa</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_L_r</span>
+                        <span class="n">psi_L_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduS</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_L_r</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">dLdfa</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_L_r</span>
 
                     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># Transform heat flux transfer adjoint variables using transpose Jacobian from</span>
                         <span class="c1"># funtofem: dQdftA^T * psi_Q = dTdts * psi_Q</span>
                         <span class="n">psi_Q_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydQdqATrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_Q_r</span><span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydQdqATrans</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_Q_r</span>
+                        <span class="p">)</span>
                         <span class="n">body</span><span class="o">.</span><span class="n">dQdfta</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_Q_r</span>
 
-            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
+            <span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flow solver returned fail flag&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="c1"># From the flow grid adjoint, get to the displacement adjoint</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="o">==</span> <span class="s1">&#39;deform&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="o">==</span> <span class="s2">&quot;deform&quot;</span><span class="p">:</span>
                             <span class="c1"># displacement adjoint equation</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span>
-                        <span class="k">elif</span> <span class="s1">&#39;rigid&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s1">&#39;deform&#39;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">:</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span>
+                        <span class="k">elif</span> <span class="p">(</span>
+                            <span class="s2">&quot;rigid&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s2">&quot;deform&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span>
+                        <span class="p">):</span>
                             <span class="c1"># solve the elastic deformation adjoint</span>
-                            <span class="n">psi_E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                            <span class="n">psi_E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                                <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
+                            <span class="p">)</span>
                             <span class="n">tmt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">))</span>
                             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">):</span>
                                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-                                    <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">node</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>  <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">node</span><span class="o">+</span><span class="mi">0</span><span class="p">,</span><span class="n">func</span><span class="p">]</span>
-                                                       <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">node</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">func</span><span class="p">]</span>
-                                                       <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">node</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">func</span><span class="p">]</span>
-                                                       <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+                                    <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                        <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">0</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+                                    <span class="p">)</span>
 
                             <span class="c1"># get the product dE/dT^T psi_E</span>
-                            <span class="n">dEdTmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                            <span class="n">dEdTmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
                             <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">):</span>
                                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
                                     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
                                         <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
-                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_X</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span>
-                                                              <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="n">i</span><span class="p">]</span>
+                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                                                <span class="o">-</span><span class="p">(</span>
+                                                    <span class="n">body</span><span class="o">.</span><span class="n">aero_X</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
+                                                    <span class="o">+</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
+                                                <span class="p">)</span>
+                                                <span class="o">*</span> <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+                                            <span class="p">)</span>
                                         <span class="k">else</span><span class="p">:</span>
-                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span> <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="n">i</span><span class="p">]</span>
+                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
 
-                            <span class="n">dEdT</span> <span class="o">=</span> <span class="n">dEdTmat</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                            <span class="n">dEdT</span> <span class="o">=</span> <span class="n">dEdTmat</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
                             <span class="n">dEdT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">dEdT</span><span class="p">)</span>
 
                             <span class="c1"># solve the rigid transform adjoint</span>
-                            <span class="n">psi_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                            <span class="n">dGdT_func</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdT</span><span class="p">[:,:,</span><span class="n">func</span><span class="p">]</span>
-                            <span class="n">dGdT</span> <span class="o">=</span> <span class="n">dGdT_func</span><span class="p">[:</span><span class="mi">3</span><span class="p">,:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                            <span class="n">psi_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                            <span class="n">dGdT_func</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdT</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">func</span><span class="p">]</span>
+                            <span class="n">dGdT</span> <span class="o">=</span> <span class="n">dGdT_func</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
 
                             <span class="n">psi_R</span> <span class="o">=</span> <span class="o">-</span><span class="n">dGdT</span> <span class="o">-</span> <span class="n">dEdT</span>
 
                             <span class="c1"># now solve the displacement adjoint</span>
-                            <span class="n">dRduA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                            <span class="n">dRduA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                                <span class="mi">3</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
+                            <span class="p">)</span>
                             <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydRduATrans</span><span class="p">(</span><span class="n">psi_R</span><span class="p">,</span> <span class="n">dRduA</span><span class="p">)</span>
 
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">psi_E</span> <span class="o">-</span> <span class="n">dRduA</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_E</span> <span class="o">-</span> <span class="n">dRduA</span>
 
                 <span class="c1"># form the RHS for the structural adjoint equation on the next reverse step</span>
                 <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
 
                     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># calculate dDdu_s^T * psi_D</span>
-                        <span class="n">psi_D_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_D_product</span><span class="p">)</span>
+                        <span class="n">psi_D_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduSTrans</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_D_product</span>
+                        <span class="p">)</span>
 
                         <span class="c1"># calculate dLdu_s^T * psi_L</span>
-                        <span class="n">psi_L_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLduSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_L</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_L_product</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_D_product</span> <span class="o">-</span> <span class="n">psi_L_product</span>
+                        <span class="n">psi_L_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLduSTrans</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_L</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_L_product</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_D_product</span> <span class="o">-</span> <span class="n">psi_L_product</span>
 
                     <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># calculate dTdt_s^T * psi_T</span>
-                        <span class="n">psi_T_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                        <span class="n">psi_T_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                        <span class="p">)</span>
                         <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dAdta</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydTdtSTrans</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">psi_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">),</span> <span class="n">psi_T_product</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs_T</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_T_product</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydTdtSTrans</span><span class="p">(</span>
+                            <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_T_product</span>
+                        <span class="p">)</span>
+                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_T_product</span>
 
             <span class="c1"># extract and accumulate coordinate derivative every step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extract_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
@@ -621,173 +611,26 @@
         <span class="c1"># end of solve loop</span>
 
         <span class="c1"># evaluate the initial conditions</span>
-        <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Flow solver returned fail flag&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">fail</span>
 
-        <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
+            <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span>
+        <span class="p">)</span>
         <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structural solver returned fail flag&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">fail</span>
 
         <span class="c1"># extract coordinate derivative term from initial condition</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_extract_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="mi">0</span>
-
-    <span class="k">def</span> <span class="nf">_aitken_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Solves the aitken relaxation</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">False</span>
-
-            <span class="c1"># initialize the &#39;previous update&#39; to zero</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
-
-            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                 <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                    <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                       <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                          <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span><span class="p">)</span>
-
-        <span class="c1"># do the Aitken update</span>
-        <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">):</span>
-
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">up</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
-                    <span class="n">norm2</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
-
-                    <span class="c1"># Only update theta if the displacements changed</span>
-                    <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="mf">1e-13</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span><span class="o">/</span><span class="n">norm2</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">))</span>
-
-                    <span class="c1"># handle the min/max for complex step</span>
-                    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">complex128</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span> <span class="o">==</span> <span class="nb">complex</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span><span class="o">.</span><span class="n">real</span> <span class="o">+</span> <span class="mf">0.0</span><span class="n">j</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">*</span> <span class="n">up</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="n">up</span><span class="p">[:]</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
-
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">up</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_temps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
-                    <span class="n">norm2</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span>
-
-                    <span class="c1"># Only update theta if the displacements changed</span>
-                    <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="mf">1e-13</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span><span class="o">/</span><span class="n">norm2</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">))</span>
-
-                    <span class="c1"># handle the min/max for complex step</span>
-                    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">complex128</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">])</span> <span class="o">==</span> <span class="nb">complex</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span><span class="o">.</span><span class="n">real</span> <span class="o">+</span> <span class="mf">0.0</span><span class="n">j</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">*</span> <span class="n">up</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span> <span class="o">=</span> <span class="n">up</span><span class="p">[:]</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">struct_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
-
-        <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">_aitken_adjoint_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">scenario</span><span class="p">):</span>
-        <span class="n">nfunctions</span> <span class="o">=</span>  <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">False</span>
-
-            <span class="c1"># initialize the &#39;previous update&#39; to zero</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
-
-            <span class="c1"># initialize the &#39;previous update&#39; to zero</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span> <span class="o">=</span> <span class="p">[]</span>
-
-            <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">up_prev_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">aitken_vec_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">theta_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="n">up_prev_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                     <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                        <span class="n">aitken_vec_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                                                        <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                        <span class="n">theta_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">up_prev_body</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aitken_vec_body</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theta_body</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">up_prev_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">aitken_therm_vec_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">theta_body</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="n">up_prev_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">T_ref</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                               <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                        <span class="n">aitken_therm_vec_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">T_ref</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="o">*</span><span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                                                                        <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
-                        <span class="n">theta_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_therm_init</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">up_prev_body</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aitken_therm_vec_body</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theta_body</span><span class="p">)</span>
-
-        <span class="c1"># do the Aitken update</span>
-        <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="n">up</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span>
-                        <span class="n">norm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span>
-
-                        <span class="c1"># Only update theta if the vector changed</span>
-                        <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="mf">1e-13</span><span class="p">:</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">))</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">*</span> <span class="n">up</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span><span class="n">up</span><span class="p">[:]</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">][:]</span>
-
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="n">up</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span>
-                        <span class="n">norm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span>
-
-                        <span class="c1"># Only update theta if the vector changed</span>
-                        <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="mf">1e-13</span><span class="p">:</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">])</span><span class="o">**</span><span class="mf">2.0</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">))</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">*</span> <span class="n">up</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span><span class="n">up</span><span class="p">[:]</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span><span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="p">[</span><span class="n">ibody</span><span class="p">][</span><span class="n">func</span><span class="p">][:]</span>
-
-        <span class="k">return</span></div>
+        <span class="k">return</span> <span class="mi">0</span></div>
 </pre></div>
 
             <div class="clearer"></div>

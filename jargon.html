@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>FUNtoFEM Parlance &#8212; FUNtoFEM .0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FUNtoFEM Parlance</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="funtofem-parlance">
+<h1>FUNtoFEM Parlance<a class="headerlink" href="#funtofem-parlance" title="Permalink to this heading">¶</a></h1>
+<section id="retrieving-data">
+<h2>Retrieving Data<a class="headerlink" href="#retrieving-data" title="Permalink to this heading">¶</a></h2>
+<p><strong>get_</strong>
+When used as a prefix in a method or function,
+<em>get_</em> indicates that the method is only used to <em>return</em>
+an associated value, rather than performing some computation on a member.</p>
+<p><strong>eval_</strong> is a prefix to indicate that a method is used to compute
+something of interest but does not <cite>return</cite> anything.</p>
+<p><strong>extract_</strong></p>
+</section>
+<section id="storing-data">
+<h2>Storing Data<a class="headerlink" href="#storing-data" title="Permalink to this heading">¶</a></h2>
+<p><strong>set_</strong> is used as a prefix for a method which stores some data
+(often in an object external to the current routine) without <em>returning</em> anything.</p>
+</section>
+<section id="adjoint">
+<h2>Adjoint<a class="headerlink" href="#adjoint" title="Permalink to this heading">¶</a></h2>
+<p>Consider a generic adjoint equation:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial R}{\partial u}^{T} \psi = - \frac{\partial f}{\partial u}^{T}\]</div>
+<p>We refer to the partial derivative <span class="math notranslate nohighlight">\(\frac{\partial R}{\partial u}^{T}\)</span>
+as <cite>dRdu</cite> or similar. The right hand side of the equation is <cite>adjR_rhs</cite>.</p>
+<p>As an example, consider the adjoint equation with respect to the
+nodal forces on the structure:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial L}{\partial f_S}^T\psi_L + \frac{\partial S}{\partial f_S}^T\psi_S = 0\]</div>
+<p>We can rearrange this equation as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial L}{\partial f_S}^T\psi_L = -\frac{\partial S}{\partial f_S}^T\psi_S\]</div>
+<p>The partial derivative for the load transfer residual is <cite>dLdfS</cite>.
+The right hand side is referred to as <cite>adjL_rhs</cite>.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">FUNtoFEM Parlance</a><ul>
+<li><a class="reference internal" href="#retrieving-data">Retrieving Data</a></li>
+<li><a class="reference internal" href="#storing-data">Storing Data</a></li>
+<li><a class="reference internal" href="#adjoint">Adjoint</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FUNtoFEM Parlance</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, FUNtoFEM Developers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    </div>
+  </body>
+</html>

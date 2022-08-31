@@ -57,10 +57,13 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+
 
 <div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A class to hold scenario information for a design point in optimization&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">steady</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fun3d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">steady</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fun3d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -83,28 +86,32 @@
 <span class="sd">        :mod:`base` : Scenario inherits from Base</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="kn">from</span> <span class="nn">.variable</span> <span class="kn">import</span> <span class="n">Variable</span> <span class="k">as</span> <span class="n">dv</span>
-
-        <span class="nb">super</span><span class="p">(</span><span class="n">Scenario</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">group</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Scenario</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">group</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group_master</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">functions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steady</span> <span class="o">=</span> <span class="n">steady</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span>  <span class="o">=</span> <span class="n">steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
 
         <span class="k">if</span> <span class="n">fun3d</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;Mach&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;AOA&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;Yaw&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;xrate&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;yrate&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">,</span> <span class="n">dv</span><span class="p">(</span><span class="s1">&#39;zrate&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+            <span class="n">mach</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;Mach&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">aoa</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;AOA&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">yaw</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;Yaw&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">xrate</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;xrate&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">yrate</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;yrate&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">zrate</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;zrate&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">mach</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">aoa</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">yaw</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">xrate</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">yrate</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span> <span class="n">zrate</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Scenario.add_function"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.add_function">[docs]</a>    <span class="k">def</span> <span class="nf">add_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -122,12 +129,14 @@
             <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">func</span><span class="o">.</span><span class="n">adjoint</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot add an adjoint function after a non-adjoint.&quot;</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please reorder the functions so that all functions requiring an adjoint come first&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;Please reorder the functions so that all functions requiring an adjoint come first&quot;</span>
+                    <span class="p">)</span>
                     <span class="n">exit</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_function_derivatives</span><span class="p">()</span></div>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Scenario.count_functions"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.count_functions">[docs]</a>    <span class="k">def</span> <span class="nf">count_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -152,9 +161,9 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">is_adjoint</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">func</span><span class="p">:</span> <span class="n">func</span><span class="o">.</span><span class="n">adjoint</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_adjoint</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">)))</span></div>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_adjoint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">)))</span></div>
 
-<div class="viewcode-block" id="Scenario.add_variable"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.add_variable">[docs]</a>    <span class="k">def</span> <span class="nf">add_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">vartype</span><span class="p">,</span><span class="n">var</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.add_variable"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.add_variable">[docs]</a>    <span class="k">def</span> <span class="nf">add_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a new variable to the scenario&#39;s variable dictionary</span>
 
@@ -167,12 +176,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">var</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">Scenario</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="n">vartype</span><span class="p">,</span><span class="n">var</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Scenario</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="n">vartype</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span></div>
 
-        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">vartype</span><span class="p">][</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Scenario.update_id"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.update_id">[docs]</a>    <span class="k">def</span> <span class="nf">update_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">id</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.set_id"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
 <span class="sd">        Update the id number of the scenario</span>

@@ -214,7 +214,8 @@ derivative values as well as setting the design variables</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables">
 <span class="sig-name descname"><span class="pre">get_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.get_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the variable objects of the entire model. Coupled variables only appear one</p>
+<dd><p>Get all the coupled and uncoupled variable objects for the entire model.
+Coupled variables only appear once.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>var_list</strong></p>
@@ -227,15 +228,12 @@ derivative values as well as setting the design variables</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables">
-<span class="sig-name descname"><span class="pre">set_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.set_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dv</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.set_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the variable values of the entire model given a list of values
 in the same order as get_variables</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dv</strong> (<em>list of float</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.10)"><em>complex</em></a><em>, or </em><em>Variable objects</em>) – The variable values in the same order as <a class="reference internal" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables" title="pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code></a> returns them</p></li>
-<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If scale, then the model variables will be set to dv * scaling stored in the variable type</p></li>
-</ul>
+<dd class="field-odd"><p><strong>dv</strong> (<em>list of float</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.10)"><em>complex</em></a><em>, or </em><em>Variable objects</em>) – The variable values in the same order as <a class="reference internal" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables" title="pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_variables()</span></code></a> returns them</p>
 </dd>
 </dl>
 </dd></dl>
@@ -285,14 +283,8 @@ in the same order as get_variables</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives">
-<span class="sig-name descname"><span class="pre">enforce_coupling_derivatives</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.enforce_coupling_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[driver call]</strong> Sum the coupled variable derivatives in each group.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file">
-<span class="sig-name descname"><span class="pre">write_sensitivity_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discipline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aero'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.write_sensitivity_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">write_sensitivity_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discipline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aerodynamic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/funtofem_model.html#FUNtoFEMmodel.write_sensitivity_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write the sensitivity file.</p>
 <p>This file contains the following information:</p>
 <p>Number of functionals</p>
@@ -411,8 +403,8 @@ scenarios in the same group</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.scenario.Scenario.update_id">
-<span class="sig-name descname"><span class="pre">update_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/scenario.html#Scenario.update_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.scenario.Scenario.update_id" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.scenario.Scenario.set_id">
+<span class="sig-name descname"><span class="pre">set_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/scenario.html#Scenario.set_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.scenario.Scenario.set_id" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Update the id number of the scenario</p>
 <dl class="field-list simple">
@@ -430,6 +422,7 @@ Update the id number of the scenario</p>
 <p>Shape parameterization is added by creating a new body class that subclasses the <code class="xref py py-class docutils literal notranslate"><span class="pre">body</span></code> class.
 See <code class="xref py py-class docutils literal notranslate"><span class="pre">MassoudBody</span></code> for an example.
 The driver adds the details for the transfer scheme. See <code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMDriver</span></code>.</p>
+<p>The aero_loads array is of size 3 x aero_nnodes.</p>
 <figure class="align-default">
 <img alt="_images/body.png" src="_images/body.png" />
 </figure>
@@ -461,8 +454,100 @@ bodies in the same group</p></li>
 </dl>
 </div>
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.body.Body.update_id">
-<span class="sig-name descname"><span class="pre">update_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.update_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.update_id" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.initialize_struct_nodes">
+<span class="sig-name descname"><span class="pre">initialize_struct_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">struct_X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">struct_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.initialize_struct_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.initialize_struct_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the structural mesh on any processors that have an instance
+of the structural solver.</p>
+<p>This function only needs to be called from processors that own an
+instance of the structural solver. This function is called before
+the transfer scheme is initialized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>struct_X</strong> (<em>np.ndarray</em>) – The structural node locations</p></li>
+<li><p><strong>struct_id</strong> – The nodal ids of each structural node</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_nodes">
+<span class="sig-name descname"><span class="pre">get_struct_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the structural node locations associated with this body</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_num_struct_nodes">
+<span class="sig-name descname"><span class="pre">get_num_struct_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_num_struct_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_num_struct_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of aerodynamic surface nodes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_node_ids">
+<span class="sig-name descname"><span class="pre">get_struct_node_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_node_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_node_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the structural node ids</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.initialize_aero_nodes">
+<span class="sig-name descname"><span class="pre">initialize_aero_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aero_X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aero_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.initialize_aero_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.initialize_aero_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the aerodynamic surface mesh on any processors that have an
+instance of the aerodynamic solver</p>
+<p>This function only needs to be called from processors that own an
+instance of the aerodynamic solver. This function is called before
+the transfer scheme is initialized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>aero_X</strong> (<em>np.ndarray</em>) – The aerodynamic node locations</p></li>
+<li><p><strong>aero_id</strong> – The nodal ids of each aerodynamic node</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_nodes">
+<span class="sig-name descname"><span class="pre">get_aero_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the aerodynamic node locations associated with this body</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_num_aero_nodes">
+<span class="sig-name descname"><span class="pre">get_num_aero_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_num_aero_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_num_aero_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of aerodynamic surface nodes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_node_ids">
+<span class="sig-name descname"><span class="pre">get_aero_node_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_node_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_node_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the aerodynamic node ids</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.initialize_transfer">
+<span class="sig-name descname"><span class="pre">initialize_transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">struct_comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">struct_root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aero_comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aero_root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.initialize_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.initialize_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the load and displacement and/or thermal transfer scheme for this body</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comm</strong> (<em>MPI.comm</em>) – MPI communicator</p></li>
+<li><p><strong>transfer_options</strong> (<em>dictionary</em><em> or </em><em>list of dictionaries</em>) – options for the load and displacement transfer scheme for the bodies</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.update_transfer">
+<span class="sig-name descname"><span class="pre">update_transfer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.update_transfer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.update_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the positions of the nodes in transfer schemes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.set_id">
+<span class="sig-name descname"><span class="pre">set_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.set_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.set_id" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Update the id number of the body or scenario</p>
 <dl class="field-list simple">
@@ -475,7 +560,7 @@ Update the id number of the body or scenario</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.body.Body.add_variable">
 <span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.add_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.add_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a new variable to the body’s variable dictionary</p>
+<dd><p>Add a new variable to the body’s variable dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -484,6 +569,428 @@ Update the id number of the body or scenario</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.initialize_variables">
+<span class="sig-name descname"><span class="pre">initialize_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.initialize_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.initialize_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the variables each time we run an analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.initialize_adjoint_variables">
+<span class="sig-name descname"><span class="pre">initialize_adjoint_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.initialize_adjoint_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.initialize_adjoint_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the adjoint variables for the body.</p>
+<p>The adjoint variables in the body are not indexed by scenario.
+The variables are initialized once for each scenario and used until the
+adjoint computation is completed. For each new scenario a new set of
+adjoint variables are initialized. You cannot solve multiple adjoints for different
+scenarios at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_disps">
+<span class="sig-name descname"><span class="pre">get_aero_disps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_disps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the displacements on the aerodynamic surface for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_disps">
+<span class="sig-name descname"><span class="pre">get_struct_disps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_disps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the displacements on the structure for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_loads">
+<span class="sig-name descname"><span class="pre">get_aero_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the loads on the aerodynamic surface for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_loads">
+<span class="sig-name descname"><span class="pre">get_struct_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the loads on the structure for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_temps">
+<span class="sig-name descname"><span class="pre">get_aero_temps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_temps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_temps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the temperatures on the aerodynamic surface for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_heat_flux">
+<span class="sig-name descname"><span class="pre">get_aero_heat_flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_heat_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_heat_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the heat flux on the aerodynamic surface for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_temps">
+<span class="sig-name descname"><span class="pre">get_struct_temps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_temps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_temps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the temperatures on the structure for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_heat_flux">
+<span class="sig-name descname"><span class="pre">get_struct_heat_flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_heat_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_heat_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the heat flux on the structure for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_disps">
+<span class="sig-name descname"><span class="pre">transfer_disps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_disps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the displacements on the structural mesh to the aerodynamic mesh
+for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_loads">
+<span class="sig-name descname"><span class="pre">transfer_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the aerodynamic loads on the aero surface mesh to loads on the
+structural mesh for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_temps">
+<span class="sig-name descname"><span class="pre">transfer_temps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_temps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_temps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the temperatures on the structural mesh to the aerodynamic mesh
+for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_heat_flux">
+<span class="sig-name descname"><span class="pre">transfer_heat_flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_heat_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_heat_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the aerodynamic heat flux on the aero surface mesh to the heat flux on the
+structural mesh for the given scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_loads_ajp">
+<span class="sig-name descname"><span class="pre">get_aero_loads_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_loads_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_loads_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the product of the load transfer adjoint variables with the derivative
+of the load transfer residuals with respect to the aerodynamic forces</p>
+<p>aero_loads_ajp = dL/dfA^{T} * psi_L</p>
+<p>The value of this product is computed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_disps_ajp">
+<span class="sig-name descname"><span class="pre">get_aero_disps_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_disps_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_disps_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the product of the adjoint variables with the grid residuals with the
+derivative of the displacement at the aerodynamic surface nodes</p>
+<p>aero_disps_ajp = dG/duA^{T} * psi_G</p>
+<p>Note that this term is typically just the shape sensitivity</p>
+<p>dG/duA^{T} * psi_G = dG/dxA0 * psi_G</p>
+<p>This term must be set by the aerodynamic analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_loads_ajp">
+<span class="sig-name descname"><span class="pre">get_struct_loads_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_loads_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_loads_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the product of the structural adjoint variables with the derivative of the
+structural residuals with respect to the structural loads.</p>
+<p>struct_loads_ajp = dS/dfS^{T} * psi_S</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_disps_ajp">
+<span class="sig-name descname"><span class="pre">get_struct_disps_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_disps_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_disps_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the product of the displacement transfer adjoint variables with the derivative
+of the displacement transfer residuals w.r.t. the structural displacements plus the
+product of the load transfer adjoint variables with the derivative of the load
+transfer residuals w.r.t. the structural displacements.</p>
+<p>struct_disps_ajp = dD/duS^{T} * psi_D + dL/duS^{T} * psi_L</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_heat_flux_ajp">
+<span class="sig-name descname"><span class="pre">get_aero_heat_flux_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_heat_flux_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_heat_flux_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>aero_flux_ajp = dQ/dhA^{T} * psi_Q</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_heat_flux_ajp">
+<span class="sig-name descname"><span class="pre">get_struct_heat_flux_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_heat_flux_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_heat_flux_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>struct_flux_ajp = dS/dhS^{T} * psi_S</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_temps_ajp">
+<span class="sig-name descname"><span class="pre">get_aero_temps_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_temps_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_temps_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the</p>
+<p>aero_temps_ajp = dA/dtA^{T} * psi_A</p>
+<p>This variable must be set in an aerodynamic analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_temps_ajp">
+<span class="sig-name descname"><span class="pre">get_struct_temps_ajp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_temps_ajp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_temps_ajp" title="Permalink to this definition">¶</a></dt>
+<dd><p>struct_temps_ajp = dT/dtS^{T} * psi_T</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_loads_adjoint">
+<span class="sig-name descname"><span class="pre">transfer_loads_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_loads_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_loads_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the adjoint computation for the load transfer operation. This code
+computes and stores the required Jacobian-adjoint products.</p>
+<p>Find the load transfer adjoint variables, psi_L, by solving the equation</p>
+<p>dL/dfS^{T} * psi_L = - dS/dfS^{T} * psi_S</p>
+<p>The right-hand-side term is stored as</p>
+<p>struct_loads_ajp = dS/dfS^{T} * psi_S</p>
+<p>and the Jacobian dL/dfS = I. After computing psi_L, the code computes the
+Jacobian-adjoint products</p>
+<p>aero_loads_ajp = dL/dfA^{T} * psi_L
+struct_disps_ajp_loads = dL/duS^{T} * psi_L</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_disps_adjoint">
+<span class="sig-name descname"><span class="pre">transfer_disps_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_disps_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_disps_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the adjoint computation for the displacement transfer operations. This code
+computes and stores required Jacobian-adjoint products.</p>
+<p>Find the displacement transfer adjoint variables, psi_D, by solving the equation:</p>
+<p>dD/duA^{T} * psi_D = - dG/duA^{T} * psi_G</p>
+<p>Here the right-hand-side term is stored as</p>
+<p>aero_disps_ajp = dG/duA^{T} * psi_G</p>
+<p>The Jacobian dD/duA = I. After computing psi_D, the code computes the Jacobian-adjoint
+products</p>
+<p>struct_disps_ajp_disps = dD/duS^{T} * psi_D</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_heat_flux_adjoint">
+<span class="sig-name descname"><span class="pre">transfer_heat_flux_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_heat_flux_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_heat_flux_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the adjoint computation for the heat flux transfer operations.</p>
+<p>This function first solves for the heat flux transfer adjoint, psi_Q by solving
+the equation</p>
+<p>dQ/dhS^{T} * psi_Q = - dS/dhS^{T} * psi_S</p>
+<p>Here the right-hand-side is stored as</p>
+<p>struct_flux_ajp = dS/dhS^{T} * psi_S</p>
+<p>Since dQ/dhS = I, the adjoint variables are psi_Q = - struct_flux_ajp.</p>
+<p>The code then computes</p>
+<p>aero_flux_ajp = dQ/dhA^{T} * psi_Q</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.transfer_temps_adjoint">
+<span class="sig-name descname"><span class="pre">transfer_temps_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.transfer_temps_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.transfer_temps_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the adjoint computations for the thermal transfer operation.</p>
+<p>This function first solves for the temperature transfer adjoint psi_T, by solving
+the equation</p>
+<p>dT/dtA^{T} * psi_T = - dA/dtA^{T} * psi_A</p>
+<p>Here the right-hand-side is stored as</p>
+<p>aero_temps_ajp = dA/dtA^{T} * psi_A</p>
+<p>Since dT/dtA = I, then psi_T = - aero_temps_ajp.</p>
+<p>The code then computes</p>
+<p>struct_temps_ajp = dT/dtS^{T} * psi_T</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_coordinate_derivatives">
+<span class="sig-name descname"><span class="pre">get_aero_coordinate_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_coordinate_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_coordinate_derivatives" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the coordinate derivatives for the functions with respect to the
+aerodynamic surface nodes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.get_struct_coordinate_derivatives">
+<span class="sig-name descname"><span class="pre">get_struct_coordinate_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_struct_coordinate_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_struct_coordinate_derivatives" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the coordinate derivatives for the functions with respect to the
+structural nodes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.add_coordinate_derivative">
+<span class="sig-name descname"><span class="pre">add_coordinate_derivative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.add_coordinate_derivative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.add_coordinate_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the coordinate derivatives for each function of interest to the aerodynamic
+and structural surface nodes - stored in aero_shape_term and struct_shape_term, respectively</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.aitken_relax">
+<span class="sig-name descname"><span class="pre">aitken_relax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-13</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.aitken_relax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.aitken_relax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform Aitken relaxation for the displacements set in the</p>
 </dd></dl>
 
 <dl class="py method">
@@ -665,19 +1172,23 @@ Calculates the shape derivative given the coordinate derivatives</p>
 <td><p>None</p></td>
 <td><p>Aerodynamic forces</p></td>
 </tr>
-<tr class="row-even"><td><p>self.struct_temps</p></td>
+<tr class="row-even"><td><p>self.aero_loads</p></td>
+<td><p>None</p></td>
+<td><p>Aerodynamic loads</p></td>
+</tr>
+<tr class="row-odd"><td><p>self.struct_temps</p></td>
 <td><p>None</p></td>
 <td><p>Structural temperature</p></td>
 </tr>
-<tr class="row-odd"><td><p>self.struct_heat_flux</p></td>
+<tr class="row-even"><td><p>self.struct_heat_flux</p></td>
 <td><p>None</p></td>
 <td><p>Structural heat flux</p></td>
 </tr>
-<tr class="row-even"><td><p>self.aero_temps</p></td>
+<tr class="row-odd"><td><p>self.aero_temps</p></td>
 <td><p>None</p></td>
 <td><p>Aerodynamic temperature</p></td>
 </tr>
-<tr class="row-odd"><td><p>self.aero_heat_flux</p></td>
+<tr class="row-even"><td><p>self.aero_heat_flux</p></td>
 <td><p>None</p></td>
 <td><p>Aerodynamic heat flux</p></td>
 </tr>
@@ -728,7 +1239,7 @@ bodies/scenarios in the same group</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.base.Base.set_variable">
-<span class="sig-name descname"><span class="pre">set_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.set_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.set_variable" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.set_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.set_variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set one or more properties of a variable given the vartype and either the variable name or a list of id’s</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -739,16 +1250,15 @@ bodies/scenarios in the same group</p></li>
 <li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#complex" title="(in Python v3.10)"><em>complex</em></a>) – value of the variable</p></li>
 <li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound for the variable</p></li>
 <li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound for the variable</p></li>
-<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
 <li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the variable is active</p></li>
 <li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the variable is coupled</p></li>
 </ul>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<p>base.set_variable(‘aerodynamic’,name=’AOA’,value=3.0)</p>
-<p>base.set_variable(‘structural’,index=2,active=False)</p>
-<p>base.set_variable(‘structural’,index=[0,1,2,3,4],active=False)</p>
+<p>base.set_variable(‘aerodynamic’, name=’AOA’, value=3.0)</p>
+<p>base.set_variable(‘structural’, index=2, active=False)</p>
+<p>base.set_variable(‘structural’, index=[0,1,2,3,4], active=False)</p>
 </dd></dl>
 
 <dl class="py method">
@@ -781,8 +1291,8 @@ This is the number of unique variables to this object</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.active_variables">
-<span class="sig-name descname"><span class="pre">active_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.active_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.active_variables" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.base.Base.get_active_variables">
+<span class="sig-name descname"><span class="pre">get_active_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.get_active_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.get_active_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the list of active variables in body or scenario</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -795,8 +1305,8 @@ This is the number of unique variables to this object</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.uncoupled_variables">
-<span class="sig-name descname"><span class="pre">uncoupled_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.uncoupled_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.uncoupled_variables" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.base.Base.get_uncoupled_variables">
+<span class="sig-name descname"><span class="pre">get_uncoupled_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.get_uncoupled_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.get_uncoupled_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the list of uncoupled, active variables in body or scenario</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -809,10 +1319,10 @@ This is the number of unique variables to this object</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.couple_variables">
-<span class="sig-name descname"><span class="pre">couple_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.couple_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.couple_variables" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.base.Base.set_coupled_variables">
+<span class="sig-name descname"><span class="pre">set_coupled_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.set_coupled_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.set_coupled_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
-Updates coupled variables in the body or scenario based on the input’s variables</p>
+Set the coupled variables in the body or scenario based on the input’s variables</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
@@ -821,80 +1331,13 @@ Updates coupled variables in the body or scenario based on the input’s variabl
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.update_id">
-<span class="sig-name descname"><span class="pre">update_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.update_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.update_id" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyfuntofem.base.Base.set_id">
+<span class="sig-name descname"><span class="pre">set_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.set_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.set_id" title="Permalink to this definition">¶</a></dt>
 <dd><p><strong>[model call]</strong>
 Update the id number of the body or scenario</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number of the scenario</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.add_coupled_derivatives">
-<span class="sig-name descname"><span class="pre">add_coupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.add_coupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.add_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Adds coupled derivatives in the body or scenario based on the input’s derivatives</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.set_coupled_derivatives">
-<span class="sig-name descname"><span class="pre">set_coupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.set_coupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.set_coupled_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Updates coupled derivatives in the body or scenario based on the input’s derivatives</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>base</strong> (<em>body</em><em> or </em><em>scenario object</em>) – body or scenario to copy coupled variables from</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.add_function_derivatives">
-<span class="sig-name descname"><span class="pre">add_function_derivatives</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.add_function_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.add_function_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-For each variable, add a new derivative value for a single new function</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.active_derivatives">
-<span class="sig-name descname"><span class="pre">active_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.active_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.active_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Get the derivatives of a function, n, with respect to all the active variables in this body or scenario</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – the function number</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>active_list</strong> – list of derivative values for each active variable in this object</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyfuntofem.base.Base.uncoupled_derivatives">
-<span class="sig-name descname"><span class="pre">uncoupled_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.uncoupled_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.uncoupled_derivatives" title="Permalink to this definition">¶</a></dt>
-<dd><p><strong>[model call]</strong>
-Get the derivatives of a function, n, with respect to all the uncoupled, active variables in this body or scenario</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – the function number</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>active_list</strong> – list of derivative values for each uncoupled, active variable in this object</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -914,8 +1357,9 @@ When the variable is added to a <code class="xref py py-class docutils literal n
 the vartype argument specifies what discipline the variable is associated with.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyfuntofem.variable.Variable">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.variable.</span></span><span class="sig-name descname"><span class="pre">Variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unknown'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/variable.html#Variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.variable.Variable" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.variable.</span></span><span class="sig-name descname"><span class="pre">Variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unknown'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/variable.html#Variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.variable.Variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Design variable type for FUNtoFEM</p>
+<p>Variable object for FUNtoFEM</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -923,7 +1367,6 @@ the vartype argument specifies what discipline the variable is associated with.<
 <li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – current value of the variable</p></li>
 <li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound of the design variable</p></li>
 <li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound of the design variable</p></li>
-<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
 <li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is active</p></li>
 <li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is coupled</p></li>
 <li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – id number of the design variable</p></li>
@@ -934,7 +1377,7 @@ the vartype argument specifies what discipline the variable is associated with.<
 <p>thickness = Variable(name=’thickness 0’, value=0.004, lower=0.001, upper=0.1)</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.variable.Variable.assign">
-<span class="sig-name descname"><span class="pre">assign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/variable.html#Variable.assign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.variable.Variable.assign" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">assign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/variable.html#Variable.assign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.variable.Variable.assign" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the one or more of the attributes of the design variable</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -942,7 +1385,6 @@ the vartype argument specifies what discipline the variable is associated with.<
 <li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – new value of the variable</p></li>
 <li><p><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – lower bound of the design variable</p></li>
 <li><p><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – upper bound of the design variable</p></li>
-<li><p><strong>scaling</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – scaling of the variable for an optimizer</p></li>
 <li><p><strong>active</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is active</p></li>
 <li><p><strong>coupled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not the design variable is coupled</p></li>
 </ul>
@@ -989,6 +1431,47 @@ without including that of the sting model, you can use the body argument to pass
 <p>lift = Function(‘lift’, analysis_type=’aerodynamic’)</p>
 <p>mass = Function(‘mass’, analysis_type=’structural’, adjoint=False)</p>
 <p>ks = Function(‘ksFailure’, analysis_type=’structural’, options={‘ksweight’:50.0})</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.function.Function.zero_derivatives">
+<span class="sig-name descname"><span class="pre">zero_derivatives</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/function.html#Function.zero_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.function.Function.zero_derivatives" title="Permalink to this definition">¶</a></dt>
+<dd><p>Zero all the derivative values that are currently set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.function.Function.set_gradient_component">
+<span class="sig-name descname"><span class="pre">set_gradient_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/function.html#Function.set_gradient_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.function.Function.set_gradient_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the gradient value for the given variable into the dictionary of gradient values</p>
+<p>This call will overwrite the gradient value stored by the function.</p>
+<dl class="simple">
+<dt>var: Variable object</dt><dd><p>Derivative of this function w.r.t. the given variable</p>
+</dd>
+<dt>value: scalar value</dt><dd><p>Value of the gradient</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.function.Function.add_gradient_component">
+<span class="sig-name descname"><span class="pre">add_gradient_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/function.html#Function.add_gradient_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.function.Function.add_gradient_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the gradient value for the given variable into the dictionary of gradient values</p>
+<dl class="simple">
+<dt>var: Variable object</dt><dd><p>Derivative of this function w.r.t. the given variable</p>
+</dd>
+<dt>value: scalar value</dt><dd><p>Value of the gradient contribution</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.function.Function.get_gradient_component">
+<span class="sig-name descname"><span class="pre">get_gradient_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/function.html#Function.get_gradient_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.function.Function.get_gradient_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the gradient value stored - return 0 if not defined</p>
+<dl class="simple">
+<dt>var: Variable object</dt><dd><p>Derivative of this function w.r.t. the given variable</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>

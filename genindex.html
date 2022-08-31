@@ -39,36 +39,33 @@
  <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
- | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
+ | <a href="#Z"><strong>Z</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="model.html#pyfuntofem.base.Base.active_derivatives">active_derivatives() (pyfuntofem.base.Base method)</a>
-</li>
-      <li><a href="model.html#pyfuntofem.base.Base.active_variables">active_variables() (pyfuntofem.base.Base method)</a>
-</li>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.add_body">add_body() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
 </li>
-      <li><a href="model.html#pyfuntofem.base.Base.add_coupled_derivatives">add_coupled_derivatives() (pyfuntofem.base.Base method)</a>
+      <li><a href="model.html#pyfuntofem.body.Body.add_coordinate_derivative">add_coordinate_derivative() (pyfuntofem.body.Body method)</a>
 </li>
       <li><a href="model.html#pyfuntofem.scenario.Scenario.add_function">add_function() (pyfuntofem.scenario.Scenario method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="model.html#pyfuntofem.base.Base.add_function_derivatives">add_function_derivatives() (pyfuntofem.base.Base method)</a>
+      <li><a href="model.html#pyfuntofem.function.Function.add_gradient_component">add_gradient_component() (pyfuntofem.function.Function method)</a>
 </li>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.add_scenario">add_scenario() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#pyfuntofem.base.Base.add_variable">add_variable() (pyfuntofem.base.Base method)</a>
 
       <ul>
@@ -77,6 +74,8 @@
         <li><a href="model.html#pyfuntofem.scenario.Scenario.add_variable">(pyfuntofem.scenario.Scenario method)</a>
 </li>
       </ul></li>
+      <li><a href="model.html#pyfuntofem.body.Body.aitken_relax">aitken_relax() (pyfuntofem.body.Body method)</a>
+</li>
       <li><a href="model.html#pyfuntofem.variable.Variable.assign">assign() (pyfuntofem.variable.Variable method)</a>
 </li>
   </ul></td>
@@ -113,16 +112,6 @@
       </ul></li>
       <li><a href="model.html#pyfuntofem.base.Base.count_uncoupled_variables">count_uncoupled_variables() (pyfuntofem.base.Base method)</a>
 </li>
-      <li><a href="model.html#pyfuntofem.base.Base.couple_variables">couple_variables() (pyfuntofem.base.Base method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.enforce_coupling_derivatives">enforce_coupling_derivatives() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -145,11 +134,65 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.base.Base.get_active_variables">get_active_variables() (pyfuntofem.base.Base method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_coordinate_derivatives">get_aero_coordinate_derivatives() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_disps">get_aero_disps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_disps_ajp">get_aero_disps_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_heat_flux">get_aero_heat_flux() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_heat_flux_ajp">get_aero_heat_flux_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_loads">get_aero_loads() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_loads_ajp">get_aero_loads_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_node_ids">get_aero_node_ids() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_nodes">get_aero_nodes() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_temps">get_aero_temps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_aero_temps_ajp">get_aero_temps_ajp() (pyfuntofem.body.Body method)</a>
+</li>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_function_gradients">get_function_gradients() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_functions">get_functions() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.function.Function.get_gradient_component">get_gradient_component() (pyfuntofem.function.Function method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_functions">get_functions() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
+      <li><a href="model.html#pyfuntofem.body.Body.get_num_aero_nodes">get_num_aero_nodes() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_num_struct_nodes">get_num_struct_nodes() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_coordinate_derivatives">get_struct_coordinate_derivatives() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_disps">get_struct_disps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_disps_ajp">get_struct_disps_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_heat_flux">get_struct_heat_flux() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_heat_flux_ajp">get_struct_heat_flux_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_loads">get_struct_loads() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_loads_ajp">get_struct_loads_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_node_ids">get_struct_node_ids() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_nodes">get_struct_nodes() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_temps">get_struct_temps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.get_struct_temps_ajp">get_struct_temps_ajp() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.base.Base.get_uncoupled_variables">get_uncoupled_variables() (pyfuntofem.base.Base method)</a>
 </li>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.get_variables">get_variables() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
 </li>
@@ -159,7 +202,19 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.body.Body.initialize_adjoint_variables">initialize_adjoint_variables() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.initialize_aero_nodes">initialize_aero_nodes() (pyfuntofem.body.Body method)</a>
+</li>
       <li><a href="model.html#pyfuntofem.body.Body.initialize_shape_parameterization">initialize_shape_parameterization() (pyfuntofem.body.Body method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.body.Body.initialize_struct_nodes">initialize_struct_nodes() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.initialize_transfer">initialize_transfer() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.initialize_variables">initialize_variables() (pyfuntofem.body.Body method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -181,12 +236,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#pyfuntofem.scenario.Scenario">Scenario (class in pyfuntofem.scenario)</a>
 </li>
-      <li><a href="model.html#pyfuntofem.base.Base.set_coupled_derivatives">set_coupled_derivatives() (pyfuntofem.base.Base method)</a>
+      <li><a href="model.html#pyfuntofem.base.Base.set_coupled_variables">set_coupled_variables() (pyfuntofem.base.Base method)</a>
 </li>
-      <li><a href="model.html#pyfuntofem.base.Base.set_variable">set_variable() (pyfuntofem.base.Base method)</a>
+      <li><a href="model.html#pyfuntofem.function.Function.set_gradient_component">set_gradient_component() (pyfuntofem.function.Function method)</a>
 </li>
+      <li><a href="model.html#pyfuntofem.base.Base.set_id">set_id() (pyfuntofem.base.Base method)</a>
+
+      <ul>
+        <li><a href="model.html#pyfuntofem.body.Body.set_id">(pyfuntofem.body.Body method)</a>
+</li>
+        <li><a href="model.html#pyfuntofem.scenario.Scenario.set_id">(pyfuntofem.scenario.Scenario method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.base.Base.set_variable">set_variable() (pyfuntofem.base.Base method)</a>
+</li>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.set_variables">set_variables() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
 </li>
       <li><a href="model.html#pyfuntofem.body.Body.shape_derivative">shape_derivative() (pyfuntofem.body.Body method)</a>
@@ -198,26 +263,40 @@
   </ul></td>
 </tr></table>
 
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_disps">transfer_disps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_disps_adjoint">transfer_disps_adjoint() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_heat_flux">transfer_heat_flux() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_heat_flux_adjoint">transfer_heat_flux_adjoint() (pyfuntofem.body.Body method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_loads">transfer_loads() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_loads_adjoint">transfer_loads_adjoint() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_temps">transfer_temps() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.transfer_temps_adjoint">transfer_temps_adjoint() (pyfuntofem.body.Body method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="model.html#pyfuntofem.base.Base.uncoupled_derivatives">uncoupled_derivatives() (pyfuntofem.base.Base method)</a>
-</li>
-      <li><a href="model.html#pyfuntofem.base.Base.uncoupled_variables">uncoupled_variables() (pyfuntofem.base.Base method)</a>
-</li>
-      <li><a href="model.html#pyfuntofem.base.Base.update_id">update_id() (pyfuntofem.base.Base method)</a>
-
-      <ul>
-        <li><a href="model.html#pyfuntofem.body.Body.update_id">(pyfuntofem.body.Body method)</a>
-</li>
-        <li><a href="model.html#pyfuntofem.scenario.Scenario.update_id">(pyfuntofem.scenario.Scenario method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="driver.html#pyfuntofem.funtofem_driver.FUNtoFEMDriver.update_model">update_model() (pyfuntofem.funtofem_driver.FUNtoFEMDriver method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#pyfuntofem.body.Body.update_shape">update_shape() (pyfuntofem.body.Body method)</a>
+</li>
+      <li><a href="model.html#pyfuntofem.body.Body.update_transfer">update_transfer() (pyfuntofem.body.Body method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -234,6 +313,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="model.html#pyfuntofem.funtofem_model.FUNtoFEMmodel.write_sensitivity_file">write_sensitivity_file() (pyfuntofem.funtofem_model.FUNtoFEMmodel method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Z">Z</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="model.html#pyfuntofem.function.Function.zero_derivatives">zero_derivatives() (pyfuntofem.function.Function method)</a>
 </li>
   </ul></td>
 </tr></table>
