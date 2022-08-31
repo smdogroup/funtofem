@@ -1,0 +1,440 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+Makefile:2: Makefile.in: No such file or directory
+make: *** No rule to make target 'Makefile.in'.  Stop.
+
+# GNU Make 4.2.1
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2016 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Wed Aug 17 12:16:32 2022
+
+# Variables
+
+# 'override' directive
+GNUMAKEFLAGS := 
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+?F = $(notdir $?)
+# environment
+DESKTOP_SESSION = ubuntu
+# default
+.SHELLFLAGS := -c
+# environment
+XDG_SESSION_CLASS = user
+# environment
+SNAP_COMMON = /var/snap/code/common
+# environment
+XDG_SESSION_TYPE = x11
+# environment
+TACS_DIR = /home/sengelstad6/git/tacs
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# environment
+IM_CONFIG_PHASE = 1
+# environment
+PYTHONINC = /usr/include/python3.8
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+XAUTHORITY = /run/user/875769/gdm/Xauthority
+# environment
+GDMSESSION = ubuntu
+# environment
+XMODIFIERS = @im=ibus
+# makefile
+CURDIR := /home/sengelstad6/git/funtofem
+# makefile
+SHELL = /bin/sh
+# environment
+SNAP_DATA = /var/snap/code/104
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+# environment
+JOURNAL_STREAM = 8:111339
+# environment
+XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
+# environment
+SNAP_INSTANCE_NAME = code
+# environment
+SNAP_ARCH = amd64
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST :=  Makefile
+# automatic
+@F = $(notdir $@)
+# environment
+GIO_LAUNCHED_DESKTOP_FILE = /var/lib/snapd/desktop/applications/code_code.desktop
+# environment
+USERNAME = sengelstad6
+# environment
+EGADS_DIR = /home/sengelstad6/git/egads4py
+# environment
+XDG_DATA_DIRS = /usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/875769/bus
+# environment
+_ = /snap/code/104/usr/share/code/code
+# environment
+MANAGERPID = 29536
+# environment
+LESSOPEN = | /usr/bin/lesspipe %s
+# environment
+VSCODE_CWD = /home/sengelstad6
+# environment
+GSETTINGS_SCHEMA_DIR = /snap/code/104/usr/share/glib-2.0/schemas
+# environment
+KRB5CCNAME = KEYRING:persistent:875769
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+PATH = /home/sengelstad6/.local/bin:/home/sengelstad6/packages/EngSketchPad/bin:/home/sengelstad6/git/tacs/extern/:/home/sengelstad6/packages/OpenCASCADE/bin:/home/sengelstad6/.local/bin:/home/sengelstad6/packages/EngSketchPad/bin:/home/sengelstad6/git/tacs/extern/:/home/sengelstad6/packages/OpenCASCADE/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/pointwise/pointwise:/opt/pointwise/pointwise
+# environment
+WV_START = firefox /home/sengelstad6/packages/EngSketchPad/wvClient/wv.html &
+# environment
+AFLR_ARCH = Linux-x86-64
+# environment
+GPG_AGENT_INFO = /run/user/875769/gnupg/S.gpg-agent:0:1
+# environment
+SESSION_MANAGER = local/ae-smdo-405112:@/tmp/.ICE-unix/29927,unix/ae-smdo-405112:/tmp/.ICE-unix/29927
+# environment
+CASROOT = /home/sengelstad6/packages/OpenCASCADE/
+# environment
+XDG_RUNTIME_DIR = /run/user/875769
+# environment
+GDK_PIXBUF_MODULE_FILE = /home/sengelstad6/snap/code/common/.cache/gdk-pixbuf-loaders.cache
+# environment
+SNAP = /snap/code/104
+# environment
+ESP_ROOT = /home/sengelstad6/packages/EngSketchPad
+# environment
+SNAP_VERSION = 6d9b74a7
+# environment
+XDG_MENU_PREFIX = gnome-
+# environment
+DISABLE_WAYLAND = 1
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# environment
+INVOCATION_ID = ac57c6855dfc4cfdb516ed3914af5852
+# environment
+GDK_PIXBUF_MODULEDIR = /snap/code/104/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
+# environment
+LS_COLORS = 
+# environment
+XDG_SESSION_DESKTOP = ubuntu
+# environment
+SLUGS_START = firefox /home/sengelstad6/packages/EngSketchPad/SLUGS/Slugs.html &
+# environment
+SSH_AUTH_SOCK = /run/user/875769/keyring/ssh
+# environment
+GIO_LAUNCHED_DESKTOP_FILE_PID = 43702
+# environment
+TWIST_FOIL = /home/sengelstad6/git/twistFoil
+# automatic
+%F = $(notdir $%)
+# environment
+WORK = /home/sengelstad6/git/caps2fun/examples/naca_OML
+# environment
+DISPLAY = :1
+# environment
+SNAP_INSTANCE_KEY = 
+# environment
+PWD = /home/sengelstad6/git/funtofem
+# default
+.LOADED := 
+# environment
+ESP_START = firefox /home/sengelstad6/packages/EngSketchPad/ESP/ESP.html &
+# environment
+SSH_AGENT_PID = 29893
+# environment
+ORIGINAL_XDG_CURRENT_DESKTOP = ubuntu:GNOME
+# environment
+GTK_MODULES = gail:atk-bridge
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/sengelstad6
+# environment
+LD_LIBRARY_PATH = /home/sengelstad6/packages/OpenCASCADE//Linux/lib:/home/sengelstad6/packages/EngSketchPad/lib:/home/sengelstad6/packages/OpenCASCADE//Linux/lib:/home/sengelstad6/packages/EngSketchPad/lib::/home/sengelstad6/packages/OpenCASCADE/lib:/home/sengelstad6/packages/OpenCASCADE/lib
+# environment
+LESSCLOSE = /usr/bin/lesspipe %s %s
+# environment
+ESPARCH = 
+# environment
+VSCODE_CLI = 1
+# environment
+VSCODE_CODE_CACHE_PATH = /home/sengelstad6/.config/Code/CachedData/6d9b74a70ca9c7733b29f0456fd8195364076dda
+# environment
+TETGEN = /home/sengelstad6/packages/tetgen/
+# environment
+LOGNAME = sengelstad6
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# environment
+SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd/void
+# environment
+SNAP_CONTEXT = ZZBEA5g1oju54NQ0_Xrd110rtDC1hjw_5M_EktPBmSAhTWRbNgOL
+# environment
+CASARCH = Linux
+# environment
+ESP_ARCH = LINUX64
+# environment
+ELECTRON_NO_ATTACH_CONSOLE = 1
+# environment
+SNAP_USER_COMMON = /home/sengelstad6/snap/code/common
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# environment
+GNOME_DESKTOP_SESSION_ID = this-is-deprecated
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+MAKELEVEL := 0
+# environment
+SNAP_REAL_HOME = /home/sengelstad6
+# default
+MAKE = $(MAKE_COMMAND)
+# default
+MAKECMDGOALS := all
+# environment
+QT_IM_MODULE = ibus
+# environment
+SNAP_USER_DATA = /home/sengelstad6/snap/code/104
+# environment
+SHLVL = 0
+# environment
+PAROPT_DIR = /home/sengelstad6/git/paropt
+# environment
+GNOME_SHELL_SESSION_MODE = ubuntu
+# default
+MAKE_VERSION := 4.2.1
+# environment
+USER = sengelstad6
+# environment
+SNAP_REVISION = 104
+# makefile
+.DEFAULT_GOAL := default
+# environment
+XDG_CURRENT_DESKTOP = Unity
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+UDUNITS2_XML_PATH = /home/sengelstad6/packages/EngSketchPad/src/CAPS/udunits/udunits2.xml
+# default
+MAKE_COMMAND := make
+# default
+.VARIABLES := 
+# automatic
+*F = $(notdir $*)
+# environment
+VSCODE_IPC_HOOK = /run/user/875769/vscode-530c2541-1.70.1-main.sock
+# environment
+BAMF_DESKTOP_FILE_HINT = /var/lib/snapd/desktop/applications/code_code.desktop
+# environment
+PYTHONPATH = /home/sengelstad6/packages/EngSketchPad/pyESP:/home/sengelstad6/packages/EngSketchPad/pyESP::/home/sengelstad6/git/paropt:/home/sengelstad6/git/calcvar:/home/sengelstad6/git/caps2tacs:/home/sengelstad6/git/caps2fun:/home/sengelstad6/git/tacs:/home/sengelstad6/packages/EngSketchPad/pyESP:/home/sengelstad6/git/mytrack:/home/sengelstad6/git/paropt:/home/sengelstad6/git/calcvar:/home/sengelstad6/git/caps2tacs:/home/sengelstad6/git/caps2fun:/home/sengelstad6/git/tacs:/home/sengelstad6/packages/EngSketchPad/pyESP:/home/sengelstad6/git/mytrack
+# makefile
+MAKEFLAGS = prR
+# environment
+MFLAGS = -prR
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+PWI_HOME = /opt/pointwise/pointwise
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# environment
+PYTHONLIB = -L/usr/lib/python3.8/config-3.8-x86_64-linux-gnu -lpython3.8
+# environment
+GDK_BACKEND = x11
+# automatic
++F = $(notdir $+)
+# environment
+QT_ACCESSIBILITY = 1
+# default
+MAKEFILES := 
+# environment
+SNAP_COOKIE = ZZBEA5g1oju54NQ0_Xrd110rtDC1hjw_5M_EktPBmSAhTWRbNgOL
+# automatic
+<F = $(notdir $<)
+# automatic
+^F = $(notdir $^)
+# environment
+SNAP_NAME = code
+# environment
+CAPS_GLYPH = /home/sengelstad6/packages/EngSketchPad/src/CAPS/aim/pointwise/glyph
+# environment
+LC_ALL = C
+# environment
+EFCOMP = gfortran
+# environment
+GJS_DEBUG_TOPICS = JS ERROR;JS LOG
+# environment
+PWID_LICENSE_FILE = 27000@pointwiselic.ecs.gatech.edu
+# default
+SUFFIXES := 
+# environment
+SNAP_REEXEC = 
+# environment
+CHROME_DESKTOP = code-url-handler.desktop
+# environment
+WINDOWPATH = 2
+# environment
+CASREV = 7.4
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+ 
+# environment
+GJS_DEBUG_OUTPUT = stderr
+# environment
+RLM_LICENSE = 5053@pointwiselic.ecs.gatech.edu
+# default
+.RECIPEPREFIX := 
+# environment
+LANG = C
+# environment
+AFLR = 
+# environment
+VSCODE_PID = 43752
+# variable set hash-table stats:
+# Load=143/1024=14%, Rehash=0, Collisions=20/166=12%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 52, inode 102872): 19 files, no impossibilities.
+
+# 19 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+interface:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 29):
+	@python3 setup.py build_ext --inplace
+
+# Not a target:
+all:
+#  Command line target.
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+complex_interface:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 35):
+	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+
+# Not a target:
+Makefile:
+#  Implicit rule search has not been done.
+#  Last modified 2022-08-17 12:14:16.915018551
+#  File has not been updated.
+
+# Not a target:
+Makefile.in:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has not been updated.
+
+debug:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 13):
+	@cd src && ${MAKE} $@ || exit 1
+	@cd lib && ${MAKE} || exit 1
+
+default:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 5):
+	@cd src && ${MAKE} || exit 1
+	@cd lib && ${MAKE} || exit 1
+	@cd funtofem; \
+	echo "ctypedef double F2FScalar" > FuntofemTypedefs.pxi; \
+	echo "F2F_NPY_SCALAR = np.NPY_DOUBLE" > FuntofemDefs.pxi; \
+	echo "dtype = np.double" >> FuntofemDefs.pxi;
+
+complex_debug:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 25):
+	@cd src && ${MAKE} $@ || exit 1
+	@cd lib && ${MAKE} || exit 1
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 41):
+	@cd src && ${MAKE} $@ || exit 1
+	@cd lib && ${MAKE} $@ || exit 1
+	@rm funtofem/*.so  || exit 1
+
+debug_interface:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 32):
+	@python3 setup.py build_ext --inplace
+
+complex:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 17):
+	@cd src && ${MAKE} $@ || exit 1
+	@cd lib && ${MAKE} || exit 1
+	@cd funtofem; \
+	echo "ctypedef complex F2FScalar" > FuntofemTypedefs.pxi; \
+	echo "F2F_NPY_SCALAR = np.NPY_CDOUBLE" > FuntofemDefs.pxi; \
+	echo "dtype = np.complex" >> FuntofemDefs.pxi;
+
+complex_debug_interface:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 38):
+	@python3 setup.py build_ext --inplace --define FUNTOFEM_USE_COMPLEX
+
+# files hash-table stats:
+# Load=14/1024=1%, Rehash=0, Collisions=0/25=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 34 / storage = 327 B / avg = 9 B
+# current buf: size = 8162 B / used = 327 B / count = 34 / avg = 9 B
+
+# strcache performance: lookups = 48 / hit rate = 29%
+# hash-table stats:
+# Load=34/8192=0%, Rehash=0, Collisions=1/48=2%
+# Finished Make data base on Wed Aug 17 12:16:32 2022
+
+ 

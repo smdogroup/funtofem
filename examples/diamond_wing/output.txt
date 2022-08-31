@@ -1,0 +1,432 @@
+FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 19:37:37 with 192 processes
+Contents of fun3d.nml file below------------------------
+&project
+    project_rootname = 'fun3d_CAPS'
+/
+
+&governing_equations
+    viscous_terms = 'inviscid'
+/
+
+&raw_grid
+    grid_format = 'aflr3'
+    data_format = 'default'
+    swap_yz_axes = .false.
+/
+
+&reference_physical_properties
+    mach_number = 0.3
+    angle_of_attack = 0.0
+    reynolds_number = 1000000.0
+    temperature = 300.0
+    temperature_units = 'Kelvin'
+/
+
+&inviscid_flux_method
+    flux_construction = 'roe'
+    flux_limiter = 'hminmod'
+    smooth_limiter_coeff = 1.0
+    freeze_limiter_iteration = 60
+/
+
+&nonlinear_solver_parameters
+    schedule_iteration = 1, 80
+    schedule_cfl = 2, 100
+    time_accuracy = 'steady'
+    time_step_nondim = 0.1
+    subiterations = 0
+    schedule_cflturb = 50.0, 50.0
+/
+
+&force_moment_integ_properties
+    area_reference = 1.0
+/
+
+&code_run_control
+    steps = 100
+    stopping_tolerance = 1e-15
+    restart_write_freq = 1000
+    restart_read = 'off'
+/
+
+&global
+    moving_grid = .true.
+    volume_animation_freq = -1
+    boundary_animation_freq = -1
+/
+
+&elasticity_gmres
+    algebraic_mesh_deform = .false.
+    nsearch = 200
+    tol = 1e-14
+    deformation_substeps = 1
+    deform_from_initial_mesh = .true.
+    use_substeps_each_step = .false.
+    elasticity = 1
+    elasticity_exponent = 1.0
+    nrestarts = 1
+    poisson_ratio = 0.0
+/
+
+&massoud_output
+    funtofem_include_skin_friction = .false.
+/
+
+&volume_output_variables
+    export_to = 'vtk'
+    x = .false.
+    y = .false.
+    z = .false.
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+
+&boundary_output_variables
+    number_of_boundaries = -1
+    boundary_list = '1-2'
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+Contents of fun3d.nml file above------------------------
+ The default "stream" data format is being used for the grid format "aflr3".
+ Namelist data file moving_body.input successfully opened
+   Namelist forced_motion not read
+   Namelist observer_motion not read
+   Namelist surface_motion_from_file not read
+   Namelist motion_from_file not read
+   Namelist composite_overset_mesh not read
+  ... Use the reference Mach number for the freestream:  T
+ Setting flow solver convergence tolerance to  0.1E-29
+ (to prevent unintended kickout from coupling process)
+ 
+ loading design ...
+ Preparing to read binary AFLR3 grid: fun3d_CAPS.lb8.ugrid
+ 
+  nnodes              39648
+  ntface,nqface       23752 0
+  ntet,npyr,nprz,nhex 206474 0 0 0
+ 
+cell statistics: type,      min volume,      max volume, max face angle
+cell statistics:  tet,  0.94634718E-09,  0.14539812E+02,  174.189550509
+cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
+
+     ... PM (64,skip_do_min) :  F T
+     ... Use subset of cores to call ParMETIS            4
+     ... Calling ParMETIS (ParMETIS_V3_PartKway) .... F T
+     ... Temporary memory usage                 869868  Bytes
+     ... edgeCut        66370
+     ... Constructing partition node sets for level-0...                206474 T
+     ... Edge Partitioning ....
+     ... Boundary partitioning....
+     ... Reordering for cache efficiency....
+     ... Write global grid information to fun3d_CAPS.grid_info
+     ... Time after preprocess TIME/Mem(MB):  ********    231.78    231.78
+ Grid Motion Type 
+   deform
+ 
+  NOTE: kappa_umuscl set by grid: .00
+ 
+ Grid read complete
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+  Running an aeroelastic case with itime = 0
+  -->Setting ignore_grid_velocity to true
+  -->Setting need_grid_velocity to false
+ 
+ Computing distance function:
+ 
+ Number of Moving Bodies:
+  1
+ 
+ Motion Data for Body    1
+   Body Name:   diamondWing
+   Parent Name: 
+  Number of Boundaries Defining Body:
+    1
+  List of Boundaries Defining Body:
+    2
+  Mesh Movement For Body Motion
+   deform
+  Component Mesh ID:
+    0
+  Rotational Motion:
+   rotate
+    0
+   no forced rotation specified
+  Translational Motion
+   translate
+    0
+   no forced translation specified
+  List of Boundaries Used For Force/Moment Integration:
+    2
+  Moment Center:
+   xmc         ymc         zmc  
+   0.00000E+00 0.00000E+00 0.00000E+00
+   move_mc
+    1
+  Surface Files
+   No surface files specified
+ 
+ Moving Body Family Trees:
+ 
+   number after each component name is the generation;
+   generation 0 motion is relative to inertial frame
+   generation 1 motion is relative to generation 0
+   generation 2 motion is relative to generation 1, etc
+ 
+   Body Name: diamondWing (0)
+    Ancestors:
+      none
+    Descendants:
+      none
+ 
+ Body 1 initial moment center:   0.0000000E+00  0.0000000E+00  0.0000000E+00
+ Done.
+[0] Creating TACSAssembler with numOwnedNodes = 1407 numElements = 1448
+[7] Creating TACSAssembler with numOwnedNodes = 1406 numElements = 1463
+[11] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1450
+[18] Creating TACSAssembler with numOwnedNodes = 1421 numElements = 1437
+[22] Creating TACSAssembler with numOwnedNodes = 1418 numElements = 1446
+[23] Creating TACSAssembler with numOwnedNodes = 1378 numElements = 1451
+[26] Creating TACSAssembler with numOwnedNodes = 1390 numElements = 1454
+[1] Creating TACSAssembler with numOwnedNodes = 1400 numElements = 1431
+[2] Creating TACSAssembler with numOwnedNodes = 1393 numElements = 1429
+[3] Creating TACSAssembler with numOwnedNodes = 1394 numElements = 1441
+[4] Creating TACSAssembler with numOwnedNodes = 1386 numElements = 1453
+[6] Creating TACSAssembler with numOwnedNodes = 1410 numElements = 1445
+[8] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1458
+[9] Creating TACSAssembler with numOwnedNodes = 1432 numElements = 1450
+[10] Creating TACSAssembler with numOwnedNodes = 1418 numElements = 1452
+[13] Creating TACSAssembler with numOwnedNodes = 1397 numElements = 1452
+[16] Creating TACSAssembler with numOwnedNodes = 1439 numElements = 1439
+[17] Creating TACSAssembler with numOwnedNodes = 1428 numElements = 1450
+[19] Creating TACSAssembler with numOwnedNodes = 1387 numElements = 1443
+[20] Creating TACSAssembler with numOwnedNodes = 1415 numElements = 1441
+[24] Creating TACSAssembler with numOwnedNodes = 1431 numElements = 1454
+[0] TACSAssembler: Total dof = 253638 Total nodes = 42273 Total elements = 43414
+[5] Creating TACSAssembler with numOwnedNodes = 1429 numElements = 1449
+[12] Creating TACSAssembler with numOwnedNodes = 1393 numElements = 1449
+[14] Creating TACSAssembler with numOwnedNodes = 1372 numElements = 1451
+[15] Creating TACSAssembler with numOwnedNodes = 1424 numElements = 1450
+[21] Creating TACSAssembler with numOwnedNodes = 1419 numElements = 1428
+[25] Creating TACSAssembler with numOwnedNodes = 1412 numElements = 1453
+[27] Creating TACSAssembler with numOwnedNodes = 1398 numElements = 1451
+[28] Creating TACSAssembler with numOwnedNodes = 1423 numElements = 1451
+[29] Creating TACSAssembler with numOwnedNodes = 1409 numElements = 1445
+[0] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.46, nnz(ILU) = 49757
+[23] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.28, nnz(ILU) = 46407
+[10] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.41, nnz(ILU) = 49010
+[27] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.48, nnz(ILU) = 48603
+[4] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.31, nnz(ILU) = 48923
+[3] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.38, nnz(ILU) = 49750
+[5] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.54, nnz(ILU) = 51069
+[18] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.75, nnz(ILU) = 53739
+[25] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.68, nnz(ILU) = 53229
+[26] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.64, nnz(ILU) = 52240
+[13] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.69, nnz(ILU) = 52677
+[8] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.77, nnz(ILU) = 54780
+[22] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.82, nnz(ILU) = 54459
+[1] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.75, nnz(ILU) = 53590
+[15] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.83, nnz(ILU) = 55473
+[19] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.90, nnz(ILU) = 56439
+[2] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.96, nnz(ILU) = 56974
+[14] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.99, nnz(ILU) = 55376
+[17] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.94, nnz(ILU) = 57486
+[24] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.99, nnz(ILU) = 58682
+[9] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.09, nnz(ILU) = 59535
+[16] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.21, nnz(ILU) = 60347
+[20] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.29, nnz(ILU) = 58444
+[12] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.09, nnz(ILU) = 59361
+[28] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.27, nnz(ILU) = 61452
+[29] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.42, nnz(ILU) = 61944
+[21] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.46, nnz(ILU) = 64353
+[11] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.30, nnz(ILU) = 63280
+[6] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.79, nnz(ILU) = 66706
+[7] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.91, nnz(ILU) = 70822
+[29] TACSBlockCyclicMat: (19260,19260) Initial density: 0.204 factor fill in: 0.664
+Transfer scheme [0]: Creating scheme of type MELD...
+FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 19:37:44 with 192 processes
+Contents of fun3d.nml file below------------------------
+&project
+    project_rootname = 'fun3d_CAPS'
+/
+
+&governing_equations
+    viscous_terms = 'inviscid'
+/
+
+&raw_grid
+    grid_format = 'aflr3'
+    data_format = 'default'
+    swap_yz_axes = .false.
+/
+
+&reference_physical_properties
+    mach_number = 0.3
+    angle_of_attack = 0.0
+    reynolds_number = 1000000.0
+    temperature = 300.0
+    temperature_units = 'Kelvin'
+/
+
+&inviscid_flux_method
+    flux_construction = 'roe'
+    flux_limiter = 'hminmod'
+    smooth_limiter_coeff = 1.0
+    freeze_limiter_iteration = 60
+/
+
+&nonlinear_solver_parameters
+    schedule_iteration = 1, 80
+    schedule_cfl = 2, 100
+    time_accuracy = 'steady'
+    time_step_nondim = 0.1
+    subiterations = 0
+    schedule_cflturb = 50.0, 50.0
+/
+
+&force_moment_integ_properties
+    area_reference = 1.0
+/
+
+&code_run_control
+    steps = 100
+    stopping_tolerance = 1e-15
+    restart_write_freq = 1000
+    restart_read = 'off'
+/
+
+&global
+    moving_grid = .true.
+    volume_animation_freq = -1
+    boundary_animation_freq = -1
+/
+
+&elasticity_gmres
+    algebraic_mesh_deform = .false.
+    nsearch = 200
+    tol = 1e-14
+    deformation_substeps = 1
+    deform_from_initial_mesh = .true.
+    use_substeps_each_step = .false.
+    elasticity = 1
+    elasticity_exponent = 1.0
+    nrestarts = 1
+    poisson_ratio = 0.0
+/
+
+&massoud_output
+    funtofem_include_skin_friction = .false.
+/
+
+&volume_output_variables
+    export_to = 'vtk'
+    x = .false.
+    y = .false.
+    z = .false.
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+
+&boundary_output_variables
+    number_of_boundaries = -1
+    boundary_list = '1-2'
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+Contents of fun3d.nml file above------------------------
+ The default "stream" data format is being used for the grid format "aflr3".
+ Namelist data file moving_body.input successfully opened
+   Namelist forced_motion not read
+   Namelist observer_motion not read
+   Namelist surface_motion_from_file not read
+   Namelist motion_from_file not read
+   Namelist composite_overset_mesh not read
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+ Setting flow solver convergence tolerance to  0.1E-29
+ (to prevent unintended kickout from coupling process)
+ 
+ loading design ...
+ Preparing to read binary AFLR3 grid: fun3d_CAPS.lb8.ugrid
+ 
+  nnodes              39648
+  ntface,nqface       23752 0
+  ntet,npyr,nprz,nhex 206474 0 0 0
+ 
+cell statistics: type,      min volume,      max volume, max face angle
+cell statistics:  tet,  0.94634718E-09,  0.14539812E+02,  174.189550509
+cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
+
+     ... PM (64,skip_do_min) :  F T
+     ... Use subset of cores to call ParMETIS            4
+     ... Calling ParMETIS (ParMETIS_V3_PartKway) .... F T
+     ... Temporary memory usage                 869868  Bytes
+     ... edgeCut        66370
+     ... Constructing partition node sets for level-0...                206474 T
+     ... Edge Partitioning ....
+     ... Boundary partitioning....
+     ... Reordering for cache efficiency....
+     ... Write global grid information to fun3d_CAPS.grid_info
+     ... Time after preprocess TIME/Mem(MB):  ********    489.98    489.98
+  NOTE: kappa_umuscl set by grid: .00
+ 
+ Grid read complete
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+  Running an aeroelastic case with itime = 0
+  -->Setting ignore_grid_velocity to true
+  -->Setting need_grid_velocity to false
+ 
+ Recomputing distance function:
+ 
+ Number of Moving Bodies:
+  1
+ 
+ Motion Data for Body    1
+   Body Name:   diamondWing
+   Parent Name: 
+  Number of Boundaries Defining Body:
+    1
+  List of Boundaries Defining Body:
+    2
+  Mesh Movement For Body Motion
+   deform
+  Component Mesh ID:
+    0
+  Rotational Motion:
+   rotate
+    0
+   no forced rotation specified
+  Translational Motion
+   translate
+    0
+   no forced translation specified
+  List of Boundaries Used For Force/Moment Integration:
+    2
+  Moment Center:
+   xmc         ymc         zmc  
+   0.00000E+00 0.00000E+00 0.00000E+00
+   move_mc
+    1
+  Surface Files
+   No surface files specified
+ 
+ Moving Body Family Trees:
+ 
+   number after each component name is the generation;
+   generation 0 motion is relative to inertial frame
+   generation 1 motion is relative to generation 0
+   generation 2 motion is relative to generation 1, etc
+ 
+   Body Name: diamondWing (0)
+    Ancestors:
+      none
+    Descendants:
+      none
+ 
+ Body 1 initial moment center:   0.0000000E+00  0.0000000E+00  0.0000000E+00

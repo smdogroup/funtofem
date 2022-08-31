@@ -1,0 +1,234 @@
+#make diamond airfoil wing for supersonic test case
+
+#design parameters for airfoil
+despmtr diamAngle0 10.0
+despmtr chord0 1.0
+despmtr diamAnglef 10.0
+despmtr frchamfer 0.05
+
+#design parameters of wing
+despmtr area 10.0
+despmtr AOA 0.0
+despmtr taper 1.0
+
+#config parameters
+cfgpmtr nrib 10
+#cfgpmtr nspar 2
+cfgpmtr view:fluid 1
+cfgpmtr view:structure 0
+
+set cfdOn view:fluid
+
+#wing quantities
+set chordf taper*chord0
+set cmean 0.5*(chord0+chordf)
+set span area/cmean
+set sspan span/2
+set toverc0 tand(diamAngle0)
+set tovercf tand(diamAnglef)
+
+#root airfoil quantities
+set xmag0 chord0/2
+set thickness0 chord0*toverc0
+set ymag0 thickness0/2
+set tchamf ymag0*frchamfer
+set wchamf tchamf*4
+
+
+#make the solid diamond loft
+mark
+#make root diamond
+skbeg xmag0 tchamf 0
+   linseg wchamf ymag0 0
+   linseg -wchamf ymag0 0
+   linseg -xmag0 tchamf 0
+   linseg -xmag0 -tchamf 0
+   linseg -wchamf -ymag0 0
+   linseg wchamf -ymag0 0
+   linseg xmag0 -tchamf 0
+   linseg xmag0 tchamf 0
+skend
+store rootDiamond 0
+restore rootDiamond 0
+rotatez -AOA 0 0
+
+#tip airfoil quantities
+set xmagf chordf/2
+set thicknessf chordf*tovercf
+set ymagf thicknessf/2
+
+#make tip diamond
+restore rootDiamond 0
+translate 0 0 -sspan
+rotatez -AOA 0 0
+loft 0
+
+select face
+	attribute compGroup $OML
+	attribute comp $OML
+
+store diamondLoft 0
+
+
+#make the structure mesh
+patbeg foo ifzero(cfdOn,1,0)
+
+   set margin 0.1*chord0
+   #one spar
+   box 0 -ymag0-margin margin 0 2*(ymag0+margin) -sspan-2*margin
+   select face
+      attribute capsGroup $spar1
+      attribute capsMesh $spar1
+      attribute spar 1
+      attribute comp $spar1
+      attribute compGroup $spar
+   
+   
+   set xmmag xmag0+margin
+   set ymmag ymag0+margin
+   patbeg irib nrib
+      set zpos -(irib-1)/(nrib-1)*sspan
+      box -xmmag -ymmag zpos 2*xmmag 2*ymmag 0
+      
+      select face
+         attribute capsGroup !$rib+irib
+         attribute capsMesh !$rib+irib
+         attribute comp !$rib+irib
+         attribute compGroup $rib
+      patbeg foo ifzero(irib-1,1,1)
+         union
+      patend
+   patend
+
+   restore diamondLoft 0
+   intersect
+
+   restore diamondLoft 0
+   hollow 0
+   union
+   
+   select face
+   	attribute isface $true
+   
+   set nOML nrib-1
+	set OMLcolor $blue
+	set ribColor $green
+	set sparColor $red
+	set stringerColor $red
+	udprim editAttr filename <<
+
+		FACE HAS isface=true
+		SET colored=false
+
+		FACE HAS compGroup=OML
+		SET _color=red
+		SET colored=true
+
+		PATBEG  iOML nOML
+           FACE  ADJ2FACE  comp=!$rib+iOML
+           AND ADJ2FACE   comp=!$rib+(iOML+1)
+           AND HAS compGroup=OML
+           SET    comp=!$OML+iOML
+           SET    capsGroup=!$OML+iOML
+           SET    capsMesh=!$OML+iOML
+           SET    _color=!OMLcolor
+           SET    colored=true
+        PATEND
+
+		FACE HAS _color=red
+		AND ADJ2FACE comp=rib2
+		AND HAS compGroup=OML
+		SET  comp=OML1
+		SET  capsGroup=OML1
+		SET capsMesh=OML1
+		SET _color=!OMLcolor
+		SET colored=true
+   
+   		FACE HAS _color=red
+		AND ADJ2FACE comp=OML1
+		AND HAS compGroup=OML
+		SET  comp=rib1
+		SET  capsGroup=rib1
+		SET capsMesh=rib1
+		SET _color=!ribColor
+		SET colored=true
+   		SET capsConstraint=wingRoot
+
+		FACE HAS _color=red
+		AND ADJ2FACE comp=!$rib+(nrib-1)
+		AND HAS compGroup=OML
+		SET comp=!$OML+nOML
+		SET capsGroup=!$OML+nOML
+		SET capsMesh=!$OML+nOML
+		SET _color=!OMLcolor
+		SET colored=true
+   
+   		FACE HAS _color=red
+		AND ADJ2FACE comp=!$OML+nOML
+		AND HAS compGroup=OML
+		SET  comp=!$rib+nrib
+		SET  capsGroup=!$rib+nrib
+		SET capsMesh=!$rib+nrib
+		SET _color=!ribColor
+		SET colored=true
+
+		FACE HAS compGroup=spar
+		SET _color=!sparColor
+		SET colored=true
+		
+		FACE HAS compGroup=rib
+		SET _color=!ribColor
+		SET colored=true
+
+		EDGE ADJ2FACE  compGroup=OML
+		SET _color=black
+
+		EDGE  ADJ2FACE  capsConstraint=wingRoot
+		SET   capsConstraint=wingRoot
+		NODE  ADJ2FACE  capsConstraint=wingRoot
+		SET   capsConstraint=wingRoot
+		
+	>>
+
+	select body
+        attribute capsAIM $egadsTessAIM;tacsAIM
+   
+patend
+
+#make the fluid mesh
+patbeg foo ifzero(cfdOn-1,1,0)
+   set ff 20*chord0
+   set exspan 1.5*span
+   set ff sqrt(ff*ff+exspan*exspan)
+    set df 2*ff
+    #farfield
+    box -ff -ff ff df df -df
+    select face
+       attribute capsGroup $Farfield
+       attribute capsMesh $Farfield
+       attribute capsMeshLength 3.0
+
+    restore diamondLoft 0
+    select face
+        attribute capsGroup $wall
+        attribute capsMesh $wall
+        attribute capsMeshLength 0.1
+    subtract
+
+    select body
+        attribute capsAIM $egadsTessAIM;pointwiseAIM;fun3dAIM;tetgenAIM
+        attribute capsMeshLength 1.0
+    
+   udprim editAttr filename <<
+      FACE HAS capsGroup=wall
+   	  SET capsMeshLength=0.1
+   
+      FACE HAS capsMeshLength=Farfield
+      SET capsMeshLength=3.0
+   >>
+patend
+
+#rotate to match fun3d coordinates
+rotatex 90 0 0
+
+   

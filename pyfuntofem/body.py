@@ -36,6 +36,7 @@ class Body(Base):
     Defines a body base class for FUNtoFEM. Can be used as is or as a
     parent class for bodies with shape parameterization.
     """
+    ANALYSIS_TYPES = ["aerothermal", "aeroelastic", "aerothermoelastic"]
 
     def __init__(
         self,
@@ -73,6 +74,8 @@ class Body(Base):
         """
 
         from .variable import Variable as dv
+
+        assert(analysis_type in Body.ANALYSIS_TYPES)
 
         super(Body, self).__init__(name, id, group)
 
