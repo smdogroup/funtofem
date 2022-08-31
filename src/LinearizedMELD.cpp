@@ -778,7 +778,7 @@ void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
 
         // Form the vector q from the centroid of the undisplaced set to the
         // node
-        F2FScalar q[3], qd[3];
+        F2FScalar q[3];
         vec_diff(xs0bar, xs, q);
 
         // Get structural node displacement
