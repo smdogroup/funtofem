@@ -127,7 +127,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - PUBLISH_DOCS: true
+          PUBLISH_DOCS: true
     
     steps:
       - name: Display run details
@@ -142,7 +142,23 @@ jobs:
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
       - uses: actions/checkout@v2
-      
+
+      - name: Setup conda environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: 3.8
+
+      - name: Install FUNtoFEM
+        run: |
+          echo "=============================================================";
+          echo "Install FUNtoFEM";
+          echo "=============================================================";
+          export F2F_DIR=${GITHUB_WORKSPACE};
+          echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+          cd $F2F_DIR;
+          cp Makefile.in.info Makefile.in;
+
       - name: Build docs
         run: |
           cd ${GITHUB_WORKSPACE}/docs;
