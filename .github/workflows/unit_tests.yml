@@ -18,7 +18,7 @@ on:
 
 jobs:
   # This job is called test_docs.
-  unit_test_and_docs:
+  unit_tests:
     # Recommended if you intend to make multiple deployments in quick succession
     concurrency: ci-${{ github.ref }}
     # Run on Ubuntu
@@ -158,6 +158,7 @@ jobs:
           echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
+          conda install sphinx -q -y;
 
       - name: Build docs
         run: |
