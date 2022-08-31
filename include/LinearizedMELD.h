@@ -42,11 +42,21 @@ class LinearizedMELD : public MELD {
 
   // Auxiliary functions for linearized load and displacement transfer
   void computePointInertiaInverse(const F2FScalar *H, F2FScalar *Hinv);
+  void adjPointInertiaInverse(const F2FScalar *Hinv, const F2FScalar *Hinvd,
+                              F2FScalar *Hd);
   void computeDispContribution(const F2FScalar w, const F2FScalar *r,
                                const F2FScalar *Hinv, const F2FScalar *q,
                                const F2FScalar *us, F2FScalar *ua);
+  void addAdjDispContribution(const F2FScalar w, const F2FScalar *r,
+                              const F2FScalar *Hinv, const F2FScalar *q,
+                              const F2FScalar *us, const F2FScalar *uad,
+                              F2FScalar *rd, F2FScalar *qd, F2FScalar *Hinvd);
   void computeLoadContribution(const F2FScalar w, const F2FScalar *q,
                                const F2FScalar *Hinv, const F2FScalar *r,
                                const F2FScalar *fa, F2FScalar *fj);
+  void addAdjLoadContribution(const F2FScalar w, const F2FScalar *r,
+                              const F2FScalar *Hinv, const F2FScalar *q,
+                              const F2FScalar *fa, const F2FScalar *fjd,
+                              F2FScalar *rd, F2FScalar *qd, F2FScalar *Hinvd);
 };
 #endif  // LINEARIZEDMELD_H

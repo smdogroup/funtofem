@@ -262,6 +262,47 @@ void LinearizedMELD::computePointInertiaInverse(const F2FScalar *H,
 }
 
 /*
+  Compute the result of the
+
+*/
+void LinearizedMELD::adjPointInertiaInverse(const F2FScalar *Hinv,
+                                            const F2FScalar *Hinvd,
+                                            F2FScalar *Hd) {
+  F2FScalar A[9];
+  // A = Hinv^{T} * Hinvd
+  A[0] = Hinv[0] * Hinvd[0] + Hinv[3] * Hinvd[3] + Hinv[6] * Hinvd[6];
+  A[3] = Hinv[1] * Hinvd[0] + Hinv[4] * Hinvd[3] + Hinv[7] * Hinvd[6];
+  A[6] = Hinv[2] * Hinvd[0] + Hinv[5] * Hinvd[3] + Hinv[8] * Hinvd[6];
+
+  A[1] = Hinv[0] * Hinvd[1] + Hinv[3] * Hinvd[4] + Hinv[6] * Hinvd[7];
+  A[4] = Hinv[1] * Hinvd[1] + Hinv[4] * Hinvd[4] + Hinv[7] * Hinvd[7];
+  A[7] = Hinv[2] * Hinvd[1] + Hinv[5] * Hinvd[4] + Hinv[8] * Hinvd[7];
+
+  A[2] = Hinv[0] * Hinvd[2] + Hinv[3] * Hinvd[5] + Hinv[6] * Hinvd[8];
+  A[5] = Hinv[1] * Hinvd[2] + Hinv[4] * Hinvd[5] + Hinv[7] * Hinvd[8];
+  A[8] = Hinv[2] * Hinvd[2] + Hinv[5] * Hinvd[5] + Hinv[8] * Hinvd[8];
+
+  // Hd = - A * Hinv^{T}
+  Hd[0] = -(A[0] * Hinv[0] + A[1] * Hinv[1] + A[2] * Hinv[2]);
+  Hd[3] = -(A[3] * Hinv[0] + A[4] * Hinv[1] + A[5] * Hinv[2]);
+  Hd[6] = -(A[6] * Hinv[0] + A[7] * Hinv[1] + A[8] * Hinv[2]);
+
+  Hd[1] = -(A[0] * Hinv[3] + A[1] * Hinv[4] + A[2] * Hinv[5]);
+  Hd[4] = -(A[3] * Hinv[3] + A[4] * Hinv[4] + A[5] * Hinv[5]);
+  Hd[7] = -(A[6] * Hinv[3] + A[7] * Hinv[4] + A[8] * Hinv[5]);
+
+  Hd[2] = -(A[0] * Hinv[6] + A[1] * Hinv[7] + A[2] * Hinv[8]);
+  Hd[5] = -(A[3] * Hinv[6] + A[4] * Hinv[7] + A[5] * Hinv[8]);
+  Hd[8] = -(A[6] * Hinv[6] + A[7] * Hinv[7] + A[8] * Hinv[8]);
+
+  // Hd = Hd - trace(Hd)
+  F2FScalar trace = Hd[0] + Hd[4] + Hd[8];
+  Hd[0] = Hd[0] - trace;
+  Hd[4] = Hd[4] - trace;
+  Hd[8] = Hd[8] - trace;
+}
+
+/*
   Computes contribution to displacement of aerodynamic surface node from single
   structural node in linearized MELD
 
@@ -280,7 +321,7 @@ void LinearizedMELD::computePointInertiaInverse(const F2FScalar *H,
 void LinearizedMELD::computeDispContribution(
     const F2FScalar w, const F2FScalar *r, const F2FScalar *Hinv,
     const F2FScalar *q, const F2FScalar *us, F2FScalar *ua) {
-  // Compute matrix = w*(qx*Hinv*dx + I)
+  // Compute matrix = w*(q^{x} * Hinv * r^{x} + I)
   F2FScalar A[9];
   A[0] = w * (q[2] * (r[1] * Hinv[5] - r[2] * Hinv[4]) -
               q[1] * (r[1] * Hinv[8] - r[2] * Hinv[7]) + 1.0);
@@ -305,6 +346,92 @@ void LinearizedMELD::computeDispContribution(
   ua[0] = A[0] * us[0] + A[3] * us[1] + A[6] * us[2];
   ua[1] = A[1] * us[0] + A[4] * us[1] + A[7] * us[2];
   ua[2] = A[2] * us[0] + A[5] * us[1] + A[8] * us[2];
+}
+
+/*
+  Compute the contributions to the adjoint from the displacement
+*/
+void LinearizedMELD::addAdjDispContribution(
+    const F2FScalar w, const F2FScalar *r, const F2FScalar *Hinv,
+    const F2FScalar *q, const F2FScalar *us, const F2FScalar *uad,
+    F2FScalar *rd, F2FScalar *qd, F2FScalar *Hinvd) {
+  // expr = w * uad^{T} * q^{x} * Hinv * r^{x} * us = - w * uad^{T} * qx * Hinv
+  // * us^{x} * r rd = d(expr)/dr = - w * uad^{T} * qx * Hinv * us^{x}
+  F2FScalar Ad[9];
+  Ad[0] = uad[0] * us[0];
+  Ad[1] = uad[1] * us[0];
+  Ad[2] = uad[2] * us[0];
+
+  Ad[3] = uad[0] * us[1];
+  Ad[4] = uad[1] * us[1];
+  Ad[5] = uad[2] * us[1];
+
+  Ad[6] = uad[0] * us[2];
+  Ad[7] = uad[1] * us[2];
+  Ad[8] = uad[2] * us[2];
+
+  if (rd) {
+    rd[0] += w * (-Ad[1] * (Hinv[5] * q[2] - Hinv[8] * q[1]) +
+                  Ad[2] * (Hinv[4] * q[2] - Hinv[7] * q[1]) +
+                  Ad[4] * (Hinv[2] * q[2] - Hinv[8] * q[0]) -
+                  Ad[5] * (Hinv[1] * q[2] - Hinv[7] * q[0]) -
+                  Ad[7] * (Hinv[2] * q[1] - Hinv[5] * q[0]) +
+                  Ad[8] * (Hinv[1] * q[1] - Hinv[4] * q[0]));
+    rd[1] += w * (Ad[0] * (Hinv[5] * q[2] - Hinv[8] * q[1]) -
+                  Ad[2] * (Hinv[3] * q[2] - Hinv[6] * q[1]) -
+                  Ad[3] * (Hinv[2] * q[2] - Hinv[8] * q[0]) +
+                  Ad[5] * (Hinv[0] * q[2] - Hinv[6] * q[0]) +
+                  Ad[6] * (Hinv[2] * q[1] - Hinv[5] * q[0]) -
+                  Ad[8] * (Hinv[0] * q[1] - Hinv[3] * q[0]));
+    rd[2] += w * (-Ad[0] * (Hinv[4] * q[2] - Hinv[7] * q[1]) +
+                  Ad[1] * (Hinv[3] * q[2] - Hinv[6] * q[1]) +
+                  Ad[3] * (Hinv[1] * q[2] - Hinv[7] * q[0]) -
+                  Ad[4] * (Hinv[0] * q[2] - Hinv[6] * q[0]) -
+                  Ad[6] * (Hinv[1] * q[1] - Hinv[4] * q[0]) +
+                  Ad[7] * (Hinv[0] * q[1] - Hinv[3] * q[0]));
+  }
+
+  if (qd) {
+    qd[0] += w * (-Ad[3] * (Hinv[7] * r[2] - Hinv[8] * r[1]) +
+                  Ad[4] * (Hinv[6] * r[2] - Hinv[8] * r[0]) -
+                  Ad[5] * (Hinv[6] * r[1] - Hinv[7] * r[0]) +
+                  Ad[6] * (Hinv[4] * r[2] - Hinv[5] * r[1]) -
+                  Ad[7] * (Hinv[3] * r[2] - Hinv[5] * r[0]) +
+                  Ad[8] * (Hinv[3] * r[1] - Hinv[4] * r[0]));
+    qd[1] += w * (Ad[0] * (Hinv[7] * r[2] - Hinv[8] * r[1]) -
+                  Ad[1] * (Hinv[6] * r[2] - Hinv[8] * r[0]) +
+                  Ad[2] * (Hinv[6] * r[1] - Hinv[7] * r[0]) -
+                  Ad[6] * (Hinv[1] * r[2] - Hinv[2] * r[1]) +
+                  Ad[7] * (Hinv[0] * r[2] - Hinv[2] * r[0]) -
+                  Ad[8] * (Hinv[0] * r[1] - Hinv[1] * r[0]));
+    qd[2] += w * (-Ad[0] * (Hinv[4] * r[2] - Hinv[5] * r[1]) +
+                  Ad[1] * (Hinv[3] * r[2] - Hinv[5] * r[0]) -
+                  Ad[2] * (Hinv[3] * r[1] - Hinv[4] * r[0]) +
+                  Ad[3] * (Hinv[1] * r[2] - Hinv[2] * r[1]) -
+                  Ad[4] * (Hinv[0] * r[2] - Hinv[2] * r[0]) +
+                  Ad[5] * (Hinv[0] * r[1] - Hinv[1] * r[0]));
+  }
+
+  if (Hinvd) {
+    Hinvd[0] += w * (-Ad[4] * q[2] * r[2] + Ad[5] * q[2] * r[1] +
+                     Ad[7] * q[1] * r[2] - Ad[8] * q[1] * r[1]);
+    Hinvd[1] += w * (Ad[3] * q[2] * r[2] - Ad[5] * q[2] * r[0] -
+                     Ad[6] * q[1] * r[2] + Ad[8] * q[1] * r[0]);
+    Hinvd[2] += w * (-Ad[3] * q[2] * r[1] + Ad[4] * q[2] * r[0] +
+                     Ad[6] * q[1] * r[1] - Ad[7] * q[1] * r[0]);
+    Hinvd[3] += w * (Ad[1] * q[2] * r[2] - Ad[2] * q[2] * r[1] -
+                     Ad[7] * q[0] * r[2] + Ad[8] * q[0] * r[1]);
+    Hinvd[4] += w * (-Ad[0] * q[2] * r[2] + Ad[2] * q[2] * r[0] +
+                     Ad[6] * q[0] * r[2] - Ad[8] * q[0] * r[0]);
+    Hinvd[5] += w * (Ad[0] * q[2] * r[1] - Ad[1] * q[2] * r[0] -
+                     Ad[6] * q[0] * r[1] + Ad[7] * q[0] * r[0]);
+    Hinvd[6] += w * (-Ad[1] * q[1] * r[2] + Ad[2] * q[1] * r[1] +
+                     Ad[4] * q[0] * r[2] - Ad[5] * q[0] * r[1]);
+    Hinvd[7] += w * (Ad[0] * q[1] * r[2] - Ad[2] * q[1] * r[0] -
+                     Ad[3] * q[0] * r[2] + Ad[5] * q[0] * r[0]);
+    Hinvd[8] += w * (-Ad[0] * q[1] * r[1] + Ad[1] * q[1] * r[0] +
+                     Ad[3] * q[0] * r[1] - Ad[4] * q[0] * r[0]);
+  }
 }
 
 /*
@@ -447,6 +574,89 @@ void LinearizedMELD::computeLoadContribution(
 }
 
 /*
+  Compute the contributions to the adjoint from the load
+*/
+void LinearizedMELD::addAdjLoadContribution(
+    const F2FScalar w, const F2FScalar *r, const F2FScalar *Hinv,
+    const F2FScalar *q, const F2FScalar *fa, const F2FScalar *fjd,
+    F2FScalar *rd, F2FScalar *qd, F2FScalar *Hinvd) {
+  F2FScalar Ad[9];
+  Ad[0] = fjd[0] * fa[0];
+  Ad[1] = fjd[1] * fa[0];
+  Ad[2] = fjd[2] * fa[0];
+
+  Ad[3] = fjd[0] * fa[1];
+  Ad[4] = fjd[1] * fa[1];
+  Ad[5] = fjd[2] * fa[1];
+
+  Ad[6] = fjd[0] * fa[2];
+  Ad[7] = fjd[1] * fa[2];
+  Ad[8] = fjd[2] * fa[2];
+
+  if (rd) {
+    rd[0] += w * (-Ad[3] * (Hinv[7] * q[2] - Hinv[8] * q[1]) +
+                  Ad[4] * (Hinv[6] * q[2] - Hinv[8] * q[0]) -
+                  Ad[5] * (Hinv[6] * q[1] - Hinv[7] * q[0]) +
+                  Ad[6] * (Hinv[4] * q[2] - Hinv[5] * q[1]) -
+                  Ad[7] * (Hinv[3] * q[2] - Hinv[5] * q[0]) +
+                  Ad[8] * (Hinv[3] * q[1] - Hinv[4] * q[0]));
+    rd[1] += w * (Ad[0] * (Hinv[7] * q[2] - Hinv[8] * q[1]) -
+                  Ad[1] * (Hinv[6] * q[2] - Hinv[8] * q[0]) +
+                  Ad[2] * (Hinv[6] * q[1] - Hinv[7] * q[0]) -
+                  Ad[6] * (Hinv[1] * q[2] - Hinv[2] * q[1]) +
+                  Ad[7] * (Hinv[0] * q[2] - Hinv[2] * q[0]) -
+                  Ad[8] * (Hinv[0] * q[1] - Hinv[1] * q[0]));
+    rd[2] += w * (-Ad[0] * (Hinv[4] * q[2] - Hinv[5] * q[1]) +
+                  Ad[1] * (Hinv[3] * q[2] - Hinv[5] * q[0]) -
+                  Ad[2] * (Hinv[3] * q[1] - Hinv[4] * q[0]) +
+                  Ad[3] * (Hinv[1] * q[2] - Hinv[2] * q[1]) -
+                  Ad[4] * (Hinv[0] * q[2] - Hinv[2] * q[0]) +
+                  Ad[5] * (Hinv[0] * q[1] - Hinv[1] * q[0]));
+  }
+  if (qd) {
+    qd[0] += w * (-Ad[1] * (Hinv[5] * r[2] - Hinv[8] * r[1]) +
+                  Ad[2] * (Hinv[4] * r[2] - Hinv[7] * r[1]) +
+                  Ad[4] * (Hinv[2] * r[2] - Hinv[8] * r[0]) -
+                  Ad[5] * (Hinv[1] * r[2] - Hinv[7] * r[0]) -
+                  Ad[7] * (Hinv[2] * r[1] - Hinv[5] * r[0]) +
+                  Ad[8] * (Hinv[1] * r[1] - Hinv[4] * r[0]));
+    qd[1] += w * (Ad[0] * (Hinv[5] * r[2] - Hinv[8] * r[1]) -
+                  Ad[2] * (Hinv[3] * r[2] - Hinv[6] * r[1]) -
+                  Ad[3] * (Hinv[2] * r[2] - Hinv[8] * r[0]) +
+                  Ad[5] * (Hinv[0] * r[2] - Hinv[6] * r[0]) +
+                  Ad[6] * (Hinv[2] * r[1] - Hinv[5] * r[0]) -
+                  Ad[8] * (Hinv[0] * r[1] - Hinv[3] * r[0]));
+    qd[2] += w * (-Ad[0] * (Hinv[4] * r[2] - Hinv[7] * r[1]) +
+                  Ad[1] * (Hinv[3] * r[2] - Hinv[6] * r[1]) +
+                  Ad[3] * (Hinv[1] * r[2] - Hinv[7] * r[0]) -
+                  Ad[4] * (Hinv[0] * r[2] - Hinv[6] * r[0]) -
+                  Ad[6] * (Hinv[1] * r[1] - Hinv[4] * r[0]) +
+                  Ad[7] * (Hinv[0] * r[1] - Hinv[3] * r[0]));
+  }
+
+  if (Hinvd) {
+    Hinvd[0] += w * (-Ad[4] * q[2] * r[2] + Ad[5] * q[1] * r[2] +
+                     Ad[7] * q[2] * r[1] - Ad[8] * q[1] * r[1]);
+    Hinvd[1] += w * (Ad[3] * q[2] * r[2] - Ad[5] * q[0] * r[2] -
+                     Ad[6] * q[2] * r[1] + Ad[8] * q[0] * r[1]);
+    Hinvd[2] += w * (-Ad[3] * q[1] * r[2] + Ad[4] * q[0] * r[2] +
+                     Ad[6] * q[1] * r[1] - Ad[7] * q[0] * r[1]);
+    Hinvd[3] += w * (Ad[1] * q[2] * r[2] - Ad[2] * q[1] * r[2] -
+                     Ad[7] * q[2] * r[0] + Ad[8] * q[1] * r[0]);
+    Hinvd[4] += w * (-Ad[0] * q[2] * r[2] + Ad[2] * q[0] * r[2] +
+                     Ad[6] * q[2] * r[0] - Ad[8] * q[0] * r[0]);
+    Hinvd[5] += w * (Ad[0] * q[1] * r[2] - Ad[1] * q[0] * r[2] -
+                     Ad[6] * q[1] * r[0] + Ad[7] * q[0] * r[0]);
+    Hinvd[6] += w * (-Ad[1] * q[2] * r[1] + Ad[2] * q[1] * r[1] +
+                     Ad[4] * q[2] * r[0] - Ad[5] * q[1] * r[0]);
+    Hinvd[7] += w * (Ad[0] * q[2] * r[1] - Ad[2] * q[0] * r[1] -
+                     Ad[3] * q[2] * r[0] + Ad[5] * q[0] * r[0]);
+    Hinvd[8] += w * (-Ad[0] * q[1] * r[1] + Ad[1] * q[0] * r[1] +
+                     Ad[3] * q[1] * r[0] - Ad[4] * q[0] * r[0]);
+  }
+}
+
+/*
   Apply the action of the displacement transfer w.r.t structural displacments
   Jacobian to the input vector
 
@@ -533,7 +743,75 @@ void LinearizedMELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * na * sizeof(F2FScalar));
+  for (int i = 0; i < na; i++) {
+    // Get vector of adjoint variables and rotation matrix for each aerodynamic
+    // node
+    const F2FScalar *lam = &vecs[3 * i];
+
+    // Point aerodynamic surface node location into a
+    const F2FScalar *xa = &Xa[3 * i];
+
+    // Compute the centroid of the initial set of nodes
+    const F2FScalar *W = &global_W[i * nn];
+    F2FScalar *xs0bar = &global_xs0bar[3 * i];
+
+    // Compute the inverse of the point inertia matrix
+    F2FScalar *H = &global_H[9 * i];
+    F2FScalar Hinv[9];
+    computePointInertiaInverse(H, Hinv);
+
+    // Form the vector r from the initial centroid to the aerodynamic surface
+    // node
+    F2FScalar r[3];
+    vec_diff(xs0bar, xa, r);
+
+    // Zero the derivative contributions
+    F2FScalar rd[3];
+    memset(rd, 0, 3 * sizeof(F2FScalar));
+
+    for (int j = 0; j < nn; j++) {
+      // Get structural node location
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        F2FScalar q[3], qd[3];
+        vec_diff(xs0bar, xs, q);
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Add contribution to aerodynamic surface node displacement
+        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, NULL, NULL);
+      } else {
+        indx = indx - ns;
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Add contribution to aerodynamic surface node displacement
+        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, NULL, NULL);
+      }
+    }
+
+    F2FScalar *prod = &prods[3 * i];
+    prod[0] -= rd[0];
+    prod[1] -= rd[1];
+    prod[2] -= rd[2];
+  }
 }
 
 /*
@@ -549,7 +827,214 @@ void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
+  // Set products to zero
+  F2FScalar *prods_global = new F2FScalar[3 * ns];
+  memset(prods_global, 0.0, 3 * ns * sizeof(F2FScalar));
+
+  for (int i = 0; i < na; i++) {
+    // Get vector of adjoint variables and rotation matrix for each aerodynamic
+    // node
+    const F2FScalar *lam = &vecs[3 * i];
+
+    // Point aerodynamic surface node location into a
+    const F2FScalar *xa = &Xa[3 * i];
+
+    // Compute the centroid of the initial set of nodes
+    const F2FScalar *W = &global_W[i * nn];
+    F2FScalar *xs0bar = &global_xs0bar[3 * i];
+
+    // Compute the inverse of the point inertia matrix
+    F2FScalar *H = &global_H[9 * i];
+    F2FScalar Hinv[9];
+    computePointInertiaInverse(H, Hinv);
+
+    // Form the vector r from the initial centroid to the aerodynamic surface
+    // node
+    F2FScalar r[3];
+    vec_diff(xs0bar, xa, r);
+
+    // Zero the derivative contributions
+    F2FScalar Hinvd[9], rd[3], xs0bard[3];
+    memset(rd, 0, 3 * sizeof(F2FScalar));
+    memset(xs0bard, 0, 3 * sizeof(F2FScalar));
+    memset(Hinvd, 0, 9 * sizeof(F2FScalar));
+
+    for (int j = 0; j < nn; j++) {
+      // Get structural node location
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);  // q = xs - xs0bar
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute and add contribution to aerodynamic surface node
+        F2FScalar qd[3];
+        memset(qd, 0, 3 * sizeof(F2FScalar));
+        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, qd, Hinvd);
+
+        // Add the contribution to the centroid
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        // Add the direct contribution to the point sensitivity
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      } else {
+        indx = indx - ns;
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);  // q = rxs - xs0bar
+
+        // Get structural node displacement
+        const F2FScalar *us = &Us[3 * indx];
+
+        // Compute the sensitivity to the node location
+        F2FScalar qd[3];
+        memset(qd, 0, 3 * sizeof(F2FScalar));
+        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, qd, Hinvd);
+
+        // Add the contribution to the centroid
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        // Reflect the derivative
+        qd[isymm] *= -1.0;
+
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      }
+    }
+
+    // r = xa - xs0bar
+    xs0bard[0] -= rd[0];
+    xs0bard[1] -= rd[1];
+    xs0bard[2] -= rd[2];
+
+    // Now deal with the sensitivities w.r.t. Hinvd
+    // Hinv = (H - I*tr(H))^{-1}
+    F2FScalar Hd[9];
+    adjPointInertiaInverse(Hinv, Hinvd, Hd);
+
+    // Add the sensitivity due to the computation of H
+    for (int j = 0; j < nn; j++) {
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        // Compute q = xs - xs0bar
+        F2FScalar q[3];  // vector from centroid to node
+        q[0] = Xs[3 * indx] - xs0bar[0];
+        q[1] = Xs[3 * indx + 1] - xs0bar[1];
+        q[2] = Xs[3 * indx + 2] - xs0bar[2];
+
+        // Compute the derivative qd = w * (Hd + Hd^{T}) * q
+        F2FScalar qd[3];
+        qd[0] = W[j] * (2.0 * Hd[0] * q[0] + (Hd[1] + Hd[3]) * q[1] +
+                        (Hd[2] + Hd[6]) * q[2]);
+        qd[1] = W[j] * ((Hd[3] + Hd[1]) * q[0] + 2.0 * Hd[4] * q[1] +
+                        (Hd[5] + Hd[7]) * q[2]);
+        qd[2] = W[j] * ((Hd[6] + Hd[2]) * q[0] + (Hd[7] + Hd[5]) * q[1] +
+                        2.0 * Hd[8] * q[2]);
+
+        // Now apply the definition of q = xs - xs0bar
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+      } else {
+        indx = indx - ns;
+
+        // Compute q = xs - xs0bar
+        F2FScalar q[3];  // vector from centroid to node
+        q[0] = Xs[3 * indx];
+        q[1] = Xs[3 * indx + 1];
+        q[2] = Xs[3 * indx + 2];
+
+        // Reflect the point and subtract the centroid location
+        q[isymm] *= -1.0;
+        q[0] = q[0] - xs0bar[0];
+        q[1] = q[1] - xs0bar[1];
+        q[2] = q[2] - xs0bar[2];
+
+        // Compute the derivative qd = w * (Hd + Hd^{T}) * q
+        F2FScalar qd[3];
+        qd[0] = W[j] * (2.0 * Hd[0] * q[0] + (Hd[1] + Hd[3]) * q[1] +
+                        (Hd[2] + Hd[6]) * q[2]);
+        qd[1] = W[j] * ((Hd[3] + Hd[1]) * q[0] + 2.0 * Hd[4] * q[1] +
+                        (Hd[5] + Hd[7]) * q[2]);
+        qd[2] = W[j] * ((Hd[6] + Hd[2]) * q[0] + (Hd[7] + Hd[5]) * q[1] +
+                        2.0 * Hd[8] * q[2]);
+
+        // Now apply the definition of q = xs - xs0bar
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        qd[isymm] *= -1.0;
+
+        // Add the contribution to the poin
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      }
+    }
+
+    F2FScalar rxs0bard[3];
+    rxs0bard[0] = xs0bard[0];
+    rxs0bard[1] = xs0bard[1];
+    rxs0bard[2] = xs0bard[2];
+    if (isymm >= 0) {
+      rxs0bard[isymm] *= -1.0;
+    }
+
+    // Add the contribution from the centroid
+    for (int j = 0; j < nn; j++) {
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= W[j] * xs0bard[0];
+        prod[1] -= W[j] * xs0bard[1];
+        prod[2] -= W[j] * xs0bard[2];
+      } else {
+        indx = indx - ns;
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= W[j] * rxs0bard[0];
+        prod[1] -= W[j] * rxs0bard[1];
+        prod[2] -= W[j] * rxs0bard[2];
+      }
+    }
+  }
+
+  // distribute the results to the structural processors
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
+
+  // clean up allocated memory
+  delete[] prods_global;
 }
 
 /*
@@ -565,7 +1050,75 @@ void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
+  F2FScalar *vecs_global = new F2FScalar[3 * ns];
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
+
+  // Zero products
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
+
+  // Loop over aerodynamic surface nodes
+  for (int i = 0; i < na; i++) {
+    // Get aerodynamic surface node location and load
+    F2FScalar *a = &Xa[3 * i];
+    const F2FScalar *fa = &Fa[3 * i];
+
+    // Compute vector d from centroid to aerodynamic surface node
+    F2FScalar *xs0bar = &global_xs0bar[3 * i];
+    F2FScalar r[3];
+    vec_diff(xs0bar, a, r);
+
+    // Compute inverse of point inertia matrix
+    F2FScalar Hinv[9];
+    computePointInertiaInverse(&global_H[9 * i], Hinv);
+
+    // Zero the derivative contributions
+    F2FScalar rd[3];
+    memset(rd, 0, 3 * sizeof(F2FScalar));
+
+    // Loop over linked structural nodes
+    for (int j = 0; j < nn; j++) {
+      // Get structural node using index from connectivity
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
+
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
+
+        // Compute load contribution
+        const F2FScalar *fsd = &vecs_global[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+
+        addAdjLoadContribution(w, r, Hinv, q, fa, fsd, rd, NULL, NULL);
+      } else {
+        indx = indx - ns;
+
+        // Compute vector q from centroid to structural node using the
+        // symmetry condition
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);
+
+        // Compute load contribution
+        const F2FScalar *fsd = &vecs_global[3 * indx];
+        F2FScalar w = global_W[nn * i + j];
+
+        addAdjLoadContribution(w, r, Hinv, q, fa, fsd, rd, NULL, NULL);
+      }
+    }
+
+    F2FScalar *prod = &prods[3 * i];
+    prod[0] -= rd[0];
+    prod[1] -= rd[1];
+    prod[2] -= rd[2];
+  }
 }
 
 /*
@@ -581,5 +1134,213 @@ void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
-  memset(prods, 0, 3 * ns_local * sizeof(F2FScalar));
+  F2FScalar *vecs_global = new F2FScalar[3 * ns];
+  structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
+
+  // Set products to zero
+  F2FScalar *prods_global = new F2FScalar[3 * ns];
+  memset(prods_global, 0.0, 3 * ns * sizeof(F2FScalar));
+
+  // Loop over aerodynamic surface nodes
+  for (int i = 0; i < na; i++) {
+    // Get aerodynamic surface node location and load
+    F2FScalar *a = &Xa[3 * i];
+    const F2FScalar *fa = &Fa[3 * i];
+
+    // Compute vector d from centroid to aerodynamic surface node
+    const F2FScalar *W = &global_W[i * nn];
+    F2FScalar *xs0bar = &global_xs0bar[3 * i];
+    F2FScalar r[3];
+    vec_diff(xs0bar, a, r);
+
+    // Compute inverse of point inertia matrix
+    F2FScalar Hinv[9];
+    computePointInertiaInverse(&global_H[9 * i], Hinv);
+
+    // Zero the derivative contributions
+    F2FScalar Hinvd[9], rd[3], xs0bard[3];
+    memset(rd, 0, 3 * sizeof(F2FScalar));
+    memset(xs0bard, 0, 3 * sizeof(F2FScalar));
+    memset(Hinvd, 0, 9 * sizeof(F2FScalar));
+
+    // Loop over linked structural nodes
+    for (int j = 0; j < nn; j++) {
+      // Get structural node using index from connectivity
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *xs = &Xs[3 * indx];
+
+        // Compute vector q from centroid to structural node
+        F2FScalar q[3];
+        vec_diff(xs0bar, xs, q);
+
+        // Get the load adjoint
+        const F2FScalar *fsd = &vecs_global[3 * indx];
+
+        // Compute load contribution to the adjoint
+        F2FScalar qd[3];
+        memset(qd, 0, 3 * sizeof(F2FScalar));
+        addAdjLoadContribution(W[j], r, Hinv, q, fa, fsd, rd, qd, Hinvd);
+
+        // Add the contribution to the centroid
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        // Add the direct contribution to the point sensitivity
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      } else {
+        indx = indx - ns;
+
+        // Form the vector q from the centroid of the undisplaced set to the
+        // node
+        const F2FScalar *xs0 = &Xs[3 * indx];
+        F2FScalar rxs0[3];
+        memcpy(rxs0, xs0, 3 * sizeof(F2FScalar));
+        rxs0[isymm] *= -1.0;
+
+        F2FScalar q[3];
+        vec_diff(xs0bar, rxs0, q);  // q = rxs - xs0bar
+
+        // Get the load adjoint
+        const F2FScalar *fsd = &vecs_global[3 * indx];
+
+        // Compute load contribution to the adjoint
+        F2FScalar qd[3];
+        memset(qd, 0, 3 * sizeof(F2FScalar));
+        addAdjLoadContribution(W[j], r, Hinv, q, fa, fsd, rd, qd, Hinvd);
+
+        // Add the contribution to the centroid
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        // Reflect the derivative
+        qd[isymm] *= -1.0;
+
+        // Add the direct contribution to the point sensitivity
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      }
+    }
+
+    // r = xa - xs0bar
+    xs0bard[0] -= rd[0];
+    xs0bard[1] -= rd[1];
+    xs0bard[2] -= rd[2];
+
+    // Now deal with the sensitivities w.r.t. Hinvd
+    // Hinv = (H - I*tr(H))^{-1}
+    F2FScalar Hd[9];
+    adjPointInertiaInverse(Hinv, Hinvd, Hd);
+
+    // Add the sensitivity due to the computation of H
+    for (int j = 0; j < nn; j++) {
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        // Compute q = xs - xs0bar
+        F2FScalar q[3];  // vector from centroid to node
+        q[0] = Xs[3 * indx] - xs0bar[0];
+        q[1] = Xs[3 * indx + 1] - xs0bar[1];
+        q[2] = Xs[3 * indx + 2] - xs0bar[2];
+
+        // Compute the derivative qd = w * (Hd + Hd^{T}) * q
+        F2FScalar qd[3];
+        qd[0] = W[j] * (2.0 * Hd[0] * q[0] + (Hd[1] + Hd[3]) * q[1] +
+                        (Hd[2] + Hd[6]) * q[2]);
+        qd[1] = W[j] * ((Hd[3] + Hd[1]) * q[0] + 2.0 * Hd[4] * q[1] +
+                        (Hd[5] + Hd[7]) * q[2]);
+        qd[2] = W[j] * ((Hd[6] + Hd[2]) * q[0] + (Hd[7] + Hd[5]) * q[1] +
+                        2.0 * Hd[8] * q[2]);
+
+        // Now apply the definition of q = xs - xs0bar
+
+        // Add the contribution to the poin
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+      } else {
+        indx = indx - ns;
+
+        // Compute q = xs - xs0bar
+        F2FScalar q[3];  // vector from centroid to node
+        q[0] = Xs[3 * indx];
+        q[1] = Xs[3 * indx + 1];
+        q[2] = Xs[3 * indx + 2];
+
+        // Reflect the point and subtract the centroid location
+        q[isymm] *= -1.0;
+        q[0] = q[0] - xs0bar[0];
+        q[1] = q[1] - xs0bar[1];
+        q[2] = q[2] - xs0bar[2];
+
+        // Compute the derivative qd = w * (Hd + Hd^{T}) * q
+        F2FScalar qd[3];
+        qd[0] = W[j] * (2.0 * Hd[0] * q[0] + (Hd[1] + Hd[3]) * q[1] +
+                        (Hd[2] + Hd[6]) * q[2]);
+        qd[1] = W[j] * ((Hd[3] + Hd[1]) * q[0] + 2.0 * Hd[4] * q[1] +
+                        (Hd[5] + Hd[7]) * q[2]);
+        qd[2] = W[j] * ((Hd[6] + Hd[2]) * q[0] + (Hd[7] + Hd[5]) * q[1] +
+                        2.0 * Hd[8] * q[2]);
+
+        // Now apply the definition of q = xs - xs0bar
+        xs0bard[0] -= qd[0];
+        xs0bard[1] -= qd[1];
+        xs0bard[2] -= qd[2];
+
+        qd[isymm] *= -1.0;
+
+        // Add the contribution to the poin
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= qd[0];
+        prod[1] -= qd[1];
+        prod[2] -= qd[2];
+      }
+    }
+
+    F2FScalar rxs0bard[3];
+    rxs0bard[0] = xs0bard[0];
+    rxs0bard[1] = xs0bard[1];
+    rxs0bard[2] = xs0bard[2];
+    if (isymm >= 0) {
+      rxs0bard[isymm] *= -1.0;
+    }
+
+    // Add the contribution from the centroid
+    for (int j = 0; j < nn; j++) {
+      int indx = global_conn[nn * i + j];
+
+      if (indx < ns) {
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= W[j] * xs0bard[0];
+        prod[1] -= W[j] * xs0bard[1];
+        prod[2] -= W[j] * xs0bard[2];
+      } else {
+        indx = indx - ns;
+        F2FScalar *prod = &prods_global[3 * indx];
+        prod[0] -= W[j] * rxs0bard[0];
+        prod[1] -= W[j] * rxs0bard[1];
+        prod[2] -= W[j] * rxs0bard[2];
+      }
+    }
+  }
+
+  // distribute the results to the structural processors
+  structAddScatter(3 * ns, prods_global, 3 * ns_local, prods);
+
+  // clean up allocated memory
+  delete[] prods_global;
+  delete[] vecs_global;
 }
