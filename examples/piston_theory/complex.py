@@ -71,9 +71,9 @@ class AdjointTest(object):
         length_dir = np.array([np.cos(alpha*np.pi/180), 0, np.sin(alpha*np.pi/180)]) #Unit vec in length dir
         width_dir = np.array([0, 1, 0]) 
         L = 1.20 #Length (chord)
-        nL = 30 # Num elems in xi dir
+        nL = 10 # Num elems in xi dir
         w = 1.20  #Width (span)
-        nw = 50 # Num elems in eta dir
+        nw = 20 # Num elems in eta dir
         solvers['flow'] = PistonInterface(self.comm, self.model, qinf, M, U_inf, x0, length_dir, width_dir,
                             L, w, nL, nw)
         assembler = None
@@ -178,7 +178,7 @@ g, A, fail = dp.eval_objcon_grad(xreal)
 print('Adjoint objective gradient ', g)
 for ac in A:
     print('Adjoint constraint gradient ', ac)
-exit(1)
+
 obj, con, fail = dp.eval_objcon(x)
 print('Forward objective gradient ', (obj-obj1)/h)
 for c in con:

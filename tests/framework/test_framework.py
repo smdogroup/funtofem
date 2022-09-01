@@ -7,6 +7,8 @@ from pyfuntofem.scenario import Scenario
 from pyfuntofem.body import Body
 from pyfuntofem.function import Function
 from pyfuntofem.test_solver import TestAerodynamicSolver, TestStructuralSolver
+from pyfuntofem.pistontheory_interface import PistonInterface
+from pyfuntofem.tacs_interface import TacsSteadyInterface
 from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
 import unittest
 
@@ -38,7 +40,9 @@ class CoupledFrameworkTest(unittest.TestCase):
             steady.add_variable("aerodynamic", avar)
 
         # Add a function to the scenario
+        #cl = Function("cl", analysis_type="aerodynamic")
         temp = Function("temperature", analysis_type="structural")
+        #steady.add_function(cl)
         steady.add_function(temp)
 
         # Add the steady-state scenario
@@ -47,7 +51,20 @@ class CoupledFrameworkTest(unittest.TestCase):
         # Instantiate a test solver for the flow and structures
         comm = MPI.COMM_WORLD
         solvers = {}
-        solvers["flow"] = TestAerodynamicSolver(comm, model)
+        #solvers["flow"] = TestAerodynamicSolver(comm, model)
+        qinf = 101325.0
+        M = 1.5
+        U_inf = 411
+        x0 = np.array([0,0,0])
+        alpha = 10.0
+        length_dir = np.array([np.cos(alpha*np.pi/180), 0, np.sin(alpha*np.pi/180)])
+        width_dir = np.array([0, 1, 0])
+        L = 1.2
+        nL = 10
+        w = 1.2
+        nw = 20
+        solvers["flow"] = PistonInterface(comm, model, qinf, M, U_inf, x0, length_dir, width_dir, L, w, nL, nw)
+        #solvers["flow"] = TestAerodynamicSolver(comm, model)
         solvers["structural"] = TestStructuralSolver(comm, model)
 
         # L&D transfer options

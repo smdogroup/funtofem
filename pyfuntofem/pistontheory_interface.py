@@ -20,6 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import enum
 from turtle import width
 
 import numpy as np
@@ -97,6 +98,13 @@ class PistonInterface(SolverInterface):
         self.nmat = []
         self.aero_nnodes = []
         self.psi_P = None
+
+        self.variables = model.get_variables()
+        self.aero_variables = []
+
+        for var in self.variables:
+            if var.analysis_type == "aerodynamic":
+                self.aero_variables.append(var)
 
         # Get the initial aero surface meshes
         self.initialize(model.scenarios[0], model.bodies, first_pass=True)
@@ -381,7 +389,7 @@ class PistonInterface(SolverInterface):
         for ibody, body in enumerate(bodies,1):
             aero_loads = body.get_aero_loads(scenario)
             lift = np.sum(aero_loads[2::3])
-            cl = lift/(self.L * self.width)
+            cl = lift/(self.qinf * self.L * self.width)
         
         return cl
 
@@ -397,12 +405,13 @@ class PistonInterface(SolverInterface):
             list of FUNtoFEM bodies. Bodies contains unused but necessary rigid motion variables
         """
 
-        for func, function in enumerate(scenario.functions):
+        for findex, func in enumerate(scenario.functions):
+            for vindex, var in enumerate(self.aero_variables):
             # Do the scenario variables first
-            for var in scenario.get_active_variables():
+#            for var in scenario.get_active_variables():
                 if var.name == 'AOA':
                     value = self.compute_cl_deriv(scenario, bodies)
-                    func.set_gradient_component(var, value)
+                    func.add_gradient_component(var, value)
 
             '''
             for vartype in scenario.variables:
@@ -436,7 +445,8 @@ class PistonInterface(SolverInterface):
 
     def compute_cl_deriv(self, scenario, bodies):
         for ibody, body in enumerate(bodies,1):
-            w = body.aero_X[2::3] + self.nmat.T@body.aero_disps
+            aero_disps = body.get_aero_disps(scenario)
+            w = body.aero_X[2::3] + self.nmat.T@aero_disps
             dw_dxi = self.CD_mat@w
             dw_dt = np.zeros(self.aero_nnodes)  #Set dw/dt = 0  for now (steady)
             areas = self.compute_Areas()
@@ -668,8 +678,10 @@ class PistonInterface(SolverInterface):
                 dPdua = np.zeros((aero_nnodes*3, aero_nnodes*3), dtype=TransferScheme.dtype)
                 self.compute_forces_adjoint(aero_disps, aero_loads, aero_X, dPdua)
 
-                for func in range(nfunctions):
-                    aero_disps_ajp[:, func] = dPdua.T@self.psi_P[:, func].flatten()
+                for k, func in enumerate(scenario.functions):
+                    aero_disps_ajp[:, k] = - dPdua.T@self.psi_P[:, k].flatten()
+                    if func.name == 'cl':
+                        aero_disps_ajp[:, k] += self.compute_dCLdua(aero_disps, aero_loads, aero_X, aero_nnodes).flatten()
 
 
 
@@ -680,6 +692,19 @@ class PistonInterface(SolverInterface):
                 #     body.dGdua[:, func] = dPdua.T@self.psi_P[:, func].flatten()
                 
         return fail
+
+    def compute_dCLdua(self, aero_disps, aero_loads, aero_X, aero_nnodes):
+        w = aero_X[2::3] + self.nmat.T@aero_disps
+        dw_dxi = self.CD_mat@w
+        dw_dt = np.zeros(self.aero_nnodes)  #Set dw/dt = 0  for now (steady)
+        areas = self.compute_Areas()
+        dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
+        df_dua = self.nmat@np.diag(areas)@np.diag(dwdxi_deriv)@self.CD_mat@self.nmat.T
+
+        lift_mat = np.zeros((1, aero_nnodes*3))
+        lift_mat[:,2::3] = 1.0
+        dCLdfa = 1/(self.qinf * self.L * self.width) * lift_mat
+        return dCLdfa@df_dua
 
     def post_adjoint(self, scenario, bodies):
         """
