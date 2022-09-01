@@ -3,6 +3,8 @@ from funtofem import TransferScheme
 from mpi4py import MPI
 import unittest
 
+np.random.seed(1234567)
+
 
 class TransferSchemeTest(unittest.TestCase):
     def test_meld(self):
