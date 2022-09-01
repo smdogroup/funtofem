@@ -45,7 +45,7 @@ def computeTransformAndDisps(R, t, e, X):
 class RigidTransformTest(unittest.TestCase):
     def test_rigid(self, plot=False):
 
-        rtol = 1e-6
+        rtol = 1e-5
         dh = 1e-6
         complex_step = False
         if TransferScheme.dtype is complex:
