@@ -10,6 +10,8 @@ from funtofem import TransferScheme
 from mpi4py import MPI
 import unittest
 
+np.random.seed(1234567)
+
 
 def computeTransformAndDisps(R, t, e, X):
     """
@@ -43,7 +45,7 @@ def computeTransformAndDisps(R, t, e, X):
 class RigidTransformTest(unittest.TestCase):
     def test_rigid(self, plot=False):
 
-        rtol = 1e-6
+        rtol = 1e-5
         dh = 1e-6
         complex_step = False
         if TransferScheme.dtype is complex:

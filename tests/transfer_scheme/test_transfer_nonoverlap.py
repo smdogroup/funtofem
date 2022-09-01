@@ -11,7 +11,7 @@ import unittest
 
 class TransferSchemeTest(unittest.TestCase):
 
-    N_PROCS = 5
+    N_PROCS = 2
 
     def _get_aero_nnodes(self, comm):
         if comm != MPI.COMM_NULL:
@@ -24,14 +24,15 @@ class TransferSchemeTest(unittest.TestCase):
         return 0
 
     def _get_comms(self, comm):
-        if comm.size != 5:
-            raise ValueError("Test can only be run with 5 MPI ranks")
+        if comm.size < 2:
+            raise ValueError("Test must be run with 2 or more MPI ranks")
 
         rank = comm.Get_rank()
+        size = comm.Get_size()
         struct_root = 0
-        aero_root = 2
+        aero_root = size // 2
 
-        if rank < 2:
+        if rank < size // 2:
             color = 55
         else:
             color = 66
@@ -39,10 +40,12 @@ class TransferSchemeTest(unittest.TestCase):
 
         aero_comm = MPI.COMM_NULL
         struct_comm = MPI.COMM_NULL
-        if rank < 2:
+        if rank < size // 2:
             struct_comm = split_comm
         else:
             aero_comm = split_comm
+
+        np.random.seed(1234567 + 2345678 * rank)
 
         return comm, struct_comm, struct_root, aero_comm, aero_root
 
