@@ -743,6 +743,8 @@ void LinearizedMELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   prods : output vector
 */
 void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
+  memset(prods, 0.0, 3 * na * sizeof(F2FScalar));
+
   for (int i = 0; i < na; i++) {
     // Get vector of adjoint variables and rotation matrix for each aerodynamic
     // node

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
@@ -13,13 +14,12 @@ from bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
 import traceback
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
+
 
 class SensitivityFileTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
-        # Generate the BDF file if required
-        bdf_file = "test_bdf_file.bdf"
-        generateBDF(bdf_file)
 
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -53,7 +53,7 @@ class SensitivityFileTest(unittest.TestCase):
         comm = MPI.COMM_WORLD
 
         solvers["structural"] = createTacsInterfaceFromBDF(
-            model, comm, nprocs, bdf_file, callback=thermoelasticity_callback
+            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
         )
         solvers["flow"] = TestAerodynamicSolver(comm, model)
 
