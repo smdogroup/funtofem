@@ -39,7 +39,7 @@ pytacs_function = caps2tacs.MassStress()
 
 caps_tacs = caps2tacs.CapsTacs(
     name="naca_wing_struct", tacs_aim=tacs_aim, 
-    egads_aim=egads_aim, pytacs_function=pytacs_function, write_solution=True, view_plots=False
+    egads_aim=egads_aim, pytacs_function=pytacs_function
     )
 
 # build the mesh

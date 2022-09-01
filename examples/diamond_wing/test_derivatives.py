@@ -29,11 +29,11 @@ start_time = time.time()
 
 # run settings
 n_tacs_procs:int = 30
-n_f2f_steps:int = 100
+n_f2f_steps:int = 10
 f2f_analysis_type:str = "aeroelastic"
 model_name:str = "F2FDiamondWing"
 complex_step_size = 1e-30
-run_complex_only = True
+run_complex_only = False
 
 """
 units settings to convert from fun3d non-dimensional to funtofem dimensional forces,disps, temps, heat fluxes, etc.
@@ -155,7 +155,9 @@ if not run_complex_only:
         complex_total_derivative = new_func.value.imag/complex_step_size
         adjoint_total_derivative = 0.0
         for ivar,var in enumerate(variables):
-            adjoint_total_derivative += rand_perturb[ivar] * gradients[i][j]
+            if comm.Get_rank() == 0:
+                print(f"d{new_func.name}/d{var.name} = {gradients[ifunc][ivar]}")
+            adjoint_total_derivative += rand_perturb[ivar] * gradients[ifunc][ivar]
 
         complex_total_derivatives.append(complex_total_derivative)
         adjoint_total_derivatives.append(adjoint_total_derivative)

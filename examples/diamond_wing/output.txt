@@ -1,4 +1,4 @@
-FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 19:37:37 with 192 processes
+FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 20:13:27 with 192 processes
 Contents of fun3d.nml file below------------------------
 &project
     project_rootname = 'fun3d_CAPS'
@@ -26,7 +26,7 @@ Contents of fun3d.nml file below------------------------
     flux_construction = 'roe'
     flux_limiter = 'hminmod'
     smooth_limiter_coeff = 1.0
-    freeze_limiter_iteration = 60
+    freeze_limiter_iteration = 8
 /
 
 &nonlinear_solver_parameters
@@ -43,7 +43,7 @@ Contents of fun3d.nml file below------------------------
 /
 
 &code_run_control
-    steps = 100
+    steps = 10
     stopping_tolerance = 1e-15
     restart_write_freq = 1000
     restart_read = 'off'
@@ -122,7 +122,7 @@ cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
      ... Boundary partitioning....
      ... Reordering for cache efficiency....
      ... Write global grid information to fun3d_CAPS.grid_info
-     ... Time after preprocess TIME/Mem(MB):  ********    231.78    231.78
+     ... Time after preprocess TIME/Mem(MB):  ********    231.75    231.75
  Grid Motion Type 
    deform
  
@@ -186,68 +186,68 @@ cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
  Done.
 [0] Creating TACSAssembler with numOwnedNodes = 1407 numElements = 1448
 [7] Creating TACSAssembler with numOwnedNodes = 1406 numElements = 1463
-[11] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1450
-[18] Creating TACSAssembler with numOwnedNodes = 1421 numElements = 1437
+[8] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1458
 [22] Creating TACSAssembler with numOwnedNodes = 1418 numElements = 1446
 [23] Creating TACSAssembler with numOwnedNodes = 1378 numElements = 1451
+[24] Creating TACSAssembler with numOwnedNodes = 1431 numElements = 1454
 [26] Creating TACSAssembler with numOwnedNodes = 1390 numElements = 1454
+[0] TACSAssembler: Total dof = 253638 Total nodes = 42273 Total elements = 43414
 [1] Creating TACSAssembler with numOwnedNodes = 1400 numElements = 1431
 [2] Creating TACSAssembler with numOwnedNodes = 1393 numElements = 1429
 [3] Creating TACSAssembler with numOwnedNodes = 1394 numElements = 1441
 [4] Creating TACSAssembler with numOwnedNodes = 1386 numElements = 1453
+[5] Creating TACSAssembler with numOwnedNodes = 1429 numElements = 1449
 [6] Creating TACSAssembler with numOwnedNodes = 1410 numElements = 1445
-[8] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1458
 [9] Creating TACSAssembler with numOwnedNodes = 1432 numElements = 1450
 [10] Creating TACSAssembler with numOwnedNodes = 1418 numElements = 1452
-[13] Creating TACSAssembler with numOwnedNodes = 1397 numElements = 1452
-[16] Creating TACSAssembler with numOwnedNodes = 1439 numElements = 1439
-[17] Creating TACSAssembler with numOwnedNodes = 1428 numElements = 1450
-[19] Creating TACSAssembler with numOwnedNodes = 1387 numElements = 1443
-[20] Creating TACSAssembler with numOwnedNodes = 1415 numElements = 1441
-[24] Creating TACSAssembler with numOwnedNodes = 1431 numElements = 1454
-[0] TACSAssembler: Total dof = 253638 Total nodes = 42273 Total elements = 43414
-[5] Creating TACSAssembler with numOwnedNodes = 1429 numElements = 1449
+[11] Creating TACSAssembler with numOwnedNodes = 1422 numElements = 1450
 [12] Creating TACSAssembler with numOwnedNodes = 1393 numElements = 1449
+[13] Creating TACSAssembler with numOwnedNodes = 1397 numElements = 1452
 [14] Creating TACSAssembler with numOwnedNodes = 1372 numElements = 1451
 [15] Creating TACSAssembler with numOwnedNodes = 1424 numElements = 1450
+[16] Creating TACSAssembler with numOwnedNodes = 1439 numElements = 1439
+[17] Creating TACSAssembler with numOwnedNodes = 1428 numElements = 1450
+[18] Creating TACSAssembler with numOwnedNodes = 1421 numElements = 1437
+[19] Creating TACSAssembler with numOwnedNodes = 1387 numElements = 1443
+[20] Creating TACSAssembler with numOwnedNodes = 1415 numElements = 1441
 [21] Creating TACSAssembler with numOwnedNodes = 1419 numElements = 1428
 [25] Creating TACSAssembler with numOwnedNodes = 1412 numElements = 1453
 [27] Creating TACSAssembler with numOwnedNodes = 1398 numElements = 1451
 [28] Creating TACSAssembler with numOwnedNodes = 1423 numElements = 1451
 [29] Creating TACSAssembler with numOwnedNodes = 1409 numElements = 1445
 [0] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.46, nnz(ILU) = 49757
-[23] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.28, nnz(ILU) = 46407
 [10] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.41, nnz(ILU) = 49010
+[23] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.28, nnz(ILU) = 46407
 [27] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.48, nnz(ILU) = 48603
 [4] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.31, nnz(ILU) = 48923
 [3] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.38, nnz(ILU) = 49750
 [5] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.54, nnz(ILU) = 51069
 [18] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.75, nnz(ILU) = 53739
-[25] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.68, nnz(ILU) = 53229
 [26] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.64, nnz(ILU) = 52240
+[25] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.68, nnz(ILU) = 53229
 [13] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.69, nnz(ILU) = 52677
 [8] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.77, nnz(ILU) = 54780
-[22] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.82, nnz(ILU) = 54459
 [1] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.75, nnz(ILU) = 53590
+[22] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.82, nnz(ILU) = 54459
+[17] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.94, nnz(ILU) = 57486
+[2] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.96, nnz(ILU) = 56974
 [15] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.83, nnz(ILU) = 55473
 [19] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.90, nnz(ILU) = 56439
-[2] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.96, nnz(ILU) = 56974
 [14] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.99, nnz(ILU) = 55376
-[17] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.94, nnz(ILU) = 57486
 [24] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 4.99, nnz(ILU) = 58682
 [9] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.09, nnz(ILU) = 59535
 [16] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.21, nnz(ILU) = 60347
 [20] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.29, nnz(ILU) = 58444
 [12] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.09, nnz(ILU) = 59361
 [28] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.27, nnz(ILU) = 61452
+[11] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.30, nnz(ILU) = 63280
 [29] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.42, nnz(ILU) = 61944
 [21] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.46, nnz(ILU) = 64353
-[11] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.30, nnz(ILU) = 63280
 [6] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.79, nnz(ILU) = 66706
 [7] BCSRMat: ILU(1000000) Input fill ratio 10.00, actual fill ratio: 5.91, nnz(ILU) = 70822
 [29] TACSBlockCyclicMat: (19260,19260) Initial density: 0.204 factor fill in: 0.664
 Transfer scheme [0]: Creating scheme of type MELD...
-FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 19:37:44 with 192 processes
+FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 20:13:33 with 192 processes
 Contents of fun3d.nml file below------------------------
 &project
     project_rootname = 'fun3d_CAPS'
@@ -275,7 +275,7 @@ Contents of fun3d.nml file below------------------------
     flux_construction = 'roe'
     flux_limiter = 'hminmod'
     smooth_limiter_coeff = 1.0
-    freeze_limiter_iteration = 60
+    freeze_limiter_iteration = 8
 /
 
 &nonlinear_solver_parameters
@@ -292,7 +292,7 @@ Contents of fun3d.nml file below------------------------
 /
 
 &code_run_control
-    steps = 100
+    steps = 10
     stopping_tolerance = 1e-15
     restart_write_freq = 1000
     restart_read = 'off'
@@ -372,7 +372,7 @@ cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
      ... Boundary partitioning....
      ... Reordering for cache efficiency....
      ... Write global grid information to fun3d_CAPS.grid_info
-     ... Time after preprocess TIME/Mem(MB):  ********    489.98    489.98
+     ... Time after preprocess TIME/Mem(MB):  ********    489.87    489.87
   NOTE: kappa_umuscl set by grid: .00
  
  Grid read complete
@@ -430,3 +430,1055 @@ cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
       none
  
  Body 1 initial moment center:   0.0000000E+00  0.0000000E+00  0.0000000E+00
+ 
+ Begin Mesh Movement, Time Step 1   (Current Step 1)
+ Solving linear elasticity equations for mesh deformation
+   Info: initial call to elasticity solver
+     Elasticity model: (1/distance)**1.0
+     Linear solver: gmres
+     Left preconditioner: point-multicolor  Preconditioner iterations: 5
+     Initial values for solution taken as zero
+     Convergence tolerances: tol_rel = 0.10000000E-13 tol_abs = 0.10000000E-13
+   Elasticity Convergence:
+     Search direction     1  residual =  0.15973730E-14   relative_residual =  0.10000000E+01
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000000E-13
+ Iter            density_RMS  density_MAX   X-location   Y-location   Z-location
+    1  0.530342077630800E-04  0.68284E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.957500847680751E-02         Drag  0.799456333439178E+00
+ 
+ Begin Mesh Movement, Time Step 2   (Current Step 2)
+ Solving linear elasticity equations for mesh deformation
+   Info: restarting elasticity solver
+     Initial values for solution taken as final values from previous step
+   Elasticity Convergence:
+     Search direction     1  residual =  0.51138591E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.74470526E-14   relative_residual =  0.14562491E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000511E-13
+    2  0.441883238281395E-04  0.67573E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.144664063587323E-01         Drag  0.161620160033898E+01
+ 
+ Begin Mesh Movement, Time Step 3   (Current Step 3)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.51678685E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.74685139E-14   relative_residual =  0.14451826E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000517E-13
+    3  0.353052052279153E-04  0.58937E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.633271235408134E-02         Drag  0.212782003128708E+01
+ 
+ Begin Mesh Movement, Time Step 4   (Current Step 4)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.32687615E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.52784418E-14   relative_residual =  0.16148140E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000327E-13
+    4  0.281741103442361E-04  0.41828E-03 -0.16631E+00  0.30250E+01 -0.14945E+00
+       Lift  0.586643923123730E-02         Drag  0.220965502811147E+01
+ 
+ Begin Mesh Movement, Time Step 5   (Current Step 5)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.64197191E-05   relative_residual =  0.10000000E+01
+     Search direction    36  residual =  0.53047627E-14   relative_residual =  0.82632318E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000064E-13
+    5  0.252384890831007E-04  0.37776E-03 -0.16947E+00  0.11605E+01 -0.21015E+00
+       Lift  0.186267364499296E-01         Drag  0.189813971705718E+01
+ 
+ Begin Mesh Movement, Time Step 6   (Current Step 6)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.45762936E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.84553005E-14   relative_residual =  0.18476307E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10004576E-13
+    6  0.253833990424655E-04  0.46676E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift  0.307636307435596E-01         Drag  0.140468124312101E+01
+ 
+ Begin Mesh Movement, Time Step 7   (Current Step 7)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.41908653E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.76367925E-14   relative_residual =  0.18222472E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10004191E-13
+    7  0.239428558269695E-04  0.36599E-03 -0.11284E+00  0.28722E+01 -0.71627E-01
+       Lift  0.231735407542292E-01         Drag  0.945805851802648E+00
+ 
+ Begin Mesh Movement, Time Step 8   (Current Step 8)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.34754998E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.65519206E-14   relative_residual =  0.18851737E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10003475E-13
+    8  0.242452597942808E-04  0.38271E-03 -0.17391E+00  0.25238E+01 -0.14935E+00
+       Lift  0.154101931572194E-01         Drag  0.589167224994732E+00
+ 
+ Begin Mesh Movement, Time Step 9   (Current Step 9)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.68666732E-03   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.73531389E-14   relative_residual =  0.10708445E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10006867E-13
+   limiter frozen
+    9  0.244141420862636E-04  0.33748E-03 -0.86862E-01  0.14638E+01  0.28137E+00
+       Lift  0.141761725988226E-01         Drag  0.326402128872350E+00
+ 
+ Begin Mesh Movement, Time Step 10   (Current Step 10)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.70685251E-03   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.83174761E-14   relative_residual =  0.11766919E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10007069E-13
+   limiter frozen
+   10  0.235840120103695E-04  0.29940E-03 -0.15883E+00  0.24390E+01 -0.70123E+00
+       Lift  0.127632123850915E-01         Drag  0.130555449904821E+00
+ 
+ Writing boundary output: fun3d_CAPS_tec_boundary.dat
+  Time step: 10, ntt: 10, Prior iterations: 0
+ Writing Legacy VTK volume file='fun3d_CAPS_volume.vtk'
+ 
+ Writing fun3d_CAPS.flow (version 12.2)
+  inserting current history iterations 10
+ Time for write: .0 s
+ 
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ Done.
+FUN3D 13.6-c04c9a5 Adjoint started 08/31/2022 at 20:13:44 with 192 processes
+Contents of ../Flow//fun3d.nml file below------------------------
+&project
+    project_rootname = 'fun3d_CAPS'
+/
+
+&governing_equations
+    viscous_terms = 'inviscid'
+/
+
+&raw_grid
+    grid_format = 'aflr3'
+    data_format = 'default'
+    swap_yz_axes = .false.
+/
+
+&reference_physical_properties
+    mach_number = 0.3
+    angle_of_attack = 0.0
+    reynolds_number = 1000000.0
+    temperature = 300.0
+    temperature_units = 'Kelvin'
+/
+
+&inviscid_flux_method
+    flux_construction = 'roe'
+    flux_limiter = 'hminmod'
+    smooth_limiter_coeff = 1.0
+    freeze_limiter_iteration = 8
+/
+
+&nonlinear_solver_parameters
+    schedule_iteration = 1, 80
+    schedule_cfl = 2, 100
+    time_accuracy = 'steady'
+    time_step_nondim = 0.1
+    subiterations = 0
+    schedule_cflturb = 50.0, 50.0
+/
+
+&force_moment_integ_properties
+    area_reference = 1.0
+/
+
+&code_run_control
+    steps = 10
+    stopping_tolerance = 1e-15
+    restart_write_freq = 1000
+    restart_read = 'off'
+/
+
+&global
+    moving_grid = .true.
+    volume_animation_freq = -1
+    boundary_animation_freq = -1
+/
+
+&elasticity_gmres
+    algebraic_mesh_deform = .false.
+    nsearch = 200
+    tol = 1e-14
+    deformation_substeps = 1
+    deform_from_initial_mesh = .true.
+    use_substeps_each_step = .false.
+    elasticity = 1
+    elasticity_exponent = 1.0
+    nrestarts = 1
+    poisson_ratio = 0.0
+/
+
+&massoud_output
+    funtofem_include_skin_friction = .false.
+/
+
+&volume_output_variables
+    export_to = 'vtk'
+    x = .false.
+    y = .false.
+    z = .false.
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+
+&boundary_output_variables
+    number_of_boundaries = -1
+    boundary_list = '1-2'
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+Contents of ../Flow//fun3d.nml file above------------------------
+ The default "stream" data format is being used for the grid format "aflr3".
+ Namelist data file ../Flow/moving_body.input successfully opened
+   Namelist forced_motion not read
+   Namelist observer_motion not read
+   Namelist surface_motion_from_file not read
+   Namelist motion_from_file not read
+   Namelist composite_overset_mesh not read
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+ Setting flow solver convergence tolerance to  0.1E-29
+ (to prevent unintended kickout from coupling process)
+ 
+ Code_id=           2
+ Preparing to read binary AFLR3 grid: ../Flow/fun3d_CAPS.lb8.ugrid
+ 
+  nnodes              39648
+  ntface,nqface       23752 0
+  ntet,npyr,nprz,nhex 206474 0 0 0
+ 
+cell statistics: type,      min volume,      max volume, max face angle
+cell statistics:  tet,  0.94634718E-09,  0.14539812E+02,  174.189550509
+cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
+
+     ... PM (64,skip_do_min) :  F T
+     ... Use subset of cores to call ParMETIS            4
+     ... Calling ParMETIS (ParMETIS_V3_PartKway) .... F T
+     ... Temporary memory usage                 869868  Bytes
+     ... edgeCut        66370
+     ... Constructing partition node sets for level-0...                206474 T
+     ... Edge Partitioning ....
+     ... Boundary partitioning....
+     ... Reordering for cache efficiency....
+     ... Write global grid information to fun3d_CAPS.grid_info
+     ... Time after preprocess TIME/Mem(MB):  ********    528.11    528.11
+  NOTE: kappa_umuscl set by grid: .00
+ loading design ...
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+  Running an aeroelastic case with itime = 0
+  -->Setting ignore_grid_velocity to true
+  -->Setting need_grid_velocity to false
+ 
+ Recomputing distance function:
+ 
+ Using linear elasticity to reposition grid...
+ 
+ loading design ...
+ No active shape variables: exiting from reposition_grid...
+ 
+ Number of Moving Bodies:
+  1
+ 
+ Motion Data for Body    1
+   Body Name:   diamondWing
+   Parent Name: 
+  Number of Boundaries Defining Body:
+    1
+  List of Boundaries Defining Body:
+    2
+  Mesh Movement For Body Motion
+   deform
+  Component Mesh ID:
+    0
+  Rotational Motion:
+   rotate
+    0
+   no forced rotation specified
+  Translational Motion
+   translate
+    0
+   no forced translation specified
+  List of Boundaries Used For Force/Moment Integration:
+    2
+  Moment Center:
+   xmc         ymc         zmc  
+   0.00000E+00 0.00000E+00 0.00000E+00
+   move_mc
+    1
+  Surface Files
+   No surface files specified
+ 
+ Moving Body Family Trees:
+ 
+   number after each component name is the generation;
+   generation 0 motion is relative to inertial frame
+   generation 1 motion is relative to generation 0
+   generation 2 motion is relative to generation 1, etc
+ 
+   Body Name: diamondWing (0)
+    Ancestors:
+      none
+    Descendants:
+      none
+ 
+ Body 1 initial moment center:   0.0000000E+00  0.0000000E+00  0.0000000E+00
+ Static aeroelastic adjoint mesh update
+ 
+ Begin Mesh Movement, Time Step 10   (Current Step 10)
+ Solving linear elasticity equations for mesh deformation
+   Info: initial call to elasticity solver
+     Elasticity model: (1/distance)**1.0
+     Linear solver: gmres
+     Left preconditioner: point-multicolor  Preconditioner iterations: 5
+     Initial values for solution taken as zero
+     Convergence tolerances: tol_rel = 0.10000000E-13 tol_abs = 0.10000000E-13
+   Elasticity Convergence:
+     Search direction     1  residual =  0.35303942E-02   relative_residual =  0.10000000E+01
+     Search direction    46  residual =  0.72452908E-14   relative_residual =  0.20522612E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10035304E-13
+ Static adjoint mesh updated moving_grid = .false. now
+ 
+ Reading ../Flow/fun3d_CAPS.flow (version  12.20)
+ the restart files contains history iterations = 10
+ 
+       Lift  0.127632123850916E-01         Drag  0.130555449904821E+00
+ Iter            adjoint RMS  adjoint MAX   X location   Y location   Z location
+    1  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Iter            adjoint RMS  adjoint MAX   X location   Y location   Z location
+    1  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Info: initial call to elasticity solver
+     Elasticity model: (1/distance)**1.0
+     Linear solver: gmres
+     Left preconditioner: point-multicolor  Preconditioner iterations: 5
+     Initial values for solution taken as zero
+     Convergence tolerances: tol_rel = 0.10000000E-13 tol_abs = 0.10000000E-13
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.20000000E-13
+   Info: initial call to elasticity solver
+     Elasticity model: (1/distance)**1.0
+     Linear solver: gmres
+     Left preconditioner: point-multicolor  Preconditioner iterations: 5
+     Initial values for solution taken as zero
+     Convergence tolerances: tol_rel = 0.10000000E-13 tol_abs = 0.10000000E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.20000000E-13
+    2  0.275601881989825E-06  0.44341E-05 -0.10859E+00  0.36241E+01 -0.72350E-01
+    2  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.22361026E-02   relative_residual =  0.10000000E+01
+     Search direction    44  residual =  0.69853069E-14   relative_residual =  0.31238758E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10022361E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10022361E-13
+    3  0.568237936020353E-05  0.11840E-03 -0.68493E+01  0.62851E+01  0.25000E+02
+    3  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.25676842E-02   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.73008139E-14   relative_residual =  0.28433458E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10025677E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10025677E-13
+    4  0.789698912699888E-05  0.15925E-03 -0.11805E+02  0.61710E+01 -0.25000E+02
+    4  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.31230969E-02   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.98663533E-14   relative_residual =  0.31591569E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10031231E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10031231E-13
+    5  0.844219721980645E-05  0.15757E-03 -0.11805E+02  0.61710E+01 -0.25000E+02
+    5  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.37118197E-02   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.99747712E-14   relative_residual =  0.26872995E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10037118E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10037118E-13
+    6  0.925095661531384E-05  0.17739E-03 -0.22450E+02  0.61061E+01 -0.25000E+02
+    6  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.43495443E-02   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.59600040E-14   relative_residual =  0.13702594E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10043495E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10043495E-13
+    7  0.980554152421269E-05  0.18715E-03 -0.22450E+02  0.61061E+01 -0.25000E+02
+    7  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.49551741E-02   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.59380202E-14   relative_residual =  0.11983475E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10049552E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10049552E-13
+    8  0.970233916807651E-05  0.17288E-03 -0.22450E+02  0.61061E+01 -0.25000E+02
+    8  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.54952440E-02   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.59966356E-14   relative_residual =  0.10912410E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10054952E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10054952E-13
+    9  0.896973510796416E-05  0.15291E-03 -0.14501E+02  0.76541E+01  0.25000E+02
+    9  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.59570972E-02   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.99455394E-14   relative_residual =  0.16695278E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10059571E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10059571E-13
+   10  0.788009460541347E-05  0.14431E-03 -0.21442E+02  0.10988E+02  0.21764E+02
+   10  0.000000000000000E+00  0.00000E+00 -0.68620E+00  0.41597E+00 -0.39252E-01
+ 
+ Writing boundary output: fun3d_CAPS_tec_boundary.dat
+  Time step: 10, ntt: 10, Prior iterations: 0
+ Writing Legacy VTK volume file='fun3d_CAPS_volume.vtk'
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.63438239E-02   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.99512868E-14   relative_residual =  0.15686575E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10063438E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10063438E-13
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ 
+ Performing linear elasticity adjoint...
+ 
+ loading design ...
+ Solving mesh adjoint equations
+   Mesh Adjoint Convergence, Cost Function : 1
+     Search direction     1  residual =  0.63438239E-02   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.99512868E-14   relative_residual =  0.15686575E-11
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10063438E-13
+   Mesh Adjoint Convergence, Cost Function : 2
+     Search direction     1  residual =  0.00000000E+00   relative_residual =  0.00000000E+00
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10063438E-13
+ 
+ Writing boundary output: fun3d_CAPS_tec_boundary.dat
+  Time step: 10, ntt: 10, Prior iterations: 0
+ Writing Legacy VTK volume file='fun3d_CAPS_volume.vtk'
+ Done.
+FUN3D 13.6-c04c9a5 Flow started 08/31/2022 at 20:14:31 with 192 processes
+Contents of fun3d.nml file below------------------------
+&project
+    project_rootname = 'fun3d_CAPS'
+/
+
+&governing_equations
+    viscous_terms = 'inviscid'
+/
+
+&raw_grid
+    grid_format = 'aflr3'
+    data_format = 'default'
+    swap_yz_axes = .false.
+/
+
+&reference_physical_properties
+    mach_number = 0.3
+    angle_of_attack = 0.0
+    reynolds_number = 1000000.0
+    temperature = 300.0
+    temperature_units = 'Kelvin'
+/
+
+&inviscid_flux_method
+    flux_construction = 'roe'
+    flux_limiter = 'hminmod'
+    smooth_limiter_coeff = 1.0
+    freeze_limiter_iteration = 8
+/
+
+&nonlinear_solver_parameters
+    schedule_iteration = 1, 80
+    schedule_cfl = 2, 100
+    time_accuracy = 'steady'
+    time_step_nondim = 0.1
+    subiterations = 0
+    schedule_cflturb = 50.0, 50.0
+/
+
+&force_moment_integ_properties
+    area_reference = 1.0
+/
+
+&code_run_control
+    steps = 10
+    stopping_tolerance = 1e-15
+    restart_write_freq = 1000
+    restart_read = 'off'
+/
+
+&global
+    moving_grid = .true.
+    volume_animation_freq = -1
+    boundary_animation_freq = -1
+/
+
+&elasticity_gmres
+    algebraic_mesh_deform = .false.
+    nsearch = 200
+    tol = 1e-14
+    deformation_substeps = 1
+    deform_from_initial_mesh = .true.
+    use_substeps_each_step = .false.
+    elasticity = 1
+    elasticity_exponent = 1.0
+    nrestarts = 1
+    poisson_ratio = 0.0
+/
+
+&massoud_output
+    funtofem_include_skin_friction = .false.
+/
+
+&volume_output_variables
+    export_to = 'vtk'
+    x = .false.
+    y = .false.
+    z = .false.
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+
+&boundary_output_variables
+    number_of_boundaries = -1
+    boundary_list = '1-2'
+    temperature = .true.
+    mach = .true.
+    p = .true.
+/
+Contents of fun3d.nml file above------------------------
+ The default "stream" data format is being used for the grid format "aflr3".
+ Namelist data file moving_body.input successfully opened
+   Namelist forced_motion not read
+   Namelist observer_motion not read
+   Namelist surface_motion_from_file not read
+   Namelist motion_from_file not read
+   Namelist composite_overset_mesh not read
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+ Setting flow solver convergence tolerance to  0.1E-29
+ (to prevent unintended kickout from coupling process)
+ 
+ loading design ...
+ Preparing to read binary AFLR3 grid: fun3d_CAPS.lb8.ugrid
+ 
+  nnodes              39648
+  ntface,nqface       23752 0
+  ntet,npyr,nprz,nhex 206474 0 0 0
+ 
+cell statistics: type,      min volume,      max volume, max face angle
+cell statistics:  tet,  0.94634718E-09,  0.14539812E+02,  174.189550509
+cell statistics:  all,  0.94634718E-09,  0.14539812E+02,  174.189550509
+
+     ... PM (64,skip_do_min) :  F T
+     ... Use subset of cores to call ParMETIS            4
+     ... Calling ParMETIS (ParMETIS_V3_PartKway) .... F T
+     ... Temporary memory usage                 869868  Bytes
+     ... edgeCut        66370
+     ... Constructing partition node sets for level-0...                206474 T
+     ... Edge Partitioning ....
+     ... Boundary partitioning....
+     ... Reordering for cache efficiency....
+     ... Write global grid information to fun3d_CAPS.grid_info
+     ... Time after preprocess TIME/Mem(MB):  ********    542.96    542.96
+  NOTE: kappa_umuscl set by grid: .00
+ 
+ Grid read complete
+  ... Use the reference Mach number for the freestream:  T
+ Setting Sutherland constant =   198.60 rather than default value of  198.60
+  Running an aeroelastic case with itime = 0
+  -->Setting ignore_grid_velocity to true
+  -->Setting need_grid_velocity to false
+ 
+ Recomputing distance function:
+ 
+ Number of Moving Bodies:
+  1
+ 
+ Motion Data for Body    1
+   Body Name:   diamondWing
+   Parent Name: 
+  Number of Boundaries Defining Body:
+    1
+  List of Boundaries Defining Body:
+    2
+  Mesh Movement For Body Motion
+   deform
+  Component Mesh ID:
+    0
+  Rotational Motion:
+   rotate
+    0
+   no forced rotation specified
+  Translational Motion
+   translate
+    0
+   no forced translation specified
+  List of Boundaries Used For Force/Moment Integration:
+    2
+  Moment Center:
+   xmc         ymc         zmc  
+   0.00000E+00 0.00000E+00 0.00000E+00
+   move_mc
+    1
+  Surface Files
+   No surface files specified
+ 
+ Moving Body Family Trees:
+ 
+   number after each component name is the generation;
+   generation 0 motion is relative to inertial frame
+   generation 1 motion is relative to generation 0
+   generation 2 motion is relative to generation 1, etc
+ 
+   Body Name: diamondWing (0)
+    Ancestors:
+      none
+    Descendants:
+      none
+ 
+ Body 1 initial moment center:   0.0000000E+00  0.0000000E+00  0.0000000E+00
+ 
+ Begin Mesh Movement, Time Step 1   (Current Step 1)
+ Solving linear elasticity equations for mesh deformation
+   Info: initial call to elasticity solver
+     Elasticity model: (1/distance)**1.0
+     Linear solver: gmres
+     Left preconditioner: point-multicolor  Preconditioner iterations: 5
+     Initial values for solution taken as zero
+     Convergence tolerances: tol_rel = 0.10000000E-13 tol_abs = 0.10000000E-13
+   Elasticity Convergence:
+     Search direction     1  residual =  0.15973730E-14   relative_residual =  0.10000000E+01
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000000E-13
+ Iter            density_RMS  density_MAX   X-location   Y-location   Z-location
+    1  0.530342077630800E-04  0.68284E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.957500847680751E-02         Drag  0.799456333439178E+00
+ 
+ Begin Mesh Movement, Time Step 2   (Current Step 2)
+ Solving linear elasticity equations for mesh deformation
+   Info: restarting elasticity solver
+     Initial values for solution taken as final values from previous step
+   Elasticity Convergence:
+     Search direction     1  residual =  0.51138591E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.74470526E-14   relative_residual =  0.14562491E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000511E-13
+    2  0.441883238281395E-04  0.67573E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.144664063587325E-01         Drag  0.161620160033898E+01
+ 
+ Begin Mesh Movement, Time Step 3   (Current Step 3)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.51678685E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.74685139E-14   relative_residual =  0.14451826E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000517E-13
+    3  0.353052052279153E-04  0.58937E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift -0.633271235408338E-02         Drag  0.212782003128708E+01
+ 
+ Begin Mesh Movement, Time Step 4   (Current Step 4)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.32687615E-04   relative_residual =  0.10000000E+01
+     Search direction    38  residual =  0.52784418E-14   relative_residual =  0.16148140E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000327E-13
+    4  0.281741103442361E-04  0.41828E-03 -0.16631E+00  0.30250E+01 -0.14945E+00
+       Lift  0.586643923123321E-02         Drag  0.220965502811147E+01
+ 
+ Begin Mesh Movement, Time Step 5   (Current Step 5)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.64197191E-05   relative_residual =  0.10000000E+01
+     Search direction    36  residual =  0.53047627E-14   relative_residual =  0.82632318E-09
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10000064E-13
+    5  0.252384890831007E-04  0.37776E-03 -0.16947E+00  0.11605E+01 -0.21015E+00
+       Lift  0.186267364499314E-01         Drag  0.189813971705717E+01
+ 
+ Begin Mesh Movement, Time Step 6   (Current Step 6)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.45762936E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.84553005E-14   relative_residual =  0.18476307E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10004576E-13
+    6  0.253833990424655E-04  0.46676E-03  0.13843E+00  0.19131E+01  0.67190E-01
+       Lift  0.307636307435521E-01         Drag  0.140468124312101E+01
+ 
+ Begin Mesh Movement, Time Step 7   (Current Step 7)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.41908653E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.76367925E-14   relative_residual =  0.18222472E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10004191E-13
+    7  0.239428558269697E-04  0.36599E-03 -0.11284E+00  0.28722E+01 -0.71627E-01
+       Lift  0.231735407542143E-01         Drag  0.945805851802648E+00
+ 
+ Begin Mesh Movement, Time Step 8   (Current Step 8)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.34754997E-03   relative_residual =  0.10000000E+01
+     Search direction    42  residual =  0.65519206E-14   relative_residual =  0.18851737E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10003475E-13
+    8  0.242452597942814E-04  0.38271E-03 -0.17391E+00  0.25238E+01 -0.14935E+00
+       Lift  0.154101931572160E-01         Drag  0.589167224994733E+00
+ 
+ Begin Mesh Movement, Time Step 9   (Current Step 9)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.68666731E-03   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.73531389E-14   relative_residual =  0.10708445E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10006867E-13
+   limiter frozen
+    9  0.244141420862634E-04  0.33748E-03 -0.86862E-01  0.14638E+01  0.28137E+00
+       Lift  0.141761725988083E-01         Drag  0.326402128872351E+00
+ 
+ Begin Mesh Movement, Time Step 10   (Current Step 10)
+ Solving linear elasticity equations for mesh deformation
+   Elasticity Convergence:
+     Search direction     1  residual =  0.70685251E-03   relative_residual =  0.10000000E+01
+     Search direction    43  residual =  0.83174762E-14   relative_residual =  0.11766919E-10
+     Convergence achieved: residual <= tol_rel * initial_residual + tol_abs =  0.10007069E-13
+   limiter frozen
+   10  0.235840120103716E-04  0.29940E-03 -0.15883E+00  0.24390E+01 -0.70123E+00
+       Lift  0.127632123850763E-01         Drag  0.130555449904820E+00
+ 
+ Writing boundary output: fun3d_CAPS_tec_boundary.dat
+  Time step: 10, ntt: 10, Prior iterations: 0
+ Writing Legacy VTK volume file='fun3d_CAPS_volume.vtk'
+ 
+ Writing fun3d_CAPS.flow (version 12.2)
+  inserting current history iterations 10
+ Time for write: .0 s
+ 
+ Current value of function            1  0.000000000000000E+000
+ Current value of function            2  0.000000000000000E+000
+ Done.
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+dksfailure/dthickness0 = 0.0
+dksfailure/dthickness1 = 0.0
+dksfailure/dthickness2 = 0.0
+dksfailure/dthickness3 = 0.0
+dksfailure/dthickness4 = 0.0
+dksfailure/dthickness5 = 0.0
+dksfailure/dthickness6 = 0.0
+dksfailure/dthickness7 = 0.0
+dksfailure/dthickness8 = 0.0
+dksfailure/dthickness9 = 0.0
+dksfailure/dthickness10 = 0.0
+dksfailure/dthickness11 = 0.0
+dksfailure/dthickness12 = 0.0
+dksfailure/dthickness13 = 0.0
+dksfailure/dthickness14 = 0.0
+dksfailure/dthickness15 = 0.0
+dksfailure/dthickness16 = 0.0
+dksfailure/dthickness17 = 0.0
+dksfailure/dthickness18 = 0.0
+dksfailure/dthickness19 = 0.0
+dmass/dthickness0 = 0.0
+dmass/dthickness1 = 0.0
+dmass/dthickness2 = 0.0
+dmass/dthickness3 = 0.0
+dmass/dthickness4 = 0.0
+dmass/dthickness5 = 0.0
+dmass/dthickness6 = 0.0
+dmass/dthickness7 = 0.0
+dmass/dthickness8 = 0.0
+dmass/dthickness9 = 0.0
+dmass/dthickness10 = 0.0
+dmass/dthickness11 = 0.0
+dmass/dthickness12 = 0.0
+dmass/dthickness13 = 0.0
+dmass/dthickness14 = 0.0
+dmass/dthickness15 = 0.0
+dmass/dthickness16 = 0.0
+dmass/dthickness17 = 0.0
+dmass/dthickness18 = 0.0
+dmass/dthickness19 = 0.0
+
+Finished funtofem analysis of F2FDiamondWing...
+	ran in 75.5960214138031 seconds
+Derivatives for ksfailure...
+	Complex total derivative = 0.0
+	Adjoint total derivative = 0.0
+Derivatives for mass...
+	Complex total derivative = 0.0
+	Adjoint total derivative = 0.0
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+NOT CMPLX_MODE
+Transfer scheme [0]: freeing MELD data...

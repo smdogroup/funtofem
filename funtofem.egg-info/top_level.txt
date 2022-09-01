@@ -1,3 +1,0 @@
-funtofem
-pyfuntofem
-pyfuntofem2
