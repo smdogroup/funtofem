@@ -807,7 +807,14 @@ class TacsOutputGenerator:
 
 
 def createTacsInterfaceFromBDF(
-    model, comm, nprocs, bdf_file, prefix="", callback=None, struct_options={}
+    model,
+    comm,
+    nprocs,
+    bdf_file,
+    prefix="",
+    callback=None,
+    struct_options={},
+    thermal_index=-1,
 ):
     """
     Create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -832,11 +839,9 @@ def createTacsInterfaceFromBDF(
     world_rank = comm.Get_rank()
     if world_rank < nprocs:
         color = 1
-        key = world_rank
     else:
         color = MPI.UNDEFINED
-        key = world_rank
-    tacs_comm = comm.Split(color, key)
+    tacs_comm = comm.Split(color, world_rank)
 
     assembler = None
     f5 = None
@@ -859,8 +864,7 @@ def createTacsInterfaceFromBDF(
     # We might need to clean up this code. This is making educated guesses
     # about what index the temperature is stored. This could be wrong if things
     # change later. May query from TACS directly?
-    thermal_index = -1
-    if assembler is not None:
+    if assembler is not None and thermal_index == -1:
         varsPerNode = assembler.getVarsPerNode()
 
         # This is the likely index of the temperature variable
@@ -870,6 +874,9 @@ def createTacsInterfaceFromBDF(
             thermal_index = 3
         elif varsPerNode >= 7:  # Shell or beam + thermal
             thermal_index = 3
+
+    # Broad cast the thermal index to ensure it's the same on all procs
+    thermal_index = comm.bcast(thermal_index, root=0)
 
     # Create the tacs interface
     interface = TacsSteadyInterface(
