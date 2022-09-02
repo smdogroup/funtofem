@@ -157,6 +157,11 @@
 <span class="sd">        base.set_variable(&#39;structural&#39;, index=[0,1,2,3,4], active=False)</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># if it is a new vartype add it to the dictionaries</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">variable</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
