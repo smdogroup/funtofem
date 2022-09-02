@@ -23,9 +23,10 @@ from tacs import TACS, elements, functions, constitutive
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
+
 class CRMtacs(TacsSteadyInterface):
-    def __init__(self,comm,tacs_comm,model,n_tacs_procs):
-        super(CRMtacs,self).__init__(comm,tacs_comm,model)
+    def __init__(self, comm, tacs_comm, model, n_tacs_procs):
+        super(CRMtacs, self).__init__(comm, tacs_comm, model)
 
         self.tacs_proc = False
         if comm.Get_rank() < n_tacs_procs:
@@ -35,9 +36,9 @@ class CRMtacs(TacsSteadyInterface):
 
             # Set constitutive properties
             rho = 2500.0  # density, kg/m^3
-            E = 70.0e9 # elastic modulus, Pa
-            nu = 0.3 # poisson's ratio
-            kcorr = 5.0 / 6.0 # shear correction factor
+            E = 70.0e9  # elastic modulus, Pa
+            nu = 0.3  # poisson's ratio
+            kcorr = 5.0 / 6.0  # shear correction factor
             ys = 350e6  # yield stress, Pa
             min_thickness = 0.001
             max_thickness = 0.100
@@ -47,40 +48,41 @@ class CRMtacs(TacsSteadyInterface):
 
             # Loop over components in mesh, creating stiffness and element
             # object for each
-            map = np.zeros(240,dtype=int)
+            map = np.zeros(240, dtype=int)
             num_components = struct_mesh.getNumComponents()
             for i in range(num_components):
                 descript = struct_mesh.getElementDescript(i)
                 comp = struct_mesh.getComponentDescript(i)
-                if 'SPAR' in comp:
+                if "SPAR" in comp:
                     t = spar_thick
                 else:
                     t = thickness
-                stiff = constitutive.isoFSDT(rho, E, nu, kcorr, ys, t, i,
-                                             min_thickness, max_thickness)
+                stiff = constitutive.isoFSDT(
+                    rho, E, nu, kcorr, ys, t, i, min_thickness, max_thickness
+                )
                 element = None
                 if descript in ["CQUAD", "CQUADR", "CQUAD4"]:
-                    element = elements.MITCShell(2,stiff,component_num=i)
+                    element = elements.MITCShell(2, stiff, component_num=i)
                 struct_mesh.setElement(i, element)
 
                 # Create map
-                if 'LE_SPAR' in comp:
+                if "LE_SPAR" in comp:
                     segnum = int(comp[-2:])
                     map[i] = segnum
-                if 'TE_SPAR' in comp:
+                if "TE_SPAR" in comp:
                     segnum = int(comp[-2:])
                     map[i] = segnum + 48
-                if 'IMPDISP' in comp:
+                if "IMPDISP" in comp:
                     map[i] = i
-                elif 'RIB' in comp:
+                elif "RIB" in comp:
                     segnum = int(comp[-9:-7]) - 1
                     if segnum > 3:
                         segnum -= 1
                     map[i] = segnum + 188
-                if 'U_SKIN' in comp:
+                if "U_SKIN" in comp:
                     segnum = int(comp[-9:-7]) - 1
                     map[i] = segnum + 92
-                if 'L_SKIN' in comp:
+                if "L_SKIN" in comp:
                     segnum = int(comp[-9:-7]) - 1
                     map[i] = segnum + 140
 
@@ -111,14 +113,13 @@ class CRMtacs(TacsSteadyInterface):
             alpha = 1.0
             beta = 0.0
             gamma = 0.0
-            tacs.assembleJacobian(alpha,beta,gamma,res,mat)
+            tacs.assembleJacobian(alpha, beta, gamma, res, mat)
             pc.factor()
 
             # Create GMRES object for structural adjoint solves
-            nrestart = 0 # number of restarts before giving up
-            m = 30 # size of Krylov subspace (max # of iterations)
+            nrestart = 0  # number of restarts before giving up
+            m = 30  # size of Krylov subspace (max # of iterations)
             gmres = TACS.KSM(mat, pc, m, nrestart)
-
 
             # Initialize member variables pertaining to TACS
             self.tacs = tacs
@@ -133,14 +134,14 @@ class CRMtacs(TacsSteadyInterface):
             self.struct_rhs_vec = tacs.createVec()
             self.psi_S_vec = tacs.createVec()
             psi_S = self.psi_S_vec.getArray()
-            self.psi_S = np.zeros((psi_S.size,self.nfunc),dtype=TACS.dtype)
+            self.psi_S = np.zeros((psi_S.size, self.nfunc), dtype=TACS.dtype)
             self.ans_array = []
             for scenario in range(len(model.scenarios)):
                 self.ans_array.append(self.ans.getArray().copy())
-        self.initialize(model.scenarios[0],model.bodies)
+        self.initialize(model.scenarios[0], model.bodies)
 
     def post_export_f5(self):
-            flag = (TACS.ToFH5.NODES | TACS.ToFH5.DISPLACEMENTS | TACS.ToFH5.EXTRAS )
-            f5 = TACS.ToFH5(self.tacs, TACS.PY_SHELL, flag)
-            filename_struct_out = "crm"  + ".f5"
-            f5.writeToFile(filename_struct_out)
+        flag = TACS.ToFH5.NODES | TACS.ToFH5.DISPLACEMENTS | TACS.ToFH5.EXTRAS
+        f5 = TACS.ToFH5(self.tacs, TACS.PY_SHELL, flag)
+        filename_struct_out = "crm" + ".f5"
+        f5.writeToFile(filename_struct_out)

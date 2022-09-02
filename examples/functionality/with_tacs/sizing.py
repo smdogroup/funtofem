@@ -36,11 +36,11 @@ struct_mesh = TACS.MeshLoader(tacs_comm)
 struct_mesh.scanBDFFile("CRM_box_2nd.bdf")
 
 # Set constitutive properties
-rho = 2500.0 # density, kg/m^3
-E = 70e9 # elastic modulus, Pa
-nu = 0.3 # poisson's ratio
-kcorr = 5.0 / 6.0 # shear correction factor
-ys = 350e6 # yield stress, Pa
+rho = 2500.0  # density, kg/m^3
+E = 70e9  # elastic modulus, Pa
+nu = 0.3  # poisson's ratio
+kcorr = 5.0 / 6.0  # shear correction factor
+ys = 350e6  # yield stress, Pa
 min_thickness = 0.002
 max_thickness = 0.20
 thickness = 0.04
@@ -49,8 +49,9 @@ thickness = 0.04
 num_components = struct_mesh.getNumComponents()
 for i in range(num_components):
     descriptor = struct_mesh.getElementDescript(i)
-    stiff = constitutive.isoFSDT(rho, E, nu, kcorr, ys, thickness, i,
-                                 min_thickness, max_thickness)
+    stiff = constitutive.isoFSDT(
+        rho, E, nu, kcorr, ys, thickness, i, min_thickness, max_thickness
+    )
     element = None
     if descriptor in ["CQUAD", "CQUADR", "CQUAD4"]:
         element = elements.MITCShell(2, stiff, component_num=i)
@@ -71,25 +72,28 @@ struct_nnodes = len(struct_X) / 3
 ################################################################################
 
 # Load points/forces from data file
-XF = np.loadtxt('funtofemforces.dat')
+XF = np.loadtxt("funtofemforces.dat")
 
 # Get the points/forces
-aero_X = XF[:,:3].flatten().astype(TransferScheme.dtype)
-aero_loads = (251.8 * 251.8 / 2 * 0.3)*XF[:,3:].flatten().astype(TransferScheme.dtype)
+aero_X = XF[:, :3].flatten().astype(TransferScheme.dtype)
+aero_loads = (251.8 * 251.8 / 2 * 0.3) * XF[:, 3:].flatten().astype(
+    TransferScheme.dtype
+)
 
-aero_nnodes = aero_X.shape[0]/3
+aero_nnodes = aero_X.shape[0] / 3
 
 # Create TransferScheme object
 isymm = -1
 num_nearest = 20
 beta = 0.5
-meld = TransferScheme.pyMELD(tacs_comm, tacs_comm, 0, tacs_comm, 0,
-                             isymm, num_nearest, beta)
+meld = TransferScheme.pyMELD(
+    tacs_comm, tacs_comm, 0, tacs_comm, 0, isymm, num_nearest, beta
+)
 
 # Load structural and aerodynamic meshes into TransferScheme
-meld.setStructNodes(struct_X) 
-meld.setAeroNodes(aero_X) 
-   
+meld.setStructNodes(struct_X)
+meld.setAeroNodes(aero_X)
+
 # Initialize TransferScheme
 meld.initialize()
 
@@ -103,16 +107,18 @@ struct_loads = np.zeros(len(struct_X), dtype=TransferScheme.dtype)
 meld.transferLoads(aero_loads, struct_loads)
 
 # Set loads on structure
-struct_loads_moments = np.zeros(2*len(struct_loads))
-struct_loads_moments[::6]  =  struct_loads[::3]
-struct_loads_moments[1::6] =  struct_loads[1::3]
-struct_loads_moments[2::6] =  struct_loads[2::3]
+struct_loads_moments = np.zeros(2 * len(struct_loads))
+struct_loads_moments[::6] = struct_loads[::3]
+struct_loads_moments[1::6] = struct_loads[1::3]
+struct_loads_moments[2::6] = struct_loads[2::3]
 
-write_flag = (TACS.ToFH5.NODES |
-              TACS.ToFH5.DISPLACEMENTS |
-              TACS.ToFH5.STRAINS |
-              TACS.ToFH5.STRESSES |
-              TACS.ToFH5.EXTRAS)
+write_flag = (
+    TACS.ToFH5.NODES
+    | TACS.ToFH5.DISPLACEMENTS
+    | TACS.ToFH5.STRAINS
+    | TACS.ToFH5.STRESSES
+    | TACS.ToFH5.EXTRAS
+)
 f5 = TACS.ToFH5(tacs, TACS.PY_SHELL, write_flag)
 
 ################################################################################
@@ -128,7 +134,7 @@ class CRMSizing(ParOpt.pyParOptProblem):
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
         self.nvars = num_components / self.size
-        if num_components % self.size != 0 and self.rank == self.size-1:
+        if num_components % self.size != 0 and self.rank == self.size - 1:
             self.nvars += num_components % self.size
         self.ncon = 1
 
@@ -166,21 +172,21 @@ class CRMSizing(ParOpt.pyParOptProblem):
         return
 
     def getVarsAndBounds(self, x, lb, ub):
-        '''Set the values of the bounds'''
+        """Set the values of the bounds"""
         self.tacs.getDesignVars(x)
         self.tacs.getDesignVarRange(lb, ub)
 
         # Scale the design variable values
         x[:] /= self.xscale
         lb[:] /= self.xscale
-        ub[:] /= self.xscale       
+        ub[:] /= self.xscale
 
         return
 
     def evalObjCon(self, x):
-        '''Evaluate the objective and constraint'''
+        """Evaluate the objective and constraint"""
 
-        xtacs = self.xscale*x
+        xtacs = self.xscale * x
 
         # Set design variables into TACS
         self.tacs.setDesignVars(xtacs)
@@ -193,7 +199,7 @@ class CRMSizing(ParOpt.pyParOptProblem):
         self.pc.factor()
 
         # Set residual
-        res_array = self.res.getArray() 
+        res_array = self.res.getArray()
         res_array[:] = struct_loads_moments[:]
         self.res.applyBCs()
 
@@ -213,13 +219,13 @@ class CRMSizing(ParOpt.pyParOptProblem):
         return fail, fobj, con
 
     def evalObjConGradient(self, x, g, A):
-        '''Evaluate the objective and constraint gradient'''
+        """Evaluate the objective and constraint gradient"""
         fail = 0
 
         # Write the output file
         if self.gevals % 10 == 0:
-            self.f5.writeToFile('sizing%03d.f5'%(self.gevals))
-        self.gevals +=1
+            self.f5.writeToFile("sizing%03d.f5" % (self.gevals))
+        self.gevals += 1
 
         # The objective gradient
         # Evaluate the derivative of the mass w.r.t design variables
@@ -228,14 +234,14 @@ class CRMSizing(ParOpt.pyParOptProblem):
 
         # The constraint gradient
         # Evaluate the derivative of the constraint w.r.t design variables
-        self.tacs.evalDVSens(self.funclist[1], self.tempdvsens) 
+        self.tacs.evalDVSens(self.funclist[1], self.tempdvsens)
 
         self.tacs.evalSVSens(self.funclist[1], self.svsens)
-        self.svsens.scale(-1.)
+        self.svsens.scale(-1.0)
         self.pc.applyFactor(self.svsens, self.adj)
         self.tacs.evalAdjointResProduct(self.adj, self.adjSensProdArray)
 
-        A[:] = -1.0*(self.tempdvsens + self.adjSensProdArray)
+        A[:] = -1.0 * (self.tempdvsens + self.adjSensProdArray)
 
         # Scale the gradient values
         g[:] *= self.xscale
@@ -243,13 +249,14 @@ class CRMSizing(ParOpt.pyParOptProblem):
 
         return fail
 
+
 # Create the problem object
 sizing = CRMSizing(tacs, f5)
 max_lbfgs = 30
 opt = ParOpt.pyParOpt(sizing, max_lbfgs, ParOpt.BFGS)
 
 # Set the output file
-opt.setOutputFile('paropt_history.out')
+opt.setOutputFile("paropt_history.out")
 
 # Set optimization parameters
 opt.setGMRESSubspaceSize(30)

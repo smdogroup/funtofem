@@ -33,14 +33,14 @@ import os
 
 class wedge_adjoint(object):
     def __init__(self):
-        print('start')
+        print("start")
 
         # cruise conditions
-        self.v_inf = 171.5                  # freestream velocity [m/s]
-        self.rho = 0.01841                  # freestream density [kg/m^3]
-        self.cruise_q = 12092.5527126               # dynamic pressure [N/m^2]
-        self.grav = 9.81                            # gravity acc. [m/s^2]
-        self.thermal_scale = 0.5 * self.rho * (self.v_inf)**3
+        self.v_inf = 171.5  # freestream velocity [m/s]
+        self.rho = 0.01841  # freestream density [kg/m^3]
+        self.cruise_q = 12092.5527126  # dynamic pressure [N/m^2]
+        self.grav = 9.81  # gravity acc. [m/s^2]
+        self.thermal_scale = 0.5 * self.rho * (self.v_inf) ** 3
 
         # Set up the communicators
         n_tacs_procs = 1
@@ -66,33 +66,46 @@ class wedge_adjoint(object):
         self.ndv = len(self.model.get_variables())
 
         # Integrator options
-        integrator_options =  {'integrator': 'BDF',
-            'start_time': 0.0,
-            'step_size': 0.001,
-            'steps': self.steps,
-            'integration_order': 2,
-            'solver_rel_tol': 1.0e-10,
-            'solver_abs_tol':1.0e-9,
-            'max_newton_iters': 50,
-            'femat':1,
-            'print_level': 0,
-            'output_freq': 10}
+        integrator_options = {
+            "integrator": "BDF",
+            "start_time": 0.0,
+            "step_size": 0.001,
+            "steps": self.steps,
+            "integration_order": 2,
+            "solver_rel_tol": 1.0e-10,
+            "solver_abs_tol": 1.0e-9,
+            "max_newton_iters": 50,
+            "femat": 1,
+            "print_level": 0,
+            "output_freq": 10,
+        }
 
         # instantiate TACS on the master
         solvers = {}
-        solvers['flow'] = FakeSolver(self.comm, self.model)
-        solvers['structural'] = wedgeTACS(integrator_options, self.comm, self.tacs_comm, self.model, n_tacs_procs)
+        solvers["flow"] = FakeSolver(self.comm, self.model)
+        solvers["structural"] = wedgeTACS(
+            integrator_options, self.comm, self.tacs_comm, self.model, n_tacs_procs
+        )
 
         # L&D transfer options
         transfer_options = {
-            'analysis_type': 'aerothermal',
-            'scheme': 'meld',
-            'thermal_scheme': 'meld',
-            'npts': 5}
+            "analysis_type": "aerothermal",
+            "scheme": "meld",
+            "thermal_scheme": "meld",
+            "npts": 5,
+        }
 
         # instantiate the driver
-        self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0,
-            transfer_options, model=self.model)
+        self.driver = FUNtoFEMnlbgs(
+            solvers,
+            self.comm,
+            self.tacs_comm,
+            0,
+            self.comm,
+            0,
+            transfer_options,
+            model=self.model,
+        )
 
         # Set up some variables and constants related to the problem
         self.cruise_lift = None
@@ -100,27 +113,29 @@ class wedge_adjoint(object):
         self.num_con = 1
         self.mass = None
 
-        self.var_scale = np.ones(self.ndv,dtype=TransferScheme.dtype)
-        self.struct_tacs = solvers['structural'].assembler
+        self.var_scale = np.ones(self.ndv, dtype=TransferScheme.dtype)
+        self.struct_tacs = solvers["structural"].assembler
 
     def _build_model(self):
 
         thickness = 0.015
 
         # Build the model
-        model = FUNtoFEMmodel('wedge')
-        plate = Body('plate', 'aerothermal',group=0, boundary=1)
-        plate.add_variable('structural', Variable('thickness', value=thickness, lower=0.01, upper=0.1))
+        model = FUNtoFEMmodel("wedge")
+        plate = Body("plate", "aerothermal", group=0, boundary=1)
+        plate.add_variable(
+            "structural", Variable("thickness", value=thickness, lower=0.01, upper=0.1)
+        )
         model.add_body(plate)
 
-        steady = Scenario('unsteady', group=0, steps=self.steps, steady=False)
+        steady = Scenario("unsteady", group=0, steps=self.steps, steady=False)
 
-        temp = Function('temperature', analysis_type='structural')
+        temp = Function("temperature", analysis_type="structural")
         steady.add_function(temp)
-#        lift = Function('cl',analysis_type='aerodynamic')
-#        steady.add_function(lift)
-#        lift_drag = Function('clp',analysis_type='aerodynamic')
-#        steady.add_function(lift_drag)
+        #        lift = Function('cl',analysis_type='aerodynamic')
+        #        steady.add_function(lift)
+        #        lift_drag = Function('clp',analysis_type='aerodynamic')
+        #        steady.add_function(lift_drag)
 
         model.add_scenario(steady)
 
@@ -128,7 +143,7 @@ class wedge_adjoint(object):
 
     def eval_objcon(self, x):
         fail = 0
-        var = x*self.var_scale
+        var = x * self.var_scale
         self.model.set_variables(var)
 
         # Simulate the maneuver condition
@@ -141,7 +156,7 @@ class wedge_adjoint(object):
 
         # Set the temperature as the objective and constraint
         temp = functions[0].value
-        print('Temperature = ',temp)
+        print("Temperature = ", temp)
         con = temp
         obj = temp
 
@@ -149,7 +164,7 @@ class wedge_adjoint(object):
 
     def eval_objcon_grad(self, x):
 
-        var = x*self.var_scale
+        var = x * self.var_scale
         self.model.set_variables(var)
 
         fail = self.driver.solve_adjoint()
@@ -163,16 +178,17 @@ class wedge_adjoint(object):
 
         return g, A, fail
 
+
 h = 1e-30
-x = np.array([0.015 + 1j*h], dtype=TransferScheme.dtype)
+x = np.array([0.015 + 1j * h], dtype=TransferScheme.dtype)
 dp = wedge_adjoint()
 
 for i in range(1):
     obj1, con1, fail = dp.eval_objcon(x)
-    fd = con1.imag/h
-    print('Forward Grad = ', con1.imag/h)
+    fd = con1.imag / h
+    print("Forward Grad = ", con1.imag / h)
 
 g, A, fail = dp.eval_objcon_grad(x)
-print('Adjoint Grad = ', A)
-print('Relative error = ', ((fd - A[0])/fd).real)
+print("Adjoint Grad = ", A)
+print("Relative error = ", ((fd - A[0]) / fd).real)
 # print('Adjoint Grad = ', g[0,0])

@@ -22,25 +22,29 @@ limitations under the License.
 
 from mpi4py import MPI
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_aerothermoelastic_interface import TacsSteadyAerothermoelasticInterface
-#from pyfuntofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
+from pyfuntofem.tacs_aerothermoelastic_interface import (
+    TacsSteadyAerothermoelasticInterface,
+)
+
+# from pyfuntofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
 import numpy as np
+
 
 def createAssembler(tacs_comm):
     # Set constitutive properties
     rho = 4540.0  # density, kg/m^3
-    E = 118e9 # elastic modulus, Pa 118e9
-    nu = 0.325 # poisson's ratio
+    E = 118e9  # elastic modulus, Pa 118e9
+    nu = 0.325  # poisson's ratio
     ys = 1050e6  # yield stress, Pa
     kappa = 6.89
     specific_heat = 463.0
 
     # Set the back-pressure for the traction load
-    pb = 654.9 #10.0 # A value for the surface pressure
+    pb = 654.9  # 10.0 # A value for the surface pressure
 
     # Load in the mesh
     mesh = TACS.MeshLoader(tacs_comm)
-    mesh.scanBDFFile('tacs_aero.bdf')
+    mesh.scanBDFFile("tacs_aero.bdf")
 
     # Get the number of components set in the mesh. Each component is
     num_components = mesh.getNumComponents()
@@ -49,11 +53,12 @@ def createAssembler(tacs_comm):
     # corresponding to the surface traction and the component corresponding
     # to remaining plate elements. There is one design variable associated
     # with each domain that shares a common (x,z) coordinate
-    num_domains = num_components//2
+    num_domains = num_components // 2
 
     # Create the constitutvie propertes and model
-    props_plate = constitutive.MaterialProperties(rho=rho,
-        specific_heat=specific_heat, kappp=kappa, E=E, nu=nu, ys=ys)
+    props_plate = constitutive.MaterialProperties(
+        rho=rho, specific_heat=specific_heat, kappp=kappa, E=E, nu=nu, ys=ys
+    )
 
     # Create the basis class
     basis = elements.LinearHexaBasis()
@@ -82,7 +87,7 @@ def createAssembler(tacs_comm):
     nz = -np.cos(theta)
 
     # Set the traction components
-    tr = [-pb*nx, 0.0, -pb*nz, 0.0]
+    tr = [-pb * nx, 0.0, -pb * nz, 0.0]
 
     # Create the traction class
     traction = elements.Traction3D(varsPerNode, faceIndex, basis, tr)
@@ -103,16 +108,17 @@ def createAssembler(tacs_comm):
 
     return assembler, num_domains
 
-#class wedgeTACS(TacsSteadyAerothermalInterface):
+
+# class wedgeTACS(TacsSteadyAerothermalInterface):
 class wedgeTACS(TacsSteadyAerothermoelasticInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
-        super(wedgeTACS,self).__init__(comm, tacs_comm, model)
+        super(wedgeTACS, self).__init__(comm, tacs_comm, model)
 
         self.tacs_proc = False
         if comm.Get_rank() < n_tacs_procs:
             # set refrence values here
             T_ref = 300.0
-            volume = 0.01 # need tacs volume for TACSAverageTemperature function
+            volume = 0.01  # need tacs volume for TACSAverageTemperature function
 
             self.tacs_proc = True
 
@@ -145,8 +151,8 @@ class wedgeTACS(TacsSteadyAerothermoelasticInterface):
             pc.factor()
 
             # Create GMRES object for structural adjoint solves
-            nrestart = 0 # number of restarts before giving up
-            m = 30 # size of Krylov subspace (max # of iterations)
+            nrestart = 0  # number of restarts before giving up
+            m = 30  # size of Krylov subspace (max # of iterations)
             gmres = TACS.KSM(mat, pc, m, nrestart)
 
             # Initialize member variables pertaining to TACS
@@ -166,10 +172,10 @@ class wedgeTACS(TacsSteadyAerothermoelasticInterface):
             self.struct_rhs_vec = assembler.createVec()
             self.psi_S_vec = assembler.createVec()
             psi_S = self.psi_S_vec.getArray()
-            self.psi_S = np.zeros((psi_S.size,self.nfunc),dtype=TACS.dtype)
+            self.psi_S = np.zeros((psi_S.size, self.nfunc), dtype=TACS.dtype)
             self.psi_T_S_vec = assembler.createVec()
             psi_T_S = self.psi_T_S_vec.getArray()
-            self.psi_T_S = np.zeros((psi_T_S.size,self.nfunc),dtype=TACS.dtype)
+            self.psi_T_S = np.zeros((psi_T_S.size, self.nfunc), dtype=TACS.dtype)
             self.ans_array = []
             self.svsenslist = []
             self.dvsenslist = []
@@ -180,21 +186,24 @@ class wedgeTACS(TacsSteadyAerothermoelasticInterface):
 
             for scenario in range(len(model.scenarios)):
                 self.ans_array.append(self.ans.getArray().copy())
-        self.initialize(model.scenarios[0],model.bodies)
+        self.initialize(model.scenarios[0], model.bodies)
 
     def post_export_f5(self):
-        flag = (TACS.OUTPUT_CONNECTIVITY |
-                TACS.OUTPUT_NODES |
-                TACS.OUTPUT_DISPLACEMENTS |
-                TACS.OUTPUT_STRAINS |
-                TACS.OUTPUT_EXTRAS)
+        flag = (
+            TACS.OUTPUT_CONNECTIVITY
+            | TACS.OUTPUT_NODES
+            | TACS.OUTPUT_DISPLACEMENTS
+            | TACS.OUTPUT_STRAINS
+            | TACS.OUTPUT_EXTRAS
+        )
         f5 = TACS.ToFH5(self.assembler, TACS.SOLID_ELEMENT, flag)
-        #f5 = TACS.ToFH5(self.assembler, TACS.SCALAR_2D_ELEMENT, flag)
-        filename_struct_out = "wedge_tacs"  + ".f5"
+        # f5 = TACS.ToFH5(self.assembler, TACS.SCALAR_2D_ELEMENT, flag)
+        filename_struct_out = "wedge_tacs" + ".f5"
         f5.writeToFile(filename_struct_out)
 
+
 # Test the model
-if __name__ == '__main__':
+if __name__ == "__main__":
     comm = MPI.COMM_WORLD
 
     assembler, num_domains = createAssembler(comm)
@@ -208,8 +217,8 @@ if __name__ == '__main__':
     pc = TACS.Pc(mat)
 
     # Create GMRES object for structural adjoint solves
-    nrestart = 0 # number of restarts before giving up
-    m = 30 # size of Krylov subspace (max # of iterations)
+    nrestart = 0  # number of restarts before giving up
+    m = 30  # size of Krylov subspace (max # of iterations)
     gmres = TACS.KSM(mat, pc, m, nrestart)
 
     # Set the variables into the assembler object with the correct
@@ -236,7 +245,7 @@ if __name__ == '__main__':
     assembler.setVariables(ans)
 
     # Create the average temperature function
-    volume = 1*2*0.005 # need tacs volume for TACSAverageTemperature function
+    volume = 1 * 2 * 0.005  # need tacs volume for TACSAverageTemperature function
     avg_temp_func = functions.AverageTemperature(assembler, volume)
 
     # Create the TACS design vector. The length of this vector will be different
@@ -251,14 +260,14 @@ if __name__ == '__main__':
 
     # Use the quadratic bernstein basis. These functions are always positive
     # and perserve a
-    A[:,0] = (1.0 - u)**2
-    A[:,1] = 2.0*u*(1.0 - u)
-    A[:,2] = u**2
+    A[:, 0] = (1.0 - u) ** 2
+    A[:, 1] = 2.0 * u * (1.0 - u)
+    A[:, 2] = u**2
 
     # Set the input design variables. These are the values that will be passed
     # from the optimizer.
     xin = np.array([1.0, 0.25, 0.25])
-    xlb = 0.1*np.ones(3)
+    xlb = 0.1 * np.ones(3)
     xub = np.ones(3)
 
     # Compute the values of the design variables in TACS. x = A * xin
@@ -302,9 +311,7 @@ if __name__ == '__main__':
         print(grad)
 
     # Write out the solution
-    flag = (TACS.OUTPUT_CONNECTIVITY |
-            TACS.OUTPUT_NODES |
-            TACS.OUTPUT_DISPLACEMENTS)
+    flag = TACS.OUTPUT_CONNECTIVITY | TACS.OUTPUT_NODES | TACS.OUTPUT_DISPLACEMENTS
     f5 = TACS.ToFH5(assembler, TACS.SOLID_ELEMENT, flag)
     filename_struct_out = "test.f5"
     f5.writeToFile(filename_struct_out)
