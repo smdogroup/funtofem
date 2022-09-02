@@ -171,8 +171,6 @@ class TransferSchemeTest(unittest.TestCase):
         dof_per_node = 6
 
         # Set typical parameter values
-        rbf_type = TransferScheme.PY_MULTIQUADRIC
-        sampling_ratio = 1
         transfer = TransferScheme.pyBeamTransfer(
             comm, comm, 0, comm, 0, conn, dof_per_node
         )
@@ -217,8 +215,6 @@ class TransferSchemeTest(unittest.TestCase):
         dof_per_node = 8
 
         # Set typical parameter values
-        rbf_type = TransferScheme.PY_MULTIQUADRIC
-        sampling_ratio = 1
         transfer = TransferScheme.pyBeamTransfer(
             comm, comm, 0, comm, 0, conn, dof_per_node
         )
