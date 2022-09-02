@@ -1046,7 +1046,7 @@ int LDTransferScheme::testDispJacVecProducts(const F2FScalar *struct_disps,
 
   // Compute complex step approximation
 #ifdef FUNTOFEM_USE_COMPLEX
-  F2FScalar *Us_cs = new F2FScalar[3 * ns_local];
+  F2FScalar *Us_cs = new F2FScalar[dof_per_node * ns_local];
   memset(Us_cs, 0.0, dof_per_node * ns_local * sizeof(F2FScalar));
   for (int j = 0; j < dof_per_node * ns_local; j++) {
     Us_cs[j] +=
@@ -1449,8 +1449,6 @@ int LDTransferScheme::testdDdxS0Products(const F2FScalar *struct_disps,
                                          const F2FScalar *test_vec_s,
                                          const F2FScalar h, const double rtol,
                                          const double atol) {
-  const int dof_per_node = getStructNodeDof();
-
   // Copy the original, unperturbed node locations
   F2FScalar *Xs_copy = new F2FScalar[3 * ns_local];
   memcpy(Xs_copy, Xs_local, 3 * ns_local * sizeof(F2FScalar));
@@ -2366,8 +2364,8 @@ int ThermalTransfer::testTempJacVecProducts(const F2FScalar *struct_temps,
 
   F2FScalar deriv_approx = -0.5 * (VPsi_pos - VPsi_neg) / h;
 
-  delete[] Us_pos;
-  delete[] Us_neg;
+  delete[] Ts_pos;
+  delete[] Ts_neg;
 #endif
   // Compute relative error
   double rel_error1 = 0.0;
@@ -2476,7 +2474,6 @@ int ThermalTransfer::testFluxJacVecProducts(
     // F2FScalar(0.0, F2FRealPart(h*test_vec_s1[j]));
   }
   transferTemp(Ts_cs, aero_temps);
-  transferFlux(aero_flux, struct_flux);
 
   F2FScalar VPhi = 0.0;
   for (int j = 0; j < na; j++) {
@@ -2492,25 +2489,23 @@ int ThermalTransfer::testFluxJacVecProducts(
   F2FScalar *Ts_pos = new F2FScalar[ns_local];
   F2FScalar *Ts_neg = new F2FScalar[ns_local];
   for (int j = 0; j < ns_local; j++) {
-    Ts_pos[j] = struct_temps[j] + h * test_vec_a[j];
-    Ts_neg[j] = struct_temps[j] - h * test_vec_a[j];
+    Ts_pos[j] = struct_temps[j] + h * test_vec_s[j];
+    Ts_neg[j] = struct_temps[j] - h * test_vec_s[j];
   }
 
   transferTemp(Ts_pos, aero_temps);
-  transferFlux(aero_flux, struct_flux);
   F2FScalar VPhi_pos = 0.0;
-  for (int j = 0; j < ns_local; j++) {
-    F2FScalar Phi = struct_flux[j];
-    VPhi_pos += test_vec_s[j] * Phi;
+  for (int j = 0; j < na; j++) {
+    F2FScalar Phi = Xa[j] + aero_temps[j];
+    VPhi_pos += test_vec_a[j] * Phi;
   }
   MPI_Allreduce(MPI_IN_PLACE, &VPhi_pos, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 
   transferTemp(Ts_neg, aero_temps);
-  transferFlux(aero_flux, struct_flux);
   F2FScalar VPhi_neg = 0.0;
-  for (int j = 0; j < ns_local; j++) {
-    F2FScalar Phi = struct_flux[j];
-    VPhi_neg += test_vec_s[j] * Phi;
+  for (int j = 0; j < na; j++) {
+    F2FScalar Phi = Xa[j] + aero_temps[j];
+    VPhi_neg += test_vec_a[j] * Phi;
   }
   MPI_Allreduce(MPI_IN_PLACE, &VPhi_neg, 1, F2F_MPI_TYPE, MPI_SUM, global_comm);
 

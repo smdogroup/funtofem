@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from tacs import elements, constitutive
 
@@ -177,3 +178,8 @@ def generateBDF(filename):
     fp.close()
 
     return
+
+
+if __name__ == "__main__":
+    filename = os.path.join("input_files", "test_bdf_file.bdf")
+    generateBDF(filename)

@@ -327,7 +327,7 @@ class Fun3dInterface(SolverInterface):
 
         return
 
-    def eval_function_gradients(self, scenario, bodies):
+    def get_function_gradients(self, scenario, bodies):
         """
         Populates the FUNtoFEM model with derivatives w.r.t. aerodynamic variables
 
@@ -406,7 +406,9 @@ class Fun3dInterface(SolverInterface):
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(scenario)
-            if "deform" in body.motion_type and aero_disps is not None:
+            aero_nnodes = body.get_num_aero_nodes()
+            deform = "deform" in body.motion_type
+            if deform and aero_disps is not None and aero_nnodes > 0:
                 dx = np.asfortranarray(aero_disps[0::3])
                 dy = np.asfortranarray(aero_disps[1::3])
                 dz = np.asfortranarray(aero_disps[2::3])
@@ -436,7 +438,6 @@ class Fun3dInterface(SolverInterface):
             aero_loads = body.get_aero_loads(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             if aero_loads is not None and aero_nnodes > 0:
-                aero_nnodes = body.get_num_aero_nodes()
                 fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
 
                 # Set the dimensional values of the forces
@@ -527,7 +528,8 @@ class Fun3dInterface(SolverInterface):
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(scenario)
-                if aero_disps is not None:
+                aero_nnodes = body.get_num_aero_nodes()
+                if aero_disps is not None and aero_nnodes > 0:
                     dx = np.asfortranarray(aero_disps[0::3])
                     dy = np.asfortranarray(aero_disps[1::3])
                     dz = np.asfortranarray(aero_disps[2::3])
@@ -596,7 +598,8 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             # Get the adjoint Jacobian product for the aerodynamic loads
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
-            if aero_loads_ajp is not None:
+            aero_nnodes = body.get_num_aero_nodes()
+            if aero_loads_ajp is not None and aero_nnodes > 0:
                 aero_nnodes = body.get_num_aero_nodes()
                 psi_F = -aero_loads_ajp
 
@@ -627,7 +630,8 @@ class Fun3dInterface(SolverInterface):
 
             # Get the adjoint Jacobian products for the aero heat flux
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
-            if aero_flux_ajp is not None:
+            aero_nnodes = body.get_num_aero_nodes()
+            if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
                 # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
                 psi_H = -aero_flux_ajp
@@ -667,7 +671,7 @@ class Fun3dInterface(SolverInterface):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
-            if aero_disps_ajp is not None:
+            if aero_disps_ajp is not None and aero_nnodes > 0:
                 lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
@@ -679,7 +683,8 @@ class Fun3dInterface(SolverInterface):
 
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
-            if aero_temps_ajp is not None:
+            aero_nnodes = body.get_num_aero_nodes()
+            if aero_temps_ajp is not None and aero_nnodes > 0:
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )

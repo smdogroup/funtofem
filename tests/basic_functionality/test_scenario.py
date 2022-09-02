@@ -60,9 +60,6 @@ class ScenarioTest(unittest.TestCase):
         assert aoa.value == 5.0
         assert scenario.variables["aerodynamic"][5].name == "zrate"
 
-        for var in scenario.variables:
-            print(var.name)
-
         # now the functions
         assert len(scenario.functions) == 2
         assert scenario.functions[0].name == "cd"
