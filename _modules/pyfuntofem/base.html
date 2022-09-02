@@ -108,6 +108,13 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="c1"># check if the variable is already defined in the list</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Cannot add two variables with the same name and same vartype&quot;</span>
+                <span class="p">)</span>
+
         <span class="c1"># assign identifying properties to the variable then to the list</span>
         <span class="n">var</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">=</span> <span class="n">vartype</span>
