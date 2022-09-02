@@ -121,6 +121,11 @@ class Base(object):
         base.set_variable('structural', index=[0,1,2,3,4], active=False)
 
         """
+
+        # if it is a new vartype add it to the dictionaries
+        if not vartype in self.variables:
+            self.variables[vartype] = []
+
         if name is not None:
             for variable in self.variables[vartype]:
                 if variable.name == name:
