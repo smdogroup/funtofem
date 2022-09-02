@@ -23,6 +23,7 @@ from tacs import TACS, elements, functions, constitutive
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
+
 class TacsCRM(TacsSteadyInterface):
     """
     This is an extension of the TacsSteadyInterface class, which abstracts the
@@ -32,6 +33,7 @@ class TacsCRM(TacsSteadyInterface):
     that solver will call in the solution of a steady aeroelastic problem
 
     """
+
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
         super(TacsCRM, self).__init__(comm, tacs_comm, model)
 
@@ -42,20 +44,20 @@ class TacsCRM(TacsSteadyInterface):
 
             # Load CRM structural wingbox mesh from BDF file
             struct_mesh = TACS.MeshLoader(tacs_comm)
-            #struct_mesh.scanBDFFile("uCRM-9_wingbox_medium.bdf")
+            # struct_mesh.scanBDFFile("uCRM-9_wingbox_medium.bdf")
             struct_mesh.scanBDFFile("wingbox_jagged_spcs.bdf")
-            #struct_mesh.scanBDFFile("wingbox_rib_spcs.bdf")
+            # struct_mesh.scanBDFFile("wingbox_rib_spcs.bdf")
 
             # Set constitutive properties
-            rho = 2500.0           # density, kg/m^3
-            E = 70.0e9             # elastic modulus, Pa
-            nu = 0.3               # poisson's ratio
-            kcorr = 5.0/6.0        # shear correction factor
-            ys = 350e6             # yield stress, Pa
-            min_thickness = 0.001  
-            max_thickness = 0.100  
-            thickness = 0.04       
-            spar_thick = 0.015     
+            rho = 2500.0  # density, kg/m^3
+            E = 70.0e9  # elastic modulus, Pa
+            nu = 0.3  # poisson's ratio
+            kcorr = 5.0 / 6.0  # shear correction factor
+            ys = 350e6  # yield stress, Pa
+            min_thickness = 0.001
+            max_thickness = 0.100
+            thickness = 0.04
+            spar_thick = 0.015
 
             # Loop over components in wingbox mesh, creating constitutive and
             # element object for each component
@@ -64,16 +66,17 @@ class TacsCRM(TacsSteadyInterface):
                 # Get the element/component descriptions from the BDF file
                 elem_descr = struct_mesh.getElementDescript(i)
                 comp_descr = struct_mesh.getComponentDescript(i)
-                
+
                 # If the component description indicates that component is
                 # along a spar, assign it the spar thickness
-                if 'SPAR' in comp_descr:
+                if "SPAR" in comp_descr:
                     t = spar_thick
                 else:
                     t = thickness
 
-                stiff = constitutive.isoFSDT(rho, E, nu, kcorr, ys, t, i,
-                                             min_thickness, max_thickness)
+                stiff = constitutive.isoFSDT(
+                    rho, E, nu, kcorr, ys, t, i, min_thickness, max_thickness
+                )
 
                 # If the element description indicates the element is a CQUAD,
                 # create a shell element in TACS
@@ -88,8 +91,8 @@ class TacsCRM(TacsSteadyInterface):
 
             # Create distributed matrix and vector objects
             mat = tacs.createFEMat()  # stiffness matrix
-            ans = tacs.createVec()    # state vector
-            res = tacs.createVec()    # load vector (effectively)
+            ans = tacs.createVec()  # state vector
+            res = tacs.createVec()  # load vector (effectively)
 
             # Create distributed node vector from TACS Assembler object and
             # extract the node locations
@@ -99,7 +102,7 @@ class TacsCRM(TacsSteadyInterface):
 
             tacs.getNodes(self.struct_X_vec)
             self.struct_X.append(self.struct_X_vec.getArray())
-            self.struct_nnodes.append(len(self.struct_X)/3)
+            self.struct_nnodes.append(len(self.struct_X) / 3)
 
             # Assemble the stiffness matrix
             alpha = 1.0
@@ -122,7 +125,7 @@ class TacsCRM(TacsSteadyInterface):
         self.initialize(model.scenarios[0], model.bodies)
 
     def post_export_f5(self):
-            flag = (TACS.ToFH5.NODES | TACS.ToFH5.DISPLACEMENTS | TACS.ToFH5.EXTRAS)
-            f5 = TACS.ToFH5(self.tacs, TACS.PY_SHELL, flag)
-            file_out = "crm.f5"
-            f5.writeToFile(file_out)
+        flag = TACS.ToFH5.NODES | TACS.ToFH5.DISPLACEMENTS | TACS.ToFH5.EXTRAS
+        f5 = TACS.ToFH5(self.tacs, TACS.PY_SHELL, flag)
+        file_out = "crm.f5"
+        f5.writeToFile(file_out)

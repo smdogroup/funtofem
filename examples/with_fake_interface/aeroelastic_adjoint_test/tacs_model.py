@@ -23,9 +23,10 @@ from tacs import TACS, elements, functions, constitutive
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
+
 class wedgeTACS(TacsSteadyInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
-        super(wedgeTACS,self).__init__(comm, tacs_comm, model)
+        super(wedgeTACS, self).__init__(comm, tacs_comm, model)
 
         assembler = None
         mat = None
@@ -37,17 +38,23 @@ class wedgeTACS(TacsSteadyInterface):
         if comm.Get_rank() < n_tacs_procs:
             # Set constitutive properties
             rho = 4540.0  # density, kg/m^3
-            E = 118e9 # elastic modulus, Pa
-            nu = 0.325 # poisson's ratio
+            E = 118e9  # elastic modulus, Pa
+            nu = 0.325  # poisson's ratio
             ys = 1050e6  # yield stress, Pa
             kappa = 6.89
-            specific_heat=463.0
+            specific_heat = 463.0
             thickness = 0.015
-            volume = 25 # need tacs volume for TACSAverageTemperature function
+            volume = 25  # need tacs volume for TACSAverageTemperature function
 
             # Create the constitutvie propertes and model
-            props = constitutive.MaterialProperties(rho=4540.0, specific_heat=463.0,
-                                                    kappa = 6.89, E=118e9, nu=0.325, ys=1050e6)
+            props = constitutive.MaterialProperties(
+                rho=4540.0,
+                specific_heat=463.0,
+                kappa=6.89,
+                E=118e9,
+                nu=0.325,
+                ys=1050e6,
+            )
             con = constitutive.SolidConstitutive(props, t=1.0, tNum=0)
 
             # Set the model type = linear thermoelasticity
@@ -62,7 +69,7 @@ class wedgeTACS(TacsSteadyInterface):
 
             # Load in the mesh
             mesh = TACS.MeshLoader(tacs_comm)
-            mesh.scanBDFFile('tacs_aero.bdf')
+            mesh.scanBDFFile("tacs_aero.bdf")
 
             # Set the element
             mesh.setElement(0, element)
@@ -75,8 +82,8 @@ class wedgeTACS(TacsSteadyInterface):
             pc = TACS.Pc(mat)
 
             # Create GMRES object for structural adjoint solves
-            nrestart = 0 # number of restarts before giving up
-            m = 30 # size of Krylov subspace (max # of iterations)
+            nrestart = 0  # number of restarts before giving up
+            m = 30  # size of Krylov subspace (max # of iterations)
             gmres = TACS.KSM(mat, pc, m, nrestart)
 
         self._initialize_variables(assembler, mat, pc, gmres)
@@ -86,10 +93,12 @@ class wedgeTACS(TacsSteadyInterface):
         return
 
     def post_export_f5(self):
-        flag = (TACS.OUTPUT_CONNECTIVITY |
-                TACS.OUTPUT_NODES |
-                TACS.OUTPUT_DISPLACEMENTS |
-                TACS.OUTPUT_STRAINS)
+        flag = (
+            TACS.OUTPUT_CONNECTIVITY
+            | TACS.OUTPUT_NODES
+            | TACS.OUTPUT_DISPLACEMENTS
+            | TACS.OUTPUT_STRAINS
+        )
         f5 = TACS.ToFH5(self.assembler, TACS.SOLID_ELEMENT, flag)
-        filename_struct_out = "tets"  + ".f5"
+        filename_struct_out = "tets" + ".f5"
         f5.writeToFile(filename_struct_out)

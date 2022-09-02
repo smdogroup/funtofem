@@ -24,9 +24,22 @@ from __future__ import print_function
 
 from .funtofem_driver import *
 
+
 class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
-    def __init__(self,solvers,comm,struct_comm,struct_master,aero_comm,aero_master,transfer_options=None,model=None,
-                 theta_init=0.125,theta_min=0.01,fsi_subiters=1):
+    def __init__(
+        self,
+        solvers,
+        comm,
+        struct_comm,
+        struct_master,
+        aero_comm,
+        aero_master,
+        transfer_options=None,
+        model=None,
+        theta_init=0.125,
+        theta_min=0.01,
+        fsi_subiters=1,
+    ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel solvers for steady and unsteady coupled adjoint.
 
@@ -46,7 +59,16 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             Minimum value of theta for the Aitken under-relaxation
         """
 
-        super(FUNtoFEMnlbgsFSISubiters,self).__init__(solvers,comm,struct_comm,struct_master,aero_comm,aero_master,transfer_options=transfer_options,model=model)
+        super(FUNtoFEMnlbgsFSISubiters, self).__init__(
+            solvers,
+            comm,
+            struct_comm,
+            struct_master,
+            aero_comm,
+            aero_master,
+            transfer_options=transfer_options,
+            model=model,
+        )
 
         # Aitken acceleration settings
         self.theta_init = theta_init
@@ -58,7 +80,7 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
         self.aitken_vec = None
         self.up_prev = None
 
-    def _initialize_adjoint_variables(self,scenario,bodies):
+    def _initialize_adjoint_variables(self, scenario, bodies):
         """
         Initialize the adjoint variables
 
@@ -73,25 +95,37 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
         nfunctions_total = len(scenario.functions)
 
         for body in bodies:
-            body.psi_L = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
-                                  dtype=TransferScheme.dtype)
-            body.psi_S = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
-                                  dtype=TransferScheme.dtype)
-            body.struct_rhs = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions),
-                                       dtype=TransferScheme.dtype)
+            body.psi_L = np.zeros(
+                (body.struct_nnodes * body.xfer_ndof, nfunctions),
+                dtype=TransferScheme.dtype,
+            )
+            body.psi_S = np.zeros(
+                (body.struct_nnodes * body.xfer_ndof, nfunctions),
+                dtype=TransferScheme.dtype,
+            )
+            body.struct_rhs = np.zeros(
+                (body.struct_nnodes * body.xfer_ndof, nfunctions),
+                dtype=TransferScheme.dtype,
+            )
 
             if body.transfer:
-                body.psi_F = np.zeros((body.aero_nnodes*3,nfunctions),
-                                      dtype=TransferScheme.dtype)
-                body.psi_D = np.zeros((body.aero_nnodes*3,nfunctions),
-                                      dtype=TransferScheme.dtype)
+                body.psi_F = np.zeros(
+                    (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+                )
+                body.psi_D = np.zeros(
+                    (body.aero_nnodes * 3, nfunctions), dtype=TransferScheme.dtype
+                )
 
             if body.shape:
-                body.aero_shape_term = np.zeros((body.aero_nnodes*3,nfunctions_total),dtype=TransferScheme.dtype)
-                body.struct_shape_term = np.zeros((body.struct_nnodes*body.xfer_ndof,nfunctions_total),dtype=TransferScheme.dtype)
+                body.aero_shape_term = np.zeros(
+                    (body.aero_nnodes * 3, nfunctions_total), dtype=TransferScheme.dtype
+                )
+                body.struct_shape_term = np.zeros(
+                    (body.struct_nnodes * body.xfer_ndof, nfunctions_total),
+                    dtype=TransferScheme.dtype,
+                )
 
-
-    def _solve_steady_forward(self,scenario,steps=None):
+    def _solve_steady_forward(self, scenario, steps=None):
         """
         Solve the aeroelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
@@ -112,25 +146,29 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             if self.model:
                 steps = scenario.steps
             else:
-                if self.comm.Get_rank()==0:
-                    print("No number of steps given for the coupled problem. Using default (1000)")
+                if self.comm.Get_rank() == 0:
+                    print(
+                        "No number of steps given for the coupled problem. Using default (1000)"
+                    )
                 steps = 1000
 
         # Loop over the NLBGS steps
-        for step in range(1,steps+1):
+        for step in range(1, steps + 1):
 
-            fail = self.solvers['flow'].iterate(scenario,self.model.bodies,step)
+            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
             if fail != 0:
                 return fail
 
             # Transfer the loads
             for body in self.model.bodies:
-                body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                body.struct_loads = np.zeros(
+                    body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                )
                 if body.transfer:
                     body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
             # Take a step in the FEM model
-            fail = self.solvers['structural'].iterate(scenario,self.model.bodies,step)
+            fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
             if fail != 0:
                 return fail
 
@@ -140,13 +178,15 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             # Transfer displacements
             for body in self.model.bodies:
                 if body.transfer:
-                    body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                    body.aero_disps = np.zeros(
+                        body.aero_nnodes * 3, dtype=TransferScheme.dtype
+                    )
                     body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
         # end solve loop
         return fail
 
-    def _solve_steady_adjoint(self,scenario):
+    def _solve_steady_adjoint(self, scenario):
         """
         Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
@@ -163,37 +203,45 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
         steps = scenario.steps
 
         # Initialize the adjoint variables
-        self._initialize_adjoint_variables(scenario,self.model.bodies)
+        self._initialize_adjoint_variables(scenario, self.model.bodies)
 
         # Load the current state
         for body in self.model.bodies:
             if body.transfer:
-                aero_disps   = np.zeros(body.aero_disps.size,dtype=TransferScheme.dtype)
+                aero_disps = np.zeros(body.aero_disps.size, dtype=TransferScheme.dtype)
                 body.transfer.transferDisps(body.struct_disps, aero_disps)
 
-                struct_loads = np.zeros(body.struct_loads.size,dtype=TransferScheme.dtype)
+                struct_loads = np.zeros(
+                    body.struct_loads.size, dtype=TransferScheme.dtype
+                )
                 body.transfer.transferLoads(body.aero_loads, struct_loads)
 
         # Initialize the adjoint variables
         nfunctions = scenario.count_adjoint_functions()
-        self._initialize_adjoint_variables(scenario,self.model.bodies)
+        self._initialize_adjoint_variables(scenario, self.model.bodies)
 
         # loop over the adjoint NLBGS solver
-        for step in range(1,steps+1):
+        for step in range(1, steps + 1):
             # Get psi_F for the flow solver
             for body in self.model.bodies:
                 for func in range(nfunctions):
                     # 'Solve' for load transfer adjoint variables
-                    body.psi_L[:,func] = body.psi_S[:,func]
+                    body.psi_L[:, func] = body.psi_S[:, func]
 
                     # Transform load transfer adjoint variables using transpose Jacobian from
                     # funtofem: psi_F = dLdfA^T * psi_L
                     if body.transfer:
-                        psi_F_r = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
-                        body.transfer.applydDduS(body.psi_L[:, func].copy(order='C'), psi_F_r)
-                        body.psi_F[:,func] = psi_F_r
+                        psi_F_r = np.zeros(
+                            body.aero_nnodes * 3, dtype=TransferScheme.dtype
+                        )
+                        body.transfer.applydDduS(
+                            body.psi_L[:, func].copy(order="C"), psi_F_r
+                        )
+                        body.psi_F[:, func] = psi_F_r
 
-            fail = self.solvers['flow'].iterate_adjoint(scenario,self.model.bodies,step)
+            fail = self.solvers["flow"].iterate_adjoint(
+                scenario, self.model.bodies, step
+            )
             if fail != 0:
                 return fail
 
@@ -202,30 +250,40 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
                 for func in range(nfunctions):
 
                     # calculate dDdu_s^T * psi_D
-                    psi_D_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                    psi_D_product = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                    )
                     if body.transfer:
-                        body.transfer.applydDduSTrans(body.psi_D[:, func].copy(order='C'), psi_D_product)
+                        body.transfer.applydDduSTrans(
+                            body.psi_D[:, func].copy(order="C"), psi_D_product
+                        )
 
                     # calculate dLdu_s^T * psi_L
-                    psi_L_product = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                    psi_L_product = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                    )
                     if body.transfer:
-                        body.transfer.applydLduSTrans(body.psi_L[:, func].copy(order='C'), psi_L_product)
+                        body.transfer.applydLduSTrans(
+                            body.psi_L[:, func].copy(order="C"), psi_L_product
+                        )
 
-                    body.struct_rhs[:,func] = -psi_D_product - psi_L_product
+                    body.struct_rhs[:, func] = -psi_D_product - psi_L_product
 
             # take a step in the structural adjoint
-            fail = self.solvers['structural'].iterate_adjoint(scenario,self.model.bodies,step)
+            fail = self.solvers["structural"].iterate_adjoint(
+                scenario, self.model.bodies, step
+            )
             if fail != 0:
                 return fail
             self._aitken_adjoint_relax(scenario)
 
         # end of solve loop
 
-        self._extract_coordinate_derivatives(scenario,self.model.bodies,steps)
+        self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
 
         return 0
 
-    def _solve_unsteady_forward(self,scenario,steps=None):
+    def _solve_unsteady_forward(self, scenario, steps=None):
         """
         This function solves the unsteady forward problem using NLBGS without FSI subiterations
 
@@ -248,71 +306,88 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             if not self.fakemodel:
                 steps = scenario.steps
             else:
-                if self.comm.Get_rank()==0:
-                    print("No number of steps given for the coupled problem. Using default (1000)")
+                if self.comm.Get_rank() == 0:
+                    print(
+                        "No number of steps given for the coupled problem. Using default (1000)"
+                    )
                 steps = 1000
         self.struct_disps_hist = []
         self.aero_loads_hist = []
 
-        for step in range(1,steps+1):
+        for step in range(1, steps + 1):
             for solver in self.solvers:
-                fail = self.solvers[solver].step_pre(scenario,self.model.bodies,step)
-                if fail!=0:
+                fail = self.solvers[solver].step_pre(scenario, self.model.bodies, step)
+                if fail != 0:
                     return fail
 
-            for fsi_subiter in range(1,self.fsi_subiters+1):
+            for fsi_subiter in range(1, self.fsi_subiters + 1):
                 for body in self.model.bodies:
 
                     # Transfer structural displacements to aerodynamic surface
                     if body.transfer:
-                        body.aero_disps = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
+                        body.aero_disps = np.zeros(
+                            body.aero_nnodes * 3, dtype=TransferScheme.dtype
+                        )
                         body.transfer.transferDisps(body.struct_disps, body.aero_disps)
 
-                    if ('rigid'  in body.motion_type and
-                        'deform' in body.motion_type):
-                        #TODO parallel rigid motion extraction
-                        rotation = np.zeros(9,dtype=TransferScheme.dtype)
-                        translation = np.zeros(3,dtype=TransferScheme.dtype)
-                        u = np.zeros(body.aero_nnodes*3,dtype=TransferScheme.dtype)
-                        body.rigid_transform = np.zeros((4,4),dtype=TransferScheme.dtype)
+                    if "rigid" in body.motion_type and "deform" in body.motion_type:
+                        # TODO parallel rigid motion extraction
+                        rotation = np.zeros(9, dtype=TransferScheme.dtype)
+                        translation = np.zeros(3, dtype=TransferScheme.dtype)
+                        u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+                        body.rigid_transform = np.zeros(
+                            (4, 4), dtype=TransferScheme.dtype
+                        )
 
-                        body.transfer.transformEquivRigidMotion(body.aero_disps,rotation,translation,u)
+                        body.transfer.transformEquivRigidMotion(
+                            body.aero_disps, rotation, translation, u
+                        )
 
-                        body.rigid_transform[:3,:3] = rotation.reshape((3,3,),order='F')
+                        body.rigid_transform[:3, :3] = rotation.reshape(
+                            (
+                                3,
+                                3,
+                            ),
+                            order="F",
+                        )
                         body.rigid_transform[:3, 3] = translation
-                        body.rigid_transform[-1,-1] = 1.0
+                        body.rigid_transform[-1, -1] = 1.0
 
                         body.aero_disps = u.copy()
 
-                    elif('rigid' in body.motion_type):
-                        transform = self.solvers['structural'].get_rigid_transform(body)
+                    elif "rigid" in body.motion_type:
+                        transform = self.solvers["structural"].get_rigid_transform(body)
 
-
-                fail = self.solvers['flow'].step_solver(scenario,self.model.bodies,step,fsi_subiter)
+                fail = self.solvers["flow"].step_solver(
+                    scenario, self.model.bodies, step, fsi_subiter
+                )
                 if fail != 0:
                     return fail
 
                 # Transfer loads from fluid and get loads on structure
                 for body in self.model.bodies:
-                    body.struct_loads = np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype)
+                    body.struct_loads = np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                    )
                     if body.transfer:
                         body.transfer.transferLoads(body.aero_loads, body.struct_loads)
 
                 # Take a step in the FEM model
-                fail = self.solvers['structural'].step_solver(scenario,self.model.bodies,step,fsi_subiter)
+                fail = self.solvers["structural"].step_solver(
+                    scenario, self.model.bodies, step, fsi_subiter
+                )
                 if fail != 0:
                     return fail
 
             for solver in self.solvers:
-                fail = self.solvers[solver].step_post(scenario,self.model.bodies,step)
+                fail = self.solvers[solver].step_post(scenario, self.model.bodies, step)
                 if fail != 0:
                     return fail
-
 
         # end solve loop
         return fail
 
-    def _solve_unsteady_adjoint(self,scenario):
+    def _solve_unsteady_adjoint(self, scenario):
         """
         Solves the unsteady adjoint problem using LBGS without FSI subiterations
 
@@ -342,18 +417,35 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             self.theta = []
 
             for ind, body in enumerate(self.model.bodies):
-                self.up_prev.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
-                self.aitken_vec.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
+                self.up_prev.append(
+                    np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                    )
+                )
+                self.aitken_vec.append(
+                    np.zeros(
+                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
+                    )
+                )
                 self.theta.append(self.theta_init)
 
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
             up = body.struct_disps - self.aitken_vec[ibody]
-            self.theta[ibody] *= 1.0 - (up - self.up_prev[ibody]).dot(up)/np.linalg.norm(up - self.up_prev[ibody])**2.0
-            self.theta[ibody] = np.max((np.min((self.theta[ibody],1.0)),self.theta_min))
+            self.theta[ibody] *= (
+                1.0
+                - (up - self.up_prev[ibody]).dot(up)
+                / np.linalg.norm(up - self.up_prev[ibody]) ** 2.0
+            )
+            self.theta[ibody] = np.max(
+                (np.min((self.theta[ibody], 1.0)), self.theta_min)
+            )
 
             # handle the min/max for complex step
-            if type(self.theta[ibody]) == np.complex128 or type(self.theta[ibody]) == complex:
+            if (
+                type(self.theta[ibody]) == np.complex128
+                or type(self.theta[ibody]) == complex
+            ):
                 self.theta[ibody] = self.theta[ibody].real + 0.0j
 
             self.aitken_vec[ibody] += self.theta[ibody] * up
@@ -362,8 +454,8 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
 
         return
 
-    def _aitken_adjoint_relax(self,scenario):
-        nfunctions =  scenario.count_adjoint_functions()
+    def _aitken_adjoint_relax(self, scenario):
+        nfunctions = scenario.count_adjoint_functions()
         if self.aitken_init:
             self.aitken_init = False
 
@@ -377,8 +469,18 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
                 aitken_vec_body = []
                 theta_body = []
                 for func in range(nfunctions):
-                    up_prev_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
-                    aitken_vec_body.append(np.zeros(body.struct_nnodes*body.xfer_ndof,dtype=TransferScheme.dtype))
+                    up_prev_body.append(
+                        np.zeros(
+                            body.struct_nnodes * body.xfer_ndof,
+                            dtype=TransferScheme.dtype,
+                        )
+                    )
+                    aitken_vec_body.append(
+                        np.zeros(
+                            body.struct_nnodes * body.xfer_ndof,
+                            dtype=TransferScheme.dtype,
+                        )
+                    )
                     theta_body.append(self.theta_init)
                 self.up_prev.append(up_prev_body)
                 self.aitken_vec.append(aitken_vec_body)
@@ -387,11 +489,17 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
         # do the Aitken update
         for ibody, body in enumerate(self.model.bodies):
             for func in range(nfunctions):
-                up = body.psi_S[:,func] - self.aitken_vec[ibody][func]
-                self.theta[ibody][func] *= 1.0 - (up - self.up_prev[ibody][func]).dot(up)/np.linalg.norm(up - self.up_prev[ibody][func])**2.0
-                self.theta[ibody][func] = np.max((np.min((self.theta[ibody][func],1.0)),self.theta_min))
+                up = body.psi_S[:, func] - self.aitken_vec[ibody][func]
+                self.theta[ibody][func] *= (
+                    1.0
+                    - (up - self.up_prev[ibody][func]).dot(up)
+                    / np.linalg.norm(up - self.up_prev[ibody][func]) ** 2.0
+                )
+                self.theta[ibody][func] = np.max(
+                    (np.min((self.theta[ibody][func], 1.0)), self.theta_min)
+                )
                 self.aitken_vec[ibody][func] += self.theta[ibody][func] * up
-                self.up_prev[ibody][func] =up[:]
-                body.psi_S[:,func] = self.aitken_vec[ibody][func][:]
+                self.up_prev[ibody][func] = up[:]
+                body.psi_S[:, func] = self.aitken_vec[ibody][func][:]
 
         return self.aitken_vec

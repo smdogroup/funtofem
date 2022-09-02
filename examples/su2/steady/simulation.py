@@ -40,27 +40,27 @@ else:
     key = world_rank
 tacs_comm = comm.Split(color, key)
 
-su2_config = 'inv_ONERAM6.cfg'
-su2_adj_config= 'inv_ONERAM6_adjoint.cfg'
+su2_config = "inv_ONERAM6.cfg"
+su2_adj_config = "inv_ONERAM6_adjoint.cfg"
 
 # Create model
-onera = FUNtoFEMmodel('onera')
+onera = FUNtoFEMmodel("onera")
 
-wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
+wing = Body("wing", analysis_type="aeroelastic", fun3d=False)
 
 # Add a structural design variable to the wing
 t = 0.025
-svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
-wing.add_variable('structural', svar)
+svar = Variable("thickness", value=t, lower=1e-3, upper=1.0)
+wing.add_variable("structural", svar)
 
 steps = 20
-if 'test' in sys.argv:
+if "test" in sys.argv:
     steps = 1
 
-cruise = Scenario('cruise', steps=steps)
+cruise = Scenario("cruise", steps=steps)
 onera.add_scenario(cruise)
 
-drag = Function('cd', analysis_type='aerodynamic')
+drag = Function("cd", analysis_type="aerodynamic")
 cruise.add_function(drag)
 
 # failure = Function('ksfailure', analysis_type='structural')
@@ -72,27 +72,37 @@ onera.add_body(wing)
 # Instatiate the flow and structural solvers
 solvers = {}
 
-qinf = 101325.0 # freestream pressure
-solvers['flow'] = SU2Interface(comm, onera, su2_config,
-                               su2ad_config=su2_adj_config, qinf=1.0)
-solvers['structural'] = OneraPlate(comm, tacs_comm, onera, n_tacs_procs)
+qinf = 101325.0  # freestream pressure
+solvers["flow"] = SU2Interface(
+    comm, onera, su2_config, su2ad_config=su2_adj_config, qinf=1.0
+)
+solvers["structural"] = OneraPlate(comm, tacs_comm, onera, n_tacs_procs)
 
 # Specify the transfer scheme options
-options = {'scheme': 'meld', 'beta': 0.5, 'npts': 50, 'isym': 1}
+options = {"scheme": "meld", "beta": 0.5, "npts": 50, "isym": 1}
 
 # Instantiate the driver
 struct_master = 0
 aero_master = 0
-driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
-                       comm, aero_master, model=onera, transfer_options=options,
-                       theta_init=0.5, theta_min=0.1)
+driver = FUNtoFEMnlbgs(
+    solvers,
+    comm,
+    tacs_comm,
+    struct_master,
+    comm,
+    aero_master,
+    model=onera,
+    transfer_options=options,
+    theta_init=0.5,
+    theta_min=0.1,
+)
 
-if 'test' in sys.argv:
+if "test" in sys.argv:
     fail = driver.solve_forward()
     fail = driver.solve_adjoint()
 
-    solvers['flow'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
-    solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
+    solvers["flow"].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
+    solvers["structural"].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
 else:
     # Perform a finite difference check
     dh = 1e-6
@@ -106,13 +116,13 @@ else:
     for func in funcs0:
         f0vals.append(func.value)
         if comm.rank == 0:
-            print('Function value: ', func.value)
+            print("Function value: ", func.value)
 
     # Evaluate the function gradient
     fail = driver.solve_adjoint()
     grads = onera.get_function_gradients()
     if comm.rank == 0:
-        print('Adjoint gradient: ', grads)
+        print("Adjoint gradient: ", grads)
 
     # Compute the function value at the perturbed point
     x = x0 + dh
@@ -134,6 +144,6 @@ else:
 
     if comm.rank == 0:
         for k, funcs in enumerate(zip(f0vals, f1vals)):
-            print('Function value: ', funcs[0], funcs[1])
-            print('Adjoint gradient: ', grads)
-            print('Finite-difference: ', 0.5*(funcs[1] - funcs[0])/dh)
+            print("Function value: ", funcs[0], funcs[1])
+            print("Adjoint gradient: ", grads)
+            print("Finite-difference: ", 0.5 * (funcs[1] - funcs[0]) / dh)

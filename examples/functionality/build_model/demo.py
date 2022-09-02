@@ -28,64 +28,80 @@ Demonstration of model set up for TOGW minimization
 import numpy as np
 from pyfuntofem.model import *
 
-crm_model = FUNtoFEMmodel('crm wing')
+crm_model = FUNtoFEMmodel("crm wing")
 
 # Set up the scenarios
 
 # cruise
-cruise = Scenario(name='cruise', group=0,steady=True,fun3d=True)
+cruise = Scenario(name="cruise", group=0, steady=True, fun3d=True)
 
-cruise.set_variable('aerodynamic','AOA',value=3.0,lower=-3.0,upper=10.0,active=True)
+cruise.set_variable(
+    "aerodynamic", "AOA", value=3.0, lower=-3.0, upper=10.0, active=True
+)
 
-lift = Function('cl',analysis_type='aerodynamic')
+lift = Function("cl", analysis_type="aerodynamic")
 cruise.add_function(lift)
 
-drag = Function('cd',analysis_type='aerodynamic')
+drag = Function("cd", analysis_type="aerodynamic")
 cruise.add_function(drag)
 
-mass = Function('mass',analysis_type='structural',adjoint=False)
+mass = Function("mass", analysis_type="structural", adjoint=False)
 cruise.add_function(mass)
 
 
 crm_model.add_scenario(cruise)
 
 # maneuver
-maneuver = Scenario(name='maneuver', group=1,steady=False,fun3d=True, steps =400)
+maneuver = Scenario(name="maneuver", group=1, steady=False, fun3d=True, steps=400)
 
-maneuver.set_variable('aerodynamic','AOA',value=5.0,lower=-3.0,upper=10.0,active=True)
+maneuver.set_variable(
+    "aerodynamic", "AOA", value=5.0, lower=-3.0, upper=10.0, active=True
+)
 
-lift = Function('cl',analysis_type='aerodynamic',start = 100, stop =400, averaging = True)
+lift = Function("cl", analysis_type="aerodynamic", start=100, stop=400, averaging=True)
 maneuver.add_function(lift)
 
-options = {'ksweight':50.0}
-ks = Function('ksFailure',analysis_type='structural',options=options,averaging = False)
+options = {"ksweight": 50.0}
+ks = Function("ksFailure", analysis_type="structural", options=options, averaging=False)
 maneuver.add_function(ks)
 
 crm_model.add_scenario(maneuver)
 
 # Set up the body
-wing = Body('wing','aeroelastic',group=1,fun3d=True)
+wing = Body("wing", "aeroelastic", group=1, fun3d=True)
 
 # Add the thickness variables
-thicknesses = np.loadtxt('thicknesses.dat')
+thicknesses = np.loadtxt("thicknesses.dat")
 for i in range(thicknesses.size):
-    thick = Variable('thickness '+str(i), value=thicknesses[i], lower = 0.003, upper = 0.05,
-                     coupled = True if i % 2 == 0 else False)
-    wing.add_variable('structural',thick)
+    thick = Variable(
+        "thickness " + str(i),
+        value=thicknesses[i],
+        lower=0.003,
+        upper=0.05,
+        coupled=True if i % 2 == 0 else False,
+    )
+    wing.add_variable("structural", thick)
 
 # Add the shape variables
-shapes = np.loadtxt('shape_vars.dat')
+shapes = np.loadtxt("shape_vars.dat")
 for i in range(shapes.shape[0]):
-    shpe = Variable('shape '+str(i), value=shapes[i,0], lower = shapes[i,1], upper = shapes[i,2])
-    wing.add_variable('shape',shpe)
+    shpe = Variable(
+        "shape " + str(i), value=shapes[i, 0], lower=shapes[i, 1], upper=shapes[i, 2]
+    )
+    wing.add_variable("shape", shpe)
 
 crm_model.add_body(wing)
 
-wing2 = Body('wing 2','aeroelastic',group=1,fun3d=True)
+wing2 = Body("wing 2", "aeroelastic", group=1, fun3d=True)
 for i in range(thicknesses.size):
-    thick = Variable('thickness '+str(i), value=thicknesses[i]*4.0, lower = 0.003, upper = 0.05,
-                     coupled = True if i % 2 == 0 else False)
-    wing2.add_variable('structural',thick)
+    thick = Variable(
+        "thickness " + str(i),
+        value=thicknesses[i] * 4.0,
+        lower=0.003,
+        upper=0.05,
+        coupled=True if i % 2 == 0 else False,
+    )
+    wing2.add_variable("structural", thick)
 
 crm_model.add_body(wing2)
 
