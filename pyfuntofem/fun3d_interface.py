@@ -327,7 +327,7 @@ class Fun3dInterface(SolverInterface):
 
         return
 
-    def eval_function_gradients(self, scenario, bodies):
+    def get_function_gradients(self, scenario, bodies):
         """
         Populates the FUNtoFEM model with derivatives w.r.t. aerodynamic variables
 
