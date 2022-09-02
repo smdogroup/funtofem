@@ -26,22 +26,22 @@ use_test_function = False
 
 # Parse command line arguments for modifying the number of steps
 p = argparse.ArgumentParser()
-p.add_argument('--num_steps', type=int, default=1000)
-p.add_argument('--use_test_function', action='store_true', default=False)
+p.add_argument("--num_steps", type=int, default=1000)
+p.add_argument("--use_test_function", action="store_true", default=False)
 args = p.parse_args()
 
 steps = args.num_steps
 use_test_function = args.use_test_function
-print('num_steps = ', steps)
-print('use_test_function = ', use_test_function)
+print("num_steps = ", steps)
+print("use_test_function = ", use_test_function)
 
-model = FUNtoFEMmodel('spring-mounted airfoil')
+model = FUNtoFEMmodel("spring-mounted airfoil")
 
-airfoil = Body('airfoil', 'aeroelastic', group=0, boundary=1, motion_type='deform')
+airfoil = Body("airfoil", "aeroelastic", group=0, boundary=1, motion_type="deform")
 model.add_body(airfoil)
 
 # Define scenario and design variables
-scenario = Scenario('forward_flight', group=0, steps=steps, steady=False)
+scenario = Scenario("forward_flight", group=0, steps=steps, steady=False)
 
 # Add the dynamic pressure variable as both aerodynamic and
 # structural
@@ -50,28 +50,36 @@ lower = 5000.0
 upper = 1.0e6
 
 # Set the time step as the only structural design variables
-struct_dt = Variable('struct_dt', value=1e-4,
-                     lower=0.0, upper=1.0, scaling=1.0)
-scenario.add_variable('structural', struct_dt)
+struct_dt = Variable("struct_dt", value=1e-4, lower=0.0, upper=1.0, scaling=1.0)
+scenario.add_variable("structural", struct_dt)
 
 # Define the objective
-objective = Function('pitch damping estimate', analysis_type='structural',
-                     averaging=False, start=0, stop=-1)
+objective = Function(
+    "pitch damping estimate",
+    analysis_type="structural",
+    averaging=False,
+    start=0,
+    stop=-1,
+)
 scenario.add_function(objective)
 
 model.add_scenario(scenario)
 
 # Instantiate the flow solver
 solvers = {}
-forward_options = {'timedep_adj_frozen': True}
-adjoint_options = {'timedep_adj_frozen': True}
-solvers['flow'] = FakeAerodynamics(comm, model, flow_dt=flow_dt)
+forward_options = {"timedep_adj_frozen": True}
+adjoint_options = {"timedep_adj_frozen": True}
+solvers["flow"] = FakeAerodynamics(comm, model, flow_dt=flow_dt)
 
 # Instantiate the structural solver
-smodel = SpringStructure(comm, model, dtype=TransferScheme.dtype,
-                         use_test_function=use_test_function,
-                         aeroelastic_coupling=True)
-solvers['structural'] = smodel
+smodel = SpringStructure(
+    comm,
+    model,
+    dtype=TransferScheme.dtype,
+    use_test_function=use_test_function,
+    aeroelastic_coupling=True,
+)
+solvers["structural"] = smodel
 
 smodel.dt = struct_time_step
 smodel.alpha0 = alpha_init
@@ -85,18 +93,24 @@ smodel.minf = minf
 smodel.flow_dt = flow_dt
 
 # Instantiate the driver
-struct_comm = solvers['structural'].tacs_comm
+struct_comm = solvers["structural"].tacs_comm
 struct_master = 0
 aero_comm = comm
 aero_master = 0
-transfer_options = {'scheme': 'meld'}
-transfer_options['isym'] = -1
-transfer_options['beta'] = 10.0
-transfer_options['npts'] = 10
-driver = FUNtoFEMnlbgs(solvers, comm,
-                       struct_comm, struct_master,
-                       aero_comm, aero_master,
-                       transfer_options, model)
+transfer_options = {"scheme": "meld"}
+transfer_options["isym"] = -1
+transfer_options["beta"] = 10.0
+transfer_options["npts"] = 10
+driver = FUNtoFEMnlbgs(
+    solvers,
+    comm,
+    struct_comm,
+    struct_master,
+    aero_comm,
+    aero_master,
+    transfer_options,
+    model,
+)
 
 # Create the design vector
 x0 = np.zeros(1, dtype=dtype)
@@ -117,7 +131,7 @@ dfdx = grads[0][0].real
 if TransferScheme.dtype == complex:
     # Perturb the design variables
     dh = 1e-30
-    x0[0] = x0[0] + 1j*dh
+    x0[0] = x0[0] + 1j * dh
     model.set_variables(x0)
 
     # Solve the forward problem again
@@ -125,13 +139,13 @@ if TransferScheme.dtype == complex:
     functions = model.get_functions()
 
     # Compute the CS approximation and relative error
-    cs = functions[0].value.imag/dh
-    rel_err = (dfdx - cs)/cs
+    cs = functions[0].value.imag / dh
+    rel_err = (dfdx - cs) / cs
 
-    print('Complex step interval:      %25.15e'%(dh))
-    print('Complex step value:         %25.15e'%(cs))
-    print('Gradient value:             %25.15e'%(dfdx))
-    print('Relative error:             %25.15e'%(rel_err))
+    print("Complex step interval:      %25.15e" % (dh))
+    print("Complex step value:         %25.15e" % (cs))
+    print("Gradient value:             %25.15e" % (dfdx))
+    print("Relative error:             %25.15e" % (rel_err))
 else:
     # Try small step sizes since the relative size of the time step is
     # already quite small
@@ -143,10 +157,10 @@ else:
         fail = driver.solve_forward()
         funcs = model.get_functions()
 
-        fd = (funcs[0].value - f0)/dh
-        rel_err = (dfdx - fd)/fd
-        
-        print('Finite-difference interval: %25.15e'%(dh))
-        print('Finite-difference value:    %25.15e'%(fd))
-        print('Gradient value:             %25.15e'%(dfdx))
-        print('Relative error:             %25.15e'%(rel_err))
+        fd = (funcs[0].value - f0) / dh
+        rel_err = (dfdx - fd) / fd
+
+        print("Finite-difference interval: %25.15e" % (dh))
+        print("Finite-difference value:    %25.15e" % (fd))
+        print("Gradient value:             %25.15e" % (dfdx))
+        print("Relative error:             %25.15e" % (rel_err))

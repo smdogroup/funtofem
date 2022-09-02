@@ -36,6 +36,8 @@ import matplotlib.pyplot as plt
 Parsing file
 --------------------------------------------------------------------------------
 """
+
+
 def loadGridQualityEval(filename, node_based=True):
     """
     Returns an array of evaluations of a grid quality function (at nodes or at
@@ -46,14 +48,15 @@ def loadGridQualityEval(filename, node_based=True):
     filename: name of file to load
     node_based: True if node-based, False if cell-centered
     """
-    f = open(filename, 'r')
+    f = open(filename, "r")
 
     # Assume node/element data is given on line 5 and extract data
-    for i in range(4): line = f.readline()
+    for i in range(4):
+        line = f.readline()
     line5 = f.readline()
-    info_list = [info.strip(',') for info in line5.split()]
-    num_nodes = int(info_list[0].split('=')[1])
-    num_cells = int(info_list[1].split('=')[1])
+    info_list = [info.strip(",") for info in line5.split()]
+    num_nodes = int(info_list[0].split("=")[1])
+    num_cells = int(info_list[1].split("=")[1])
 
     # Skip next two lines (data begins after line 7)
     line = f.readline()
@@ -64,8 +67,9 @@ def loadGridQualityEval(filename, node_based=True):
     feval = np.array([])
     for i in range(num_lines):
         feval = np.append(feval, float(f.readline().strip()))
-    
+
     return feval
+
 
 """
 --------------------------------------------------------------------------------
@@ -79,10 +83,12 @@ skew_deformed = loadGridQualityEval("aero_def_skew.dat")
 skew_hist = plt.figure()
 nbins = 20
 bins = np.linspace(0.0, skew_deformed.max(), nbins)
-n, bins, patches = plt.hist(skew_undeformed, bins, facecolor="blue",
-                            label="undeformed", alpha=0.5, normed=1)
-n, bins, patches = plt.hist(skew_deformed, bins, facecolor="red",
-                           label="deformed", alpha=0.5, normed=1)
+n, bins, patches = plt.hist(
+    skew_undeformed, bins, facecolor="blue", label="undeformed", alpha=0.5, normed=1
+)
+n, bins, patches = plt.hist(
+    skew_deformed, bins, facecolor="red", label="deformed", alpha=0.5, normed=1
+)
 plt.xlabel(r"k face skewness")
 plt.ylabel(r"number of nodes")
 plt.legend()
@@ -98,13 +104,15 @@ aspect_hist = plt.figure()
 nbins = 20
 mean_orig_aspect = np.mean(aspect_undeformed)
 range_def_aspect = aspect_deformed.max() - aspect_deformed.min()
-lb = mean_orig_aspect - 0.5*range_def_aspect
-ub = mean_orig_aspect + 0.5*range_def_aspect
+lb = mean_orig_aspect - 0.5 * range_def_aspect
+ub = mean_orig_aspect + 0.5 * range_def_aspect
 bins = np.linspace(lb, ub, 20)
-n, bins, patches = plt.hist(aspect_undeformed, bins, facecolor="blue",
-                            label="undeformed", alpha=0.5, normed=1)
-n, bins, patches = plt.hist(aspect_deformed, bins, facecolor="red",
-                           label="deformed", alpha=0.5, normed=1)
+n, bins, patches = plt.hist(
+    aspect_undeformed, bins, facecolor="blue", label="undeformed", alpha=0.5, normed=1
+)
+n, bins, patches = plt.hist(
+    aspect_deformed, bins, facecolor="red", label="deformed", alpha=0.5, normed=1
+)
 plt.xlabel(r"k aspect ratio")
 plt.ylabel(r"number of nodes")
 plt.legend()

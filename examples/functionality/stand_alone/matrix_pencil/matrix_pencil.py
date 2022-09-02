@@ -7,6 +7,7 @@ import bisect
 import matplotlib.pyplot as plt
 from matrix_pencil_der import *
 
+
 class MatrixPencil(object):
     def __init__(self, t, x, N=-1, output_level=0, rho=100):
         """
@@ -55,12 +56,14 @@ class MatrixPencil(object):
             # check that the step size is uniform
             flag = 0
             tol = 1e-6
-            for i in range(t.size-1):
-                if abs(self.dt - (t[i+1] - t[i])) > tol:
+            for i in range(t.size - 1):
+                if abs(self.dt - (t[i + 1] - t[i])) > tol:
                     flag = 1
             if flag > 0:
                 print("Warning: Matrix pencil time step size is not uniform")
-                print("         Please provide data with a uniform step size or use the downsampling option")
+                print(
+                    "         Please provide data with a uniform step size or use the downsampling option"
+                )
 
         else:
             T = np.linspace(t[0], t[-1], N)
@@ -71,7 +74,7 @@ class MatrixPencil(object):
 
         # Set the pencil parameter L
         self.n = self.X.shape[0]
-        self.L = self.N/2 - 1
+        self.L = self.N / 2 - 1
 
         if self.output_level[-1] == "1":
             print("Number of samples, N = ", self.N)
@@ -126,14 +129,14 @@ class MatrixPencil(object):
                 j1 = 1
                 j0 = 0
             elif j1 == n:
-                j1 = n-1
-                j0 = n-2
+                j1 = n - 1
+                j0 = n - 2
             else:
-                j0 = j1-1
+                j0 = j1 - 1
 
             dt = t[j1] - t[j0]
-            H[i,j0] += (t[j1] - T[i])/dt
-            H[i,j1] += (T[i] - t[j0])/dt
+            H[i, j0] += (t[j1] - T[i]) / dt
+            H[i, j1] += (T[i] - t[j0]) / dt
 
         return H
 
@@ -143,10 +146,10 @@ class MatrixPencil(object):
 
         """
         # Assemble the Hankel matrix Y from the samples X
-        Y = np.empty((self.N-self.L, self.L+1), dtype=self.X.dtype)
-        for i in range(self.N-self.L):
-            for j in range(self.L+1):
-                Y[i,j] = self.X[i+j]
+        Y = np.empty((self.N - self.L, self.L + 1), dtype=self.X.dtype)
+        for i in range(self.N - self.L):
+            for j in range(self.L + 1):
+                Y[i, j] = self.X[i + j]
 
         # Compute the SVD of the Hankel matrix
         self.U, self.s, self.VT = la.svd(Y)
@@ -155,9 +158,9 @@ class MatrixPencil(object):
         self.EstimateModelOrder()
 
         # Filter the right singular vectors of the Hankel matrix based on M
-        Vhat = self.VT[:self.M,:]
-        self.V1T = Vhat[:,:-1]
-        self.V2T = Vhat[:,1:]
+        Vhat = self.VT[: self.M, :]
+        self.V1T = Vhat[:, :-1]
+        self.V2T = Vhat[:, 1:]
 
         # Compute the pseudoinverse of V1T
         self.V1inv = la.pinv(self.V1T)
@@ -174,7 +177,7 @@ class MatrixPencil(object):
         self.lam, self.W, self.V = la.eig(A, left=True, right=True)
 
         # Compute damping and freqency
-        s = np.log(self.lam[:self.M])/self.dt
+        s = np.log(self.lam[: self.M]) / self.dt
         self.damp = s.real
         self.freq = s.imag
 
@@ -200,14 +203,14 @@ class MatrixPencil(object):
         # Normalize the singular values by the maximum and cut out modes
         # corresponding to singular values below a specified tolerance
         tol1 = 1.0e-2
-        snorm = self.s/self.s.max()
+        snorm = self.s / self.s.max()
         n_above_tol = len(self.s[snorm > tol1])
 
         # Approximate second derivative singular values using convolve as a
         # central difference operator
         w = [1.0, -1.0]
-        diff = sig.convolve(snorm, w, 'valid')
-        diffdiff = sig.convolve(diff, w, 'valid')
+        diff = sig.convolve(snorm, w, "valid")
+        diffdiff = sig.convolve(diff, w, "valid")
 
         # Cut out more modes depending on the approximated second derivative
         # The idea is sort of to cut at an inflection point in the singular
@@ -222,36 +225,43 @@ class MatrixPencil(object):
         # Report the model order
         if self.output_level[-1] == "1":
             print("Model order, M = ", self.M)
-            np.savetxt('singular_values.dat',snorm)
+            np.savetxt("singular_values.dat", snorm)
 
         # Plotting to help diagnose what the cuts are doing
         if self.output_level[-2] == "1":
             # Plot normalized singular values and first cut-off
             plt.figure(figsize=(8, 10))
             ax = plt.gca()
-            ax.scatter(np.arange(len(self.s)), snorm, s=40, c='blue', alpha=0.3)
-            ax.plot(np.array([-0.2*len(self.s), 1.2*len(self.s)]),
-                    tol1*np.ones(2),
-                    color='orange', linestyle='dashed', linewidth=2,
-                    label='cut-off')
-            ax.set_yscale('log')
+            ax.scatter(np.arange(len(self.s)), snorm, s=40, c="blue", alpha=0.3)
+            ax.plot(
+                np.array([-0.2 * len(self.s), 1.2 * len(self.s)]),
+                tol1 * np.ones(2),
+                color="orange",
+                linestyle="dashed",
+                linewidth=2,
+                label="cut-off",
+            )
+            ax.set_yscale("log")
             ax.set_ylim(1e-20, 1e1)
             plt.legend()
-            plt.title('Normalized Singular Values', fontsize=16)
+            plt.title("Normalized Singular Values", fontsize=16)
 
             # Plot approximate second derivative and second cut-off
             plt.figure(figsize=(8, 10))
             ax = plt.gca()
-            ax.scatter(np.arange(len(diffdiff)), diffdiff,
-                       s=40, c='blue', alpha=0.3)
-            ax.plot(np.array([-0.2*len(self.s), 1.2*len(self.s)]),
-                    tol2*np.ones(2),
-                    color='orange', linestyle='dashed', linewidth=2,
-                    label='2nd cut-off')
-            ax.set_yscale('log')
+            ax.scatter(np.arange(len(diffdiff)), diffdiff, s=40, c="blue", alpha=0.3)
+            ax.plot(
+                np.array([-0.2 * len(self.s), 1.2 * len(self.s)]),
+                tol2 * np.ones(2),
+                color="orange",
+                linestyle="dashed",
+                linewidth=2,
+                label="2nd cut-off",
+            )
+            ax.set_yscale("log")
             ax.set_ylim(1e-20, 1e1)
             plt.legend()
-            plt.title('Approx. 2nd Derivative of Singular Values', fontsize=16)
+            plt.title("Approx. 2nd Derivative of Singular Values", fontsize=16)
             plt.show()
 
         return
@@ -272,16 +282,16 @@ class MatrixPencil(object):
             print("M = ", self.M)
             print("damping modes are:")
             for i in range(self.damp.size):
-                print('freq:', self.freq[i], 'damp:', self.damp[i])
+                print("freq:", self.freq[i], "damp:", self.damp[i])
 
         m = self.damp.max()
-        c = m + np.log(np.sum(np.exp(self.rho*(self.damp - m))))/self.rho
+        c = m + np.log(np.sum(np.exp(self.rho * (self.damp - m)))) / self.rho
 
         if self.is_complex:
             dcdx = self.AggregateDampingDer()
-            return  c + 1j*dcdx.dot(self.x_imag)
+            return c + 1j * dcdx.dot(self.x_imag)
         else:
-            return  c
+            return c
 
     def AggregateDampingDer(self):
         """
@@ -304,7 +314,7 @@ class MatrixPencil(object):
         dcdX = dYdXTrans(dcdY)
         dcdx = self.H.T.dot(dcdX)
 
-        return  dcdx
+        return dcdx
 
     def ComputeAmplitudeAndPhase(self):
         """
@@ -315,7 +325,9 @@ class MatrixPencil(object):
         B = np.zeros((self.N, self.M), dtype=self.lam.dtype)
         for i in range(self.N):
             for j in range(self.M):
-                B[i,j] = np.abs(self.lam[j])**i*np.exp(1.0j*i*np.angle(self.lam[j]))
+                B[i, j] = np.abs(self.lam[j]) ** i * np.exp(
+                    1.0j * i * np.angle(self.lam[j])
+                )
 
         r, _, _, _ = la.lstsq(B, self.X)
 
@@ -348,6 +360,6 @@ class MatrixPencil(object):
             w = self.freq[i]
             p = self.faze[i]
 
-            X += a*np.exp(x*(t - self.t0))*np.cos(w*(t - self.t0) + p)
+            X += a * np.exp(x * (t - self.t0)) * np.cos(w * (t - self.t0) + p)
 
         return X

@@ -23,7 +23,7 @@ limitations under the License.
 import zmq
 import numpy as np
 
-from mpi4py        import MPI
+from mpi4py import MPI
 from funtofem_server import Server
 
 if __name__ == "__main__":
@@ -38,17 +38,24 @@ if __name__ == "__main__":
     else:
         color = MPI.UNDEFINED
         key = world_rank
-    struct_comm = comm.Split(color,key)
+    struct_comm = comm.Split(color, key)
 
     transfer_options = {}
-    transfer_options['scheme'] = 'MELD'
-    transfer_options['isym']   =  -1
-    transfer_options['beta']   =  0.5
-    transfer_options['npts']   =  30
+    transfer_options["scheme"] = "MELD"
+    transfer_options["isym"] = -1
+    transfer_options["beta"] = 0.5
+    transfer_options["npts"] = 30
 
     context = zmq.Context()
-    endpoint = 'tcp://*:' + str(43200+comm.Get_rank())
-    server = Server(comm,struct_comm, context=context, endpoint=endpoint, type_=zmq.REP, transfer_options=transfer_options)
+    endpoint = "tcp://*:" + str(43200 + comm.Get_rank())
+    server = Server(
+        comm,
+        struct_comm,
+        context=context,
+        endpoint=endpoint,
+        type_=zmq.REP,
+        transfer_options=transfer_options,
+    )
     server.serve()
     server.close()
     context.destroy()

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import linalg as la
 
+
 def c_ks(alphas, rho):
     """
     Kreisselmeier-Steinhauser (KS) function to approximate maximum real
@@ -14,7 +15,8 @@ def c_ks(alphas, rho):
     """
     m = alphas.min()
 
-    return -m + np.log(np.sum(np.exp(-rho*(alphas - m))))/rho
+    return -m + np.log(np.sum(np.exp(-rho * (alphas - m)))) / rho
+
 
 def DcDalpha(alphas, rho):
     """
@@ -34,9 +36,10 @@ def DcDalpha(alphas, rho):
 
     """
     m = alphas.max()
-    a = np.sum(np.exp(rho*(alphas - m)))
+    a = np.sum(np.exp(rho * (alphas - m)))
 
-    return np.exp(rho*(alphas - m))/a
+    return np.exp(rho * (alphas - m)) / a
+
 
 def DalphaDlam(lam, dt):
     """
@@ -55,10 +58,11 @@ def DalphaDlam(lam, dt):
         derivatives
 
     """
-    real_part = (1.0/dt)*lam.real/np.real(np.conj(lam)*lam)
-    imag_part = (1.0/dt)*lam.imag/np.real(np.conj(lam)*lam)
+    real_part = (1.0 / dt) * lam.real / np.real(np.conj(lam) * lam)
+    imag_part = (1.0 / dt) * lam.imag / np.real(np.conj(lam) * lam)
 
-    return real_part + 1j*imag_part
+    return real_part + 1j * imag_part
+
 
 def DlamDA(A):
     """
@@ -80,12 +84,13 @@ def DlamDA(A):
     m = len(lam)
     dlam = np.zeros((m, m, m), dtype=lam.dtype)
     for i in range(m):
-        w = WH[i,:]
-        v = V[:,i]
+        w = WH[i, :]
+        v = V[:, i]
         norm = w.dot(v)
-        dlam[i,:,:] = np.outer(w,v)/norm
+        dlam[i, :, :] = np.outer(w, v) / norm
 
     return dlam
+
 
 def SVDDerivative(U, s, VT):
     """
@@ -123,65 +128,66 @@ def SVDDerivative(U, s, VT):
     ns = len(s)
 
     # Allocate output arrays
-    dU = np.zeros((m,m,m,n))
-    ds = np.zeros((ns,m,n))
-    dVT = np.zeros((n,n,m,n))
+    dU = np.zeros((m, m, m, n))
+    ds = np.zeros((ns, m, n))
+    dVT = np.zeros((n, n, m, n))
 
     # Square matrix of singular values
     S1 = np.diag(s)
-    S1inv = np.diag(1.0/s)
+    S1inv = np.diag(1.0 / s)
 
     # Form skew-symmetric F matrix
-    F = np.zeros((ns,ns))
+    F = np.zeros((ns, ns))
     for i in range(ns):
-        for j in range(i+1,ns):
-            F[i,j] = 1.0/(s[j]**2 - s[i]**2)
-            F[j,i] = 1.0/(s[i]**2 - s[j]**2)
+        for j in range(i + 1, ns):
+            F[i, j] = 1.0 / (s[j] ** 2 - s[i] ** 2)
+            F[j, i] = 1.0 / (s[i] ** 2 - s[j] ** 2)
 
     for k in range(m):
         for l in range(n):
-            dP = np.outer(U[k,:], VT[:,l])
+            dP = np.outer(U[k, :], VT[:, l])
 
             # Extract diagonal for ds
-            ds[:,k,l] = np.diag(dP)
+            ds[:, k, l] = np.diag(dP)
 
             # Compute dC and dD matrices for various cases
             if m > n:
-                dP1 = dP[:n,:]
-                dP2 = dP[n:,:]
+                dP1 = dP[:n, :]
+                dP2 = dP[n:, :]
 
-                dC1 = F*(dP1.dot(S1) + S1.dot(dP1.T))
-                dDT = -F*(S1.dot(dP1) + dP1.T.dot(S1))
+                dC1 = F * (dP1.dot(S1) + S1.dot(dP1.T))
+                dDT = -F * (S1.dot(dP1) + dP1.T.dot(S1))
 
                 dC2T = dP2.dot(S1inv)
 
-                dC = np.zeros((m,m))
-                dC[:n,:n] = dC1
-                dC[:n,n:] = -dC2T.T
-                dC[n:,:n] = dC2T
+                dC = np.zeros((m, m))
+                dC[:n, :n] = dC1
+                dC[:n, n:] = -dC2T.T
+                dC[n:, :n] = dC2T
 
             else:
-                dP1 = dP[:,:m]
-                dP2 = dP[:,m:]
+                dP1 = dP[:, :m]
+                dP2 = dP[:, m:]
 
-                dC = F*(dP1.dot(S1) + S1.dot(dP1.T))
-                dD1 = F*(S1.dot(dP1) + dP1.T.dot(S1))
+                dC = F * (dP1.dot(S1) + S1.dot(dP1.T))
+                dD1 = F * (S1.dot(dP1) + dP1.T.dot(S1))
 
                 dD2 = S1inv.dot(dP2)
 
                 if m == n:
                     dDT = -dD1
                 else:
-                    dDT = np.zeros((n,n))
-                    dDT[:m,:m] = -dD1
-                    dDT[:m,m:] = dD2
-                    dDT[m:,:m] = -dD2.T
+                    dDT = np.zeros((n, n))
+                    dDT[:m, :m] = -dD1
+                    dDT[:m, m:] = dD2
+                    dDT[m:, :m] = -dD2.T
 
             # Compute dU and dVT sensitivities from dC and dD
-            dU[:,:,k,l] = U.dot(dC)
-            dVT[:,:,k,l] = dDT.dot(VT)
+            dU[:, :, k, l] = U.dot(dC)
+            dVT[:, :, k, l] = dDT.dot(VT)
 
     return dU, ds, dVT
+
 
 def PseudoinverseDerivative(A, Ainv):
     """
@@ -204,7 +210,7 @@ def PseudoinverseDerivative(A, Ainv):
     n = A.shape[1]
 
     # Allocate array for output
-    dAinv = np.zeros((n,m,m,n))
+    dAinv = np.zeros((n, m, m, n))
 
     for k in range(m):
         for l in range(n):
@@ -215,11 +221,14 @@ def PseudoinverseDerivative(A, Ainv):
 
             dA = np.outer(ek, el)
 
-            dAinv[:,:,k,l] = -Ainv.dot(dA).dot(Ainv) + \
-                Ainv.dot(Ainv.T).dot(dA.T).dot(np.eye(m) - A.dot(Ainv)) + \
-                (np.eye(n) - Ainv.dot(A)).dot(dA.T).dot(Ainv.T).dot(Ainv)
+            dAinv[:, :, k, l] = (
+                -Ainv.dot(dA).dot(Ainv)
+                + Ainv.dot(Ainv.T).dot(dA.T).dot(np.eye(m) - A.dot(Ainv))
+                + (np.eye(n) - Ainv.dot(A)).dot(dA.T).dot(Ainv.T).dot(Ainv)
+            )
 
     return dAinv
+
 
 def DalphaDlamTrans(dcda, lam, dt):
     """
@@ -245,13 +254,14 @@ def DalphaDlamTrans(dcda, lam, dt):
     L = lam.shape[0]
 
     # Pad the dcda derivative with zeros
-    if (M < L):
-        dcda = np.hstack((dcda, np.zeros(L-M)))
+    if M < L:
+        dcda = np.hstack((dcda, np.zeros(L - M)))
 
-    dadl_real = (1.0/dt)*lam.real/np.real(np.conj(lam)*lam)
-    dadl_imag = (1.0/dt)*lam.imag/np.real(np.conj(lam)*lam)
+    dadl_real = (1.0 / dt) * lam.real / np.real(np.conj(lam) * lam)
+    dadl_imag = (1.0 / dt) * lam.imag / np.real(np.conj(lam) * lam)
 
-    return dcda*dadl_real + 1j*dcda*dadl_imag
+    return dcda * dadl_real + 1j * dcda * dadl_imag
+
 
 def DlamDATrans(dcdl, W, V):
     """
@@ -277,13 +287,14 @@ def DlamDATrans(dcdl, W, V):
     m = len(dcdl)
     dcdA = np.zeros((m, m))
     for i in range(m):
-        w = WH[i,:]
-        v = V[:,i]
+        w = WH[i, :]
+        v = V[:, i]
         norm = w.dot(v)
-        dldA = np.outer(w,v)/norm
-        dcdA += dcdl[i].real*dldA.real + dcdl[i].imag*dldA.imag
+        dldA = np.outer(w, v) / norm
+        dcdA += dcdl[i].real * dldA.real + dcdl[i].imag * dldA.imag
 
     return dcdA
+
 
 def PseudoInverseDeriv(dcdA, A, Ainv):
     AAinv = la.inv(np.dot(A, A.T))
@@ -345,6 +356,7 @@ def dAdV2Trans(dcdA, V1inv):
 
     return dcdV2T
 
+
 def dV12dVhatTrans(dcdV1T, dcdV2T):
     """
     Pad the d(c)/d(V1^{T}) derivatives  with zeros, pad the d(c)/d(V2^{T})
@@ -365,10 +377,12 @@ def dV12dVhatTrans(dcdV1T, dcdV2T):
 
     """
     M = dcdV1T.shape[0]
-    dcdVhat = np.hstack((dcdV1T, np.zeros(M).reshape((M,1)))) + \
-              np.hstack((np.zeros(M).reshape((M,1)), dcdV2T))
+    dcdVhat = np.hstack((dcdV1T, np.zeros(M).reshape((M, 1)))) + np.hstack(
+        (np.zeros(M).reshape((M, 1)), dcdV2T)
+    )
 
     return dcdVhat
+
 
 def dVhatdYTrans(dcdVhat, U, s, VT):
     """
@@ -404,9 +418,9 @@ def dVhatdYTrans(dcdVhat, U, s, VT):
     # Compute the entries of the skew symmetric matrix
     F = np.zeros((n, n))
     for i in range(n):
-        for j in range(i+1, n):
-            F[i,j] = 1.0/(s[j]**2 - s[i]**2)
-            F[j,i] = 1.0/(s[i]**2 - s[j]**2)
+        for j in range(i + 1, n):
+            F[i, j] = 1.0 / (s[j] ** 2 - s[i] ** 2)
+            F[j, i] = 1.0 / (s[i] ** 2 - s[j] ** 2)
 
     # Compute the E1 matrix
     E1 = np.zeros((n, m))
@@ -414,13 +428,14 @@ def dVhatdYTrans(dcdVhat, U, s, VT):
         E1[i, i] = 1.0
 
     dcdV = np.zeros((n, n))
-    dcdV[:,:M] = dcdVhat.T
+    dcdV[:, :M] = dcdVhat.T
 
     # Compute the derivative
-    B = F*(np.dot(VT, dcdV) - np.dot(dcdV.T, VT.T))
+    B = F * (np.dot(VT, dcdV) - np.dot(dcdV.T, VT.T))
     dcdY = np.dot(U, np.dot(E1.T, np.dot(np.diag(s), np.dot(B, VT))))
 
     return dcdY
+
 
 def dYdXTrans(dcdY):
     """
@@ -444,8 +459,8 @@ def dYdXTrans(dcdY):
     dcdX = np.zeros(N)
 
     # Sum the anti-diagonals into dcdX
-    for i in range(N-L):
-        for j in range(L+1):
-            dcdX[i+j] += dcdY[i,j]
+    for i in range(N - L):
+        for j in range(L + 1):
+            dcdX[i + j] += dcdY[i, j]
 
     return dcdX

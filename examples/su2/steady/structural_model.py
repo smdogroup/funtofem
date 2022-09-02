@@ -23,6 +23,7 @@ from tacs import TACS, elements, functions, constitutive
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
+
 class OneraPlate(TacsSteadyInterface):
     """
     This is an extension of the TacsSteadyInterface class, which abstracts the
@@ -32,6 +33,7 @@ class OneraPlate(TacsSteadyInterface):
     that solver will call in the solution of a steady aeroelastic problem
 
     """
+
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
         super(OneraPlate, self).__init__(comm, tacs_comm, model)
 
@@ -49,22 +51,26 @@ class OneraPlate(TacsSteadyInterface):
                 ny = 10
 
                 # Set the nodes
-                nnodes = (nx+1)*(ny+1)
-                nelems = nx*ny
-                nodes = np.arange(nnodes).reshape((nx+1, ny+1))
+                nnodes = (nx + 1) * (ny + 1)
+                nelems = nx * ny
+                nodes = np.arange(nnodes).reshape((nx + 1, ny + 1))
 
                 conn = []
                 for j in range(ny):
                     for i in range(nx):
                         # Append the node locations
-                        conn.append([nodes[i, j],
-                                     nodes[i+1, j],
-                                     nodes[i, j+1],
-                                     nodes[i+1, j+1]])
+                        conn.append(
+                            [
+                                nodes[i, j],
+                                nodes[i + 1, j],
+                                nodes[i, j + 1],
+                                nodes[i + 1, j + 1],
+                            ]
+                        )
 
                 # Set the node pointers
                 conn = np.array(conn, dtype=np.intc).flatten()
-                ptr = np.arange(0, 4*nelems+1, 4, dtype=np.intc)
+                ptr = np.arange(0, 4 * nelems + 1, 4, dtype=np.intc)
                 elem_ids = np.zeros(nelems, dtype=np.intc)
                 creator.setGlobalConnectivity(nnodes, ptr, conn, elem_ids)
 
@@ -75,25 +81,29 @@ class OneraPlate(TacsSteadyInterface):
                 root_chord = 0.8
                 semi_span = 1.2
                 taper_ratio = 0.56
-                sweep = 26.7 # degrees
+                sweep = 26.7  # degrees
 
                 # Set the node locations
-                Xpts = np.zeros(3*nnodes)
-                x = np.linspace(0, 1, nx+1)
-                y = np.linspace(0, 1, ny+1)
-                for j in range(ny+1):
-                    for i in range(nx+1):
-                        c = root_chord*(1.0 - y[j]) + root_chord*taper_ratio*y[j]
-                        xoff = 0.25*root_chord + semi_span*y[j]*np.tan(sweep*np.pi/180.0)
+                Xpts = np.zeros(3 * nnodes)
+                x = np.linspace(0, 1, nx + 1)
+                y = np.linspace(0, 1, ny + 1)
+                for j in range(ny + 1):
+                    for i in range(nx + 1):
+                        c = root_chord * (1.0 - y[j]) + root_chord * taper_ratio * y[j]
+                        xoff = 0.25 * root_chord + semi_span * y[j] * np.tan(
+                            sweep * np.pi / 180.0
+                        )
 
-                        Xpts[3*nodes[i,j]] = xoff + c*(x[i] - 0.25)
-                        Xpts[3*nodes[i,j]+1] = semi_span*y[j]
+                        Xpts[3 * nodes[i, j]] = xoff + c * (x[i] - 0.25)
+                        Xpts[3 * nodes[i, j] + 1] = semi_span * y[j]
 
                 # Set the node locations
                 creator.setNodes(Xpts)
 
             # Set the material properties
-            props = constitutive.MaterialProperties(rho=2570.0, E=70e9, nu=0.3, ys=350e6)
+            props = constitutive.MaterialProperties(
+                rho=2570.0, E=70e9, nu=0.3, ys=350e6
+            )
 
             # Set constitutive properties
             t = 0.025
@@ -109,7 +119,7 @@ class OneraPlate(TacsSteadyInterface):
             element = elements.Quad4Shell(transform, con)
 
             # Set the elements
-            elems = [ element ]
+            elems = [element]
             creator.setElements(elems)
 
             # Create TACS Assembler object from the mesh loader
@@ -125,10 +135,12 @@ class OneraPlate(TacsSteadyInterface):
         return
 
     def post_export_f5(self):
-        flag = (TACS.OUTPUT_CONNECTIVITY |
-                TACS.OUTPUT_NODES |
-                TACS.OUTPUT_DISPLACEMENTS |
-                TACS.OUTPUT_EXTRAS)
+        flag = (
+            TACS.OUTPUT_CONNECTIVITY
+            | TACS.OUTPUT_NODES
+            | TACS.OUTPUT_DISPLACEMENTS
+            | TACS.OUTPUT_EXTRAS
+        )
         f5 = TACS.ToFH5(self.assembler, TACS.BEAM_OR_SHELL_ELEMENT, flag)
         file_out = "onera_struct_out.f5"
         f5.writeToFile(file_out)

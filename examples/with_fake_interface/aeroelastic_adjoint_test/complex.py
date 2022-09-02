@@ -22,7 +22,7 @@ limitations under the License.
 
 from __future__ import print_function
 
-from pyfuntofem.model  import *
+from pyfuntofem.model import *
 from pyfuntofem.driver import *
 from pyfuntofem.fake_solver import *
 
@@ -30,14 +30,15 @@ from tacs_model import wedgeTACS
 from mpi4py import MPI
 import os
 
+
 class AdjointTest(object):
     def __init__(self):
         # cruise conditions
-        self.v_inf = 171.5                  # freestream velocity [m/s]
-        self.rho = 0.01841                  # freestream density [kg/m^3]
-        self.cruise_q = 12092.5527126               # dynamic pressure [N/m^2]
-        self.grav = 9.81                            # gravity acc. [m/s^2]
-        self.thermal_scale = 0.5 * self.rho * (self.v_inf)**3
+        self.v_inf = 171.5  # freestream velocity [m/s]
+        self.rho = 0.01841  # freestream density [kg/m^3]
+        self.cruise_q = 12092.5527126  # dynamic pressure [N/m^2]
+        self.grav = 9.81  # gravity acc. [m/s^2]
+        self.thermal_scale = 0.5 * self.rho * (self.v_inf) ** 3
 
         # Set the communicator
         comm = MPI.COMM_WORLD
@@ -62,19 +63,30 @@ class AdjointTest(object):
 
         # instantiate TACS on the master
         solvers = {}
-        solvers['flow'] = FakeSolver(self.comm, self.model)
-        solvers['structural'] = wedgeTACS(self.comm, self.tacs_comm, self.model, n_tacs_procs)
+        solvers["flow"] = FakeSolver(self.comm, self.model)
+        solvers["structural"] = wedgeTACS(
+            self.comm, self.tacs_comm, self.model, n_tacs_procs
+        )
 
         # L&D transfer options
         transfer_options = {
-            'analysis_type': 'aerothermoelastic',
-            'scheme': 'meld',
-            'thermal_scheme': 'meld',
-            'npts': 5}
+            "analysis_type": "aerothermoelastic",
+            "scheme": "meld",
+            "thermal_scheme": "meld",
+            "npts": 5,
+        }
 
         # instantiate the driver
-        self.driver = FUNtoFEMnlbgs(solvers, self.comm, self.tacs_comm, 0, self.comm, 0,
-                                    transfer_options, model=self.model)
+        self.driver = FUNtoFEMnlbgs(
+            solvers,
+            self.comm,
+            self.tacs_comm,
+            0,
+            self.comm,
+            0,
+            transfer_options,
+            model=self.model,
+        )
 
         # Set up some variables and constants related to the problem
         self.cruise_lift = None
@@ -82,27 +94,27 @@ class AdjointTest(object):
         self.num_con = 1
         self.mass = None
 
-        self.var_scale = np.ones(self.ndv,dtype=TransferScheme.dtype)
-        self.struct_tacs = solvers['structural'].assembler
+        self.var_scale = np.ones(self.ndv, dtype=TransferScheme.dtype)
+        self.struct_tacs = solvers["structural"].assembler
 
     def _build_model(self):
 
         thickness = 0.015
 
         # Build the model
-        model = FUNtoFEMmodel('wedge')
-        plate = Body('plate', 'aerothermoelastic', group=0, boundary=1)
+        model = FUNtoFEMmodel("wedge")
+        plate = Body("plate", "aerothermoelastic", group=0, boundary=1)
 
-        svar = Variable('thickness', value=thickness, lower=0.01, upper=0.1)
-        plate.add_variable('structural', svar)
+        svar = Variable("thickness", value=thickness, lower=0.01, upper=0.1)
+        plate.add_variable("structural", svar)
         model.add_body(plate)
 
-        steady = Scenario('steady', group=0, steps=100)
+        steady = Scenario("steady", group=0, steps=100)
 
-        temp = Function('mass', analysis_type='structural')
+        temp = Function("mass", analysis_type="structural")
         steady.add_function(temp)
 
-        failure = Function('ksfailure', analysis_type='structural')
+        failure = Function("ksfailure", analysis_type="structural")
         steady.add_function(failure)
 
         model.add_scenario(steady)
@@ -111,7 +123,7 @@ class AdjointTest(object):
 
     def eval_objcon(self, x):
         fail = 0
-        var = x*self.var_scale
+        var = x * self.var_scale
         self.model.set_variables(var)
 
         # Simulate the maneuver condition
@@ -131,7 +143,7 @@ class AdjointTest(object):
         return obj, con, fail
 
     def eval_objcon_grad(self, x):
-        var = x*self.var_scale
+        var = x * self.var_scale
         self.model.set_variables(var)
 
         fail = self.driver.solve_adjoint()
@@ -145,19 +157,20 @@ class AdjointTest(object):
 
         return g, A, fail
 
+
 h = 1e-30
-x = np.array([0.015 +1j*h], dtype=TransferScheme.dtype)
+x = np.array([0.015 + 1j * h], dtype=TransferScheme.dtype)
 xreal = np.array([0.015], dtype=TransferScheme.dtype)
 
 dp = AdjointTest()
 
 obj1, con1, fail = dp.eval_objcon(xreal)
 g, A, fail = dp.eval_objcon_grad(xreal)
-print('Adjoint objective gradient ', g)
+print("Adjoint objective gradient ", g)
 for ac in A:
-    print('Adjoint constraint gradient ', ac)
+    print("Adjoint constraint gradient ", ac)
 
 obj, con, fail = dp.eval_objcon(x)
-print('Forward objective gradient ', obj.imag/h)
+print("Forward objective gradient ", obj.imag / h)
 for c in con:
-    print('Forward constraint gradient = ', c.imag/h)
+    print("Forward constraint gradient = ", c.imag / h)
