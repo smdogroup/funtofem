@@ -366,24 +366,8 @@
             <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
             <span class="n">discpline_vars</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
-                <span class="c1"># Write the structural variables to the structural sensitivity file. All other</span>
-                <span class="c1"># variables are assumed to be associated with the aerodynamics</span>
-                <span class="n">owned</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="k">if</span> <span class="p">(</span>
-                    <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;struct&quot;</span>
-                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;structures&quot;</span>
-                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span>
-                <span class="p">)</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
-                    <span class="n">owned</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">elif</span> <span class="p">(</span>
-                    <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aero&quot;</span>
-                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aerodynamic&quot;</span>
-                    <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;flow&quot;</span>
-                    <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">!=</span> <span class="s2">&quot;structural&quot;</span>
-                <span class="p">):</span>
-                    <span class="n">owned</span> <span class="o">=</span> <span class="kc">True</span>
-
-                <span class="k">if</span> <span class="n">owned</span><span class="p">:</span>
+                <span class="c1"># Write the variables whose analysis_type matches the discipline string.</span>
+                <span class="k">if</span> <span class="n">discipline</span> <span class="o">==</span> <span class="n">var</span><span class="o">.</span><span class="n">analysis_type</span><span class="p">:</span>
                     <span class="n">discpline_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
 
             <span class="c1"># Write out the number of sets of discpline variables</span>
