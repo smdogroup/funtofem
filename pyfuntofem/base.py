@@ -72,6 +72,13 @@ class Base(object):
         if not vartype in self.variables:
             self.variables[vartype] = []
 
+        # check if the variable is already defined in the list
+        for v in self.variables[vartype]:
+            if v.name == var.name:
+                raise ValueError(
+                    "Cannot add two variables with the same name and same vartype"
+                )
+
         # assign identifying properties to the variable then to the list
         var.id = len(self.variables[vartype]) + 1
         var.analysis_type = vartype
