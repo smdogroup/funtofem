@@ -194,11 +194,11 @@ void MELDThermal::transferFlux(const F2FScalar *aero_flux,
 
   Arguments
   ---------
-  vecs  : input vector
+  vecs  : input structural vector
 
   Returns
   --------
-  prods : output vector
+  prods : output aerodynamic vector
 */
 void MELDThermal::applydTdtS(const F2FScalar *vecs, F2FScalar *prods) {
   // Make a global image of the input vector
@@ -240,11 +240,11 @@ void MELDThermal::applydTdtS(const F2FScalar *vecs, F2FScalar *prods) {
 
   Arguments
   ----------
-  vecs  : input vector
+  vecs  : input aerodynamic vector
 
   Returns
   --------
-  prods : output vector
+  prods : output structural vector
 */
 void MELDThermal::applydTdtSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   // Zero array of transpose Jacobian-vector products every call
@@ -281,11 +281,11 @@ void MELDThermal::applydTdtSTrans(const F2FScalar *vecs, F2FScalar *prods) {
 
   Arguments
   ---------
-  vecs  : input vector
+  vecs  : input aerodynamic vector
 
   Returns
   --------
-  prods : output vector
+  prods : output structural vector
 */
 void MELDThermal::applydQdqA(const F2FScalar *vecs, F2FScalar *prods) {
   applydTdtSTrans(vecs, prods);
@@ -297,11 +297,11 @@ void MELDThermal::applydQdqA(const F2FScalar *vecs, F2FScalar *prods) {
 
   Arguments
   ----------
-  vecs  : input vector
+  vecs  : input structural vector
 
   Returns
   --------
-  prods : output vector
+  prods : output aerodynamic vector
 */
 void MELDThermal::applydQdqATrans(const F2FScalar *vecs, F2FScalar *prods) {
   applydTdtS(vecs, prods);

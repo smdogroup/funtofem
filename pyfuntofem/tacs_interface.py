@@ -32,7 +32,15 @@ class TacsSteadyInterface(SolverInterface):
     A base class to do coupled steady simulations with TACS
     """
 
-    def __init__(self, comm, model, assembler=None, gen_output=None, thermal_index=0):
+    def __init__(
+        self,
+        comm,
+        model,
+        assembler=None,
+        gen_output=None,
+        thermal_index=0,
+        struct_id=None,
+    ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
         framework.
@@ -57,6 +65,10 @@ class TacsSteadyInterface(SolverInterface):
             Can pass None if you want to override the class
         gen_output: Function
             Callback for generating output files for visualization
+        thermal_index: int
+            Index of the structural degree of freedom corresponding to the temperature
+        struct_id: list or np.ndarray
+            List of the unique global ids of all the structural nodes
         """
 
         self.comm = comm
@@ -73,7 +85,9 @@ class TacsSteadyInterface(SolverInterface):
                 self.struct_variables.append(var)
 
         # Set the assembler object - if it exists or not
-        self._initialize_variables(model, assembler, thermal_index=thermal_index)
+        self._initialize_variables(
+            model, assembler, thermal_index=thermal_index, struct_id=struct_id
+        )
 
         if self.assembler is not None:
             self.tacs_comm = self.assembler.getMPIComm()
@@ -81,7 +95,7 @@ class TacsSteadyInterface(SolverInterface):
             # Initialize the structural nodes in the bodies
             struct_X = self.struct_X.getArray()
             for body in model.bodies:
-                body.initialize_struct_nodes(struct_X)
+                body.initialize_struct_nodes(struct_X, struct_id=struct_id)
 
         # Generate output
         self.gen_output = gen_output

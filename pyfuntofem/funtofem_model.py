@@ -330,24 +330,8 @@ class FUNtoFEMmodel(object):
             variables = self.get_variables()
             discpline_vars = []
             for var in variables:
-                # Write the structural variables to the structural sensitivity file. All other
-                # variables are assumed to be associated with the aerodynamics
-                owned = False
-                if (
-                    discipline == "struct"
-                    or discipline == "structures"
-                    or discipline == "structural"
-                ) and var.analysis_type == "structural":
-                    owned = True
-                elif (
-                    discipline == "aero"
-                    or discipline == "aerodynamic"
-                    or discipline == "flow"
-                    and var.analysis_type != "structural"
-                ):
-                    owned = True
-
-                if owned:
+                # Write the variables whose analysis_type matches the discipline string.
+                if discipline == var.analysis_type:
                     discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables

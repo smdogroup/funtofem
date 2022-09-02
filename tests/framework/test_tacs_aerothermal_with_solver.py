@@ -1,6 +1,7 @@
 import os
 from tacs import TACS
 from mpi4py import MPI
+import numpy as np
 from funtofem import TransferScheme
 from pyfuntofem.funtofem_model import FUNtoFEMmodel
 from pyfuntofem.variable import Variable
@@ -12,6 +13,8 @@ from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.tacs_interface import createTacsInterfaceFromBDF
 from bdf_test_utils import thermoelasticity_callback
 import unittest
+
+np.random.seed(1234567)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
@@ -78,8 +81,8 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-4
-        rtol = 1e-5
+        epsilon = 1e-5
+        rtol = 1e-4
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30

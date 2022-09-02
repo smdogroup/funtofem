@@ -1054,16 +1054,23 @@ cdef class pyBeamTransfer(pyTransferScheme):
     def __cinit__(self, MPI.Comm comm,
                   MPI.Comm struct, int struct_root,
                   MPI.Comm aero, int aero_root,
-                  np.ndarray[int, ndim=1, mode='c'] _conn,
-                  int _nelems, int _order,
-                  int _dof_per_node):
+                  np.ndarray[int, ndim=2, mode='c'] conn,
+                  int dof_per_node=6):
         cdef MPI_Comm c_comm = comm.ob_mpi
         cdef MPI_Comm struct_comm = struct.ob_mpi
         cdef MPI_Comm aero_comm = aero.ob_mpi
+        cdef int *conn_data = NULL
+        cdef int nelems = 0
+        cdef int order = 2
+
+        if conn is not None:
+            conn_data = <int*>conn.data
+            nelems = conn.shape[0]
+            order = conn.shape[1]
 
         self.ptr = new BeamTransfer(c_comm, struct_comm, struct_root,
                                     aero_comm, aero_root,
-                                    <int*>_conn.data, _nelems, _order,
-                                    _dof_per_node)
+                                    conn_data, nelems, order,
+                                    dof_per_node)
 
         return
