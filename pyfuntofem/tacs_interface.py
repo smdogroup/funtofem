@@ -95,7 +95,7 @@ class TacsSteadyInterface(SolverInterface):
             # Initialize the structural nodes in the bodies
             struct_X = self.struct_X.getArray()
             for body in model.bodies:
-                body.initialize_struct_nodes(struct_X)
+                body.initialize_struct_nodes(struct_X, struct_id=struct_id)
 
         # Generate output
         self.gen_output = gen_output
