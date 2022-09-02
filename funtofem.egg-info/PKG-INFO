@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: funtofem
+Version: 0.1
+Summary: Aeroelastic coupling framework and transfer schemes
+Author: Graeme J. Kennedy
+Author-email: graeme.kennedy@ae.gatech.edu
+License-File: LICENSE.txt

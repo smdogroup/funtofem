@@ -3,8 +3,8 @@
 #PBS -A AFVAW39842SAM
 #PBS -N DwingF2F
 #PBS -q debug
-#PBS -l select=4:ncpus=48:mpiprocs=48
-#PBS -l walltime=1:00:00
+#PBS -l select=1:ncpus=48:mpiprocs=48
+#PBS -l walltime=00:10:00
 #PBS -j oe
 #
 ## Optional Directives ------------------------------------
@@ -13,7 +13,7 @@
 # boolean run settings, need run setup true if not run caps setup yet
 clean_files = true
 run_setup = true
-declare -i nprocs=192
+declare -i nprocs=48
 
 # open workdir, load shell stuff, clean files
 cd $PBS_O_WORKDIR
@@ -34,5 +34,5 @@ fi
 
 # Run funtofem analysis with MPI, three test cases below, no if block here to be more friendly
 #mpiexec_mpt -n ${nprocs} python run_forward.py 2>&1 > output.txt
-#mpiexec_mpt -n ${nprocs} python run_adjoint.py 2>&1 > output.txt
-mpiexec_mpt -n ${nprocs} python test_derivatives.py 2>&1 > output.txt
+mpiexec_mpt -n ${nprocs} python test_adjoint.py 2>&1 > output.txt
+#mpiexec_mpt -n ${nprocs} python test_derivatives.py 2>&1 > output.txt

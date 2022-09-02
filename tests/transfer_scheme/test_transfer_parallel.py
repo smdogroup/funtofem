@@ -210,5 +210,5 @@ if __name__ == "__main__":
     test = TransferSchemeTest()
     test.test_meld()
     test.test_meld_thermal()
-#    test.test_linear_meld()
-#    test.test_rbf()
+    test.test_rbf()
+    test.test_linear_meld()

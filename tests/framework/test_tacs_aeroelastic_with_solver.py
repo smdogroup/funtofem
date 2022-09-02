@@ -10,20 +10,19 @@ from pyfuntofem.function import Function
 from pyfuntofem.test_solver import TestAerodynamicSolver
 from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.tacs_interface import createTacsInterfaceFromBDF
-from bdf_test_utils import generateBDF, thermoelasticity_callback
+from bdf_test_utils import elasticity_callback
 import unittest
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 
 class TacsFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
 
-        # Generate the BDF file if required
-        bdf_file = "test_bdf_file.bdf"
-        generateBDF(bdf_file)
-
         # Build the model
         model = FUNtoFEMmodel("wedge")
-        plate = Body("plate", "aerothermoelastic", group=0, boundary=1)
+        plate = Body("plate", "aeroelastic", group=0, boundary=1)
 
         # Create a structural variable
         thickness = 1.0
@@ -53,7 +52,7 @@ class TacsFrameworkTest(unittest.TestCase):
         comm = MPI.COMM_WORLD
 
         solvers["structural"] = createTacsInterfaceFromBDF(
-            model, comm, nprocs, bdf_file, callback=thermoelasticity_callback
+            model, comm, nprocs, bdf_filename, callback=elasticity_callback
         )
         solvers["flow"] = TestAerodynamicSolver(comm, model)
 
@@ -61,7 +60,7 @@ class TacsFrameworkTest(unittest.TestCase):
 
         # L&D transfer options
         transfer_options = {
-            "analysis_type": "aerothermoelastic",
+            "analysis_type": "aeroelastic",
             "scheme": "meld",
             "thermal_scheme": "meld",
             "npts": 5,

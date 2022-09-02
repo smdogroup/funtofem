@@ -98,7 +98,7 @@ solvers = {}
 
 solvers['flow'] = Fun3dInterface(comm=comm,model=model,flow_dt=1.0, qinf=qinf, thermal_scale=thermal_scale, fun3d_dir=fun3d_parent_dir)
 solvers['structural'] = createTacsInterfaceFromBDF(
-    model=model, comm=comm, nprocs=n_tacs_procs, bdf_file=dat_file, path=tacs_directory, base_name=model_name, callback=None, struct_options={}
+    model=model, comm=comm, nprocs=n_tacs_procs, bdf_file=dat_file, prefix=tacs_directory, callback=None, struct_options={}
 )
 
 # setup the tacs comm again for the driver

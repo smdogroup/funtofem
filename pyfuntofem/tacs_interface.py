@@ -330,7 +330,6 @@ class TacsSteadyInterface(SolverInterface):
 
         # Broacast the list across all processors - not just structural procs
         feval = self.comm.bcast(feval, root=0)
-        
 
         # Set the function values on all processors
         for i, func in enumerate(scenario.functions):
@@ -789,25 +788,33 @@ class TacsSteadyInterface(SolverInterface):
 
 
 class TacsOutputGenerator:
-    def __init__(self, path, base_name="tacs_output_file", f5=None):
+    def __init__(self, prefix, name="tacs_output_file", f5=None):
         """Store information about how to write TACS output files"""
         self.count = 0
-        self.path = path if path is not None else os.getcwd()
-        self.base_name = base_name
+        self.prefix = prefix
+        self.name = name
         self.f5 = f5
 
     def __call__(self):
         """Generate the output from TACS"""
 
         if self.f5 is not None:
-            filename = f"{self.base_name}_{self.count}.f5"
-            filepath = os.path.join(self.path, filename)
-            self.f5.writeToFile(filepath)
+            file = self.name + "%03d.f5" % (self.count)
+            filename = os.path.join(self.prefix, file)
+            self.f5.writeToFile(filename)
         self.count += 1
         return
 
+
 def createTacsInterfaceFromBDF(
-    model, comm, nprocs, bdf_file, path=None, base_name="", callback=None, struct_options={}
+    model,
+    comm,
+    nprocs,
+    bdf_file,
+    prefix="",
+    callback=None,
+    struct_options={},
+    thermal_index=-1,
 ):
     """
     Create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -820,10 +827,8 @@ def createTacsInterfaceFromBDF(
         MPI communicator (typically MPI_COMM_WORLD)
     bdf_file: str
         The BDF file name
-    path: str
-        path to write the f5 files to
-    base_name: str
-        base name of the f5 files
+    prefix: str
+        Output prefix for .f5 files generated from TACS
     callback: function
         The element callback function for pyTACS
     struct_options: dictionary
@@ -834,11 +839,9 @@ def createTacsInterfaceFromBDF(
     world_rank = comm.Get_rank()
     if world_rank < nprocs:
         color = 1
-        key = world_rank
     else:
         color = MPI.UNDEFINED
-        key = world_rank
-    tacs_comm = comm.Split(color, key)
+    tacs_comm = comm.Split(color, world_rank)
 
     assembler = None
     f5 = None
@@ -856,13 +859,12 @@ def createTacsInterfaceFromBDF(
         f5 = fea_assembler.outputViewer
 
     # Create the output generator
-    gen_output = TacsOutputGenerator(path, base_name, f5=f5)
+    gen_output = TacsOutputGenerator(prefix, f5=f5)
 
     # We might need to clean up this code. This is making educated guesses
     # about what index the temperature is stored. This could be wrong if things
     # change later. May query from TACS directly?
-    thermal_index = -1
-    if assembler is not None:
+    if assembler is not None and thermal_index == -1:
         varsPerNode = assembler.getVarsPerNode()
 
         # This is the likely index of the temperature variable
@@ -872,6 +874,9 @@ def createTacsInterfaceFromBDF(
             thermal_index = 3
         elif varsPerNode >= 7:  # Shell or beam + thermal
             thermal_index = 3
+
+    # Broad cast the thermal index to ensure it's the same on all procs
+    thermal_index = comm.bcast(thermal_index, root=0)
 
     # Create the tacs interface
     interface = TacsSteadyInterface(

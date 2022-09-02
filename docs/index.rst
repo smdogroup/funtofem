@@ -9,7 +9,7 @@ Welcome to FUNtoFEM's Documentation
 If you are using FUNtoFEM with existing interface class and solvers, you should only need the :doc:`model` and :doc:`driver`.
 If you wish to create a new interface or a new driver, see the :doc:`programmers_guide`.
 
-.. figure:: images/funtofem_flowchart.png
+.. figure:: images/atePath.svg
 
 .. toctree::
    :maxdepth: 2

@@ -1,0 +1,18 @@
+#!/bin/bash
+## Required PBS Directives --------------------------------------
+#PBS -A AFVAW39842SAM
+#PBS -N F2Ftestflo
+#PBS -q debug
+#PBS -l select=1:ncpus=48:mpiprocs=48
+#PBS -l walltime=0:10:00
+#PBS -j oe
+#
+## Optional Directives ------------------------------------
+#PBS -m be
+
+# open workdir, load shell stuff, clean files
+cd $PBS_O_WORKDIR
+source $HOME/.bashrc
+source $HOME/.profile
+
+testflo ./tests
