@@ -22,11 +22,12 @@ limitations under the License.
 from pyfuntofem.model import *
 from funtofem import TransferScheme
 
+
 def build_model():
-    crm = FUNtoFEMmodel('crm')
-    wing = Body('wing', id=2, fun3d=False)
+    crm = FUNtoFEMmodel("crm")
+    wing = Body("wing", id=2, fun3d=False)
     crm.add_body(wing)
-    cruise = Scenario('cruise', steps=100)
+    cruise = Scenario("cruise", steps=100)
     crm.add_scenario(cruise)
 
     return crm

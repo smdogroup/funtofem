@@ -23,15 +23,8 @@ limitations under the License.
 from __future__ import print_function
 
 from pyfuntofem.model import Function, FUNtoFEMmodel
-# from pyfuntofem.driver import *
 from pyfuntofem.fun3d_interface import Fun3dInterface
 from pyfuntofem.massoud_body import MassoudBody
-
-from pyfuntofem.model import
-
-
-
-
 from tacs_model import CRMtacs
 from pyOpt import Optimization, SLSQP
 from mpi4py import MPI
@@ -324,7 +317,6 @@ class crm_togw(object):
         fail = self.driver.solve_adjoint()
         grads = self.model.get_function_gradients()
         funcs = self.model.get_functions()
-
 
         funcs = self.model.get_functions()
 

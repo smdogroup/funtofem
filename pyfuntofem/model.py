@@ -23,6 +23,6 @@ limitations under the License.
 # Model classes
 from .variable import *
 from .function import *
-from .body     import *
+from .body import *
 from .scenario import *
 from .funtofem_model import *

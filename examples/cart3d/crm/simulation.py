@@ -25,11 +25,12 @@ from pyfuntofem.cart3d_interface import *
 from structural_model import TacsCRM
 from mpi4py import MPI
 
+
 def build_model():
-    crm = FUNtoFEMmodel('crm')
-    wing = Body('wing', id=2, fun3d=False)
+    crm = FUNtoFEMmodel("crm")
+    wing = Body("wing", id=2, fun3d=False)
     crm.add_body(wing)
-    cruise = Scenario('cruise', steps=100)
+    cruise = Scenario("cruise", steps=100)
     crm.add_scenario(cruise)
 
     return crm
@@ -52,23 +53,31 @@ tacs_comm = comm.Split(color, key)
 crm = build_model()
 
 # Instatiate the flow and structural solvers
-solvers= {}
+solvers = {}
 
 pinf = 101325  # freestream pressure
-gamma = 1.4    # ratio of specific heats
+gamma = 1.4  # ratio of specific heats
 with_conv_hist = True
 adapt_growth = [9]
-solvers['flow'] = Cart3DInterface(comm, crm, pinf, gamma, with_conv_hist, adapt_growth)
-solvers['structural'] = TacsCRM(comm, tacs_comm, crm, n_tacs_procs)
+solvers["flow"] = Cart3DInterface(comm, crm, pinf, gamma, with_conv_hist, adapt_growth)
+solvers["structural"] = TacsCRM(comm, tacs_comm, crm, n_tacs_procs)
 
 # Specify the transfer scheme options
-options = {'scheme': 'meld', 'beta': 0.5, 'npts': 500, 'isym': -1}
+options = {"scheme": "meld", "beta": 0.5, "npts": 500, "isym": -1}
 
 # Instantiate the driver
 struct_master = 0
 aero_master = 0
-driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
-                       comm, aero_master, model=crm, transfer_options=options)
+driver = FUNtoFEMnlbgs(
+    solvers,
+    comm,
+    tacs_comm,
+    struct_master,
+    comm,
+    aero_master,
+    model=crm,
+    transfer_options=options,
+)
 
 # Run the forward analysis
 fail = driver.solve_forward()

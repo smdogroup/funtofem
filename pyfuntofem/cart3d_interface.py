@@ -24,9 +24,10 @@ from __future__ import print_function
 
 import numpy as np
 import os
-from funtofem         import TransferScheme
+from funtofem import TransferScheme
 from .solver_interface import SolverInterface
-from .cart3d_utils     import ReadTriangulation, ComputeAeroLoads, WriteTri, RMS
+from .cart3d_utils import ReadTriangulation, ComputeAeroLoads, WriteTri, RMS
+
 
 class Cart3DInterface(SolverInterface):
     """
@@ -107,7 +108,7 @@ class Cart3DInterface(SolverInterface):
 
         # Touch a file to record the RMS error output for convergence study
         if self.conv_hist:
-            with open(self.conv_hist_file, 'w') as f:
+            with open(self.conv_hist_file, "w") as f:
                 pass
 
         # Read in the Components.i.tri file
@@ -118,36 +119,38 @@ class Cart3DInterface(SolverInterface):
 
         # Store original number of adapt cycles in file
         if self.adapt_growth is not None:
-            system_command = r'''awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $0}}' aero.csh > orig_n_adapt_cycles'''
+            system_command = r"""awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $0}}' aero.csh > orig_n_adapt_cycles"""
             os.system(system_command)
 
         # Extract the relevant components' node locations to body object
         for ibody, body in enumerate(bodies, 1):
-            comp_faces = faces[comps == body.id,:]
+            comp_faces = faces[comps == body.id, :]
             comp_verts = np.unique(comp_faces.flatten())
 
             body.aero_nnodes = len(comp_verts)
-            body.aero_X = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
+            body.aero_X = np.zeros(3 * body.aero_nnodes, dtype=TransferScheme.dtype)
 
-            body.aero_X[0::3] = verts[comp_verts,0]
-            body.aero_X[1::3] = verts[comp_verts,1]
-            body.aero_X[2::3] = verts[comp_verts,2]
+            body.aero_X[0::3] = verts[comp_verts, 0]
+            body.aero_X[1::3] = verts[comp_verts, 1]
+            body.aero_X[2::3] = verts[comp_verts, 2]
 
             body.rigid_transform = np.identity(4, dtype=TransferScheme.dtype)
 
             # Initialize the state values used for convergence study as well
             if self.conv_hist:
-                self.uprev[body.id] = np.zeros(3*body.aero_nnodes, 
-                        dtype=TransferScheme.dtype)
-                self.fprev[body.id] = np.zeros(3*body.aero_nnodes, 
-                        dtype=TransferScheme.dtype)
+                self.uprev[body.id] = np.zeros(
+                    3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                )
+                self.fprev[body.id] = np.zeros(
+                    3 * body.aero_nnodes, dtype=TransferScheme.dtype
+                )
 
         # Head back to run directory
         os.chdir("..")
 
         return 0
 
-    def get_functions(self,scenario,bodies):
+    def get_functions(self, scenario, bodies):
         """
         Populate the scenario with the aerodynamic function values.
 
@@ -159,7 +162,7 @@ class Cart3DInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
         pass
-        #for function in scenario.functions:
+        # for function in scenario.functions:
         #    if function.analysis_type=='aerodynamic':
         #        # the [6] index returns the value
         #        if self.comm.Get_rank() == 0:
@@ -185,30 +188,31 @@ class Cart3DInterface(SolverInterface):
 
         # Write step number to file output
         if self.conv_hist:
-            with open(self.conv_hist_file, 'a') as f:
+            with open(self.conv_hist_file, "a") as f:
                 f.write("{0:03d} ".format(step))
-        
+
         # Add displacements to node locations and write out to Components.i.tri
         file_in = "Components.i.tri"
         verts, faces, comps, scalars = ReadTriangulation(file_in)
 
-        for ibody, body in enumerate(bodies,1):
-            comp_faces = faces[comps == body.id,:]
+        for ibody, body in enumerate(bodies, 1):
+            comp_faces = faces[comps == body.id, :]
             comp_verts = np.unique(comp_faces.flatten())
 
-            if 'deform' in body.motion_type:
-                verts[comp_verts,:] = body.aero_X.reshape((-1,3)) + \
-                                      body.aero_disps.reshape((-1,3))
-                
-            if 'rigid' in body.motion_type:
-                R = body.rigid_transform[:3,:3]
-                t = body.rigid_transform[:3,-1]
-                verts[comp_verts,:] = vert[comp_verts,:].dot(R.T) + t.T
+            if "deform" in body.motion_type:
+                verts[comp_verts, :] = body.aero_X.reshape(
+                    (-1, 3)
+                ) + body.aero_disps.reshape((-1, 3))
+
+            if "rigid" in body.motion_type:
+                R = body.rigid_transform[:3, :3]
+                t = body.rigid_transform[:3, -1]
+                verts[comp_verts, :] = vert[comp_verts, :].dot(R.T) + t.T
 
             # Compute RMS error of displacements and write to file
             if self.conv_hist:
                 delta_u_rms = RMS(body.aero_disps, self.uprev[body.id])
-                with open(self.conv_hist_file, 'a') as f:
+                with open(self.conv_hist_file, "a") as f:
                     f.write("{0:22.15e} ".format(delta_u_rms))
 
                 self.uprev[body.id] = body.aero_disps
@@ -223,14 +227,16 @@ class Cart3DInterface(SolverInterface):
         if self.adapt_growth is not None:
             # Try to use the number of adapt cycles specified for the current step
             try:
-                n_adapt_cycles = self.adapt_growth[step-1]
+                n_adapt_cycles = self.adapt_growth[step - 1]
             # For any steps for which the number isn't specified, repeat last
             except IndexError:
                 n_adapt_cycles = self.adapt_growth[-1]
 
-            system_command = r'''awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $1, $2, $3, ''' + \
-                    r'''"{0}"'''.format(n_adapt_cycles) + \
-                    r'''}else{print $0}}' aero.csh > aero.csh~'''
+            system_command = (
+                r"""awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $1, $2, $3, """
+                + r'''"{0}"'''.format(n_adapt_cycles)
+                + r"""}else{print $0}}' aero.csh > aero.csh~"""
+            )
             os.system(system_command)
             os.rename("aero.csh~", "aero.csh")
             os.system("chmod +x aero.csh")
@@ -247,15 +253,15 @@ class Cart3DInterface(SolverInterface):
 
         # Pull out the forces from FUN3D
         for ibody, body in enumerate(bodies, 1):
-            comp_faces = faces[comps == body.id,:]
+            comp_faces = faces[comps == body.id, :]
             comp_verts = np.unique(comp_faces.flatten())
 
-            body.aero_loads = aero_loads[comp_verts,:].flatten()
+            body.aero_loads = aero_loads[comp_verts, :].flatten()
 
             # Compute RMS error of displacements and write to file
             if self.conv_hist:
                 delta_f_rms = RMS(body.aero_loads, self.fprev[body.id])
-                with open(self.conv_hist_file, 'a') as f:
+                with open(self.conv_hist_file, "a") as f:
                     f.write("{0:22.15e} ".format(delta_f_rms))
 
                 self.fprev[body.id] = body.aero_loads
@@ -268,16 +274,16 @@ class Cart3DInterface(SolverInterface):
             # Read loadsCC.dat to get lift and drag
             file_in = "BEST/FLOW/loadsCC.dat"
             try:
-                with open(file_in, 'r') as f:
+                with open(file_in, "r") as f:
                     data = f.readlines()
                     data = [x.split() for x in data]
 
                     for line in data:
-                        if len(line) > 0 and line[0] == 'entire':
-                            if line[1] == 'Lift':
+                        if len(line) > 0 and line[0] == "entire":
+                            if line[1] == "Lift":
                                 lift = float(line[-1])
 
-                            if line[1] == 'Drag':
+                            if line[1] == "Drag":
                                 drag = float(line[-1])
 
             except IOError:
@@ -287,7 +293,7 @@ class Cart3DInterface(SolverInterface):
             # Read history.dat to get the final global L1 density residual
             file_in = "BEST/FLOW/history.dat"
             try:
-                with open(file_in, 'r') as f:
+                with open(file_in, "r") as f:
                     data = f.readlines()
                     data = [x.split() for x in data]
                     dens_res = float(data[-1][-1])
@@ -297,7 +303,7 @@ class Cart3DInterface(SolverInterface):
                 print("Its contents will not appear in convergence history")
 
             # Write whatever I could get from the files to convergence history
-            with open(self.conv_hist_file, 'a') as f:
+            with open(self.conv_hist_file, "a") as f:
                 if lift is not None:
                     f.write("{0:11.8g} ".format(lift))
 
@@ -318,15 +324,15 @@ class Cart3DInterface(SolverInterface):
         os.system("mv -f adapt?? " + dir_name)
 
         # Copy everything in BEST directory to storage
-        #os.system("cp -rf BEST/. {0}".format(dir_name))
+        # os.system("cp -rf BEST/. {0}".format(dir_name))
 
         # Use aero_archive.csh to compress other information and store
-        #os.system("aero_archive.csh")
-        #os.system("mv -f AERO_FILE_ARCHIVE.txt {0}".format(dir_name))
-        #os.system("mv -f loadsCC_ARCHIVE.tgz {0}".format(dir_name))
+        # os.system("aero_archive.csh")
+        # os.system("mv -f AERO_FILE_ARCHIVE.txt {0}".format(dir_name))
+        # os.system("mv -f loadsCC_ARCHIVE.tgz {0}".format(dir_name))
 
         # Remove adapt folders to prepare for next run
-        #os.system("rm -rf adapt??")
+        # os.system("rm -rf adapt??")
 
         # Head back to run directory
         os.chdir("..")
@@ -336,7 +342,7 @@ class Cart3DInterface(SolverInterface):
     def post(self, scenario, bodies):
         """
         Clean-up related to running Cart3D
-        
+
         Return the following to their original values:
          - the .tri file that aero.csh uses to generate the mesh
          - the number of adapt cycles specified in aero.csh
@@ -362,9 +368,11 @@ class Cart3DInterface(SolverInterface):
                 info = f.readline().split()
                 n_adapt_cycles = int(info[3])
 
-            system_command = r'''awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $1, $2, $3, ''' + \
-                    r'''"{0}"'''.format(n_adapt_cycles) + \
-                    r'''}else{print $0}}' aero.csh > aero.csh~'''
+            system_command = (
+                r"""awk '{if ("set" == $1 && "n_adapt_cycles" == $2){print $1, $2, $3, """
+                + r'''"{0}"'''.format(n_adapt_cycles)
+                + r"""}else{print $0}}' aero.csh > aero.csh~"""
+            )
             os.system(system_command)
             os.rename("aero.csh~", "aero.csh")
             os.system("chmod +x aero.csh")

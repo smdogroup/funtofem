@@ -35,10 +35,10 @@ from funtofem import FUNtoFEM
 Input aerodynamic surface mesh and forces
 --------------------------------------------------------------------------------
 """
-XF = np.loadtxt('funtofemforces.dat')
-aero_X = XF[:,:3].flatten().astype(FUNtoFEM.dtype)
-aero_loads = (251.8 * 251.8 / 2 * 0.3)*XF[:,3:].flatten().astype(FUNtoFEM.dtype)
-aero_nnodes = aero_X.shape[0]/3
+XF = np.loadtxt("funtofemforces.dat")
+aero_X = XF[:, :3].flatten().astype(FUNtoFEM.dtype)
+aero_loads = (251.8 * 251.8 / 2 * 0.3) * XF[:, 3:].flatten().astype(FUNtoFEM.dtype)
+aero_nnodes = aero_X.shape[0] / 3
 
 """
 --------------------------------------------------------------------------------
@@ -50,13 +50,13 @@ tacs_comm = MPI.COMM_WORLD
 # Load structural mesh
 struct_mesh = TACS.MeshLoader(tacs_comm)
 struct_mesh.scanBDFFile("CRM_box_2nd.bdf")
-   
+
 # Set constitutive properties
-rho = 2500.0 # density, kg/m^3
-E = 70e9 # elastic modulus, Pa
-nu = 0.3 # poisson's ratio
-kcorr = 5.0 / 6.0 # shear correction factor
-ys = 350e6 # yield stress, Pa
+rho = 2500.0  # density, kg/m^3
+E = 70e9  # elastic modulus, Pa
+nu = 0.3  # poisson's ratio
+kcorr = 5.0 / 6.0  # shear correction factor
+ys = 350e6  # yield stress, Pa
 min_thickness = 0.001
 max_thickness = 0.020
 
@@ -68,29 +68,30 @@ num_components = struct_mesh.getNumComponents()
 for i in range(num_components):
     descript = struct_mesh.getElementDescript(i)
     comp = struct_mesh.getComponentDescript(i)
-    if 'SPAR' in comp:
+    if "SPAR" in comp:
         t = spar_thick
     else:
         t = thickness
-    stiff = constitutive.isoFSDT(rho, E, nu, kcorr, ys, t, i,
-                                 min_thickness, max_thickness)
+    stiff = constitutive.isoFSDT(
+        rho, E, nu, kcorr, ys, t, i, min_thickness, max_thickness
+    )
     element = None
     if descript in ["CQUAD", "CQUADR", "CQUAD4"]:
         element = elements.MITCShell(2, stiff, component_num=i)
     struct_mesh.setElement(i, element)
-   
+
 # Create tacs assembler object
 tacs = struct_mesh.createTACS(6)
 res = tacs.createVec()
 ans = tacs.createVec()
 mat = tacs.createFEMat()
-   
+
 # Create distributed node vector from TACS Assembler object and extract the
 # node locations
 struct_X_vec = tacs.createNodeVec()
 tacs.getNodes(struct_X_vec)
 struct_X = struct_X_vec.getArray().astype(FUNtoFEM.dtype)
-struct_nnodes = len(struct_X)/3
+struct_nnodes = len(struct_X) / 3
 
 # Create the preconditioner for the corresponding matrix
 pc = TACS.Pc(mat)
@@ -101,7 +102,7 @@ beta = 0.0
 gamma = 0.0
 tacs.assembleJacobian(alpha, beta, gamma, res, mat)
 pc.factor()
-   
+
 """
 --------------------------------------------------------------------------------
 Set up FUNtoFEM
@@ -114,8 +115,8 @@ isymm = 1
 funtofem = FUNtoFEM.pyFUNtoFEM(comm, comm, 0, comm, 0, scheme, isymm)
 
 # Set nodes into funtofem
-funtofem.setStructNodes(struct_X) 
-funtofem.setAeroNodes(aero_X) 
+funtofem.setStructNodes(struct_X)
+funtofem.setAeroNodes(aero_X)
 
 # Initialize funtofem
 num_nearest = 20
@@ -160,4 +161,3 @@ funtofem.transferDisps(struct_disps)
 
 # With loads and displacements input, can now use testAll
 funtofem.testAll(True, 1e-6)
-
