@@ -442,7 +442,7 @@ class PistonInterface(SolverInterface):
             aero_loads = body.get_aero_loads(scenario)
             lift = np.sum(aero_loads[2::3])
             cl = lift / (self.qinf * self.L * self.width)
-
+            print("CL = ", cl)
         return cl
 
     def get_function_gradients(self, scenario, bodies):
@@ -462,7 +462,8 @@ class PistonInterface(SolverInterface):
                 # Do the scenario variables first
                 #            for var in scenario.get_active_variables():
                 if var.name == "AOA":
-                    value = self.compute_cl_deriv(scenario, bodies)
+                    print("Getting AoA gradient")
+                    value = self.compute_aoa_deriv(scenario, bodies)
                     func.add_gradient_component(var, value[:])
 
             """
@@ -495,7 +496,7 @@ class PistonInterface(SolverInterface):
 
         return
 
-    def compute_cl_deriv(self, scenario, bodies):
+    def compute_aoa_deriv(self, scenario, bodies):
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(scenario)
             w = body.aero_X[2::3] + self.nmat.T @ aero_disps
@@ -523,8 +524,8 @@ class PistonInterface(SolverInterface):
                 @ dAeroX_dAlpha
             )
 
-            cl_grad = self.psi_P.T @ dP_dAlpha
-            print("cl grad: ", cl_grad)
+            cl_grad = -self.psi_P.T @ dP_dAlpha
+            print("psi_P * dP_dalpha: ", cl_grad)
         return cl_grad
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
@@ -836,5 +837,3 @@ class PistonInterface(SolverInterface):
         # self.fun3d_adjoint.post()
         # os.chdir("../..")
         pass
-
-

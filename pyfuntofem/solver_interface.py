@@ -808,11 +808,21 @@ class SolverInterface(object):
         Test to see if the adjoint methods are implemented correctly
         """
 
-        self.set_functions(scenario, bodies)
         self.set_variables(scenario, bodies)
+        self.set_functions(scenario, bodies)
+
+        self.get_functions(scenario, bodies)
 
         for body in bodies:
             body.initialize_variables(scenario)
+
+        x = self.assembler.createDesignVec()
+        self.assembler.getDesignVars(x)
+        # print(x.getArray())
+
+        u = self.assembler.createVec()
+        self.assembler.getVariables(u)
+        # print(u.getArray())
 
         # Set random loads and heat fluxes
         for body in bodies:

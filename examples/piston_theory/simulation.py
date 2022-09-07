@@ -28,6 +28,7 @@ import numpy as np
 from pyfuntofem.model import *
 from pyfuntofem.driver import *
 from pyfuntofem.pistontheory_interface import PistonInterface
+from pyfuntofem.tacs_interface import TacsSteadyInterface
 from structural_model import OneraPlate
 from mpi4py import MPI
 
@@ -57,10 +58,14 @@ wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
 
 # Add a structural design variable to the wing
 t = 0.025
-svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
-wing.add_variable('structural', svar)
+#svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
+#wing.add_variable('structural', svar)
 
-steps = 10
+#Aero design var
+avar = Variable('AOA', value=5.0, lower=0.1, upper=11)
+wing.add_variable('aerodynamic', avar)
+
+steps = 50
 if 'test' in sys.argv:
     steps = 1
 
@@ -104,7 +109,10 @@ w = 1.20  #Width
 nw = 50 # Num elems in eta dir
 solvers['flow'] = PistonInterface(comm, onera, qinf, M, U_inf, x0, length_dir, width_dir,
        L, w, nL, nw)
-solvers['structural'] = OneraPlate(comm, tacs_comm, onera, n_tacs_procs)
+assembler = None
+if world_rank < n_tacs_procs:
+     assembler = OneraPlate(tacs_comm)
+solvers['structural'] = TacsSteadyInterface(comm, onera)
 
 # Specify the transfer scheme options
 options = {'scheme': 'meld', 'beta': 0.9, 'npts': 10, 'isym': 1}
@@ -126,7 +134,7 @@ if 'test' in sys.argv:
 else:
     # Perform a finite difference check
     dh = 1e-6
-    x0 = np.array([0.025])
+    x0 = np.array([1.5])
 
     # Get the function value
     onera.set_variables(x0)
