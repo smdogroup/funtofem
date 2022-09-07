@@ -33,7 +33,7 @@ from structural_model import OneraPlate
 from mpi4py import MPI
 
 
-#No need to split the communicator? Maybe only for tacs, otherwise
+# No need to split the communicator? Maybe only for tacs, otherwise
 # Fluid solve Serial Only
 n_tacs_procs = 1
 comm = MPI.COMM_WORLD
@@ -47,32 +47,28 @@ else:
     key = world_rank
 tacs_comm = comm.Split(color, key)
 
-
-#su2_config = 'inv_ONERAM6.cfg' Unnecessary
-#su2_adj_config= 'inv_ONERAM6_adjoint.cfg'
-
 # Create model
-onera = FUNtoFEMmodel('onera')
+onera = FUNtoFEMmodel("onera")
 
-wing = Body('wing', analysis_type='aeroelastic', fun3d=False)
+wing = Body("wing", analysis_type="aeroelastic", fun3d=False)
 
 # Add a structural design variable to the wing
 t = 0.025
-#svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
-#wing.add_variable('structural', svar)
+# svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
+# wing.add_variable('structural', svar)
 
-#Aero design var
-avar = Variable('AOA', value=5.0, lower=0.1, upper=11)
-wing.add_variable('aerodynamic', avar)
+# Aero design var
+avar = Variable("AOA", value=5.0, lower=0.1, upper=11)
+wing.add_variable("aerodynamic", avar)
 
 steps = 50
-if 'test' in sys.argv:
+if "test" in sys.argv:
     steps = 1
 
-cruise = Scenario('cruise', steps=steps)
+cruise = Scenario("cruise", steps=steps)
 onera.add_scenario(cruise)
 
-drag = Function('cl', analysis_type='aerodynamic')
+drag = Function("cl", analysis_type="aerodynamic")
 cruise.add_function(drag)
 
 # failure = Function('ksfailure', analysis_type='structural')
@@ -84,53 +80,74 @@ onera.add_body(wing)
 # Instatiate the flow and structural solvers
 solvers = {}
 
-qinf = 101325.0 # freestream pressure Pa
-M = 1.2     # Mach number
-U_inf = 411 #Freestream velocity m/s
-x0 = np.array([0,0,0])
-alpha = 10  #Angle of attack (degrees)
-length_dir = np.array([np.cos(alpha*np.pi/180), 0, np.sin(alpha*np.pi/180)]) #Unit vec in length dir
-width_dir = np.array([0, 1, 0])     #Unit vec in width dir
+qinf = 101325.0  # freestream pressure Pa
+M = 1.2  # Mach number
+U_inf = 411  # Freestream velocity m/s
+x0 = np.array([0, 0, 0])
+alpha = 10  # Angle of attack (degrees)
+length_dir = np.array(
+    [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
+)  # Unit vec in length dir
+width_dir = np.array([0, 1, 0])  # Unit vec in width dir
 
-#Check direction to validate unit vectors (and orthogonality?)
-if not (0.99 <= np.linalg.norm(length_dir) <= 1.01) :
-    print('Length direction not a unit vector \n Calculations may be inaccurate', file=sys.stderr)
+# Check direction to validate unit vectors (and orthogonality?)
+if not (0.99 <= np.linalg.norm(length_dir) <= 1.01):
+    print(
+        "Length direction not a unit vector \n Calculations may be inaccurate",
+        file=sys.stderr,
+    )
     exit(1)
-if not (0.99 <= np.linalg.norm(width_dir) <= 1.01) :
-    print('Width direction not a unit vector \n Calculations may be inaccurate', file=sys.stderr)
+if not (0.99 <= np.linalg.norm(width_dir) <= 1.01):
+    print(
+        "Width direction not a unit vector \n Calculations may be inaccurate",
+        file=sys.stderr,
+    )
     exit(1)
-if not (-0.01 <= np.dot(length_dir,width_dir) <= 0.01) :
-    print('Spanning vectors not orthogonal \n Calculations may be inaccurate', file=sys.stderr)
+if not (-0.01 <= np.dot(length_dir, width_dir) <= 0.01):
+    print(
+        "Spanning vectors not orthogonal \n Calculations may be inaccurate",
+        file=sys.stderr,
+    )
     exit(1)
 
-L = 1.20 #Length
-nL = 30 # Num elems in xi dir
-w = 1.20  #Width
-nw = 50 # Num elems in eta dir
-solvers['flow'] = PistonInterface(comm, onera, qinf, M, U_inf, x0, length_dir, width_dir,
-       L, w, nL, nw)
+L = 1.20  # Length
+nL = 30  # Num elems in xi dir
+w = 1.20  # Width
+nw = 50  # Num elems in eta dir
+solvers["flow"] = PistonInterface(
+    comm, onera, qinf, M, U_inf, x0, length_dir, width_dir, L, w, nL, nw
+)
 assembler = None
 if world_rank < n_tacs_procs:
-     assembler = OneraPlate(tacs_comm)
-solvers['structural'] = TacsSteadyInterface(comm, onera)
+    assembler = OneraPlate(tacs_comm)
+solvers["structural"] = TacsSteadyInterface(comm, onera)
 
 # Specify the transfer scheme options
-options = {'scheme': 'meld', 'beta': 0.9, 'npts': 10, 'isym': 1}
+options = {"scheme": "meld", "beta": 0.9, "npts": 10, "isym": 1}
 
 # Instantiate the driver
 struct_master = 0
 aero_master = 0
-driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master,
-                       comm, aero_master, model=onera, transfer_options=options,
-                       theta_init=0.3, theta_min=0.01)
+driver = FUNtoFEMnlbgs(
+    solvers,
+    comm,
+    tacs_comm,
+    struct_master,
+    comm,
+    aero_master,
+    model=onera,
+    transfer_options=options,
+    theta_init=0.3,
+    theta_min=0.01,
+)
 
-if 'test' in sys.argv:
+if "test" in sys.argv:
     fail = driver.solve_forward()
     exit(1)
     fail = driver.solve_adjoint()
 
-    solvers['flow'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
-    solvers['structural'].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
+    solvers["flow"].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
+    solvers["structural"].adjoint_test(cruise, onera.bodies, epsilon=1e-7)
 else:
     # Perform a finite difference check
     dh = 1e-6
@@ -144,13 +161,13 @@ else:
     for func in funcs0:
         f0vals.append(func.value)
         if comm.rank == 0:
-            print('Function value: ', func.value)
+            print("Function value: ", func.value)
 
     # Evaluate the function gradient
     fail = driver.solve_adjoint()
     grads = onera.get_function_gradients()
     if comm.rank == 0:
-        print('Adjoint gradient: ', grads)
+        print("Adjoint gradient: ", grads)
 
     # Compute the function value at the perturbed point
     x = x0 + dh
@@ -172,6 +189,6 @@ else:
 
     if comm.rank == 0:
         for k, funcs in enumerate(zip(f0vals, f1vals)):
-            print('Function value: ', funcs[0], funcs[1])
-            print('Adjoint gradient: ', grads)
-            print('Finite-difference: ', 0.5*(funcs[1] - funcs[0])/dh)
+            print("Function value: ", funcs[0], funcs[1])
+            print("Adjoint gradient: ", grads)
+            print("Finite-difference: ", 0.5 * (funcs[1] - funcs[0]) / dh)

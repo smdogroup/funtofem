@@ -22,6 +22,7 @@ limitations under the License.
 from tacs import TACS, elements, functions, constitutive
 import numpy as np
 
+
 def OneraPlate(tacs_comm):
     # Set the creator object
     ndof = 6
@@ -33,22 +34,21 @@ def OneraPlate(tacs_comm):
         ny = 10
 
         # Set the nodes
-        nnodes = (nx+1)*(ny+1)
-        nelems = nx*ny
-        nodes = np.arange(nnodes).reshape((nx+1, ny+1))
+        nnodes = (nx + 1) * (ny + 1)
+        nelems = nx * ny
+        nodes = np.arange(nnodes).reshape((nx + 1, ny + 1))
 
         conn = []
         for j in range(ny):
             for i in range(nx):
                 # Append the node locations
-                conn.append([nodes[i, j],
-                                nodes[i+1, j],
-                                nodes[i, j+1],
-                                nodes[i+1, j+1]])
+                conn.append(
+                    [nodes[i, j], nodes[i + 1, j], nodes[i, j + 1], nodes[i + 1, j + 1]]
+                )
 
         # Set the node pointers
         conn = np.array(conn, dtype=np.intc).flatten()
-        ptr = np.arange(0, 4*nelems+1, 4, dtype=np.intc)
+        ptr = np.arange(0, 4 * nelems + 1, 4, dtype=np.intc)
         elem_ids = np.zeros(nelems, dtype=np.intc)
         creator.setGlobalConnectivity(nnodes, ptr, conn, elem_ids)
 
@@ -59,19 +59,21 @@ def OneraPlate(tacs_comm):
         root_chord = 0.8
         semi_span = 1.2
         taper_ratio = 0.56
-        sweep = 26.7 # degrees
+        sweep = 26.7  # degrees
 
         # Set the node locations
-        Xpts = np.zeros(3*nnodes, TACS.dtype)
-        x = np.linspace(0, 1, nx+1)
-        y = np.linspace(0, 1, ny+1)
-        for j in range(ny+1):
-            for i in range(nx+1):
-                c = root_chord*(1.0 - y[j]) + root_chord*taper_ratio*y[j]
-                xoff = 0.25*root_chord + semi_span*y[j]*np.tan(sweep*np.pi/180.0)
+        Xpts = np.zeros(3 * nnodes, TACS.dtype)
+        x = np.linspace(0, 1, nx + 1)
+        y = np.linspace(0, 1, ny + 1)
+        for j in range(ny + 1):
+            for i in range(nx + 1):
+                c = root_chord * (1.0 - y[j]) + root_chord * taper_ratio * y[j]
+                xoff = 0.25 * root_chord + semi_span * y[j] * np.tan(
+                    sweep * np.pi / 180.0
+                )
 
-                Xpts[3*nodes[i,j]] = xoff + c*(x[i] - 0.25)
-                Xpts[3*nodes[i,j]+1] = semi_span*y[j]
+                Xpts[3 * nodes[i, j]] = xoff + c * (x[i] - 0.25)
+                Xpts[3 * nodes[i, j] + 1] = semi_span * y[j]
 
         # Set the node locations
         creator.setNodes(Xpts)
@@ -93,13 +95,15 @@ def OneraPlate(tacs_comm):
     element = elements.Quad4Shell(transform, con)
 
     # Set the elements
-    elems = [ element ]
+    elems = [element]
     creator.setElements(elems)
 
     # Create TACS Assembler object from the mesh loader
     assembler = creator.createTACS()
 
     return assembler
+
+
 '''
 
 class OneraPlate(TacsSteadyInterface):

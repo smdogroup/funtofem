@@ -33,9 +33,9 @@ class CoupledFrameworkTest(unittest.TestCase):
         # wing.add_variable("structural", svar)
 
         # Add the aerodynamic variables to the scenario
-        #AoA = 10.0
-        #avar = Variable("AOA", value=AoA, lower=0.1, upper=11)
-        #wing.add_variable("aerodynamic", avar)
+        # AoA = 10.0
+        # avar = Variable("AOA", value=AoA, lower=0.1, upper=11)
+        # wing.add_variable("aerodynamic", avar)
 
         model.add_body(wing)
 
