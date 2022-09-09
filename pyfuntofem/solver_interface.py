@@ -816,12 +816,12 @@ class SolverInterface(object):
         for body in bodies:
             body.initialize_variables(scenario)
 
-        x = self.assembler.createDesignVec()
-        self.assembler.getDesignVars(x)
+        # x = self.assembler.createDesignVec()
+        # self.assembler.getDesignVars(x)
         # print(x.getArray())
 
-        u = self.assembler.createVec()
-        self.assembler.getVariables(u)
+        # u = self.assembler.createVec()
+        # self.assembler.getVariables(u)
         # print(u.getArray())
 
         # Set random loads and heat fluxes
