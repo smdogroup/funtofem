@@ -1,7 +1,0 @@
-*.o*
-*.pbs
-*.txt
-**/Flow/*.flow
-**/Flow/**.grid_info
-**/Flow/*.dat
-**/Flow/*.vtk
