@@ -1,3 +1,4 @@
-./capsStruct/**
-./capsFluid/**
-
+capsStruct/
+capsFluid/
+*.o*
+*.pbs
