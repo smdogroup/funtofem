@@ -23,33 +23,33 @@ limitations under the License.
 from __future__ import print_function
 from tkinter.tix import INTEGER
 
-from tacs             import TACS, functions
-from tacs_builder     import TACSBodyType
+from tacs import TACS, functions
+from tacs_builder import TACSBodyType
 from .solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-class IntegrationSettings:
-    INTEGRATION_TYPES = ['BDF','DIRK']
 
-    def __init__(self,
-        integration_type:str = 'BDF',
-        integration_order:int=2,
-        L2_convergence:float=1e-12,
-        L2_convergence_rel:float=1e-12,
-        jac_assembly_freq:int=1,
-        write_solution:bool=True,
-        number_solution_files:bool=True,
-        print_timing_info:bool=False,
-        print_level:int = 0
+class IntegrationSettings:
+    INTEGRATION_TYPES = ["BDF", "DIRK"]
+
+    def __init__(
+        self,
+        integration_type: str = "BDF",
+        integration_order: int = 2,
+        L2_convergence: float = 1e-12,
+        L2_convergence_rel: float = 1e-12,
+        jac_assembly_freq: int = 1,
+        write_solution: bool = True,
+        number_solution_files: bool = True,
+        print_timing_info: bool = False,
+        print_level: int = 0,
     ):
-        # TODO : add comments for this 
-        """
-        
-        """
-        assert(integration_type in IntegrationSettings.INTEGRATION_TYPES)
-        
+        # TODO : add comments for this
+        """ """
+        assert integration_type in IntegrationSettings.INTEGRATION_TYPES
+
         self.integration_type = integration_type
         self.integration_order = integration_order
         self.L2_convergence = L2_convergence
@@ -62,15 +62,16 @@ class IntegrationSettings:
 
     @property
     def is_bdf(self) -> bool:
-        return self.integration_type == 'BDF'
+        return self.integration_type == "BDF"
 
     @property
     def is_dirk(self) -> bool:
-        return self.integration_type == 'DIRK'
+        return self.integration_type == "DIRK"
 
     @property
     def num_stages(self) -> int:
         return self.integration_order - 1
+
 
 class TacsOutputGeneratorUnsteady:
     def __init__(self, path, name="tacs_output", f5=None):
@@ -89,14 +90,15 @@ class TacsUnsteadyInterface(SolverInterface):
     A base class to do coupled unsteady simulations with TACS
     """
 
-    def __init__(self, 
-                 comm,
-                 model,
-                 assembler=None,
-                 gen_output:TacsOutputGeneratorUnsteady=None,
-                 thermal_index:int=0,
-                 struct_id:int=None,
-                 integration_settings:IntegrationSettings=None
+    def __init__(
+        self,
+        comm,
+        model,
+        assembler=None,
+        gen_output: TacsOutputGeneratorUnsteady = None,
+        thermal_index: int = 0,
+        struct_id: int = None,
+        integration_settings: IntegrationSettings = None,
     ):
 
         self.comm = comm
@@ -156,8 +158,13 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # Create the time integrator and allocate the load data structures
             if self.integration_settings.is_bdf:
-                self.integrator = TACS.BDFIntegrator(self.assembler, self.tInit, self.tFinal,
-                                                        float(self.numSteps), self.integration_settings.integration_order)
+                self.integrator = TACS.BDFIntegrator(
+                    self.assembler,
+                    self.tInit,
+                    self.tFinal,
+                    float(self.numSteps),
+                    self.integration_settings.integration_order,
+                )
                 # Create a force vector for each time step
                 self.F = [self.assembler.createVec() for i in range(self.numSteps + 1)]
                 # Auxillary element object for applying tractions/pressure
@@ -165,14 +172,23 @@ class TacsUnsteadyInterface(SolverInterface):
 
             elif self.integration_settings.is_dirk:
                 self.numStages = self.integration_settings.num_stages
-                self.integrator = TACS.DIRKIntegrator(self.assembler, self.tInit, self.tFinal,
-                                                        float(self.numSteps), self.numStages)
+                self.integrator = TACS.DIRKIntegrator(
+                    self.assembler,
+                    self.tInit,
+                    self.tFinal,
+                    float(self.numSteps),
+                    self.numStages,
+                )
                 # Create a force vector for each time stage
-                self.F = [self.assembler.createVec() for i in range((self.numSteps + 1)*self.numStages)]
+                self.F = [
+                    self.assembler.createVec()
+                    for i in range((self.numSteps + 1) * self.numStages)
+                ]
                 # Auxiliary element object for applying tractions/pressure at each time stage
-                self.auxElems = [TACS.AuxElements() for i in range((self.numSteps + 1)*self.numStages)]
-
-            
+                self.auxElems = [
+                    TACS.AuxElements()
+                    for i in range((self.numSteps + 1) * self.numStages)
+                ]
 
 
 def createTacsUnsteadyInterfaceFromBDF(
@@ -199,7 +215,7 @@ def createTacsUnsteadyInterfaceFromBDF(
         MPI communicator (typically MPI_COMM_WORLD)
     bdf_file: str
         The BDF file name
-    prefix: 
+    prefix:
 
     callback: function
         The element callback function for pyTACS
@@ -256,5 +272,3 @@ def createTacsUnsteadyInterfaceFromBDF(
     )
 
     return interface
-
-        
