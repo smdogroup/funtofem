@@ -40,7 +40,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         model.add_body(wing)
 
         # Create a scenario to run
-        steady = Scenario("steady", group=0, steps=50)
+        steady = Scenario("steady", group=0, steps=100)
         steady.set_variable("aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0)
 
         # Add a function to the scenario
@@ -110,7 +110,7 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         model, driver = self._setup_model_and_driver()
 
-        # Check whether to use the complex-step method or now
+        # Check whether to use the complex-step method or not
         complex_step = False
         epsilon = 1e-6
         rtol = 1e-6
@@ -161,7 +161,7 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         # Solve the forward analysis
         driver.solve_forward()
-        driver.solve_adjoint()
+        # driver.solve_adjoint()
 
         # Get the functions
         functions = model.get_functions()

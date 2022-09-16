@@ -567,6 +567,7 @@ class Body(Base):
 
         # Count up the number of functions for this scenario
         nf = scenario.count_adjoint_functions()
+        self.aitken_init = True
 
         # Allocate the adjoint variables and internal body variables required
         ns = 3 * self.struct_nnodes
@@ -1265,7 +1266,87 @@ class Body(Base):
 
         return
 
-    def aitken_adjoint_relax(self, scenario, tol=1e-13):
+    def aitken_adjoint_relax(self, scenario, tol=1e-16):
+        return
+        """
+        INCOMPLETE NEW AITKEN IMPLEMENTATION BELOW
+        Attempt at elastic implementation, not thermal
+        """
+
+        nfunctions = scenario.count_adjoint_functions()
+        if self.aitken_init:
+            self.aitken_init = False
+
+            # initialize "previous update" to zero
+
+            self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            self.theta = self.theta_init
+
+            # initialize "previous (thermal) update" to zero
+            self.therm_up_prev = []
+            self.aitken_therm_vec = []
+            self.theta_therm = []
+            if self.transfer is not None:
+                up_prev_body = []
+                aitken_vec_body = []
+                theta_body = []
+                for func in range(nfunctions):
+                    up_prev_body.append(
+                        np.zeros(self.struct_nnodes * 3, dtype=TransferScheme.dtype)
+                    )
+                    aitken_vec_body.append(
+                        np.zeros(self.struct_nnodes * 3, dtype=TransferScheme.dtype)
+                    )
+                    # theta_body.append(self.theta_init)
+                # self.up_prev.append(up_prev_body)
+                # self.aitken_vec (aitken_vec_body)
+                # self.theta.append(theta_body)
+
+            if self.thermal_transfer is not None:
+                up_prev_body = []
+                aitken_therm_vec_body = []
+                theta_body = []
+                for func in range(nfunctions):
+                    up_prev_body.append(
+                        self.T_ref
+                        * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
+                    )
+                    aitken_therm_vec_body.append(
+                        self.T_ref
+                        * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
+                    )
+                    theta_body.append(self.theta_therm_init)
+                self.therm_up_prev.append(up_prev_body)
+                self.aitken_therm_vec.append(aitken_therm_vec_body)
+                self.theta_therm.append(theta_body)
+
+        # do the Aitken update
+        if self.transfer is not None:
+            for func in range(nfunctions):
+                up = self.struct_loads_ajp[:, func] - self.aitken_vec
+                # print("adj up shape: ", self.aitken_vec[func].shape)
+                # print("Update: ", up[-1])
+                norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
+                # print("Prev update: ", np.linalg.norm(self.prev_update))
+
+                # only update theta if vec changed
+                if norm2 > tol:
+                    self.theta *= 1.0 - (up - self.prev_update).dot(up) / norm2
+                    # print("theta pre = ", self.theta)
+
+                    self.theta = np.max(
+                        (
+                            np.min((self.theta, self.theta_max)),
+                            self.theta_min,
+                        )
+                    )
+                self.aitken_vec += self.theta * up
+                # print("theta = ", self.theta)
+                # print("aitken vec norm: ", np.linalg.norm(self.aitken_vec))
+                self.prev_update = up[:]
+                self.struct_loads_ajp[:, func] = self.aitken_vec[:]
+
         return
 
     def collect_coordinate_derivatives(self, comm, discipline, root=0):

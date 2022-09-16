@@ -647,19 +647,21 @@ class PistonInterface(SolverInterface):
         """
         Returns 'pressure' values at each node location
         """
-        press = (
-            2
-            * self.qinf
-            / self.M
-            * (
-                (1 / self.U_inf * dw_dt + dw_dxi)
-                + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
-                + (self.gamma + 1)
-                / 12
-                * self.M**2
-                * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
-            )
-        )
+        # press = (
+        #     2
+        #     * self.qinf
+        #     / self.M
+        #     * (
+        #         (1 / self.U_inf * dw_dt + dw_dxi)
+        #         + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
+        #         + (self.gamma + 1)
+        #         / 12
+        #         * self.M**2
+        #         * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
+        #     )
+        # )
+
+        press = 2 * self.qinf / self.M * ((1 / self.U_inf * dw_dt + dw_dxi))
 
         return press
 
@@ -668,26 +670,29 @@ class PistonInterface(SolverInterface):
         Returns partial derivatives 'pressure' values at each node location
         with respect to dw_dxi
         """
-        d_press_dwdxi = (
-            2
-            * self.qinf
-            / self.M
-            * (
-                (1)
-                + (self.gamma + 1)
-                / 4
-                * self.M
-                * 2
-                * (1 / self.U_inf * dw_dt + dw_dxi)
-                * (1)
-                + (self.gamma + 1)
-                / 12
-                * self.M**2
-                * 3
-                * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
-                * (1)
-            )
-        )
+        # d_press_dwdxi = (
+        #     2
+        #     * self.qinf
+        #     / self.M
+        #     * (
+        #         1
+        #         + (self.gamma + 1)
+        #         / 4
+        #         * self.M
+        #         * 2
+        #         * (1 / self.U_inf * dw_dt + dw_dxi)
+        #         * (1)
+        #         + (self.gamma + 1)
+        #         / 12
+        #         * self.M**2
+        #         * 3
+        #         * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
+        #         * (1)
+        #     )
+        # )
+
+        ones = np.ones(dw_dxi.shape)
+        d_press_dwdxi = 2 * self.qinf / self.M * ones
 
         return d_press_dwdxi
 
@@ -768,6 +773,7 @@ class PistonInterface(SolverInterface):
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             if aero_loads_ajp is not None:
                 self.psi_P = -aero_loads_ajp
+                # print("Psi_P: ", self.psi_P[-1])
             # if body.aero_nnodes > 0:
             #     # Solve the force adjoint equation
             #     if body.transfer is not None:
@@ -781,17 +787,24 @@ class PistonInterface(SolverInterface):
             aero_loads = body.get_aero_loads(scenario)
             aero_X = body.get_aero_nodes()
             if aero_disps_ajp is not None:
+
                 dPdua = np.zeros(
                     (aero_nnodes * 3, aero_nnodes * 3), dtype=TransferScheme.dtype
                 )
                 self.compute_forces_adjoint(aero_disps, aero_loads, aero_X, dPdua)
 
                 for k, func in enumerate(scenario.functions):
+                    prev_aero_disps_ajp = np.zeros(
+                        aero_nnodes * 3, dtype=TransferScheme.dtype
+                    )
+                    prev_aero_disps_ajp[:] = aero_disps_ajp[:, k]
                     aero_disps_ajp[:, k] = -dPdua.T @ self.psi_P[:, k].flatten()
                     if func.name == "cl":
                         aero_disps_ajp[:, k] += self.compute_dCLdua(
                             aero_disps, aero_loads, aero_X, aero_nnodes
                         ).flatten()
+                    update = aero_disps_ajp[:, k] - prev_aero_disps_ajp
+                    # print("Update: ", np.linalg.norm(update))
 
                 # dPdua = np.zeros((aero_nnodes*3, aero_nnodes*3), dtype=TransferScheme.dtype)
                 # self.compute_forces_adjoint(body.aero_disps, body.aero_loads, body.aero_X, dPdua)
