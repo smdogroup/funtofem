@@ -45,6 +45,9 @@ class IntegrationSettings:
         number_solution_files: bool = True,
         print_timing_info: bool = False,
         print_level: int = 0,
+        start_time: float = 0.0,
+        end_time: float = 10.0,
+        num_steps: int = 10,
     ):
         # TODO : add comments for this
         """ """
@@ -59,6 +62,9 @@ class IntegrationSettings:
         self.number_solution_files = number_solution_files
         self.print_timing_info = print_timing_info
         self.print_level = print_level
+        self.start_time = start_time
+        self.end_time = end_time
+        self.num_steps = num_steps
 
     @property
     def is_bdf(self) -> bool:
@@ -119,6 +125,91 @@ class TacsUnsteadyInterface(SolverInterface):
             model, assembler, thermal_index=thermal_index, struct_id=struct_id
         )
 
+        if self.assembler is not None:
+            self.tacs_comm = self.assembler.getMPIComm()
+
+            # Initialize the structural nodes in the bodies
+            struct_X = self.struct_X.getArray()
+            for body in model.bodies:
+                body.initialize_struct_nodes(struct_X, struct_id=struct_id)
+
+    # Allocate data for each scenario
+    class ScenarioData:
+        def __init__(self, assembler, func_list, func_tags):
+            # Initialize the assembler objects
+            self.assembler = assembler
+            self.func_list = func_list
+            self.func_tags = func_tags
+            self.func_grad = []
+
+            self.u = None
+            self.dfdx = []
+            self.dfdXpts = []
+            self.dfdu = []
+            self.psi = []
+
+            if self.assembler is not None:
+                # Store the solution variables
+                self.u = self.assembler.createVec()
+
+                # Store information about the adjoint
+                for func in self.func_list:
+                    self.dfdx.append(self.assembler.createDesignVec())
+                    self.dfdXpts.append(self.assembler.createNodeVec())
+                    self.dfdu.append(self.assembler.createVec())
+                    self.psi.append(self.assembler.createVec())
+
+            return
+
+    def _initialize_integrator(
+        self,
+        model,
+    ):
+        # setup the integrator looping over each of the scenarios
+        self.integrator = {}
+        for scenario in model.scenarios:
+            self.integrator[scenario.id] = self.create
+
+            # Create the time integrator and allocate the load data structures
+            if self.integration_settings.is_bdf:
+                self.integrator = TACS.BDFIntegrator(
+                    self.assembler,
+                    self.integration_settings.start_time,
+                    self.integration_settings.end_time,
+                    float(self.integration_settings.num_steps),
+                    self.integration_settings.integration_order,
+                )
+
+                self.integrator.setAbsTol(self.integration_settings.L2_convergence)
+                self.integrator.setRelTol(self.integration_settings.L2_convergence_rel)
+
+                # Create a force vector for each time step
+                self.F = [self.assembler.createVec() for i in range(self.numSteps + 1)]
+                # Auxillary element object for applying tractions/pressure
+                self.auxElems = [TACS.AuxElements() for i in range(self.numSteps + 1)]
+
+            elif self.integration_settings.is_dirk:
+                self.numStages = self.integration_settings.num_stages
+                self.integrator = TACS.DIRKIntegrator(
+                    self.assembler,
+                    self.tInit,
+                    self.tFinal,
+                    float(self.numSteps),
+                    self.numStages,
+                )
+                # Create a force vector for each time stage
+                self.F = [
+                    self.assembler.createVec()
+                    for i in range((self.numSteps + 1) * self.numStages)
+                ]
+                # Auxiliary element object for applying tractions/pressure at each time stage
+                self.auxElems = [
+                    TACS.AuxElements()
+                    for i in range((self.numSteps + 1) * self.numStages)
+                ]
+
+        return
+
     def _initialize_variables(
         self,
         model,
@@ -151,44 +242,103 @@ class TacsUnsteadyInterface(SolverInterface):
         self.pc = None
         self.gmres = None
 
-        # setup the integrator looping over each of the scenarios
-        self.integrator = {}
+        if assembler is not None:
+            # Set the assembler
+            self.assembler = assembler
+            self.tacs_proc = True
+
+            # Create the scenario-independent solution data
+            self.res = self.assembler.createVec()
+            self.ans = self.assembler.createVec()
+            self.ext_force = self.assembler.createVec()
+            self.update = self.assembler.createVec()
+
+            # Allocate the nodal vector
+            self.struct_X = assembler.createNodeVec()
+            self.assembler.getNodes(self.struct_X)
+
+            # required for AverageTemp function, not sure if needed on
+            # body level
+            self.vol = 1.0
+
+            # Allocate the different solver pieces - the
+            self.mat = mat
+            self.pc = pc
+            self.gmres = gmres
+
+            if mat is None:
+                self.mat = assembler.createSchurMat()
+                self.pc = TACS.Pc(self.mat)
+                self.gmres = TACS.KSM(self.mat, self.pc, 30)
+            elif pc is None:
+                self.mat = mat
+                self.pc = TACS.Pc(self.mat)
+                self.gmres = TACS.KSM(self.mat, self.pc, 30)
+            elif gmres is None:
+                self.mat = mat
+                self.pc = pc
+                self.gmres = TACS.KSM(self.mat, self.pc, 30)
+
+        # Allocate the scenario data
+        self.scenario_data = {}
         for scenario in model.scenarios:
-            self.integrator[scenario.id] = self.create
+            func_list, func_tags = self._allocate_functions(scenario)
+            self.scenario_data[scenario] = self.ScenarioData(
+                self.assembler, func_list, func_tags
+            )
 
-            # Create the time integrator and allocate the load data structures
-            if self.integration_settings.is_bdf:
-                self.integrator = TACS.BDFIntegrator(
-                    self.assembler,
-                    self.tInit,
-                    self.tFinal,
-                    float(self.numSteps),
-                    self.integration_settings.integration_order,
-                )
-                # Create a force vector for each time step
-                self.F = [self.assembler.createVec() for i in range(self.numSteps + 1)]
-                # Auxillary element object for applying tractions/pressure
-                self.auxElems = [TACS.AuxElements() for i in range(self.numSteps + 1)]
+        self._initialize_integrator(model)
 
-            elif self.integration_settings.is_dirk:
-                self.numStages = self.integration_settings.num_stages
-                self.integrator = TACS.DIRKIntegrator(
-                    self.assembler,
-                    self.tInit,
-                    self.tFinal,
-                    float(self.numSteps),
-                    self.numStages,
-                )
-                # Create a force vector for each time stage
-                self.F = [
-                    self.assembler.createVec()
-                    for i in range((self.numSteps + 1) * self.numStages)
-                ]
-                # Auxiliary element object for applying tractions/pressure at each time stage
-                self.auxElems = [
-                    TACS.AuxElements()
-                    for i in range((self.numSteps + 1) * self.numStages)
-                ]
+    def _allocate_functions(self, scenario):
+        """
+        Allocate the data required to store the function values and
+        compute the gradient for a given scenario. This function should
+        be called only from a processor where the assembler is defined.
+        """
+
+        func_list = []
+        func_tag = []
+
+        if self.tacs_proc:
+            # Create the list of functions and their corresponding function tags
+            for func in scenario.functions:
+                if func.analysis_type != "structural":
+                    func_list.append(None)
+                    func_tag.append(0)
+
+                elif func.name.lower() == "ksfailure":
+                    ksweight = 50.0
+                    if func.options is not None and "ksweight" in func.options:
+                        ksweight = func.options["ksweight"]
+                    func_list.append(
+                        functions.KSFailure(self.assembler, ksWeight=ksweight)
+                    )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "compliance":
+                    func_list.append(functions.Compliance(self.assembler))
+                    func_tag.append(1)
+
+                elif func.name.lower() == "temperature":
+                    func_list.append(
+                        functions.AverageTemperature(self.assembler, volume=self.vol)
+                    )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "heatflux":
+                    func_list.append(functions.HeatFlux(self.assembler))
+                    func_tag.append(1)
+
+                elif func.name == "mass":
+                    func_list.append(functions.StructuralMass(self.assembler))
+                    func_tag.append(-1)
+
+                else:
+                    print("WARNING: Unknown function being set into TACS set to mass")
+                    func_list.append(functions.StructuralMass(self.assembler))
+                    func_tag.append(-1)
+
+        return func_list, func_tag
 
 
 def createTacsUnsteadyInterfaceFromBDF(
