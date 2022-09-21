@@ -629,6 +629,7 @@ class Fun3dInterface(SolverInterface):
                         )
 
             # Get the adjoint Jacobian products for the aero heat flux
+            aero_flux = body.get_aero_heat_flux(scenario)
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             if aero_flux_ajp is not None and aero_nnodes > 0:
@@ -654,7 +655,7 @@ class Fun3dInterface(SolverInterface):
                         self.dHdq[func] = 0.0
                     if step > 0:
                         self.dHdq[func] -= (
-                            np.dot(body.aero_heat_flux_mag, psi_H[:, func])
+                            np.dot(aero_flux, psi_H[:, func])
                             / self.thermal_scale
                         )
 
