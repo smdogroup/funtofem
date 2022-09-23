@@ -257,6 +257,21 @@ class Body(Base):
 
         return self.aero_id
 
+    def verify_analysis_type(self, analysis_type):
+        """ "
+        Input verification for analysis type when initializing a body.
+
+        Parameters
+        ----------
+        analysis_type: str
+            type of analysis
+        """
+
+        if not analysis_type in ["aerothermal", "aerothermoelastic", "aeroelastic"]:
+            raise ValueError("analysis_type specified is not recognized as valid")
+
+        return
+
     def initialize_transfer(
         self,
         comm,
@@ -288,6 +303,9 @@ class Body(Base):
         body_analysis_type = self.analysis_type
         if "analysis_type" in transfer_options:
             body_analysis_type = transfer_options["analysis_type"].lower()
+
+        # Verify analysis type is valid
+        self.verify_analysis_type(body_analysis_type)
 
         # Set up the transfer schemes based on the type of analysis set for this body
         if (

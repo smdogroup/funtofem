@@ -72,6 +72,9 @@ class Base(object):
         if not vartype in self.variables:
             self.variables[vartype] = []
 
+        # verify specified variable type is valid
+        self.verify_vartype(vartype)
+
         # check if the variable is already defined in the list
         for v in self.variables[vartype]:
             if v.name == var.name:
@@ -133,6 +136,9 @@ class Base(object):
         if not vartype in self.variables:
             self.variables[vartype] = []
 
+        # verify specified variable type is valid
+        self.verify_vartype(vartype)
+
         if name is not None:
             for variable in self.variables[vartype]:
                 if variable.name == name:
@@ -166,6 +172,21 @@ class Base(object):
                 print("Warning unknown type for index. Variable not set")
         else:
             print("Warning no valid name or index given. Variable not set")
+
+        return
+
+    def verify_vartype(self, vartype):
+        """
+        Input verification for vartype when specifying a variable.
+
+        Parameters
+        ----------
+        vartype: str
+            type of variable
+        """
+
+        if not vartype in ["structural", "aerodynamic", "rigid_motion", "shape"]:
+            raise ValueError("vartype specified is not a recognized variable type")
 
         return
 
