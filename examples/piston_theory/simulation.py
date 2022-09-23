@@ -53,26 +53,28 @@ onera = FUNtoFEMmodel("onera")
 wing = Body("wing", analysis_type="aeroelastic", fun3d=False)
 
 # Add a structural design variable to the wing
-t = 0.025
+# t = 0.025
 # svar = Variable('thickness', value=t, lower=1e-3, upper=1.0)
 # wing.add_variable('structural', svar)
 
 # Aero design var
 avar = Variable("AOA", value=5.0, lower=0.1, upper=11)
-wing.add_variable("aerodynamic", avar)
 
 steps = 50
+
 if "test" in sys.argv:
     steps = 1
 
 cruise = Scenario("cruise", steps=steps)
-onera.add_scenario(cruise)
+cruise.set_variable("aerodynamic", name="AOA", value=5.0, lower=0.0, upper=10.0)
 
-drag = Function("cl", analysis_type="aerodynamic")
-cruise.add_function(drag)
+lift = Function("cl", analysis_type="aerodynamic")
+cruise.add_function(lift)
 
 # failure = Function('ksfailure', analysis_type='structural')
-# cruise.add_function(drag)
+# cruise.add_function(failure)
+
+onera.add_scenario(cruise)
 
 # Add the body after the variables
 onera.add_body(wing)
@@ -81,34 +83,14 @@ onera.add_body(wing)
 solvers = {}
 
 qinf = 101325.0  # freestream pressure Pa
-M = 1.2  # Mach number
-U_inf = 411  # Freestream velocity m/s
+M = 2  # Mach number
+U_inf = 811  # Freestream velocity m/s
 x0 = np.array([0, 0, 0])
 alpha = 10  # Angle of attack (degrees)
 length_dir = np.array(
     [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
 )  # Unit vec in length dir
 width_dir = np.array([0, 1, 0])  # Unit vec in width dir
-
-# Check direction to validate unit vectors (and orthogonality?)
-if not (0.99 <= np.linalg.norm(length_dir) <= 1.01):
-    print(
-        "Length direction not a unit vector \n Calculations may be inaccurate",
-        file=sys.stderr,
-    )
-    exit(1)
-if not (0.99 <= np.linalg.norm(width_dir) <= 1.01):
-    print(
-        "Width direction not a unit vector \n Calculations may be inaccurate",
-        file=sys.stderr,
-    )
-    exit(1)
-if not (-0.01 <= np.dot(length_dir, width_dir) <= 0.01):
-    print(
-        "Spanning vectors not orthogonal \n Calculations may be inaccurate",
-        file=sys.stderr,
-    )
-    exit(1)
 
 L = 1.20  # Length
 nL = 30  # Num elems in xi dir
@@ -120,10 +102,10 @@ solvers["flow"] = PistonInterface(
 assembler = None
 if world_rank < n_tacs_procs:
     assembler = OneraPlate(tacs_comm)
-solvers["structural"] = TacsSteadyInterface(comm, onera)
+solvers["structural"] = TacsSteadyInterface(comm, onera, assembler=assembler)
 
 # Specify the transfer scheme options
-options = {"scheme": "meld", "beta": 0.9, "npts": 10, "isym": 1}
+options = {"analysis_type": "aeroelastic", "scheme": "meld", "beta": 0.9, "npts": 10, "isym": 1}
 
 # Instantiate the driver
 struct_master = 0
@@ -132,9 +114,9 @@ driver = FUNtoFEMnlbgs(
     solvers,
     comm,
     tacs_comm,
-    struct_master,
+    0,
     comm,
-    aero_master,
+    0,
     model=onera,
     transfer_options=options,
     theta_init=0.3,
@@ -151,11 +133,12 @@ if "test" in sys.argv:
 else:
     # Perform a finite difference check
     dh = 1e-6
-    x0 = np.array([1.5])
+    x0 = np.array([5.0])
 
     # Get the function value
     onera.set_variables(x0)
     fail = driver.solve_forward()
+    f5 = assembler.outputViewer
     funcs0 = onera.get_functions()
     f0vals = []
     for func in funcs0:

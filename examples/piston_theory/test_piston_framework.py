@@ -44,10 +44,10 @@ class CoupledFrameworkTest(unittest.TestCase):
         steady.set_variable("aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0)
 
         # Add a function to the scenario
-        # cl = Function("cl", analysis_type="aerodynamic")
-        temp = Function("ksfailure", analysis_type="structural")
-        # steady.add_function(cl)
-        steady.add_function(temp)
+        cl = Function("cl", analysis_type="aerodynamic")
+        # ks = Function("ksfailure", analysis_type="structural")
+        steady.add_function(cl)
+        # steady.add_function(ks)
 
         # Add the steady-state scenario
         model.add_scenario(steady)
@@ -66,7 +66,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         tacs_comm = comm.Split(color, key)
 
         solvers = {}
-        # solvers["flow"] = TestAerodynamicSolver(comm, model)
+
         qinf = 101325.0
         M = 1.5
         U_inf = 411
@@ -159,9 +159,7 @@ class CoupledFrameworkTest(unittest.TestCase):
             epsilon = 1e-30
             rtol = 1e-9
 
-        # Solve the forward analysis
         driver.solve_forward()
-        # driver.solve_adjoint()
 
         # Get the functions
         functions = model.get_functions()
