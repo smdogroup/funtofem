@@ -105,7 +105,13 @@ if world_rank < n_tacs_procs:
 solvers["structural"] = TacsSteadyInterface(comm, onera, assembler=assembler)
 
 # Specify the transfer scheme options
-options = {"analysis_type": "aeroelastic", "scheme": "meld", "beta": 0.9, "npts": 10, "isym": 1}
+options = {
+    "analysis_type": "aeroelastic",
+    "scheme": "meld",
+    "beta": 0.9,
+    "npts": 10,
+    "isym": 1,
+}
 
 # Instantiate the driver
 struct_master = 0
