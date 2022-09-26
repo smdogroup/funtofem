@@ -662,6 +662,8 @@ class SolverInterface(object):
         """
         Test to see if the adjoint methods are implemented correctly
         """
+        for func in scenario.functions:
+            func.value = 0.0
 
         self.set_functions(scenario, bodies)
         self.set_variables(scenario, bodies)
@@ -808,8 +810,13 @@ class SolverInterface(object):
         Test to see if the adjoint methods are implemented correctly
         """
 
-        self.set_functions(scenario, bodies)
+        for func in scenario.functions:
+            func.value = 0.0
+
         self.set_variables(scenario, bodies)
+        self.set_functions(scenario, bodies)
+
+        self.get_functions(scenario, bodies)
 
         for body in bodies:
             body.initialize_variables(scenario)
