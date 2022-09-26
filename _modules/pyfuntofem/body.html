@@ -603,6 +603,7 @@
 
         <span class="c1"># Count up the number of functions for this scenario</span>
         <span class="n">nf</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="c1"># Allocate the adjoint variables and internal body variables required</span>
         <span class="n">ns</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span>
@@ -1301,7 +1302,87 @@
 
         <span class="k">return</span></div>
 
-    <span class="k">def</span> <span class="nf">aitken_adjoint_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-13</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">aitken_adjoint_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-16</span><span class="p">):</span>
+        <span class="k">return</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        INCOMPLETE NEW AITKEN IMPLEMENTATION BELOW</span>
+<span class="sd">        Attempt at elastic implementation, not thermal</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_init</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># initialize &quot;previous update&quot; to zero</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prev_update</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span>
+
+            <span class="c1"># initialize &quot;previous (thermal) update&quot; to zero</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">up_prev_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">aitken_vec_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">theta_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
+                    <span class="n">up_prev_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">aitken_vec_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="c1"># theta_body.append(self.theta_init)</span>
+                <span class="c1"># self.up_prev.append(up_prev_body)</span>
+                <span class="c1"># self.aitken_vec (aitken_vec_body)</span>
+                <span class="c1"># self.theta.append(theta_body)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">up_prev_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">aitken_therm_vec_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">theta_body</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
+                    <span class="n">up_prev_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span>
+                        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">aitken_therm_vec_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span>
+                        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">theta_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_therm_init</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">therm_up_prev</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">up_prev_body</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">aitken_therm_vec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aitken_therm_vec_body</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta_therm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theta_body</span><span class="p">)</span>
+
+        <span class="c1"># do the Aitken update</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
+                <span class="n">up</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_loads_ajp</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span>
+                <span class="c1"># print(&quot;adj up shape: &quot;, self.aitken_vec[func].shape)</span>
+                <span class="c1"># print(&quot;Update: &quot;, up[-1])</span>
+                <span class="n">norm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_update</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.0</span>
+                <span class="c1"># print(&quot;Prev update: &quot;, np.linalg.norm(self.prev_update))</span>
+
+                <span class="c1"># only update theta if vec changed</span>
+                <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_update</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm2</span>
+                    <span class="c1"># print(&quot;theta pre = &quot;, self.theta)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span>
+                        <span class="p">(</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="n">up</span>
+                <span class="c1"># print(&quot;theta = &quot;, self.theta)</span>
+                <span class="c1"># print(&quot;aitken vec norm: &quot;, np.linalg.norm(self.aitken_vec))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_update</span> <span class="o">=</span> <span class="n">up</span><span class="p">[:]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">struct_loads_ajp</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_vec</span><span class="p">[:]</span>
+
         <span class="k">return</span>
 
 <div class="viewcode-block" id="Body.collect_coordinate_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.body.Body.collect_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">collect_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
