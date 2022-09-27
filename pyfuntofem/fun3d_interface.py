@@ -419,7 +419,7 @@ class Fun3dInterface(SolverInterface):
             #     self.fun3d_flow.input_rigid_transform(transform, body=ibody)
 
             aero_temps = body.get_aero_temps(scenario)
-            if aero_temps is not None:
+            if aero_temps is not None and aero_nnodes > 0:
                 temps = np.asfortranarray(aero_temps[:]) / body.T_ref
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
@@ -631,6 +631,8 @@ class Fun3dInterface(SolverInterface):
             # Get the adjoint Jacobian products for the aero heat flux
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
+            aero_flux = body.get_aero_heat_flux(scenario)
+
             if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
                 # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
@@ -654,14 +656,13 @@ class Fun3dInterface(SolverInterface):
                         self.dHdq[func] = 0.0
                     if step > 0:
                         self.dHdq[func] -= (
-                            np.dot(body.aero_heat_flux_mag, psi_H[:, func])
-                            / self.thermal_scale
+                            np.dot(aero_flux, psi_H[:, func]) / self.thermal_scale
                         )
 
-            if "rigid" in body.motion_type:
-                self.fun3d_adjoint.input_rigid_transform(
-                    body.rigid_transform, body=ibody
-                )
+            # if "rigid" in body.motion_type:
+            #     self.fun3d_adjoint.input_rigid_transform(
+            #         body.rigid_transform, body=ibody
+            #     )
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
@@ -693,11 +694,11 @@ class Fun3dInterface(SolverInterface):
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
 
-            if "rigid" in body.motion_type:
-                body.dGdT = (
-                    self.fun3d_adjoint.extract_rigid_adjoint_product(nfuncs)
-                    * self.flow_dt
-                )
+            # if "rigid" in body.motion_type:
+            #     body.dGdT = (
+            #         self.fun3d_adjoint.extract_rigid_adjoint_product(nfuncs)
+            #         * self.flow_dt
+            #     )
 
         return fail
 
