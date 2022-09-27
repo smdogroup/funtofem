@@ -554,7 +554,9 @@ class Body(Base):
             if scenario.steady:
                 self.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=self.dtype)
                 self.aero_heat_flux[scenario.id] = np.zeros(na, dtype=self.dtype)
-                self.struct_temps[scenario.id] = np.zeros(ns, dtype=self.dtype)
+                self.struct_temps[scenario.id] = (
+                    np.ones(ns, dtype=self.dtype) * self.T_ref
+                )
                 self.aero_temps[scenario.id] = np.zeros(na, dtype=self.dtype)
             else:
                 id = scenario.id
@@ -566,7 +568,9 @@ class Body(Base):
                 for time_index in range(scenario.steps + 1):
                     self.struct_heat_flux[id].append(np.zeros(ns, dtype=self.dtype))
                     self.aero_heat_flux[id].append(np.zeros(na, dtype=self.dtype))
-                    self.struct_temps[id].append(np.zeros(ns, dtype=self.dtype))
+                    self.struct_temps[id].append(
+                        np.ones(ns, dtype=self.dtype) * self.T_ref
+                    )
                     self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
 
         return
@@ -844,6 +848,8 @@ class Body(Base):
                 struct_temps = self.struct_temps[scenario.id][time_index]
                 aero_temps = self.aero_temps[scenario.id][time_index]
             self.thermal_transfer.transferTemp(struct_temps, aero_temps)
+
+        return
 
     def transfer_heat_flux(self, scenario, time_index=0):
         """
