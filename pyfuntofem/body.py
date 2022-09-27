@@ -46,6 +46,7 @@ class Body(Base):
         boundary=0,
         fun3d=True,
         motion_type="deform",
+        use_aitken_accel=True,
     ):
         """
 
@@ -64,6 +65,8 @@ class Body(Base):
             whether or not you are using FUN3D. If true, the body class will auto-populate 'rigid_motion' required by FUN3D
         motion_type: str
             the type of motion the body is undergoing. Possible options: 'deform','rigid','deform+rigid','rigid+deform'
+        use_aitken_accel: bool
+            whether or not to use Aitken acceleration. Defaults to true.
 
         See Also
         --------
@@ -141,6 +144,7 @@ class Body(Base):
         self.aero_id = None
 
         # Aitken acceleration settings
+        self.use_aitken_accel = use_aitken_accel
         self.theta_init = 0.125
         self.theta_therm_init = 0.125
         self.theta_min = 0.01
@@ -1252,6 +1256,10 @@ class Body(Base):
         """
         Perform Aitken relaxation for the displacements set in the
         """
+
+        # If Aitken relaxation is turned off, skip this
+        if self.use_aitken_accel is False:
+            return
 
         if not self.aitken_is_initialized:
             self.theta = self.theta_init
