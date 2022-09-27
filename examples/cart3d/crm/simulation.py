@@ -25,6 +25,7 @@ from pyfuntofem.cart3d_interface import *
 from structural_model import TacsCRM
 from mpi4py import MPI
 
+
 def build_model():
     crm = FUNtoFEMmodel("crm")
     wing = Body("wing", "aeroelastic", id=2, fun3d=False)
