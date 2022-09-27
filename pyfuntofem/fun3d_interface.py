@@ -656,8 +656,7 @@ class Fun3dInterface(SolverInterface):
                         self.dHdq[func] = 0.0
                     if step > 0:
                         self.dHdq[func] -= (
-                            np.dot(aero_flux, psi_H[:, func])
-                            / self.thermal_scale
+                            np.dot(aero_flux, psi_H[:, func]) / self.thermal_scale
                         )
 
             # if "rigid" in body.motion_type:
