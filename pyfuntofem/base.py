@@ -185,8 +185,17 @@ class Base(object):
             type of variable
         """
 
-        if not vartype in ["structural", "aerodynamic", "rigid_motion", "shape"]:
-            raise ValueError("vartype specified is not a recognized variable type")
+        if not vartype in [
+            "structural",
+            "aerodynamic",
+            "rigid_motion",
+            "shape",
+            "controls",
+        ]:
+            print(
+                "Warning: vartype specified is not a recognized variable type",
+                flush=True,
+            )
 
         return
 
