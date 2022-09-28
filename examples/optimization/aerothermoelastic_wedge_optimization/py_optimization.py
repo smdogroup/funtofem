@@ -29,7 +29,7 @@ from pyfuntofem.fun3d_interface import *
 # from pyfuntofem.massoud_body import *
 
 from tacs_model import wedgeTACS
-from pyOpt import Optimization, SLSQP
+from pyoptsparse import Optimization, SLSQP
 from mpi4py import MPI
 import os, sys
 import time
