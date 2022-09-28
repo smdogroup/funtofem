@@ -6,7 +6,6 @@ from pyfuntofem.variable import Variable
 from pyfuntofem.scenario import Scenario
 from pyfuntofem.body import Body
 from pyfuntofem.function import Function
-from pyfuntofem.test_solver import TestAerodynamicSolver, TestStructuralSolver
 from pyfuntofem.pistontheory_interface import PistonInterface
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
@@ -29,24 +28,27 @@ class CoupledFrameworkTest(unittest.TestCase):
         #     )
         #     wing.add_variable("structural", svar)
         # thickness = 1.0
-        # svar = Variable("thickness", value=thickness, lower=0.001, upper=1.0)
-        # wing.add_variable("structural", svar)
 
-        # Add the aerodynamic variables to the scenario
-        # AoA = 10.0
-        # avar = Variable("AOA", value=AoA, lower=0.1, upper=11)
-        # wing.add_variable("aerodynamic", avar)
+        thickness = 0.025
+        svar = Variable("thickness", value=thickness, lower=0.001, upper=1.0)
+        wing.add_variable("structural", svar)
 
         model.add_body(wing)
 
         # Create a scenario to run
         steady = Scenario("steady", group=0, steps=100)
-        steady.set_variable("aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0)
+        steady.set_variable(
+            "aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0, active=False
+        )
+        # steady.set_variable(
+        #     "structural", name="thickness", value=5.0, lower=0.0, upper=15.0
+        # )
 
         # Add a function to the scenario
         cl = Function("cl", analysis_type="aerodynamic")
-        # ks = Function("ksfailure", analysis_type="structural")
         steady.add_function(cl)
+
+        # ks = Function("ksfailure", analysis_type="structural")
         # steady.add_function(ks)
 
         # Add the steady-state scenario
