@@ -146,12 +146,14 @@ else:
     onera.set_variables(x0)
     fail = driver.solve_forward()
 
-    flag = (TACS.OUTPUT_CONNECTIVITY |
-        TACS.OUTPUT_NODES |
-        TACS.OUTPUT_DISPLACEMENTS |
-        TACS.OUTPUT_STRAINS)
+    flag = (
+        TACS.OUTPUT_CONNECTIVITY
+        | TACS.OUTPUT_NODES
+        | TACS.OUTPUT_DISPLACEMENTS
+        | TACS.OUTPUT_STRAINS
+    )
     f5 = TACS.ToFH5(assembler, TACS.BEAM_OR_SHELL_ELEMENT, flag)
-    f5.writeToFile('AeroelasticOutput.f5')
+    f5.writeToFile("AeroelasticOutput.f5")
 
     funcs0 = onera.get_functions()
     f0vals = []
