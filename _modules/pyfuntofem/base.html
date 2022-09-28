@@ -108,6 +108,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="c1"># verify specified variable type is valid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verify_vartype</span><span class="p">(</span><span class="n">vartype</span><span class="p">)</span>
+
         <span class="c1"># check if the variable is already defined in the list</span>
         <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
@@ -169,6 +172,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="c1"># verify specified variable type is valid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verify_vartype</span><span class="p">(</span><span class="n">vartype</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">vartype</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">variable</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
@@ -202,6 +208,30 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning unknown type for index. Variable not set&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning no valid name or index given. Variable not set&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Base.verify_vartype"><a class="viewcode-back" href="../../model.html#pyfuntofem.base.Base.verify_vartype">[docs]</a>    <span class="k">def</span> <span class="nf">verify_vartype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Input verification for vartype when specifying a variable.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vartype: str</span>
+<span class="sd">            type of variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vartype</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;structural&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;aerodynamic&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rigid_motion&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;shape&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;controls&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;Warning: vartype specified is not a recognized variable type&quot;</span><span class="p">,</span>
+                <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">return</span></div>
 

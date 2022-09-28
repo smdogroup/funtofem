@@ -428,7 +428,7 @@ The driver adds the details for the transfer scheme. See <code class="xref py py
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyfuntofem.body.Body">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.body.</span></span><span class="sig-name descname"><span class="pre">Body</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fun3d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motion_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deform'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.body.</span></span><span class="sig-name descname"><span class="pre">Body</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fun3d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motion_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'deform'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_aitken_accel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body" title="Permalink to this definition">¶</a></dt>
 <dd><p>Defines a body base class for FUNtoFEM. Can be used as is or as a
 parent class for bodies with shape parameterization.</p>
 <dl class="field-list simple">
@@ -441,6 +441,7 @@ bodies in the same group</p></li>
 <li><p><strong>boundary</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – FUN3D boundary number associated with the body</p></li>
 <li><p><strong>fun3d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not you are using FUN3D. If true, the body class will auto-populate ‘rigid_motion’ required by FUN3D</p></li>
 <li><p><strong>motion_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – the type of motion the body is undergoing. Possible options: ‘deform’,’rigid’,’deform+rigid’,’rigid+deform’</p></li>
+<li><p><strong>use_aitken_accel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – whether or not to use Aitken acceleration. Defaults to true.</p></li>
 </ul>
 </dd>
 </dl>
@@ -523,6 +524,18 @@ the transfer scheme is initialized.</p>
 <dt class="sig sig-object py" id="pyfuntofem.body.Body.get_aero_node_ids">
 <span class="sig-name descname"><span class="pre">get_aero_node_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.get_aero_node_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.get_aero_node_ids" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the aerodynamic node ids</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.body.Body.verify_analysis_type">
+<span class="sig-name descname"><span class="pre">verify_analysis_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/body.html#Body.verify_analysis_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.body.Body.verify_analysis_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>”
+Input verification for analysis type when initializing a body.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>analysis_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of analysis</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1259,6 +1272,17 @@ bodies/scenarios in the same group</p></li>
 <p>base.set_variable(‘aerodynamic’, name=’AOA’, value=3.0)</p>
 <p>base.set_variable(‘structural’, index=2, active=False)</p>
 <p>base.set_variable(‘structural’, index=[0,1,2,3,4], active=False)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.base.Base.verify_vartype">
+<span class="sig-name descname"><span class="pre">verify_vartype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/base.html#Base.verify_vartype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.base.Base.verify_vartype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input verification for vartype when specifying a variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vartype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – type of variable</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
