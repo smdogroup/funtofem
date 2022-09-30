@@ -156,12 +156,13 @@ class PistonInterface(SolverInterface):
             for i in range(aero_nnodes):
                 self.nmat[3 * i : 3 * i + 3, i] = self.n
 
-            # Extracting node locations
+            # Setting aero node locations
+            struct_length_dir = np.array([1, 0, 0])
             for i in range(self.nL + 1):
                 for j in range(self.nw + 1):
                     coord = (
                         self.x0
-                        + i * self.L / self.nL * self.length_dir
+                        + i * self.L / self.nL * struct_length_dir
                         + j * self.width / self.nw * self.width_dir
                     )
                     aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
@@ -169,6 +170,19 @@ class PistonInterface(SolverInterface):
                     aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
 
             body.initialize_aero_nodes(aero_X)
+
+            # Setting internal aero node locations with AoA
+            self.piston_aero_X = np.zeros(3 * aero_nnodes, dtype=TransferScheme.dtype)
+            for i in range(self.nL + 1):
+                for j in range(self.nw + 1):
+                    coord = (
+                        self.x0
+                        + i * self.L / self.nL * self.length_dir
+                        + j * self.width / self.nw * self.width_dir
+                    )
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
 
     def initialize(self, scenario, bodies):
         """
@@ -192,7 +206,7 @@ class PistonInterface(SolverInterface):
 
     def initialize_AoA(self, bodies):
         for ibody, body in enumerate(bodies, 1):
-            aero_X = np.zeros(3 * self.aero_nnodes, dtype=TransferScheme.dtype)
+            # aero_X = np.zeros(3 * self.aero_nnodes, dtype=TransferScheme.dtype)
             for i in range(self.nL + 1):
                 for j in range(self.nw + 1):
                     coord = (
@@ -200,11 +214,11 @@ class PistonInterface(SolverInterface):
                         + i * self.L / self.nL * self.length_dir
                         + j * self.width / self.nw * self.width_dir
                     )
-                    aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
-                    aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
-                    aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
 
-        body.initialize_aero_nodes(aero_X)
+        # body.initialize_aero_nodes(aero_X)
 
     def initialize_adjoint(self, scenario, bodies):
         """
@@ -264,6 +278,7 @@ class PistonInterface(SolverInterface):
         return
 
     def set_AoA(self, alpha, scenario, bodies):
+        self.alpha = alpha
         self.length_dir = np.array(
             [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
         )  # Unit vec in length dir
@@ -326,32 +341,43 @@ class PistonInterface(SolverInterface):
     def compute_aoa_deriv(self, scenario, bodies):
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(scenario)
-            w = body.aero_X[2::3] + self.nmat.T @ aero_disps
+            # w = body.aero_X[2::3] + self.nmat.T @ aero_disps
+            w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
             dw_dxi = self.CD_mat @ w
             dw_dt = np.zeros(self.aero_nnodes)  # Set dw/dt = 0  for now (steady)
             areas = self.compute_Areas()
 
             dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
-            dAeroX_dAlpha = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+            # dAeroX_dAlpha = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+            # for i in range(body.aero_nnodes):
+            #     # r = body.aero_X[3 * i]
+            #     r = self.piston_aero_X[3 * i]
+            #     dAeroX_dAlpha[3 * i : 3 * i + 3] = np.array(
+            #         [
+            #             -r * np.pi / 180 * np.sin(self.alpha * np.pi / 180),
+            #             0,
+            #             r * np.pi / 180 * np.cos(self.alpha * np.pi / 180),
+            #         ]
+            #     )
+
+            dAeroX_dAlpha = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
             for i in range(body.aero_nnodes):
-                r = body.aero_X[3 * i]
-                dAeroX_dAlpha[3 * i : 3 * i + 3] = np.array(
-                    [
-                        -r * np.pi / 180 * np.sin(self.alpha * np.pi / 180),
-                        0,
-                        r * np.pi / 180 * np.cos(self.alpha * np.pi / 180),
-                    ]
+                # r = body.aero_X[3 * i]
+                r = self.piston_aero_X[3 * i]
+                dAeroX_dAlpha[i] = np.array(
+                    [r * np.pi / 180 * np.sin(self.alpha * np.pi / 180)]
                 )
+            print("CD_mat_shape: ", self.CD_mat.shape)
+            print("dAero shape: ", dAeroX_dAlpha.shape)
             dP_dAlpha = (
-                self.nmat
+                -self.nmat
                 @ np.diag(areas)
                 @ np.diag(dwdxi_deriv)
                 @ self.CD_mat
-                @ self.nmat.T
                 @ dAeroX_dAlpha
             )
 
-            cl_grad = -self.psi_P.T @ dP_dAlpha
+            cl_grad = self.psi_P.T @ dP_dAlpha
             print("psi_P * dP_dalpha: ", cl_grad)
         return cl_grad
 
@@ -414,9 +440,9 @@ class PistonInterface(SolverInterface):
             aero_disps = body.get_aero_disps(scenario)
             aero_loads = body.get_aero_loads(scenario)
             # print("aero loads: ", aero_loads[-1])
-            aero_X = body.get_aero_nodes()
+            # aero_X = body.get_aero_nodes()
             if aero_disps is not None:
-                self.compute_forces(aero_disps, aero_loads, aero_X)
+                self.compute_forces(aero_disps, aero_loads, self.piston_aero_X)
 
                 # Write Loads to File at the last step
                 # if step == scenario.steps:
@@ -428,7 +454,7 @@ class PistonInterface(SolverInterface):
 
     def compute_forces(self, aero_disps, aero_loads, aero_X):
 
-        # Compute w for piston theory: [dx,dy,dz] DOT planarNormal
+        # Compute w for piston theory: [dx,dy,dz] DOT freestream normal
         # print("aero_disps: ", aero_disps[-1])
         w = aero_X[2::3] + self.nmat.T @ aero_disps
 
@@ -613,13 +639,15 @@ class PistonInterface(SolverInterface):
             aero_nnodes = body.get_num_aero_nodes()
             aero_disps = body.get_aero_disps(scenario)
             aero_loads = body.get_aero_loads(scenario)
-            aero_X = body.get_aero_nodes()
+            # aero_X = body.get_aero_nodes()
 
             if aero_disps_ajp is not None:
                 dPdua = np.zeros(
                     (aero_nnodes * 3, aero_nnodes * 3), dtype=TransferScheme.dtype
                 )
-                self.compute_forces_adjoint(aero_disps, aero_loads, aero_X, dPdua)
+                self.compute_forces_adjoint(
+                    aero_disps, aero_loads, self.piston_aero_X, dPdua
+                )
 
                 for k, func in enumerate(scenario.functions):
                     # aero_disps_ajp[:, k] = -np.dot(
@@ -630,7 +658,7 @@ class PistonInterface(SolverInterface):
 
                     if func.name == "cl":
                         aero_disps_ajp[:, k] += self.compute_dCLdua(
-                            aero_disps, aero_loads, aero_X, aero_nnodes
+                            aero_disps, aero_loads, self.piston_aero_X, aero_nnodes
                         ).flatten()
 
             # if aero_disps_ajp is not None:

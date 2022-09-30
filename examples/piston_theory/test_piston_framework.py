@@ -31,25 +31,25 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         thickness = 0.025
         svar = Variable("thickness", value=thickness, lower=0.001, upper=1.0)
-        wing.add_variable("structural", svar)
+        #wing.add_variable("structural", svar)
 
         model.add_body(wing)
 
         # Create a scenario to run
         steady = Scenario("steady", group=0, steps=100)
         steady.set_variable(
-            "aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0, active=False
+            "aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0, active=True
         )
         # steady.set_variable(
         #     "structural", name="thickness", value=5.0, lower=0.0, upper=15.0
         # )
 
         # Add a function to the scenario
-        cl = Function("cl", analysis_type="aerodynamic")
-        steady.add_function(cl)
+        #cl = Function("cl", analysis_type="aerodynamic")
+        #steady.add_function(cl)
 
-        # ks = Function("ksfailure", analysis_type="structural")
-        # steady.add_function(ks)
+        ks = Function("ksfailure", analysis_type="structural")
+        steady.add_function(ks)
 
         # Add the steady-state scenario
         model.add_scenario(steady)
@@ -73,7 +73,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         M = 1.5
         U_inf = 411
         x0 = np.array([0, 0, 0])
-        alpha = 10.0
+        alpha = 5.0
         length_dir = np.array(
             [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
         )
