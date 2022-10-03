@@ -23,11 +23,11 @@ limitations under the License.
 from __future__ import print_function
 from tkinter.tix import INTEGER
 
-from tacs import TACS, functions
-from tacs_builder import TACSBodyType
+from tacs import TACS, pytacs, functions
 from .solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 
+import os
 import numpy as np
 
 
@@ -46,7 +46,7 @@ class IntegrationSettings:
         print_timing_info: bool = False,
         print_level: int = 0,
         start_time: float = 0.0,
-        end_time: float = 10.0,
+        dt: float = 0.1,
         num_steps: int = 10,
     ):
         # TODO : add comments for this
@@ -63,7 +63,7 @@ class IntegrationSettings:
         self.print_timing_info = print_timing_info
         self.print_level = print_level
         self.start_time = start_time
-        self.end_time = end_time
+        self.end_time = start_time + dt*num_steps
         self.num_steps = num_steps
 
     @property
@@ -80,15 +80,23 @@ class IntegrationSettings:
 
 
 class TacsOutputGeneratorUnsteady:
-    def __init__(self, path, name="tacs_output", f5=None):
-        self.path = path
+    def __init__(self, prefix, name="tacs_output", f5=None):
+        self.count = 0
+        self.prefix = prefix
         self.name = name
         self.f5 = f5
         # TODO : complete this class
 
     def __call__(self):
-        # TODO : write f5 files for each time step
-        pass
+        # TODO : write f5 files for each time step, we don't know how to do this yet
+        if self.f5 is not None:
+            file = self.name + f"{self.count}03d.f5"
+            filename = os.path.join(self.prefix, file)
+
+            # is this how to do it?
+            self.f5.writeToFile(filename)
+        self.count += 1
+        return
 
 
 class TacsUnsteadyInterface(SolverInterface):
@@ -168,11 +176,11 @@ class TacsUnsteadyInterface(SolverInterface):
         # setup the integrator looping over each of the scenarios
         self.integrator = {}
         for scenario in model.scenarios:
-            self.integrator[scenario.id] = self.create
+            #self.integrator[scenario.id] = self.create
 
             # Create the time integrator and allocate the load data structures
             if self.integration_settings.is_bdf:
-                self.integrator = TACS.BDFIntegrator(
+                self.integrator[scenario.id] = TACS.BDFIntegrator(
                     self.assembler,
                     self.integration_settings.start_time,
                     self.integration_settings.end_time,
@@ -180,17 +188,17 @@ class TacsUnsteadyInterface(SolverInterface):
                     self.integration_settings.integration_order,
                 )
 
-                self.integrator.setAbsTol(self.integration_settings.L2_convergence)
-                self.integrator.setRelTol(self.integration_settings.L2_convergence_rel)
+                self.integrator[scenario.id].setAbsTol(self.integration_settings.L2_convergence)
+                self.integrator[scenario.id].setRelTol(self.integration_settings.L2_convergence_rel)
 
                 # Create a force vector for each time step
-                self.F = [self.assembler.createVec() for i in range(self.numSteps + 1)]
+                self.F[scenario.id] = [self.assembler.createVec() for i in range(self.numSteps + 1)]
                 # Auxillary element object for applying tractions/pressure
-                self.auxElems = [TACS.AuxElements() for i in range(self.numSteps + 1)]
+                self.auxElems[scenario.id] = [TACS.AuxElements() for i in range(self.numSteps + 1)]
 
             elif self.integration_settings.is_dirk:
                 self.numStages = self.integration_settings.num_stages
-                self.integrator = TACS.DIRKIntegrator(
+                self.integrator[scenario.id] = TACS.DIRKIntegrator(
                     self.assembler,
                     self.tInit,
                     self.tFinal,
@@ -198,12 +206,12 @@ class TacsUnsteadyInterface(SolverInterface):
                     self.numStages,
                 )
                 # Create a force vector for each time stage
-                self.F = [
+                self.F[scenario.id] = [
                     self.assembler.createVec()
                     for i in range((self.numSteps + 1) * self.numStages)
                 ]
                 # Auxiliary element object for applying tractions/pressure at each time stage
-                self.auxElems = [
+                self.auxElems[scenario.id] = [
                     TACS.AuxElements()
                     for i in range((self.numSteps + 1) * self.numStages)
                 ]
@@ -340,12 +348,91 @@ class TacsUnsteadyInterface(SolverInterface):
 
         return func_list, func_tag
 
+    def set_functions(self, scenario, bodies):
+        """
+        Set the functions into the TACS integrator, not for assembler.
+        """
+        if self.tacs_proc:
+            func_list = self.scenario_data[scenario].func_list
+
+            self.integrator[scenario.id].setFunctions(func_list)
+            self.integrator[scenario.id].evalFunctions(func_list)
+        return
+
+    def set_variables(self, scenario, bodies):
+        """
+        Set the design variable values into the structural solver.
+
+        This takes the variables that are set in the list of :class:`~variable.Variable` objects
+        and sets them into the TACSAssembler object.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: list of :class:`~body.Body` objects
+            The bodies in the model
+        """
+
+        if self.tacs_proc:
+            # Set the design variable values on the processors that
+            # have an instance of TACSAssembler.
+            xvec = self.assembler.createDesignVec()
+            self.assembler.getDesignVars(xvec)
+            xarray = xvec.getArray()
+
+            # This assumes that the TACS variables are not distributed and are set
+            # only on the tacs_comm root processor.
+            if self.tacs_comm.rank == 0:
+                for i, var in enumerate(self.struct_variables):
+                    xarray[i] = var.value
+
+            self.assembler.setDesignVars(xvec)
+
+    def get_functions(scenario, bodies):
+        pass
+
+    def get_function_gradients(scenario, bodies):
+        pass
+
+    def initialize(self, scenario, bodies):
+        pass
+
+    def iterate(self, scenario, bodies, step):
+        pass
+
+    def post(self, scenario, bodies):
+        pass
+
+    def initialize_adjoint(self, scenario, bodies):
+        pass
+
+    def iterate_adjoint(self, scenario, bodies, step):
+        pass
+
+    def post_adjoint(self, scenario, bodies):
+        pass
+
+    def get_coordinate_derivatives(self, scenario, bodies, step):
+        pass
+
+    def step_pre(self, scenario, bodies, step):
+        pass
+
+    def step_solver(self, scenario, bodies, step, fsi_subiter):
+        pass
+
+    def step_post(self, scenario, bodies, step):
+        pass
+
+
 
 def createTacsUnsteadyInterfaceFromBDF(
     model,
     comm,
     nprocs,
     bdf_file,
+    integration_settings:IntegrationSettings,
     t0=0.0,
     tf=1.0,
     prefix="",
@@ -397,7 +484,7 @@ def createTacsUnsteadyInterfaceFromBDF(
         f5 = fea_assembler.outputViewer
 
     # Create the output generator
-    gen_output = TacsOutputGenerator(prefix, f5=f5)
+    gen_output = TacsOutputGeneratorUnsteady(prefix, f5=f5)
 
     # We might need to clean up this code. This is making educated guesses
     # about what index the temperature is stored. This could be wrong if things
@@ -418,7 +505,7 @@ def createTacsUnsteadyInterfaceFromBDF(
 
     # Create the tacs interface
     interface = TacsUnsteadyInterface(
-        comm, model, assembler, gen_output, thermal_index=thermal_index
+        comm, model, assembler, gen_output, thermal_index=thermal_index, integration_settings=integration_settings
     )
 
     return interface
