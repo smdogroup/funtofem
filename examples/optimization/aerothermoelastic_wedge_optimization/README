@@ -1,0 +1,3 @@
+Example case for steady aerothermoelastic optimization of subsonic wedge.
+
+Uses pyOptSparse to optimize temperature subject to a mass constraint.
