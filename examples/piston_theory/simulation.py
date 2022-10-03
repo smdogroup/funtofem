@@ -153,7 +153,11 @@ else:
         | TACS.OUTPUT_STRAINS
     )
     f5 = TACS.ToFH5(assembler, TACS.BEAM_OR_SHELL_ELEMENT, flag)
+    print("Writing deformed structure .f5 file...")
     f5.writeToFile("AeroelasticOutput.f5")
+
+"""
+Code below potentially useful for later optimization problems
 
     funcs0 = onera.get_functions()
     f0vals = []
@@ -191,3 +195,4 @@ else:
             print("Function value: ", funcs[0], funcs[1])
             print("Adjoint gradient: ", grads)
             print("Finite-difference: ", 0.5 * (funcs[1] - funcs[0]) / dh)
+"""

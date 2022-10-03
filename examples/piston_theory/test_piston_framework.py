@@ -20,18 +20,10 @@ class CoupledFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("model")
         wing = Body("plate", "aeroelastic", group=0, boundary=1)
 
-        # Create a structural variable
-        # for i in range(5):
-        #     thickness = np.random.rand()
-        #     svar = Variable(
-        #         "thickness %d" % (i), value=thickness, lower=0.01, upper=0.1
-        #     )
-        #     wing.add_variable("structural", svar)
-        # thickness = 1.0
-
+        # Create structural variable
         thickness = 0.025
         svar = Variable("thickness", value=thickness, lower=0.001, upper=1.0)
-        #wing.add_variable("structural", svar)
+        # wing.add_variable("structural", svar)
 
         model.add_body(wing)
 
@@ -40,13 +32,10 @@ class CoupledFrameworkTest(unittest.TestCase):
         steady.set_variable(
             "aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0, active=True
         )
-        # steady.set_variable(
-        #     "structural", name="thickness", value=5.0, lower=0.0, upper=15.0
-        # )
 
         # Add a function to the scenario
-        #cl = Function("cl", analysis_type="aerodynamic")
-        #steady.add_function(cl)
+        # cl = Function("cl", analysis_type="aerodynamic")
+        # steady.add_function(cl)
 
         ks = Function("ksfailure", analysis_type="structural")
         steady.add_function(ks)
