@@ -31,6 +31,7 @@ from pyfuntofem.pistontheory_interface import PistonInterface
 from pyfuntofem.tacs_interface import TacsSteadyInterface
 from structural_model import OneraPlate
 from mpi4py import MPI
+from tacs import TACS
 
 
 # No need to split the communicator? Maybe only for tacs, otherwise
@@ -83,10 +84,10 @@ onera.add_body(wing)
 solvers = {}
 
 qinf = 101325.0  # freestream pressure Pa
-M = 2  # Mach number
-U_inf = 811  # Freestream velocity m/s
+M = 1.5  # Mach number
+U_inf = 411  # Freestream velocity m/s
 x0 = np.array([0, 0, 0])
-alpha = 10  # Angle of attack (degrees)
+alpha = 5.0  # Angle of attack (degrees)
 length_dir = np.array(
     [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
 )  # Unit vec in length dir
@@ -144,7 +145,20 @@ else:
     # Get the function value
     onera.set_variables(x0)
     fail = driver.solve_forward()
-    f5 = assembler.outputViewer
+
+    flag = (
+        TACS.OUTPUT_CONNECTIVITY
+        | TACS.OUTPUT_NODES
+        | TACS.OUTPUT_DISPLACEMENTS
+        | TACS.OUTPUT_STRAINS
+    )
+    f5 = TACS.ToFH5(assembler, TACS.BEAM_OR_SHELL_ELEMENT, flag)
+    print("Writing deformed structure .f5 file...")
+    f5.writeToFile("AeroelasticOutput.f5")
+
+"""
+Code below potentially useful for later optimization problems
+
     funcs0 = onera.get_functions()
     f0vals = []
     for func in funcs0:
@@ -181,3 +195,4 @@ else:
             print("Function value: ", funcs[0], funcs[1])
             print("Adjoint gradient: ", grads)
             print("Finite-difference: ", 0.5 * (funcs[1] - funcs[0]) / dh)
+"""
