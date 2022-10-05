@@ -22,9 +22,7 @@ limitations under the License.
 
 from mpi4py import MPI
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_aerothermoelastic_interface import (
-    TacsSteadyAerothermoelasticInterface,
-)
+from pyfuntofem.tacs_interface import TacsSteadyInterface
 
 # from pyfuntofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
 import numpy as np
@@ -110,9 +108,9 @@ def createAssembler(tacs_comm):
 
 
 # class wedgeTACS(TacsSteadyAerothermalInterface):
-class wedgeTACS(TacsSteadyAerothermoelasticInterface):
+class wedgeTACS(TacsSteadyInterface):
     def __init__(self, comm, tacs_comm, model, n_tacs_procs):
-        super(wedgeTACS, self).__init__(comm, tacs_comm, model)
+        super(wedgeTACS, self).__init__(comm, tacs_comm, model, ndof=1)
 
         self.tacs_proc = False
         if comm.Get_rank() < n_tacs_procs:

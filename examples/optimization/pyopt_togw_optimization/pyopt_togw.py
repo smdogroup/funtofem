@@ -26,7 +26,7 @@ from pyfuntofem.model import Function, FUNtoFEMmodel
 from pyfuntofem.fun3d_interface import Fun3dInterface
 from pyfuntofem.massoud_body import MassoudBody
 from tacs_model import CRMtacs
-from pyOpt import Optimization, SLSQP
+from pyoptsparse import Optimization, SLSQP
 from mpi4py import MPI
 
 

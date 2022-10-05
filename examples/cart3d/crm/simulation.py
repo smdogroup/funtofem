@@ -28,7 +28,7 @@ from mpi4py import MPI
 
 def build_model():
     crm = FUNtoFEMmodel("crm")
-    wing = Body("wing", id=2, fun3d=False)
+    wing = Body("wing", "aeroelastic", id=2, fun3d=False)
     crm.add_body(wing)
     cruise = Scenario("cruise", steps=100)
     crm.add_scenario(cruise)
