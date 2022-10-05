@@ -104,7 +104,6 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_done = False
         self._adjoint_resid = None
 
-
         # Initialize the nodes associated with the bodies
         self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
@@ -480,11 +479,15 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_forward_residuals(step=scenario.steps, norm=True) #step=scenario.steps
+        resid = self.get_forward_residuals(
+            step=scenario.steps, norm=True
+        )  # step=scenario.steps
         self._forward_done = True
         self._forward_resid = resid
         if abs(resid.real) > 1.0e-10:
-            print(f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large...")
+            print(
+                f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large..."
+            )
 
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
@@ -732,7 +735,9 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_done = True
         self._adjoint_resid = resid
         if abs(resid.real) > 1.0e-10:
-            print(f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large...")
+            print(
+                f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large..."
+            )
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
@@ -743,7 +748,7 @@ class Fun3dInterface(SolverInterface):
         """
         Queries FUN3D forward flow residuals 1-6 to evaluate convergence
         Returns list of R1-R6 if norm=False, else the total residual norm
-        
+
         Parameters
         ----------
         step: int
@@ -757,7 +762,7 @@ class Fun3dInterface(SolverInterface):
             if norm:
                 return np.linalg.norm(residuals)
             else:
-                return residuals 
+                return residuals
         else:
             return self._forward_resid
 
@@ -765,7 +770,7 @@ class Fun3dInterface(SolverInterface):
         """
         Queries FUN3D adjoint residuals 1-6 to evaluate convergence
         Returns list of R1-R6 if norm=False, else the total residual norm
-        
+
         Parameters
         ----------
         step: int
@@ -779,7 +784,7 @@ class Fun3dInterface(SolverInterface):
             if norm:
                 return np.linalg.norm(residuals)
             else:
-                return residuals 
+                return residuals
         else:
             return self._adjoint_resid
 
