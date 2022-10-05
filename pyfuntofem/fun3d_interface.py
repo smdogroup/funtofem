@@ -99,6 +99,12 @@ class Fun3dInterface(SolverInterface):
         self.thermal_scale = thermal_scale  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
 
+        self._forward_done = False
+        self._forward_resid = None
+        self._adjoint_done = False
+        self._adjoint_resid = None
+
+
         # Initialize the nodes associated with the bodies
         self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
@@ -473,9 +479,15 @@ class Fun3dInterface(SolverInterface):
             Set to true during instantiation
         """
 
+        # report warning if flow residual too large
+        resid = self.get_forward_residuals(step=scenario.steps, norm=True) #step=scenario.steps
+        self._forward_done = True
+        self._forward_resid = resid
+        if abs(resid.real) > 1.0e-10:
+            print(f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large...")
+
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
-
         return
 
     def initialize_adjoint(self, scenario, bodies):
@@ -715,9 +727,61 @@ class Fun3dInterface(SolverInterface):
             list of FUNtoFEM bodies.
         """
 
+        # report warning if flow residual too large
+        resid = self.get_adjoint_residuals(step=scenario.steps, norm=True)
+        self._adjoint_done = True
+        self._adjoint_resid = resid
+        if abs(resid.real) > 1.0e-10:
+            print(f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large...")
+
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
         os.chdir(self.root_dir)
+        return
+
+    def get_forward_residuals(self, step, norm=True):
+        """
+        Queries FUN3D forward flow residuals 1-6 to evaluate convergence
+        Returns list of R1-R6 if norm=False, else the total residual norm
+        
+        Parameters
+        ----------
+        step: int
+            the time step number
+        norm: bool
+            whether to reduce length-6 residual vector to scalar norm
+        """
+        if not self._forward_done:
+            residuals = self.fun3d_flow.get_flow_rms_residual(step)
+            print(f"Forward residuals = {residuals}")
+            if norm:
+                return np.linalg.norm(residuals)
+            else:
+                return residuals 
+        else:
+            return self._forward_resid
+
+    def get_adjoint_residuals(self, step, norm=True):
+        """
+        Queries FUN3D adjoint residuals 1-6 to evaluate convergence
+        Returns list of R1-R6 if norm=False, else the total residual norm
+        
+        Parameters
+        ----------
+        step: int
+            the time step number
+        norm: bool
+            whether to reduce length-6 residual vector to scalar norm
+        """
+        if not self._adjoint_done:
+            residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
+            print(f"Adjoint residuals = {residuals}")
+            if norm:
+                return np.linalg.norm(residuals)
+            else:
+                return residuals 
+        else:
+            return self._adjoint_resid
 
     def set_states(self, scenario, bodies, step):
         """
