@@ -21,6 +21,7 @@ limitations under the License.
 """
 
 from __future__ import print_function
+from re import S
 from tkinter.tix import INTEGER
 
 from tacs import TACS, pytacs, functions
@@ -246,9 +247,10 @@ class TacsUnsteadyInterface(SolverInterface):
         self.update = None
 
         # Matrix, preconditioner and solver method
-        self.mat = None
-        self.pc = None
-        self.gmres = None
+        # TODO : do we need mat, pc, gmres for unsteady?
+        # self.mat = None
+        # self.pc = None
+        # self.gmres = None
 
         if assembler is not None:
             # Set the assembler
@@ -270,27 +272,30 @@ class TacsUnsteadyInterface(SolverInterface):
             self.vol = 1.0
 
             # Allocate the different solver pieces - the
-            self.mat = mat
-            self.pc = pc
-            self.gmres = gmres
+            # TODO : do we need gmres, pc, mat for unsteady case?
+            # self.mat = mat
+            # self.pc = pc
+            # self.gmres = gmres
 
-            if mat is None:
-                self.mat = assembler.createSchurMat()
-                self.pc = TACS.Pc(self.mat)
-                self.gmres = TACS.KSM(self.mat, self.pc, 30)
-            elif pc is None:
-                self.mat = mat
-                self.pc = TACS.Pc(self.mat)
-                self.gmres = TACS.KSM(self.mat, self.pc, 30)
-            elif gmres is None:
-                self.mat = mat
-                self.pc = pc
-                self.gmres = TACS.KSM(self.mat, self.pc, 30)
+            # if mat is None:
+            #     self.mat = assembler.createSchurMat()
+            #     self.pc = TACS.Pc(self.mat)
+            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
+            # elif pc is None:
+            #     self.mat = mat
+            #     self.pc = TACS.Pc(self.mat)
+            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
+            # elif gmres is None:
+            #     self.mat = mat
+            #     self.pc = pc
+            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
 
         # Allocate the scenario data
         self.scenario_data = {}
         for scenario in model.scenarios:
             func_list, func_tags = self._allocate_functions(scenario)
+            
+            # TODO : does scenario data need to be saved for each time step too?
             self.scenario_data[scenario] = self.ScenarioData(
                 self.assembler, func_list, func_tags
             )
@@ -389,29 +394,371 @@ class TacsUnsteadyInterface(SolverInterface):
 
             self.assembler.setDesignVars(xvec)
 
-    def get_functions(scenario, bodies):
-        pass
+    def get_functions(self, scenario, bodies):
+        """
+        Evaluate the structural functions of interest.
+        The functions are evaluated based on the values of the state variables set
+        into the TACSAssembler and TACSIntegrator objects. 
+        These values are only available on the TACS processors, 
+        but are broadcast to all processors after evaluation.
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: list of :class:`~body.Body` objects
+            The bodies in the model
+        """
 
-    def get_function_gradients(scenario, bodies):
-        pass
+        # Evaluate the list of functions of interest using TACS integrator
+        feval = None
+        if self.tacs_proc:
+            feval = self.integrator[scenario.id].evalFunctions(self.scenario_data[scenario].funclist)
+
+        # Broadcast the list across all procs including non-struct procs
+        feval = self.comm.bcast(feval, root=0)
+
+        # Set the function values on all procs
+        for ifunc, func in enumerate(scenario.functions):
+            if func.analysis_type == "structural":
+                func.value = feval[ifunc]
+        
+        return
+
+
+    def get_function_gradients(self, scenario, bodies):
+        """
+        Take the TACS gradients, computed in the post_adjoint() call
+        and place them into the functions of interest. This function can only
+        be called after solver.post_adjoint().
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: list of :class:`~body.Body` objects
+            The bodies in the model
+        """
+
+        func_grad = self.scenario_data[scenario].func_grad
+
+        for ifunc, func in enumerate(scenario.functions):
+            for ivar, var in enumerate(self.struct_variables):
+                func.set_gradient_component(var, func_grad[ifunc][ivar])
+
+        return
 
     def initialize(self, scenario, bodies):
-        pass
+        """
+        Initialize the internal data for solving the FEM governing
+        eqns. Set the nodes in the structural mesh to be consistent 
+        with the nodes stored in the body classes. 
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: list of :class:`~body.Body` objects
+            The bodies in the model
+        """
+
+        if self.tacs_proc:
+            for body in bodies:
+                # get an in-place array of the structural nodes
+                struct_X = self.struct_X
+
+                # set the structural node locations into the array
+                struct_X[:] = body.get_struct_nodes()
+
+                # Reset the node locations in TACS (possibly distributing
+                # the node locations across TACS processors
+                self.assembler.setNodes(self.struct_X)
+
+            # TODO : get_mesh() equivalent of previous unsteady here?
+
+            # Set the solution to zero
+            self.ans.zeroEntries()
+
+            # Set the boundary conditions
+            self.assembler.setBCs(self.ans)
+
+            # Set the state variables into the assembler object
+            # need to do this also for integrator?
+            self.assembler.setVariables(self.ans)
+
+            # TODO : assemble unsteady Jacobian
+            # Assemble Jacobian matrix and pre-conditioner factor it
+            #alpha = 1.0
+            #beta = 0.0
+            #gamma = 0.0
+            #self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat)
+            #self.pc.factor()
+
+            # zeroth-iteration of integrator before full iteration loop
+            self.integrator.iterate(0)
+
 
     def iterate(self, scenario, bodies, step):
-        pass
+        """
+        unsteady TACS time integration
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies
+        step: integer
+            Time step number in TACS
+        """
+
+        fail = 0
+
+        if self.tacs_proc:
+
+            # TODO : assemble residual of previous time step? 
+            # self.res = M*qddot + C*qdot + K * q - force = 0
+
+            # get the external force vector for the integrator & zero it
+            self.ext_force.zeroEntries()
+            ext_force_array = self.ext_force.getArray()
+
+            # get ndof of the problem (3 for elastic, 4 for thermoelastic)
+            ndof = self.assembler.getVarsPerNode()
+
+            # Copy external loads and heat fluxes to the structure
+            # Does this overwrite loads from multiple bodies on same elements?
+            for body in bodies:
+                
+                # get and copy struct loads into ext_force_array
+                struct_loads = body.get_struct_loads(scenario)
+                if struct_loads is not None:
+                    for i in range(3):
+                        ext_force_array[i::ndof] += struct_loads[i::3].astype(TACS.dtype)
+
+                # get and copy struct heat fluxes into ext_forces
+                struct_flux = body.get_struct_flux(scenario)
+                if struct_flux is not None:
+                    ext_force_array[self.thermal_index::ndof] += struct_flux[:].astype(TACS.dtype)
+
+            # TODO : See if need any of these steps - apply BCs, add ext forces, etc.
+            #self.assembler.applyBCs(self.ext_force)
+
+            # Iterate the TACS integrator
+            self.integrator.iterate(step, self.ext_force)
+
+            # TODO : anything with BCs here?
+            #self.ans.axpy(-1.0, self.update)
+            #self.assembler.setBCs(self.ans)
+
+            # extract the structural disps, temps from the assembler
+            self.assembler.setVariables(self.ans)
+            ans_array = self.ans.getArray()
+
+            # extract the disps, temps to the body
+            for body in bodies:
+
+                # copy struct_disps to the body
+                struct_disps = body.get_struct_disps(scenario)
+                if struct_disps is not None:
+                    for i in range(3):
+                        struct_disps[i::3] = ans_array[i::ndof].astype(body.dtype)
+
+                # copy struct temps to the body, converting from gauge to abs temp with T_ref
+                struct_temps = body.get_struct_temps(scenario)
+                if struct_temps is not None:
+                    struct_temps[:] = (
+                        ans_array[self.thermal_index :: ndof].astype(body.dtype) + body.T_ref
+                    )
+
+        return fail
 
     def post(self, scenario, bodies):
-        pass
+        """
+        This function is called after the analysis is completed
+        
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies
+        """
+        if self.tacs_proc:
+            # Save the solution vector
+            self.scenario_data[scenario].u.copyValues(self.ans)
+
+            if self.gen_output is not None:
+                self.gen_output()
+
+        return
 
     def initialize_adjoint(self, scenario, bodies):
-        pass
+        """
+        Initialize the solver for adjoint computations
+
+        Initializes the incoming load and heat flux ajp
+        sensitivities for 
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies
+        """
+        
+        # TODO : finish initialize adjoint
+        func_list = self.scenario_data[scenario].func_list
+        self.integrator[scenario.id].evalFunctions(func_list)
+
+        # TODO : do we need to initialize dfdu?
+        # Zero the vectors in the sensitivity list
+        # dfdu = self.scenario_data[scenario].dfdu
+        # for vec in dfdu:
+        #     vec.zeroEntries()
+
+        # Compute the derivative of the function with respect to the
+        # state variables
+        #self.assembler.addSVSens(func_list, dfdu, 1.0, 0.0, 0.0)
+
+            
 
     def iterate_adjoint(self, scenario, bodies, step):
-        pass
+        """
+        Iterate the adjoint sensitivities for TACS FEM solver, unsteady case
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies
+        """
+
+
+        fail = 0
+
+        if self.tacs_proc:
+            
+            # extract the list of functions, dfdu, etc
+            func_list = self.scenario_data[scenario].func_list
+            func_tags = self.scenario_data[scenario].func_tags
+
+            # TODO : need to save psi for each time step, each function?
+            psi = self.scenario_data[scenario].psi
+
+            # TODO : do we need a dfdu equivalent for integrator or built-in?
+            #dfdu = self.scenario_data[scenario].dfdu
+            
+
+            # iterate over each function
+            for ifunc in range(len(func_list)):
+
+                # get the solution data for this function
+                ext_force_adjoint = self.res.getArray()
+
+                # if not an adjoint function, move onto next function
+                if func_tags[ifunc] == -1:
+                    continue
+
+                # TODO : add dfdu sensivities here?
+
+                ndof = self.assembler.getVarsPerNode()
+                # add struct_disps, struct_flux ajps to the res_adjoint or 
+                # the residual of the TACS structural adjoint system
+                for body in bodies:
+
+                    struct_disps_ajp = body.get_aero_disps(scenario)
+                    if struct_disps_ajp is not None:
+                        for i in range(3):
+                            ext_force_adjoint[i::ndof] -= struct_disps_ajp[i::3, ifunc].astype(
+                                TACS.dtype
+                            )
+
+                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                    if struct_temps_ajp is not None:
+                        ext_force_adjoint[self.thermal_index :: ndof] -= struct_temps_ajp[
+                            :, ifunc
+                        ].astype(TACS.dtype)
+
+            # TODO : do I need to set functions for integrator again? Does this in TACS/problems/transient.py
+            #self.integrator.setFunctions(func_list)
+
+            # iterate the integrator solver, outside of function loop
+            self.integrator[scenario.id].initAdjoint(step)
+            self.integrator[scenario.id].iterateAdjoint(step, ext_force_adjoint)
+            self.integrator[scenario.id].postAdjoint(step)
+
+            # function loop to extract struct load, heat flux adjoints for each func
+            for ifunc in range(len(func_list)):
+
+                # TODO : maybe psi needs to be saved for each time step here, the adjoints
+                # get the struct load, flux sensitivities out of integrator
+                psi = self.integrator[scenario.id].getAdjoint(step, ifunc)
+                psi_array = psi.getArray()
+
+                # pass sensitivities back to each body for loads, heat flux
+                for body in bodies:
+                    
+                    # pass on struct loads adjoint product
+                    struct_loads_ajp = body.get_struct_loads_ajp(scenario)
+                    if struct_loads_ajp is not None:
+                        for i in range(3):
+                            struct_loads_ajp[i::3, ifunc] = -psi_array[i::ndof].astype(
+                                body.dtype
+                            )
+                    
+                    # pass on struct flux adjoint product
+                    struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
+                    if struct_flux_ajp is not None:
+                        struct_flux_ajp[:, ifunc] = -psi_array[
+                            self.thermal_index :: ndof
+                        ].astype(body.dtype)
+                
+        return fail
 
     def post_adjoint(self, scenario, bodies):
-        pass
+        """
+        This function is called after the adjoint variables have been computed.
+        This function finalizes the total derivative of the function w.r.t. the design variables
+        by compute the gradient
+        gradient = df/dx + psi_S * dS/dx
+        These values are only computed on the TACS processors.
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies
+        """
+
+        func_grad = []
+
+        # TODO : add sensitivity across all processors?
+        # Add the values across processors - this is required to
+        # collect the distributed design variable contributions
+        # for vec in dfdx:
+        #     vec.beginSetValues(TACS.ADD_VALUES)
+        #     vec.endSetValues(TACS.ADD_VALUES)
+
+        for ifunc, func in enumerate(scenario.functions):
+
+            grad = self.integrator[scenario.id].getGradient(ifunc)
+            
+            # TODO : don't have to get DVsens and addAdjointResProducts?
+            # TACS/problems/transient.py doesn't seem to do this
+
+            func_grad.append(
+                grad.getArray().copy()
+            )
+
+        # Broadcast gradients to all processors
+        self.scenario_data[scenario.id].func_grad = self.comm.bcast(func_grad, root=0)
+
+        
+            
+
+
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
         pass
