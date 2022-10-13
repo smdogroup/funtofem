@@ -21,15 +21,11 @@ limitations under the License.
 """
 
 from __future__ import print_function
-from re import S
-from tkinter.tix import INTEGER
-
+from mpi4py import MPI
 from tacs import TACS, pytacs, functions
 from .solver_interface import SolverInterface
 from typing import TYPE_CHECKING
-
 import os
-import numpy as np
 
 
 class IntegrationSettings:
@@ -176,6 +172,8 @@ class TacsUnsteadyInterface(SolverInterface):
     ):
         # setup the integrator looping over each of the scenarios
         self.integrator = {}
+        self.F = {}
+        self.auxElems = {}
         for scenario in model.scenarios:
             #self.integrator[scenario.id] = self.create
 
@@ -193,9 +191,9 @@ class TacsUnsteadyInterface(SolverInterface):
                 self.integrator[scenario.id].setRelTol(self.integration_settings.L2_convergence_rel)
 
                 # Create a force vector for each time step
-                self.F[scenario.id] = [self.assembler.createVec() for i in range(self.numSteps + 1)]
+                self.F[scenario.id] = [self.assembler.createVec() for i in range(self.integration_settings.num_steps + 1)]
                 # Auxillary element object for applying tractions/pressure
-                self.auxElems[scenario.id] = [TACS.AuxElements() for i in range(self.numSteps + 1)]
+                self.auxElems[scenario.id] = [TACS.AuxElements() for i in range(self.integration_settings.num_steps + 1)]
 
             elif self.integration_settings.is_dirk:
                 self.numStages = self.integration_settings.num_stages
