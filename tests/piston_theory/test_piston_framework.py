@@ -103,11 +103,13 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or not
         complex_step = False
-        epsilon = 1e-8
+        epsilon_flow = 1e-8
+        epsilon_struct = 1e-6
         rtol = 1e-5
         if TransferScheme.dtype == complex:
             complex_step = True
-            epsilon = 1e-30
+            epsilon_flow = 1e-30
+            epsilon_struct = 1e-30
             rtol = 1e-9
 
         # Manual test of the disciplinary solvers
@@ -119,7 +121,7 @@ class CoupledFrameworkTest(unittest.TestCase):
             "flow",
             scenario,
             bodies,
-            epsilon=epsilon,
+            epsilon=epsilon_flow,
             complex_step=complex_step,
             rtol=rtol,
         )
@@ -129,7 +131,7 @@ class CoupledFrameworkTest(unittest.TestCase):
             "structural",
             scenario,
             bodies,
-            epsilon=epsilon,
+            epsilon=epsilon_struct,
             complex_step=complex_step,
             rtol=rtol,
         )
