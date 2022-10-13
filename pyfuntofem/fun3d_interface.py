@@ -90,6 +90,9 @@ class Fun3dInterface(SolverInterface):
 
         # Temporary measure until FUN3D adjoint is reformulated
         self.flow_dt = flow_dt
+        for scen in model.scenarios:
+            if scen.steady is True and float(self.flow_dt) != 1.0:
+                raise ValueError("For steady cases, flow_dt must be set to 1.")
 
         # dynamic pressure
         self.qinf = qinf
