@@ -109,7 +109,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             Number of iterations if not set by the model
         """
 
-        self.aitken_init = True
         fail = 0
 
         # Determine if we're using the scenario's number of steps or the argument
@@ -171,7 +170,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         """
 
         fail = 0
-        self.aitken_init = True
 
         # how many steps to take for the block Gauss Seidel
         steps = scenario.steps

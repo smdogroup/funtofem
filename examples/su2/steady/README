@@ -1,0 +1,4 @@
+Example case for steady SU2 interface.
+Inviscid ONERA M6 wing.
+
+Uses the adjoint method to calculate the gradient of drag with respect to thickness of the wing.
