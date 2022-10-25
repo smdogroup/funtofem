@@ -31,6 +31,7 @@
 &nonlinear_solver_parameters
     schedule_iteration(1:2) = 1, 80
     schedule_cfl(1:2) = 20, 20
+    subiterations = 2
     time_accuracy = '2ndorderOPT'
     time_step_nondim = 0.001
 
@@ -49,6 +50,7 @@
 
 &global
     moving_grid = .true.
+    boundary_animation_freq = 2
 /
 
 &elasticity_gmres

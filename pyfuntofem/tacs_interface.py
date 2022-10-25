@@ -464,14 +464,14 @@ class TacsSteadyInterface(SolverInterface):
             # Add the external load and heat fluxes on the structure
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
-                struct_loads = body.get_struct_loads(scenario)
+                struct_loads = body.get_struct_loads(scenario, time_index=step)
                 if struct_loads is not None:
                     for i in range(3):
                         ext_force_array[i::ndof] += struct_loads[i::3].astype(
                             TACS.dtype
                         )
 
-                struct_flux = body.get_struct_heat_flux(scenario)
+                struct_flux = body.get_struct_heat_flux(scenario, time_index=step)
                 if struct_flux is not None:
                     ext_force_array[self.thermal_index :: ndof] += struct_flux[
                         :
@@ -498,13 +498,13 @@ class TacsSteadyInterface(SolverInterface):
             # Extract displacements and temperatures for each body
             ans_array = self.ans.getArray()
             for body in bodies:
-                struct_disps = body.get_struct_disps(scenario)
+                struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
                         struct_disps[i::3] = ans_array[i::ndof].astype(body.dtype)
 
                 # Set the structural temperature
-                struct_temps = body.get_struct_temps(scenario)
+                struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
                     struct_temps[:] = (
                         ans_array[self.thermal_index :: ndof].astype(body.dtype)
