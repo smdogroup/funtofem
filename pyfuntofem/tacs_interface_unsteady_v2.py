@@ -316,8 +316,6 @@ class TacsUnsteadyInterface(SolverInterface):
         if self.tacs_proc:
             self._initialize_integrator(model)
 
-        print("Finished initializing integrator", flush=True)
-
     def _allocate_functions(self, scenario):
         """
         Allocate the data required to store the function values and

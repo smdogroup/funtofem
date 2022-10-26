@@ -13,7 +13,7 @@ from pyfuntofem.tacs_interface_unsteady_v2 import (
 )
 
 # run settings
-num_steps = 10
+num_steps = 50
 n_tacs_procs = 1
 f2f_analysis_type = "aeroelastic"
 flow_type = "laminar"
@@ -98,7 +98,7 @@ integration_settings = IntegrationSettings(
     print_level=0,
     start_time=0.0,
     dt=0.1,
-    num_steps=10,
+    num_steps=num_steps,
 )
 
 # setup the tacs comm again for the driver
@@ -110,7 +110,6 @@ else:
     color = MPI.UNDEFINED
     key = world_rank
 tacs_comm = comm.Split(color, key)
-print("Set up MPI COMM", flush=True)
 
 # initialize the funtofem solvers
 solvers = {}
@@ -126,6 +125,12 @@ solvers["flow"] = Fun3dInterface(
     adjoint_options={"timedep_adjoint_frozen": True},
 )
 
+cwd = os.getcwd()
+tacs_folder = os.path.join(cwd, "tacs_output")
+
+if not (os.path.exists(tacs_folder)) and comm.rank == 0:
+    os.mkdir(tacs_folder)
+
 # create tacs unsteady interface from the BDF / DAT file
 solvers["structural"] = createTacsUnsteadyInterfaceFromBDF(
     model=model,
@@ -133,7 +138,7 @@ solvers["structural"] = createTacsUnsteadyInterfaceFromBDF(
     nprocs=n_tacs_procs,
     bdf_file="nastran_CAPS.dat",
     integration_settings=integration_settings,
-    output_dir=os.getcwd(),
+    output_dir=tacs_folder,
     callback=funtofem_callback,
     struct_options={},
 )
@@ -156,7 +161,6 @@ driver = FUNtoFEMnlbgs(
     transfer_options=transfer_options,
     model=model,
 )
-print("Instantiated the driver, ready for forward analysis", flush=True)
 # solve the forward analysis
 driver.solve_forward()
 functions = model.get_functions()
