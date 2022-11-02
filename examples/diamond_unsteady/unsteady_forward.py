@@ -13,7 +13,7 @@ from pyfuntofem.tacs_interface_unsteady_v2 import (
 )
 
 # run settings
-num_steps = 50
+num_steps = 100
 n_tacs_procs = 1
 f2f_analysis_type = "aeroelastic"
 flow_type = "laminar"
@@ -118,7 +118,7 @@ solvers = {}
 solvers["flow"] = Fun3dInterface(
     comm=comm,
     model=model,
-    flow_dt=0.001,
+    flow_dt=0.01,
     qinf=1.0e4,
     thermal_scale=1.0e6,
     forward_options={"timedep_adjoint_frozen": True},

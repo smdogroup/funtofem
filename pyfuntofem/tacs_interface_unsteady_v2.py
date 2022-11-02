@@ -576,13 +576,13 @@ class TacsUnsteadyInterface(SolverInterface):
             for body in bodies:
 
                 # copy struct_disps to the body
-                struct_disps = body.get_struct_disps(scenario)
+                struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
                         struct_disps[i::3] = ans_array[i::ndof].astype(body.dtype)
 
                 # copy struct temps to the body, converting from gauge to abs temp with T_ref
-                struct_temps = body.get_struct_temps(scenario)
+                struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
                     struct_temps[:] = (
                         ans_array[self.thermal_index :: ndof].astype(body.dtype)
@@ -633,8 +633,10 @@ class TacsUnsteadyInterface(SolverInterface):
         """
 
         # TODO : finish initialize adjoint
-        func_list = self.scenario_data[scenario].func_list
-        self.integrator[scenario.id].evalFunctions(func_list)
+        if self.tacs_proc:
+
+            func_list = self.scenario_data[scenario].func_list
+            self.integrator[scenario.id].evalFunctions(func_list)
 
         # TODO : do we need to initialize dfdu?
         # Zero the vectors in the sensitivity list
@@ -645,6 +647,43 @@ class TacsUnsteadyInterface(SolverInterface):
         # Compute the derivative of the function with respect to the
         # state variables
         # self.assembler.addSVSens(func_list, dfdu, 1.0, 0.0, 0.0)
+
+    def set_states(self, scenario, bodies, step):
+        """
+        Load the states (struct_disps) associated with this step.
+
+        **Note: in the NLBGS algorithm the transfer scheme uses the
+        structural displacements from the prior step.
+        set_states will request the states from the previous step
+        but then ask the structural solver to linearize
+        about the current step in iterate_adjoint**
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        bodies: list of :class:`~body.Body` objects
+            The bodies in the model
+        step: int
+            The time step number that the driver wants the states from
+        """
+
+        if self.tacs_proc:
+            _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
+            disps = self.ans.getArray()
+            ndof = self.assembler.getVarsPerNode()
+
+            for body in bodies:
+                struct_disps = body.get_struct_disps(scenario, time_index=step)
+                if struct_disps is not None:
+                    for i in range(3):
+                        struct_disps[i::3] = self.ans[i::ndof].astype(body.dtype)
+
+                struct_temps = body.get_struct_temps(scenario, time_index=step)
+                if struct_temps is not None:
+                    struct_temps[:] = self.ans[self.thermal_index :: ndof].astype(
+                        body.dtype
+                    )
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
