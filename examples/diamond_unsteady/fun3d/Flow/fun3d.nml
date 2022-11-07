@@ -29,11 +29,11 @@
 /
 
 &nonlinear_solver_parameters
-    schedule_iteration(1:2) = 1, 80
+    schedule_iteration(1:2) = 1, 5
     schedule_cfl(1:2) = 20, 20
     subiterations = 5
     time_accuracy = '2ndorderOPT'
-    time_step_nondim = 0.001
+    time_step_nondim = 0.001   !Look into this
 
 /
 
@@ -42,7 +42,7 @@
 /
 
 &code_run_control
-    steps = 50
+    steps = 25
     stopping_tolerance = 1e-15
     restart_write_freq = 1000
     restart_read = 'off'
@@ -50,7 +50,7 @@
 
 &global
     moving_grid = .true.
-    boundary_animation_freq = 2
+    boundary_animation_freq = 5
 /
 
 &elasticity_gmres

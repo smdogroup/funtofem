@@ -145,6 +145,7 @@ class TacsUnsteadyInterface(SolverInterface):
             self.func_list = func_list
             self.func_tags = func_tags
             self.func_grad = []
+            self.struct_rhs_vec = None
 
             self.u = None
             self.dfdx = []
@@ -196,6 +197,8 @@ class TacsUnsteadyInterface(SolverInterface):
                 self.integrator[scenario.id].setRelTol(
                     self.integration_settings.L2_convergence_rel
                 )
+
+                self.integrator[scenario.id].setPrintLevel(self.integration_settings.print_level)
 
                 # Create a force vector for each time step
                 self.F[scenario.id] = [
@@ -634,7 +637,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         # TODO : finish initialize adjoint
         if self.tacs_proc:
-
+            self.struct_rhs_vec = []
             func_list = self.scenario_data[scenario].func_list
             self.integrator[scenario.id].evalFunctions(func_list)
 
@@ -667,7 +670,7 @@ class TacsUnsteadyInterface(SolverInterface):
         step: int
             The time step number that the driver wants the states from
         """
-
+        print("Setting states for adj computation", flush=True)
         if self.tacs_proc:
             _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
             disps = self.ans.getArray()
@@ -677,13 +680,14 @@ class TacsUnsteadyInterface(SolverInterface):
                 struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
-                        struct_disps[i::3] = self.ans[i::ndof].astype(body.dtype)
+                        struct_disps[i::3] = disps[i::ndof].astype(body.dtype)
 
                 struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
-                    struct_temps[:] = self.ans[self.thermal_index :: ndof].astype(
+                    struct_temps[:] = disps[self.thermal_index :: ndof].astype(
                         body.dtype
                     )
+            print("Successfully loaded states for adjoint iters", flush=True)
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
@@ -715,7 +719,8 @@ class TacsUnsteadyInterface(SolverInterface):
             for ifunc in range(len(func_list)):
 
                 # get the solution data for this function
-                ext_force_adjoint = self.res.getArray()
+                rhs_func = self.struct_rhs_vec[ifunc].getArray()
+                #ext_force_adjoint = self.res.getArray()
 
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:
@@ -728,16 +733,16 @@ class TacsUnsteadyInterface(SolverInterface):
                 # the residual of the TACS structural adjoint system
                 for body in bodies:
 
-                    struct_disps_ajp = body.get_aero_disps(scenario)
+                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         for i in range(3):
-                            ext_force_adjoint[i::ndof] -= struct_disps_ajp[
+                            rhs_func[i::ndof] -= struct_disps_ajp[
                                 i::3, ifunc
                             ].astype(TACS.dtype)
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
-                        ext_force_adjoint[
+                        rhs_func[
                             self.thermal_index :: ndof
                         ] -= struct_temps_ajp[:, ifunc].astype(TACS.dtype)
 
@@ -746,7 +751,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # iterate the integrator solver, outside of function loop
             self.integrator[scenario.id].initAdjoint(step)
-            self.integrator[scenario.id].iterateAdjoint(step, ext_force_adjoint)
+            self.integrator[scenario.id].iterateAdjoint(step, self.struct_rhs_vec)
             self.integrator[scenario.id].postAdjoint(step)
 
             # function loop to extract struct load, heat flux adjoints for each func

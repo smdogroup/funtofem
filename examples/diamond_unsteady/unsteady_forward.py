@@ -13,7 +13,7 @@ from pyfuntofem.tacs_interface_unsteady_v2 import (
 )
 
 # run settings
-num_steps = 100
+num_steps = 25
 n_tacs_procs = 1
 f2f_analysis_type = "aeroelastic"
 flow_type = "laminar"
@@ -24,7 +24,8 @@ comm = MPI.COMM_WORLD
 # element callback
 def funtofem_callback(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
     # Set constitutive properties
-    rho = 4540.0  # density, kg/m^3
+    #rho = 4540.0  # density, kg/m^3
+    rho = 0.0
     E = 118e9  # elastic modulus, Pa 118e9
     nu = 0.325  # poisson's ratio
     ys = 1050e6  # yield stress, Pa
@@ -95,7 +96,7 @@ integration_settings = IntegrationSettings(
     write_solution=True,
     number_solution_files=True,
     print_timing_info=False,
-    print_level=0,
+    print_level=2,
     start_time=0.0,
     dt=0.1,
     num_steps=num_steps,
@@ -171,3 +172,7 @@ variables = model.get_variables()
 print("Finished running funtofem unsteady analysis...")
 for ifunc, func in enumerate(functions):
     print(f"\tFunction {func.name} = {func.value.real}")
+
+print("Running funtofem unsteady adjoint")
+driver.solve_adjoint()
+gradients = model.get_function_gradients()
