@@ -420,7 +420,8 @@ class Fun3dInterface(SolverInterface):
 
             aero_temps = body.get_aero_temps(scenario)
             if aero_temps is not None and aero_nnodes > 0:
-                temps = np.asfortranarray(aero_temps[:]) / body.T_ref
+                # Nondimensionalize by freestream temperature
+                temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
@@ -537,7 +538,8 @@ class Fun3dInterface(SolverInterface):
 
                 aero_temps = body.get_aero_temps(scenario)
                 if body.thermal_transfer is not None:
-                    temps = np.asfortranarray(aero_temps[:]) / body.T_ref
+                    # Nondimensionalize by freestream temperature
+                    temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                     self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
 
             self.fun3d_adjoint.initialize_solution()
@@ -772,7 +774,7 @@ class Fun3dInterface(SolverInterface):
             if "rigid" in body.motion_type and body.transfer is not None:
                 self.fun3d_flow.input_rigid_transform(body.rigid_transform, body=ibody)
             if body.thermal_transfer is not None:
-                temps = np.asfortranarray(body.aero_temps[:]) / body.T_ref
+                temps = np.asfortranarray(body.aero_temps[:]) / scenario.T_inf
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         # Take a step in FUN3D
