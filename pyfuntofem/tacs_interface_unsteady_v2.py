@@ -198,7 +198,9 @@ class TacsUnsteadyInterface(SolverInterface):
                     self.integration_settings.L2_convergence_rel
                 )
 
-                self.integrator[scenario.id].setPrintLevel(self.integration_settings.print_level)
+                self.integrator[scenario.id].setPrintLevel(
+                    self.integration_settings.print_level
+                )
 
                 # Create a force vector for each time step
                 self.F[scenario.id] = [
@@ -641,6 +643,9 @@ class TacsUnsteadyInterface(SolverInterface):
             func_list = self.scenario_data[scenario].func_list
             self.integrator[scenario.id].evalFunctions(func_list)
 
+            for func in range(len(func_list)):
+                self.struct_rhs_vec.append(self.assembler.createVec())
+
         # TODO : do we need to initialize dfdu?
         # Zero the vectors in the sensitivity list
         # dfdu = self.scenario_data[scenario].dfdu
@@ -670,7 +675,7 @@ class TacsUnsteadyInterface(SolverInterface):
         step: int
             The time step number that the driver wants the states from
         """
-        print("Setting states for adj computation", flush=True)
+
         if self.tacs_proc:
             _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
             disps = self.ans.getArray()
@@ -687,7 +692,6 @@ class TacsUnsteadyInterface(SolverInterface):
                     struct_temps[:] = disps[self.thermal_index :: ndof].astype(
                         body.dtype
                     )
-            print("Successfully loaded states for adjoint iters", flush=True)
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
@@ -720,7 +724,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
                 # get the solution data for this function
                 rhs_func = self.struct_rhs_vec[ifunc].getArray()
-                #ext_force_adjoint = self.res.getArray()
+                # ext_force_adjoint = self.res.getArray()
 
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:
@@ -736,15 +740,15 @@ class TacsUnsteadyInterface(SolverInterface):
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         for i in range(3):
-                            rhs_func[i::ndof] -= struct_disps_ajp[
-                                i::3, ifunc
-                            ].astype(TACS.dtype)
+                            rhs_func[i::ndof] -= struct_disps_ajp[i::3, ifunc].astype(
+                                TACS.dtype
+                            )
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
-                        rhs_func[
-                            self.thermal_index :: ndof
-                        ] -= struct_temps_ajp[:, ifunc].astype(TACS.dtype)
+                        rhs_func[self.thermal_index :: ndof] -= struct_temps_ajp[
+                            :, ifunc
+                        ].astype(TACS.dtype)
 
             # TODO : do I need to set functions for integrator again? Does this in TACS/problems/transient.py
             # self.integrator.setFunctions(func_list)

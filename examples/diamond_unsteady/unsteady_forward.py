@@ -122,8 +122,8 @@ solvers["flow"] = Fun3dInterface(
     flow_dt=0.01,
     qinf=1.0e4,
     thermal_scale=1.0e6,
-    forward_options={"timedep_adjoint_frozen": True},
-    adjoint_options={"timedep_adjoint_frozen": True},
+    forward_options={"timedep_adj_frozen": True},
+    adjoint_options={"timedep_adj_frozen": True},
 )
 
 cwd = os.getcwd()
