@@ -63,7 +63,17 @@
 <div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A class to hold scenario information for a design point in optimization&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">steady</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fun3d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">steady</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">fun3d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">T_ref</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+        <span class="n">T_inf</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -80,6 +90,10 @@
 <span class="sd">            whether or not you are using FUN3D. If true, the scenario class will auto-populate &#39;aerodynamic&#39; required by FUN3D</span>
 <span class="sd">        steps: int</span>
 <span class="sd">            the number of coupled time steps to run for the scenario</span>
+<span class="sd">        T_ref: double</span>
+<span class="sd">            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.</span>
+<span class="sd">        T_inf: double</span>
+<span class="sd">            Fluid freestream reference temperature in Kelvin.</span>
 
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
@@ -97,6 +111,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">functions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steady</span> <span class="o">=</span> <span class="n">steady</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span> <span class="o">=</span> <span class="n">T_ref</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_inf</span> <span class="o">=</span> <span class="n">T_inf</span>
 
         <span class="k">if</span> <span class="n">fun3d</span><span class="p">:</span>
             <span class="n">mach</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;Mach&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
