@@ -133,7 +133,6 @@ class Body(Base):
         self.thermal_index = (
             3  # 0,1,2 for xyz and 3 for temp (mod 4) see tacs_interface.py
         )
-        self.T_ref = 300.0  # reference temperature in Kelvin
 
         # Node locations u
         self.struct_X = None
@@ -555,7 +554,7 @@ class Body(Base):
                 self.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=self.dtype)
                 self.aero_heat_flux[scenario.id] = np.zeros(na, dtype=self.dtype)
                 self.struct_temps[scenario.id] = (
-                    np.ones(ns, dtype=self.dtype) * self.T_ref
+                    np.ones(ns, dtype=self.dtype) * scenario.T_ref
                 )
                 self.aero_temps[scenario.id] = np.zeros(na, dtype=self.dtype)
             else:
@@ -569,7 +568,7 @@ class Body(Base):
                     self.struct_heat_flux[id].append(np.zeros(ns, dtype=self.dtype))
                     self.aero_heat_flux[id].append(np.zeros(na, dtype=self.dtype))
                     self.struct_temps[id].append(
-                        np.ones(ns, dtype=self.dtype) * self.T_ref
+                        np.ones(ns, dtype=self.dtype) * scenario.T_ref
                     )
                     self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
 
@@ -1341,11 +1340,11 @@ class Body(Base):
                 theta_body = []
                 for func in range(nfunctions):
                     up_prev_body.append(
-                        self.T_ref
+                        scenario.T_ref
                         * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
                     )
                     aitken_therm_vec_body.append(
-                        self.T_ref
+                        scenario.T_ref
                         * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
                     )
                     theta_body.append(self.theta_therm_init)
@@ -1540,14 +1539,14 @@ class Body(Base):
     #                 theta_body = []
     #                 for func in range(nfunctions):
     #                     up_prev_body.append(
-    #                         body.T_ref
+    #                         scenario.T_ref
     #                         * np.ones(
     #                             body.struct_nnodes * body.therm_xfer_ndof,
     #                             dtype=TransferScheme.dtype,
     #                         )
     #                     )
     #                     aitken_therm_vec_body.append(
-    #                         body.T_ref
+    #                         scenario.T_ref
     #                         * np.ones(
     #                             body.struct_nnodes * body.therm_xfer_ndof,
     #                             dtype=TransferScheme.dtype,

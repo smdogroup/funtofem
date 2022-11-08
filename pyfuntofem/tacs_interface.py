@@ -506,6 +506,7 @@ class TacsSteadyInterface(SolverInterface):
                 # Set the structural temperature
                 struct_temps = body.get_struct_temps(scenario)
                 if struct_temps is not None:
+                    # absolute temperature in Kelvin of the structural surface
                     struct_temps[:] = (
                         ans_array[self.thermal_index :: ndof].astype(body.dtype)
                         + body.T_ref
