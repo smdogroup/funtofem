@@ -20,28 +20,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import enum
-from turtle import width
-
 import numpy as np
-import os
 import sys
 
-np.set_printoptions(threshold=sys.maxsize)
-# from fun3d.solvers      import Flow, Adjoint
-# from fun3d              import interface
 from funtofem import TransferScheme
 from .solver_interface import SolverInterface
 
 
 class PistonInterface(SolverInterface):
     """
-    FUNtoFEM interface class for FUN3D. Works for both steady and unsteady analysis.
-    Requires the FUN3D directory structure.
-    During the forward analysis, the FUN3D interface will operate in the scenario.name/Flow directory and scenario.name/Adjoint directory for the adjoint.
+    FUNtoFEM interface class for a third order piston theory aerodynamic solver. Works for steady analysis for now.
 
-    FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
-    To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
+    This current analysis tool depends on a purely rectangular aerodynamic grid for ease of implementation.
     """
 
     def __init__(
@@ -63,24 +53,38 @@ class PistonInterface(SolverInterface):
         adjoint_options=None,
     ):
         """
-        The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
-        The surface mesh on each processor only holds it's owned nodes. Transfer of that data to other processors is handled inside the FORTRAN side of FUN3D's FUNtoFEM interface.
+        The instantiation of the Piston Theory interface class will populate the model with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
+        The surface mesh on each processor only holds it's owned nodes.
 
         Parameters
         ----------
         comm: MPI.comm
             MPI communicator
         model: :class:`FUNtoFEMmodel`
-            FUNtoFEM model. This instantiatio
-        flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            FUNtoFEM model.
+        qinf: float
+            freestream dynamic pressure
+        M: float
+            freestream Mach number
+        U_inf: float
+            freestream flow velocity
+        x0: float
+            aerodynamic mesh "origin"
+        length_dir: numpy.ndarray
+            spanning flow-wise direction of aerodynamic grid surface
+        width_dirL: numpy.ndarray
+            spanning width-wise direction of aerodynamic grid surface
+        L: float
+            length of aerodynamic grid
+        w: float
+            width of aerodynamic grid
+        nL: int
+            number of length-wise elements on aerodynamic grid
+        nw: int
+            number of width-wise elements on aerodynamic grid
         """
 
         self.comm = comm
-
-        #  Instantiate FUN3D
-        # self.fun3d_flow = Flow()
-        # self.fun3d_adjoint = Adjoint()
 
         # command line options
         self.forward_options = forward_options
@@ -135,18 +139,8 @@ class PistonInterface(SolverInterface):
             if var.analysis_type == "aerodynamic":
                 self.aero_variables.append(var)
 
-        # Get the initial aero surface meshes
-        self.initialize(model.scenarios[0], model.bodies, first_pass=True)
-        # self.post(model.scenarios[0], model.bodies, first_pass=True)
-
-        # Temporary measure until FUN3D adjoint is reformulated
-        # self.flow_dt = flow_dt
-
-        self.dFdqinf = []
-
         # heat flux
         self.thermal_scale = 1.0  # = 1/2 * rho_inf * (V_inf)^3
-        self.dHdq = []
 
         for ibody, body in enumerate(model.bodies, 1):
             aero_nnodes = (self.nL + 1) * (self.nw + 1)
@@ -162,23 +156,24 @@ class PistonInterface(SolverInterface):
             diag_neg = -np.ones(aero_nnodes - 1)
             self.CD_mat += np.diag(diag_ones, 1)
             self.CD_mat += np.diag(diag_neg, -1)
-            self.CD_mat[0][0] = -2
-            self.CD_mat[0][1] = 2
-            self.CD_mat[-1][-2] = -2
-            self.CD_mat[-1][-1] = 2
-            self.CD_mat *= 1 / (2 * self.L / self.nL)
+            self.CD_mat[0][0] = -2.0
+            self.CD_mat[0][1] = 2.0
+            self.CD_mat[-1][-2] = -2.0
+            self.CD_mat[-1][-1] = 2.0
+            self.CD_mat *= 1.0 / (2.0 * self.L / self.nL)
 
             self.nmat = np.zeros((3 * aero_nnodes, aero_nnodes))
             self.n = np.array([0, 0, 1])
             for i in range(aero_nnodes):
                 self.nmat[3 * i : 3 * i + 3, i] = self.n
 
-            # Extracting node locations
+            # Setting aero node locations
+            struct_length_dir = np.array([1, 0, 0])
             for i in range(self.nL + 1):
                 for j in range(self.nw + 1):
                     coord = (
                         self.x0
-                        + i * self.L / self.nL * self.length_dir
+                        + i * self.L / self.nL * struct_length_dir
                         + j * self.width / self.nw * self.width_dir
                     )
                     aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
@@ -187,7 +182,20 @@ class PistonInterface(SolverInterface):
 
             body.initialize_aero_nodes(aero_X)
 
-    def initialize(self, scenario, bodies, first_pass=False):
+            # Setting internal aero node locations with AoA
+            self.piston_aero_X = np.zeros(3 * aero_nnodes, dtype=TransferScheme.dtype)
+            for i in range(self.nL + 1):
+                for j in range(self.nw + 1):
+                    coord = (
+                        self.x0
+                        + i * self.L / self.nL * self.length_dir
+                        + j * self.width / self.nw * self.width_dir
+                    )
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
+
+    def initialize(self, scenario, bodies):
         """
         Changes the directory to ./`scenario.name`/Flow, then
         initializes the FUN3D flow (forward) solver.
@@ -198,8 +206,6 @@ class PistonInterface(SolverInterface):
             The scenario that needs to be initialized
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies to either get new surface meshes from or to set the original mesh in
-        first_pass: bool
-            When extracting the mesh, first_pass is set to True. Otherwise, the new mesh will be set in for bodies with shape parameterizations
 
         Returns
         -------
@@ -207,50 +213,10 @@ class PistonInterface(SolverInterface):
             If the grid deformation failed, the intiialization will return 1
         """
 
-        # if first_pass:
-        #     for ibody, body in enumerate(bodies,1):
-        #         body.aero_nnodes = (self.nL+1) * (self.nw+1)
-        #         body.aero_X = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
-
-        #         self.alpha = np.arccos(self.length_dir[0])*180/np.pi
-
-        #         self.CD_mat = np.zeros((body.aero_nnodes,body.aero_nnodes)) #Matrix for central difference
-        #         diag_ones = np.ones(body.aero_nnodes-1)
-        #         diag_neg = -np.ones(body.aero_nnodes-1)
-        #         self.CD_mat += np.diag(diag_ones, 1)
-        #         self.CD_mat += np.diag(diag_neg,-1)
-        #         self.CD_mat[0][0] = -2
-        #         self.CD_mat[0][1] = 2
-        #         self.CD_mat[-1][-2] = -2
-        #         self.CD_mat[-1][-1] = 2
-        #         self.CD_mat *= 1/(2*self.L/self.nL)
-
-        #         self.nmat = np.zeros((3*body.aero_nnodes, body.aero_nnodes))
-        #         self.n = np.array([0,0,1])
-        #         for i in range(body.aero_nnodes):
-        #             self.nmat[3*i:3*i+3, i] = self.n
-
-        #         if body.aero_nnodes > 0:
-        #             body.aero_id = np.arange(1,body.aero_nnodes)
-        #             body.aero_loads = np.zeros(3*body.aero_nnodes, dtype=TransferScheme.dtype)
-        #             #Extracting node locations
-        #             for i in range(self.nL+1):
-        #                 for j in range(self.nw+1):
-        #                     coord = self.x0 + i*self.L/self.nL* self.length_dir + j*self.width/self.nw * self.width_dir
-        #                     body.aero_X[3*(self.nw+1)*i + j*3] = coord[0]
-        #                     body.aero_X[3*(self.nw+1)*i + j*3 + 1] = coord[1]
-        #                     body.aero_X[3*(self.nw+1)*i + j*3 + 2] = coord[2]
-
-        #         else:
-        #             body.aero_id = np.zeros(3*body.aero_nnodes, dtype=int)
-
-        #         body.rigid_transform = np.identity(4, dtype=TransferScheme.dtype)
-
         return 0
 
     def initialize_AoA(self, bodies):
         for ibody, body in enumerate(bodies, 1):
-            aero_X = np.zeros(3 * self.aero_nnodes, dtype=TransferScheme.dtype)
             for i in range(self.nL + 1):
                 for j in range(self.nw + 1):
                     coord = (
@@ -258,11 +224,11 @@ class PistonInterface(SolverInterface):
                         + i * self.L / self.nL * self.length_dir
                         + j * self.width / self.nw * self.width_dir
                     )
-                    aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
-                    aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
-                    aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
+                    self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
 
-        body.initialize_aero_nodes(aero_X)
+        # body.initialize_aero_nodes(aero_X)
 
     def initialize_adjoint(self, scenario, bodies):
         """
@@ -281,58 +247,7 @@ class PistonInterface(SolverInterface):
         fail: int
             If the grid deformation failed, the intiialization will return 1
         """
-        # os.chdir("./" + scenario.name)
-        # os.chdir("./Adjoint")
-        """
-        if scenario.steady:
-            # load the forces and displacements
-            for ibody, body in enumerate(bodies):
-                if body.transfer is not None:
-                    body.aero_loads = self.force_save[scenario.id][ibody]
-                    body.aero_disps = self.disps_save[scenario.id][ibody]
 
-                if body.thermal_transfer is not None:
-                    body.aero_heat_flux = self.heat_flux_save[scenario.id][ibody]
-                    body.aero_heat_flux_mag = self.heat_flux_mag_save[scenario.id][ibody]
-                    body.aero_temps = self.temps_save[scenario.id][ibody]
-
-            # Deform the aero mesh before finishing FUN3D initialization (Probably unnecessary for PT)
-            
-            if body.aero_nnodes > 0:
-                for ibody, body in enumerate(bodies,1):
-                    if body.transfer is not None:
-                        dx = np.asfortranarray(body.aero_disps[0::3])
-                        dy = np.asfortranarray(body.aero_disps[1::3])
-                        dz = np.asfortranarray(body.aero_disps[2::3])
-                        self.fun3d_adjoint.input_deformation(dx, dy, dz,body=ibody)
-                    if body.thermal_transfer is not None:
-                        temps = np.asfortranarray(body.aero_temps[:])/body.T_ref
-                        self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
-            self.fun3d_adjoint.initialize_solution()
-            
-        else:
-            if self.adjoint_options is None:
-                options = {'timedep_adj_frozen': True}
-            else:
-                options = self.adjoint_options
-            self.fun3d_adjoint.initialize_project(comm=self.comm)
-            self.fun3d_adjoint.setOptions(kwargs=options)
-            self.fun3d_adjoint.initialize_data()
-            interface.design_initialize()
-            for ibody, body in enumerate(bodies,1):
-                if body.shape and body.aero_nnodes > 0:
-                    aero_X = np.reshape(body.aero_X,(3,-1), order='F')
-                    interface.design_push_body_mesh(ibody, aero_X, body.aero_id)
-                    interface.design_push_body_name(ibody, body.name)
-                else:
-                    interface.design_push_body_mesh(ibody,[],[])
-                    interface.design_push_body_name(ibody, body.name)
-            self.fun3d_adjoint.initialize_grid()
-            self.fun3d_adjoint.initialize_solution()
-
-        self.dFdqinf = np.zeros(len(scenario.functions))
-        self.dHdq = np.zeros(len(scenario.functions))
-        """
         return 0
 
     def set_functions(self, scenario, bodies):
@@ -347,51 +262,12 @@ class PistonInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
-        pass
-        """
-        for function in scenario.functions:
-            if function.adjoint:
-                start =  1 if function.stop==-1 else function.start
-                stop  =  1 if function.stop==-1 else function.stop
-                ftype = -1 if function.averaging else 1
-                interface.design_push_composite_func(function.id,
-                                                     1,
-                                                     start,
-                                                     stop,
-                                                     1.0,
-                                                     0.0,
-                                                     1.0,
-                                                     function.value,
-                                                     ftype,
-                                                     100.0,
-                                                     -100.0)
 
-                if function.body ==-1:
-                    boundary = 0
-                else:
-                    boundary = bodies[function.body].boundary
-
-                # The funtofem function in FUN3D acts as any adjoint function
-                # that isn't dependent on FUN3D variables
-                name = function.name if function.analysis_type == 'aerodynamic' else 'funtofem'
-
-                interface.design_push_component_func(function.id,
-                                                     1,
-                                                     boundary,
-                                                     name,
-                                                     function.value,
-                                                     1.0,
-                                                     0.0,
-                                                     1.0)
-        """
         return
 
     def set_variables(self, scenario, bodies):
         """
-        Set the aerodynamic variable definitions into FUN3D using the design interface.
-        FUN3D expects 6 global variables (Mach number, AOA, yaw, etc.) that are stored in the scenario.
-        It also expects a set of rigid motion variables for each body that are stored in the body.
-        If the body has been specific as *motion_driver(i)='funtofem'*, the rigid motion variables will not affect the body's movement but must be passed regardless.
+        Sets the aerodynamic variables (currently only angle of attack is supported)
 
         Parameters
         ----------
@@ -404,11 +280,11 @@ class PistonInterface(SolverInterface):
         for var in scenario.variables["aerodynamic"]:
             if var.name == "AOA":
                 self.set_AoA(var.value, scenario, bodies)
-                print("setting AoA to: ", var.value)
 
         return
 
     def set_AoA(self, alpha, scenario, bodies):
+        self.alpha = alpha
         self.length_dir = np.array(
             [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
         )  # Unit vec in length dir
@@ -429,7 +305,6 @@ class PistonInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.analysis_type == "aerodynamic":
-                # the [6] index returns the value
                 if self.comm.Get_rank() == 0:
                     if function.name == "cl":
                         function.value = self.compute_cl(scenario, bodies)
@@ -442,7 +317,6 @@ class PistonInterface(SolverInterface):
             aero_loads = body.get_aero_loads(scenario)
             lift = np.sum(aero_loads[2::3])
             cl = lift / (self.qinf * self.L * self.width)
-            print("CL = ", cl)
         return cl
 
     def get_function_gradients(self, scenario, bodies):
@@ -459,47 +333,21 @@ class PistonInterface(SolverInterface):
 
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.aero_variables):
-                # Do the scenario variables first
-                #            for var in scenario.get_active_variables():
                 if var.name == "AOA":
-                    print("Getting AoA gradient")
-                    value = self.compute_aoa_deriv(scenario, bodies)
-                    func.add_gradient_component(var, value[:])
-
-            """
-            for vartype in scenario.variables:
-                if vartype == 'aerodynamic':
-                    for i, var in enumerate(scenario.variables[vartype]):
-                        if var.active:
-                            if function.adjoint:
-                                if var.name == 'AOA':
-                                    scenario.derivatives[vartype][offset+func][i] = self.compute_cl_deriv(scenario, bodies)
-                                elif var.id<=6:
-                                    scenario.derivatives[vartype][offset+func][i] = 0
-                                    #scenario.derivatives[vartype][offset+func][i] = interface.design_pull_global_derivative(function.id,var.id)
-                                elif var.name.lower() == 'dynamic pressure':
-                                    scenario.derivatives[vartype][offset+func][i] = self.comm.reduce(self.dFdqinf[func])
-                                    scenario.derivatives[vartype][offset+func][i] = self.comm.reduce(self.dHdq[func])
-                            else:
-                                scenario.derivatives[vartype][offset+func][i] = 0.0
-                            scenario.derivatives[vartype][offset+func][i] = self.comm.bcast(scenario.derivatives[vartype][offset+func][i],root=0)
-
-
-            for body in bodies:
-                for vartype in body.variables:
-                    if vartype == 'rigid_motion':
-                        for i, var in enumerate(body.variables[vartype]):
-                            if var.active:
-                                # rigid motion variables are not active in funtofem path
-                                body.derivatives[vartype][offset+func][i] = 0.0
-            """
+                    if func.name == "cl":
+                        value = self.compute_cl_deriv(scenario, bodies)
+                        func.add_gradient_component(var, value[:])
+                    elif func.name == "ksfailure":
+                        value = self.compute_ks_deriv(scenario, bodies)
+                        func.add_gradient_component(var, value[:])
 
         return
 
-    def compute_aoa_deriv(self, scenario, bodies):
+    def compute_cl_deriv(self, scenario, bodies):
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(scenario)
-            w = body.aero_X[2::3] + self.nmat.T @ aero_disps
+            # w = body.aero_X[2::3] + self.nmat.T @ aero_disps
+            w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
             dw_dxi = self.CD_mat @ w
             dw_dt = np.zeros(self.aero_nnodes)  # Set dw/dt = 0  for now (steady)
             areas = self.compute_Areas()
@@ -507,7 +355,9 @@ class PistonInterface(SolverInterface):
             dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
             dAeroX_dAlpha = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
             for i in range(body.aero_nnodes):
-                r = body.aero_X[3 * i]
+                r = np.sqrt(
+                    self.piston_aero_X[3 * i] ** 2 + self.piston_aero_X[3 * i + 2] ** 2
+                )
                 dAeroX_dAlpha[3 * i : 3 * i + 3] = np.array(
                     [
                         -r * np.pi / 180 * np.sin(self.alpha * np.pi / 180),
@@ -515,8 +365,9 @@ class PistonInterface(SolverInterface):
                         r * np.pi / 180 * np.cos(self.alpha * np.pi / 180),
                     ]
                 )
+
             dP_dAlpha = (
-                self.nmat
+                -self.nmat
                 @ np.diag(areas)
                 @ np.diag(dwdxi_deriv)
                 @ self.CD_mat
@@ -524,14 +375,61 @@ class PistonInterface(SolverInterface):
                 @ dAeroX_dAlpha
             )
 
-            cl_grad = -self.psi_P.T @ dP_dAlpha
-            print("psi_P * dP_dalpha: ", cl_grad)
+            # Computing dCL_dAlpha
+            lift_mat = np.zeros((1, self.aero_nnodes * 3))
+            lift_mat[:, 2::3] = 1.0
+            dCLdfa = 1 / (self.qinf * self.L * self.width) * lift_mat
+            dCL_dAlpha = (
+                dCLdfa
+                @ self.nmat
+                @ np.diag(areas)
+                @ np.diag(dwdxi_deriv)
+                @ self.CD_mat
+                @ self.nmat.T
+                @ dAeroX_dAlpha
+            )
+
+            cl_grad = dCL_dAlpha + self.psi_P.T @ dP_dAlpha
+
         return cl_grad
+
+    def compute_ks_deriv(self, scenario, bodies):
+        for ibody, body in enumerate(bodies, 1):
+            aero_disps = body.get_aero_disps(scenario)
+            w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
+            dw_dxi = self.CD_mat @ w
+            dw_dt = np.zeros(self.aero_nnodes)  # Set dw/dt = 0  for now (steady)
+            areas = self.compute_Areas()
+
+            dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
+            dAeroX_dAlpha = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+            for i in range(body.aero_nnodes):
+                r = np.sqrt(
+                    self.piston_aero_X[3 * i] ** 2 + self.piston_aero_X[3 * i + 2] ** 2
+                )
+                dAeroX_dAlpha[3 * i : 3 * i + 3] = np.array(
+                    [
+                        -r * np.pi / 180 * np.sin(self.alpha * np.pi / 180),
+                        0,
+                        r * np.pi / 180 * np.cos(self.alpha * np.pi / 180),
+                    ]
+                )
+
+            dP_dAlpha = (
+                -self.nmat
+                @ np.diag(areas)
+                @ np.diag(dwdxi_deriv)
+                @ self.CD_mat
+                @ self.nmat.T
+                @ dAeroX_dAlpha
+            )
+
+            ks_grad = self.psi_P.T @ dP_dAlpha
+        return ks_grad
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
         """
-        Adds FUN3D's contribution to the aerodynamic surface coordinate derivatives.
-        This is just the grid adjoint variable, $\lambda_G$.
+        NOT APPLICABLE TO PISTON THEORY SOLVER !!!
 
         Parameters
         ----------
@@ -542,25 +440,8 @@ class PistonInterface(SolverInterface):
         step: int
             the time step number
         """
-        nfunctions = scenario.count_adjoint_functions()
-        for ibody, body in enumerate(bodies, 1):
-            if body.shape and body.aero_nnodes > 0:
-                # Aero solver contribution = dGdxa0^T psi_G
-                body.aero_id = self.fun3d_adjoint.extract_surface_id(
-                    body.aero_nnodes, body=ibody
-                )
 
-                (
-                    dGdxa0_x,
-                    dGdxa0_y,
-                    dGdxa0_z,
-                ) = self.fun3d_adjoint.extract_grid_adjoint_product(
-                    body.aero_nnodes, nfunctions, body=ibody
-                )
-
-                body.aero_shape_term[::3, :nfunctions] += dGdxa0_x[:, :] * self.flow_dt
-                body.aero_shape_term[1::3, :nfunctions] += dGdxa0_y[:, :] * self.flow_dt
-                body.aero_shape_term[2::3, :nfunctions] += dGdxa0_z[:, :] * self.flow_dt
+        pass
 
     def iterate(self, scenario, bodies, step):
         """
@@ -586,22 +467,21 @@ class PistonInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(scenario)
             aero_loads = body.get_aero_loads(scenario)
-            # print("aero loads: ", aero_loads[-1])
-            aero_X = body.get_aero_nodes()
+
             if aero_disps is not None:
-                self.compute_forces(aero_disps, aero_loads, aero_X)
+                self.compute_forces(aero_disps, aero_loads, self.piston_aero_X)
+
                 # Write Loads to File at the last step
-                if step == scenario.steps:
-                    file = open("NodalForces_redo_M1_2.txt", "w")
-                    np.savetxt(file, aero_loads)
-                    file.close()
+                # if step == scenario.steps:
+                #     file = open("NodalForces.txt", "w")
+                #     np.savetxt(file, aero_loads)
+                #     file.close()
 
         return 0
 
     def compute_forces(self, aero_disps, aero_loads, aero_X):
 
-        # Compute w for piston theory: [dx,dy,dz] DOT planarNormal
-        # print("aero_disps: ", aero_disps[-1])
+        # Compute w for piston theory: [dx,dy,dz] DOT freestream normal
         w = aero_X[2::3] + self.nmat.T @ aero_disps
 
         ####### Compute body.aero_loads using Piston Theory ######
@@ -638,30 +518,31 @@ class PistonInterface(SolverInterface):
 
     def compute_Pressure_adjoint(self, dw_dxi, dw_dt, press_adj):
         d_press_dxi = self.compute_Pressure_deriv(dw_dxi, dw_dt)
-        dw_dxi_adjoint = (
-            np.diag(d_press_dxi) @ press_adj
-        )  # Verify this is a component wise product
+        dw_dxi_adjoint = np.diag(d_press_dxi) @ press_adj
         return dw_dxi_adjoint, None
 
     def compute_Pressure(self, dw_dxi, dw_dt):
         """
-        Returns 'pressure' values at each node location
+        Returns 'pressure' values at each node location using piston theory
+        governing equation
         """
-        # press = (
-        #     2
-        #     * self.qinf
-        #     / self.M
-        #     * (
-        #         (1 / self.U_inf * dw_dt + dw_dxi)
-        #         + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
-        #         + (self.gamma + 1)
-        #         / 12
-        #         * self.M**2
-        #         * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
-        #     )
-        # )
 
-        press = 2 * self.qinf / self.M * ((1 / self.U_inf * dw_dt + dw_dxi))
+        press = (
+            2
+            * self.qinf
+            / self.M
+            * (
+                (1 / self.U_inf * dw_dt + dw_dxi)
+                + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
+                + (self.gamma + 1)
+                / 12
+                * self.M**2
+                * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
+            )
+        )
+
+        # Simplified First Order Piston Theory
+        # press = 2.0 * self.qinf / self.M * ((1.0 / self.U_inf * dw_dt + dw_dxi))
 
         return press
 
@@ -670,29 +551,30 @@ class PistonInterface(SolverInterface):
         Returns partial derivatives 'pressure' values at each node location
         with respect to dw_dxi
         """
-        # d_press_dwdxi = (
-        #     2
-        #     * self.qinf
-        #     / self.M
-        #     * (
-        #         1
-        #         + (self.gamma + 1)
-        #         / 4
-        #         * self.M
-        #         * 2
-        #         * (1 / self.U_inf * dw_dt + dw_dxi)
-        #         * (1)
-        #         + (self.gamma + 1)
-        #         / 12
-        #         * self.M**2
-        #         * 3
-        #         * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
-        #         * (1)
-        #     )
-        # )
+        d_press_dwdxi = (
+            2
+            * self.qinf
+            / self.M
+            * (
+                1
+                + (self.gamma + 1)
+                / 4
+                * self.M
+                * 2
+                * (1 / self.U_inf * dw_dt + dw_dxi)
+                * (1)
+                + (self.gamma + 1)
+                / 12
+                * self.M**2
+                * 3
+                * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
+                * (1)
+            )
+        )
 
-        ones = np.ones(dw_dxi.shape)
-        d_press_dwdxi = 2 * self.qinf / self.M * ones
+        # Simplified First Order Piston Theory
+        # ones = np.ones(dw_dxi.shape)
+        # d_press_dwdxi = 2.0 * self.qinf / self.M * ones
 
         return d_press_dwdxi
 
@@ -773,11 +655,6 @@ class PistonInterface(SolverInterface):
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             if aero_loads_ajp is not None:
                 self.psi_P = -aero_loads_ajp
-                # print("Psi_P: ", self.psi_P[-1])
-            # if body.aero_nnodes > 0:
-            #     # Solve the force adjoint equation
-            #     if body.transfer is not None:
-            #         self.psi_P = - body.dLdfa
 
         for ibody, body in enumerate(bodies, 1):
             # Extract the equivalent of dG/du_a^T psi_G from Piston Theory (dP/du_a^T psi_P)
@@ -785,32 +662,22 @@ class PistonInterface(SolverInterface):
             aero_nnodes = body.get_num_aero_nodes()
             aero_disps = body.get_aero_disps(scenario)
             aero_loads = body.get_aero_loads(scenario)
-            aero_X = body.get_aero_nodes()
-            if aero_disps_ajp is not None:
 
+            if aero_disps_ajp is not None:
                 dPdua = np.zeros(
                     (aero_nnodes * 3, aero_nnodes * 3), dtype=TransferScheme.dtype
                 )
-                self.compute_forces_adjoint(aero_disps, aero_loads, aero_X, dPdua)
+                self.compute_forces_adjoint(
+                    aero_disps, aero_loads, self.piston_aero_X, dPdua
+                )
 
                 for k, func in enumerate(scenario.functions):
-                    prev_aero_disps_ajp = np.zeros(
-                        aero_nnodes * 3, dtype=TransferScheme.dtype
-                    )
-                    prev_aero_disps_ajp[:] = aero_disps_ajp[:, k]
                     aero_disps_ajp[:, k] = -dPdua.T @ self.psi_P[:, k].flatten()
+
                     if func.name == "cl":
                         aero_disps_ajp[:, k] += self.compute_dCLdua(
-                            aero_disps, aero_loads, aero_X, aero_nnodes
+                            aero_disps, aero_loads, self.piston_aero_X, aero_nnodes
                         ).flatten()
-                    update = aero_disps_ajp[:, k] - prev_aero_disps_ajp
-                    # print("Update: ", np.linalg.norm(update))
-
-                # dPdua = np.zeros((aero_nnodes*3, aero_nnodes*3), dtype=TransferScheme.dtype)
-                # self.compute_forces_adjoint(body.aero_disps, body.aero_loads, body.aero_X, dPdua)
-
-                # for func in range(nfunctions):
-                #     body.dGdua[:, func] = dPdua.T@self.psi_P[:, func].flatten()
 
         return fail
 
