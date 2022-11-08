@@ -27,7 +27,17 @@ from .variable import Variable
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
 
-    def __init__(self, name, id=0, group=None, steady=True, fun3d=True, steps=1000):
+    def __init__(
+        self,
+        name,
+        id=0,
+        group=None,
+        steady=True,
+        fun3d=True,
+        steps=1000,
+        T_ref=300,
+        T_inf=300,
+    ):
         """
         Parameters
         ----------
@@ -44,6 +54,10 @@ class Scenario(Base):
             whether or not you are using FUN3D. If true, the scenario class will auto-populate 'aerodynamic' required by FUN3D
         steps: int
             the number of coupled time steps to run for the scenario
+        T_ref: double
+            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
+        T_inf: double
+            Fluid freestream reference temperature in Kelvin.
 
         See Also
         --------
@@ -61,6 +75,9 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
+
+        self.T_ref = T_ref
+        self.T_inf = T_inf
 
         if fun3d:
             mach = Variable("Mach", id=1, upper=5.0, active=False)
