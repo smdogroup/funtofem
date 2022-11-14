@@ -888,7 +888,7 @@ def createTacsInterfaceFromBDF(
         elif varsPerNode == 4:  # Solid + thermal
             thermal_index = 3
         elif varsPerNode >= 7:  # Shell or beam + thermal
-            thermal_index = 3
+            thermal_index = varsPerNode - 1
 
     # Broad cast the thermal index to ensure it's the same on all procs
     thermal_index = comm.bcast(thermal_index, root=0)
