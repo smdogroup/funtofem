@@ -315,6 +315,102 @@ class Fun3dInterface(SolverInterface):
 
         return
 
+    def get_thermal_conduct(self, scenario, aero_temps):
+        """
+        Calculate dimensional thermal conductivity at each aero surface node.
+        First, use two-constant Sutherland's law to calculate viscosity for use in calculating aero heat flux.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            Current scenario.
+        aero_temps: np.ndarray
+            Current aero surface temperatures.
+        """
+
+        # Gas constants
+        s1 = scenario.suther1
+        s2 = scenario.suther2
+        cp = scenario.cp
+        Pr = scenario.Pr
+
+        # Compute viscosity at each aero surface node
+        mu = s1 * aero_temps ** (3.0 / 2.0) / (aero_temps + s2)
+        # Compute the dimensional thermal conductivity
+        k = mu * cp / Pr
+
+        return k
+
+    def get_thermal_conduct_deriv(self, scenario, aero_temps):
+        """
+        Calculate derivative of thermal conductivity with respect to aero surface temperature.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            Current scenario.
+        aero_temps: np.ndarray
+            Current aero surface temperatures.
+        """
+
+        # Gas constants
+        s1 = scenario.suther1
+        s2 = scenario.suther2
+        cp = scenario.cp
+        Pr = scenario.Pr
+
+        # Compute viscosity at each aero surface node
+        dmu_dtA = (
+            s1
+            * aero_temps ** (0.5)
+            * (3 * s2 + aero_temps)
+            / (2 * (s2 + aero_temps) ** 2)
+        )
+        # Compute the dimensional thermal conductivity
+        dkdtA = dmu_dtA * cp / Pr
+
+        return dkdtA
+
+    def test_thermal_conduct_deriv(self, scenario, aero_temps):
+        """
+        Perform a finite difference check to test the implementation of the thermal
+        conductivity scaling and its derivative.
+        f = v * k(tA)
+        dfdk = v
+
+        fd = v*(k(tA+h*p)-k(tA))/h
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            Current scenario.
+        aero_temps: np.ndarray
+            Current aero surface temperatures.
+        """
+
+        p = np.ones(aero_temps.shape, dtype=TransferScheme.dtype)
+        h = 1e-6
+
+        v = np.random.randn(aero_temps.shape)
+
+        k0 = self.get_thermal_conduct(scenario, aero_temps)
+
+        temps_pert = aero_temps + h * p
+        k1 = self.get_thermal_conduct(scenario, temps_pert)
+
+        fd = v * (k1 - k0) / h
+        dkdtA = self.get_thermal_conduct_deriv(scenario, aero_temps)
+        dfdk = v
+        dfdtA = dfdk * dkdtA
+
+        fd_scalar = np.dot(fd, p)
+        dfdtA_scalar = np.dot(dfdtA, p)
+
+        err = fd_scalar - dfdtA_scalar
+        print(f"Error check for thermal conductivity derivative: {err}", flush=True)
+
+        return
+
     def get_functions(self, scenario, bodies):
         """
         Populate the scenario with the aerodynamic function values.
@@ -463,8 +559,12 @@ class Fun3dInterface(SolverInterface):
                     aero_nnodes, body=ibody
                 )
 
-                # Set the dimensional values of the normal component of the heat flux
-                heat_flux[:] = self.thermal_scale * cq_mag[:]
+                dTdn_dim = cq_mag * scenario.T_inf
+
+                aero_temps = body.get_aero_temps(scenario)
+                k_dim = self.get_thermal_conduct(scenario, aero_temps)
+
+                heat_flux[:] = dTdn_dim[:] * k_dim[:]
 
         return 0
 
