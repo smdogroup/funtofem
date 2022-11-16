@@ -555,11 +555,9 @@ class Fun3dInterface(SolverInterface):
             heat_flux = body.get_aero_heat_flux(scenario)
             if heat_flux is not None and aero_nnodes > 0:
                 # Extract the components of the heat flux and magnitude (along the unit norm)
-                cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
-                    aero_nnodes, body=ibody
-                )
+                cqa = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
 
-                dTdn_dim = cq_mag * scenario.T_inf
+                dTdn_dim = cqa * scenario.T_inf
 
                 aero_temps = body.get_aero_temps(scenario)
                 k_dim = self.get_thermal_conduct(scenario, aero_temps)
@@ -760,17 +758,12 @@ class Fun3dInterface(SolverInterface):
                 psi_H = -aero_flux_ajp
 
                 dtype = TransferScheme.dtype
-                lam_x = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                lam_y = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
                 for func in range(nfuncs):
                     lam[:, func] = self.thermal_scale * psi_H[:, func] / self.flow_dt
 
-                self.fun3d_adjoint.input_heat_flux_adjoint(
-                    lam_x, lam_y, lam_z, lam, body=ibody
-                )
+                self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
                 for func in range(nfuncs):
                     if scenario.steady and ibody == 1:
@@ -977,7 +970,7 @@ class Fun3dInterface(SolverInterface):
                     body.aero_loads[scenario.id][2::3] = fz[:]
 
                 if body.thermal_transfer is not None:
-                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_cqa(
                         body.aero_nnodes, body=ibody
                     )
                     body.aero_heat_flux = np.zeros(
