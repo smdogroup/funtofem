@@ -1,17 +1,15 @@
 from tacs_interface import TacsSteadyInterface
 
+
 class TacsSteadyAnalysisDriver:
     """
     Class to perform only a TACS analysis with aerodynamic loads and heat fluxes in the body still retained.
     Similar to FUNtoFEMDriver class and FuntoFEMnlbgsDriver.
-    Assumed to be ran after one solve_forward from a regular coupled problem, represents uncoupled 
+    Assumed to be ran after one solve_forward from a regular coupled problem, represents uncoupled
     TACS analysis from aerodynamic loads.
     """
-    def __init__( 
-        self,
-        tacs_interface:TacsSteadyInterface,
-        model
-    ):
+
+    def __init__(self, tacs_interface: TacsSteadyInterface, model):
         self.tacs_interface = tacs_interface
         self.model = model
 
@@ -20,8 +18,8 @@ class TacsSteadyAnalysisDriver:
             body.update_transfer()
 
         # zero out previous run data from funtofem
-        #self._zero_tacs_data()
-        #self._zero_adjoint_data()
+        # self._zero_tacs_data()
+        # self._zero_adjoint_data()
 
     def solve_forward(self):
         """
@@ -44,7 +42,7 @@ class TacsSteadyAnalysisDriver:
             self.tacs_interface.initialize(scenario, self.model.bodies)
             self.tacs_interface.iterate(scenario, self.model.bodies, step=0)
             self.tacs_interface.post(scenario, self.model.bodies)
-            
+
             # get functions to store the function values into the model
             self.tacs_interface.get_functions(scenario, self.model.bodies)
 
@@ -95,7 +93,7 @@ class TacsSteadyAnalysisDriver:
             self.tacs_interface.res.zeroEntries()
             self.tacs_interface.ext_force.zeroEntries()
             self.tacs_interface.update.zeroEntries()
-            
+
             # zero any scenario data
             for scenario in self.model.scenarios:
 
