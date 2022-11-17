@@ -1285,7 +1285,7 @@ class Body(Base):
             # Only update theta if the displacements changed
             if norm2 > tol:
                 # Compute the tentative theta value
-                value = (up - self.prev_update).dot(up) 
+                value = (up - self.prev_update).dot(up)
                 value = comm.allreduce(value)
                 self.theta *= 1.0 - value / norm2
 
@@ -1309,14 +1309,17 @@ class Body(Base):
 
             # print out theta_t
             if comm.rank == 0:
-                print(f"theta t = {self.theta_t}", flush=True)
+                print(f"theta t = {self.theta_t.real}", flush=True)
 
-            # Only update theta if the displacements changed
+            # Only update theta if the temperatures changed
             if norm2 > tol:
                 # Compute the tentative theta value
-                value = (up - self.prev_update_t).dot(up) 
+                value = (up - self.prev_update_t).dot(up)
                 value = comm.allreduce(value)
                 self.theta_t *= 1.0 - value / norm2
+
+                if comm.rank == 0:
+                    print(f"value of thermal update = {value}", flush=True)
 
                 self.theta_t = np.max(
                     (np.min((self.theta_t, self.theta_max)), self.theta_min)
@@ -1324,7 +1327,7 @@ class Body(Base):
 
             # handle the min/max for complex step
             if type(self.theta_t) == np.complex128 or type(self.theta_t) == complex:
-                self.theta_t = self.theta.real + 0.0j
+                self.theta_t = self.theta_t.real + 0.0j
 
             self.aitken_vec_t += self.theta_t * up
             self.prev_update_t[:] = up[:]
