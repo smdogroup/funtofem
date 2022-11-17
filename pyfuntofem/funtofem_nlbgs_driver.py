@@ -154,7 +154,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # Under-relaxation for solver stability
             for body in self.model.bodies:
-                body.aitken_relax(scenario)
+                body.aitken_relax(self.comm, scenario)
 
         return fail
 
@@ -217,7 +217,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 return fail
 
             for body in self.model.bodies:
-                body.aitken_adjoint_relax(scenario)
+                body.aitken_adjoint_relax(self.comm, scenario)
 
         self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
         return 0
