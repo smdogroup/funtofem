@@ -31,6 +31,69 @@ except:
     pass
 
 
+class AitkenRelaxation:
+    """
+    Class to define aitken relaxation settings
+    """
+
+    def __init__(
+        self,
+        theta_init=0.125,
+        theta_therm_init=0.125,
+        theta_min=0.01,
+        theta_max=1.0,
+    ):
+        """
+        Construct an aitken relaxation setting object
+        Parmeters
+        ----------
+        theta_init : float
+            initial learning rate for displacement update
+        theta_therm_init : float
+            initial learning rate for temperature update
+        theta_min : float
+            minimum learning rate
+        theta_max : float
+            maximum learning rate
+        """
+        self.theta_init = theta_init
+        self.theta_therm_init = theta_therm_init
+        self.theta_min = theta_min
+        self.theta_max = theta_max
+
+
+class SimpleRelaxation:
+    """
+    Class to define simple exponential decay relaxation scheme
+    """
+
+    def __init__(
+        self,
+        theta_init: float = 1.0,
+        theta_therm_init: float = 1.0,
+        tenth_steps: int = 50,
+        min_learning_rate: float = 1.0e-4,
+    ):
+        self.theta = theta_init
+        self.theta_t = theta_therm_init
+        self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
+        self.min_learning_rate = min_learning_rate
+
+    def call_displacement(self):
+        """
+        Perform the update to the learning rate for displacement transfer
+        """
+        self.theta *= self.decay_rate
+        self.theta = np.max((self.theta, self.min_learning_rate))
+
+    def call_thermal(self):
+        """
+        Perform the update to the learning rate for thermal transfer
+        """
+        self.theta_t *= self.decay_rate
+        self.theta_t = np.max((self.theta_t, self.min_learning_rate))
+
+
 class Body(Base):
     """
     Defines a body base class for FUNtoFEM. Can be used as is or as a
@@ -46,7 +109,7 @@ class Body(Base):
         boundary=0,
         fun3d=True,
         motion_type="deform",
-        use_aitken_accel=True,
+        relaxation_scheme=None,
     ):
         """
 
@@ -142,18 +205,18 @@ class Body(Base):
         self.struct_id = None
         self.aero_id = None
 
+        # relaxation scheme object
+        self.relaxation_scheme = relaxation_scheme
+        self.use_aitken_accel = isinstance(relaxation_scheme, AitkenRelaxation)
+        self.use_simple_accel = isinstance(relaxation_scheme, SimpleRelaxation)
+
         # Aitken acceleration settings
-        self.use_aitken_accel = use_aitken_accel
         self.theta_init = 0.125
         self.theta_therm_init = 0.125
         self.theta_min = 0.01
         self.theta_max = 1.0
 
-        self.aitken_init = None
-        self.aitken_vec = None
-        self.aitken_therm_vec = None
-        self.up_prev = None
-        self.therm_up_prev = None
+        self.aitken_init = False
 
         # forward variables
         self.struct_disps = {}
@@ -1258,126 +1321,107 @@ class Body(Base):
 
         return
 
-    def aitken_relax(self, scenario, tol=1e-13):
+    def aitken_relax(self, comm, scenario, tol=1e-13):
         """
         Perform Aitken relaxation for the displacements set in the
         """
 
         # If Aitken relaxation is turned off, skip this
-        if self.use_aitken_accel is False:
+        if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
 
         if not self.aitken_is_initialized:
+            # Aitken data for the displacements
             self.theta = self.theta_init
             self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+
+            # Aitken data for the temperatures
+            self.theta_t = self.theta_init
+            self.prev_update_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
+            self.aitken_vec_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
+
             self.aitken_is_initialized = True
 
         if self.transfer is not None:
             struct_disps = self.get_struct_disps(scenario)
             up = struct_disps - self.aitken_vec
-            norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
 
-            # Only update theta if the displacements changed
-            if norm2 > tol:
-                # Compute the tentative theta value
-                self.theta *= 1.0 - (up - self.prev_update).dot(up) / norm2
+            if self.use_aitken_accel:
+                norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
+                norm2 = comm.allreduce(norm2)
 
-                self.theta = np.max(
-                    (np.min((self.theta, self.theta_max)), self.theta_min)
-                )
+                # Only update theta if the displacements changed
+                if norm2 > tol:
+                    # Compute the tentative theta value
+                    value = (up - self.prev_update).dot(up)
+                    value = comm.allreduce(value)
+                    self.theta *= 1.0 - value / norm2
 
-            # handle the min/max for complex step
-            if type(self.theta) == np.complex128 or type(self.theta) == complex:
-                self.theta = self.theta.real + 0.0j
+                    self.theta = np.max(
+                        (np.min((self.theta, self.theta_max)), self.theta_min)
+                    )
 
+                # handle the min/max for complex step
+                if type(self.theta) == np.complex128 or type(self.theta) == complex:
+                    self.theta = self.theta.real + 0.0j
+
+            if self.use_simple_accel:
+                # overwrite theta learning rate from the relaxation scheme
+                self.theta = self.relaxation_scheme.learning_rate
+
+                # call the scheme to drop the learning rate for the next iteration
+                self.relaxation_scheme.call_displacement()
+
+            # perform the aitken update for displacement transfer
             self.aitken_vec += self.theta * up
             self.prev_update[:] = up[:]
             struct_disps[:] = self.aitken_vec
 
-        return
+        if self.thermal_transfer is not None:
+            struct_temps = self.get_struct_temps(scenario)
+            up = struct_temps - self.aitken_vec_t
 
-    def aitken_adjoint_relax(self, scenario, tol=1e-16):
-        return
-        """
-        INCOMPLETE NEW AITKEN IMPLEMENTATION BELOW
-        Attempt at elastic implementation, not thermal
-        """
+            if self.use_aitken_accel:
+                norm2 = np.linalg.norm(up - self.prev_update_t) ** 2.0
+                norm2 = comm.allreduce(norm2)
 
-        nfunctions = scenario.count_adjoint_functions()
-        if self.aitken_init:
-            self.aitken_init = False
+                # print out theta_t
+                if comm.rank == 0:
+                    print(f"theta t = {self.theta_t.real}", flush=True)
 
-            # initialize "previous update" to zero
-
-            self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
-            self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
-            self.theta = self.theta_init
-
-            # initialize "previous (thermal) update" to zero
-            self.therm_up_prev = []
-            self.aitken_therm_vec = []
-            self.theta_therm = []
-            if self.transfer is not None:
-                up_prev_body = []
-                aitken_vec_body = []
-                theta_body = []
-                for func in range(nfunctions):
-                    up_prev_body.append(
-                        np.zeros(self.struct_nnodes * 3, dtype=TransferScheme.dtype)
-                    )
-                    aitken_vec_body.append(
-                        np.zeros(self.struct_nnodes * 3, dtype=TransferScheme.dtype)
-                    )
-                    # theta_body.append(self.theta_init)
-                # self.up_prev.append(up_prev_body)
-                # self.aitken_vec (aitken_vec_body)
-                # self.theta.append(theta_body)
-
-            if self.thermal_transfer is not None:
-                up_prev_body = []
-                aitken_therm_vec_body = []
-                theta_body = []
-                for func in range(nfunctions):
-                    up_prev_body.append(
-                        scenario.T_ref
-                        * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
-                    )
-                    aitken_therm_vec_body.append(
-                        scenario.T_ref
-                        * np.ones(self.struct_nnodes * 1, dtype=TransferScheme.dtype)
-                    )
-                    theta_body.append(self.theta_therm_init)
-                self.therm_up_prev.append(up_prev_body)
-                self.aitken_therm_vec.append(aitken_therm_vec_body)
-                self.theta_therm.append(theta_body)
-
-        # do the Aitken update
-        if self.transfer is not None:
-            for func in range(nfunctions):
-                up = self.struct_loads_ajp[:, func] - self.aitken_vec
-                # print("adj up shape: ", self.aitken_vec[func].shape)
-                # print("Update: ", up[-1])
-                norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
-                # print("Prev update: ", np.linalg.norm(self.prev_update))
-
-                # only update theta if vec changed
+                # Only update theta if the temperatures changed
                 if norm2 > tol:
-                    self.theta *= 1.0 - (up - self.prev_update).dot(up) / norm2
-                    # print("theta pre = ", self.theta)
+                    # Compute the tentative theta value
+                    value = (up - self.prev_update_t).dot(up)
+                    value = comm.allreduce(value.real)
+                    self.theta_t *= 1.0 - value / norm2
 
-                    self.theta = np.max(
-                        (
-                            np.min((self.theta, self.theta_max)),
-                            self.theta_min,
-                        )
+                    if comm.rank == 0:
+                        print(f"value of thermal update = {value}", flush=True)
+
+                    self.theta_t = np.max(
+                        (np.min((self.theta_t, self.theta_max)), self.theta_min)
                     )
-                self.aitken_vec += self.theta * up
-                # print("theta = ", self.theta)
-                # print("aitken vec norm: ", np.linalg.norm(self.aitken_vec))
-                self.prev_update = up[:]
-                self.struct_loads_ajp[:, func] = self.aitken_vec[:]
 
+                # handle the min/max for complex step
+                if type(self.theta_t) == np.complex128 or type(self.theta_t) == complex:
+                    self.theta_t = self.theta_t.real + 0.0j
+
+            if self.use_simple_accel:
+                # overwrite theta learning rate from the relaxation scheme
+                self.theta_t = self.relaxation_scheme.theta_t
+
+                # call the scheme to drop the learning rate for the next iteration
+                self.relaxation_scheme.call_thermal()
+
+            self.aitken_vec_t += self.theta_t * up
+            self.prev_update_t[:] = up[:]
+            struct_temps[:] = self.aitken_vec_t
+
+        return
+
+    def aitken_adjoint_relax(self, comm, scenario, tol=1e-16):
         return
 
     def collect_coordinate_derivatives(self, comm, discipline, root=0):
