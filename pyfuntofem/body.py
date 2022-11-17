@@ -35,12 +35,13 @@ class AitkenRelaxation:
     """
     Class to define aitken relaxation settings
     """
+
     def __init__(
         self,
-        theta_init = 0.125,
-        theta_therm_init = 0.125,
-        theta_min = 0.01,
-        theta_max = 1.0,
+        theta_init=0.125,
+        theta_therm_init=0.125,
+        theta_min=0.01,
+        theta_max=1.0,
     ):
         """
         Construct an aitken relaxation setting object
@@ -60,20 +61,22 @@ class AitkenRelaxation:
         self.theta_min = theta_min
         self.theta_max = theta_max
 
+
 class SimpleRelaxation:
     """
     Class to define simple exponential decay relaxation scheme
     """
+
     def __init__(
         self,
-        theta_init:float=1.0,
-        theta_therm_init:float=1.0,
-        tenth_steps:int=50,
-        min_learning_rate:float=1.0e-4,
+        theta_init: float = 1.0,
+        theta_therm_init: float = 1.0,
+        tenth_steps: int = 50,
+        min_learning_rate: float = 1.0e-4,
     ):
         self.theta = theta_init
         self.theta_t = theta_therm_init
-        self.decay_rate = np.power(0.1, 1.0/tenth_steps)
+        self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
         self.min_learning_rate = min_learning_rate
 
     def call_displacement(self):
@@ -90,6 +93,7 @@ class SimpleRelaxation:
         self.theta_t *= self.decay_rate
         self.theta_t = np.max((self.theta_t, self.min_learning_rate))
 
+
 class Body(Base):
     """
     Defines a body base class for FUNtoFEM. Can be used as is or as a
@@ -105,7 +109,7 @@ class Body(Base):
         boundary=0,
         fun3d=True,
         motion_type="deform",
-        relaxation_scheme=None
+        relaxation_scheme=None,
     ):
         """
 
@@ -1323,7 +1327,7 @@ class Body(Base):
         """
 
         # If Aitken relaxation is turned off, skip this
-        if not(self.use_aitken_accel) and not(self.use_simple_accel):
+        if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
 
         if not self.aitken_is_initialized:
