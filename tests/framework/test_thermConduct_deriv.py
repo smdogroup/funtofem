@@ -2,14 +2,8 @@ import numpy as np
 from funtofem import TransferScheme
 from pyfuntofem.scenario import Scenario
 
-myType = TransferScheme.dtype
-steady = Scenario("steady", group=0, steps=1)
 
-my_temps = np.array(np.random.rand(100) * 400, dtype=myType)
-rtol = 1e-6
-
-
-def test_thermal_conduct_deriv(aero_temps):
+def test_thermal_conduct_deriv(self):
     """
     Perform a finite difference check to test the implementation of the thermal
     conductivity scaling and its derivative.
@@ -20,11 +14,13 @@ def test_thermal_conduct_deriv(aero_temps):
 
     Parameters
     ----------
-    myType: :class:`~scenario.Scenario`
-        Current scenario.
-    aero_temps: np.ndarray
-        Current aero surface temperatures.
     """
+
+    myType = TransferScheme.dtype
+    steady = Scenario("steady", group=0, steps=1)
+
+    aero_temps = np.array(np.random.rand(100) * 400, dtype=myType)
+    rtol = 1e-6
 
     p = np.ones(aero_temps.shape, dtype=TransferScheme.dtype)
     h = 1e-6
@@ -47,13 +43,13 @@ def test_thermal_conduct_deriv(aero_temps):
 
     rel_err = (fd_scalar - dfdtA_scalar) / dfdtA_scalar
 
+    print(
+        f"Finite difference check for thermal conductivity derivative: {rel_err}",
+        flush=True,
+    )
+    assert abs(rel_err) < rtol
+
     return rel_err
 
 
-rel_err = test_thermal_conduct_deriv(my_temps)
-
-print(
-    f"Finite difference check for thermal conductivity derivative: {rel_err}",
-    flush=True,
-)
-assert abs(rel_err) < rtol
+test_thermal_conduct_deriv()
