@@ -43,7 +43,7 @@ Heat Flux Transfer Residual
 .. math:: 
 	\mathbf{\color{green}Q}(\mathbf{h}_A, \mathbf{h}_S) \triangleq \mathbf{h}_S - \mathbf{W}^T \mathbf{h}_A = 0
 
-* :math:`\mathbf{h}_A` - aerodynamic heat flux at the structure surface
+* :math:`\mathbf{h}_A` - aerodynamic heat flux at the surface
 * :math:`\mathbf{h}_S` - structure heat flux at the surface
 * :math:`\mathbf{W}` - weight matrix for the temperature transfer
 
@@ -97,13 +97,14 @@ Grid Deformation Residual
 Heat Flux Integration Residual 
 ==============================
 .. math:: 
-	\mathbf{\color{blue}H}(\mathbf{h}_A, \mathbf{q}, \mathbf{x}, \mathbf{x}_G) \triangleq
-	\mathbf{h}_A - \varphi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0
+	\mathbf{\color{blue}H}(\mathbf{h}_A, \mathbf{q}, \mathbf{t}_A, \mathbf{x}, \mathbf{x}_G) \triangleq
+	\mathbf{h}_A(\mathbf{t}_A) - \varphi (\mathbf{q}, \mathbf{x}, \mathbf{x}_G) = 0
 
-* :math:`\mathbf{h}_A` - nodal forces on aerodynamic surface
+* :math:`\mathbf{h}_A` - aerodynamic heat flux at the surface
+* :math:`\mathbf{q}` - flow state vector
+* :math:`\mathbf{t}_A` - aerodynamic temperatures at the structure surface
 * :math:`\mathbf{x}` - design variable vector
 * :math:`\mathbf{x}_G` - aerodynamic volume mesh
-* :math:`\mathbf{q}` - flow state vector
 * :math:`\varphi` - action of the heat flux integration
 
 TACS, Structure Solver
@@ -303,6 +304,10 @@ The interpolation is repeated for all aerodynamic surface nodes, giving the temp
 
 	{T}({t}_{S}, {t}_{A}) \triangleq  {W} {t}_{S} - {t}_{A} = 0,
 
+Because FUN3D is a nondimensional code and heat flux does not scale linearly with a reference temperature, area-weighted 
+temperature gradients at the wall are extracted from FUN3D. Inside FUNtoFEM, the thermal conductivity is then calculated 
+at each aerodynamic surface node based on the corresponding aerodynamic temperatures. The area-weighted heat flux at the
+aerodynamic surface nodes is then calculated as a product of the temperature gradients and thermal conductivity values.
 The relationship between the area-weighted heat flux at the aerodynamic surface nodes and the resulting heat flux on the 
 structural nodes is calculated in the same manner as the loads. Based on virtual work, the flux produced at a structural 
 node by the force at an aerodynamic surface node is:
@@ -341,15 +346,15 @@ for each analysis component combined with their corresponding adjoint, giving th
 .. math::
 
 	\mathbf{\mathcal{L}}_{ATE} \triangleq \; & f({x}, {q}, {x}_{G}, {f}_{A}, {f}_{S}, {f}_{T,A}, {f}_{T,S}, {u}_{S}, {t}_{S}, {u}_{A}, {t}_{A})
-    + \psi_{A}^{T} {A}({x}, {q}, {x}_G, {t}_{A} )
-    + \psi_{G}^{T} {G}\left({x}, {u}_{A}, {x}_G\right) \\
-    & + \psi_{F}^{T} {F} ( {x}, {x}_G, {q}, {f}_A )
-    + \psi_{L}^{T} {L}({x}, {u}_{S}, {f}_{A}, {f}_{S})
-    + \psi_{H}^{T} {H} \left( {x}, {x}_G, {q}, {f}_{T,A} \right) 
-    + \psi_{Q}^{T} \mathbf{Q}(\mathbf{f}_{T,A},\mathbf{f}_{T,S}) \\
-    & + \psi_{S}^{T} \mathbf{S}(\mathbf{x},{u}_{S},\mathbf{t}_{S},{f}_{S},\mathbf{f}_{T,S})
-    + \psi_{D}^{T} {D}({x}, {u}_{S}, {u}_{A})
-    + \psi_{T}^{T} \mathbf{T}(\mathbf{t}_{S},{t}_{A})
+    + \psi_{A}^{T} \mathbf{A}({x}, {q}, {x}_G, {t}_{A} )
+    + \psi_{G}^{T} \mathbf{G}\left({x}, {u}_{A}, {x}_G\right) \\
+    & + \psi_{F}^{T} \mathbf{F} ( {x}, {x}_G, {q}, {f}_A )
+    + \psi_{L}^{T} \mathbf{L}({x}, {u}_{S}, {f}_{A}, {f}_{S})
+    + \psi_{H}^{T} \mathbf{H} \left( {x}, {x}_G, {q}, {f}_{T,A} \right) 
+    + \psi_{Q}^{T} \mathbf{Q}(f_{T,A},f_{T,S}) \\
+    & + \psi_{S}^{T} \mathbf{S}(x,u_S,t_S,f_S,f_{T,S})
+    + \psi_{D}^{T} \mathbf{D}(x, u_S, u_A)
+    + \psi_{T}^{T} \mathbf{T}(t_S,t_A)
 
 The adjoint equations are obtained by taking the derivative of the aerothermoelastic Lagrangian with respect to the state 
 variables and setting it to zero. This results in the following coupled system of equations:
@@ -357,9 +362,9 @@ variables and setting it to zero. This results in the following coupled system o
 .. math::
 
 	\begin{bmatrix}
-	\frac{\partial \mathbf{A}}{\partial \mathbf{q}}^{T} & 0 &
+	\frac{\partial A}{\partial q}^{T} & 0 &
 	\frac{\partial {F}}{\partial {q}}^{T} & 0 &
-	\frac{\partial \mathbf{H}}{\partial \mathbf{q}}^{T} & 0 & 0 & 0 & 0 \\
+	\frac{\partial H}{\partial q}^{T} & 0 & 0 & 0 & 0 \\
 	%
 	\frac{\partial {A}}{\partial {x}_{G}}^{T} & 
 	\frac{\partial {G}}{\partial {x}_{G}}^{T} &
@@ -381,12 +386,12 @@ variables and setting it to zero. This results in the following coupled system o
 	0 & 0 & 0 & 0 & 0 & 0 &
 	\frac{\partial {S}}{\partial {u}_{S}}^{T} &
 	\frac{\partial {D}}{\partial {u}_{S}}^{T} &
-	\frac{\partial {S}}{\partial {t}_{S}}^{T} \\
+	\frac{\partial {T}}{\partial {t}_{S}}^{T} \\
 	%
 	0 & \frac{\partial {G}}{\partial {u}_{A}}^{T} & 0 & 0 & 0 & 0 & 0 &
 	\frac{\partial {D}}{\partial {u}_{A}}^{T} & 0 \\
 	%
-	\frac{\partial {A}}{\partial {t}_{A}}^{T} & 0 & 0 & 0 & 0 & 0 & 0 & 0 &
+	\frac{\partial {A}}{\partial {t}_{A}}^{T} & 0 & 0 & 0 & \frac{\partial H}{\partial t_A}^T & 0 & 0 & 0 &
 	\frac{\partial {T}}{\partial {t}_{A}}^{T} 
 	\end{bmatrix} 
 	\begin{bmatrix}
@@ -402,15 +407,15 @@ variables and setting it to zero. This results in the following coupled system o
 	\end{bmatrix} 
 	= -
 	\begin{bmatrix}
-	\frac{\partial f}{\partial \mathbf{q}}^{T} \\
-	\frac{\partial f}{\partial {x}_{G}}^{T} \\
-	\frac{\partial f}{\partial {f}_{A}}^{T} \\
-	\frac{\partial f}{\partial {f}_{S}}^{T} \\
-	\frac{\partial f}{\partial {f}_{T,A}}^{T} \\
-	\frac{\partial f}{\partial {f}_{T,S}}^{T} \\
-	\frac{\partial f}{\partial {u}} \\
-	\frac{\partial f}{\partial {u}_{A}} \\
-	\frac{\partial f}{\partial {t}_{A}}
+	\frac{\partial f}{\partial q}^{T} \\
+	\frac{\partial f}{\partial x_{G}}^{T} \\
+	\frac{\partial f}{\partial f_{A}}^{T} \\
+	\frac{\partial f}{\partial f_{S}}^{T} \\
+	\frac{\partial f}{\partial f_{T,A}}^{T} \\
+	\frac{\partial f}{\partial f_{T,S}}^{T} \\
+	\frac{\partial f}{\partial u} \\
+	\frac{\partial f}{\partial u_{A}} \\
+	\frac{\partial f}{\partial t_{A}}
 	\end{bmatrix} 
 
 
@@ -426,7 +431,7 @@ off-diagonal terms of the partial derivative of the Lagrangian with respect to t
 The number of functions is abbreviated as nfuncs for a given scenario.
 
 .. |ad_ajp| replace:: :math:`\psi_G^T \frac{\partial G}{\partial u_A}`
-.. |at_ajp| replace:: :math:`\psi_A^T \frac{\partial A}{\partial t_A}`
+.. |at_ajp| replace:: :math:`\psi_A^T \frac{\partial A}{\partial t_A} + \psi_H^T \frac{\partial H}{\partial t_A}`
 .. |al_ajp| replace:: :math:`\psi_L^T \frac{\partial L}{\partial f_A}`
 .. |af_ajp| replace:: :math:`\psi_Q^T \frac{\partial Q}{\partial h_A}`
 
