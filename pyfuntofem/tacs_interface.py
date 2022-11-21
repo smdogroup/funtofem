@@ -21,7 +21,7 @@ limitations under the License.
 """
 
 from mpi4py import MPI
-from tacs import pytacs, TACS, functions
+from tacs import pytacs, TACS, functions, constitutive, elements
 from .solver_interface import SolverInterface
 import numpy as np
 import os
@@ -827,6 +827,7 @@ def createTacsInterfaceFromBDF(
     nprocs,
     bdf_file,
     prefix="",
+    struct_DVs=[],
     callback=None,
     struct_options={},
     thermal_index=-1,
@@ -844,6 +845,8 @@ def createTacsInterfaceFromBDF(
         The BDF file name
     prefix: str
         Output prefix for .f5 files generated from TACS
+    struct_DVs: List
+        list of struct DV values for the built-in funtofem callback method
     callback: function
         The element callback function for pyTACS
     struct_options: dictionary
@@ -863,6 +866,113 @@ def createTacsInterfaceFromBDF(
     if world_rank < nprocs:
         # Create the assembler class
         fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
+
+        # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
+        def f2f_callback(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
+
+            # compute the dv index by checking the dvprel has propID equal to the propID from the kwarg of the callback
+            t = None
+            dv_ind = 0
+            for dv_key in fea_assembler.bdfInfo.dvprels:
+                propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
+                if propertyID == kwargs['propID']:
+                    t = struct_DVs[dv_ind]
+                    break
+                dv_ind += 1
+
+            # Callback function to return appropriate tacs MaterialProperties object
+            # For a pynastran mat card
+            def matCallBack(matInfo):
+                # Nastran isotropic material card
+                if matInfo.type == 'MAT1':
+                    mat = tacs.constitutive.MaterialProperties(rho=matInfo.rho, E=matInfo.e,
+                                                            nu=matInfo.nu, ys=matInfo.St,
+                                                            alpha=matInfo.a)
+                # Nastran orthotropic material card
+                elif matInfo.type == 'MAT8':
+                    E1 = matInfo.e11
+                    E2 = matInfo.e22
+                    nu12 = matInfo.nu12
+                    G12 = matInfo.g12
+                    G13 = matInfo.g1z
+                    G23 = matInfo.g2z
+                    # If out-of-plane shear values are 0, Nastran defaults them to the in-plane
+                    if G13 == 0.0:
+                        G13 = G12
+                    if G23 == 0.0:
+                        G23 = G12
+                    rho = matInfo.rho
+                    Xt = matInfo.Xt
+                    Xc = matInfo.Xc
+                    Yt = matInfo.Yt
+                    Yc = matInfo.Yc
+                    S12 = matInfo.S
+                    mat = tacs.constitutive.MaterialProperties(rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13, G23=G23,
+                                                            Xt=Xt, Xc=Xc, Yt=Yt, Yc=Yc, S12=S12)
+                # Nastran 2D anisotropic material card
+                elif matInfo.type == 'MAT2':
+                    C11 = matInfo.G11
+                    C12 = matInfo.G12
+                    C22 = matInfo.G22
+                    C13 = matInfo.G13
+                    C23 = matInfo.G23
+                    C33 = matInfo.G33
+                    rho = matInfo.rho
+                    # See if this card features anisotropic coupling terms (which we don't support yet)
+                    if np.abs(C13) / (C11 + C22) >= 1e-8 or np.abs(C23) / (C11 + C22) >= 1e-8:
+                        self._TACSWarning(
+                            f"MAT2 card {matInfo.mid} has anisotropic stiffness components that are not currently supported. "
+                            "These terms will be dropped and the material treated as orthotropic. "
+                            "Result accuracy may be affected.")
+                    nu12 = C12 / C22
+                    nu21 = C12 / C11
+                    E1 = C11 * (1 - nu12 * nu21)
+                    E2 = C22 * (1 - nu12 * nu21)
+                    G12 = G13 = G23 = C33
+                    mat = tacs.constitutive.MaterialProperties(rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13,
+                                                            G23=G23)
+
+                else:
+                    raise self._TACSError(f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}.")
+
+                return mat
+
+            # get the property info
+            propInfo = fea_assembler.bdfInfo.properties[propertyID]
+
+            # First we define the material object
+            mat = None
+
+            # make either one or more material objects from the 
+            if hasattr(propInfo, 'mid_ref'):
+                matInfo = propInfo.mid_ref
+                mat = matCallBack(matInfo)
+            # This property references multiple materials (maybe a laminate)
+            elif hasattr(propInfo, 'mids_ref'):
+                mat = []
+                for matInfo in propInfo.mids_ref:
+                    mat.append(matCallBack(matInfo))
+
+            # make the shell constitutive object for that material, thickness, and dv_ind (for thickness DVs)
+            con = constitutive.IsoShellConstitutive(mat, t=t, tNum=dv_ind)
+
+            # add elements to FEA (assumes all elements are thermal shells by default for aerothermoelastic analysis)
+            elemList = []
+            transform = None
+            for elemDescript in elemDescripts:
+                if elemDescript in ['CQUAD4', 'CQUADR']:
+                    elem = elements.Quad4ThermalShell(transform, con)
+                else:
+                    print("Uh oh, '%s' not recognized" % (elemDescript))
+                elemList.append(elem)
+
+            # Add scale for thickness dv
+            scale = [1.0]
+            return elemList, scale
+
+        # use the default funtofem callback if none is provided
+        if callback is None:
+            callback = f2f_callback
 
         # Set up constitutive objects and elements
         fea_assembler.initialize(callback)
