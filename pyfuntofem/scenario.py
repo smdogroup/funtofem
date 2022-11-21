@@ -35,6 +35,7 @@ class Scenario(Base):
         steady=True,
         fun3d=True,
         steps=1000,
+        preconditioner_steps=0,
         T_ref=300,
         T_inf=300,
     ):
@@ -53,7 +54,9 @@ class Scenario(Base):
         fun3d: bool
             whether or not you are using FUN3D. If true, the scenario class will auto-populate 'aerodynamic' required by FUN3D
         steps: int
-            the number of coupled time steps to run for the scenario
+            the total number of fun3d time steps to run for the scenario
+        preconditioner_steps: int
+            the number of fun3d iterations ran before coupled iterations for preconditioning
         T_ref: double
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
@@ -75,6 +78,7 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
+        self.preconditioner_steps = preconditioner_steps
 
         self.T_ref = T_ref
         self.T_inf = T_inf
