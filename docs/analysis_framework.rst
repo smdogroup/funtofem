@@ -165,7 +165,7 @@ The order of execution in the code follows:
 	\frac{\partial \mathbf{L}^T}{\partial \mathbf{u}_S}\psi_L &= -\frac{\partial \mathbf{f}^T}{\partial \mathbf{u}_S} \\
 	\end{align}
 
-The corresponding Lagrangian in the areoelastic framework is given by:
+The corresponding Lagrangian in the aeroelastic framework is given by:
 
 .. math:: 
 	\mathcal{L}(\mathbf{x}, \mathbf{q}, \mathbf{x}_{G}, \mathbf{u}_{A}, \mathbf{f}_{A}, \mathbf{f}_{S}, \mathbf{u}_S) = &
@@ -345,14 +345,14 @@ for each analysis component combined with their corresponding adjoint, giving th
 
 .. math::
 
-	\mathbf{\mathcal{L}}_{ATE} \triangleq \; & f({x}, {q}, {x}_{G}, {f}_{A}, {f}_{S}, {f}_{T,A}, {f}_{T,S}, {u}_{S}, {t}_{S}, {u}_{A}, {t}_{A})
+	\mathbf{\mathcal{L}}_{ATE} \triangleq \; & f({x}, {q}, {x}_{G}, {f}_{A}, {f}_{S}, h_A, h_S, {u}_{S}, {t}_{S}, {u}_{A}, {t}_{A})
     + \psi_{A}^{T} \mathbf{A}({x}, {q}, {x}_G, {t}_{A} )
     + \psi_{G}^{T} \mathbf{G}\left({x}, {u}_{A}, {x}_G\right) \\
     & + \psi_{F}^{T} \mathbf{F} ( {x}, {x}_G, {q}, {f}_A )
     + \psi_{L}^{T} \mathbf{L}({x}, {u}_{S}, {f}_{A}, {f}_{S})
-    + \psi_{H}^{T} \mathbf{H} \left( {x}, {x}_G, {q}, {f}_{T,A} \right) 
-    + \psi_{Q}^{T} \mathbf{Q}(f_{T,A},f_{T,S}) \\
-    & + \psi_{S}^{T} \mathbf{S}(x,u_S,t_S,f_S,f_{T,S})
+    + \psi_{H}^{T} \mathbf{H} \left( {x}, {x}_G, {q}, h_A \right) 
+    + \psi_{Q}^{T} \mathbf{Q}(h_A,h_S) \\
+    & + \psi_{S}^{T} \mathbf{S}(x,u_S,t_S,f_S,h_S)
     + \psi_{D}^{T} \mathbf{D}(x, u_S, u_A)
     + \psi_{T}^{T} \mathbf{T}(t_S,t_A)
 
@@ -377,13 +377,13 @@ variables and setting it to zero. This results in the following coupled system o
 	0 & 0 & 0 & \frac{\partial {L}}{\partial {f}_{S}}^{T} &
 	0 & 0 & \frac{\partial {S}}{\partial {f}_{S}}^{T} & 0 & 0 \\
 	%
-	0 & 0 & 0 & 0 & \frac{\partial {H}}{\partial {f}_{T,A}}^{T} &
-	\frac{\partial {Q}}{\partial {f}_{T,A}}^{T} & 0 & 0 & 0 \\
+	0 & 0 & 0 & 0 & \frac{\partial {H}}{\partial h_A}^{T} &
+	\frac{\partial {Q}}{\partial h_A}^{T} & 0 & 0 & 0 \\
 	%
-	0 & 0 & 0 & 0 & 0 & \frac{\partial {Q}}{\partial {f}_{T,S}}^{T} & 
-	\frac{\partial {S}}{\partial {f}_{T,S}}^{T} & 0 & 0 \\
+	0 & 0 & 0 & 0 & 0 & \frac{\partial {Q}}{\partial h_S}^{T} & 
+	\frac{\partial S}{\partial h_S}^{T} & 0 & 0 \\
 	%
-	0 & 0 & 0 & 0 & 0 & 0 &
+	0 & 0 & 0 & \frac{\partial L}{\partial u_S}^T & 0 & 0 &
 	\frac{\partial {S}}{\partial {u}_{S}}^{T} &
 	\frac{\partial {D}}{\partial {u}_{S}}^{T} &
 	\frac{\partial {T}}{\partial {t}_{S}}^{T} \\
@@ -411,8 +411,8 @@ variables and setting it to zero. This results in the following coupled system o
 	\frac{\partial f}{\partial x_{G}}^{T} \\
 	\frac{\partial f}{\partial f_{A}}^{T} \\
 	\frac{\partial f}{\partial f_{S}}^{T} \\
-	\frac{\partial f}{\partial f_{T,A}}^{T} \\
-	\frac{\partial f}{\partial f_{T,S}}^{T} \\
+	\frac{\partial f}{\partial h_A}^{T} \\
+	\frac{\partial f}{\partial h_S}^{T} \\
 	\frac{\partial f}{\partial u} \\
 	\frac{\partial f}{\partial u_{A}} \\
 	\frac{\partial f}{\partial t_{A}}
