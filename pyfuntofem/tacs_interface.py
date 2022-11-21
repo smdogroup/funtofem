@@ -868,14 +868,16 @@ def createTacsInterfaceFromBDF(
         fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
 
         # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
-        def f2f_callback(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
+        def f2f_callback(
+            dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
+        ):
 
             # compute the dv index by checking the dvprel has propID equal to the propID from the kwarg of the callback
             t = None
             dv_ind = 0
             for dv_key in fea_assembler.bdfInfo.dvprels:
                 propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
-                if propertyID == kwargs['propID']:
+                if propertyID == kwargs["propID"]:
                     t = struct_DVs[dv_ind]
                     break
                 dv_ind += 1
@@ -884,12 +886,16 @@ def createTacsInterfaceFromBDF(
             # For a pynastran mat card
             def matCallBack(matInfo):
                 # Nastran isotropic material card
-                if matInfo.type == 'MAT1':
-                    mat = tacs.constitutive.MaterialProperties(rho=matInfo.rho, E=matInfo.e,
-                                                            nu=matInfo.nu, ys=matInfo.St,
-                                                            alpha=matInfo.a)
+                if matInfo.type == "MAT1":
+                    mat = tacs.constitutive.MaterialProperties(
+                        rho=matInfo.rho,
+                        E=matInfo.e,
+                        nu=matInfo.nu,
+                        ys=matInfo.St,
+                        alpha=matInfo.a,
+                    )
                 # Nastran orthotropic material card
-                elif matInfo.type == 'MAT8':
+                elif matInfo.type == "MAT8":
                     E1 = matInfo.e11
                     E2 = matInfo.e22
                     nu12 = matInfo.nu12
@@ -907,10 +913,22 @@ def createTacsInterfaceFromBDF(
                     Yt = matInfo.Yt
                     Yc = matInfo.Yc
                     S12 = matInfo.S
-                    mat = tacs.constitutive.MaterialProperties(rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13, G23=G23,
-                                                            Xt=Xt, Xc=Xc, Yt=Yt, Yc=Yc, S12=S12)
+                    mat = tacs.constitutive.MaterialProperties(
+                        rho=rho,
+                        E1=E1,
+                        E2=E2,
+                        nu12=nu12,
+                        G12=G12,
+                        G13=G13,
+                        G23=G23,
+                        Xt=Xt,
+                        Xc=Xc,
+                        Yt=Yt,
+                        Yc=Yc,
+                        S12=S12,
+                    )
                 # Nastran 2D anisotropic material card
-                elif matInfo.type == 'MAT2':
+                elif matInfo.type == "MAT2":
                     C11 = matInfo.G11
                     C12 = matInfo.G12
                     C22 = matInfo.G22
@@ -919,21 +937,28 @@ def createTacsInterfaceFromBDF(
                     C33 = matInfo.G33
                     rho = matInfo.rho
                     # See if this card features anisotropic coupling terms (which we don't support yet)
-                    if np.abs(C13) / (C11 + C22) >= 1e-8 or np.abs(C23) / (C11 + C22) >= 1e-8:
+                    if (
+                        np.abs(C13) / (C11 + C22) >= 1e-8
+                        or np.abs(C23) / (C11 + C22) >= 1e-8
+                    ):
                         self._TACSWarning(
                             f"MAT2 card {matInfo.mid} has anisotropic stiffness components that are not currently supported. "
                             "These terms will be dropped and the material treated as orthotropic. "
-                            "Result accuracy may be affected.")
+                            "Result accuracy may be affected."
+                        )
                     nu12 = C12 / C22
                     nu21 = C12 / C11
                     E1 = C11 * (1 - nu12 * nu21)
                     E2 = C22 * (1 - nu12 * nu21)
                     G12 = G13 = G23 = C33
-                    mat = tacs.constitutive.MaterialProperties(rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13,
-                                                            G23=G23)
+                    mat = tacs.constitutive.MaterialProperties(
+                        rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13, G23=G23
+                    )
 
                 else:
-                    raise self._TACSError(f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}.")
+                    raise self._TACSError(
+                        f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}."
+                    )
 
                 return mat
 
@@ -943,12 +968,12 @@ def createTacsInterfaceFromBDF(
             # First we define the material object
             mat = None
 
-            # make either one or more material objects from the 
-            if hasattr(propInfo, 'mid_ref'):
+            # make either one or more material objects from the
+            if hasattr(propInfo, "mid_ref"):
                 matInfo = propInfo.mid_ref
                 mat = matCallBack(matInfo)
             # This property references multiple materials (maybe a laminate)
-            elif hasattr(propInfo, 'mids_ref'):
+            elif hasattr(propInfo, "mids_ref"):
                 mat = []
                 for matInfo in propInfo.mids_ref:
                     mat.append(matCallBack(matInfo))
@@ -960,7 +985,7 @@ def createTacsInterfaceFromBDF(
             elemList = []
             transform = None
             for elemDescript in elemDescripts:
-                if elemDescript in ['CQUAD4', 'CQUADR']:
+                if elemDescript in ["CQUAD4", "CQUADR"]:
                     elem = elements.Quad4ThermalShell(transform, con)
                 else:
                     print("Uh oh, '%s' not recognized" % (elemDescript))
