@@ -386,7 +386,7 @@ variables and setting it to zero. This results in the following coupled system o
 	0 & 0 & 0 & \frac{\partial L}{\partial u_S}^T & 0 & 0 &
 	\frac{\partial {S}}{\partial {u}_{S}}^{T} &
 	\frac{\partial {D}}{\partial {u}_{S}}^{T} &
-	\frac{\partial {T}}{\partial {t}_{S}}^{T} \\
+	0 \\
 	%
 	0 & \frac{\partial {G}}{\partial {u}_{A}}^{T} & 0 & 0 & 0 & 0 & 0 &
 	\frac{\partial {D}}{\partial {u}_{A}}^{T} & 0 \\
