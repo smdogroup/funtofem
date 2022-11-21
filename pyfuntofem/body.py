@@ -73,11 +73,13 @@ class SimpleRelaxation:
         theta_therm_init: float = 1.0,
         tenth_steps: int = 50,
         min_learning_rate: float = 1.0e-4,
+        min_learning_rate_t: float = 1.0e-4,
     ):
         self.theta = theta_init
         self.theta_t = theta_therm_init
         self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
         self.min_learning_rate = min_learning_rate
+        self.min_learning_rate_t = min_learning_rate_t
 
     def call_displacement(self):
         """
@@ -91,7 +93,7 @@ class SimpleRelaxation:
         Perform the update to the learning rate for thermal transfer
         """
         self.theta_t *= self.decay_rate
-        self.theta_t = np.max((self.theta_t, self.min_learning_rate))
+        self.theta_t = np.max((self.theta_t, self.min_learning_rate_t))
 
 
 class Body(Base):
