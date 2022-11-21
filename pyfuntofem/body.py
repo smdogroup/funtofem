@@ -1341,7 +1341,9 @@ class Body(Base):
             # Aitken data for the temperatures
             self.theta_t = self.theta_init
             self.prev_update_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
-            self.aitken_vec_t = np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
+            self.aitken_vec_t = (
+                np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
+            )
 
             self.aitken_is_initialized = True
 
