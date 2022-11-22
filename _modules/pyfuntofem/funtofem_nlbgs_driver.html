@@ -158,8 +158,23 @@
                     <span class="p">)</span>
                 <span class="n">steps</span> <span class="o">=</span> <span class="mi">1000</span>
 
+        <span class="c1"># flow preconditioner steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">scenario</span><span class="o">.</span><span class="n">preconditioner_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+            <span class="c1"># Take a step in the flow solver for preconditioner (just aerodynamic iteration)</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">conditioner_iterate</span><span class="p">(</span>
+                <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
+            <span class="p">)</span>
+
+            <span class="c1"># exit with failure if the flow iteration failed</span>
+            <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">fail</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fail</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">fail</span>
+
         <span class="c1"># Loop over the NLBGS steps</span>
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">preconditioner_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
             <span class="c1"># Transfer displacements and temperatures</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
                 <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
