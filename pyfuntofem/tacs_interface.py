@@ -23,9 +23,7 @@ limitations under the License.
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions, constitutive, elements
 from .solver_interface import SolverInterface
-import numpy as np
 import os
-from collections import OrderedDict
 
 
 class TacsSteadyInterface(SolverInterface):
