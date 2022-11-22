@@ -892,12 +892,8 @@ def createTacsInterfaceFromBDF(
                     structDV_dict[var.name] = var.value
 
         # convert dict to alphabetically sorted list of DVs (which matches the BDF/DAT written from ESP/CAPS)
-        key_list = [key for key in structDV_dict]
-        sorted_key_list = np.sort(key_list)
-        structDV_list = []
-
-        for key in sorted_key_list:
-            structDV_list.append(structDV_dict[key])
+        structDV_namelist = [key for key in structDV_dict]
+        sorted_structDV_namelist = np.sort(structDV_namelist)
 
         # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
         def f2f_callback(
@@ -910,16 +906,23 @@ def createTacsInterfaceFromBDF(
                 fea_assembler.bdfInfo.cross_reference()
                 fea_assembler.bdfInfo.is_xrefed = True
 
-            # compute the dv index by checking the dvprel has propID equal to the propID from the kwarg of the callback
+            # compute the thickness by checking the dvprel has propID equal to the propID from the kwarg of the callback
             # this information is unavailable to a user creating their own element callback without an fea_assembler object
             t = None
-            dv_ind = 0
+            dv_name = None
             for dv_key in fea_assembler.bdfInfo.dvprels:
                 propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
+                dv_obj = fea_assembler.bdfInfo.dvprels[dv_key].dvids_ref[0]
+                dv_name = dv_obj.label
+
                 if propertyID == kwargs["propID"]:
-                    t = structDV_list[dv_ind]
+                    t = structDV_dict[dv_name]
                     break
-                dv_ind += 1
+
+            # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
+            for dv_ind, name in enumerate(sorted_structDV_namelist):
+                if name == dv_name:
+                    break
 
             # Callback function to return appropriate tacs MaterialProperties object
             # For a pynastran mat card
@@ -987,7 +990,7 @@ def createTacsInterfaceFromBDF(
 
                 return mat
 
-            # get the property info\
+            # get the property info
             propertyID = kwargs["propID"]
             propInfo = fea_assembler.bdfInfo.properties[propertyID]
 
