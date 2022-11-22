@@ -882,13 +882,11 @@ def createTacsInterfaceFromBDF(
         for var in variables:
             if var.analysis_type == "structural":
                 struct_variables.append(var)
-                if comm.rank == 0:
-                    print(
-                        f"adding struct DV name to dict = {var.name.lower()}",
-                        flush=True,
-                    )
                 structDV_dict[var.name.lower()] = var.value
                 structDV_names.append(var.name.lower())
+
+        if comm.rank == 0:
+            print(f"struct dv_names = {structDV_names}", flush=True)
 
         # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
         def f2f_callback(
@@ -901,6 +899,10 @@ def createTacsInterfaceFromBDF(
                 fea_assembler.bdfInfo.cross_reference()
                 fea_assembler.bdfInfo.is_xrefed = True
 
+            # get the property info
+            propertyID = kwargs["propID"]
+            propInfo = fea_assembler.bdfInfo.properties[propertyID]
+
             # compute the thickness by checking the dvprel has propID equal to the propID from the kwarg of the callback
             # this information is unavailable to a user creating their own element callback without an fea_assembler object
             t = None
@@ -911,15 +913,22 @@ def createTacsInterfaceFromBDF(
                 dv_name = dv_obj.label.lower()
 
                 if propertyID == kwargs["propID"]:
-                    if comm.rank == 0:
-                        print(f"trying to open = {dv_name}", flush=True)
-                    t = structDV_dict[dv_name]
+
+                    # only grab thickness from specified DVs
+                    if dv_name in structDV_names:
+                        t = structDV_dict[dv_name]
+
+                    # exit for loop with current t, dv_name
                     break
 
-            # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
-            for dv_ind, name in enumerate(structDV_names):
-                if name.lower() == dv_name.lower():
-                    break
+            if t is not None:
+                # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
+                for dv_ind, name in enumerate(structDV_names):
+                    if name.lower() == dv_name.lower():
+                        break
+            else:
+                t = propInfo.t
+                dv_ind = -1
 
             # Callback function to return appropriate tacs MaterialProperties object
             # For a pynastran mat card
@@ -986,10 +995,6 @@ def createTacsInterfaceFromBDF(
                     )
 
                 return mat
-
-            # get the property info
-            propertyID = kwargs["propID"]
-            propInfo = fea_assembler.bdfInfo.properties[propertyID]
 
             # First we define the material object
             mat = None

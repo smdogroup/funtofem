@@ -686,17 +686,21 @@ class Fun3dInterface(SolverInterface):
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             aero_flux = body.get_aero_heat_flux(scenario)
+            aero_temps = body.get_aero_temps(scenario)
 
             if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
                 # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
                 psi_H = -aero_flux_ajp
 
+                # new viscosity law effect
+                conductivity = scenario.get_thermal_conduct(aero_temps)
+
                 dtype = TransferScheme.dtype
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
                 for func in range(nfuncs):
-                    lam[:, func] = self.thermal_scale * psi_H[:, func] / self.flow_dt
+                    lam[:, func] = psi_H[:, func] / self.flow_dt * conductivity[:]
 
                 self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
@@ -734,6 +738,11 @@ class Fun3dInterface(SolverInterface):
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
+
+            # additional terms
+            heat_flux = body.get_aero_heat_flux(scenario)
+            dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
+
             if aero_temps_ajp is not None and aero_nnodes > 0:
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
@@ -742,6 +751,14 @@ class Fun3dInterface(SolverInterface):
                 scale = self.flow_dt / scenario.T_inf
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
+
+                    # contribution from viscosity in adjoint path
+                    aero_temps_ajp[:, func] += (
+                        scale
+                        * aero_flux_ajp[:, func]
+                        * (heat_flux[:] / conductivity[:])
+                        * dkdtA[:]
+                    )
 
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
