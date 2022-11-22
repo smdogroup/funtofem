@@ -1,4 +1,4 @@
-from tacs_interface import TacsSteadyInterface
+from .tacs_interface import TacsSteadyInterface
 
 
 class TacsSteadyAnalysisDriver:
