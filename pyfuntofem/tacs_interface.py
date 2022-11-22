@@ -79,10 +79,20 @@ class TacsSteadyInterface(SolverInterface):
         self.variables = model.get_variables()
 
         # Get the structural variables from the global list of variables.
-        self.struct_variables = []
+        struct_variables = []
         for var in self.variables:
             if var.analysis_type == "structural":
-                self.struct_variables.append(var)
+                struct_variables.append(var)
+
+        # sort list of structural variable by their names (alphabetically) to match ESP/CAPS
+        structDV_namelist = [var.name for var in struct_variables]
+        sorted_structDV_namelist = np.sort(structDV_namelist)
+        self.struct_variables = []
+        for name in sorted_structDV_namelist:
+            for var in struct_variables:
+                if var.name == name:
+                    self.struct_variables.append(var)
+                    break
 
         # Set the assembler object - if it exists or not
         self._initialize_variables(
@@ -827,7 +837,6 @@ def createTacsInterfaceFromBDF(
     nprocs,
     bdf_file,
     prefix="",
-    struct_DVs=[],
     callback=None,
     struct_options={},
     thermal_index=-1,
@@ -845,8 +854,6 @@ def createTacsInterfaceFromBDF(
         The BDF file name
     prefix: str
         Output prefix for .f5 files generated from TACS
-    struct_DVs: List[float]
-        ordered list of thickness DV values for built-in funtofem callback method
     callback: function
         The element callback function for pyTACS
     struct_options: dictionary
@@ -867,18 +874,50 @@ def createTacsInterfaceFromBDF(
         # Create the assembler class
         fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
 
+        """
+        Automatically adds structural variables from the BDF / DAT file into TACS
+        as long as you have added them with the same name in the DAT file.
+
+        Uses a custom funtofem callback to create thermoelastic shells which are unavailable
+        in pytacs default callback. And creates the DVs in the correct order in TACS based on DVPREL cards.
+        """
+
+        # get dict of struct DVs from the bodies and structural variables
+        # only supports thickness DVs for the structure currently
+        structDV_dict = {}
+        for body in model.bodies:
+            c_variables = body.get_active_variables()
+            for var in c_variables:
+                if var.analysis_type == "structural":
+                    structDV_dict[var.name] = var.value
+
+        # convert dict to alphabetically sorted list of DVs (which matches the BDF/DAT written from ESP/CAPS)
+        key_list = [key for key in structDV_dict]
+        sorted_key_list = np.sort(key_list)
+        structDV_list = []
+
+        for key in sorted_key_list:
+            structDV_list.append(structDV_dict[key])
+
         # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
         def f2f_callback(
             dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
         ):
 
+            # Make sure cross-referencing is turned on in pynastran
+            # this allows it to read the material cards later on
+            if fea_assembler.bdfInfo.is_xrefed is False:
+                fea_assembler.bdfInfo.cross_reference()
+                fea_assembler.bdfInfo.is_xrefed = True
+
             # compute the dv index by checking the dvprel has propID equal to the propID from the kwarg of the callback
+            # this information is unavailable to a user creating their own element callback without an fea_assembler object
             t = None
             dv_ind = 0
             for dv_key in fea_assembler.bdfInfo.dvprels:
                 propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
                 if propertyID == kwargs["propID"]:
-                    t = struct_DVs[dv_ind]
+                    t = structDV_list[dv_ind]
                     break
                 dv_ind += 1
 
@@ -887,7 +926,7 @@ def createTacsInterfaceFromBDF(
             def matCallBack(matInfo):
                 # Nastran isotropic material card
                 if matInfo.type == "MAT1":
-                    mat = tacs.constitutive.MaterialProperties(
+                    mat = constitutive.MaterialProperties(
                         rho=matInfo.rho,
                         E=matInfo.e,
                         nu=matInfo.nu,
@@ -896,9 +935,6 @@ def createTacsInterfaceFromBDF(
                     )
                 # Nastran orthotropic material card
                 elif matInfo.type == "MAT8":
-                    E1 = matInfo.e11
-                    E2 = matInfo.e22
-                    nu12 = matInfo.nu12
                     G12 = matInfo.g12
                     G13 = matInfo.g1z
                     G23 = matInfo.g2z
@@ -907,25 +943,19 @@ def createTacsInterfaceFromBDF(
                         G13 = G12
                     if G23 == 0.0:
                         G23 = G12
-                    rho = matInfo.rho
-                    Xt = matInfo.Xt
-                    Xc = matInfo.Xc
-                    Yt = matInfo.Yt
-                    Yc = matInfo.Yc
-                    S12 = matInfo.S
-                    mat = tacs.constitutive.MaterialProperties(
-                        rho=rho,
-                        E1=E1,
-                        E2=E2,
-                        nu12=nu12,
+                    mat = constitutive.MaterialProperties(
+                        rho=matInfo.rho,
+                        E1=matInfo.e11,
+                        E2=matInfo.e22,
+                        nu12=matInfo.nu12,
                         G12=G12,
                         G13=G13,
                         G23=G23,
-                        Xt=Xt,
-                        Xc=Xc,
-                        Yt=Yt,
-                        Yc=Yc,
-                        S12=S12,
+                        Xt=matInfo.Xt,
+                        Xc=matInfo.Xc,
+                        Yt=matInfo.Yt,
+                        Yc=matInfo.Yc,
+                        S12=matInfo.S,
                     )
                 # Nastran 2D anisotropic material card
                 elif matInfo.type == "MAT2":
@@ -935,34 +965,30 @@ def createTacsInterfaceFromBDF(
                     C13 = matInfo.G13
                     C23 = matInfo.G23
                     C33 = matInfo.G33
-                    rho = matInfo.rho
-                    # See if this card features anisotropic coupling terms (which we don't support yet)
-                    if (
-                        np.abs(C13) / (C11 + C22) >= 1e-8
-                        or np.abs(C23) / (C11 + C22) >= 1e-8
-                    ):
-                        self._TACSWarning(
-                            f"MAT2 card {matInfo.mid} has anisotropic stiffness components that are not currently supported. "
-                            "These terms will be dropped and the material treated as orthotropic. "
-                            "Result accuracy may be affected."
-                        )
                     nu12 = C12 / C22
                     nu21 = C12 / C11
                     E1 = C11 * (1 - nu12 * nu21)
                     E2 = C22 * (1 - nu12 * nu21)
                     G12 = G13 = G23 = C33
-                    mat = tacs.constitutive.MaterialProperties(
-                        rho=rho, E1=E1, E2=E2, nu12=nu12, G12=G12, G13=G13, G23=G23
+                    mat = constitutive.MaterialProperties(
+                        rho=matInfo.rho,
+                        E1=E1,
+                        E2=E2,
+                        nu12=nu12,
+                        G12=G12,
+                        G13=G13,
+                        G23=G23,
                     )
 
                 else:
-                    raise self._TACSError(
+                    raise ValueError(
                         f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}."
                     )
 
                 return mat
 
-            # get the property info
+            # get the property info\
+            propertyID = kwargs["propID"]
             propInfo = fea_assembler.bdfInfo.properties[propertyID]
 
             # First we define the material object
@@ -999,10 +1025,10 @@ def createTacsInterfaceFromBDF(
         if callback is None:
             callback = f2f_callback
 
-        # Set up constitutive objects and elements
+        # Set up constitutive objects and elements in pyTACS
         fea_assembler.initialize(callback)
 
-        # Set the assembler
+        # Retrieve the assembler from pyTACS fea_assembler object
         assembler = fea_assembler.assembler
 
         # Set the output file creator
