@@ -25,6 +25,7 @@ from tacs import pytacs, TACS, functions, constitutive, elements
 from .solver_interface import SolverInterface
 import numpy as np
 import os
+from collections import OrderedDict
 
 
 class TacsSteadyInterface(SolverInterface):
@@ -79,20 +80,10 @@ class TacsSteadyInterface(SolverInterface):
         self.variables = model.get_variables()
 
         # Get the structural variables from the global list of variables.
-        struct_variables = []
+        self.struct_variables = []
         for var in self.variables:
             if var.analysis_type == "structural":
-                struct_variables.append(var)
-
-        # sort list of structural variable by their names (alphabetically) to match ESP/CAPS
-        structDV_namelist = [var.name for var in struct_variables]
-        sorted_structDV_namelist = np.sort(structDV_namelist)
-        self.struct_variables = []
-        for name in sorted_structDV_namelist:
-            for var in struct_variables:
-                if var.name == name:
-                    self.struct_variables.append(var)
-                    break
+                self.struct_variables.append(var)
 
         # Set the assembler object - if it exists or not
         self._initialize_variables(
@@ -885,15 +876,21 @@ def createTacsInterfaceFromBDF(
         # get dict of struct DVs from the bodies and structural variables
         # only supports thickness DVs for the structure currently
         structDV_dict = {}
-        for body in model.bodies:
-            c_variables = body.get_active_variables()
-            for var in c_variables:
-                if var.analysis_type == "structural":
-                    structDV_dict[var.name] = var.value
+        variables = model.get_variables()
+        structDV_names = []
 
-        # convert dict to alphabetically sorted list of DVs (which matches the BDF/DAT written from ESP/CAPS)
-        structDV_namelist = [key for key in structDV_dict]
-        sorted_structDV_namelist = np.sort(structDV_namelist)
+        # Get the structural variables from the global list of variables.
+        struct_variables = []
+        for var in variables:
+            if var.analysis_type == "structural":
+                struct_variables.append(var)
+                if comm.rank == 0:
+                    print(
+                        f"adding struct DV name to dict = {var.name.lower()}",
+                        flush=True,
+                    )
+                structDV_dict[var.name.lower()] = var.value
+                structDV_names.append(var.name.lower())
 
         # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
         def f2f_callback(
@@ -913,15 +910,17 @@ def createTacsInterfaceFromBDF(
             for dv_key in fea_assembler.bdfInfo.dvprels:
                 propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
                 dv_obj = fea_assembler.bdfInfo.dvprels[dv_key].dvids_ref[0]
-                dv_name = dv_obj.label
+                dv_name = dv_obj.label.lower()
 
                 if propertyID == kwargs["propID"]:
+                    if comm.rank == 0:
+                        print(f"trying to open = {dv_name}", flush=True)
                     t = structDV_dict[dv_name]
                     break
 
             # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
-            for dv_ind, name in enumerate(sorted_structDV_namelist):
-                if name == dv_name:
+            for dv_ind, name in enumerate(structDV_names):
+                if name.lower() == dv_name.lower():
                     break
 
             # Callback function to return appropriate tacs MaterialProperties object
