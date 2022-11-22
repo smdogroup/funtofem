@@ -393,6 +393,32 @@ class Fun3dInterface(SolverInterface):
 
         return
 
+    def conditioner_iterate(self, scenario, bodies, step):
+        """
+        flow solver preconditioner iterations for aerothermal and aerothermoelastic analysis
+        to solve temperature profiles to stagnation first
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The scenario
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies.
+        step: int
+            the time step number
+        """
+
+        # Take a step in FUN3D
+        self.comm.Barrier()
+        bcont = self.fun3d_flow.iterate()
+        if bcont == 0:
+            if self.comm.Get_rank() == 0:
+                print("Negative volume returning fail")
+            fail = 1
+            os.chdir(self.root_dir)
+            return fail
+
+        return 0
+
     def iterate(self, scenario, bodies, step):
         """
         Forward iteration of FUN3D.
