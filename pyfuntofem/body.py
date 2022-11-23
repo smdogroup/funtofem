@@ -73,25 +73,27 @@ class SimpleRelaxation:
         theta_therm_init: float = 1.0,
         tenth_steps: int = 50,
         min_learning_rate: float = 1.0e-4,
+        min_learning_rate_t: float = 1.0e-4,
     ):
         self.theta = theta_init
         self.theta_t = theta_therm_init
         self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
         self.min_learning_rate = min_learning_rate
+        self.min_learning_rate_t = min_learning_rate_t
 
-    def call_displacement(self):
+    def relax_displacement(self):
         """
         Perform the update to the learning rate for displacement transfer
         """
         self.theta *= self.decay_rate
         self.theta = np.max((self.theta, self.min_learning_rate))
 
-    def call_thermal(self):
+    def relax_thermal(self):
         """
         Perform the update to the learning rate for thermal transfer
         """
         self.theta_t *= self.decay_rate
-        self.theta_t = np.max((self.theta_t, self.min_learning_rate))
+        self.theta_t = np.max((self.theta_t, self.min_learning_rate_t))
 
 
 class Body(Base):
@@ -1339,7 +1341,9 @@ class Body(Base):
             # Aitken data for the temperatures
             self.theta_t = self.theta_init
             self.prev_update_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
-            self.aitken_vec_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
+            self.aitken_vec_t = (
+                np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
+            )
 
             self.aitken_is_initialized = True
 
@@ -1371,7 +1375,7 @@ class Body(Base):
                 self.theta = self.relaxation_scheme.learning_rate
 
                 # call the scheme to drop the learning rate for the next iteration
-                self.relaxation_scheme.call_displacement()
+                self.relaxation_scheme.relax_displacement()
 
             # perform the aitken update for displacement transfer
             self.aitken_vec += self.theta * up
@@ -1386,19 +1390,12 @@ class Body(Base):
                 norm2 = np.linalg.norm(up - self.prev_update_t) ** 2.0
                 norm2 = comm.allreduce(norm2)
 
-                # print out theta_t
-                if comm.rank == 0:
-                    print(f"theta t = {self.theta_t.real}", flush=True)
-
                 # Only update theta if the temperatures changed
                 if norm2 > tol:
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
                     self.theta_t *= 1.0 - value / norm2
-
-                    if comm.rank == 0:
-                        print(f"value of thermal update = {value}", flush=True)
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
@@ -1413,7 +1410,7 @@ class Body(Base):
                 self.theta_t = self.relaxation_scheme.theta_t
 
                 # call the scheme to drop the learning rate for the next iteration
-                self.relaxation_scheme.call_thermal()
+                self.relaxation_scheme.relax_thermal()
 
             self.aitken_vec_t += self.theta_t * up
             self.prev_update_t[:] = up[:]
