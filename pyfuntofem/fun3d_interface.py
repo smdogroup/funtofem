@@ -488,6 +488,7 @@ class Fun3dInterface(SolverInterface):
             # and then take the product of thermal conductivity and area-weighted temperature gradient.
             heat_flux = body.get_aero_heat_flux(scenario)
             if heat_flux is not None and aero_nnodes > 0:
+
                 # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)
                 dTdn = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
 
@@ -694,13 +695,15 @@ class Fun3dInterface(SolverInterface):
                 psi_H = -aero_flux_ajp
 
                 # new viscosity law effect
-                conductivity = scenario.get_thermal_conduct(aero_temps)
+                k_dim = scenario.get_thermal_conduct(aero_temps)
 
                 dtype = TransferScheme.dtype
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
+                scale = scenario.T_inf / self.flow_dt
+
                 for func in range(nfuncs):
-                    lam[:, func] = psi_H[:, func] / self.flow_dt * conductivity[:]
+                    lam[:, func] = scale * psi_H[:, func] * k_dim[:]
 
                 self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
@@ -739,11 +742,11 @@ class Fun3dInterface(SolverInterface):
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
 
-            # additional terms
-            heat_flux = body.get_aero_heat_flux(scenario)
-            dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
-
             if aero_temps_ajp is not None and aero_nnodes > 0:
+                # additional terms
+                heat_flux = body.get_aero_heat_flux(scenario)
+                dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
+
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
@@ -754,9 +757,9 @@ class Fun3dInterface(SolverInterface):
 
                     # contribution from viscosity in adjoint path
                     aero_temps_ajp[:, func] += (
-                        scale
+                        self.flow_dt
                         * aero_flux_ajp[:, func]
-                        * (heat_flux[:] / conductivity[:])
+                        * (heat_flux[:] / k_dim[:])
                         * dkdtA[:]
                     )
 
