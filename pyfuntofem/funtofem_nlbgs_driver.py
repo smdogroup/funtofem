@@ -122,8 +122,23 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     )
                 steps = 1000
 
+        # flow preconditioner steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)
+        for step in range(1, scenario.preconditioner_steps + 1):
+
+            # Take a step in the flow solver for preconditioner (just aerodynamic iteration)
+            fail = self.solvers["flow"].conditioner_iterate(
+                scenario, self.model.bodies, step
+            )
+
+            # exit with failure if the flow iteration failed
+            fail = self.comm.allreduce(fail)
+            if fail != 0:
+                if self.comm.Get_rank() == 0:
+                    print("Flow solver returned fail flag")
+                return fail
+
         # Loop over the NLBGS steps
-        for step in range(1, steps + 1):
+        for step in range(scenario.preconditioner_steps + 1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
                 body.transfer_disps(scenario)
