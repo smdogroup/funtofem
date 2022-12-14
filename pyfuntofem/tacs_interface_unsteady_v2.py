@@ -261,12 +261,6 @@ class TacsUnsteadyInterface(SolverInterface):
         self.ext_force = None
         self.update = None
 
-        # Matrix, preconditioner and solver method
-        # TODO : do we need mat, pc, gmres for unsteady?
-        # self.mat = None
-        # self.pc = None
-        # self.gmres = None
-
         if assembler is not None:
             print(
                 f"Proc={self.comm.rank} inside assembler {assembler} check", flush=True
@@ -289,25 +283,7 @@ class TacsUnsteadyInterface(SolverInterface):
             # body level
             self.vol = 1.0
 
-            # Allocate the different solver pieces - the
-            # TODO : do we need gmres, pc, mat for unsteady case?
-            # self.mat = mat
-            # self.pc = pc
-            # self.gmres = gmres
-
-            # if mat is None:
-            #     self.mat = assembler.createSchurMat()
-            #     self.pc = TACS.Pc(self.mat)
-            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
-            # elif pc is None:
-            #     self.mat = mat
-            #     self.pc = TACS.Pc(self.mat)
-            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
-            # elif gmres is None:
-            #     self.mat = mat
-            #     self.pc = pc
-            #     self.gmres = TACS.KSM(self.mat, self.pc, 30)
-
+            # Allocate the different solver pieces
         # Allocate the scenario data
         self.scenario_data = {}
         for scenario in model.scenarios:
@@ -505,14 +481,6 @@ class TacsUnsteadyInterface(SolverInterface):
             # need to do this also for integrator?
             self.assembler.setVariables(self.ans)
 
-            # TODO : assemble unsteady Jacobian
-            # Assemble Jacobian matrix and pre-conditioner factor it
-            # alpha = 1.0
-            # beta = 0.0
-            # gamma = 0.0
-            # self.assembler.assembleJacobian(alpha, beta, gamma, self.res, self.mat)
-            # self.pc.factor()
-
             # zeroth-iteration of integrator before full iteration loop
             self.integrator[scenario.id].iterate(0)
 
@@ -533,9 +501,6 @@ class TacsUnsteadyInterface(SolverInterface):
         fail = 0
 
         if self.tacs_proc:
-
-            # TODO : assemble residual of previous time step?
-            # self.res = M*qddot + C*qdot + K * q - force = 0
 
             # get the external force vector for the integrator & zero it
             self.ext_force.zeroEntries()
@@ -563,15 +528,8 @@ class TacsUnsteadyInterface(SolverInterface):
                         :
                     ].astype(TACS.dtype)
 
-            # TODO : See if need any of these steps - apply BCs, add ext forces, etc.
-            # self.assembler.applyBCs(self.ext_force)
-
             # Iterate the TACS integrator
             self.integrator[scenario.id].iterate(step, self.ext_force)
-
-            # TODO : anything with BCs here?
-            # self.ans.axpy(-1.0, self.update)
-            # self.assembler.setBCs(self.ans)
 
             # extract the structural disps, temps from the assembler
             self.assembler.setVariables(self.ans)
@@ -613,11 +571,12 @@ class TacsUnsteadyInterface(SolverInterface):
             if self.gen_output is not None:
                 vec = self.assembler.createVec()
                 for time_step in range(1, scenario.steps + 1):
-                    # Extract eigenvector
+                    # Extract states
                     time, q, _, _ = self.integrator[scenario.id].getStates(time_step)
                     vec.copyValues(q)
-                    # Set eigen mode in assembler
+                    # Set states mode in assembler
                     self.assembler.setVariables(vec)
+                    # Write output .f5
                     self.gen_output(time_step)
 
         return
@@ -823,6 +782,29 @@ class TacsUnsteadyInterface(SolverInterface):
         self.scenario_data[scenario.id].func_grad = self.comm.bcast(func_grad, root=0)
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
+        if self.tacs_proc:
+            fXptSens_vec = self.assembler.createNodeVec()
+
+            for ibody, body in enumerate(bodies):
+                if body.shape:
+                    # TACS should accumulate the derivs internally, only evaluate at first timestep
+                    if step == 0:
+                        for nfunc, func in enumerate(scenario.functions):
+                            if func.adjoint:
+                                fXptSens_vec = self.integrator[
+                                    scenario.id
+                                ].getXptGradient(nfunc)
+                            elif func.name == "mass":
+                                tacsfunc = functions.StructuralMass(self.assembler)
+                                self.assembler.evalXptSens(tacsfunc, fXptSens_vec)
+
+                            fxptSens = fXptSens_vec.getArray()
+                            struct_shape_term = body.get_struct_coordinate_derivatives(
+                                scenario
+                            )
+
+                            struct_shape_term[:, nfunc] += fxptSens.astype(body.dtype)
+
         pass
 
     def step_pre(self, scenario, bodies, step):
@@ -902,12 +884,7 @@ def createTacsUnsteadyInterfaceFromBDF(
         varsPerNode = assembler.getVarsPerNode()
 
         # This is the likely index of the temperature variable
-        if varsPerNode == 1:  # Thermal only
-            thermal_index = 0
-        elif varsPerNode == 4:  # Solid + thermal
-            thermal_index = 3
-        elif varsPerNode >= 7:  # Shell or beam + thermal
-            thermal_index = 3
+        thermal_index = varsPerNode - 1
 
     # Broad cast the thermal index to ensure it's the same on all procs
     thermal_index = comm.bcast(thermal_index, root=0)

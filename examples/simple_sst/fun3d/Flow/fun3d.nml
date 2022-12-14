@@ -1,0 +1,81 @@
+&project
+    project_rootname = 'simpleSST_v1'
+/
+
+&governing_equations
+    eqn_type = 'compressible'
+    viscous_terms = 'laminar'
+/
+
+&raw_grid
+    grid_format = 'aflr3'
+    data_format = 'default'
+    swap_yz_axes = .false.
+/
+
+&reference_physical_properties
+    mach_number = 2.0
+    angle_of_attack = 4.0
+    reynolds_number = 1000000.0
+    temperature = 300.0
+    temperature_units = 'Kelvin'
+/
+
+&inviscid_flux_method
+    flux_construction = 'roe'
+    flux_limiter = 'hminmod'
+    smooth_limiter_coeff = 1.0
+    freeze_limiter_iteration = 1
+/
+
+&nonlinear_solver_parameters
+    schedule_iteration(1:2) = 1, 50
+    schedule_cfl(1:2) = 5, 20
+    time_accuracy = '2ndorderOPT'
+    subiterations = 5
+    time_step_nondim = 0.001
+/
+
+&force_moment_integ_properties
+    area_reference = 1.0
+/
+
+&code_run_control
+    steps = 800
+    stopping_tolerance = 1e-15
+    restart_write_freq = 1000
+    restart_read = 'off'
+/
+
+&global
+    moving_grid = .true.
+    volume_animation_freq = -1
+    boundary_animation_freq = 5
+/
+
+&elasticity_gmres
+    algebraic_mesh_deform = .false.
+    nsearch = 200
+    tol = 1e-14
+    deformation_substeps = 1
+    deform_from_initial_mesh = .true.
+    use_substeps_each_step = .false.
+    elasticity = 1
+    elasticity_exponent = 1.0
+    nrestarts = 1
+    poisson_ratio = 0.0
+/
+
+&gust_data
+ngust_sin = 1
+l_gust_sin(1) = 0.5
+tref_gust_sin(1) = 0.4
+u_gust_sin(1) = 0.0     ! x velocity magnitude (nondim ie. Mach)
+v_gust_sin(1) = 0.0     ! y vel mag
+w_gust_sin(1) = 0.05   ! z vel mag
+/
+
+
+&massoud_output
+    funtofem_include_skin_friction = .false. !Orig set to true
+/

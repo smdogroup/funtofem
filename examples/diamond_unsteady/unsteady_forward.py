@@ -24,7 +24,7 @@ comm = MPI.COMM_WORLD
 # element callback
 def funtofem_callback(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
     # Set constitutive properties
-    #rho = 4540.0  # density, kg/m^3
+    # rho = 4540.0  # density, kg/m^3
     rho = 0.0
     E = 118e9  # elastic modulus, Pa 118e9
     nu = 0.325  # poisson's ratio
