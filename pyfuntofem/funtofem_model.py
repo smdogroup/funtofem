@@ -345,7 +345,7 @@ class FUNtoFEMmodel(object):
                 data += "{}\n".format(func.name)
 
                 # Print the function value
-                data += "{}\n".format(func.value)
+                data += "{}\n".format(func.value.real)
 
                 # Print the number of coordinates
                 data += "{}\n".format(count)
@@ -357,13 +357,14 @@ class FUNtoFEMmodel(object):
                     for i in range(len(id)):
                         data += "{} {} {} {}\n".format(
                             int(id[i]),
-                            deriv[3 * i, n],
-                            deriv[3 * i + 1, n],
-                            deriv[3 * i + 2, n],
+                            deriv[3 * i, n].real,
+                            deriv[3 * i + 1, n].real,
+                            deriv[3 * i + 2, n].real,
                         )
 
                 for var in discpline_vars:
                     deriv = func.get_gradient_component(var)
+                    deriv = deriv.real
 
                     # Write the variable name and derivative value
                     data += var.name + "\n"
