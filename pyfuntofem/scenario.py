@@ -38,6 +38,11 @@ class Scenario(Base):
         preconditioner_steps=0,
         T_ref=300,
         T_inf=300,
+        suther1=1.458205e-6,
+        suther2=110.3333,
+        gamma=1.4,
+        R_specific=287.058,
+        Pr=0.72,
     ):
         """
         Parameters
@@ -61,6 +66,16 @@ class Scenario(Base):
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
             Fluid freestream reference temperature in Kelvin.
+        suther1: double
+            First constant in Sutherland's two-constant viscosity model. Units of kg/m-s-K^0.5
+        suther2: double
+            Second constant in Sutherland's two-constant viscosity model. Units of K
+        gamma: double
+            Ratio of specific heats.
+        R_specific: double
+            Specific gas constant of the working fluid (assumed air). Units of J/kg-K
+        Pr: double
+            Prandtl number.
 
         See Also
         --------
@@ -82,6 +97,15 @@ class Scenario(Base):
 
         self.T_ref = T_ref
         self.T_inf = T_inf
+        self.suther1 = suther1
+        self.suther2 = suther2
+        self.gamma = gamma
+        self.R_specific = R_specific
+        self.Pr = Pr
+
+        # Heat capacity at constant pressure
+        cp = R_specific * gamma / (gamma - 1)
+        self.cp = cp
 
         if fun3d:
             mach = Variable("Mach", id=1, upper=5.0, active=False)
@@ -182,3 +206,55 @@ class Scenario(Base):
 
         for func in self.functions:
             func.scenario = id
+
+    def get_thermal_conduct(self, aero_temps):
+        """
+        Calculate dimensional thermal conductivity at each aero surface node.
+        First, use two-constant Sutherland's law to calculate viscosity for use in calculating aero heat flux.
+
+        Parameters
+        ----------
+        aero_temps: np.ndarray
+            Current aero surface temperatures.
+        """
+
+        # Gas constants
+        s1 = self.suther1
+        s2 = self.suther2
+        cp = self.cp
+        Pr = self.Pr
+
+        # Compute viscosity at each aero surface node
+        mu = s1 * aero_temps ** (3.0 / 2.0) / (aero_temps + s2)
+        # Compute the dimensional thermal conductivity
+        k = mu * cp / Pr
+
+        return k
+
+    def get_thermal_conduct_deriv(self, aero_temps):
+        """
+        Calculate derivative of thermal conductivity with respect to aero surface temperature.
+
+        Parameters
+        ----------
+        aero_temps: np.ndarray
+            Current aero surface temperatures.
+        """
+
+        # Gas constants
+        s1 = self.suther1
+        s2 = self.suther2
+        cp = self.cp
+        Pr = self.Pr
+
+        # Compute viscosity at each aero surface node
+        dmu_dtA = (
+            s1
+            * aero_temps ** (0.5)
+            * (3 * s2 + aero_temps)
+            / (2 * (s2 + aero_temps) ** 2)
+        )
+        # Compute the dimensional thermal conductivity
+        dkdtA = dmu_dtA * cp / Pr
+
+        return dkdtA
