@@ -482,15 +482,24 @@ class Fun3dInterface(SolverInterface):
                 aero_loads[2::3] = self.qinf * fz[:]
 
             # Compute the heat flux on the body
+            # FUN3D is nondimensional, it doesn't output a heat flux (which can't be scaled linearly).
+            # Instead, FUN3D can directly output a temperature gradient at the wall. We then compute
+            # the heat flux manually by calculating viscosity based on aero temps to get thermal conductivity,
+            # and then take the product of thermal conductivity and area-weighted temperature gradient.
             heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
-            if heat_flux is not None and aero_nnodes > 0:
-                # Extract the components of the heat flux and magnitude (along the unit norm)
-                cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
-                    aero_nnodes, body=ibody
-                )
 
-                # Set the dimensional values of the normal component of the heat flux
-                heat_flux[:] = self.thermal_scale * cq_mag[:]
+            if heat_flux is not None and aero_nnodes > 0:
+
+                # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)
+                dTdn = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
+
+                dTdn_dim = dTdn * scenario.T_inf
+
+                aero_temps = body.get_aero_temps(scenario)
+                k_dim = scenario.get_thermal_conduct(aero_temps)
+
+                # actually a heating rate integral(heat_flux) over the area
+                heat_flux[:] = dTdn_dim[:] * k_dim[:]
 
         return 0
 
@@ -679,24 +688,25 @@ class Fun3dInterface(SolverInterface):
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             aero_flux = body.get_aero_heat_flux(scenario)
+            aero_temps = body.get_aero_temps(scenario)
 
             if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
                 # dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
                 psi_H = -aero_flux_ajp
 
+                # new viscosity law effect
+                k_dim = scenario.get_thermal_conduct(aero_temps)
+
                 dtype = TransferScheme.dtype
-                lam_x = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                lam_y = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
-                for func in range(nfuncs):
-                    lam[:, func] = self.thermal_scale * psi_H[:, func] / self.flow_dt
+                scale = scenario.T_inf / self.flow_dt
 
-                self.fun3d_adjoint.input_heat_flux_adjoint(
-                    lam_x, lam_y, lam_z, lam, body=ibody
-                )
+                for func in range(nfuncs):
+                    lam[:, func] = scale * psi_H[:, func] * k_dim[:]
+
+                self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
                 for func in range(nfuncs):
                     if scenario.steady and ibody == 1:
@@ -732,7 +742,12 @@ class Fun3dInterface(SolverInterface):
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
+
             if aero_temps_ajp is not None and aero_nnodes > 0:
+                # additional terms
+                heat_flux = body.get_aero_heat_flux(scenario)
+                dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
+
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
@@ -740,6 +755,14 @@ class Fun3dInterface(SolverInterface):
                 scale = self.flow_dt / scenario.T_inf
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
+
+                    # contribution from viscosity in adjoint path
+                    aero_temps_ajp[:, func] += (
+                        self.flow_dt
+                        * aero_flux_ajp[:, func]
+                        * (heat_flux[:] / k_dim[:])
+                        * dkdtA[:]
+                    )
 
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
@@ -903,7 +926,7 @@ class Fun3dInterface(SolverInterface):
                     body.aero_loads[scenario.id][2::3] = fz[:]
 
                 if body.thermal_transfer is not None:
-                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_heat_flux(
+                    cqx, cqy, cqz, cq_mag = self.fun3d_flow.extract_cqa(
                         body.aero_nnodes, body=ibody
                     )
                     body.aero_heat_flux = np.zeros(
