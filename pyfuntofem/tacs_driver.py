@@ -262,11 +262,11 @@ class TacsSteadyShapeDriver:
         """
 
         # set the new shape variables into the model
-        for var in self.shape_variables:
-            self.tacs_aim.geometry.despmtr[var.name].value = var.value
-
-        # build the new structure geometry
         if self.root_proc:
+            for var in self.shape_variables:
+                self.tacs_aim.geometry.despmtr[var.name].value = var.value
+
+            # build the new structure geometry
             self.tacs_aim.preAnalysis()
 
         # make the new tacs interface of the structural geometry
