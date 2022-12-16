@@ -215,7 +215,7 @@ class TacsSteadyShapeDriver:
         funtofem_driver.solve_forward()
 
         # run post analysis of tacs aim to prevent CAPS_DIRTY error
-        if initially_none and self.root_proc:
+        if initially_none:
 
             # write the model sensitivity file with zero derivatives
             self.model.write_sensitivity_file(
@@ -223,6 +223,10 @@ class TacsSteadyShapeDriver:
                 filename=os.path.join(self.analysis_dir, "nastran_CAPS.sens"),
                 discipline="structural",
             )
+
+            # run postAnalysis to prevent CAPS_DIRTY error
+            if self.root_proc:
+                self.tacs_aim.postAnalysis()
 
     def _transfer_fixed_aero_loads(self):
         """
@@ -232,7 +236,7 @@ class TacsSteadyShapeDriver:
         for body in self.model.bodies:
 
             # update the transfer schemes for the new mesh size
-            body.update_tranfer()
+            body.update_transfer()
 
             ns = self.body.struct_nnodes
             dtype = self.body.dtype
