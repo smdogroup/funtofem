@@ -205,7 +205,7 @@
 
             <span class="c1"># Under-relaxation for solver stability</span>
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">aitken_relax</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">aitken_relax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span> <span class="n">scenario</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">fail</span>
 
@@ -268,7 +268,7 @@
                 <span class="k">return</span> <span class="n">fail</span>
 
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">aitken_adjoint_relax</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">aitken_adjoint_relax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span> <span class="n">scenario</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_extract_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span>

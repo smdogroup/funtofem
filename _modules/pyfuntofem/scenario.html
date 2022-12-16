@@ -74,6 +74,11 @@
         <span class="n">preconditioner_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="n">T_ref</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
         <span class="n">T_inf</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+        <span class="n">suther1</span><span class="o">=</span><span class="mf">1.458205e-6</span><span class="p">,</span>
+        <span class="n">suther2</span><span class="o">=</span><span class="mf">110.3333</span><span class="p">,</span>
+        <span class="n">gamma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
+        <span class="n">R_specific</span><span class="o">=</span><span class="mf">287.058</span><span class="p">,</span>
+        <span class="n">Pr</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -97,6 +102,16 @@
 <span class="sd">            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.</span>
 <span class="sd">        T_inf: double</span>
 <span class="sd">            Fluid freestream reference temperature in Kelvin.</span>
+<span class="sd">        suther1: double</span>
+<span class="sd">            First constant in Sutherland&#39;s two-constant viscosity model. Units of kg/m-s-K^0.5</span>
+<span class="sd">        suther2: double</span>
+<span class="sd">            Second constant in Sutherland&#39;s two-constant viscosity model. Units of K</span>
+<span class="sd">        gamma: double</span>
+<span class="sd">            Ratio of specific heats.</span>
+<span class="sd">        R_specific: double</span>
+<span class="sd">            Specific gas constant of the working fluid (assumed air). Units of J/kg-K</span>
+<span class="sd">        Pr: double</span>
+<span class="sd">            Prandtl number.</span>
 
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
@@ -118,6 +133,15 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span> <span class="o">=</span> <span class="n">T_ref</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T_inf</span> <span class="o">=</span> <span class="n">T_inf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suther1</span> <span class="o">=</span> <span class="n">suther1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suther2</span> <span class="o">=</span> <span class="n">suther2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R_specific</span> <span class="o">=</span> <span class="n">R_specific</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span> <span class="o">=</span> <span class="n">Pr</span>
+
+        <span class="c1"># Heat capacity at constant pressure</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">R_specific</span> <span class="o">*</span> <span class="n">gamma</span> <span class="o">/</span> <span class="p">(</span><span class="n">gamma</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cp</span> <span class="o">=</span> <span class="n">cp</span>
 
         <span class="k">if</span> <span class="n">fun3d</span><span class="p">:</span>
             <span class="n">mach</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;Mach&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -217,7 +241,59 @@
                 <span class="n">var</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="nb">id</span>
 
         <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
-            <span class="n">func</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="nb">id</span></div></div>
+            <span class="n">func</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="nb">id</span></div>
+
+<div class="viewcode-block" id="Scenario.get_thermal_conduct"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.get_thermal_conduct">[docs]</a>    <span class="k">def</span> <span class="nf">get_thermal_conduct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate dimensional thermal conductivity at each aero surface node.</span>
+<span class="sd">        First, use two-constant Sutherland&#39;s law to calculate viscosity for use in calculating aero heat flux.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        aero_temps: np.ndarray</span>
+<span class="sd">            Current aero surface temperatures.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Gas constants</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">suther1</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">suther2</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cp</span>
+        <span class="n">Pr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span>
+
+        <span class="c1"># Compute viscosity at each aero surface node</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">s1</span> <span class="o">*</span> <span class="n">aero_temps</span> <span class="o">**</span> <span class="p">(</span><span class="mf">3.0</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">aero_temps</span> <span class="o">+</span> <span class="n">s2</span><span class="p">)</span>
+        <span class="c1"># Compute the dimensional thermal conductivity</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">*</span> <span class="n">cp</span> <span class="o">/</span> <span class="n">Pr</span>
+
+        <span class="k">return</span> <span class="n">k</span></div>
+
+<div class="viewcode-block" id="Scenario.get_thermal_conduct_deriv"><a class="viewcode-back" href="../../model.html#pyfuntofem.scenario.Scenario.get_thermal_conduct_deriv">[docs]</a>    <span class="k">def</span> <span class="nf">get_thermal_conduct_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate derivative of thermal conductivity with respect to aero surface temperature.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        aero_temps: np.ndarray</span>
+<span class="sd">            Current aero surface temperatures.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Gas constants</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">suther1</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">suther2</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cp</span>
+        <span class="n">Pr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span>
+
+        <span class="c1"># Compute viscosity at each aero surface node</span>
+        <span class="n">dmu_dtA</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">s1</span>
+            <span class="o">*</span> <span class="n">aero_temps</span> <span class="o">**</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="o">*</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">s2</span> <span class="o">+</span> <span class="n">aero_temps</span><span class="p">)</span>
+            <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">s2</span> <span class="o">+</span> <span class="n">aero_temps</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># Compute the dimensional thermal conductivity</span>
+        <span class="n">dkdtA</span> <span class="o">=</span> <span class="n">dmu_dtA</span> <span class="o">*</span> <span class="n">cp</span> <span class="o">/</span> <span class="n">Pr</span>
+
+        <span class="k">return</span> <span class="n">dkdtA</span></div></div>
 </pre></div>
 
             <div class="clearer"></div>
