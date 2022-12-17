@@ -238,24 +238,28 @@ class TacsSteadyShapeDriver:
             # update the transfer schemes for the new mesh size
             body.update_transfer()
 
-            ns = self.body.struct_nnodes
-            dtype = self.body.dtype
+            ns = body.struct_nnodes
+            dtype = body.dtype
 
             # zero the initial struct loads and struct flux for each scenario
             for scenario in self.model.scenarios:
 
-                # initialize new struct loads
-                if self.body.transfer is not None:
-                    self.body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+                # initialize new elastic struct vectors
+                if body.transfer is not None:
+                    body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+                    body.struct_disps[scenario.id] = np.zeros(3 * ns, dtype=dtype)
 
                 # initialize new struct heat flux
-                if self.body.thermal_transfer is not None:
-                    self.body.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=dtype)
+                if body.thermal_transfer is not None:
+                    body.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=dtype)
+                    body.struct_temps[scenario.id] = (
+                        np.ones(ns, dtype=dtype) * scenario.T_ref
+                    )
 
                 # transfer the loads and heat flux from fixed aero loads to
                 # the mesh for the new structural shape
-                self.body.transfer_loads(scenario)
-                self.body.transfer_heat_flux(scenario)
+                body.transfer_loads(scenario)
+                body.transfer_heat_flux(scenario)
 
         return
 
@@ -316,7 +320,8 @@ class TacsSteadyShapeDriver:
         )
 
         # run the tacs aim postAnalysis to compute the chain rule product
-        self.tacs_aim.postAnalysis()
+        if self.root_proc:
+            self.tacs_aim.postAnalysis()
 
         # store the shape variables in the function gradients
         for scenario in self.model.scenarios:
@@ -325,8 +330,25 @@ class TacsSteadyShapeDriver:
     def get_function_gradients(self, scenario):
         """
         get shape derivatives together from tacs aim
+        and store the data in the funtofem model
         """
+        gradients = None
+
+        # read shape gradients from tacs aim on root proc
+        if self.root_proc:
+            for ifunc, func in enumerate(scenario.functions):
+                gradients.append([])
+                for ivar, var in enumerate(self.shape_variables):
+                    derivative = self.tacs_aim.dynout[func.name].deriv(var.name)
+                    gradients[ifunc].append(derivative)
+
+        # broadcast shape gradients to all other processors
+        gradients = self.comm.bcast(gradients, root=0)
+
+        # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.shape_variables):
-                derivative = self.tacs_aim.dynout[func.name].deriv(var.name)
+                derivative = gradients[ifunc][ivar]
                 func.set_gradient_component(var, derivative)
+
+        return
