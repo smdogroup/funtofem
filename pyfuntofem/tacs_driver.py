@@ -286,6 +286,7 @@ class TacsSteadyShapeDriver:
             self.tacs_aim.preAnalysis()
 
         # make the new tacs interface of the structural geometry
+        # TODO : need to make sure the InterfaceFromBDF method tells the struct_id
         self.tacs_interface = createTacsInterfaceFromBDF(
             model=self.model,
             comm=self.comm,
@@ -325,7 +326,7 @@ class TacsSteadyShapeDriver:
 
             # add transfer scheme contributions
             for body in self.model.bodies:
-                body.add_coordinate_derivatives(scenario, step=0)
+                body.add_coordinate_derivative(scenario, step=0)
 
         # collect the coordinate derivatives for each body
         for body in self.model.bodies:
