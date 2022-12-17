@@ -84,6 +84,9 @@ class TacsSteadyAnalysisDriver:
 
             # call get function gradients to store  the gradients from tacs
             self.tacs_interface.get_function_gradients(scenario, self.model.bodies)
+            self.tacs_interface.get_coordinate_derivatives(
+                scenario, self.model.bodies, step=0
+            )
 
     def _zero_tacs_data(self):
         """
@@ -244,6 +247,11 @@ class TacsSteadyShapeDriver:
             # zero the initial struct loads and struct flux for each scenario
             for scenario in self.model.scenarios:
 
+                # initialize new struct shape term for new ns
+                nf = scenario.count_adjoint_functions()
+                # TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios
+                body.struct_shape_term = np.zeros((3 * ns, nf), dtype=dtype)
+
                 # initialize new elastic struct vectors
                 if body.transfer is not None:
                     body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
@@ -307,6 +315,17 @@ class TacsSteadyShapeDriver:
 
         # run the adjoint structural analysis
         self.tacs_driver.solve_adjoint()
+
+        # compute tacs coordinate derivatives
+        tacs_interface = self.tacs_driver.tacs_interface
+        for scenario in self.model.scenarios:
+            tacs_interface.get_coordinate_derivatives(
+                scenario, self.model.bodies, step=0
+            )
+
+            # add transfer scheme contributions
+            for body in self.model.bodies:
+                body.add_coordinate_derivatives(scenario, step=0)
 
         # collect the coordinate derivatives for each body
         for body in self.model.bodies:
