@@ -1045,6 +1045,22 @@ def createTacsInterfaceFromBDF(
     # Create the output generator
     gen_output = TacsOutputGenerator(prefix, f5=f5)
 
+    # get struct ids for coordinate derivatives and .sens file
+    struct_id = None
+    if assembler is not None:
+        # get list of local node IDs with global size, with -1 for nodes not owned by this proc
+        num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
+        bdfNodes = range(num_nodes)
+        local_struct_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+            bdfNodes, nastranOrdering=False
+        )
+
+        # convert back to global IDs owned by this proc
+        global_owned_struct_ids = [
+            inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
+        ]
+        struct_id = global_owned_struct_ids
+
     # We might need to clean up this code. This is making educated guesses
     # about what index the temperature is stored. This could be wrong if things
     # change later. May query from TACS directly?
@@ -1064,7 +1080,12 @@ def createTacsInterfaceFromBDF(
 
     # Create the tacs interface
     interface = TacsSteadyInterface(
-        comm, model, assembler, gen_output, thermal_index=thermal_index
+        comm,
+        model,
+        assembler,
+        gen_output,
+        thermal_index=thermal_index,
+        struct_id=struct_id,
     )
 
     return interface
