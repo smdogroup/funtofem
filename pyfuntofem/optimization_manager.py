@@ -117,6 +117,21 @@ class OptimizationManager:
                 self._sens[func.name][var.name] = func.get_gradient_component(var).real
         return
 
+    def add_sparse_variables(self, opt_problem):
+        """
+        add funtofem model variables to a pyoptsparse optimization problem
+        """
+        for var in self.model.get_variables():
+            opt_problem.addVar(
+                var.name,
+                lower=var.lower,
+                upper=var.upper,
+                value=var.value,
+                scale=var.scale,
+            )
+
+        return
+
     def eval_functions(self, x_dict):
         """
         obtain the functions dictionary for pyoptsparse
