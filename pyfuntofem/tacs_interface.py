@@ -84,8 +84,6 @@ class TacsSteadyInterface(SolverInterface):
                 self.struct_variables.append(var)
 
         # Set the assembler object - if it exists or not
-        if comm.rank == 0:
-            print("Call Initialize variables", flush=True)
         self._initialize_variables(
             model, assembler, thermal_index=thermal_index, struct_id=struct_id
         )
@@ -154,16 +152,12 @@ class TacsSteadyInterface(SolverInterface):
             self.tacs_proc = True
 
             # Create the scenario-independent solution data
-            if self.comm.rank == 0:
-                print("Create empty vectors", flush=True)
             self.res = self.assembler.createVec()
             self.ans = self.assembler.createVec()
             self.ext_force = self.assembler.createVec()
             self.update = self.assembler.createVec()
 
             # Allocate the nodal vector
-            if self.comm.rank == 0:
-                print("Create node vectors", flush=True)
             self.struct_X = assembler.createNodeVec()
             self.assembler.getNodes(self.struct_X)
 
