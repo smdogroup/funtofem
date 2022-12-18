@@ -356,6 +356,7 @@ class TacsSteadyShapeDriver:
 
         # read shape gradients from tacs aim on root proc
         if self.root_proc:
+            gradients = []
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
                 for ivar, var in enumerate(self.shape_variables):
