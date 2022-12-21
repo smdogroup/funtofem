@@ -7,7 +7,7 @@ from tacs import constitutive, elements
 from pyfuntofem.model import *
 from pyfuntofem.driver import *
 from pyfuntofem.fun3d_interface import Fun3dInterface
-from pyfuntofem.tacs_interface_unsteady_v2 import (
+from pyfuntofem.tacs_interface_unsteady import (
     createTacsUnsteadyInterfaceFromBDF,
     IntegrationSettings,
 )
@@ -20,40 +20,6 @@ flow_type = "laminar"
 
 # number of tacs processors and setup MPI
 comm = MPI.COMM_WORLD
-
-# element callback
-def funtofem_callback(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
-    # Set constitutive properties
-    rho = 4540.0  # density, kg/m^3
-    # rho = 0.0
-    E = 118e9  # elastic modulus, Pa 118e9
-    nu = 0.325  # poisson's ratio
-    ys = 1050e6  # yield stress, Pa
-    kappa = 6.89
-    specific_heat = 463.0
-    cte = 21.0e-6
-
-    prop = constitutive.MaterialProperties(
-        rho=rho, specific_heat=specific_heat, E=E, nu=nu, ys=ys, cte=cte, kappa=kappa
-    )
-    con = constitutive.IsoShellConstitutive(prop, t=0.03, tNum=dvNum)
-
-    elemList = []
-    transform = None
-    for elemDescript in elemDescripts:
-        if elemDescript in ["CQUAD4", "CQUADR"]:
-            if "therm" in f2f_analysis_type:
-                elem = elements.Quad4ThermalShell(transform, con)
-            else:
-                elem = elements.Quad4Shell(transform, con)
-        else:
-            print("Uh oh, '%s' not recognized" % (elemDescript))
-        elemList.append(elem)
-
-    # Add scale for thickness dv
-    scale = [1.0]
-    return elemList, scale
-
 
 # Build the model
 model = FUNtoFEMmodel("simpleSST")
@@ -140,7 +106,7 @@ solvers["structural"] = createTacsUnsteadyInterfaceFromBDF(
     bdf_file="nastran_CAPS.dat",
     integration_settings=integration_settings,
     output_dir=tacs_folder,
-    callback=funtofem_callback,
+    callback=None,
     struct_options={},
 )
 
