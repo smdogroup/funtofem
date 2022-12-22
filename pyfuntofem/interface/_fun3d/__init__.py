@@ -3,16 +3,12 @@
 # have to make sure that the subfolder is not called fun3d otherwise interferes with fun3d python interface
 
 # check whether fun3d is available on this machine / server
-import imp
-try:
-    imp.find_module('fun3d')
-    #from fun3d.solvers import Flow, Adjoint
-    fun3d_avail = True
-except ImportError:
-    fun3d_avail = False
+import importlib
+fun3d_loader = importlib.util.find_spec('fun3d')
+has_fun3d = fun3d_loader is not None
 
 # import the funtofem-fun3d files if available
-if fun3d_avail:
+if has_fun3d:
     # don't import deprecated client class
     #from .fun3d_client import *
 

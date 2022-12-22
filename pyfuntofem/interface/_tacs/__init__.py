@@ -3,12 +3,9 @@
 # as well as one-way coupled drivers for TACS
 
 # check whether TACS package exists
-import imp
-try:
-    imp.find_module('tacs')
-    has_tacs = True
-except ImportError:
-    has_tacs = False
+import importlib
+tacs_loader = importlib.util.find_spec('tacs')
+has_tacs = tacs_loader is not None
 
 # if has TACS, proceed with imports
 # classes/methods included in import * found in __all__ at the

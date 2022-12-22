@@ -1,12 +1,9 @@
 # __init__ for pyfuntofem/openmdao subfolder
 
 # checks whether openmdao is available
-import imp
-try:
-    imp.find_module('openmdao')
-    has_openmdao = True
-except ImportError:
-    has_openmdao = False
+import importlib
+openmdao_loader = importlib.util.find_spec('openmdao')
+has_openmdao = openmdao_loader is not None
 
 # if openmdao module is available, proceed
 if has_openmdao:
