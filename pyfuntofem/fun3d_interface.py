@@ -440,7 +440,7 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(scenario)
+            aero_disps = body.get_aero_disps(scenario, time_index=step)
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
             if deform and aero_disps is not None and aero_nnodes > 0:
@@ -453,7 +453,7 @@ class Fun3dInterface(SolverInterface):
             #     transform = np.asfortranarray(body.rigid_transform)
             #     self.fun3d_flow.input_rigid_transform(transform, body=ibody)
 
-            aero_temps = body.get_aero_temps(scenario)
+            aero_temps = body.get_aero_temps(scenario, time_index=step)
             if aero_temps is not None and aero_nnodes > 0:
                 # Nondimensionalize by freestream temperature
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
@@ -471,7 +471,7 @@ class Fun3dInterface(SolverInterface):
 
         for ibody, body in enumerate(bodies, 1):
             # Compute the aerodynamic nodes on the body
-            aero_loads = body.get_aero_loads(scenario)
+            aero_loads = body.get_aero_loads(scenario, time_index=step)
             aero_nnodes = body.get_num_aero_nodes()
             if aero_loads is not None and aero_nnodes > 0:
                 fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
@@ -486,7 +486,8 @@ class Fun3dInterface(SolverInterface):
             # Instead, FUN3D can directly output a temperature gradient at the wall. We then compute
             # the heat flux manually by calculating viscosity based on aero temps to get thermal conductivity,
             # and then take the product of thermal conductivity and area-weighted temperature gradient.
-            heat_flux = body.get_aero_heat_flux(scenario)
+            heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
+
             if heat_flux is not None and aero_nnodes > 0:
 
                 # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)

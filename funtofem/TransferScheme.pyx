@@ -1,6 +1,9 @@
 #!/bin/python
 # distutils: language=c++
 # For the use of MPI
+
+__all__ = ["pyTransferScheme", "pyThermalTransfer", "pyMELD", "pyMELDThermal", "pyRBF", "pyLinearizedMELD", "pyBeamTransfer"]
+
 from mpi4py.libmpi cimport *
 cimport mpi4py.MPI as MPI
 
