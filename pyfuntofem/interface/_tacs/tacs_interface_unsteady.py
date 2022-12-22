@@ -26,7 +26,7 @@ __all__ = ["IntegrationSettings", "TacsUnsteadyInterface", "createTacsUnsteadyIn
 
 from mpi4py import MPI
 from tacs import TACS, pytacs, functions
-from pyfuntofem.solver_interface import SolverInterface
+from pyfuntofem.interface.solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 import os
 

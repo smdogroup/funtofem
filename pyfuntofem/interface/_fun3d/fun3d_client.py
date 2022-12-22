@@ -36,7 +36,7 @@ from fun3d.mda.fsi.fun3d_aero import (
     AdjointProduct,
 )
 from funtofem import TransferScheme
-from ..solver_interface import SolverInterface
+from pyfuntofem.interface.solver_interface import SolverInterface
 
 
 class Fun3dClient(SolverInterface):

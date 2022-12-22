@@ -20,16 +20,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-# import each subfolder
+# import each analysis interface subfolder
 # each analysis subfolder checks whether the package is available before import
 
-# TIP : open a python shell and run the following to check imported packages:
-# import pyfuntofem
-# pyfuntofem.__dict__
-
-from .driver import *
-from .model import *
-from .optimization import *
+# import the base interface
 from .solver_interface import *
 
 # Import all of the funtofem interfaces

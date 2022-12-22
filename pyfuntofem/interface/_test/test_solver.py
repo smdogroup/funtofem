@@ -24,7 +24,7 @@ __all__ = ["TestAerodynamicSolver", "TestStructuralSolver"]
 
 import numpy as np
 from funtofem import TransferScheme
-from pyfuntofem.solver_interface import SolverInterface
+from pyfuntofem.interface.solver_interface import SolverInterface
 
 
 class TestAerodynamicSolver(SolverInterface):

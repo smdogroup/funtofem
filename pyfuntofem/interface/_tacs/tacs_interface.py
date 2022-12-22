@@ -24,7 +24,7 @@ __all__ = ["TacsSteadyInterface", "createTacsInterfaceFromBDF"]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions, constitutive, elements
-from pyfuntofem.solver_interface import SolverInterface
+from pyfuntofem.interface.solver_interface import SolverInterface
 import os
 
 
