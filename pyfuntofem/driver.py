@@ -28,5 +28,8 @@ from .funtofem_nlbgs_driver import *
 from .funtofem_nlbgs_fsi_subiters_driver import *
 from .pyopt_optimization import *
 
+# Tacs drivers
+from .tacs_driver import *
+
 # Solver interfaces
 from .solver_interface import *

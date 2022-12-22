@@ -31,6 +31,7 @@ class Variable(object):
         value=0.0,
         lower=0.0,
         upper=1.0,
+        scale=1.0,
         active=True,
         coupled=False,
         id=0,
@@ -67,6 +68,7 @@ class Variable(object):
         self.active = active
         self.coupled = coupled
         self.id = id
+        self.scale = scale
         self.analysis_type = None
 
     def assign(
