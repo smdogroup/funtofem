@@ -628,6 +628,7 @@
 
         <span class="c1"># We re-initialize aitken acceleration every time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">aitken_is_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_is_initialized</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ns</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span>
@@ -1412,7 +1413,7 @@
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_simple_accel</span><span class="p">:</span>
                 <span class="c1"># overwrite theta learning rate from the relaxation scheme</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relaxation_scheme</span><span class="o">.</span><span class="n">learning_rate</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relaxation_scheme</span><span class="o">.</span><span class="n">theta</span>
 
                 <span class="c1"># call the scheme to drop the learning rate for the next iteration</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">relaxation_scheme</span><span class="o">.</span><span class="n">relax_displacement</span><span class="p">()</span>
@@ -1459,6 +1460,112 @@
         <span class="k">return</span></div>
 
     <span class="k">def</span> <span class="nf">aitken_adjoint_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-16</span><span class="p">):</span>
+        <span class="c1"># If Aitken relaxation is turned off, skip this</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">use_aitken_accel</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">use_simple_accel</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="c1"># exit early to not perform aitken adjoint relax</span>
+        <span class="k">return</span>
+
+        <span class="c1"># number of nodes and functions</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span>
+        <span class="n">nf</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_is_initialized</span><span class="p">:</span>
+            <span class="c1"># Aitken data for the displacements</span>
+            <span class="c1"># self.theta_adj = self.theta_init</span>
+            <span class="c1"># self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)</span>
+            <span class="c1"># self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)</span>
+
+            <span class="c1"># Aitken data for the temperatures</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_init</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">prev_adj_update_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_vec_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_is_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">struct_flux_ajp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_struct_heat_flux_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ifunc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nf</span><span class="p">):</span>
+                <span class="c1"># if comm.rank == 0: print(f&quot;Aitken adjoint loop, func {ifunc}&quot;,flush=True)</span>
+                <span class="n">up</span> <span class="o">=</span> <span class="n">struct_flux_ajp</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_vec_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_aitken_accel</span><span class="p">:</span>
+                    <span class="n">norm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_adj_update_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">])</span> <span class="o">**</span> <span class="mf">2.0</span>
+                    <span class="n">norm2</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">norm2</span><span class="p">)</span>
+
+                    <span class="c1"># Only update theta if the temperatures changed</span>
+                    <span class="k">if</span> <span class="n">norm2</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">:</span>
+                        <span class="c1"># Compute the tentative theta value</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">up</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">prev_adj_update_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">up</span><span class="p">)</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">real</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">value</span> <span class="o">/</span> <span class="n">norm2</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span>
+                            <span class="p">(</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_max</span><span class="p">)),</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">theta_min</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+                    <span class="c1"># handle the min/max for complex step</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">])</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">complex128</span>
+                        <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">])</span> <span class="o">==</span> <span class="nb">complex</span>
+                    <span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span><span class="o">.</span><span class="n">real</span> <span class="o">+</span> <span class="mf">0.0</span><span class="n">j</span>
+
+                <span class="c1"># if self.use_simple_accel:</span>
+                <span class="c1">#     # overwrite theta learning rate from the relaxation scheme</span>
+                <span class="c1">#     self.theta_t = self.relaxation_scheme.theta_t</span>
+
+                <span class="c1">#     # call the scheme to drop the learning rate for the next iteration</span>
+                <span class="c1">#     self.relaxation_scheme.relax_thermal()</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_vec_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_adj_t</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span> <span class="o">*</span> <span class="n">up</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_adj_update_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="n">up</span><span class="p">[:]</span>
+                <span class="n">struct_flux_ajp</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aitken_adj_vec_t</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span>
+
+                <span class="c1"># barrier before next iteration</span>
+                <span class="c1"># comm.Barrier()</span>
+
+        <span class="c1"># elastic adjoint transfer</span>
+        <span class="c1"># if self.transfer is not None:</span>
+        <span class="c1">#     struct_disps = self.get_struct_disps(scenario)</span>
+        <span class="c1">#     up = struct_disps - self.aitken_vec</span>
+
+        <span class="c1">#     if self.use_aitken_accel:</span>
+        <span class="c1">#         norm2 = np.linalg.norm(up - self.prev_update) ** 2.0</span>
+        <span class="c1">#         norm2 = comm.allreduce(norm2)</span>
+
+        <span class="c1">#         # Only update theta if the displacements changed</span>
+        <span class="c1">#         if norm2 &gt; tol:</span>
+        <span class="c1">#             # Compute the tentative theta value</span>
+        <span class="c1">#             value = (up - self.prev_update).dot(up)</span>
+        <span class="c1">#             value = comm.allreduce(value)</span>
+        <span class="c1">#             self.theta *= 1.0 - value / norm2</span>
+
+        <span class="c1">#       :q      self.theta = np.max(</span>
+        <span class="c1">#                 (np.min((self.theta, self.theta_max)), self.theta_min)</span>
+        <span class="c1">#             )</span>
+
+        <span class="c1">#         # handle the min/max for complex step</span>
+        <span class="c1">#         if type(self.theta) == np.complex128 or type(self.theta) == complex:</span>
+        <span class="c1">#             self.theta = self.theta.real + 0.0j</span>
+
+        <span class="c1">#     if self.use_simple_accel:</span>
+        <span class="c1">#         # overwrite theta learning rate from the relaxation scheme</span>
+        <span class="c1">#         self.theta = self.relaxation_scheme.theta</span>
+
+        <span class="c1">#         # call the scheme to drop the learning rate for the next iteration</span>
+        <span class="c1">#         self.relaxation_scheme.relax_displacement()</span>
+
+        <span class="c1">#     # perform the aitken update for displacement transfer</span>
+        <span class="c1">#     self.aitken_vec += self.theta * up</span>
+        <span class="c1">#     self.prev_update[:] = up[:]</span>
+        <span class="c1">#     struct_disps[:] = self.aitken_vec</span>
+
         <span class="k">return</span>
 
 <div class="viewcode-block" id="Body.collect_coordinate_derivatives"><a class="viewcode-back" href="../../model.html#pyfuntofem.body.Body.collect_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">collect_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -1531,6 +1638,8 @@
 
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">struct_ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">struct_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">struct_shape</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+                    <span class="c1"># add 1 to struct_ids to make one-based for nastran</span>
+                    <span class="n">struct_ids</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">struct_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">struct_ids</span><span class="p">)</span>
 
