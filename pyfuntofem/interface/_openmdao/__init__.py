@@ -2,7 +2,8 @@
 
 # checks whether openmdao is available
 import importlib
-openmdao_loader = importlib.util.find_spec('openmdao')
+
+openmdao_loader = importlib.util.find_spec("openmdao")
 has_openmdao = openmdao_loader is not None
 
 # if openmdao module is available, proceed

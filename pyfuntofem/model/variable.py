@@ -21,6 +21,7 @@
 
 __all__ = ["Variable"]
 
+
 class Variable(object):
     """
     Design variable type for FUNtoFEM

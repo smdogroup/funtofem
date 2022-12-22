@@ -22,7 +22,11 @@ limitations under the License.
 
 from __future__ import print_function
 
-__all__ = ["IntegrationSettings", "TacsUnsteadyInterface", "createTacsUnsteadyInterfaceFromBDF"] 
+__all__ = [
+    "IntegrationSettings",
+    "TacsUnsteadyInterface",
+    "createTacsUnsteadyInterfaceFromBDF",
+]
 
 from mpi4py import MPI
 from tacs import TACS, pytacs, functions

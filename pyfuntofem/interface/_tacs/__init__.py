@@ -4,7 +4,8 @@
 
 # check whether TACS package exists
 import importlib
-tacs_loader = importlib.util.find_spec('tacs')
+
+tacs_loader = importlib.util.find_spec("tacs")
 has_tacs = tacs_loader is not None
 
 # if has TACS, proceed with imports

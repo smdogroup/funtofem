@@ -30,7 +30,8 @@ from .solver_interface import *
 # underscores are used here to prevent conflicting imports with fun3d, tacs, etc.
 from ._cart3d import *
 from ._fun3d import *
-#from ._openmdao import *
+
+# from ._openmdao import *
 from ._su2 import *
 from ._tacs import *
 from ._test import *

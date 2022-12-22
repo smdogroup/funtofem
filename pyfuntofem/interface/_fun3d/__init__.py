@@ -4,12 +4,13 @@
 
 # check whether fun3d is available on this machine / server
 import importlib
-fun3d_loader = importlib.util.find_spec('fun3d')
+
+fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 # import the funtofem-fun3d files if available
 if has_fun3d:
     # don't import deprecated client class
-    #from .fun3d_client import *
+    # from .fun3d_client import *
 
     from .fun3d_interface import *

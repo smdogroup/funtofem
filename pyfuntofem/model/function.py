@@ -21,6 +21,7 @@
 
 __all__ = ["Function"]
 
+
 class Function(object):
     """holds component function information in FUNtoFEM"""
 

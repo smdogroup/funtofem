@@ -4,6 +4,7 @@ __all__ = ["FuntofemComponent"]
 
 from openmdao.api import ExplicitComponent
 
+
 class FuntofemComponent(ExplicitComponent):
     """
     OpenMDAO component that wraps pyfuntofem

@@ -5,7 +5,14 @@
 
 from __future__ import print_function
 
-__all__ = ["ReadTriangulation", "ReadTri", "ReadTriBinary", "ComputeAeroLoads", "WriteTri", "RMS"]
+__all__ = [
+    "ReadTriangulation",
+    "ReadTri",
+    "ReadTriBinary",
+    "ComputeAeroLoads",
+    "WriteTri",
+    "RMS",
+]
 
 import numpy as np
 import struct
