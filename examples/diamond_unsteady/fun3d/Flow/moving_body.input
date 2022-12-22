@@ -1,9 +1,0 @@
-&body_definitions
-    n_moving_bodies = 1
-    body_name = 'simple_diamond'
-    parent_name = ''
-    n_defining_bndry = 1
-    defining_bndry(1,1) = 2
-    motion_driver = 'funtofem'
-    mesh_movement = 'deform'
-/
