@@ -1,14 +1,11 @@
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
-from pyfuntofem.funtofem_model import FUNtoFEMmodel
-from pyfuntofem.variable import Variable
-from pyfuntofem.scenario import Scenario
-from pyfuntofem.body import Body
-from pyfuntofem.function import Function
-from pyfuntofem.pistontheory_interface import PistonInterface
-from pyfuntofem.tacs_interface import TacsSteadyInterface
-from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
+
+from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from pyfuntofem.interface import PistonInterface, TacsSteadyInterface
+from pyfuntofem.driver import FUNtoFEMnlbgs
+
 from structural_model import OneraPlate
 import unittest
 
