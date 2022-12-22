@@ -438,6 +438,12 @@
         <span class="c1"># how many steps to take</span>
         <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
 
+        <span class="c1"># Load current state</span>
+        <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">transfer_temps</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
+            <span class="c1"># body.transfer_loads(scenario, time_index=steps)</span>
+
         <span class="c1"># Initialize the adjoint variables</span>
         <span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_adjoint_variables</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">)</span>
@@ -451,34 +457,38 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_states</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
-                    <span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_disps_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="c1"># body.transfer_loads_adjoint(scenario)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_temps_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
-                    <span class="n">struct_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
-                    <span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferLoads</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_loads</span><span class="p">,</span> <span class="n">struct_loads</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="s2">&quot;rigid&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s2">&quot;deform&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span><span class="p">:</span>
-                    <span class="n">rotation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transformEquivRigidMotion</span><span class="p">(</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">u</span>
-                    <span class="p">)</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">translation</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-
-                    <span class="n">body</span><span class="o">.</span><span class="n">global_aero_disps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[:]</span>
-                    <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="c1">#                if body.transfer is not None:</span>
+            <span class="c1">#                    body.aero_disps = np.zeros(</span>
+            <span class="c1">#                        body.aero_nnodes * 3, dtype=TransferScheme.dtype</span>
+            <span class="c1">#                    )</span>
+            <span class="c1">#                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    struct_loads = np.zeros(</span>
+            <span class="c1">#                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype</span>
+            <span class="c1">#                    )</span>
+            <span class="c1">#                    body.transfer.transferLoads(body.aero_loads, struct_loads)</span>
+            <span class="c1">#</span>
+            <span class="c1">#                if &quot;rigid&quot; in body.motion_type and &quot;deform&quot; in body.motion_type:</span>
+            <span class="c1">#                    rotation = np.zeros(9, dtype=TransferScheme.dtype)</span>
+            <span class="c1">#                    translation = np.zeros(3, dtype=TransferScheme.dtype)</span>
+            <span class="c1">#                    u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    body.transfer.transformEquivRigidMotion(</span>
+            <span class="c1">#                        body.aero_disps, rotation, translation, u</span>
+            <span class="c1">#                    )</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    body.rigid_transform[:3, :3] = rotation.reshape((3, 3), order=&quot;F&quot;)</span>
+            <span class="c1">#                    body.rigid_transform[:3, 3] = translation</span>
+            <span class="c1">#                    body.rigid_transform[-1, -1] = 1.0</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    body.global_aero_disps = body.aero_disps[:]</span>
+            <span class="c1">#                    body.aero_disps = u.copy()</span>
 
             <span class="c1"># take a step in the structural adjoint</span>
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;structural&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
@@ -491,28 +501,35 @@
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Structural solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
-            <span class="c1"># Get load and heat flux terms for the flow solver</span>
-            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># Transform load transfer adjoint variables using transpose Jacobian from</span>
-                        <span class="c1"># funtofem: dLdfA^T * psi_L</span>
-                        <span class="n">psi_L_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduS</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_L_r</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">dLdfa</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_L_r</span>
+            <span class="c1"># # Get load and heat flux terms for the flow solver</span>
+            <span class="c1"># for body in self.model.bodies:</span>
+            <span class="c1">#     body.transfer_disps_adjoint(scenario)</span>
+            <span class="c1">#     body.transfer_temps_adjoint(scenario)</span>
 
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># Transform heat flux transfer adjoint variables using transpose Jacobian from</span>
-                        <span class="c1"># funtofem: dQdftA^T * psi_Q = dTdts * psi_Q</span>
-                        <span class="n">psi_Q_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydQdqATrans</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_T_S</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_Q_r</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">dQdfta</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi_Q_r</span>
+            <span class="c1">#                for func in range(nfunctions):</span>
+            <span class="c1">#                    if body.transfer is not None:</span>
+            <span class="c1">#                        # Transform load transfer adjoint variables using transpose Jacobian from</span>
+            <span class="c1">#                        # funtofem: dLdfA^T * psi_L</span>
+            <span class="c1">#                        psi_L_r = np.zeros(</span>
+            <span class="c1">#                            body.aero_nnodes * 3, dtype=TransferScheme.dtype</span>
+            <span class="c1">#                        )</span>
+            <span class="c1">#                        body.transfer.applydDduS(</span>
+            <span class="c1">#                            body.psi_S[:, func].copy(order=&quot;C&quot;), psi_L_r</span>
+            <span class="c1">#                        )</span>
+            <span class="c1">#                        body.dLdfa[:, func] = psi_L_r</span>
+            <span class="c1">#</span>
+            <span class="c1">#                    if body.thermal_transfer is not None:</span>
+            <span class="c1">#                        # Transform heat flux transfer adjoint variables using transpose Jacobian from</span>
+            <span class="c1">#                        # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q</span>
+            <span class="c1">#                        psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)</span>
+            <span class="c1">#                        body.thermal_transfer.applydQdqATrans(</span>
+            <span class="c1">#                            body.psi_T_S[:, func].copy(order=&quot;C&quot;), psi_Q_r</span>
+            <span class="c1">#                        )</span>
+            <span class="c1">#                        body.dQdfta[:, func] = psi_Q_r</span>
+
+            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">transfer_heat_flux_adjoint</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
             <span class="n">fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span><span class="p">[</span><span class="s2">&quot;flow&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">(</span>
                 <span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span>
@@ -524,99 +541,99 @@
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Flow solver returned fail flag&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">fail</span>
 
-            <span class="c1"># From the flow grid adjoint, get to the displacement adjoint</span>
-            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="o">==</span> <span class="s2">&quot;deform&quot;</span><span class="p">:</span>
-                            <span class="c1"># displacement adjoint equation</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span>
-                        <span class="k">elif</span> <span class="p">(</span>
-                            <span class="s2">&quot;rigid&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span> <span class="ow">and</span> <span class="s2">&quot;deform&quot;</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">motion_type</span>
-                        <span class="p">):</span>
-                            <span class="c1"># solve the elastic deformation adjoint</span>
-                            <span class="n">psi_E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                                <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
-                            <span class="p">)</span>
-                            <span class="n">tmt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">rigid_transform</span><span class="p">))</span>
-                            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-                                    <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                                        <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">0</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
-                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
-                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdua</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">node</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
-                                        <span class="o">+</span> <span class="n">tmt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-                                    <span class="p">)</span>
+            <span class="c1"># # From the flow grid adjoint, get to the displacement adjoint</span>
+            <span class="c1"># for body in self.model.bodies:</span>
+            <span class="c1">#     if body.transfer is not None:</span>
+            <span class="c1">#         for func in range(nfunctions):</span>
+            <span class="c1">#             if body.motion_type == &quot;deform&quot;:</span>
+            <span class="c1">#                 # displacement adjoint equation</span>
+            <span class="c1">#                 body.psi_D[:, func] = -body.dGdua[:, func]</span>
+            <span class="c1">#             elif (</span>
+            <span class="c1">#                 &quot;rigid&quot; in body.motion_type and &quot;deform&quot; in body.motion_type</span>
+            <span class="c1">#             ):</span>
+            <span class="c1">#                 # solve the elastic deformation adjoint</span>
+            <span class="c1">#                 psi_E = np.zeros(</span>
+            <span class="c1">#                     body.aero_nnodes * 3, dtype=TransferScheme.dtype</span>
+            <span class="c1">#                 )</span>
+            <span class="c1">#                 tmt = np.linalg.inv(np.transpose(body.rigid_transform))</span>
+            <span class="c1">#                 for node in range(body.aero_nnodes):</span>
+            <span class="c1">#                     for i in range(3):</span>
+            <span class="c1">#                         psi_E[3 * node + i] = (</span>
+            <span class="c1">#                             tmt[i, 0] * body.dGdua[3 * node + 0, func]</span>
+            <span class="c1">#                             + tmt[i, 1] * body.dGdua[3 * node + 1, func]</span>
+            <span class="c1">#                             + tmt[i, 2] * body.dGdua[3 * node + 2, func]</span>
+            <span class="c1">#                             + tmt[i, 3]</span>
+            <span class="c1">#                         )</span>
 
-                            <span class="c1"># get the product dE/dT^T psi_E</span>
-                            <span class="n">dEdTmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="c1">#                 # get the product dE/dT^T psi_E</span>
+            <span class="c1">#                 dEdTmat = np.zeros((3, 4), dtype=TransferScheme.dtype)</span>
 
-                            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-                                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
-                                        <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
-                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
-                                                <span class="o">-</span><span class="p">(</span>
-                                                    <span class="n">body</span><span class="o">.</span><span class="n">aero_X</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
-                                                    <span class="o">+</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
-                                                <span class="p">)</span>
-                                                <span class="o">*</span> <span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
-                                            <span class="p">)</span>
-                                        <span class="k">else</span><span class="p">:</span>
-                                            <span class="n">dEdTmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">psi_E</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+            <span class="c1">#                 for n in range(body.aero_nnodes):</span>
+            <span class="c1">#                     for i in range(3):</span>
+            <span class="c1">#                         for j in range(4):</span>
+            <span class="c1">#                             if j &lt; 3:</span>
+            <span class="c1">#                                 dEdTmat[i, j] += (</span>
+            <span class="c1">#                                     -(</span>
+            <span class="c1">#                                         body.aero_X[3 * n + j]</span>
+            <span class="c1">#                                         + body.aero_disps[3 * n + j]</span>
+            <span class="c1">#                                     )</span>
+            <span class="c1">#                                     * psi_E[3 * n + i]</span>
+            <span class="c1">#                                 )</span>
+            <span class="c1">#                             else:</span>
+            <span class="c1">#                                 dEdTmat[i, j] += -psi_E[3 * n + i]</span>
 
-                            <span class="n">dEdT</span> <span class="o">=</span> <span class="n">dEdTmat</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
-                            <span class="n">dEdT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">dEdT</span><span class="p">)</span>
+            <span class="c1">#                 dEdT = dEdTmat.flatten(order=&quot;F&quot;)</span>
+            <span class="c1">#                 dEdT = self.comm.allreduce(dEdT)</span>
 
-                            <span class="c1"># solve the rigid transform adjoint</span>
-                            <span class="n">psi_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-                            <span class="n">dGdT_func</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dGdT</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">func</span><span class="p">]</span>
-                            <span class="n">dGdT</span> <span class="o">=</span> <span class="n">dGdT_func</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
+            <span class="c1">#                 # solve the rigid transform adjoint</span>
+            <span class="c1">#                 psi_R = np.zeros(12, dtype=TransferScheme.dtype)</span>
+            <span class="c1">#                 dGdT_func = body.dGdT[:, :, func]</span>
+            <span class="c1">#                 dGdT = dGdT_func[:3, :4].flatten(order=&quot;F&quot;)</span>
 
-                            <span class="n">psi_R</span> <span class="o">=</span> <span class="o">-</span><span class="n">dGdT</span> <span class="o">-</span> <span class="n">dEdT</span>
+            <span class="c1">#                 psi_R = -dGdT - dEdT</span>
 
-                            <span class="c1"># now solve the displacement adjoint</span>
-                            <span class="n">dRduA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                                <span class="mi">3</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span>
-                            <span class="p">)</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydRduATrans</span><span class="p">(</span><span class="n">psi_R</span><span class="p">,</span> <span class="n">dRduA</span><span class="p">)</span>
+            <span class="c1">#                 # now solve the displacement adjoint</span>
+            <span class="c1">#                 dRduA = np.zeros(</span>
+            <span class="c1">#                     3 * body.aero_nnodes, dtype=TransferScheme.dtype</span>
+            <span class="c1">#                 )</span>
+            <span class="c1">#                 body.transfer.applydRduATrans(psi_R, dRduA)</span>
 
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_E</span> <span class="o">-</span> <span class="n">dRduA</span>
+            <span class="c1">#                 body.psi_D[:, func] = -psi_E - dRduA</span>
 
-                <span class="c1"># form the RHS for the structural adjoint equation on the next reverse step</span>
-                <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
+            <span class="c1">#     # form the RHS for the structural adjoint equation on the next reverse step</span>
+            <span class="c1">#     for func in range(nfunctions):</span>
 
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># calculate dDdu_s^T * psi_D</span>
-                        <span class="n">psi_D_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDduSTrans</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_D</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_D_product</span>
-                        <span class="p">)</span>
+            <span class="c1">#         if body.transfer is not None:</span>
+            <span class="c1">#             # calculate dDdu_s^T * psi_D</span>
+            <span class="c1">#             psi_D_product = np.zeros(</span>
+            <span class="c1">#                 body.struct_nnodes * body.xfer_ndof,</span>
+            <span class="c1">#                 dtype=TransferScheme.dtype,</span>
+            <span class="c1">#             )</span>
+            <span class="c1">#             body.transfer.applydDduSTrans(</span>
+            <span class="c1">#                 body.psi_D[:, func].copy(order=&quot;C&quot;), psi_D_product</span>
+            <span class="c1">#             )</span>
 
-                        <span class="c1"># calculate dLdu_s^T * psi_L</span>
-                        <span class="n">psi_L_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">xfer_ndof</span><span class="p">,</span>
-                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLduSTrans</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_L</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_L_product</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_D_product</span> <span class="o">-</span> <span class="n">psi_L_product</span>
+            <span class="c1">#             # calculate dLdu_s^T * psi_L</span>
+            <span class="c1">#             psi_L_product = np.zeros(</span>
+            <span class="c1">#                 body.struct_nnodes * body.xfer_ndof,</span>
+            <span class="c1">#                 dtype=TransferScheme.dtype,</span>
+            <span class="c1">#             )</span>
+            <span class="c1">#             body.transfer.applydLduSTrans(</span>
+            <span class="c1">#                 body.psi_L[:, func].copy(order=&quot;C&quot;), psi_L_product</span>
+            <span class="c1">#             )</span>
+            <span class="c1">#             body.struct_rhs[:, func] = -psi_D_product - psi_L_product</span>
 
-                    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="c1"># calculate dTdt_s^T * psi_T</span>
-                        <span class="n">psi_T_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">struct_nnodes</span> <span class="o">*</span> <span class="n">body</span><span class="o">.</span><span class="n">therm_xfer_ndof</span><span class="p">,</span>
-                            <span class="n">dtype</span><span class="o">=</span><span class="n">TransferScheme</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">dAdta</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">applydTdtSTrans</span><span class="p">(</span>
-                            <span class="n">body</span><span class="o">.</span><span class="n">psi_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">),</span> <span class="n">psi_T_product</span>
-                        <span class="p">)</span>
-                        <span class="n">body</span><span class="o">.</span><span class="n">struct_rhs_T</span><span class="p">[:,</span> <span class="n">func</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_T_product</span>
+            <span class="c1">#         if body.thermal_transfer is not None:</span>
+            <span class="c1">#             # calculate dTdt_s^T * psi_T</span>
+            <span class="c1">#             psi_T_product = np.zeros(</span>
+            <span class="c1">#                 body.struct_nnodes * body.therm_xfer_ndof,</span>
+            <span class="c1">#                 dtype=TransferScheme.dtype,</span>
+            <span class="c1">#             )</span>
+            <span class="c1">#             body.psi_T = body.dAdta</span>
+            <span class="c1">#             body.thermal_transfer.applydTdtSTrans(</span>
+            <span class="c1">#                 body.psi_T[:, func].copy(order=&quot;C&quot;), psi_T_product</span>
+            <span class="c1">#             )</span>
+            <span class="c1">#             body.struct_rhs_T[:, func] = -psi_T_product</span>
 
             <span class="c1"># extract and accumulate coordinate derivative every step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extract_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
