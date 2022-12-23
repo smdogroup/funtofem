@@ -4,7 +4,7 @@ from funtofem import TransferScheme
 
 from pyfuntofem.model import Variable, Scenario, Body, Function, FUNtoFEMmodel
 from pyfuntofem.driver import FUNtoFEMnlbgs
-from pyfuntofem.interface._test import TestAerodynamicSolver, TestStructuralSolver
+from pyfuntofem.interface import TestAerodynamicSolver, TestStructuralSolver
 
 import unittest
 import traceback
