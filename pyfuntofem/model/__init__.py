@@ -3,7 +3,7 @@
 
 # classes and methods in import * are defined in __all__ at the top of each file
 
-from .base import *
+from ._base import *
 from .body import *
 from .function import *
 from .funtofem_model import *

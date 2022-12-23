@@ -27,8 +27,8 @@ __all__ = ["Cart3DInterface"]
 import numpy as np
 import os
 from funtofem import TransferScheme
-from pyfuntofem.interface.solver_interface import SolverInterface
-from .cart3d_utils import ReadTriangulation, ComputeAeroLoads, WriteTri, RMS
+from ._solver_interface import SolverInterface
+from .utils.cart3d_utils import ReadTriangulation, ComputeAeroLoads, WriteTri, RMS
 
 
 class Cart3DInterface(SolverInterface):

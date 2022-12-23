@@ -24,7 +24,7 @@ from __future__ import print_function
 
 __all__ = ["FUNtoFEMnlbgsFSISubiters"]
 
-from .funtofem_driver import *
+from ._funtofem_driver import *
 
 
 class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):

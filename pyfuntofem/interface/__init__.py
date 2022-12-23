@@ -23,15 +23,38 @@ limitations under the License.
 # import each analysis interface subfolder
 # each analysis subfolder checks whether the package is available before import
 
+# use importlib to check available packages for interface imports
+import importlib
+
 # import the base interface
-from .solver_interface import *
+from ._solver_interface import *
 
-# Import all of the funtofem interfaces
-# underscores are used here to prevent conflicting imports with fun3d, tacs, etc.
-from ._cart3d import *
-from ._fun3d import *
+# Import all of the funtofem analysis interfaces
+# ----------------------------------------------
 
-# from ._openmdao import *
-from ._su2 import *
-from ._tacs import *
-from ._test import *
+# Cart3D interface
+from .cart3d_interface import *
+
+# FUN3D interface, with python package "fun3d"
+fun3d_loader = importlib.util.find_spec("fun3d")
+if fun3d_loader is not None:
+    from .fun3d_interface import *
+
+# SU2 interface, with python package "pysu2"
+su2_loader = importlib.util.find_spec("pysu2")
+if su2_loader is not None:
+    from .su2_interface import *
+
+# TACS interface, with python packaage "tacs"
+tacs_loader = importlib.util.find_spec("tacs")
+if tacs_loader is not None:
+    from .tacs_interface import *
+    from .tacs_interface_unsteady import *
+
+# test interfaces
+from .pistontheory_interface import *
+from .test_solver import *
+
+# import any interface utilities
+# -------------------------------
+from .utils import *

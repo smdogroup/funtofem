@@ -22,7 +22,7 @@ limitations under the License.
 
 __all__ = ["Scenario"]
 
-from .base import Base
+from ._base import Base
 from .variable import Variable
 
 
