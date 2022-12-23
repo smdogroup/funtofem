@@ -22,7 +22,9 @@ limitations under the License.
 
 from __future__ import print_function
 
-from .funtofem_driver import *
+__all__ = ["FUNtoFEMnlbgsFSISubiters"]
+
+from ._funtofem_driver import *
 
 
 class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):

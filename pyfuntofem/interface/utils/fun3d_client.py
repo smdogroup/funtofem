@@ -22,6 +22,8 @@ limitations under the License.
 
 from __future__ import print_function
 
+__all__ = ["Fun3dClient"]
+
 import numpy as np
 import os
 import zmq
@@ -34,7 +36,7 @@ from fun3d.mda.fsi.fun3d_aero import (
     AdjointProduct,
 )
 from funtofem import TransferScheme
-from .solver_interface import SolverInterface
+from ._solver_interface import SolverInterface
 
 
 class Fun3dClient(SolverInterface):

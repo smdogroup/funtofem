@@ -4,6 +4,16 @@
 # Primarily written by George Anderson, modified and augmented by Jan Kiviaho
 
 from __future__ import print_function
+
+__all__ = [
+    "ReadTriangulation",
+    "ReadTri",
+    "ReadTriBinary",
+    "ComputeAeroLoads",
+    "WriteTri",
+    "RMS",
+]
+
 import numpy as np
 import struct
 import os

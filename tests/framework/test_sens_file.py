@@ -1,13 +1,11 @@
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
-from pyfuntofem.funtofem_model import FUNtoFEMmodel
-from pyfuntofem.variable import Variable
-from pyfuntofem.scenario import Scenario
-from pyfuntofem.body import Body
-from pyfuntofem.function import Function
-from pyfuntofem.test_solver import TestAerodynamicSolver, TestStructuralSolver
-from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
+
+from pyfuntofem.model import Variable, Scenario, Body, Function, FUNtoFEMmodel
+from pyfuntofem.driver import FUNtoFEMnlbgs
+from pyfuntofem.interface import TestAerodynamicSolver, TestStructuralSolver
+
 import unittest
 import traceback
 

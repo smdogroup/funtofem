@@ -20,9 +20,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+__all__ = ["TacsSteadyInterface", "createTacsInterfaceFromBDF"]
+
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions, constitutive, elements
-from .solver_interface import SolverInterface
+from ._solver_interface import SolverInterface
 import os
 
 

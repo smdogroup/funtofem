@@ -20,10 +20,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+__all__ = ["FUNtoFEMnlbgs"]
+
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
-from .funtofem_driver import FUNtoFEMDriver
+from ._funtofem_driver import FUNtoFEMDriver
 
 try:
     from .hermes_transfer import HermesTransfer
