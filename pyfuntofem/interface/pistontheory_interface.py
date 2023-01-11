@@ -20,11 +20,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+__all__ = ["PistonInterface"]
+
 import numpy as np
 import sys
 
 from funtofem import TransferScheme
-from .solver_interface import SolverInterface
+from ._solver_interface import SolverInterface
 
 
 class PistonInterface(SolverInterface):

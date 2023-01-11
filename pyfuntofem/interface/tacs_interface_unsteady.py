@@ -21,9 +21,16 @@ limitations under the License.
 """
 
 from __future__ import print_function
+
+__all__ = [
+    "IntegrationSettings",
+    "TacsUnsteadyInterface",
+    "createTacsUnsteadyInterfaceFromBDF",
+]
+
 from mpi4py import MPI
 from tacs import TACS, pytacs, functions
-from .solver_interface import SolverInterface
+from ._solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 import os
 

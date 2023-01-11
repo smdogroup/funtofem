@@ -20,12 +20,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+__all__ = ["Fun3dInterface"]
+
 import numpy as np
 import os
 from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
-from .solver_interface import SolverInterface
+from ._solver_interface import SolverInterface
 
 
 class Fun3dInterface(SolverInterface):

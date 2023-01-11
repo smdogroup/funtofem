@@ -6,8 +6,8 @@ from tacs import constitutive, elements
 # import other pyfuntofem
 from pyfuntofem.model import *
 from pyfuntofem.driver import *
-from pyfuntofem.fun3d_interface import Fun3dInterface
-from pyfuntofem.tacs_interface_unsteady import (
+from pyfuntofem.interface import (
+    Fun3dInterface,
     createTacsUnsteadyInterfaceFromBDF,
     IntegrationSettings,
 )

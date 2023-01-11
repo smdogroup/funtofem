@@ -1,6 +1,6 @@
 import numpy as np
 from funtofem import TransferScheme
-from pyfuntofem.scenario import Scenario
+from pyfuntofem.model import Scenario
 import unittest
 
 

@@ -2,14 +2,11 @@ import os
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
-from pyfuntofem.funtofem_model import FUNtoFEMmodel
-from pyfuntofem.variable import Variable
-from pyfuntofem.scenario import Scenario
-from pyfuntofem.body import Body
-from pyfuntofem.function import Function
-from pyfuntofem.test_solver import TestAerodynamicSolver
-from pyfuntofem.funtofem_nlbgs_driver import FUNtoFEMnlbgs
-from pyfuntofem.tacs_interface import createTacsInterfaceFromBDF
+
+from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from pyfuntofem.driver import FUNtoFEMnlbgs
+from pyfuntofem.interface import TestAerodynamicSolver, createTacsInterfaceFromBDF
+
 from bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
 import traceback

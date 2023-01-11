@@ -22,9 +22,7 @@ limitations under the License.
 
 from __future__ import print_function
 
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.fake_solver import *
+from pyfuntofem import *
 
 from tacs_model import wedgeTACS
 from mpi4py import MPI
