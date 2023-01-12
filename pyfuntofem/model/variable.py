@@ -19,7 +19,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["Variable"]
+__all__ = ["Variable", "StructuralVariable", "AerodynamicVariable", "ShapeVariable"]
 
 
 class Variable(object):
@@ -30,6 +30,7 @@ class Variable(object):
     def __init__(
         self,
         name="unknown",
+        analysis_type=None,
         value=0.0,
         lower=0.0,
         upper=1.0,
@@ -71,7 +72,7 @@ class Variable(object):
         self.coupled = coupled
         self.id = id
         self.scale = scale
-        self.analysis_type = None
+        self.analysis_type = analysis_type
 
     def assign(
         self,
@@ -108,3 +109,78 @@ class Variable(object):
             self.active = active
         if coupled is not None:
             self.coupled = coupled
+
+
+class StructuralVariable(Variable):
+    def __init__(
+        self,
+        name="unknown",
+        value=0.0,
+        lower=0.0,
+        upper=1.0,
+        scale=1.0,
+        active=True,
+        coupled=False,
+        id=0,
+    ):
+        return super(StructuralVariable, self).__init__(
+            name=name,
+            analysis_type="structural",
+            value=value,
+            lower=lower,
+            upper=upper,
+            scale=scale,
+            active=active,
+            coupled=coupled,
+            id=id,
+        )
+
+
+class AerodynamicVariable(Variable):
+    def __init__(
+        self,
+        name="unknown",
+        value=0.0,
+        lower=0.0,
+        upper=1.0,
+        scale=1.0,
+        active=True,
+        coupled=False,
+        id=0,
+    ):
+        return super(AerodynamicVariable, self).__init__(
+            name=name,
+            analysis_type="aerodynamic",
+            value=value,
+            lower=lower,
+            upper=upper,
+            scale=scale,
+            active=active,
+            coupled=coupled,
+            id=id,
+        )
+
+
+class ShapeVariable(Variable):
+    def __init__(
+        self,
+        name="unknown",
+        value=0.0,
+        lower=0.0,
+        upper=1.0,
+        scale=1.0,
+        active=True,
+        coupled=False,
+        id=0,
+    ):
+        return super(ShapeVariable, self).__init__(
+            name=name,
+            analysis_type="shape",
+            value=value,
+            lower=lower,
+            upper=upper,
+            scale=scale,
+            active=active,
+            coupled=coupled,
+            id=id,
+        )
