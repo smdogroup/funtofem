@@ -4,7 +4,7 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import TestAerodynamicSolver, createTacsInterfaceFromBDF
+from pyfuntofem.interface import TestAerodynamicSolver, TacsSteadyInterface
 from pyfuntofem.driver import FUNtoFEMnlbgs
 
 from bdf_test_utils import thermoelasticity_callback
@@ -51,7 +51,7 @@ class TacsFrameworkTest(unittest.TestCase):
         nprocs = 1
         comm = MPI.COMM_WORLD
 
-        solvers["structural"] = createTacsInterfaceFromBDF(
+        solvers["structural"] = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
         )
         solvers["flow"] = TestAerodynamicSolver(comm, model)

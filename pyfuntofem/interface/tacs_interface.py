@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TacsSteadyInterface", "createTacsInterfaceFromBDF"]
+__all__ = ["TacsSteadyInterface"]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions, constitutive, elements
@@ -802,6 +802,272 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
+    @classmethod
+    def create_from_bdf(
+        cls,
+        model,
+        comm,
+        nprocs,
+        bdf_file,
+        prefix="",
+        callback=None,
+        struct_options={},
+        thermal_index=-1,
+    ):
+        """
+        Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
+
+        Parameters
+        ----------
+        model: :class:`FUNtoFEMmodel`
+            The model class associated with the problem
+        comm: MPI.comm
+            MPI communicator (typically MPI_COMM_WORLD)
+        bdf_file: str
+            The BDF file name
+        prefix: str
+            Output prefix for .f5 files generated from TACS
+        struct_DVs: List
+            list of struct DV values for the built-in funtofem callback method
+        callback: function
+            The element callback function for pyTACS
+        struct_options: dictionary
+            The options passed to pyTACS
+        """
+
+        # Split the communicator
+        world_rank = comm.Get_rank()
+        if world_rank < nprocs:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        tacs_comm = comm.Split(color, world_rank)
+
+        assembler = None
+        f5 = None
+        if world_rank < nprocs:
+            # Create the assembler class
+            fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
+
+            """
+            Automatically adds structural variables from the BDF / DAT file into TACS
+            as long as you have added them with the same name in the DAT file.
+
+            Uses a custom funtofem callback to create thermoelastic shells which are unavailable
+            in pytacs default callback. And creates the DVs in the correct order in TACS based on DVPREL cards.
+            """
+
+            # get dict of struct DVs from the bodies and structural variables
+            # only supports thickness DVs for the structure currently
+            structDV_dict = {}
+            variables = model.get_variables()
+            structDV_names = []
+
+            # Get the structural variables from the global list of variables.
+            struct_variables = []
+            for var in variables:
+                if var.analysis_type == "structural":
+                    struct_variables.append(var)
+                    structDV_dict[var.name.lower()] = var.value
+                    structDV_names.append(var.name.lower())
+
+            # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
+            def f2f_callback(
+                dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
+            ):
+
+                # Make sure cross-referencing is turned on in pynastran
+                # this allows it to read the material cards later on
+                if fea_assembler.bdfInfo.is_xrefed is False:
+                    fea_assembler.bdfInfo.cross_reference()
+                    fea_assembler.bdfInfo.is_xrefed = True
+
+                # get the property info
+                propertyID = kwargs["propID"]
+                propInfo = fea_assembler.bdfInfo.properties[propertyID]
+
+                # compute the thickness by checking the dvprel has propID equal to the propID from the kwarg of the callback
+                # this information is unavailable to a user creating their own element callback without an fea_assembler object
+                t = None
+                dv_name = None
+                for dv_key in fea_assembler.bdfInfo.dvprels:
+                    propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
+                    dv_obj = fea_assembler.bdfInfo.dvprels[dv_key].dvids_ref[0]
+                    dv_name = dv_obj.label.lower()
+
+                    if propertyID == kwargs["propID"]:
+
+                        # only grab thickness from specified DVs
+                        if dv_name in structDV_names:
+                            t = structDV_dict[dv_name]
+
+                        # exit for loop with current t, dv_name
+                        break
+
+                if t is not None:
+                    # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
+                    for dv_ind, name in enumerate(structDV_names):
+                        if name.lower() == dv_name.lower():
+                            break
+                else:
+                    t = propInfo.t
+                    dv_ind = -1
+
+                # Callback function to return appropriate tacs MaterialProperties object
+                # For a pynastran mat card
+                def matCallBack(matInfo):
+                    # Nastran isotropic material card
+                    if matInfo.type == "MAT1":
+                        mat = constitutive.MaterialProperties(
+                            rho=matInfo.rho,
+                            E=matInfo.e,
+                            nu=matInfo.nu,
+                            ys=matInfo.St,
+                            alpha=matInfo.a,
+                        )
+                    # Nastran orthotropic material card
+                    elif matInfo.type == "MAT8":
+                        G12 = matInfo.g12
+                        G13 = matInfo.g1z
+                        G23 = matInfo.g2z
+                        # If out-of-plane shear values are 0, Nastran defaults them to the in-plane
+                        if G13 == 0.0:
+                            G13 = G12
+                        if G23 == 0.0:
+                            G23 = G12
+                        mat = constitutive.MaterialProperties(
+                            rho=matInfo.rho,
+                            E1=matInfo.e11,
+                            E2=matInfo.e22,
+                            nu12=matInfo.nu12,
+                            G12=G12,
+                            G13=G13,
+                            G23=G23,
+                            Xt=matInfo.Xt,
+                            Xc=matInfo.Xc,
+                            Yt=matInfo.Yt,
+                            Yc=matInfo.Yc,
+                            S12=matInfo.S,
+                        )
+                    # Nastran 2D anisotropic material card
+                    elif matInfo.type == "MAT2":
+                        C11 = matInfo.G11
+                        C12 = matInfo.G12
+                        C22 = matInfo.G22
+                        C13 = matInfo.G13
+                        C23 = matInfo.G23
+                        C33 = matInfo.G33
+                        nu12 = C12 / C22
+                        nu21 = C12 / C11
+                        E1 = C11 * (1 - nu12 * nu21)
+                        E2 = C22 * (1 - nu12 * nu21)
+                        G12 = G13 = G23 = C33
+                        mat = constitutive.MaterialProperties(
+                            rho=matInfo.rho,
+                            E1=E1,
+                            E2=E2,
+                            nu12=nu12,
+                            G12=G12,
+                            G13=G13,
+                            G23=G23,
+                        )
+
+                    else:
+                        raise ValueError(
+                            f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}."
+                        )
+
+                    return mat
+
+                # First we define the material object
+                mat = None
+
+                # make either one or more material objects from the
+                if hasattr(propInfo, "mid_ref"):
+                    matInfo = propInfo.mid_ref
+                    mat = matCallBack(matInfo)
+                # This property references multiple materials (maybe a laminate)
+                elif hasattr(propInfo, "mids_ref"):
+                    mat = []
+                    for matInfo in propInfo.mids_ref:
+                        mat.append(matCallBack(matInfo))
+
+                # make the shell constitutive object for that material, thickness, and dv_ind (for thickness DVs)
+                con = constitutive.IsoShellConstitutive(mat, t=t, tNum=dv_ind)
+
+                # add elements to FEA (assumes all elements are thermal shells by default for aerothermoelastic analysis)
+                elemList = []
+                transform = None
+                for elemDescript in elemDescripts:
+                    if elemDescript in ["CQUAD4", "CQUADR"]:
+                        elem = elements.Quad4ThermalShell(transform, con)
+                    else:
+                        print("Uh oh, '%s' not recognized" % (elemDescript))
+                    elemList.append(elem)
+
+                # Add scale for thickness dv
+                scale = [1.0]
+                return elemList, scale
+
+            # use the default funtofem callback if none is provided
+            if callback is None:
+                callback = f2f_callback
+
+            # Set up constitutive objects and elements in pyTACS
+            fea_assembler.initialize(callback)
+
+            # Retrieve the assembler from pyTACS fea_assembler object
+            assembler = fea_assembler.assembler
+
+            # Set the output file creator
+            f5 = fea_assembler.outputViewer
+
+        # Create the output generator
+        gen_output = TacsOutputGenerator(prefix, f5=f5)
+
+        # get struct ids for coordinate derivatives and .sens file
+        struct_id = None
+        if assembler is not None:
+            # get list of local node IDs with global size, with -1 for nodes not owned by this proc
+            num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
+            bdfNodes = range(num_nodes)
+            local_struct_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+                bdfNodes, nastranOrdering=False
+            )
+
+            # convert back to global IDs owned by this proc
+            global_owned_struct_ids = [
+                inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
+            ]
+            struct_id = global_owned_struct_ids
+
+        # We might need to clean up this code. This is making educated guesses
+        # about what index the temperature is stored. This could be wrong if things
+        # change later. May query from TACS directly?
+        if assembler is not None and thermal_index == -1:
+            varsPerNode = assembler.getVarsPerNode()
+
+            # This is the likely index of the temperature variable
+            if varsPerNode == 1:  # Thermal only
+                thermal_index = 0
+            elif varsPerNode == 4:  # Solid + thermal
+                thermal_index = 3
+            elif varsPerNode >= 7:  # Shell or beam + thermal
+                thermal_index = varsPerNode - 1
+
+        # Broad cast the thermal index to ensure it's the same on all procs
+        thermal_index = comm.bcast(thermal_index, root=0)
+
+        # Create the tacs interface
+        return cls(
+            comm,
+            model,
+            assembler,
+            gen_output,
+            thermal_index=thermal_index,
+            struct_id=struct_id,
+        )
+
 
 class TacsOutputGenerator:
     def __init__(self, prefix, name="tacs_output_file", f5=None):
@@ -822,269 +1088,4 @@ class TacsOutputGenerator:
         return
 
 
-def createTacsInterfaceFromBDF(
-    model,
-    comm,
-    nprocs,
-    bdf_file,
-    prefix="",
-    struct_DVs=[],
-    callback=None,
-    struct_options={},
-    thermal_index=-1,
-):
-    """
-    Create a TacsSteadyInterface instance using the pytacs BDF loader
 
-    Parameters
-    ----------
-    model: :class:`FUNtoFEMmodel`
-        The model class associated with the problem
-    comm: MPI.comm
-        MPI communicator (typically MPI_COMM_WORLD)
-    bdf_file: str
-        The BDF file name
-    prefix: str
-        Output prefix for .f5 files generated from TACS
-    struct_DVs: List
-        list of struct DV values for the built-in funtofem callback method
-    callback: function
-        The element callback function for pyTACS
-    struct_options: dictionary
-        The options passed to pyTACS
-    """
-
-    # Split the communicator
-    world_rank = comm.Get_rank()
-    if world_rank < nprocs:
-        color = 1
-    else:
-        color = MPI.UNDEFINED
-    tacs_comm = comm.Split(color, world_rank)
-
-    assembler = None
-    f5 = None
-    if world_rank < nprocs:
-        # Create the assembler class
-        fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
-
-        """
-        Automatically adds structural variables from the BDF / DAT file into TACS
-        as long as you have added them with the same name in the DAT file.
-
-        Uses a custom funtofem callback to create thermoelastic shells which are unavailable
-        in pytacs default callback. And creates the DVs in the correct order in TACS based on DVPREL cards.
-        """
-
-        # get dict of struct DVs from the bodies and structural variables
-        # only supports thickness DVs for the structure currently
-        structDV_dict = {}
-        variables = model.get_variables()
-        structDV_names = []
-
-        # Get the structural variables from the global list of variables.
-        struct_variables = []
-        for var in variables:
-            if var.analysis_type == "structural":
-                struct_variables.append(var)
-                structDV_dict[var.name.lower()] = var.value
-                structDV_names.append(var.name.lower())
-
-        # define custom funtofem element callback for appropriate assignment of DVs and for thermal shells
-        def f2f_callback(
-            dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
-        ):
-
-            # Make sure cross-referencing is turned on in pynastran
-            # this allows it to read the material cards later on
-            if fea_assembler.bdfInfo.is_xrefed is False:
-                fea_assembler.bdfInfo.cross_reference()
-                fea_assembler.bdfInfo.is_xrefed = True
-
-            # get the property info
-            propertyID = kwargs["propID"]
-            propInfo = fea_assembler.bdfInfo.properties[propertyID]
-
-            # compute the thickness by checking the dvprel has propID equal to the propID from the kwarg of the callback
-            # this information is unavailable to a user creating their own element callback without an fea_assembler object
-            t = None
-            dv_name = None
-            for dv_key in fea_assembler.bdfInfo.dvprels:
-                propertyID = fea_assembler.bdfInfo.dvprels[dv_key].pid
-                dv_obj = fea_assembler.bdfInfo.dvprels[dv_key].dvids_ref[0]
-                dv_name = dv_obj.label.lower()
-
-                if propertyID == kwargs["propID"]:
-
-                    # only grab thickness from specified DVs
-                    if dv_name in structDV_names:
-                        t = structDV_dict[dv_name]
-
-                    # exit for loop with current t, dv_name
-                    break
-
-            if t is not None:
-                # get the DV ind from the currently set structDVs (if not all BDF/DAT file DVPRELs are used)
-                for dv_ind, name in enumerate(structDV_names):
-                    if name.lower() == dv_name.lower():
-                        break
-            else:
-                t = propInfo.t
-                dv_ind = -1
-
-            # Callback function to return appropriate tacs MaterialProperties object
-            # For a pynastran mat card
-            def matCallBack(matInfo):
-                # Nastran isotropic material card
-                if matInfo.type == "MAT1":
-                    mat = constitutive.MaterialProperties(
-                        rho=matInfo.rho,
-                        E=matInfo.e,
-                        nu=matInfo.nu,
-                        ys=matInfo.St,
-                        alpha=matInfo.a,
-                    )
-                # Nastran orthotropic material card
-                elif matInfo.type == "MAT8":
-                    G12 = matInfo.g12
-                    G13 = matInfo.g1z
-                    G23 = matInfo.g2z
-                    # If out-of-plane shear values are 0, Nastran defaults them to the in-plane
-                    if G13 == 0.0:
-                        G13 = G12
-                    if G23 == 0.0:
-                        G23 = G12
-                    mat = constitutive.MaterialProperties(
-                        rho=matInfo.rho,
-                        E1=matInfo.e11,
-                        E2=matInfo.e22,
-                        nu12=matInfo.nu12,
-                        G12=G12,
-                        G13=G13,
-                        G23=G23,
-                        Xt=matInfo.Xt,
-                        Xc=matInfo.Xc,
-                        Yt=matInfo.Yt,
-                        Yc=matInfo.Yc,
-                        S12=matInfo.S,
-                    )
-                # Nastran 2D anisotropic material card
-                elif matInfo.type == "MAT2":
-                    C11 = matInfo.G11
-                    C12 = matInfo.G12
-                    C22 = matInfo.G22
-                    C13 = matInfo.G13
-                    C23 = matInfo.G23
-                    C33 = matInfo.G33
-                    nu12 = C12 / C22
-                    nu21 = C12 / C11
-                    E1 = C11 * (1 - nu12 * nu21)
-                    E2 = C22 * (1 - nu12 * nu21)
-                    G12 = G13 = G23 = C33
-                    mat = constitutive.MaterialProperties(
-                        rho=matInfo.rho,
-                        E1=E1,
-                        E2=E2,
-                        nu12=nu12,
-                        G12=G12,
-                        G13=G13,
-                        G23=G23,
-                    )
-
-                else:
-                    raise ValueError(
-                        f"Unsupported material type '{matInfo.type}' for material number {matInfo.mid}."
-                    )
-
-                return mat
-
-            # First we define the material object
-            mat = None
-
-            # make either one or more material objects from the
-            if hasattr(propInfo, "mid_ref"):
-                matInfo = propInfo.mid_ref
-                mat = matCallBack(matInfo)
-            # This property references multiple materials (maybe a laminate)
-            elif hasattr(propInfo, "mids_ref"):
-                mat = []
-                for matInfo in propInfo.mids_ref:
-                    mat.append(matCallBack(matInfo))
-
-            # make the shell constitutive object for that material, thickness, and dv_ind (for thickness DVs)
-            con = constitutive.IsoShellConstitutive(mat, t=t, tNum=dv_ind)
-
-            # add elements to FEA (assumes all elements are thermal shells by default for aerothermoelastic analysis)
-            elemList = []
-            transform = None
-            for elemDescript in elemDescripts:
-                if elemDescript in ["CQUAD4", "CQUADR"]:
-                    elem = elements.Quad4ThermalShell(transform, con)
-                else:
-                    print("Uh oh, '%s' not recognized" % (elemDescript))
-                elemList.append(elem)
-
-            # Add scale for thickness dv
-            scale = [1.0]
-            return elemList, scale
-
-        # use the default funtofem callback if none is provided
-        if callback is None:
-            callback = f2f_callback
-
-        # Set up constitutive objects and elements in pyTACS
-        fea_assembler.initialize(callback)
-
-        # Retrieve the assembler from pyTACS fea_assembler object
-        assembler = fea_assembler.assembler
-
-        # Set the output file creator
-        f5 = fea_assembler.outputViewer
-
-    # Create the output generator
-    gen_output = TacsOutputGenerator(prefix, f5=f5)
-
-    # get struct ids for coordinate derivatives and .sens file
-    struct_id = None
-    if assembler is not None:
-        # get list of local node IDs with global size, with -1 for nodes not owned by this proc
-        num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
-        bdfNodes = range(num_nodes)
-        local_struct_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
-            bdfNodes, nastranOrdering=False
-        )
-
-        # convert back to global IDs owned by this proc
-        global_owned_struct_ids = [
-            inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
-        ]
-        struct_id = global_owned_struct_ids
-
-    # We might need to clean up this code. This is making educated guesses
-    # about what index the temperature is stored. This could be wrong if things
-    # change later. May query from TACS directly?
-    if assembler is not None and thermal_index == -1:
-        varsPerNode = assembler.getVarsPerNode()
-
-        # This is the likely index of the temperature variable
-        if varsPerNode == 1:  # Thermal only
-            thermal_index = 0
-        elif varsPerNode == 4:  # Solid + thermal
-            thermal_index = 3
-        elif varsPerNode >= 7:  # Shell or beam + thermal
-            thermal_index = varsPerNode - 1
-
-    # Broad cast the thermal index to ensure it's the same on all procs
-    thermal_index = comm.bcast(thermal_index, root=0)
-
-    # Create the tacs interface
-    interface = TacsSteadyInterface(
-        comm,
-        model,
-        assembler,
-        gen_output,
-        thermal_index=thermal_index,
-        struct_id=struct_id,
-    )
-
-    return interface
