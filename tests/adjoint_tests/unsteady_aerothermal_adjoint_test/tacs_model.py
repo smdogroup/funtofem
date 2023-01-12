@@ -20,9 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_aerothermal_interface_unsteady import (
-    TacsUnsteadyAerothermalInterface,
-)
+from pyfuntofem import *
 import numpy as np
 
 
