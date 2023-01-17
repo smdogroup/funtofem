@@ -147,7 +147,7 @@ class Scenario(Base):
 
         self.functions.append(function)
 
-        return
+        return self
 
     def count_functions(self):
         """
