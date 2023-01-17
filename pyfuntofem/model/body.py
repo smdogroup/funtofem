@@ -408,7 +408,7 @@ class Body(Base):
             type of analysis
         """
 
-        if not analysis_type in ["aerothermal", "aerothermoelastic", "aeroelastic"]:
+        if not analysis_type in Body.ANALYSIS_TYPES:
             raise ValueError("analysis_type specified is not recognized as valid")
 
         return
@@ -420,7 +420,7 @@ class Body(Base):
         struct_root,
         aero_comm,
         aero_root,
-        transfer_options=None,
+        transfer_settings=None,
     ):
         """
         Initialize the load and displacement and/or thermal transfer scheme for this body
@@ -429,52 +429,48 @@ class Body(Base):
         ----------
         comm: MPI.comm
             MPI communicator
-        transfer_options: dictionary or list of dictionaries
+        transfer_settings: TransferSettings
             options for the load and displacement transfer scheme for the bodies
         """
 
         # If the user did not specify a transfer scheme default to MELD
-        if transfer_options is None:
-            transfer_options = {"scheme": "meld", "isym": -1, "beta": 0.5, "npts": 200}
+        if transfer_settings is None:
+            transfer_settings = TransferSettings()
 
         # Initialize the transfer and thermal transfer objects to None
         self.transfer = None
         self.thermal_transfer = None
 
-        body_analysis_type = self.analysis_type
-        if "analysis_type" in transfer_options:
-            body_analysis_type = transfer_options["analysis_type"].lower()
-
         # Verify analysis type is valid
-        self.verify_analysis_type(body_analysis_type)
+        self.verify_analysis_type(self.analysis_type)
+
+        elastic_analyses = [_ for _ in Body.ANALYSIS_TYPES if "elastic" in _]
+        thermal_analyses = [_ for _ in Body.ANALYSIS_TYPES if "therm" in _]
 
         # Set up the transfer schemes based on the type of analysis set for this body
-        if (
-            body_analysis_type == "aeroelastic"
-            or body_analysis_type == "aerothermoelastic"
-        ):
+        if (self.analysis_type in elastic_analyses):
 
             # Set up the load and displacement transfer schemes
-            if transfer_options["scheme"].lower() == "hermes":
+            if transfer_settings.elastic_scheme == "hermes":
                 self.transfer = HermesTransfer(
                     self.comm, self.struct_comm, self.aero_comm
                 )
 
-            elif transfer_options["scheme"].lower() == "rbf":
+            elif transfer_settings.elastic_scheme == "rbf":
                 basis = TransferScheme.PY_THIN_PLATE_SPLINE
 
-                if "basis function" in transfer_options:
+                if "basis function" in transfer_settings.options:
                     if (
-                        transfer_options["basis function"].lower()
+                        transfer_settings.options["basis function"].lower()
                         == "thin plate spline"
                     ):
                         basis = TransferScheme.PY_THIN_PLATE_SPLINE
-                    elif transfer_options["basis function"].lower() == "gaussian":
+                    elif transfer_settings.options["basis function"].lower() == "gaussian":
                         basis = TransferScheme.PY_GAUSSIAN
-                    elif transfer_options["basis function"].lower() == "multiquadric":
+                    elif transfer_settings.options["basis function"].lower() == "multiquadric":
                         basis = TransferScheme.PY_MULTIQUADRIC
                     elif (
-                        transfer_options["basis function"].lower()
+                        transfer_settings.options["basis function"].lower()
                         == "inverse multiquadric"
                     ):
                         basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
@@ -486,18 +482,7 @@ class Body(Base):
                     comm, struct_comm, struct_root, aero_comm, aero_root, basis, 1
                 )
 
-            elif transfer_options["scheme"].lower() == "meld":
-                # defaults
-                isym = -1  # No symmetry
-                beta = 0.5  # Decay factor
-                num_nearest = 200  # Number of nearest neighbours
-
-                if "isym" in transfer_options:
-                    isym = transfer_options["isym"]
-                if "beta" in transfer_options:
-                    beta = transfer_options["beta"]
-                if "npts" in transfer_options:
-                    num_nearest = transfer_options["npts"]
+            elif transfer_settings.elastic_scheme == "meld":
 
                 self.transfer = TransferScheme.pyMELD(
                     comm,
@@ -505,40 +490,25 @@ class Body(Base):
                     struct_root,
                     aero_comm,
                     aero_root,
-                    isym,
-                    num_nearest,
-                    beta,
+                    transfer_settings.isym,
+                    transfer_settings.npts,
+                    transfer_settings.beta,
                 )
 
-            elif transfer_options["scheme"].lower() == "linearized meld":
-                # defaults
-                isym = -1
-                beta = 0.5
-                num_nearest = 200
-
-                if "isym" in transfer_options:
-                    isym = transfer_options["isym"]
-                if "beta" in transfer_options:
-                    beta = transfer_options["beta"]
-                if "npts" in transfer_options:
-                    num_nearest = transfer_options["npts"]
-
+            elif transfer_settings.elastic_scheme == "linearized meld":
+                
                 self.transfer = TransferScheme.pyLinearizedMELD(
                     comm,
                     struct_comm,
                     struct_root,
                     aero_comm,
                     aero_root,
-                    isym,
-                    num_nearest,
-                    beta,
+                    transfer_settings.isym,
+                    transfer_settings.npts,
+                    transfer_settings.beta,
                 )
 
-            elif transfer_options["scheme"].lower() == "beam":
-                conn = transfer_options["conn"]
-                nelems = transfer_options["nelems"]
-                order = transfer_options["order"]
-                ndof = transfer_options["ndof"]
+            elif transfer_settings.elastic_scheme == "beam":
 
                 self.xfer_ndof = ndof
                 self.transfer = TransferScheme.pyBeamTransfer(
@@ -547,34 +517,20 @@ class Body(Base):
                     struct_root,
                     aero_comm,
                     aero_root,
-                    conn,
-                    nelems,
-                    order,
-                    ndof,
+                    transfer_settings.options["conn"],
+                    transfer_settings.options["nelems"],
+                    transfer_settings.options["order"],
+                    transfer_settings.options["ndof"],
                 )
             else:
                 print("Error: Unknown transfer scheme for body")
                 quit()
 
         # Set up the transfer schemes based on the type of analysis set for this body
-        if (
-            body_analysis_type == "aerothermal"
-            or body_analysis_type == "aerothermoelastic"
-        ):
-            # Set up the load and displacement transfer schemes
+        if (self.analysis_type in thermal_analyses):
+            # Set up the thermal transfer schemes
 
-            if transfer_options["thermal_scheme"].lower() == "meld":
-                # defaults
-                isym = -1
-                beta = 0.5
-                num_nearest = 200
-
-                if "isym" in transfer_options:
-                    isym = transfer_options["isym"]
-                if "beta" in transfer_options:
-                    beta = transfer_options["beta"]
-                if "npts" in transfer_options:
-                    num_nearest = transfer_options["npts"]
+            if transfer_settings.thermal_scheme == "meld":
 
                 self.thermal_transfer = TransferScheme.pyMELDThermal(
                     comm,
@@ -582,9 +538,9 @@ class Body(Base):
                     struct_root,
                     aero_comm,
                     aero_root,
-                    isym,
-                    num_nearest,
-                    beta,
+                    transfer_settings.isym,
+                    transfer_settings.npts,
+                    transfer_settings.beta,
                 )
             else:
                 print("Error: Unknown thermal transfer scheme for body")

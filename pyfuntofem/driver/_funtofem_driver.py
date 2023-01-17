@@ -47,17 +47,17 @@ class FUNtoFEMDriver(object):
         struct_root,
         aero_comm,
         aero_root,
-        transfer_options=None,
+        transfer_settings=None,
         model=None,
     ):
         """
         Parameters
         ----------
-        solvers: dict
+        solvers: SolverManager
            the various disciplinary solvers
         comm: MPI.comm
             MPI communicator
-        transfer_options: dict
+        transfer_settings: TransferSettings
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
@@ -101,7 +101,7 @@ class FUNtoFEMDriver(object):
                 struct_root,
                 aero_comm,
                 aero_root,
-                transfer_options=transfer_options,
+                transfer_settings=transfer_settings,
             )
 
         # Initialize the shape parameterization

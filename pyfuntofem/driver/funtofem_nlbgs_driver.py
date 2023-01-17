@@ -42,7 +42,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         struct_root,
         aero_comm,
         aero_root,
-        transfer_options=None,
+        transfer_settings=None,
         model=None,
         theta_init=0.125,
         theta_min=0.01,
@@ -58,7 +58,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
            the various disciplinary solvers
         comm: MPI.comm
             MPI communicator
-        transfer_options: dict
+        transfer_settings: TransferSettings
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
