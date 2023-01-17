@@ -3,8 +3,13 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import PistonInterface, TacsSteadyInterface
-from pyfuntofem.driver import FUNtoFEMnlbgs
+from pyfuntofem.interface import (
+    PistonInterface,
+    TacsSteadyInterface,
+    SolverManager,
+    CommManager,
+)
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 from structural_model import OneraPlate
 import unittest
@@ -53,8 +58,6 @@ class CoupledFrameworkTest(unittest.TestCase):
             key = world_rank
         tacs_comm = comm.Split(color, key)
 
-        solvers = {}
-
         qinf = 101325.0
         M = 1.5
         U_inf = 411
@@ -68,27 +71,30 @@ class CoupledFrameworkTest(unittest.TestCase):
         nL = 10
         w = 1.2
         nw = 20
-        solvers["flow"] = PistonInterface(
+
+        # create solver and comm manager
+        solvers = SolverManager(comm)
+        solvers.flow = PistonInterface(
             comm, model, qinf, M, U_inf, x0, length_dir, width_dir, L, w, nL, nw
         )
+
+        # create a comm manager
+        comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
 
         assembler = None
         if world_rank < n_tacs_procs:
             assembler = OneraPlate(tacs_comm)
-        solvers["structural"] = TacsSteadyInterface(comm, model, assembler=assembler)
+        solvers.structural = TacsSteadyInterface(comm, model, assembler=assembler)
 
         # L&D transfer options
-        transfer_options = {
-            "analysis_type": "aeroelastic",
-            "scheme": "meld",
-            "npts": 10,
-            "beta": 0.9,
-            "isym": 1,
-        }
+        transfer_settings = TransferSettings(npts=10, beta=10, isym=1)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, comm, tacs_comm, 0, comm, 0, transfer_options, model=model
+            solvers,
+            comm_manager=comm_manager,
+            transfer_settings=transfer_settings,
+            model=model,
         )
         # model.print_summary()
 
@@ -114,7 +120,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         bodies = model.bodies
         solvers = driver.solvers
 
-        fail = solvers["flow"].test_adjoint(
+        fail = solvers.flow.test_adjoint(
             "flow",
             scenario,
             bodies,
@@ -124,7 +130,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         )
         assert fail == False
 
-        fail = solvers["structural"].test_adjoint(
+        fail = solvers.structural.test_adjoint(
             "structural",
             scenario,
             bodies,
@@ -212,6 +218,4 @@ class CoupledFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = CoupledFrameworkTest()
-    test.test_model_derivatives()
-    test.test_coupled_derivatives()
+    unittest.main()
