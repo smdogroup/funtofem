@@ -226,7 +226,7 @@ class ModelTest(unittest.TestCase):
 
         offset = 0.1
         for var in var_list:
-            var.assign(value=var.value + offset)
+            var.set_bounds(value=var.value + offset)
 
         model.set_variables(var_list)
         assert model.scenarios[0].variables["aerodynamic"][1].value == 3.0 + offset
@@ -264,3 +264,7 @@ class ModelTest(unittest.TestCase):
             assert (
                 model.bodies[i].variables["controls"][0].value == 0.2 + offset + offset2
             )
+
+
+if __name__ == "__main__":
+    unittest.main()

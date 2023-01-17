@@ -42,11 +42,15 @@ class VariableTest(unittest.TestCase):
         assert var.coupled == True
         assert var.id == 4
 
-    def test_variable_assign(self):
+    def test_variable_set_bounds(self):
         var = Variable(name="test")
-        var.assign(value=1.0, lower=-1.0, upper=2.0, active=False, coupled=True)
+        var.set_bounds(value=1.0, lower=-1.0, upper=2.0, active=False, coupled=True)
         assert var.value == 1.0
         assert var.lower == -1.0
         assert var.upper == 2.0
         assert var.active == False
         assert var.coupled == True
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -58,6 +58,12 @@ class Base(object):
 
         return
 
+    def register_to(self, funtofem_model):
+        """
+        required method for each subclass
+        """
+        pass
+
     def add_variable(self, vartype, var):
         """
         Add a new variable to the body's or scenario's variable dictionary
@@ -144,7 +150,7 @@ class Base(object):
         if name is not None:
             for variable in self.variables[vartype]:
                 if variable.name == name:
-                    variable.assign(
+                    variable.set_bounds(
                         value=value,
                         upper=upper,
                         lower=lower,
@@ -155,7 +161,7 @@ class Base(object):
         elif index is not None:
             if type(index) == list:
                 for ndx in index:
-                    self.variables[vartype][ndx].assign(
+                    self.variables[vartype][ndx].set_bounds(
                         value=value,
                         upper=upper,
                         lower=lower,
@@ -163,7 +169,7 @@ class Base(object):
                         coupled=coupled,
                     )
             elif type(index) == int:
-                self.variables[vartype][index].assign(
+                self.variables[vartype][index].set_bounds(
                     value=value,
                     upper=upper,
                     lower=lower,

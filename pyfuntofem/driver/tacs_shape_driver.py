@@ -24,10 +24,7 @@ limitations under the License.
 # TACS one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["TacsSteadyShapeDriver"]
 
-from pyfuntofem.interface.tacs_interface import (
-    TacsSteadyInterface,
-    createTacsInterfaceFromBDF,
-)
+from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
 from .tacs_driver import TacsSteadyAnalysisDriver
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 
@@ -106,7 +103,7 @@ class TacsSteadyShapeDriver:
                 self.tacs_aim.preAnalysis()
 
         # build a tacs interface
-        tacs_interface = createTacsInterfaceFromBDF(
+        tacs_interface = TacsSteadyInterface.create_from_bdf(
             model=self.model,
             comm=self.comm,
             nprocs=self.n_tacs_procs,
@@ -204,7 +201,7 @@ class TacsSteadyShapeDriver:
 
         # make the new tacs interface of the structural geometry
         # TODO : need to make sure the InterfaceFromBDF method tells the struct_id
-        self.tacs_interface = createTacsInterfaceFromBDF(
+        self.tacs_interface = TacsSteadyInterface.create_from_bdf(
             model=self.model,
             comm=self.comm,
             nprocs=self.n_tacs_procs,

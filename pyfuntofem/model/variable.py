@@ -21,6 +21,8 @@
 
 __all__ = ["Variable"]
 
+from ._base import Base
+
 
 class Variable(object):
     """
@@ -30,6 +32,7 @@ class Variable(object):
     def __init__(
         self,
         name="unknown",
+        analysis_type=None,
         value=0.0,
         lower=0.0,
         upper=1.0,
@@ -71,13 +74,14 @@ class Variable(object):
         self.coupled = coupled
         self.id = id
         self.scale = scale
-        self.analysis_type = None
+        self.analysis_type = analysis_type
 
-    def assign(
+    def set_bounds(
         self,
-        value=None,
         lower=None,
+        value=None,
         upper=None,
+        scale=None,
         active=None,
         coupled=None,
     ):
@@ -86,12 +90,14 @@ class Variable(object):
 
         Parameters
         ----------
+        lower:float
+            lower bound of the variable
         value: float
             new value of the variable
-        lower: float
-            lower bound of the design variable
         upper: float
             upper bound of the design variable
+        scale: float
+            scale of the variable for the optimizer
         active: bool
             whether or not the design variable is active
         coupled: bool
@@ -104,7 +110,59 @@ class Variable(object):
             self.lower = lower
         if upper is not None:
             self.upper = upper
+        if scale is not None:
+            self.scale = scale
         if active is not None:
             self.active = active
         if coupled is not None:
             self.coupled = coupled
+
+        # return the object for method cascading
+        return self
+
+    @classmethod
+    def structural(cls, name: str):
+        """
+        create a structural analysis variable
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="structural")
+
+    @classmethod
+    def aerodynamic(cls, name: str):
+        """
+        create an aerodynamic analysis variable
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="aerodynamic")
+
+    @classmethod
+    def shape(cls, name: str):
+        """
+        create a shape analysis variable
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="shape")
+
+    def rescale(self, factor: float):
+        """
+        rescale the lb, value, ub of the variable
+        """
+        self.lower *= factor
+        self.value *= factor
+        self.upper *= factor
+
+        # return the object for method cascading
+        return self
+
+    def register_to(self, base):
+        """
+        register a variable with previously defined analysis type to
+        a body or scenario
+        """
+        assert self.analysis_type is not None
+        assert isinstance(base, Base)
+
+        # add variable to the base object - either scenario or body
+        base.add_variable(vartype=self.analysis_type, var=self)
+        return self
