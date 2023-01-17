@@ -152,3 +152,7 @@ class BodyTest(unittest.TestCase):
 
         assert len(vars) == body.count_uncoupled_variables()
         assert vars[0].name == "var 1"
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -30,3 +30,7 @@ class BaseTest(unittest.TestCase):
         assert base.name == "test body"
         assert base.id == 1
         assert base.group == 2
+
+
+if __name__ == "__main__":
+    unittest.main()
