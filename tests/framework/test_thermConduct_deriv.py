@@ -50,3 +50,7 @@ class ThermalConductTest(unittest.TestCase):
             flush=True,
         )
         assert abs(rel_err) < rtol
+
+
+if __name__ == "__main__":
+    unittest.main()

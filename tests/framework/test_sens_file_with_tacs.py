@@ -4,8 +4,12 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.driver import FUNtoFEMnlbgs
-from pyfuntofem.interface import TestAerodynamicSolver, TacsSteadyInterface
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+from pyfuntofem.interface import (
+    TestAerodynamicSolver,
+    TacsSteadyInterface,
+    SolverManager,
+)
 
 from bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
@@ -20,7 +24,7 @@ class SensitivityFileTest(unittest.TestCase):
 
         # Build the model
         model = FUNtoFEMmodel("wedge")
-        plate = Body("plate", "aerothermoelastic", group=0, boundary=1)
+        plate = Body.aerothermoelastic("plate", boundary=1)
 
         # Create a structural variable
         thickness = 1.0
@@ -42,31 +46,22 @@ class SensitivityFileTest(unittest.TestCase):
 
         model.add_scenario(steady)
 
-        # Instantiate the solvers we'll use here
-        solvers = {}
-
         # Build the TACS interface
         nprocs = 1
         comm = MPI.COMM_WORLD
 
-        solvers["structural"] = TacsSteadyInterface.create_from_bdf(
+        solvers = SolverManager(comm)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
         )
-        solvers["flow"] = TestAerodynamicSolver(comm, model)
-
-        tacs_comm = solvers["structural"].tacs_comm
+        solvers.flow = TestAerodynamicSolver(comm, model)
 
         # L&D transfer options
-        transfer_options = {
-            "analysis_type": "aerothermoelastic",
-            "scheme": "meld",
-            "thermal_scheme": "meld",
-            "npts": 5,
-        }
+        transfer_settings = TransferSettings(npts=5)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, comm, tacs_comm, 0, comm, 0, transfer_options, model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         return model, driver
@@ -108,5 +103,4 @@ class SensitivityFileTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = SensitivityFileTest()
-    test.test_sens_file()
+    unittest.main()
