@@ -38,16 +38,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
     def __init__(
         self,
         solvers,
-        comm,
-        struct_comm,
-        struct_root,
-        aero_comm,
-        aero_root,
+        comm_manager=None,
         transfer_settings=None,
         model=None,
-        theta_init=0.125,
-        theta_min=0.01,
-        theta_max=1.0,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -57,26 +50,18 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         ----------
         solvers: SolverManager
            the various disciplinary solvers
-        comm: MPI.comm
-            MPI communicator
+        comm_manager: CommManager
+            manager for various discipline communicators
         transfer_settings: TransferSettings
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
-        theta_init: float
-            Initial value of theta for the Aitken under-relaxation
-        theta_min: float
-            Minimum value of theta for the Aitken under-relaxation
         """
 
         super(FUNtoFEMnlbgs, self).__init__(
             solvers,
-            comm,
-            struct_comm,
-            struct_root,
-            aero_comm,
-            aero_root,
-            transfer_options=transfer_options,
+            comm_manager=comm_manager,
+            transfer_settings=transfer_settings,
             model=model,
         )
 

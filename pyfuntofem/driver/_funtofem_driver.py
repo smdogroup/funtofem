@@ -42,11 +42,7 @@ class FUNtoFEMDriver(object):
     def __init__(
         self,
         solvers,
-        comm,
-        struct_comm,
-        struct_root,
-        aero_comm,
-        aero_root,
+        comm_manager=None,
         transfer_settings=None,
         model=None,
     ):
@@ -55,22 +51,32 @@ class FUNtoFEMDriver(object):
         ----------
         solvers: SolverManager
            the various disciplinary solvers
-        comm: MPI.comm
-            MPI communicator
+        comm_manager: CommManager
+            manager of discipline communicators
         transfer_settings: TransferSettings
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
         """
 
-        # communicator
-        self.comm = comm
-        self.aero_comm = aero_comm
-        self.aero_root = aero_root
-        self.struct_comm = struct_comm
-        self.struct_root = struct_root
+        # add the comm manger
+        if comm_manager is not None:
+            comm_manager = comm_manager
+        else:
+            # use default comm manager from solvers if not available
+            comm_manager = solvers.comm_manager
+        self.comm_manager = comm_manager
 
-        # Solver classes
+        # communicator
+        self.comm = comm_manager.master_comm
+        self.aero_comm = comm_manager.aero_comm
+        self.aero_root = comm_manager.aero_root
+        self.struct_comm = comm_manager.struct_comm
+        self.struct_root = comm_manager.struct_root
+
+        # use default transfer settings 
+
+        # SolverManager class
         self.solvers = solvers
 
         # Make a fake model if not given one
@@ -96,11 +102,11 @@ class FUNtoFEMDriver(object):
         # Initialize transfer scheme in each body class
         for body in self.model.bodies:
             body.initialize_transfer(
-                comm,
-                struct_comm,
-                struct_root,
-                aero_comm,
-                aero_root,
+                self.comm,
+                self.struct_comm,
+                self.struct_root,
+                self.aero_comm,
+                self.aero_root,
                 transfer_settings=transfer_settings,
             )
 
