@@ -115,6 +115,23 @@ class Fun3dInterface(SolverInterface):
 
         return
 
+    def set_units(self, qinf:float, flow_dt:float=1.0):
+        """
+        separate method to change qinf units
+        Parameters
+        ----------------------------------------------
+        qinf: float
+            elastic load dim factor = 0.5 * rho_inf * v_inf^2
+        flow_dt: float
+            dimensionalization constant for time steps out of FUN3D
+        """
+        self.qinf = qinf
+        self.flow_dt = flow_dt
+
+        # return obj for method cascading
+        return self
+        
+
     def _initialize_body_nodes(self, scenario, bodies):
 
         # Change directories to the flow directory
