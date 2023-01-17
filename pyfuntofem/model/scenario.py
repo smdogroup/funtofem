@@ -124,6 +124,14 @@ class Scenario(Base):
             self.add_variable("aerodynamic", yrate)
             self.add_variable("aerodynamic", zrate)
 
+    @classmethod
+    def steady(cls, name:str, steps:int, preconditioner_steps:int=0):
+        return cls(name=name, steady=True, steps=steps, preconditioner_steps=preconditioner_steps)
+
+    @classmethod
+    def unsteady(cls, name:str, steps:int, preconditioner_steps:int=0):
+        return cls(name=name, steady=False, steps=steps, preconditioner_steps=preconditioner_steps)
+
     def add_function(self, function):
         """
         Add a new function to the scenario's function list

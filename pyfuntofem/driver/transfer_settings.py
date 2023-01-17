@@ -13,7 +13,7 @@ class TransferSettings:
         thermal_scheme="meld", 
         npts:int=200, 
         beta:float=0.5, 
-        isym:-1,
+        isym:int=-1,
         options:dict={},
     ):
         """
