@@ -21,6 +21,7 @@
 
 __all__ = ["Variable"]
 
+from ._base import Base
 
 class Variable(object):
     """
@@ -76,9 +77,10 @@ class Variable(object):
 
     def assign(
         self,
-        value=None,
         lower=None,
+        value=None,
         upper=None,
+        scale=None,
         active=None,
         coupled=None,
     ):
@@ -87,12 +89,14 @@ class Variable(object):
 
         Parameters
         ----------
+        lower:float
+            lower bound of the variable
         value: float
             new value of the variable
-        lower: float
-            lower bound of the design variable
         upper: float
             upper bound of the design variable
+        scale: float
+            scale of the variable for the optimizer
         active: bool
             whether or not the design variable is active
         coupled: bool
@@ -109,6 +113,9 @@ class Variable(object):
             self.active = active
         if coupled is not None:
             self.coupled = coupled
+
+        # return the object for method cascading
+        return self
 
     @classmethod
     def structural(cls, name:str):
@@ -133,3 +140,26 @@ class Variable(object):
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, analysis_type="shape")
+
+    def rescale(self, factor:float):
+        """
+        rescale the lb, value, ub of the variable
+        """
+        self.lower *= factor
+        self.value *= factor
+        self.upper *= factor
+        
+        # return the object for method cascading
+        return self
+
+    def register_to(self, base):
+        """
+        register a variable with previously defined analysis type to
+        a body or scenario
+        """
+        assert(self.analysis_type is not None)
+        assert(isinstance(base, Base))
+        
+        # add variable to the base object - either scenario or body
+        base.add_variable(vartype=self.analysis_type, var=self)
+        return self
