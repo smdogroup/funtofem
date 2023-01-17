@@ -28,7 +28,7 @@ import importlib
 
 # import the base interface and solver manager
 from ._solver_interface import *
-from solver_manager import *
+from .solver_manager import *
 
 # Import all of the funtofem analysis interfaces
 # ----------------------------------------------

@@ -24,6 +24,7 @@ import numpy as np
 from ._base import Base
 from mpi4py import MPI
 from funtofem import TransferScheme
+from ..driver.transfer_settings import TransferSettings
 
 try:
     from .hermes_transfer import HermesTransfer

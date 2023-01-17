@@ -26,6 +26,7 @@ import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
 from ._funtofem_driver import FUNtoFEMDriver
+from ..optimization.optimization_manager import OptimizationManager
 
 try:
     from .hermes_transfer import HermesTransfer
@@ -80,6 +81,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         )
 
         return
+
+    def create_manager(self, hot_start:bool=True, write_designs:bool=True):
+        """
+        Create an optimization manager object for this driver
+        """
+        return OptimizationManager(comm=self.comm, model=self.model, driver=self, 
+            write_designs=write_designs, hot_start=hot_start)
 
     def _initialize_adjoint_variables(self, scenario, bodies):
         """

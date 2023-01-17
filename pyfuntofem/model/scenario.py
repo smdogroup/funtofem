@@ -214,6 +214,7 @@ class Scenario(Base):
         """
         funtofem_model.add_scenario(self)
         return self
+    
     def set_id(self, id):
         """
         **[model call]**
