@@ -115,7 +115,7 @@ class Fun3dInterface(SolverInterface):
 
         return
 
-    def set_units(self, qinf:float, flow_dt:float=1.0):
+    def set_units(self, qinf: float, flow_dt: float = 1.0):
         """
         separate method to change qinf units
         Parameters
@@ -130,7 +130,6 @@ class Fun3dInterface(SolverInterface):
 
         # return obj for method cascading
         return self
-        
 
     def _initialize_body_nodes(self, scenario, bodies):
 

@@ -23,6 +23,7 @@ __all__ = ["Base"]
 
 from funtofem import TransferScheme
 
+
 class Base(object):
     """
     Base class for FUNtoFEM bodies and scenarios
@@ -62,7 +63,7 @@ class Base(object):
         required method for each subclass
         """
         pass
-        
+
     def add_variable(self, vartype, var):
         """
         Add a new variable to the body's or scenario's variable dictionary

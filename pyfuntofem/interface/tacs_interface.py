@@ -27,6 +27,7 @@ from tacs import pytacs, TACS, functions, constitutive, elements
 from ._solver_interface import SolverInterface
 import os
 
+
 class TacsSteadyInterface(SolverInterface):
     """
     A base class to do coupled steady simulations with TACS
@@ -1073,6 +1074,7 @@ class TacsSteadyInterface(SolverInterface):
         """
         # have to import here to prevent circular import dependency
         from ..driver.tacs_driver import TacsSteadyAnalysisDriver
+
         return TacsSteadyAnalysisDriver(tacs_interface=self, model=self.model)
 
 

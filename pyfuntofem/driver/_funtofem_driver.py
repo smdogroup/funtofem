@@ -74,7 +74,7 @@ class FUNtoFEMDriver(object):
         self.struct_comm = comm_manager.struct_comm
         self.struct_root = comm_manager.struct_root
 
-        # use default transfer settings 
+        # use default transfer settings
 
         # SolverManager class
         self.solvers = solvers
@@ -302,9 +302,7 @@ class FUNtoFEMDriver(object):
 
         # get the contributions from the solvers
         for solver in self.solvers.solver_list:
-            solver.get_coordinate_derivatives(
-                scenario, self.model.bodies, step
-            )
+            solver.get_coordinate_derivatives(scenario, self.model.bodies, step)
 
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:

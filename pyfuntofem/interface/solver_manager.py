@@ -1,12 +1,14 @@
-
 __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
 from .tacs_interface import TacsSteadyInterface
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 
+
 class CommManager:
-    def __init__(self, master_comm, struct_comm=None, struct_root=0, aero_comm=None, aero_root=0):
+    def __init__(
+        self, master_comm, struct_comm=None, struct_root=0, aero_comm=None, aero_root=0
+    ):
         """
         Comm Manager holds the disciplinary comms of each solver below in the SolverManager class
 
@@ -30,8 +32,9 @@ class CommManager:
             self.aero_comm = master_comm
         self.aero_root = aero_root
 
+
 class SolverManager:
-    def __init__(self, comm, use_flow:bool=True, use_struct:bool=True):
+    def __init__(self, comm, use_flow: bool = True, use_struct: bool = True):
         """
         Create a solver manager object which holds flow, struct solvers
         and in the future might be expanded to hold dynamics, etc.
@@ -111,9 +114,12 @@ class SolverManager:
 
     @property
     def struct_comm(self):
-        is_tacs = isinstance(self.structural, TacsSteadyInterface) or \
-            isinstance(self.structural, TacsUnsteadyInterface)
-        if is_tacs: # TODO : change tacs_comm -> comm and comm -> master_comm so simpler
+        is_tacs = isinstance(self.structural, TacsSteadyInterface) or isinstance(
+            self.structural, TacsUnsteadyInterface
+        )
+        if (
+            is_tacs
+        ):  # TODO : change tacs_comm -> comm and comm -> master_comm so simpler
             return self.structural.tacs_comm
         else:
             return self.structural.comm
@@ -124,6 +130,6 @@ class SolverManager:
 
     @property
     def fully_defined(self) -> bool:
-        has_flow = not(self.use_flow) or self.flow is not None
-        has_struct = not(self.use_struct) or self.structural is not None
+        has_flow = not (self.use_flow) or self.flow is not None
+        has_struct = not (self.use_struct) or self.structural is not None
         return has_flow and has_struct

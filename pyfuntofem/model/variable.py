@@ -23,6 +23,7 @@ __all__ = ["Variable"]
 
 from ._base import Base
 
+
 class Variable(object):
     """
     Design variable type for FUNtoFEM
@@ -120,15 +121,15 @@ class Variable(object):
         return self
 
     @classmethod
-    def structural(cls, name:str):
+    def structural(cls, name: str):
         """
-        create a structural analysis variable 
+        create a structural analysis variable
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, analysis_type="structural")
 
     @classmethod
-    def aerodynamic(cls, name:str):
+    def aerodynamic(cls, name: str):
         """
         create an aerodynamic analysis variable
         (make sure to set optimal settings and then register it)
@@ -136,21 +137,21 @@ class Variable(object):
         return cls(name=name, analysis_type="aerodynamic")
 
     @classmethod
-    def shape(cls, name:str):
+    def shape(cls, name: str):
         """
         create a shape analysis variable
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, analysis_type="shape")
 
-    def rescale(self, factor:float):
+    def rescale(self, factor: float):
         """
         rescale the lb, value, ub of the variable
         """
         self.lower *= factor
         self.value *= factor
         self.upper *= factor
-        
+
         # return the object for method cascading
         return self
 
@@ -159,9 +160,9 @@ class Variable(object):
         register a variable with previously defined analysis type to
         a body or scenario
         """
-        assert(self.analysis_type is not None)
-        assert(isinstance(base, Base))
-        
+        assert self.analysis_type is not None
+        assert isinstance(base, Base)
+
         # add variable to the base object - either scenario or body
         base.add_variable(vartype=self.analysis_type, var=self)
         return self

@@ -67,12 +67,17 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return
 
-    def create_manager(self, hot_start:bool=True, write_designs:bool=True):
+    def create_manager(self, hot_start: bool = True, write_designs: bool = True):
         """
         Create an optimization manager object for this driver
         """
-        return OptimizationManager(comm=self.comm, model=self.model, driver=self, 
-            write_designs=write_designs, hot_start=hot_start)
+        return OptimizationManager(
+            comm=self.comm,
+            model=self.model,
+            driver=self,
+            write_designs=write_designs,
+            hot_start=hot_start,
+        )
 
     def _initialize_adjoint_variables(self, scenario, bodies):
         """
@@ -200,9 +205,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_heat_flux_adjoint(scenario)
 
             # Iterate over the aerodynamic adjoint
-            fail = self.solvers.flow.iterate_adjoint(
-                scenario, self.model.bodies, step
-            )
+            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -490,9 +493,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads_adjoint(scenario)
                 body.transfer_heat_flux_adjoint(scenario)
 
-            fail = self.solver.flow.iterate_adjoint(
-                scenario, self.model.bodies, step
-            )
+            fail = self.solver.flow.iterate_adjoint(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:

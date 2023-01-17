@@ -244,51 +244,69 @@ class Body(Base):
 
     @classmethod
     def aeroelastic(
-        cls, 
-        name:str, 
-        boundary:int=0, 
-        use_fun3d:bool=True,
-        motion_type:str="deform",
+        cls,
+        name: str,
+        boundary: int = 0,
+        use_fun3d: bool = True,
+        motion_type: str = "deform",
         relaxation_scheme=None,
     ):
         """
         class method to create a body object
         recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
-        return cls(name=name, analysis_type="aeroelastic", boundary=boundary,\
-             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+        return cls(
+            name=name,
+            analysis_type="aeroelastic",
+            boundary=boundary,
+            fun3d=use_fun3d,
+            motion_type=motion_type,
+            relaxation_scheme=relaxation_scheme,
+        )
 
     @classmethod
     def aerothermal(
         cls,
-        name:str,
-        boundary:int=0,
-        use_fun3d:bool=True,
-        motion_type:str="deform",
+        name: str,
+        boundary: int = 0,
+        use_fun3d: bool = True,
+        motion_type: str = "deform",
         relaxation_scheme=None,
     ):
         """
         class method to create a body object
         recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
-        return cls(name=name, analysis_type="aerothermal", boundary=boundary,\
-             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+        return cls(
+            name=name,
+            analysis_type="aerothermal",
+            boundary=boundary,
+            fun3d=use_fun3d,
+            motion_type=motion_type,
+            relaxation_scheme=relaxation_scheme,
+        )
 
     @classmethod
     def aerothermoelastic(
         cls,
-        name:str,
-        boundary:int=0,
-        use_fun3d:bool=True,
-        motion_type:str="deform",
+        name: str,
+        boundary: int = 0,
+        use_fun3d: bool = True,
+        motion_type: str = "deform",
         relaxation_scheme=None,
     ):
         """
         class method to create a body object
         recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
-        return cls(name=name, analysis_type="aerothermoelastic", boundary=boundary,\
-             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+        return cls(
+            name=name,
+            analysis_type="aerothermoelastic",
+            boundary=boundary,
+            fun3d=use_fun3d,
+            motion_type=motion_type,
+            relaxation_scheme=relaxation_scheme,
+        )
 
     def motion_type(self, new_motion_type):
         """
@@ -309,7 +327,7 @@ class Body(Base):
         add this body to the funtofem model in a method cascade
         """
         funtofem_model.add_body(self)
-        return self       
+        return self
 
     def initialize_struct_nodes(self, struct_X, struct_id=None):
         """
@@ -449,7 +467,7 @@ class Body(Base):
         thermal_analyses = [_ for _ in Body.ANALYSIS_TYPES if "therm" in _]
 
         # Set up the transfer schemes based on the type of analysis set for this body
-        if (self.analysis_type in elastic_analyses):
+        if self.analysis_type in elastic_analyses:
 
             # Set up the load and displacement transfer schemes
             if transfer_settings.elastic_scheme == "hermes":
@@ -466,9 +484,15 @@ class Body(Base):
                         == "thin plate spline"
                     ):
                         basis = TransferScheme.PY_THIN_PLATE_SPLINE
-                    elif transfer_settings.options["basis function"].lower() == "gaussian":
+                    elif (
+                        transfer_settings.options["basis function"].lower()
+                        == "gaussian"
+                    ):
                         basis = TransferScheme.PY_GAUSSIAN
-                    elif transfer_settings.options["basis function"].lower() == "multiquadric":
+                    elif (
+                        transfer_settings.options["basis function"].lower()
+                        == "multiquadric"
+                    ):
                         basis = TransferScheme.PY_MULTIQUADRIC
                     elif (
                         transfer_settings.options["basis function"].lower()
@@ -497,7 +521,7 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "linearized meld":
-                
+
                 self.transfer = TransferScheme.pyLinearizedMELD(
                     comm,
                     struct_comm,
@@ -528,7 +552,7 @@ class Body(Base):
                 quit()
 
         # Set up the transfer schemes based on the type of analysis set for this body
-        if (self.analysis_type in thermal_analyses):
+        if self.analysis_type in thermal_analyses:
             # Set up the thermal transfer schemes
 
             if transfer_settings.thermal_scheme == "meld":
