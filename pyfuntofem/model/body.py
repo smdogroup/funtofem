@@ -241,6 +241,75 @@ class Body(Base):
 
         return
 
+    @classmethod
+    def aeroelastic(
+        cls, 
+        name:str, 
+        boundary:int=0, 
+        use_fun3d:bool=True,
+        motion_type:str="deform",
+        relaxation_scheme=None,
+    ):
+        """
+        class method to create a body object
+        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        """
+        return cls(name=name, analysis_type="aeroelastic", boundary=boundary,\
+             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+
+    @classmethod
+    def aerothermal(
+        cls,
+        name:str,
+        boundary:int=0,
+        use_fun3d:bool=True,
+        motion_type:str="deform",
+        relaxation_scheme=None,
+    ):
+        """
+        class method to create a body object
+        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        """
+        return cls(name=name, analysis_type="aerothermal", boundary=boundary,\
+             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+
+    @classmethod
+    def aerothermoelastic(
+        cls,
+        name:str,
+        boundary:int=0,
+        use_fun3d:bool=True,
+        motion_type:str="deform",
+        relaxation_scheme=None,
+    ):
+        """
+        class method to create a body object
+        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        """
+        return cls(name=name, analysis_type="aerothermoelastic", boundary=boundary,\
+             fun3d=use_fun3d, motion_type=motion_type, relaxation_scheme=relaxation_scheme)
+
+    def motion_type(self, new_motion_type):
+        """
+        set the motion type in a method cascade
+        """
+        self.motion_type = motion_type
+        return self
+
+    def relaxation(self, new_relaxation_scheme):
+        """
+        set the relaxation scheme in a method cascade
+        """
+        self.relaxation_scheme = new_relaxation_scheme
+        return self
+
+    def register_to(self, funtofem_model):
+        """
+        add this body to the funtofem model in a method cascade
+        """
+        funtofem_model.add_body(self)
+        return self       
+
     def initialize_struct_nodes(self, struct_X, struct_id=None):
         """
         Initialize the structural mesh on any processors that have an instance

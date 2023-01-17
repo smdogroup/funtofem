@@ -208,6 +208,12 @@ class Scenario(Base):
         # return the object for method cascading
         return self
 
+    def register_to(self, funtofem_model):
+        """
+        add this scenario to the funtofem model at the end of a method cascade
+        """
+        funtofem_model.add_scenario(self)
+        return self
     def set_id(self, id):
         """
         **[model call]**
