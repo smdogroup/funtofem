@@ -31,6 +31,18 @@ class SolverManager:
         return self._use_struct
 
     @property
+    def solver_list(self):
+        """
+        return a list of solvers
+        """
+        mlist = []
+        if self.use_flow:
+            mlist.append(self.flow)
+        if self.use_struct:
+            mlist.append(self.structural)
+        return mlist
+
+    @property
     def flow(self):
         return self._flow
 

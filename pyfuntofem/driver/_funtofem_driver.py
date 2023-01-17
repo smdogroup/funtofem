@@ -232,8 +232,8 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.initialize_variables(scenario)
 
-        for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            fail = solver.initialize(scenario, bodies)
             if fail != 0:
                 return fail
         return 0
@@ -245,37 +245,37 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
-        for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            fail = solver.initialize_adjoint(scenario, bodies)
             if fail != 0:
                 return fail
         return 0
 
     def _post_forward(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].post(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.post(scenario, bodies)
 
     def _post_adjoint(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].post_adjoint(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.post_adjoint(scenario, bodies)
 
     def _distribute_functions(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].set_functions(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.set_functions(scenario, bodies)
 
     def _distribute_variables(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].set_variables(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.set_variables(scenario, bodies)
 
     def _get_functions(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_functions(scenario, self.model.bodies)
+        for solver in self.solvers.solver_list:
+            solver.get_functions(scenario, self.model.bodies)
 
     def _get_function_grads(self, scenario):
         # Set the function gradients into the scenario and body classes
         bodies = self.model.bodies
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_function_gradients(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.get_function_gradients(scenario, bodies)
 
         offset = self._get_scenario_function_offset(scenario)
         for body in bodies:
@@ -295,8 +295,8 @@ class FUNtoFEMDriver(object):
         nfunctions = scenario.count_adjoint_functions()
 
         # get the contributions from the solvers
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_coordinate_derivatives(
+        for solver in self.solvers.solver_list:
+            solver.get_coordinate_derivatives(
                 scenario, self.model.bodies, step
             )
 

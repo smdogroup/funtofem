@@ -54,7 +54,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         Parameters
         ----------
-        solvers: dict
+        solvers: SolverManager
            the various disciplinary solvers
         comm: MPI.comm
             MPI communicator
@@ -128,7 +128,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for step in range(1, scenario.preconditioner_steps + 1):
 
             # Take a step in the flow solver for preconditioner (just aerodynamic iteration)
-            fail = self.solvers["flow"].conditioner_iterate(
+            fail = self.solvers.flow.conditioner_iterate(
                 scenario, self.model.bodies, step
             )
 
@@ -147,7 +147,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_temps(scenario)
 
             # Take a step in the flow solver
-            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
+            fail = self.solvers.flow.iterate(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -161,7 +161,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_heat_flux(scenario)
 
             # Take a step in the FEM model
-            fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
+            fail = self.solvers.structural.iterate(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -207,7 +207,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_heat_flux_adjoint(scenario)
 
             # Iterate over the aerodynamic adjoint
-            fail = self.solvers["flow"].iterate_adjoint(
+            fail = self.solvers.flow.iterate_adjoint(
                 scenario, self.model.bodies, step
             )
 
@@ -223,7 +223,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_temps_adjoint(scenario)
 
             # take a step in the structural adjoint
-            fail = self.solvers["structural"].iterate_adjoint(
+            fail = self.solvers.structural.iterate_adjoint(
                 scenario, self.model.bodies, step
             )
 
@@ -275,7 +275,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_temps(scenario, time_index)
 
             # Take a step in the flow solver
-            fail = self.solvers["flow"].iterate(scenario, self.model.bodies, time_index)
+            fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -289,7 +289,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_heat_flux(scenario, time_index)
 
             # Take a step in the FEM model
-            fail = self.solvers["structural"].iterate(
+            fail = self.solvers.structural.iterate(
                 scenario, self.model.bodies, time_index
             )
 
@@ -418,9 +418,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for rstep in range(1, steps + 1):
             step = steps - rstep + 1
 
-            self.solvers["flow"].set_states(scenario, self.model.bodies, step)
+            self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)
-            self.solvers["structural"].set_states(scenario, self.model.bodies, step - 1)
+            self.solvers.structural.set_states(scenario, self.model.bodies, step - 1)
 
             for body in self.model.bodies:
                 body.transfer_disps_adjoint(scenario)
@@ -457,7 +457,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             #                    body.aero_disps = u.copy()
 
             # take a step in the structural adjoint
-            fail = self.solvers["structural"].iterate_adjoint(
+            fail = self.solvers.structural.iterate_adjoint(
                 scenario, self.model.bodies, step
             )
 
@@ -497,7 +497,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads_adjoint(scenario)
                 body.transfer_heat_flux_adjoint(scenario)
 
-            fail = self.solvers["flow"].iterate_adjoint(
+            fail = self.solver.flow.iterate_adjoint(
                 scenario, self.model.bodies, step
             )
 
@@ -607,14 +607,14 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # end of solve loop
 
         # evaluate the initial conditions
-        fail = self.solvers["flow"].iterate_adjoint(scenario, self.model.bodies, step=0)
+        fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step=0)
         fail = self.comm.allreduce(fail)
         if fail != 0:
             if self.comm.Get_rank() == 0:
                 print("Flow solver returned fail flag")
             return fail
 
-        fail = self.solvers["structural"].iterate_adjoint(
+        fail = self.solvers.structural.iterate_adjoint(
             scenario, self.model.bodies, step=0
         )
         fail = self.comm.allreduce(fail)
