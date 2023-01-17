@@ -294,7 +294,7 @@ class Body(Base):
         """
         set the motion type in a method cascade
         """
-        self.motion_type = motion_type
+        self.motion_type = new_motion_type
         return self
 
     def relaxation(self, new_relaxation_scheme):

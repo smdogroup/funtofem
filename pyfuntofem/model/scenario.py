@@ -222,6 +222,14 @@ class Scenario(Base):
         """
         funtofem_model.add_scenario(self)
         return self
+
+    def set_temperature(self, T_ref:float=300.0, T_inf:float=300.0):
+        """
+        set structure temperature T_ref and freestream T_inf
+        """
+        self.T_ref = T_ref
+        self.T_inf = T_inf
+        return self
     
     def set_id(self, id):
         """

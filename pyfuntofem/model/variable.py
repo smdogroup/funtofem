@@ -75,7 +75,7 @@ class Variable(object):
         self.scale = scale
         self.analysis_type = analysis_type
 
-    def assign(
+    def set_bounds(
         self,
         lower=None,
         value=None,
@@ -109,6 +109,8 @@ class Variable(object):
             self.lower = lower
         if upper is not None:
             self.upper = upper
+        if scale is not None:
+            self.scale = scale
         if active is not None:
             self.active = active
         if coupled is not None:
