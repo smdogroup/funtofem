@@ -19,7 +19,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["Variable", "StructuralVariable", "AerodynamicVariable", "ShapeVariable"]
+__all__ = ["Variable"]
 
 
 class Variable(object):
@@ -110,77 +110,26 @@ class Variable(object):
         if coupled is not None:
             self.coupled = coupled
 
+    @classmethod
+    def structural(cls, name:str):
+        """
+        create a structural analysis variable 
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="structural")
 
-class StructuralVariable(Variable):
-    def __init__(
-        self,
-        name="unknown",
-        value=0.0,
-        lower=0.0,
-        upper=1.0,
-        scale=1.0,
-        active=True,
-        coupled=False,
-        id=0,
-    ):
-        return super(StructuralVariable, self).__init__(
-            name=name,
-            analysis_type="structural",
-            value=value,
-            lower=lower,
-            upper=upper,
-            scale=scale,
-            active=active,
-            coupled=coupled,
-            id=id,
-        )
+    @classmethod
+    def aerodynamic(cls, name:str):
+        """
+        create an aerodynamic analysis variable
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="aerodynamic")
 
-
-class AerodynamicVariable(Variable):
-    def __init__(
-        self,
-        name="unknown",
-        value=0.0,
-        lower=0.0,
-        upper=1.0,
-        scale=1.0,
-        active=True,
-        coupled=False,
-        id=0,
-    ):
-        return super(AerodynamicVariable, self).__init__(
-            name=name,
-            analysis_type="aerodynamic",
-            value=value,
-            lower=lower,
-            upper=upper,
-            scale=scale,
-            active=active,
-            coupled=coupled,
-            id=id,
-        )
-
-
-class ShapeVariable(Variable):
-    def __init__(
-        self,
-        name="unknown",
-        value=0.0,
-        lower=0.0,
-        upper=1.0,
-        scale=1.0,
-        active=True,
-        coupled=False,
-        id=0,
-    ):
-        return super(ShapeVariable, self).__init__(
-            name=name,
-            analysis_type="shape",
-            value=value,
-            lower=lower,
-            upper=upper,
-            scale=scale,
-            active=active,
-            coupled=coupled,
-            id=id,
-        )
+    @classmethod
+    def shape(cls, name:str):
+        """
+        create a shape analysis variable
+        (make sure to set optimal settings and then register it)
+        """
+        return cls(name=name, analysis_type="shape")

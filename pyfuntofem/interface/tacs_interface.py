@@ -1086,6 +1086,3 @@ class TacsOutputGenerator:
             self.f5.writeToFile(filename)
         self.count += 1
         return
-
-
-
