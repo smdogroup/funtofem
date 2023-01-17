@@ -27,13 +27,14 @@ class TransferSettings:
         isym: whether to search for symmetries in the geometry for transfer
         options: additional options dictionary like for beam and rbf basis functions
         """
-        assert(elastic_scheme in ELASTIC_SCHEMES)
-        assert(thermal_scheme in THERMAL_SCHEMES)
+        assert(elastic_scheme in TransferSettings.ELASTIC_SCHEMES)
+        assert(thermal_scheme in TransferSettings.THERMAL_SCHEMES)
         self.elastic_scheme = elastic_scheme
         self.thermal_scheme = thermal_scheme
         self.npts = npts
         self.beta = beta
         self.isym = isym
+        self.options = options
 
     def scheme(self, new_scheme):
         """
