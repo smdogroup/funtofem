@@ -24,7 +24,7 @@ __all__ = ["Scenario"]
 
 from ._base import Base
 from .variable import Variable
-
+from .function import Function
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
@@ -147,6 +147,7 @@ class Scenario(Base):
 
         self.functions.append(function)
 
+        # return the object for method cascading
         return self
 
     def count_functions(self):
@@ -188,6 +189,24 @@ class Scenario(Base):
         var.scenario = self.id
 
         super(Scenario, self).add_variable(vartype, var)
+
+        # return object for method cascading
+        return self
+
+    def include(self, obj):
+        """
+        generic include method adds objects for readability
+        """
+        if isinstance(obj, Function):
+            self.add_function(obj)
+        elif isinstance(obj, Variable):
+            assert(obj.analysis_type is not None)
+            self.add_variable(vartype=obj.analysis_type, var=obj)
+        else:
+            raise ValueError("Scenario include method does not currently support other methods")
+
+        # return the object for method cascading
+        return self
 
     def set_id(self, id):
         """
