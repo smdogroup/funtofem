@@ -83,6 +83,14 @@ class SolverManager:
     def flow(self, new_flow_solver):
         self._flow = new_flow_solver
 
+    def make_flow_complex(self):
+        """
+        switch fun3d flow to complex
+        """
+        from .fun3d_interface import Fun3dInterface
+        self.flow = Fun3dInterface.copy_complex_interface(self.flow)
+        return self
+
     @property
     def structural(self):
         return self._structural

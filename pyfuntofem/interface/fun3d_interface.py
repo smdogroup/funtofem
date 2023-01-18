@@ -23,7 +23,7 @@ limitations under the License.
 __all__ = ["Fun3dInterface"]
 
 import numpy as np
-import os
+import os, sys, importlib
 from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
@@ -74,6 +74,7 @@ class Fun3dInterface(SolverInterface):
         """
 
         self.comm = comm
+        self.model = model
 
         #  Instantiate FUN3D
         self.fun3d_flow = Flow()
@@ -976,3 +977,22 @@ class Fun3dInterface(SolverInterface):
                 self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
 
         return 0
+
+    @classmethod
+    def copy_complex_interface(cls, fun3d_interface):
+        """
+        copy used for derivative testing
+        driver.solvers.flow = Fun3dInterface.copy_complex_interface(drivers.solvers.flow)
+        """
+
+        # unload and reload fun3d Flow, Adjoint as complex versions
+        os.environ["CMPLX_MODE"] = "1"
+        importlib.reload(sys.modules['fun3d.interface'])
+        #importlib.reload(sys.modules['fun3d.solvers'])
+
+        return cls(
+            comm=fun3d_interface.comm,
+            model=fun3d_interface.model,
+            qinf=fun3d_interface.qinf,
+            fun3d_dir=fun3d_interface.fun3d_dir
+        )
