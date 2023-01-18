@@ -406,7 +406,9 @@ class TestStructuralSolver(SolverInterface):
         # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs
         self.Jac1 = 0.01 * scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.b1 = 0.01 * scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.c1 = 0.01 * scale * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+        self.c1 = (
+            0.01 * scale * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+        )
 
         # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs
         self.Jac2 = 0.05 * scale * (np.random.rand(self.npts, self.npts) - 0.5)

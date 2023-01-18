@@ -979,20 +979,37 @@ class Fun3dInterface(SolverInterface):
         return 0
 
     @classmethod
-    def copy_complex_interface(cls, fun3d_interface):
+    def copy_real_interface(cls, fun3d_interface):
         """
         copy used for derivative testing
-        driver.solvers.flow = Fun3dInterface.copy_complex_interface(drivers.solvers.flow)
+        drivers.solvers.make_real_flow()
         """
 
-        # unload and reload fun3d Flow, Adjoint as complex versions
-        os.environ["CMPLX_MODE"] = "1"
-        importlib.reload(sys.modules['fun3d.interface'])
-        #importlib.reload(sys.modules['fun3d.solvers'])
+        # unload and reload fun3d Flow, Adjoint as real versions
+        os.environ["CMPLX_MODE"] = ""
+        importlib.reload(sys.modules["fun3d.interface"])
 
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
             qinf=fun3d_interface.qinf,
-            fun3d_dir=fun3d_interface.fun3d_dir
+            fun3d_dir=fun3d_interface.fun3d_dir,
+        )
+
+    @classmethod
+    def copy_complex_interface(cls, fun3d_interface):
+        """
+        copy used for derivative testing
+        driver.solvers.make_complex_flow()
+        """
+
+        # unload and reload fun3d Flow, Adjoint as complex versions
+        os.environ["CMPLX_MODE"] = "1"
+        importlib.reload(sys.modules["fun3d.interface"])
+
+        return cls(
+            comm=fun3d_interface.comm,
+            model=fun3d_interface.model,
+            qinf=fun3d_interface.qinf,
+            fun3d_dir=fun3d_interface.fun3d_dir,
         )
