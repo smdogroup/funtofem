@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TestAerodynamicSolver", "TestStructuralSolver"]
+__all__ = ["TestAerodynamicSolver", "TestStructuralSolver", "TestResult"]
 
 import numpy as np
 from funtofem import TransferScheme
@@ -635,3 +635,33 @@ class TestStructuralSolver(SolverInterface):
 
     def post_adjoint(self, scenario, bodies):
         return
+
+
+class TestResult:
+    def __init__(self, name, complex_TD, adjoint_TD, rel_error):
+        """
+        Class to store test results from complex step method
+        """
+        self.name = name
+        self.complex_TD = complex_TD
+        self.adjoint_TD = adjoint_TD
+        self.rel_error = rel_error
+
+    def set_name(self, new_name):
+        self.name = new_name
+        return self
+
+    def write(self, file_hdl):
+        file_hdl.write(f"Test Result - {self.name}\n")
+        file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+        file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+        file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+        file_hdl.flush()
+        return self
+
+    def report(self):
+        print(f"Test Result - {self.name}")
+        print("\tComplex step TD  = ", self.complex_TD)
+        print("\tAdjoint TD      = ", self.adjoint_TD)
+        print("\tRelative error        = ", self.rel_error)
+        return self
