@@ -28,6 +28,7 @@ from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
 import os
 from mpi4py import MPI
 import numpy as np
+from ..optimization.optimization_manager import OptimizationManager
 
 
 class TacsSteadyAnalysisDriver:
@@ -49,6 +50,18 @@ class TacsSteadyAnalysisDriver:
         # zero out previous run data from funtofem
         # self._zero_tacs_data()
         # self._zero_adjoint_data()
+
+    def create_manager(self, hot_start: bool = True, write_designs: bool = True):
+        """
+        create an optimization manager for optimizing this driver
+        """
+        return OptimizationManager(
+            comm=self.tacs_interface.comm,
+            model=self.model,
+            driver=self,
+            write_designs=write_designs,
+            hot_start=hot_start,
+        )
 
     def solve_forward(self):
         """

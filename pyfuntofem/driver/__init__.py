@@ -15,6 +15,7 @@ from ._funtofem_driver import *
 # import the two fully coupled funtofem drivers
 from .funtofem_nlbgs_driver import *
 from .funtofem_nlbgs_fsi_subiters_driver import *
+from .transfer_settings import *
 
 # import the two tacs drivers if tacs is available
 if tacs_loader is not None:

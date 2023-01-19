@@ -23,7 +23,7 @@ limitations under the License.
 __all__ = ["Fun3dInterface"]
 
 import numpy as np
-import os
+import os, sys, importlib
 from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
@@ -74,6 +74,7 @@ class Fun3dInterface(SolverInterface):
         """
 
         self.comm = comm
+        self.model = model
 
         #  Instantiate FUN3D
         self.fun3d_flow = Flow()
@@ -114,6 +115,22 @@ class Fun3dInterface(SolverInterface):
         self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
+
+    def set_units(self, qinf: float, flow_dt: float = 1.0):
+        """
+        separate method to change qinf units
+        Parameters
+        ----------------------------------------------
+        qinf: float
+            elastic load dim factor = 0.5 * rho_inf * v_inf^2
+        flow_dt: float
+            dimensionalization constant for time steps out of FUN3D
+        """
+        self.qinf = qinf
+        self.flow_dt = flow_dt
+
+        # return obj for method cascading
+        return self
 
     def _initialize_body_nodes(self, scenario, bodies):
 
@@ -816,7 +833,6 @@ class Fun3dInterface(SolverInterface):
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
             print(f"Forward residuals = {residuals}")
-
             if norm:
                 return np.linalg.norm(residuals)
             else:
@@ -839,7 +855,6 @@ class Fun3dInterface(SolverInterface):
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
             print(f"Adjoint residuals = {residuals}")
-
             if norm:
                 return np.linalg.norm(residuals)
             else:
@@ -962,3 +977,39 @@ class Fun3dInterface(SolverInterface):
                 self.aero_temps_hist[scenario.id][step][ibody] = body.aero_temps.copy()
 
         return 0
+
+    @classmethod
+    def copy_real_interface(cls, fun3d_interface):
+        """
+        copy used for derivative testing
+        drivers.solvers.make_real_flow()
+        """
+
+        # unload and reload fun3d Flow, Adjoint as real versions
+        os.environ["CMPLX_MODE"] = ""
+        importlib.reload(sys.modules["fun3d.interface"])
+
+        return cls(
+            comm=fun3d_interface.comm,
+            model=fun3d_interface.model,
+            qinf=fun3d_interface.qinf,
+            fun3d_dir=fun3d_interface.fun3d_dir,
+        )
+
+    @classmethod
+    def copy_complex_interface(cls, fun3d_interface):
+        """
+        copy used for derivative testing
+        driver.solvers.make_complex_flow()
+        """
+
+        # unload and reload fun3d Flow, Adjoint as complex versions
+        os.environ["CMPLX_MODE"] = "1"
+        importlib.reload(sys.modules["fun3d.interface"])
+
+        return cls(
+            comm=fun3d_interface.comm,
+            model=fun3d_interface.model,
+            qinf=fun3d_interface.qinf,
+            fun3d_dir=fun3d_interface.fun3d_dir,
+        )

@@ -156,3 +156,59 @@ class Function(object):
             return self.derivatives[var]
 
         return 0.0
+
+    @classmethod
+    def ksfailure(
+        cls, ks_weight: float = 50.0, start: int = 0, stop: int = -1, body: int = -1
+    ):
+        """
+        Class constructor for the KS Failure function
+        """
+        return cls(
+            name="ksfailure",
+            analysis_type="structural",
+            options={"ksWeight": ks_weight},
+            start=start,
+            stop=stop,
+            body=body,
+        )
+
+    @classmethod
+    def mass(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """
+        Class constructor for the Mass function
+        """
+        return cls(
+            name="mass", analysis_type="structural", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def lift(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """
+        Class constructor for the Lift function
+        """
+        return cls(
+            name="cl", analysis_type="aerodynamic", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def drag(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """
+        Class constructor for the Drag function
+        """
+        return cls(
+            name="cd", analysis_type="aerodynamic", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def temperature(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """
+        Class constructor for the Temperature function
+        """
+        return cls(
+            name="temperature",
+            analysis_type="structural",
+            start=start,
+            stop=stop,
+            body=body,
+        )

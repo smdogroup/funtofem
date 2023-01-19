@@ -42,35 +42,41 @@ class FUNtoFEMDriver(object):
     def __init__(
         self,
         solvers,
-        comm,
-        struct_comm,
-        struct_root,
-        aero_comm,
-        aero_root,
-        transfer_options=None,
+        comm_manager=None,
+        transfer_settings=None,
         model=None,
     ):
         """
         Parameters
         ----------
-        solvers: dict
+        solvers: SolverManager
            the various disciplinary solvers
-        comm: MPI.comm
-            MPI communicator
-        transfer_options: dict
+        comm_manager: CommManager
+            manager of discipline communicators
+        transfer_settings: TransferSettings
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
         """
 
-        # communicator
-        self.comm = comm
-        self.aero_comm = aero_comm
-        self.aero_root = aero_root
-        self.struct_comm = struct_comm
-        self.struct_root = struct_root
+        # add the comm manger
+        if comm_manager is not None:
+            comm_manager = comm_manager
+        else:
+            # use default comm manager from solvers if not available
+            comm_manager = solvers.comm_manager
+        self.comm_manager = comm_manager
 
-        # Solver classes
+        # communicator
+        self.comm = comm_manager.master_comm
+        self.aero_comm = comm_manager.aero_comm
+        self.aero_root = comm_manager.aero_root
+        self.struct_comm = comm_manager.struct_comm
+        self.struct_root = comm_manager.struct_root
+
+        # use default transfer settings
+
+        # SolverManager class
         self.solvers = solvers
 
         # Make a fake model if not given one
@@ -96,12 +102,12 @@ class FUNtoFEMDriver(object):
         # Initialize transfer scheme in each body class
         for body in self.model.bodies:
             body.initialize_transfer(
-                comm,
-                struct_comm,
-                struct_root,
-                aero_comm,
-                aero_root,
-                transfer_options=transfer_options,
+                self.comm,
+                self.struct_comm,
+                self.struct_root,
+                self.aero_comm,
+                self.aero_root,
+                transfer_settings=transfer_settings,
             )
 
         # Initialize the shape parameterization
@@ -232,8 +238,8 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.initialize_variables(scenario)
 
-        for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            fail = solver.initialize(scenario, bodies)
             if fail != 0:
                 return fail
         return 0
@@ -245,37 +251,37 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
-        for solver in self.solvers.keys():
-            fail = self.solvers[solver].initialize_adjoint(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            fail = solver.initialize_adjoint(scenario, bodies)
             if fail != 0:
                 return fail
         return 0
 
     def _post_forward(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].post(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.post(scenario, bodies)
 
     def _post_adjoint(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].post_adjoint(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.post_adjoint(scenario, bodies)
 
     def _distribute_functions(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].set_functions(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.set_functions(scenario, bodies)
 
     def _distribute_variables(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].set_variables(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.set_variables(scenario, bodies)
 
     def _get_functions(self, scenario, bodies):
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_functions(scenario, self.model.bodies)
+        for solver in self.solvers.solver_list:
+            solver.get_functions(scenario, self.model.bodies)
 
     def _get_function_grads(self, scenario):
         # Set the function gradients into the scenario and body classes
         bodies = self.model.bodies
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_function_gradients(scenario, bodies)
+        for solver in self.solvers.solver_list:
+            solver.get_function_gradients(scenario, bodies)
 
         offset = self._get_scenario_function_offset(scenario)
         for body in bodies:
@@ -295,10 +301,8 @@ class FUNtoFEMDriver(object):
         nfunctions = scenario.count_adjoint_functions()
 
         # get the contributions from the solvers
-        for solver in self.solvers.keys():
-            self.solvers[solver].get_coordinate_derivatives(
-                scenario, self.model.bodies, step
-            )
+        for solver in self.solvers.solver_list:
+            solver.get_coordinate_derivatives(scenario, self.model.bodies, step)
 
         # transfer scheme contributions to the coordinates derivatives
         if step > 0:

@@ -72,5 +72,4 @@ class ScenarioTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = ScenarioTest()
-    test.test_build_scenario()
+    unittest.main()

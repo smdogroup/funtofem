@@ -8,7 +8,7 @@ from pyfuntofem.model import *
 from pyfuntofem.driver import *
 from pyfuntofem.interface import (
     Fun3dInterface,
-    createTacsUnsteadyInterfaceFromBDF,
+    TacsUnsteadyInterface,
     IntegrationSettings,
 )
 
@@ -99,15 +99,13 @@ if not (os.path.exists(tacs_folder)) and comm.rank == 0:
     os.mkdir(tacs_folder)
 
 # create tacs unsteady interface from the BDF / DAT file
-solvers["structural"] = createTacsUnsteadyInterfaceFromBDF(
+solvers["structural"] = TacsUnsteadyInterface.create_from_bdf(
     model=model,
     comm=comm,
     nprocs=n_tacs_procs,
     bdf_file="nastran_CAPS.dat",
     integration_settings=integration_settings,
     output_dir=tacs_folder,
-    callback=None,
-    struct_options={},
 )
 
 # L&D transfer options
