@@ -117,7 +117,9 @@ class TestFun3dUncoupled(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e2)
-        solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0, thermal_k=1.0)
+        solvers.structural = TestStructuralSolver(
+            comm, model, elastic_k=1000.0, thermal_k=1.0
+        )
         transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model

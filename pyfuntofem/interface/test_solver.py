@@ -404,20 +404,30 @@ class TestStructuralSolver(SolverInterface):
         self.struct_dvs = np.array(self.struct_dvs, dtype=TransferScheme.dtype)
 
         # elastic and thermal scales 1/stiffness
-        elastic_scale = 1.0/elastic_k
-        thermal_scale = 1.0/thermal_k
+        elastic_scale = 1.0 / elastic_k
+        thermal_scale = 1.0 / thermal_k
 
         # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs
-        self.Jac1 = 0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.b1 = 0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+        self.Jac1 = (
+            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+        )
+        self.b1 = (
+            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+        )
         self.c1 = (
-            0.01 * elastic_scale * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+            0.01
+            * elastic_scale
+            * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
         )
 
         # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs
         self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
-        self.c2 = 0.01 * thermal_scale * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+        self.c2 = (
+            0.01
+            * thermal_scale
+            * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+        )
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
