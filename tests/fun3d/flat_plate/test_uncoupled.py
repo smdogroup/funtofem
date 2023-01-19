@@ -63,7 +63,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e2)
-        solvers.structural = TestStructuralSolver(comm, model, scale=0.001)
+        solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
         transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
@@ -75,7 +75,7 @@ class TestFun3dUncoupled(unittest.TestCase):
     def _laminar_aerothermal(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
-        plate = Body.aerothermal("plate", boundary=1)
+        plate = Body.aerothermal("plate", boundary=6)
         Variable.structural("thickness").set_bounds(
             lower=0.001, value=0.01, upper=2.0
         ).register_to(plate)
@@ -90,7 +90,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model)
-        solvers.structural = TestStructuralSolver(comm, model, scale=0.001)
+        solvers.structural = TestStructuralSolver(comm, model, thermal_k=1.0)
         transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
@@ -117,7 +117,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e2)
-        solvers.structural = TestStructuralSolver(comm, model, scale=0.001)
+        solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0, thermal_k=1.0)
         transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
