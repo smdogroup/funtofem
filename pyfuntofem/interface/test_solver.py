@@ -643,7 +643,7 @@ class TestResult:
         Class to store test results from complex step method
         """
         self.name = name
-        self.func_names = func_names # list of function names
+        self.func_names = func_names  # list of function names
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
         self.rel_error = rel_error
