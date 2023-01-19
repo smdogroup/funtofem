@@ -55,12 +55,12 @@ class TestFun3dTacs(unittest.TestCase):
         try:
             TestResult(test_name, complex_TD, adjoint_TD, rel_error).write(
                 self.file_hdl
-            )
+            ).report()
         except:
             self.file_hdl = open("test_result.txt", "w")
             TestResult(test_name, complex_TD, adjoint_TD, rel_error).write(
                 self.file_hdl
-            )
+            ).report()
 
         self.assertTrue(abs(rel_error) < rtol)
 
@@ -117,7 +117,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar", steps=100).set_temperature(
+        test_scenario = Scenario.steady("laminar1", steps=100).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure(ks_weight=50.0))
@@ -152,7 +152,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar", steps=100).set_temperature(
+        test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.temperature())
@@ -168,7 +168,7 @@ class TestFun3dTacs(unittest.TestCase):
             comm, model, assembler, gen_output=None, thermal_index=3
         )
         comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-        transfer_settings = TransferSettings(npts=20)
+        transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers,
             comm_manager=comm_manager,
@@ -189,7 +189,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar", steps=100).set_temperature(
+        test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure(ks_weight=50.0))
@@ -223,4 +223,4 @@ if __name__ == "__main__":
         unittest.main()
     else:
         tester = TestFun3dTacs()
-        tester.test_laminar_aerothermal()
+        tester.test_laminar_aeroelastic()
