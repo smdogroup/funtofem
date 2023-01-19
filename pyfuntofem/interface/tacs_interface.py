@@ -41,6 +41,7 @@ class TacsSteadyInterface(SolverInterface):
         gen_output=None,
         thermal_index=0,
         struct_id=None,
+        override_rotx=False,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -74,6 +75,9 @@ class TacsSteadyInterface(SolverInterface):
 
         self.comm = comm
         self.tacs_comm = None
+
+        # Flag to output heat flux instead of rotx
+        self.override_rotx = override_rotx
 
         # Get the list of active design variables from the FUNtoFEM model. This
         # returns the variables in the FUNtoFEM order. By scenario/body.
@@ -532,6 +536,18 @@ class TacsSteadyInterface(SolverInterface):
             # Save the solution vector
             self.scenario_data[scenario].u.copyValues(self.ans)
 
+            if self.override_rotx:
+                # Override rotx to be heat flux
+                ans_array = self.ans.getArray()
+                ndof = self.assembler.getVarsPerNode()
+
+                for body in bodies:
+                    struct_flux = body.get_struct_heat_flux(scenario)
+                    if struct_flux is not None:
+                        ans_array[3 :: ndof] = struct_flux[:]
+
+                self.assembler.setVariables(self.ans)
+
             if self.gen_output is not None:
                 self.gen_output()
 
@@ -831,6 +847,7 @@ def createTacsInterfaceFromBDF(
     callback=None,
     struct_options={},
     thermal_index=-1,
+    override_rotx=False,
 ):
     """
     Create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1082,6 +1099,7 @@ def createTacsInterfaceFromBDF(
         gen_output,
         thermal_index=thermal_index,
         struct_id=struct_id,
+        override_rotx=override_rotx,
     )
 
     return interface
