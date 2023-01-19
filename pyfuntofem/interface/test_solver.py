@@ -638,29 +638,35 @@ class TestStructuralSolver(SolverInterface):
 
 
 class TestResult:
-    def __init__(self, name, complex_TD, adjoint_TD, rel_error):
+    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error):
         """
         Class to store test results from complex step method
         """
         self.name = name
+        self.func_names = func_names # list of function names
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
         self.rel_error = rel_error
+
+        self.nfuncs = len(func_names)
 
     def set_name(self, new_name):
         self.name = new_name
         return self
 
     def write(self, file_hdl):
-        file_hdl.write(f"Test Result - {self.name}\n")
-        file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
-        file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
-        file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+        file_hdl.write(f"Test: {self.name}\n")
+        for ifunc in range(self.nfuncs):
+            file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+            file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+            file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+            file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
         file_hdl.flush()
         return self
 
     def report(self):
         print(f"Test Result - {self.name}")
+        print("\tFunctions = ", self.func_names)
         print("\tComplex step TD  = ", self.complex_TD)
         print("\tAdjoint TD      = ", self.adjoint_TD)
         print("\tRelative error        = ", self.rel_error)
