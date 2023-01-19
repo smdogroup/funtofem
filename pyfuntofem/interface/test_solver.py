@@ -655,6 +655,9 @@ class TestResult:
         return self
 
     def write(self, file_hdl):
+        """
+        write the test result out to a file handle
+        """
         file_hdl.write(f"Test: {self.name}\n")
         for ifunc in range(self.nfuncs):
             file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
@@ -674,6 +677,10 @@ class TestResult:
 
     @classmethod
     def complex_step(cls, test_name, model, driver, status_file):
+        """
+        perform complex step test on a model and driver for multiple functions & variables
+        used for fun3d+tacs coupled derivative tests only...
+        """
 
         # determine the number of functions and variables
         nfunctions = len(model.get_functions())

@@ -15,7 +15,7 @@ np.random.seed(1234567)
 
 
 class TestFun3dUncoupled(unittest.TestCase):
-    FILENAME = "fun3d-fake-laminar"
+    FILENAME = "fun3d-fake-laminar.txt"
 
     def test_laminar_aeroelastic(self):
         # build the funtofem model with one body and scenario
@@ -28,8 +28,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario = Scenario.steady("laminar1", steps=200).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        # test_scenario.include(Function.ksfailure(ks_weight=50.0))
-        test_scenario.include(Function.lift())
+        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -59,7 +58,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.temperature())
+        test_scenario.include(Function.temperature()).include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -67,13 +66,16 @@ class TestFun3dUncoupled(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model)
         solvers.structural = TestStructuralSolver(comm, model, thermal_k=1.0)
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
 
         # run the complex step test on the model and driver
-        self._complex_step_check(model, driver)
+        max_rel_error = TestResult.complex_step(
+            "fun3d+fake-laminar-aerothermal", model, driver, TestFun3dUncoupled.FILENAME
+        )
+        self.assertTrue(max_rel_error < 1e-7)
 
     def _laminar_aerothermoelastic(self):
         # build the funtofem model with one body and scenario
@@ -86,7 +88,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.ksfailure())
+        test_scenario.include(Function.ksfailure()).include(Function.temperature()).include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -96,14 +98,20 @@ class TestFun3dUncoupled(unittest.TestCase):
         solvers.structural = TestStructuralSolver(
             comm, model, elastic_k=1000.0, thermal_k=1.0
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
 
         # run the complex step test on the model and driver
-        self._complex_step_check(model, driver)
+        max_rel_error = TestResult.complex_step(
+            "fun3d+fake-laminar-aerothermoelastic", model, driver, TestFun3dUncoupled.FILENAME
+        )
+        self.assertTrue(max_rel_error < 1e-7)
 
 
 if __name__ == "__main__":
+    # open and close the file to reset it
+    open(TestFun3dUncoupled.FILENAME, "w").close()
+
     unittest.main()
