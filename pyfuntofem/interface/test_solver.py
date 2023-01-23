@@ -659,12 +659,18 @@ class TestResult:
         write the test result out to a file handle
         """
         file_hdl.write(f"Test: {self.name}\n")
-        for ifunc in range(self.nfuncs):
-            file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
-            file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
-            file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
-            file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
-        file_hdl.flush()
+        if isinstance(self.func_names, list):
+            for ifunc in range(self.nfuncs):
+                file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+                file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
+            file_hdl.flush()
+        else:
+            file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+            file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+            file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+            file_hdl.flush()
         return self
 
     def report(self):
