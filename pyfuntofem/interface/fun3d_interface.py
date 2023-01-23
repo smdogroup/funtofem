@@ -377,7 +377,8 @@ class Fun3dInterface(SolverInterface):
                     elif var.name.lower() == "dynamic pressure":
                         deriv = self.comm.reduce(self.dFdqinf[func])
 
-                    function.set_gradient_component(var, deriv)
+                    # function.set_gradient_component(var, deriv)
+                    function.add_gradient_component(var, deriv)
 
         return scenario, bodies
 
