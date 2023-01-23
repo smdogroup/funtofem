@@ -4,19 +4,7 @@ from mpi4py import MPI
 from tacs import constitutive, elements
 
 # import other pyfuntofem
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.interface import (
-    Fun3dInterface,
-    createTacsUnsteadyInterfaceFromBDF,
-    IntegrationSettings,
-)
-
-# run settings
-num_steps = 800
-n_tacs_procs = 8
-f2f_analysis_type = "aeroelastic"
-flow_type = "laminar"
+from pyfuntofem import *
 
 # number of tacs processors and setup MPI
 comm = MPI.COMM_WORLD
@@ -24,33 +12,19 @@ comm = MPI.COMM_WORLD
 # Build the model
 model = FUNtoFEMmodel("simpleSST")
 
-wing_body = Body("simpleSST", analysis_type=f2f_analysis_type, group=0, boundary=2)
-wing_body.add_variable(
-    "structural", Variable("thick", value=0.03, lower=0.0001, upper=1.0)
-)
-model.add_body(wing_body)
+wing = Body.aeroelastic("simpleSST", boundary=2)
+Variable.structural("thick").set_bounds(lower=0.001, value=3, upper=100).rescale(
+    0.001
+).register_to(wing)
+wing.register_to(model)
 
 # make a new steady scenario that evaluates ksfailure and mass in funtofem
-my_scenario = Scenario("fun3d", group=0, steady=False, steps=num_steps)
-
-# functions (average over 50 timesteps during the gust)
-start = 300
-stop = 350
-ks_failure = Function(
-    "ksfailure",
-    start=start,
-    stop=stop,
-    analysis_type="structural",
-    options={"ksweight": 1000.0},
-)
-mass = Function("mass", start=start, stop=stop, analysis_type="structural")
-lift = Function("cl", start=start, stop=stop, analysis_type="aerodynamic")
-drag = Function("cd", start=start, stop=stop, analysis_type="aerodynamic")
-
-for function in [ks_failure, mass, lift, drag]:
-    my_scenario.add_function(function)
-
-model.add_scenario(my_scenario)
+laminar = Scenario.unsteady("laminar", 800)
+laminar.include(Function.ksfailure(ks_weight=50.0, start=300, stop=350))
+laminar.include(Function.mass(start=300, stop=350))
+laminar.include(Function.lift(start=300, stop=350))
+laminar.include(Function.drag(start=300, stop=350))
+laminar.register_to(model)
 
 # select the integration settings for tacs
 integration_settings = IntegrationSettings(
@@ -68,66 +42,30 @@ integration_settings = IntegrationSettings(
     num_steps=num_steps,
 )
 
-# setup the tacs comm again for the driver
-world_rank = comm.Get_rank()
-if world_rank < n_tacs_procs:
-    color = 55
-    key = world_rank
-else:
-    color = MPI.UNDEFINED
-    key = world_rank
-tacs_comm = comm.Split(color, key)
-
 # initialize the funtofem solvers
-solvers = {}
-
-# create the fun3d interface solver
-solvers["flow"] = Fun3dInterface(
+solvers = SolverManager()
+solvers.flow = Fun3dInterface(
     comm=comm,
     model=model,
-    flow_dt=0.001,
-    qinf=1.0e4,
-    thermal_scale=1.0e6,
     forward_options={"timedep_adj_frozen": True},
     adjoint_options={"timedep_adj_frozen": True},
 )
-
-cwd = os.getcwd()
-tacs_folder = os.path.join(cwd, "tacs_output")
-
-if not (os.path.exists(tacs_folder)) and comm.rank == 0:
+solvers.flow.set_units(qinf=1.0e4, flow_dt=0.001)
+tacs_folder = os.path.join(os.getcwd(), "tacs_output")
+if not os.path.exists(tacs_folder) and comm.rank == 0:
     os.mkdir(tacs_folder)
-
-# create tacs unsteady interface from the BDF / DAT file
-solvers["structural"] = createTacsUnsteadyInterfaceFromBDF(
-    model=model,
+solvers.structural = TacsUnsteadyInterface.create_from_bdf(
     comm=comm,
-    nprocs=n_tacs_procs,
+    model=model,
+    nprocs=8,
     bdf_file="nastran_CAPS.dat",
     integration_settings=integration_settings,
     output_dir=tacs_folder,
-    callback=None,
-    struct_options={},
 )
 
-# L&D transfer options
-transfer_options = {
-    "analysis_type": f2f_analysis_type,
-    "scheme": "meld",
-    "thermal_scheme": "meld",
-}
+# build the coupled driver
+driver = FUNtoFEMnlbgs(solvers=solvers, model=model)
 
-# instantiate the driver
-driver = FUNtoFEMnlbgs(
-    solvers=solvers,
-    comm=comm,
-    struct_comm=tacs_comm,
-    struct_root=0,
-    aero_comm=comm,
-    aero_root=0,
-    transfer_options=transfer_options,
-    model=model,
-)
 # solve the forward analysis
 driver.solve_forward()
 functions = model.get_functions()
