@@ -28,7 +28,9 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario = Scenario.steady("laminar1", steps=200).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(Function.lift()).include(Function.drag())
+        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
+            Function.lift()
+        ).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -55,10 +57,12 @@ class TestFun3dUncoupled(unittest.TestCase):
             lower=0.001, value=0.01, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
+        test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.temperature()).include(Function.lift()).include(Function.drag())
+        test_scenario.include(Function.temperature()).include(Function.lift()).include(
+            Function.drag()
+        )
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -85,10 +89,12 @@ class TestFun3dUncoupled(unittest.TestCase):
             lower=0.001, value=0.01, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar2", steps=500).set_temperature(
+        test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.ksfailure()).include(Function.temperature()).include(Function.lift()).include(Function.drag())
+        test_scenario.include(Function.ksfailure()).include(
+            Function.temperature()
+        ).include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -105,7 +111,10 @@ class TestFun3dUncoupled(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+fake-laminar-aerothermoelastic", model, driver, TestFun3dUncoupled.FILENAME
+            "fun3d+fake-laminar-aerothermoelastic",
+            model,
+            driver,
+            TestFun3dUncoupled.FILENAME,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
