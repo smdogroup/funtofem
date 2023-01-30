@@ -16,10 +16,9 @@ from pyfuntofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    usesFun3d,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
-
-from ._loader_declarators import usesFun3d
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")

@@ -15,7 +15,7 @@ def usesFun3d(test_method):
         return test_method
     else:
 
-        def fake_pass_method():
+        def fake_pass_method(obj):
             return
 
         return fake_pass_method
@@ -34,7 +34,7 @@ def usesCaps(test_method):
         return test_method
     else:
 
-        def fake_pass_method():
+        def fake_pass_method(obj):
             return
 
         return fake_pass_method

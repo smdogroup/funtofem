@@ -17,8 +17,6 @@ from pyfuntofem.interface import (
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from ._loader_declarators import usesFun3d
-
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
