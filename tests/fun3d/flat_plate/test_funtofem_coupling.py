@@ -1,4 +1,4 @@
-import numpy as np, unittest
+import importlib
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
@@ -12,11 +12,20 @@ from pyfuntofem.model import (
     AitkenRelaxation,
 )
 from pyfuntofem.interface import (
-    Fun3dInterface,
     TacsSteadyInterface,
     SolverManager,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+
+from ._loader_declarators import usesFun3d
+
+# check whether fun3d is available
+fun3d_loader = importlib.util.find_spec("fun3d")
+has_fun3d = fun3d_loader is not None
+if has_fun3d:
+    from pyfuntofem.interface import Fun3dInterface
+else:
+    raise AssertionError("You don't have FUN3D so you can't complete this test.")
 
 """
 Goal here is to start run a complex flow for funtofem_coupling.f90 internal complex step test

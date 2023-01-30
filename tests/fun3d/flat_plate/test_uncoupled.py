@@ -1,15 +1,22 @@
-import os, numpy as np, unittest
+import numpy as np, unittest, importlib
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (
-    Fun3dInterface,
     TestStructuralSolver,
     SolverManager,
     TestResult,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+
+from ._loader_declarators import usesFun3d
+
+# check whether fun3d is available
+fun3d_loader = importlib.util.find_spec("fun3d")
+has_fun3d = fun3d_loader is not None
+if has_fun3d:
+    from pyfuntofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
 
@@ -17,6 +24,7 @@ np.random.seed(1234567)
 class TestFun3dUncoupled(unittest.TestCase):
     FILENAME = "fun3d-fake-laminar.txt"
 
+    @usesFun3d
     def test_laminar_aeroelastic(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
@@ -49,6 +57,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
+    @usesFun3d
     def _laminar_aerothermal(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
@@ -81,6 +90,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
+    @usesFun3d
     def _laminar_aerothermoelastic(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
