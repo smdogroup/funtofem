@@ -1,4 +1,4 @@
-__all__ = ["useFun3d", "useCaps"]
+__all__ = ["usesFun3d", "usesCaps"]
 
 import importlib
 
