@@ -115,7 +115,6 @@ class TacsUnsteadyInterface(SolverInterface):
         struct_id: int = None,
         integration_settings: IntegrationSettings = None,
     ):
-
         self.comm = comm
         self.tacs_comm = None
 
@@ -250,7 +249,6 @@ class TacsUnsteadyInterface(SolverInterface):
         struct_id=None,
         thermal_index=0,
     ):
-
         self.thermal_index = thermal_index
         self.struct_id = struct_id
 
@@ -507,7 +505,6 @@ class TacsUnsteadyInterface(SolverInterface):
         fail = 0
 
         if self.tacs_proc:
-
             # get the external force vector for the integrator & zero it
             self.ext_force.zeroEntries()
             ext_force_array = self.ext_force.getArray()
@@ -518,7 +515,6 @@ class TacsUnsteadyInterface(SolverInterface):
             # Copy external loads and heat fluxes to the structure
             # Does this overwrite loads from multiple bodies on same elements?
             for body in bodies:
-
                 # get and copy struct loads into ext_force_array
                 struct_loads = body.get_struct_loads(scenario, time_index=step)
                 if struct_loads is not None:
@@ -543,7 +539,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # extract the disps, temps to the body
             for body in bodies:
-
                 # copy struct_disps to the body
                 struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
@@ -673,7 +668,6 @@ class TacsUnsteadyInterface(SolverInterface):
         fail = 0
 
         if self.tacs_proc:
-
             # extract the list of functions, dfdu, etc
             func_list = self.scenario_data[scenario].func_list
             func_tags = self.scenario_data[scenario].func_tags
@@ -686,7 +680,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # iterate over each function
             for ifunc in range(len(func_list)):
-
                 # get the solution data for this function
                 rhs_func = self.struct_rhs_vec[ifunc].getArray()
                 # ext_force_adjoint = self.res.getArray()
@@ -701,7 +694,6 @@ class TacsUnsteadyInterface(SolverInterface):
                 # add struct_disps, struct_flux ajps to the res_adjoint or
                 # the residual of the TACS structural adjoint system
                 for body in bodies:
-
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         for i in range(3):
@@ -725,7 +717,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # function loop to extract struct load, heat flux adjoints for each func
             for ifunc in range(len(func_list)):
-
                 # TODO : maybe psi needs to be saved for each time step here, the adjoints
                 # get the struct load, flux sensitivities out of integrator
                 psi = self.integrator[scenario.id].getAdjoint(step, ifunc)
@@ -733,7 +724,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
                 # pass sensitivities back to each body for loads, heat flux
                 for body in bodies:
-
                     # pass on struct loads adjoint product
                     struct_loads_ajp = body.get_struct_loads_ajp(scenario)
                     if struct_loads_ajp is not None:
@@ -900,7 +890,6 @@ class TacsUnsteadyInterface(SolverInterface):
             def f2f_callback(
                 dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
             ):
-
                 # Make sure cross-referencing is turned on in pynastran
                 # this allows it to read the material cards later on
                 if fea_assembler.bdfInfo.is_xrefed is False:
@@ -921,7 +910,6 @@ class TacsUnsteadyInterface(SolverInterface):
                     dv_name = dv_obj.label.lower()
 
                     if propertyID == kwargs["propID"]:
-
                         # only grab thickness from specified DVs
                         if dv_name in structDV_names:
                             t = structDV_dict[dv_name]

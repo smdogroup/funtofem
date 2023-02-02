@@ -95,7 +95,6 @@ class TacsSteadyShapeDriver:
         # generate the geometry if necessary
         initially_none = self.initial_bdf is None
         if initially_none:
-
             self.initial_bdf = os.path.join(self.analysis_dir, "nastran_CAPS.dat")
 
             # run the tacs aim preAnalysis to generate a bdf file
@@ -133,7 +132,6 @@ class TacsSteadyShapeDriver:
 
         # run post analysis of tacs aim to prevent CAPS_DIRTY error
         if initially_none:
-
             # write the model sensitivity file with zero derivatives
             self.model.write_sensitivity_file(
                 comm=self.comm,
@@ -151,7 +149,6 @@ class TacsSteadyShapeDriver:
         """
         # loop over each body to copy and transfer loads for the new structure
         for body in self.model.bodies:
-
             # update the transfer schemes for the new mesh size
             body.update_transfer()
 
@@ -160,7 +157,6 @@ class TacsSteadyShapeDriver:
 
             # zero the initial struct loads and struct flux for each scenario
             for scenario in self.model.scenarios:
-
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 # TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios

@@ -156,7 +156,6 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
 
         # Loop over the NLBGS steps
         for step in range(1, steps + 1):
-
             fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
             if fail != 0:
                 return fail
@@ -250,7 +249,6 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
             # Get the structural adjoint rhs
             for body in self.model.bodies:
                 for func in range(nfunctions):
-
                     # calculate dDdu_s^T * psi_D
                     psi_D_product = np.zeros(
                         body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
@@ -324,7 +322,6 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
 
             for fsi_subiter in range(1, self.fsi_subiters + 1):
                 for body in self.model.bodies:
-
                     # Transfer structural displacements to aerodynamic surface
                     if body.transfer:
                         body.aero_disps = np.zeros(

@@ -45,7 +45,6 @@ class TransferSchemeTest(unittest.TestCase):
         return
 
     def test_meld_thermal(self):
-
         comm = MPI.COMM_WORLD
 
         # Set typical parameter values
@@ -158,7 +157,6 @@ class TransferSchemeTest(unittest.TestCase):
         return
 
     def test_beam_transfer(self):
-
         comm = MPI.COMM_WORLD
 
         nelems = 10
@@ -202,7 +200,6 @@ class TransferSchemeTest(unittest.TestCase):
         assert fail == 0
 
     def test_quaternion_beam_transfer(self):
-
         comm = MPI.COMM_WORLD
 
         nelems = 10

@@ -468,7 +468,6 @@ class Body(Base):
 
         # Set up the transfer schemes based on the type of analysis set for this body
         if self.analysis_type in elastic_analyses:
-
             # Set up the load and displacement transfer schemes
             if transfer_settings.elastic_scheme == "hermes":
                 self.transfer = HermesTransfer(
@@ -508,7 +507,6 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "meld":
-
                 self.transfer = TransferScheme.pyMELD(
                     comm,
                     struct_comm,
@@ -521,7 +519,6 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "linearized meld":
-
                 self.transfer = TransferScheme.pyLinearizedMELD(
                     comm,
                     struct_comm,
@@ -534,7 +531,6 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "beam":
-
                 self.xfer_ndof = ndof
                 self.transfer = TransferScheme.pyBeamTransfer(
                     comm,
@@ -556,7 +552,6 @@ class Body(Base):
             # Set up the thermal transfer schemes
 
             if transfer_settings.thermal_scheme == "meld":
-
                 self.thermal_transfer = TransferScheme.pyMELDThermal(
                     comm,
                     struct_comm,

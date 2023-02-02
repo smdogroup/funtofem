@@ -21,7 +21,6 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 class SensitivityFileTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate", boundary=1)
@@ -67,7 +66,6 @@ class SensitivityFileTest(unittest.TestCase):
         return model, driver
 
     def test_sens_file(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now

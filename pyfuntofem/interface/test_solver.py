@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TestAerodynamicSolver", "TestStructuralSolver"]
+__all__ = ["TestAerodynamicSolver", "TestStructuralSolver", "TestResult"]
 
 import numpy as np
 from funtofem import TransferScheme
@@ -234,7 +234,6 @@ class TestAerodynamicSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.aero_variables):
-
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                     if aero_loads_ajp is not None:
@@ -512,7 +511,6 @@ class TestStructuralSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.struct_variables):
-
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
@@ -635,3 +633,111 @@ class TestStructuralSolver(SolverInterface):
 
     def post_adjoint(self, scenario, bodies):
         return
+
+
+class TestResult:
+    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error):
+        """
+        Class to store test results from complex step method
+        """
+        self.name = name
+        self.func_names = func_names  # list of function names
+        self.complex_TD = complex_TD
+        self.adjoint_TD = adjoint_TD
+        self.rel_error = rel_error
+
+        self.nfuncs = len(func_names)
+
+    def set_name(self, new_name):
+        self.name = new_name
+        return self
+
+    def write(self, file_hdl):
+        """
+        write the test result out to a file handle
+        """
+        file_hdl.write(f"Test: {self.name}\n")
+        if isinstance(self.func_names, list):
+            for ifunc in range(self.nfuncs):
+                file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+                file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
+            file_hdl.flush()
+        else:
+            file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+            file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+            file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+            file_hdl.flush()
+        return self
+
+    def report(self):
+        print(f"Test Result - {self.name}")
+        print("\tFunctions = ", self.func_names)
+        print("\tComplex step TD  = ", self.complex_TD)
+        print("\tAdjoint TD      = ", self.adjoint_TD)
+        print("\tRelative error        = ", self.rel_error)
+        return self
+
+    @classmethod
+    def complex_step(cls, test_name, model, driver, status_file):
+        """
+        perform complex step test on a model and driver for multiple functions & variables
+        used for fun3d+tacs coupled derivative tests only...
+        """
+
+        # determine the number of functions and variables
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+        func_names = [func.name for func in model.get_functions()]
+
+        # generate random contravariant tensor, an input space curve tangent dx/ds for design vars
+        dxds = np.random.rand(nvariables)
+
+        # solve the adjoint
+        driver.solvers.make_flow_real()
+        driver.solve_forward()
+        driver.solve_adjoint()
+        gradients = model.get_function_gradients()
+
+        # compute the adjoint total derivative df/ds = df/dx * dx/ds
+        adjoint_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            for ivar in range(nvariables):
+                adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+
+        # perform complex step method
+        driver.solvers.make_flow_complex()
+        epsilon = 1e-30
+        variables = model.get_variables()
+
+        # perturb the design vars by x_pert = x + 1j * h * dx/ds
+        for ivar in range(nvariables):
+            variables[ivar].value += 1j * epsilon * dxds[ivar]
+
+        # run the complex step method
+        driver.solve_forward()
+        functions = model.get_functions()
+
+        # compute the complex step total derivative df/ds = Im{f(x+ih * dx/ds)}/h for each func
+        complex_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            complex_TD[ifunc] += functions[ifunc].value.imag / epsilon
+
+        # compute rel error between adjoint & complex step for each function
+        rel_error = [
+            (adjoint_TD[ifunc] - complex_TD[ifunc]) / complex_TD[ifunc]
+            for ifunc in range(nfunctions)
+        ]
+        rel_error = [_.real for _ in rel_error]
+
+        # make test results object and write it to file
+        file_hdl = open(status_file, "a")
+        cls(test_name, func_names, complex_TD, adjoint_TD, rel_error).write(
+            file_hdl
+        ).report()
+
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+
+        return max_rel_error

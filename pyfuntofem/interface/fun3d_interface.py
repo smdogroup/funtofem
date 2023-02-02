@@ -133,7 +133,6 @@ class Fun3dInterface(SolverInterface):
         return self
 
     def _initialize_body_nodes(self, scenario, bodies):
-
         # Change directories to the flow directory
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
@@ -377,7 +376,8 @@ class Fun3dInterface(SolverInterface):
                     elif var.name.lower() == "dynamic pressure":
                         deriv = self.comm.reduce(self.dFdqinf[func])
 
-                    function.set_gradient_component(var, deriv)
+                    # function.set_gradient_component(var, deriv)
+                    function.add_gradient_component(var, deriv)
 
         return scenario, bodies
 
@@ -508,7 +508,6 @@ class Fun3dInterface(SolverInterface):
             heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
 
             if heat_flux is not None and aero_nnodes > 0:
-
                 # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)
                 dTdn = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
 

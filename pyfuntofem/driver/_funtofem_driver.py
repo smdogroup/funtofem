@@ -147,7 +147,6 @@ class FUNtoFEMDriver(object):
 
         # loop over the forward problem for the different scenarios
         for scenario in self.model.scenarios:
-
             # tell the solvers what the variable values and functions are for this scenario
             if not self.fakemodel:
                 self._distribute_variables(scenario, self.model.bodies)

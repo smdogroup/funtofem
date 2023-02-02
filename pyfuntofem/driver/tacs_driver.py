@@ -75,7 +75,6 @@ class TacsSteadyAnalysisDriver:
         self._zero_tacs_data()
 
         for scenario in self.model.scenarios:
-
             # set functions and variables
             self.tacs_interface.set_variables(scenario, self.model.bodies)
             self.tacs_interface.set_functions(scenario, self.model.bodies)
@@ -132,7 +131,6 @@ class TacsSteadyAnalysisDriver:
         """
 
         if self.tacs_interface.tacs_proc:
-
             # zero temporary solution data
             # others are zeroed out in the tacs_interface by default
             self.tacs_interface.res.zeroEntries()
@@ -141,14 +139,12 @@ class TacsSteadyAnalysisDriver:
 
             # zero any scenario data
             for scenario in self.model.scenarios:
-
                 # zero state data
                 u = self.tacs_interface.scenario_data[scenario].u
                 u.zeroEntries()
                 self.tacs_interface.assembler.setVariables(u)
 
     def _zero_adjoint_data(self):
-
         if self.tacs_interface.tacs_proc:
             # zero adjoint variable
             for scenario in self.model.scenarios:

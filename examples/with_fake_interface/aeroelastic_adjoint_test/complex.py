@@ -98,7 +98,6 @@ class AdjointTest(object):
         self.struct_tacs = solvers["structural"].assembler
 
     def _build_model(self):
-
         thickness = 0.015
 
         # Build the model
