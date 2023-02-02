@@ -1,4 +1,4 @@
-import numpy as np, unittest, importlib
+import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
@@ -26,10 +26,12 @@ if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
-
+results_folder = os.path.join(os.getcwd(), "results")
+if not os.path.exists(results_folder): os.mkdir(results_folder)
 
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def _build_assembler(self, comm):
 
@@ -118,7 +120,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-laminar-aeroelastic",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -161,7 +163,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-turbulent-aeroelastic",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -203,7 +205,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-laminar-aerothermal",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -245,7 +247,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-turbulent-aerothermal",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -289,7 +291,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-laminar-aerothermolastic",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -333,7 +335,7 @@ class TestFun3dTacs(unittest.TestCase):
             "fun3d+tacs-turbulent-aerothermolastic",
             model,
             driver,
-            TestFun3dTacs.FILENAME,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -347,7 +349,7 @@ class TestFun3dTacs(unittest.TestCase):
 
 if __name__ == "__main__":
     # open and close the file to reset it
-    open(TestFun3dTacs.FILENAME, "w").close()
+    open(TestFun3dTacs.FILEPATH, "w").close()
 
     full_test = False
     if full_test:

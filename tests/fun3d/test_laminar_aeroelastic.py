@@ -26,6 +26,9 @@ has_fun3d = fun3d_loader is not None
 if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
+results_folder = os.path.join(os.getcwd(), "results")
+if not os.path.exists(results_folder): os.mkdir(results_folder)
+
 # define a function to suppress stdout
 @contextmanager
 def stdchannel_redirected(stdchannel, dest_filename):
@@ -55,6 +58,7 @@ def stdchannel_redirected(stdchannel, dest_filename):
 
 class TestLaminarAeroelastic(unittest.TestCase):
     FILENAME = "full_plate.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     @usesFun3d
     def test_fun3d_interface(self):

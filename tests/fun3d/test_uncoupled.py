@@ -1,4 +1,4 @@
-import numpy as np, unittest, importlib
+import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
@@ -18,10 +18,12 @@ if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
-
+results_folder = os.path.join(os.getcwd(), "results")
+if not os.path.exists(results_folder): os.mkdir(results_folder)
 
 class TestFun3dUncoupled(unittest.TestCase):
     FILENAME = "fun3d-fake-laminar.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     @usesFun3d
     def test_laminar_aeroelastic(self):
@@ -52,7 +54,7 @@ class TestFun3dUncoupled(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+fake-laminar-aeroelastic", model, driver, TestFun3dUncoupled.FILENAME
+            "fun3d+fake-laminar-aeroelastic", model, driver, TestFun3dUncoupled.FILEPATH
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -85,7 +87,7 @@ class TestFun3dUncoupled(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+fake-laminar-aerothermal", model, driver, TestFun3dUncoupled.FILENAME
+            "fun3d+fake-laminar-aerothermal", model, driver, TestFun3dUncoupled.FILEPATH
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -123,13 +125,13 @@ class TestFun3dUncoupled(unittest.TestCase):
             "fun3d+fake-laminar-aerothermoelastic",
             model,
             driver,
-            TestFun3dUncoupled.FILENAME,
+            TestFun3dUncoupled.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
 
 if __name__ == "__main__":
     # open and close the file to reset it
-    open(TestFun3dUncoupled.FILENAME, "w").close()
+    open(TestFun3dUncoupled.FILEPATH, "w").close()
 
     unittest.main()
