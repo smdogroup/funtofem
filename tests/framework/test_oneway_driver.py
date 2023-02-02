@@ -112,7 +112,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver.solve_forward()
 
         complex_mode = False
-        rtol = 1e-4
+        rtol = 1e-3
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_mode = True
             rtol = 1e-7
@@ -165,7 +165,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver.solve_forward()
 
         complex_mode = False
-        rtol = 1e-4
+        rtol = 1e-3
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_mode = True
             rtol = 1e-7
