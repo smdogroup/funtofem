@@ -1,6 +1,7 @@
 import os, unittest, numpy as np
 from mpi4py import MPI
-
+from tacs import TACS
+from funtofem import TransferScheme
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (
     TestAerodynamicSolver,
@@ -57,15 +58,22 @@ class TestOnewayDriver(unittest.TestCase):
         # prime the oneway driver by running one forward analysis of coupled driver
         coupled_driver.solve_forward()
 
-        # run teh oomplex step test`
-        max_rel_error = TestResult.complex_step(
+        complex_mode = False
+        rtol = 1e-4
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
+            complex_mode = True
+            rtol = 1e-7
+
+        # run teh oomplex step test
+        max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic",
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
             has_fun3d=False,
+            complex_mode=complex_mode,
         )
-        self.assertTrue(max_rel_error < 1e-7)
+        self.assertTrue(max_rel_error < rtol)
 
         return
 
@@ -103,15 +111,22 @@ class TestOnewayDriver(unittest.TestCase):
         # to obtain fixed aero loads
         coupled_driver.solve_forward()
 
-        # run the complex step test on the model and oneway driver
-        max_rel_error = TestResult.complex_step(
+        complex_mode = False
+        rtol = 1e-4
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
+            complex_mode = True
+            rtol = 1e-7
+
+        # run teh oomplex step test
+        max_rel_error = TestResult.derivative_test(
             "oneway-aerothermal",
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
             has_fun3d=False,
+            complex_mode=complex_mode,
         )
-        self.assertTrue(max_rel_error < 1e-7)
+        self.assertTrue(max_rel_error < rtol)
 
         return
 
@@ -149,16 +164,22 @@ class TestOnewayDriver(unittest.TestCase):
         # to obtain fixed aero loads
         coupled_driver.solve_forward()
 
-        # run the complex step test on the model and oneway driver
-        max_rel_error = TestResult.complex_step(
+        complex_mode = False
+        rtol = 1e-4
+        if TransferScheme.dtype == complex and TACS.dtype == complex:
+            complex_mode = True
+            rtol = 1e-7
+
+        # run teh oomplex step test
+        max_rel_error = TestResult.derivative_test(
             "oneway-aerothermoelastic",
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
             has_fun3d=False,
+            complex_mode=complex_mode,
         )
-        self.assertTrue(max_rel_error < 1e-7)
-
+        self.assertTrue(max_rel_error < rtol)
         return
 
 

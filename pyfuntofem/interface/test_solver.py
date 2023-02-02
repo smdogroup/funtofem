@@ -743,3 +743,74 @@ class TestResult:
         max_rel_error = max(np.array(abs_rel_error))
 
         return max_rel_error
+
+    @classmethod
+    def finite_difference(
+        cls, test_name, model, driver, status_file, epsilon=1e-5, has_fun3d=True
+    ):
+        """
+        perform finite difference test on a model and driver for multiple functions & variables
+        """
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+        func_names = [func.name for func in model.get_functions()]
+
+        # generate random contravariant tensor in input space x(s)
+        dxds = np.random.rand(nvariables)
+
+        # solve the adjoint
+        driver.solve_forward()
+        driver.solve_adjoint()
+        gradients = model.get_function_gradients()
+
+        # compute adjoint total derivative df/dx
+        adjoint_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            for ivar in range(nvariables):
+                adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+
+        # perform finite difference computation
+        driver.solve_forward()
+        i_functions = [func.value.real for func in model.get_functions()]
+
+        variables = model.get_variables()
+        for ivar in range(nvariables):
+            variables[ivar].value += epsilon * dxds[ivar]
+        driver.solve_forward()
+        f_functions = [func.value.real for func in model.get_functions()]
+
+        finite_diff_TD = [
+            (f_functions[ifunc] - i_functions[ifunc]) / epsilon
+            for ifunc in range(nfunctions)
+        ]
+
+        # compute relative error
+        rel_error = [
+            (adjoint_TD[ifunc] - finite_diff_TD[ifunc]) / finite_diff_TD[ifunc]
+            for ifunc in range(nfunctions)
+        ]
+
+        # make test results object and write to file
+        file_hdl = open(status_file, "a")
+        cls(test_name, func_names, finite_diff_TD, adjoint_TD, rel_error).write(
+            file_hdl
+        ).report()
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+        return max_rel_error
+
+    @classmethod
+    def derivative_test(
+        cls, test_name, model, driver, status_file, has_fun3d=True, complex_mode=True
+    ):
+        """
+        call either finite diff or complex step test depending on real mode of funtofem + TACS
+        """
+        if complex_mode:
+            return cls.complex_step(
+                test_name, model, driver, status_file, has_fun3d=has_fun3d
+            )
+        else:
+            return cls.finite_difference(
+                test_name, model, driver, status_file, has_fun3d=has_fun3d
+            )
