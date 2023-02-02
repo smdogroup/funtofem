@@ -1,4 +1,4 @@
-import os
+import os, unittest, numpy as np
 from mpi4py import MPI
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
@@ -11,8 +11,6 @@ from pyfuntofem.interface import (
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsSteadyAnalysisDriver
 
 from bdf_test_utils import thermoelasticity_callback, elasticity_callback
-import unittest
-import numpy as np
 
 np.random.seed(1234567)
 
@@ -35,13 +33,19 @@ class TestOnewayDriver(unittest.TestCase):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic(boundary=1)
-        Variable.structural("thickness").set_bounds(lower=0.01, value=0.1, upper=1.0).register_to(plate)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady(steps=150).include(Function.ksfailure()).include(Function.temperature())
+        scenario = (
+            Scenario.steady(steps=150)
+            .include(Function.ksfailure())
+            .include(Function.temperature())
+        )
         scenario.register_to(model)
-        
+
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
@@ -70,13 +74,19 @@ class TestOnewayDriver(unittest.TestCase):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal(boundary=1)
-        Variable.structural("thickness").set_bounds(lower=0.01, value=0.1, upper=1.0).register_to(plate)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady(steps=150).include(Function.ksfailure()).include(Function.temperature())
+        scenario = (
+            Scenario.steady(steps=150)
+            .include(Function.ksfailure())
+            .include(Function.temperature())
+        )
         scenario.register_to(model)
-        
+
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
@@ -99,19 +109,25 @@ class TestOnewayDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < 1e-7)
 
         return
-    
+
     def test_aerothermoelastic(self):
 
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic(boundary=1)
-        Variable.structural("thickness").set_bounds(lower=0.01, value=0.1, upper=1.0).register_to(plate)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady(steps=150).include(Function.ksfailure()).include(Function.temperature())
+        scenario = (
+            Scenario.steady(steps=150)
+            .include(Function.ksfailure())
+            .include(Function.temperature())
+        )
         scenario.register_to(model)
-        
+
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)

@@ -99,7 +99,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="fun3d_meshes").set_units(qinf=1.0e4)
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -349,6 +349,9 @@ if __name__ == "__main__":
     # open and close the file to reset it
     open(TestFun3dTacs.FILENAME, "w").close()
 
-    unittest.main()
-    # tester = TestFun3dTacs()
-    # tester.test_laminar_aeroelastic()
+    full_test = False
+    if full_test:
+        unittest.main()
+    else:
+        tester = TestFun3dTacs()
+        tester.test_laminar_aeroelastic()
