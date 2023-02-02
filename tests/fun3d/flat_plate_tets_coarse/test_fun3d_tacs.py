@@ -71,7 +71,8 @@ class TestFun3dTacs(unittest.TestCase):
 
             # Load in the mesh
             mesh = TACS.MeshLoader(tacs_comm)
-            mesh.scanBDFFile("tacs_aero.bdf")
+            bdf_file = os.path.join(os.getcwd(), "meshes", "tacs_aero.bdf")
+            mesh.scanBDFFile(bdf_file)
 
             # Set the element
             mesh.setElement(0, element_plate)
@@ -101,7 +102,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="fun3d_meshes").set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -144,7 +145,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model,fun3d_dir="meshes").set_units(qinf=1.0e4)
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -187,7 +188,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model)
+        solvers.flow = Fun3dInterface(comm, model,fun3d_dir="meshes")
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -218,7 +219,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=500).set_temperature(
+        test_scenario = Scenario.steady("turbulent", steps=500,fun3d_dir="meshes").set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.temperature()).include(Function.lift()).include(
@@ -262,7 +263,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
+        test_scenario = Scenario.steady("laminar", steps=500,fun3d_dir="meshes").set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
@@ -306,7 +307,7 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=500).set_temperature(
+        test_scenario = Scenario.steady("turbulent", steps=500,fun3d_dir="meshes").set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
@@ -339,6 +340,49 @@ class TestFun3dTacs(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
+    @usesFun3d
+    def test_laminar_aeroelastic_noskinfric(self):
+        # build the funtofem model with one body and scenario
+        model = FUNtoFEMmodel("plate")
+        plate = Body.aeroelastic("plate", boundary=6).relaxation(AitkenRelaxation())
+        Variable.structural("thickness").set_bounds(
+            lower=0.001, value=0.1, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.steady("laminar_noskinfric", steps=500).set_temperature(
+            T_ref=300.0, T_inf=300.0
+        )
+        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
+            Function.lift()
+        ).include(Function.drag())
+        test_scenario.register_to(model)
+
+        # build the solvers and coupled driver
+        comm = MPI.COMM_WORLD
+        solvers = SolverManager(comm)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
+
+        assembler = self._build_assembler(comm)
+        solvers.structural = TacsSteadyInterface(
+            comm, model, assembler, gen_output=None, thermal_index=3
+        )
+        # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
+        transfer_settings = TransferSettings(npts=5)
+        driver = FUNtoFEMnlbgs(
+            solvers,
+            transfer_settings=transfer_settings,
+            model=model,
+        )
+
+        # run the complex step test on the model and driver
+        max_rel_error = TestResult.complex_step(
+            "fun3d+tacs-laminar-aeroelastic-noskinfric",
+            model,
+            driver,
+            TestFun3dTacs.FILEPATH,
+        )
+        self.assertTrue(max_rel_error < 1e-7)
+
     def __del__(self):
         # close the file handle on deletion of the object
         try:
@@ -351,9 +395,4 @@ if __name__ == "__main__":
     # open and close the file to reset it
     open(TestFun3dTacs.FILEPATH, "w").close()
 
-    full_test = False
-    if full_test:
-        unittest.main()
-    else:
-        tester = TestFun3dTacs()
-        tester.test_laminar_aeroelastic()
+    unittest.main()
