@@ -31,18 +31,14 @@ class TestOnewayDriver(unittest.TestCase):
     def test_aeroelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
-        plate = Body.aeroelastic(boundary=1)
+        plate = Body.aeroelastic("plate", boundary=1)
         Variable.structural("thickness").set_bounds(
             lower=0.01, value=0.1, upper=1.0
         ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
-        scenario = (
-            Scenario.steady(steps=150)
-            .include(Function.ksfailure())
-            .include(Function.temperature())
-        )
+        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -53,16 +49,21 @@ class TestOnewayDriver(unittest.TestCase):
             model, comm, 1, bdf_filename, callback=elasticity_callback
         )
         transfer_settings = TransferSettings(npts=5)
-        coupled_driver = FUNtoFEMnlbgs(solvers, transfer_settings, model)
+        coupled_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
         oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
-        # to obtain fixed aero loads
         coupled_driver.solve_forward()
 
-        # run the complex step test on the model and oneway driver
+        # run teh oomplex step test`
         max_rel_error = TestResult.complex_step(
-            "oneway-aeroelastic", model, oneway_driver, TestOnewayDriver.FILENAME
+            "oneway-aeroelastic",
+            model,
+            oneway_driver,
+            TestOnewayDriver.FILENAME,
+            has_fun3d=False,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -71,7 +72,7 @@ class TestOnewayDriver(unittest.TestCase):
     def test_aerothermal(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
-        plate = Body.aerothermal(boundary=1)
+        plate = Body.aerothermal("plate", boundary=1)
         Variable.structural("thickness").set_bounds(
             lower=0.01, value=0.1, upper=1.0
         ).register_to(plate)
@@ -79,7 +80,7 @@ class TestOnewayDriver(unittest.TestCase):
 
         # build the scenario
         scenario = (
-            Scenario.steady(steps=150)
+            Scenario.steady("test", steps=150)
             .include(Function.ksfailure())
             .include(Function.temperature())
         )
@@ -93,7 +94,9 @@ class TestOnewayDriver(unittest.TestCase):
             model, comm, 1, bdf_filename, callback=thermoelasticity_callback
         )
         transfer_settings = TransferSettings(npts=5)
-        coupled_driver = FUNtoFEMnlbgs(solvers, transfer_settings, model)
+        coupled_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
         oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
@@ -102,7 +105,11 @@ class TestOnewayDriver(unittest.TestCase):
 
         # run the complex step test on the model and oneway driver
         max_rel_error = TestResult.complex_step(
-            "oneway-aerothermal", model, oneway_driver, TestOnewayDriver.FILENAME
+            "oneway-aerothermal",
+            model,
+            oneway_driver,
+            TestOnewayDriver.FILENAME,
+            has_fun3d=False,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -111,7 +118,7 @@ class TestOnewayDriver(unittest.TestCase):
     def test_aerothermoelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
-        plate = Body.aerothermoelastic(boundary=1)
+        plate = Body.aerothermoelastic("plate", boundary=1)
         Variable.structural("thickness").set_bounds(
             lower=0.01, value=0.1, upper=1.0
         ).register_to(plate)
@@ -119,7 +126,7 @@ class TestOnewayDriver(unittest.TestCase):
 
         # build the scenario
         scenario = (
-            Scenario.steady(steps=150)
+            Scenario.steady("test", steps=150)
             .include(Function.ksfailure())
             .include(Function.temperature())
         )
@@ -133,7 +140,9 @@ class TestOnewayDriver(unittest.TestCase):
             model, comm, 1, bdf_filename, callback=thermoelasticity_callback
         )
         transfer_settings = TransferSettings(npts=5)
-        coupled_driver = FUNtoFEMnlbgs(solvers, transfer_settings, model)
+        coupled_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
         oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
@@ -142,7 +151,11 @@ class TestOnewayDriver(unittest.TestCase):
 
         # run the complex step test on the model and oneway driver
         max_rel_error = TestResult.complex_step(
-            "oneway-aerothermoelastic", model, oneway_driver, TestOnewayDriver.FILENAME
+            "oneway-aerothermoelastic",
+            model,
+            oneway_driver,
+            TestOnewayDriver.FILENAME,
+            has_fun3d=False,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -150,4 +163,5 @@ class TestOnewayDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    open(TestOnewayDriver.FILENAME, "w").close()
     unittest.main()
