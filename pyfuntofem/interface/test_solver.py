@@ -695,7 +695,8 @@ class TestResult:
         dxds = np.random.rand(nvariables)
 
         # solve the adjoint
-        if has_fun3d: driver.solvers.make_flow_real()
+        if has_fun3d:
+            driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients()
@@ -707,7 +708,8 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform complex step method
-        if has_fun3d: driver.solvers.make_flow_complex()
+        if has_fun3d:
+            driver.solvers.make_flow_complex()
         epsilon = 1e-30
         variables = model.get_variables()
 
