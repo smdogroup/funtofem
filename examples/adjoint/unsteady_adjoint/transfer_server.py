@@ -27,7 +27,6 @@ from mpi4py import MPI
 from funtofem_server import Server
 
 if __name__ == "__main__":
-
     n_struct_procs = 2
     comm = MPI.COMM_WORLD
 

@@ -482,7 +482,6 @@ class PistonInterface(SolverInterface):
         return 0
 
     def compute_forces(self, aero_disps, aero_loads, aero_X):
-
         # Compute w for piston theory: [dx,dy,dz] DOT freestream normal
         w = aero_X[2::3] + self.nmat.T @ aero_disps
 

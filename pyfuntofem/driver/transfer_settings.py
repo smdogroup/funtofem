@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 class TransferSettings:
     ELASTIC_SCHEMES = ["hermes", "rbf", "meld", "linearized meld", "beam"]
     THERMAL_SCHEMES = ["meld"]
+
     # TODO : determine whether we should put analysis type back in transfer settings?
     def __init__(
         self,

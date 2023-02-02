@@ -876,7 +876,6 @@ class TacsSteadyInterface(SolverInterface):
             def f2f_callback(
                 dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs
             ):
-
                 # Make sure cross-referencing is turned on in pynastran
                 # this allows it to read the material cards later on
                 if fea_assembler.bdfInfo.is_xrefed is False:
@@ -897,7 +896,6 @@ class TacsSteadyInterface(SolverInterface):
                     dv_name = dv_obj.label.lower()
 
                     if propertyID == kwargs["propID"]:
-
                         # only grab thickness from specified DVs
                         if dv_name in structDV_names:
                             t = structDV_dict[dv_name]

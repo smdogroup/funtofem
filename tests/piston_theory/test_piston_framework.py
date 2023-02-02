@@ -17,7 +17,6 @@ import unittest
 
 class CoupledFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("model")
         wing = Body("plate", "aeroelastic", group=0, boundary=1)
@@ -101,7 +100,6 @@ class CoupledFrameworkTest(unittest.TestCase):
         return model, driver
 
     def test_model_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or not
@@ -143,7 +141,6 @@ class CoupledFrameworkTest(unittest.TestCase):
         return
 
     def test_coupled_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now

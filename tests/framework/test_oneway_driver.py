@@ -29,7 +29,6 @@ class TestOnewayDriver(unittest.TestCase):
     FILENAME = "oneway-driver.txt"
 
     def test_aeroelastic(self):
-
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic(boundary=1)
@@ -70,7 +69,6 @@ class TestOnewayDriver(unittest.TestCase):
         return
 
     def test_aerothermal(self):
-
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal(boundary=1)
@@ -111,7 +109,6 @@ class TestOnewayDriver(unittest.TestCase):
         return
 
     def test_aerothermoelastic(self):
-
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic(boundary=1)

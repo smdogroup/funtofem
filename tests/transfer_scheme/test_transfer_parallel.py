@@ -10,7 +10,6 @@ import unittest
 
 
 class TransferSchemeTest(unittest.TestCase):
-
     N_PROCS = 2
 
     def _get_aero_nnodes(self, comm):

@@ -23,7 +23,6 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 class TacsFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body("plate", "aerothermoelastic", group=0, boundary=1)
@@ -107,7 +106,6 @@ class TacsFrameworkTest(unittest.TestCase):
         return
 
     def test_coupled_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now

@@ -70,7 +70,6 @@ class MELDThermal_temp_xfer(om.ExplicitComponent):
         )
 
     def compute(self, inputs, outputs):
-
         x_s0 = np.array(inputs["x_struct0"], dtype=TransferScheme.dtype)
         x_a0 = np.array(inputs["x_aero0"], dtype=TransferScheme.dtype)
         mapping = self.options["mapping"]
@@ -163,7 +162,6 @@ class MELDThermal_heat_xfer_rate_xfer(om.ExplicitComponent):
         )
 
     def compute(self, inputs, outputs):
-
         heat_xfer_conv = np.array(inputs["q_convect"], dtype=TransferScheme.dtype)
         heat_xfer_cond = np.zeros(self.cond_nnodes, dtype=TransferScheme.dtype)
 
@@ -227,7 +225,6 @@ class MELDThermal_builder(Builder):
 
     # api level method for all builders
     def get_element(self):
-
         temp_xfer = MELDThermal_temp_xfer(
             xfer_object=self.xfer_object,
             cond_ndof=self.cond_ndof,
@@ -253,7 +250,6 @@ class MELDThermal_builder(Builder):
         return self.xfer_object()
 
     def get_component(self):
-
         temp_xfer = MELDThermal_temp_xfer(
             xfer_object=self.xfer_object,
             cond_ndof=self.cond_ndof,

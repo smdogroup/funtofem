@@ -38,7 +38,6 @@ class crm_togw(object):
     """
 
     def __init__(self):
-
         # Set up the communicators
         n_tacs_procs = 3
 
@@ -143,7 +142,6 @@ class crm_togw(object):
         self.area0 = self.eval_area(np.zeros(52))
 
     def _build_model(self):
-
         # Build the CRM model
         model = FUNtoFEMmodel("crm")
 
@@ -228,7 +226,6 @@ class crm_togw(object):
         self.model = model
 
     def eval_objcon(self, x):
-
         fail = 0
 
         self.model.set_variables(x * self.var_scale)
@@ -299,7 +296,6 @@ class crm_togw(object):
         return obj, con, fail
 
     def eval_objcon_grad(self, x, obj, con):
-
         self.model.set_variables(x * self.var_scale)
 
         variables = self.model.get_variables()
@@ -400,7 +396,6 @@ class crm_togw(object):
         return g, A, fail
 
     def eval_smoothness(self, x):
-
         con = np.zeros(2 * (187 - 3), dtype=TransferScheme.dtype)
         j = 0
         k = 0
@@ -416,7 +411,6 @@ class crm_togw(object):
         return con
 
     def eval_smoothness_grad(self, x):
-
         offset = 54
         grad = np.zeros([2 * (187 - 3), self.ndv], dtype=TransferScheme.dtype)
 
@@ -490,7 +484,6 @@ class crm_togw(object):
         return area
 
     def quad_area(self, ax, ay, bx, by, cx, cy, dx, dy):
-
         # diagonal distance
         e = np.sqrt((cy - ay) ** 2.0 + (cx - ax) ** 2.0)
 
@@ -641,7 +634,6 @@ class crm_togw(object):
         ddxdx,
         ddydx,
     ):
-
         # diagonal distance
         e = np.sqrt((cy - ay) ** 2.0 + (cx - ax) ** 2.0)
 

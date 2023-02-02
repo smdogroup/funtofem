@@ -30,6 +30,7 @@ results_folder = os.path.join(os.getcwd(), "results")
 if not os.path.exists(results_folder):
     os.mkdir(results_folder)
 
+
 # define a function to suppress stdout
 @contextmanager
 def stdchannel_redirected(stdchannel, dest_filename):
@@ -79,7 +80,6 @@ class TestLaminarAeroelastic(unittest.TestCase):
 
         # suppress stdout during each FUN3D analysis
         with stdchannel_redirected(sys.stdout, os.devnull):
-
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)
@@ -184,7 +184,6 @@ class TestLaminarAeroelastic(unittest.TestCase):
 
         # suppress the standard output from fortran, fun3d
         with stdchannel_redirected(sys.stdout, os.devnull):
-
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)
@@ -255,7 +254,6 @@ class TestLaminarAeroelastic(unittest.TestCase):
 
         # suppress the standard output from fortran, fun3d
         with stdchannel_redirected(sys.stdout, os.devnull):
-
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)

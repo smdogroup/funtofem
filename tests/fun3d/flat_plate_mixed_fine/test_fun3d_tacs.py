@@ -36,7 +36,6 @@ class TestFun3dTacs(unittest.TestCase):
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def _build_assembler(self, comm):
-
         # build a tacs communicator on one proc
         n_tacs_procs = 1
         world_rank = comm.Get_rank()
@@ -51,7 +50,6 @@ class TestFun3dTacs(unittest.TestCase):
         # build the tacs assembler of the flat plate
         assembler = None
         if comm.rank < n_tacs_procs:
-
             # Create the constitutvie propertes and model
             props_plate = constitutive.MaterialProperties(
                 rho=4540.0,

@@ -62,7 +62,6 @@ tacs_comm = comm.Split(color, key)
 # build the tacs assembler of the flat plate
 assembler = None
 if comm.rank < n_tacs_procs:
-
     # Create the constitutvie propertes and model
     props_plate = constitutive.MaterialProperties(
         rho=4540.0,

@@ -124,7 +124,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # flow preconditioner steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)
         for step in range(1, scenario.preconditioner_steps + 1):
-
             # Take a step in the flow solver for preconditioner (just aerodynamic iteration)
             fail = self.solvers.flow.conditioner_iterate(
                 scenario, self.model.bodies, step

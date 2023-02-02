@@ -234,7 +234,6 @@ class TestAerodynamicSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.aero_variables):
-
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                     if aero_loads_ajp is not None:
@@ -512,7 +511,6 @@ class TestStructuralSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.struct_variables):
-
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:

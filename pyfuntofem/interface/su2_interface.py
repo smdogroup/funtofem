@@ -379,7 +379,6 @@ class SU2Interface(SolverInterface):
         return
 
     def iterate_adjoint(self, scenario, bodies, step):
-
         func = 0
 
         for body in bodies:

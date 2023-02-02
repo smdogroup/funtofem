@@ -39,11 +39,11 @@ integration_settings = IntegrationSettings(
     print_level=2,
     start_time=0.0,
     dt=0.05,
-    num_steps=num_steps,
+    num_steps=800,
 )
 
 # initialize the funtofem solvers
-solvers = SolverManager()
+solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(
     comm=comm,
     model=model,
