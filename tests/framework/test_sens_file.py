@@ -3,8 +3,12 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 
 from pyfuntofem.model import Variable, Scenario, Body, Function, FUNtoFEMmodel
-from pyfuntofem.driver import FUNtoFEMnlbgs
-from pyfuntofem.interface import TestAerodynamicSolver, TestStructuralSolver
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+from pyfuntofem.interface import (
+    TestAerodynamicSolver,
+    TestStructuralSolver,
+    SolverManager,
+)
 
 import unittest
 import traceback
@@ -12,7 +16,6 @@ import traceback
 
 class SensitivityFileTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("model")
         plate = Body("plate", "aerothermal", group=0, boundary=1)
@@ -45,27 +48,21 @@ class SensitivityFileTest(unittest.TestCase):
 
         # Instantiate a test solver for the flow and structures
         comm = MPI.COMM_WORLD
-        solvers = {}
-        solvers["flow"] = TestAerodynamicSolver(comm, model)
-        solvers["structural"] = TestStructuralSolver(comm, model)
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.structural = TestStructuralSolver(comm, model)
 
         # L&D transfer options
-        transfer_options = {
-            "analysis_type": "aerothermoelastic",
-            "scheme": "meld",
-            "thermal_scheme": "meld",
-            "npts": 5,
-        }
+        transfer_settings = TransferSettings(npts=5)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, comm, comm, 0, comm, 0, transfer_options, model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         return model, driver
 
     def test_sens_file(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now
@@ -101,5 +98,4 @@ class SensitivityFileTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = SensitivityFileTest()
-    test.test_sens_file()
+    unittest.main()

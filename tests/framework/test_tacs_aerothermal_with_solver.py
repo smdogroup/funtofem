@@ -5,8 +5,12 @@ import numpy as np
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import TestAerodynamicSolver, createTacsInterfaceFromBDF
-from pyfuntofem.driver import FUNtoFEMnlbgs
+from pyfuntofem.interface import (
+    TestAerodynamicSolver,
+    TacsSteadyInterface,
+    SolverManager,
+)
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 from bdf_test_utils import thermoelasticity_callback
 import unittest
@@ -19,7 +23,6 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 class TacsFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body("plate", "aerothermal", group=0, boundary=1)
@@ -44,31 +47,21 @@ class TacsFrameworkTest(unittest.TestCase):
 
         model.add_scenario(steady)
 
-        # Instantiate the solvers we'll use here
-        solvers = {}
-
         # Build the TACS interface
         nprocs = 1
         comm = MPI.COMM_WORLD
-
-        solvers["structural"] = createTacsInterfaceFromBDF(
+        solvers = SolverManager(comm)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
         )
-        solvers["flow"] = TestAerodynamicSolver(comm, model)
-
-        tacs_comm = solvers["structural"].tacs_comm
+        solvers.flow = TestAerodynamicSolver(comm, model)
 
         # L&D transfer options
-        transfer_options = {
-            "analysis_type": "aerothermal",
-            "scheme": "meld",
-            "thermal_scheme": "meld",
-            "npts": 5,
-        }
+        transfer_settings = TransferSettings(npts=5)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, comm, tacs_comm, 0, comm, 0, transfer_options, model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         return model, driver
@@ -90,7 +83,7 @@ class TacsFrameworkTest(unittest.TestCase):
         bodies = model.bodies
         solvers = driver.solvers
 
-        fail = solvers["flow"].test_adjoint(
+        fail = solvers.flow.test_adjoint(
             "flow",
             scenario,
             bodies,
@@ -100,7 +93,7 @@ class TacsFrameworkTest(unittest.TestCase):
         )
         assert fail == False
 
-        fail = solvers["structural"].test_adjoint(
+        fail = solvers.structural.test_adjoint(
             "structural",
             scenario,
             bodies,
@@ -113,7 +106,6 @@ class TacsFrameworkTest(unittest.TestCase):
         return
 
     def test_coupled_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now
@@ -178,6 +170,4 @@ class TacsFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = TacsFrameworkTest()
-    test.test_solver_coupling()
-    test.test_coupled_derivatives()
+    unittest.main()

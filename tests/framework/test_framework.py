@@ -3,15 +3,18 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import TestAerodynamicSolver, TestStructuralSolver
-from pyfuntofem.driver import FUNtoFEMnlbgs
+from pyfuntofem.interface import (
+    TestAerodynamicSolver,
+    TestStructuralSolver,
+    SolverManager,
+)
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 import unittest
 
 
 class CoupledFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
-
         # Build the model
         model = FUNtoFEMmodel("model")
         plate = Body("plate", "aerothermal", group=0, boundary=1)
@@ -44,27 +47,21 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         # Instantiate a test solver for the flow and structures
         comm = MPI.COMM_WORLD
-        solvers = {}
-        solvers["flow"] = TestAerodynamicSolver(comm, model)
-        solvers["structural"] = TestStructuralSolver(comm, model)
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.structural = TestStructuralSolver(comm, model)
 
         # L&D transfer options
-        transfer_options = {
-            "analysis_type": "aerothermoelastic",
-            "scheme": "meld",
-            "thermal_scheme": "meld",
-            "npts": 5,
-        }
+        transfer_settings = TransferSettings(npts=5)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, comm, comm, 0, comm, 0, transfer_options, model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         return model, driver
 
     def test_model_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now
@@ -81,7 +78,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         bodies = model.bodies
         solvers = driver.solvers
 
-        fail = solvers["flow"].test_adjoint(
+        fail = solvers.flow.test_adjoint(
             "flow",
             scenario,
             bodies,
@@ -91,7 +88,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         )
         assert fail == False
 
-        solvers["structural"].test_adjoint(
+        solvers.structural.test_adjoint(
             "structural",
             scenario,
             bodies,
@@ -104,7 +101,6 @@ class CoupledFrameworkTest(unittest.TestCase):
         return
 
     def test_coupled_derivatives(self):
-
         model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or now
@@ -181,6 +177,4 @@ class CoupledFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    test = CoupledFrameworkTest()
-    test.test_model_derivatives()
-    test.test_coupled_derivatives()
+    unittest.main()

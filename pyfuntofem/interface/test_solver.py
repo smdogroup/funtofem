@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TestAerodynamicSolver", "TestStructuralSolver"]
+__all__ = ["TestAerodynamicSolver", "TestStructuralSolver", "TestResult"]
 
 import numpy as np
 from funtofem import TransferScheme
@@ -234,7 +234,6 @@ class TestAerodynamicSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.aero_variables):
-
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                     if aero_loads_ajp is not None:
@@ -361,7 +360,7 @@ class TestAerodynamicSolver(SolverInterface):
 
 
 class TestStructuralSolver(SolverInterface):
-    def __init__(self, comm, model, solver="aerodynamic"):
+    def __init__(self, comm, model, elastic_k=1.0, thermal_k=1.0):
         """
         A test solver that provides the functionality that FUNtoFEM expects from
         a structural solver.
@@ -403,15 +402,31 @@ class TestStructuralSolver(SolverInterface):
         # Allocate space for the aero dvs
         self.struct_dvs = np.array(self.struct_dvs, dtype=TransferScheme.dtype)
 
+        # elastic and thermal scales 1/stiffness
+        elastic_scale = 1.0 / elastic_k
+        thermal_scale = 1.0 / thermal_k
+
         # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs
-        self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.c1 = 0.01 * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+        self.Jac1 = (
+            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+        )
+        self.b1 = (
+            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+        )
+        self.c1 = (
+            0.01
+            * elastic_scale
+            * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+        )
 
         # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs
-        self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
-        self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
-        self.c2 = 0.01 * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+        self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
+        self.b2 = 0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
+        self.c2 = (
+            0.01
+            * thermal_scale
+            * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+        )
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -496,7 +511,6 @@ class TestStructuralSolver(SolverInterface):
         # Set the derivatives of the functions for the given scenario
         for findex, func in enumerate(scenario.functions):
             for vindex, var in enumerate(self.struct_variables):
-
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
@@ -619,3 +633,184 @@ class TestStructuralSolver(SolverInterface):
 
     def post_adjoint(self, scenario, bodies):
         return
+
+
+class TestResult:
+    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error):
+        """
+        Class to store test results from complex step method
+        """
+        self.name = name
+        self.func_names = func_names  # list of function names
+        self.complex_TD = complex_TD
+        self.adjoint_TD = adjoint_TD
+        self.rel_error = rel_error
+
+        self.nfuncs = len(func_names)
+
+    def set_name(self, new_name):
+        self.name = new_name
+        return self
+
+    def write(self, file_hdl):
+        """
+        write the test result out to a file handle
+        """
+        file_hdl.write(f"Test: {self.name}\n")
+        if isinstance(self.func_names, list):
+            for ifunc in range(self.nfuncs):
+                file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+                file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+                file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
+            file_hdl.flush()
+        else:
+            file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+            file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+            file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+            file_hdl.flush()
+        return self
+
+    def report(self):
+        print(f"Test Result - {self.name}")
+        print("\tFunctions = ", self.func_names)
+        print("\tComplex step TD  = ", self.complex_TD)
+        print("\tAdjoint TD      = ", self.adjoint_TD)
+        print("\tRelative error        = ", self.rel_error)
+        return self
+
+    @classmethod
+    def complex_step(cls, test_name, model, driver, status_file, has_fun3d=True):
+        """
+        perform complex step test on a model and driver for multiple functions & variables
+        used for fun3d+tacs coupled derivative tests only...
+        """
+
+        # determine the number of functions and variables
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+        func_names = [func.name for func in model.get_functions()]
+
+        # generate random contravariant tensor, an input space curve tangent dx/ds for design vars
+        dxds = np.random.rand(nvariables)
+
+        # solve the adjoint
+        if has_fun3d:
+            driver.solvers.make_flow_real()
+        driver.solve_forward()
+        driver.solve_adjoint()
+        gradients = model.get_function_gradients()
+
+        # compute the adjoint total derivative df/ds = df/dx * dx/ds
+        adjoint_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            for ivar in range(nvariables):
+                adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+
+        # perform complex step method
+        if has_fun3d:
+            driver.solvers.make_flow_complex()
+        epsilon = 1e-30
+        variables = model.get_variables()
+
+        # perturb the design vars by x_pert = x + 1j * h * dx/ds
+        for ivar in range(nvariables):
+            variables[ivar].value += 1j * epsilon * dxds[ivar]
+
+        # run the complex step method
+        driver.solve_forward()
+        functions = model.get_functions()
+
+        # compute the complex step total derivative df/ds = Im{f(x+ih * dx/ds)}/h for each func
+        complex_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            complex_TD[ifunc] += functions[ifunc].value.imag / epsilon
+
+        # compute rel error between adjoint & complex step for each function
+        rel_error = [
+            (adjoint_TD[ifunc] - complex_TD[ifunc]) / complex_TD[ifunc]
+            for ifunc in range(nfunctions)
+        ]
+        rel_error = [_.real for _ in rel_error]
+
+        # make test results object and write it to file
+        file_hdl = open(status_file, "a")
+        cls(test_name, func_names, complex_TD, adjoint_TD, rel_error).write(
+            file_hdl
+        ).report()
+
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+
+        return max_rel_error
+
+    @classmethod
+    def finite_difference(
+        cls, test_name, model, driver, status_file, epsilon=1e-5, has_fun3d=True
+    ):
+        """
+        perform finite difference test on a model and driver for multiple functions & variables
+        """
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+        func_names = [func.name for func in model.get_functions()]
+
+        # generate random contravariant tensor in input space x(s)
+        dxds = np.random.rand(nvariables)
+
+        # solve the adjoint
+        driver.solve_forward()
+        driver.solve_adjoint()
+        gradients = model.get_function_gradients()
+
+        # compute adjoint total derivative df/dx
+        adjoint_TD = np.zeros((nfunctions))
+        for ifunc in range(nfunctions):
+            for ivar in range(nvariables):
+                adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+
+        # perform finite difference computation
+        driver.solve_forward()
+        i_functions = [func.value.real for func in model.get_functions()]
+
+        variables = model.get_variables()
+        for ivar in range(nvariables):
+            variables[ivar].value += epsilon * dxds[ivar]
+        driver.solve_forward()
+        f_functions = [func.value.real for func in model.get_functions()]
+
+        finite_diff_TD = [
+            (f_functions[ifunc] - i_functions[ifunc]) / epsilon
+            for ifunc in range(nfunctions)
+        ]
+
+        # compute relative error
+        rel_error = [
+            (adjoint_TD[ifunc] - finite_diff_TD[ifunc]) / finite_diff_TD[ifunc]
+            for ifunc in range(nfunctions)
+        ]
+
+        # make test results object and write to file
+        file_hdl = open(status_file, "a")
+        cls(test_name, func_names, finite_diff_TD, adjoint_TD, rel_error).write(
+            file_hdl
+        ).report()
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+        return max_rel_error
+
+    @classmethod
+    def derivative_test(
+        cls, test_name, model, driver, status_file, has_fun3d=True, complex_mode=True
+    ):
+        """
+        call either finite diff or complex step test depending on real mode of funtofem + TACS
+        """
+        if complex_mode:
+            return cls.complex_step(
+                test_name, model, driver, status_file, has_fun3d=has_fun3d
+            )
+        else:
+            return cls.finite_difference(
+                test_name, model, driver, status_file, has_fun3d=has_fun3d
+            )

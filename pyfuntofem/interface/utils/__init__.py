@@ -9,6 +9,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 
 # currently active utilities
 from .cart3d_utils import *
+from .loader_decorators import *
 
 # need to be updated and therefore commmented out for now
 # if openmdao_loader is not None: from .openmdao import *

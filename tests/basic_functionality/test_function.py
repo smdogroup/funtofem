@@ -47,3 +47,7 @@ class FunctionTest(unittest.TestCase):
         assert func.adjoint == False
         assert func.options["opt"] == 6
         assert func.averaging == True
+
+
+if __name__ == "__main__":
+    unittest.main()

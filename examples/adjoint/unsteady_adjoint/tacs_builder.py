@@ -175,7 +175,6 @@ class TACSBody:
             bcs = [x - conn_offset for x in self.bcs]
 
             for eidx in range(self.nelems):
-
                 # Find the start/end pointer to this element from ptr list
                 start_idx = ptr[eidx]
                 end_idx = ptr[eidx + 1]
@@ -188,11 +187,9 @@ class TACSBody:
                 ncommon = len(common)
 
                 if ncommon == 0:
-
                     self.bctype.append(TACSBCType.NA)
 
                 elif ncommon == 3:
-
                     # Add the edge to the boundary list
                     edge = []
                     for e in econn:
@@ -205,7 +202,6 @@ class TACSBody:
                     self.bctype.append(TACSBCType.EDGE)
 
                 elif ncommon == 9:
-
                     # Offset to global numbering
                     econn = [x + conn_offset for x in econn]
 
@@ -2557,6 +2553,7 @@ label_attr_map = {
     "mesh": ["mesh", str, int],
 }
 
+
 # Class to load the input parameters to create rigid and flexible
 # bodies
 class BodyParams(object):
@@ -2865,11 +2862,9 @@ class TACSDynamicsProblem(TACSProblem):
 
         # Set the forces from each body
         for body in self.tacs_body_list:
-
             # Use user provided F(x,t) during body creation (call
             # funtofem directly here??)
             if body.btype == TACSBodyType.FLEXIBLE:
-
                 if body.forcing is not None:
                     body.forcing(tindex, body)
                 else:
@@ -3038,7 +3033,6 @@ class TACSDynamicsProblem(TACSProblem):
 
 
 if __name__ == "__main__":
-
     """
     An example of creating TACS using TACSMeshLoader class. For
     sophisticated flexible multibody simulations use TACSBuilder class
