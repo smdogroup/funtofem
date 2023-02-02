@@ -680,7 +680,7 @@ class TestResult:
         return self
 
     @classmethod
-    def complex_step(cls, test_name, model, driver, status_file):
+    def complex_step(cls, test_name, model, driver, status_file, has_fun3d=True):
         """
         perform complex step test on a model and driver for multiple functions & variables
         used for fun3d+tacs coupled derivative tests only...
@@ -695,7 +695,7 @@ class TestResult:
         dxds = np.random.rand(nvariables)
 
         # solve the adjoint
-        driver.solvers.make_flow_real()
+        if has_fun3d: driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients()
@@ -707,7 +707,7 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform complex step method
-        driver.solvers.make_flow_complex()
+        if has_fun3d: driver.solvers.make_flow_complex()
         epsilon = 1e-30
         variables = model.get_variables()
 
