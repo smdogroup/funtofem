@@ -27,7 +27,8 @@ if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
 results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder): os.mkdir(results_folder)
+if not os.path.exists(results_folder):
+    os.mkdir(results_folder)
 
 # define a function to suppress stdout
 @contextmanager

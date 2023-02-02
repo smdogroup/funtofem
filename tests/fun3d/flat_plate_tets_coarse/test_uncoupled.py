@@ -19,7 +19,9 @@ if has_fun3d:
 
 np.random.seed(1234567)
 results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder): os.mkdir(results_folder)
+if not os.path.exists(results_folder):
+    os.mkdir(results_folder)
+
 
 class TestFun3dUncoupled(unittest.TestCase):
     FILENAME = "fun3d-fake-laminar.txt"

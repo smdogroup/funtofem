@@ -27,7 +27,9 @@ if has_fun3d:
 
 np.random.seed(1234567)
 results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder): os.mkdir(results_folder)
+if not os.path.exists(results_folder):
+    os.mkdir(results_folder)
+
 
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
@@ -102,7 +104,9 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
+            qinf=1.0e4
+        )
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -145,7 +149,9 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model,fun3d_dir="meshes").set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
+            qinf=1.0e4
+        )
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -188,7 +194,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model,fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
@@ -219,9 +225,9 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=500,fun3d_dir="meshes").set_temperature(
-            T_ref=300.0, T_inf=300.0
-        )
+        test_scenario = Scenario.steady(
+            "turbulent", steps=500, fun3d_dir="meshes"
+        ).set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.include(Function.temperature()).include(Function.lift()).include(
             Function.drag()
         )
@@ -263,9 +269,9 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar", steps=500,fun3d_dir="meshes").set_temperature(
-            T_ref=300.0, T_inf=300.0
-        )
+        test_scenario = Scenario.steady(
+            "laminar", steps=500, fun3d_dir="meshes"
+        ).set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
@@ -307,9 +313,9 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=500,fun3d_dir="meshes").set_temperature(
-            T_ref=300.0, T_inf=300.0
-        )
+        test_scenario = Scenario.steady(
+            "turbulent", steps=500, fun3d_dir="meshes"
+        ).set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
@@ -349,9 +355,9 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("laminar_noskinfric", steps=500).set_temperature(
-            T_ref=300.0, T_inf=300.0
-        )
+        test_scenario = Scenario.steady(
+            "laminar_noskinfric", steps=500
+        ).set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
@@ -360,7 +366,9 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
+            qinf=1.0e4
+        )
 
         assembler = self._build_assembler(comm)
         solvers.structural = TacsSteadyInterface(
