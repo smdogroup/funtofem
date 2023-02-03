@@ -24,6 +24,7 @@ __all__ = ["Scenario"]
 
 from ._base import Base
 from .variable import Variable
+from .function import Function
 
 
 class Scenario(Base):
@@ -124,6 +125,24 @@ class Scenario(Base):
             self.add_variable("aerodynamic", yrate)
             self.add_variable("aerodynamic", zrate)
 
+    @classmethod
+    def steady(cls, name: str, steps: int, preconditioner_steps: int = 0):
+        return cls(
+            name=name,
+            steady=True,
+            steps=steps,
+            preconditioner_steps=preconditioner_steps,
+        )
+
+    @classmethod
+    def unsteady(cls, name: str, steps: int, preconditioner_steps: int = 0):
+        return cls(
+            name=name,
+            steady=False,
+            steps=steps,
+            preconditioner_steps=preconditioner_steps,
+        )
+
     def add_function(self, function):
         """
         Add a new function to the scenario's function list
@@ -147,7 +166,8 @@ class Scenario(Base):
 
         self.functions.append(function)
 
-        return
+        # return the object for method cascading
+        return self
 
     def count_functions(self):
         """
@@ -188,6 +208,41 @@ class Scenario(Base):
         var.scenario = self.id
 
         super(Scenario, self).add_variable(vartype, var)
+
+        # return object for method cascading
+        return self
+
+    def include(self, obj):
+        """
+        generic include method adds objects for readability
+        """
+        if isinstance(obj, Function):
+            self.add_function(obj)
+        elif isinstance(obj, Variable):
+            assert obj.analysis_type is not None
+            self.add_variable(vartype=obj.analysis_type, var=obj)
+        else:
+            raise ValueError(
+                "Scenario include method does not currently support other methods"
+            )
+
+        # return the object for method cascading
+        return self
+
+    def register_to(self, funtofem_model):
+        """
+        add this scenario to the funtofem model at the end of a method cascade
+        """
+        funtofem_model.add_scenario(self)
+        return self
+
+    def set_temperature(self, T_ref: float = 300.0, T_inf: float = 300.0):
+        """
+        set structure temperature T_ref and freestream T_inf
+        """
+        self.T_ref = T_ref
+        self.T_inf = T_inf
+        return self
 
     def set_id(self, id):
         """

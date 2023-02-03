@@ -674,7 +674,6 @@ class Fun3dClient(SolverInterface):
         try:
             for ibody, body in enumerate(bodies, 1):
                 if body.aero_nnodes > 0:
-
                     # Solve the force adjoint equation
                     psi_F = -body.dLdfa
 
@@ -847,7 +846,6 @@ class Fun3dClient(SolverInterface):
         return 0
 
     def step_post(self, scenario, bodies, step):
-
         try:
             self.fun3d_client.flow_step_post(step)
         except FUN3DAeroException as e:

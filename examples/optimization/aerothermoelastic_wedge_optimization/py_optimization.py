@@ -43,7 +43,6 @@ class wedge_adjoint(object):
     """
 
     def __init__(self):
-
         # steady conditions
         self.v_inf = (
             1962.44 / 6.6 * 0.5
@@ -129,7 +128,6 @@ class wedge_adjoint(object):
         self.assembler = solvers["structural"].assembler
 
     def _build_model(self):
-
         thickness = 0.5
         # Build the model
         model = FUNtoFEMmodel("wedge")

@@ -49,7 +49,6 @@ class FuntofemComponent(ExplicitComponent):
         self.new_forward = True
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
-
         if self.comm.Get_rank() == 0:
             print("compute_jacvec_product")
         if "f" in d_outputs:
