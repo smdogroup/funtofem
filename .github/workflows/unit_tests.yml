@@ -105,10 +105,10 @@ jobs:
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";
-          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
-          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/aerothermoelastic_adjoint_test/gen_TACS_bdf_aero.py;
-          python3 ${GITHUB_WORKSPACE}/tests/adjoint_tests/unsteady_aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
-          testflo ${GITHUB_WORKSPACE}/tests/;
+          python3 ${GITHUB_WORKSPACE}/tests/unit_tests/adjoint_tests/aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
+          python3 ${GITHUB_WORKSPACE}/tests/unit_tests/adjoint_tests/aerothermoelastic_adjoint_test/gen_TACS_bdf_aero.py;
+          python3 ${GITHUB_WORKSPACE}/tests/unit_tests/adjoint_tests/unsteady_aerothermal_adjoint_test/gen_TACS_bdf_aero.py;
+          testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
 
   make-docs:
     # Recommended if you intend to make multiple deployments in quick succession
