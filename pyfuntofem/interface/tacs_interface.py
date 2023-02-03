@@ -545,7 +545,7 @@ class TacsSteadyInterface(SolverInterface):
                 for body in bodies:
                     struct_flux = body.get_struct_heat_flux(scenario)
                     if struct_flux is not None:
-                        ans_array[3 :: ndof] = struct_flux[:]
+                        ans_array[3::ndof] = struct_flux[:]
 
                 self.assembler.setVariables(self.ans)
 
@@ -1083,7 +1083,7 @@ class TacsSteadyInterface(SolverInterface):
             thermal_index=thermal_index,
             struct_id=struct_id,
             override_rotx=override_rotx,
-    )
+        )
 
     def create_driver(self):
         """
