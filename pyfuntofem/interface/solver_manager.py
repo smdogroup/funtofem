@@ -6,6 +6,11 @@ from .tacs_interface import TacsSteadyInterface
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 
 
+fun3d_loader = importlib.util.find_spec("fun3d")
+if fun3d_loader is not None:
+    from .fun3d_interface import Fun3dInterface
+
+
 class CommManager:
     def __init__(
         self, master_comm, struct_comm=None, struct_root=0, aero_comm=None, aero_root=0
@@ -66,12 +71,9 @@ class SolverManager:
 
     @property
     def uses_fun3d(self) -> bool:
-        fun3d_loader = importlib.util.find_spec("fun3d")
         if fun3d_loader is None or self.flow is None:
             return False
         else:
-            from .fun3d_interface import Fun3dInterface
-
             return isinstance(self.flow, Fun3dInterface)
 
     @property
