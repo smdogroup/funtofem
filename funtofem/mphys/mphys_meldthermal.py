@@ -85,7 +85,7 @@ class MeldTempXfer(om.ExplicitComponent):
 
         T_conduct = np.array(inputs["T_conduct"], dtype=TransferScheme.dtype)
         T_convect = np.array(outputs["T_convect"], dtype=TransferScheme.dtype)
-        
+
         self.meldThermal.transferTemp(T_conduct, T_convect)
         outputs["T_convect"] = T_convect
 
@@ -97,7 +97,6 @@ class MeldTempXfer(om.ExplicitComponent):
             D = u_a - g(u_s,x_a0,x_s0)
         So explicit partials below for u_a are negative partials of D
         """
-
 
         meld = self.meldThermal
         if mode == "fwd":
@@ -134,7 +133,7 @@ class MeldTempXfer(om.ExplicitComponent):
                     meld.applydTdtSTrans(dT_convect, prod)
 
                     d_inputs["T_conduct"] -= np.array(prod, dtype=np.float64)
-                
+
 
 class MeldHeatXfer(om.ExplicitComponent):
     """
@@ -199,7 +198,7 @@ class MeldHeatXfer(om.ExplicitComponent):
             desc="heat transfer rate on the thermalion mesh at the interface",
             tags=["mphys_coupling"],
         )
-        
+
         self.meld_initialized = False
 
     def compute(self, inputs, outputs):
@@ -212,7 +211,7 @@ class MeldHeatXfer(om.ExplicitComponent):
 
             self.meldThermal.initialize()
             self.meld_initialized = True
-            
+
         heat_convect = np.array(inputs["q_convect"], dtype=TransferScheme.dtype)
         heat_conduct = np.array(outputs["q_conduct"], dtype=TransferScheme.dtype)
         self.meldThermal.transferFlux(heat_convect, heat_conduct)
@@ -280,7 +279,7 @@ class MeldThermalBuilder(Builder):
         self.thermal_builder = thermal_builder
         self.isym = isym
         self.n = n
-        self.beta=beta
+        self.beta = beta
         self.check_partials = check_partials
 
     def initialize(self, comm):
