@@ -1,7 +1,6 @@
-import os
+import os, numpy as np, unittest
 from tacs import TACS
 from mpi4py import MPI
-import numpy as np
 from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
@@ -10,11 +9,10 @@ from pyfuntofem.interface import (
     TacsUnsteadyInterface,
     IntegrationSettings,
     SolverManager,
+    TestResult,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
-
-from bdf_test_utils import elasticity_callback
-import unittest
+from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 
 np.random.seed(1234567)
 
@@ -24,39 +22,22 @@ tacs_folder = os.path.join(base_dir, "tacs")
 if not os.path.exists(tacs_folder):
     os.mkdir(tacs_folder)
 
+comm = MPI.COMM_WORLD
+ntacs_procs = 1
 
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
-    def _setup_model_and_driver(self):
+    FILENAME = "testaero-tacs-unsteady.txt"
+
+    def test_aeroelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
-        plate = Body("plate", "aeroelastic", group=0, boundary=1)
-
-        # Create a structural variable
-        thickness = 1.0
-        svar = Variable("thickness", value=thickness, lower=0.01, upper=0.1)
-        plate.add_variable("structural", svar)
-        model.add_body(plate)
-
-        # Create a scenario to run
-        steps = 150
-        steady = Scenario("steady", group=0, steps=steps)
-
-        # Add a function to the scenario
-        ks = Function("ksfailure", analysis_type="structural")
-        steady.add_function(ks)
-
-        # Add a function to the scenario
-        temp = Function("temperature", analysis_type="structural")
-        steady.add_function(temp)
-
-        model.add_scenario(steady)
-
-        # Instantiate the solvers we'll use here
-        solvers = {}
-
-        # Build the TACS interface
-        nprocs = 1
-        comm = MPI.COMM_WORLD
+        plate = Body.aeroelastic("plate")
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=1.0, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario.register_to(model)
 
         integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
 
@@ -64,7 +45,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
             model,
             comm,
-            nprocs,
+            ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
             integration_settings=integration_settings,
@@ -72,117 +53,107 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
-        # L&D transfer options
-        transfer_settings = TransferSettings(npts=5)
+        # instantiate the driver
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=5), model=model
+        )
+
+        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+        max_rel_error = TestResult.derivative_test(
+            "testaero+tacs-aeroelastic-unsteady",
+            model,
+            driver,
+            TacsUnsteadyFrameworkTest.FILENAME,
+            complex_mode=complex_mode,
+        )
+        rtol = 1e-7 if complex_mode else 1e-4
+        self.assertTrue(max_rel_error < rtol)
+        return
+
+    def test_aerothermal(self):
+        # Build the model
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermal("plate")
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=1.0, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.steady("test", steps=150).include(
+            Function.temperature()
+        )
+        test_scenario.register_to(model)
+
+        integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
+
+        solvers = SolverManager(comm)
+        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            integration_settings=integration_settings,
+            output_dir=tacs_folder,
+        )
+        solvers.flow = TestAerodynamicSolver(comm, model)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=transfer_settings, model=model
+            solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        return model, driver
-
-    @unittest.skip("not sure this works")
-    def test_solver_coupling(self):
-        model, driver = self._setup_model_and_driver()
-
-        # Check whether to use the complex-step method or now
-        complex_step = False
-        epsilon = 1e-5
-        rtol = 1e-5
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_step = True
-            epsilon = 1e-30
-            rtol = 1e-9
-
-        # Manual test of the disciplinary solvers
-        scenario = model.scenarios[0]
-        bodies = model.bodies
-        solvers = driver.solvers
-
-        fail = solvers.flow.test_adjoint(
-            "flow",
-            scenario,
-            bodies,
-            epsilon=epsilon,
-            complex_step=complex_step,
-            rtol=rtol,
+        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+        max_rel_error = TestResult.derivative_test(
+            "testaero+tacs-aerothermal-unsteady",
+            model,
+            driver,
+            TacsUnsteadyFrameworkTest.FILENAME,
+            complex_mode=complex_mode,
         )
-        assert fail == False
-
-        fail = solvers.structural.test_adjoint(
-            "structural",
-            scenario,
-            bodies,
-            epsilon=epsilon,
-            complex_step=complex_step,
-            rtol=rtol,
-        )
-        assert fail == False
-
+        rtol = 1e-7 if complex_mode else 1e-4
+        self.assertTrue(max_rel_error < rtol)
         return
 
-    def test_coupled_derivatives(self):
-        model, driver = self._setup_model_and_driver()
+    def test_aerothermoelastic(self):
+        # Build the model
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermoelastic("plate")
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=1.0, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario.include(Function.temperature()).register_to(model)
 
-        # Check whether to use the complex-step method or now
-        complex_step = False
-        epsilon = 1e-5
-        rtol = 1e-5
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_step = True
-            epsilon = 1e-30
-            rtol = 1e-9
+        integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
 
-        # Solve the forward analysis
-        driver.solve_forward()
-        driver.solve_adjoint()
+        solvers = SolverManager(comm)
+        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            integration_settings=integration_settings,
+            output_dir=tacs_folder,
+        )
+        solvers.flow = TestAerodynamicSolver(comm, model)
 
-        # Get the functions
-        functions = model.get_functions()
-        variables = model.get_variables()
+        # instantiate the driver
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=5), model=model
+        )
 
-        # Store the function values
-        fvals_init = []
-        for func in functions:
-            fvals_init.append(func.value)
-
-        # Solve the adjoint and get the function gradients
-        driver.solve_adjoint()
-        grads = model.get_function_gradients()
-
-        # Set the new variable values
-        if complex_step:
-            variables[0].value = variables[0].value + 1j * epsilon
-            model.set_variables(variables)
-        else:
-            variables[0].value = variables[0].value + epsilon
-            model.set_variables(variables)
-
-        driver.solve_forward()
-
-        # Store the function values
-        fvals = []
-        for func in functions:
-            fvals.append(func.value)
-
-        if complex_step:
-            deriv = fvals[0].imag / epsilon
-
-            rel_error = (deriv - grads[0][0]) / deriv
-            print("Approximate gradient  = ", deriv.real)
-            print("Adjoint gradient      = ", grads[0][0].real)
-            print("Relative error        = ", rel_error.real)
-            assert abs(rel_error) < rtol
-        else:
-            deriv = (fvals[0] - fvals_init[0]) / epsilon
-
-            rel_error = (deriv - grads[0][0]) / deriv
-            print("Approximate gradient  = ", deriv)
-            print("Adjoint gradient      = ", grads[0][0])
-            print("Relative error        = ", rel_error)
-            assert abs(rel_error) < rtol
-
+        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+        max_rel_error = TestResult.derivative_test(
+            "testaero+tacs-aerothermoelastic-unsteady",
+            model,
+            driver,
+            TacsUnsteadyFrameworkTest.FILENAME,
+            complex_mode=complex_mode,
+        )
+        rtol = 1e-7 if complex_mode else 1e-4
+        self.assertTrue(max_rel_error < rtol)
         return
 
 
