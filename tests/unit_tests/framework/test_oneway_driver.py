@@ -53,7 +53,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         coupled_driver.solve_forward()
@@ -70,7 +70,6 @@ class TestOnewayDriver(unittest.TestCase):
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
-            has_fun3d=False,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -82,7 +81,7 @@ class TestOnewayDriver(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal("plate", boundary=1)
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
+            lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
 
@@ -105,7 +104,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         # to obtain fixed aero loads
@@ -123,7 +122,6 @@ class TestOnewayDriver(unittest.TestCase):
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
-            has_fun3d=False,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -158,7 +156,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         # to obtain fixed aero loads
@@ -176,7 +174,6 @@ class TestOnewayDriver(unittest.TestCase):
             model,
             oneway_driver,
             TestOnewayDriver.FILENAME,
-            has_fun3d=False,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)

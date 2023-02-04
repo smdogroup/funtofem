@@ -699,7 +699,7 @@ class TestResult:
         return self
 
     @classmethod
-    def complex_step(cls, test_name, model, driver, status_file, has_fun3d=True):
+    def complex_step(cls, test_name, model, driver, status_file):
         """
         perform complex step test on a model and driver for multiple functions & variables
         used for fun3d+tacs coupled derivative tests only...
@@ -714,7 +714,7 @@ class TestResult:
         dxds = np.random.rand(nvariables)
 
         # solve the adjoint
-        if has_fun3d:
+        if driver.solvers.uses_fun3d:
             driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
@@ -727,7 +727,7 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform complex step method
-        if has_fun3d:
+        if driver.solvers.uses_fun3d:
             driver.solvers.make_flow_complex()
         epsilon = 1e-30
         variables = model.get_variables()
@@ -770,7 +770,12 @@ class TestResult:
 
     @classmethod
     def finite_difference(
-        cls, test_name, model, driver, status_file, epsilon=1e-5, has_fun3d=True
+        cls,
+        test_name,
+        model,
+        driver,
+        status_file,
+        epsilon=1e-5,
     ):
         """
         perform finite difference test on a model and driver for multiple functions & variables
@@ -829,17 +834,21 @@ class TestResult:
         return max_rel_error
 
     @classmethod
-    def derivative_test(
-        cls, test_name, model, driver, status_file, has_fun3d=True, complex_mode=True
-    ):
+    def derivative_test(cls, test_name, model, driver, status_file, complex_mode=True):
         """
         call either finite diff or complex step test depending on real mode of funtofem + TACS
         """
         if complex_mode:
             return cls.complex_step(
-                test_name, model, driver, status_file, has_fun3d=has_fun3d
+                test_name,
+                model,
+                driver,
+                status_file,
             )
         else:
             return cls.finite_difference(
-                test_name, model, driver, status_file, has_fun3d=has_fun3d
+                test_name,
+                model,
+                driver,
+                status_file,
             )

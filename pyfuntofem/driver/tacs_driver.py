@@ -39,9 +39,12 @@ class TacsSteadyAnalysisDriver:
     TACS analysis from aerodynamic loads.
     """
 
-    def __init__(self, comm, tacs_interface: TacsSteadyInterface, model):
-        self.comm = comm
-        self.tacs_interface = tacs_interface
+    def __init__(self, solvers, model):
+        assert isinstance(solvers.structural, TacsSteadyInterface)
+
+        self.comm = solvers.comm
+        self.solvers = solvers
+        self.tacs_interface = solvers.structural
         self.model = model
 
         # reset struct mesh positions

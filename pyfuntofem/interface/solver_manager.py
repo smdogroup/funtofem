@@ -1,6 +1,7 @@
 __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
+import importlib
 from .tacs_interface import TacsSteadyInterface
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 
@@ -64,6 +65,16 @@ class SolverManager:
         return self._use_struct
 
     @property
+    def uses_fun3d(self) -> bool:
+        fun3d_loader = importlib.util.find_spec("fun3d")
+        if fun3d_loader is None or self.flow is None:
+            return False
+        else:
+            from .fun3d_interface import Fun3dInterface
+
+            return isinstance(self.flow, Fun3dInterface)
+
+    @property
     def solver_list(self):
         """
         return a list of solvers
@@ -87,8 +98,6 @@ class SolverManager:
         """
         switch fun3d flow to real
         """
-        from .fun3d_interface import Fun3dInterface
-
         self.flow = Fun3dInterface.copy_real_interface(self.flow)
         return self
 
@@ -96,8 +105,6 @@ class SolverManager:
         """
         switch fun3d flow to complex
         """
-        from .fun3d_interface import Fun3dInterface
-
         self.flow = Fun3dInterface.copy_complex_interface(self.flow)
         return self
 
