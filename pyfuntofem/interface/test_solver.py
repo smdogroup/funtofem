@@ -149,13 +149,11 @@ class TestAerodynamicSolver(SolverInterface):
         self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.c1 = 0.01 * (np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5)
-        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
         # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
         self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
         self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
-        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Set random initial node locations
         self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -163,6 +161,10 @@ class TestAerodynamicSolver(SolverInterface):
         # Data for generating functional output values
         self.func_coefs1 = np.random.rand(3 * self.npts)
         self.func_coefs2 = np.random.rand(self.npts)
+
+        # omega values
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
+        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the aerodynamic or structural mesh
         for body in model.bodies:
