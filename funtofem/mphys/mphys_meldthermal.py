@@ -19,7 +19,6 @@ class MeldTempXfer(om.ExplicitComponent):
 
         self.options.declare("aero_nnodes")
         self.options.declare("check_partials")
-        self.options.declare("mapping")
 
         self.meldThermal = None
         self.initialized_meld = False
@@ -149,7 +148,6 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         self.options.declare("aero_nnodes")
         self.options.declare("check_partials")
-        self.options.declare("mapping")
 
         self.meldThermal = None
         self.initialized_meld = False
@@ -214,6 +212,7 @@ class MeldHeatXfer(om.ExplicitComponent):
 
             self.meldThermal.initialize()
             self.meld_initialized = True
+            
         heat_convect = np.array(inputs["q_convect"], dtype=TransferScheme.dtype)
         heat_conduct = np.array(outputs["q_conduct"], dtype=TransferScheme.dtype)
         self.meldThermal.transferFlux(heat_convect, heat_conduct)

@@ -125,6 +125,7 @@ f5 = TACS.ToFH5(tacs, TACS.PY_SHELL, write_flag)
 #                                  ParOpt                                      #
 ################################################################################
 
+
 # Create sizing as a ParOpt problem
 class CRMSizing(ParOpt.pyParOptProblem):
     def __init__(self, tacs, f5):

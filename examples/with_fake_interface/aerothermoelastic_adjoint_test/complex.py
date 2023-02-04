@@ -99,7 +99,6 @@ class wedge_adjoint(object):
         self.struct_tacs = solvers["structural"].assembler
 
     def _build_model(self):
-
         thickness = 0.015
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -144,7 +143,6 @@ class wedge_adjoint(object):
         return obj, con, fail
 
     def eval_objcon_grad(self, x):
-
         var = x * self.var_scale
         self.model.set_variables(var)
 
