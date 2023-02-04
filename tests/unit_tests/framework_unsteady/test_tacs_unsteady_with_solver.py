@@ -25,7 +25,7 @@ if not os.path.exists(tacs_folder):
     os.mkdir(tacs_folder)
 
 
-class TacsFrameworkTest(unittest.TestCase):
+class TacsUnsteadyFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")

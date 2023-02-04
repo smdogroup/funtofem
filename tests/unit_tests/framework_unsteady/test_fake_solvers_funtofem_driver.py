@@ -13,7 +13,7 @@ from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 import unittest
 
 
-class CoupledFrameworkTest(unittest.TestCase):
+class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
         # Build the model
         model = FUNtoFEMmodel("model")
