@@ -21,7 +21,9 @@ np.random.seed(1234567)
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 tacs_folder = os.path.join(base_dir, "tacs")
-if not os.path.exists(tacs_folder): os.mkdir(tacs_folder)
+if not os.path.exists(tacs_folder):
+    os.mkdir(tacs_folder)
+
 
 class TacsFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
@@ -60,7 +62,13 @@ class TacsFrameworkTest(unittest.TestCase):
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=elasticity_callback, integration_settings=integration_settings, output_dir=tacs_folder
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=elasticity_callback,
+            integration_settings=integration_settings,
+            output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 

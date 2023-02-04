@@ -303,7 +303,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_loads[:] = np.dot(self.Jac1, aero_disps)
                 aero_loads[:] += np.dot(self.b1, self.aero_X)
                 aero_loads[:] += np.dot(self.c1, self.aero_dvs)
-                if not scenario.steady: aero_loads[:] += self.omega1
+                if not scenario.steady:
+                    aero_loads[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario)
@@ -312,7 +313,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux[:] = np.dot(self.Jac2, aero_temps)
                 aero_flux[:] += np.dot(self.b2, self.aero_X)
                 aero_flux[:] += np.dot(self.c2, self.aero_dvs)
-                if not scenario.steady: aero_flux[:] += self.omega2
+                if not scenario.steady:
+                    aero_flux[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -583,7 +585,8 @@ class TestStructuralSolver(SolverInterface):
                 struct_disps[:] = np.dot(self.Jac1, struct_loads)
                 struct_disps[:] += np.dot(self.b1, self.struct_X)
                 struct_disps[:] += np.dot(self.c1, self.struct_dvs)
-                if not scenario.steady: struct_disps[:] += self.omega1
+                if not scenario.steady:
+                    struct_disps[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario)
@@ -592,7 +595,8 @@ class TestStructuralSolver(SolverInterface):
                 struct_temps[:] = np.dot(self.Jac2, struct_flux)
                 struct_temps[:] += np.dot(self.b2, self.struct_X)
                 struct_temps[:] += np.dot(self.c2, self.struct_dvs)
-                if not scenario.steady: struct_temps[:] += self.omega2
+                if not scenario.steady:
+                    struct_temps[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0

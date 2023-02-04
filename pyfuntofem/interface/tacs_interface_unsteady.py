@@ -789,7 +789,9 @@ class TacsUnsteadyInterface(SolverInterface):
             fXptSens_vec = self.assembler.createNodeVec()
 
             for ibody, body in enumerate(bodies):
-                shape_variables = body.variables["shape"] if "shape" in body.variables else []
+                shape_variables = (
+                    body.variables["shape"] if "shape" in body.variables else []
+                )
                 if len(shape_variables) > 0:
                     # TACS should accumulate the derivs internally, only evaluate at first timestep
                     if step == 0:
