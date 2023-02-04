@@ -162,7 +162,7 @@ class TestFun3dTacs(unittest.TestCase):
             tacs_comm=tacs_comm,
         )
 
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
             solvers,
             transfer_settings=transfer_settings,
@@ -397,10 +397,9 @@ class TestFun3dTacs(unittest.TestCase):
             tacs_comm=tacs_comm,
         )
 
-        transfer_settings = TransferSettings(npts=5)
         driver = FUNtoFEMnlbgs(
             solvers,
-            transfer_settings=transfer_settings,
+            transfer_settings=TransferSettings(),
             model=model,
         )
 
@@ -432,7 +431,7 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
+            qinf=1.0
         )
 
         assembler, tacs_comm = self._build_assembler()
@@ -444,7 +443,7 @@ class TestFun3dTacs(unittest.TestCase):
             tacs_comm=tacs_comm,
         )
 
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
             solvers,
             transfer_settings=transfer_settings,
