@@ -891,8 +891,12 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # use the default funtofem callback if none is provided
             if callback is None:
-                include_thermal = any(["therm" in body.analysis_type for body in model.bodies])
-                callback = f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal)
+                include_thermal = any(
+                    ["therm" in body.analysis_type for body in model.bodies]
+                )
+                callback = f2f_callback(
+                    fea_assembler, structDV_names, structDV_dict, include_thermal
+                )
 
             # Set up constitutive objects and elements
             fea_assembler.initialize(callback)

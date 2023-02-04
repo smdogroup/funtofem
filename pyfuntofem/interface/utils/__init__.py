@@ -12,7 +12,7 @@ from .cart3d_utils import *
 from .loader_decorators import *
 
 # tacs utils
-tacs_loader = importlib.utils.find_spec("tacs")
+tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:
     from .funtofem_callback import *
 
