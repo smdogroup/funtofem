@@ -114,9 +114,10 @@ class TacsUnsteadyInterface(SolverInterface):
         thermal_index: int = 0,
         struct_id: int = None,
         integration_settings: IntegrationSettings = None,
+        tacs_comm=None,
     ):
         self.comm = comm
-        self.tacs_comm = None
+        self.tacs_comm = tacs_comm
 
         # get active design variables
         self.variables = model.get_variables()
@@ -134,7 +135,8 @@ class TacsUnsteadyInterface(SolverInterface):
         )
 
         if self.assembler is not None:
-            self.tacs_comm = self.assembler.getMPIComm()
+            if self.tacs_comm is None:
+                self.tacs_comm = self.assembler.getMPIComm()
 
             # Initialize the structural nodes in the bodies
             struct_X = self.struct_X.getArray()
@@ -1075,4 +1077,5 @@ class TacsUnsteadyInterface(SolverInterface):
             thermal_index=thermal_index,
             integration_settings=integration_settings,
             struct_id=struct_id,
+            tacs_comm=tacs_comm,
         )

@@ -41,6 +41,7 @@ class TacsSteadyInterface(SolverInterface):
         gen_output=None,
         thermal_index=0,
         struct_id=None,
+        tacs_comm=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -70,10 +71,12 @@ class TacsSteadyInterface(SolverInterface):
             Index of the structural degree of freedom corresponding to the temperature
         struct_id: list or np.ndarray
             List of the unique global ids of all the structural nodes
+        tacs_comm: MPI.comm
+            MPI communicator with only n_tacs_procs active
         """
 
         self.comm = comm
-        self.tacs_comm = None
+        self.tacs_comm = tacs_comm
 
         # Get the list of active design variables from the FUNtoFEM model. This
         # returns the variables in the FUNtoFEM order. By scenario/body.
@@ -91,7 +94,8 @@ class TacsSteadyInterface(SolverInterface):
         )
 
         if self.assembler is not None:
-            self.tacs_comm = self.assembler.getMPIComm()
+            if self.tacs_comm is None:
+                self.tacs_comm = self.assembler.getMPIComm()
 
             # Initialize the structural nodes in the bodies
             struct_X = self.struct_X.getArray()
@@ -1065,6 +1069,7 @@ class TacsSteadyInterface(SolverInterface):
             gen_output,
             thermal_index=thermal_index,
             struct_id=struct_id,
+            tacs_comm=tacs_comm,
         )
 
     def create_driver(self):
