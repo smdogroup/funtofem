@@ -636,7 +636,7 @@ class TestStructuralSolver(SolverInterface):
 
 
 class TestResult:
-    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error):
+    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error, comm=None):
         """
         Class to store test results from complex step method
         """
@@ -645,6 +645,7 @@ class TestResult:
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
         self.rel_error = rel_error
+        self.comm = comm
 
         self.nfuncs = len(func_names)
 
@@ -652,31 +653,37 @@ class TestResult:
         self.name = new_name
         return self
 
+    @property
+    def root_proc(self) -> bool:
+        return self.comm is None or self.comm.rank == 0
+
     def write(self, file_hdl):
         """
         write the test result out to a file handle
         """
-        file_hdl.write(f"Test: {self.name}\n")
-        if isinstance(self.func_names, list):
-            for ifunc in range(self.nfuncs):
-                file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
-                file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
-                file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
-                file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
-            file_hdl.flush()
-        else:
-            file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
-            file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
-            file_hdl.write(f"\tRelative error = {self.rel_error}\n")
-            file_hdl.flush()
+        if self.root_proc:
+            file_hdl.write(f"Test: {self.name}\n")
+            if isinstance(self.func_names, list):
+                for ifunc in range(self.nfuncs):
+                    file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+                    file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                    file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+                    file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
+                file_hdl.flush()
+            else:
+                file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+                file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+                file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+                file_hdl.flush()
         return self
 
     def report(self):
-        print(f"Test Result - {self.name}")
-        print("\tFunctions = ", self.func_names)
-        print("\tComplex step TD  = ", self.complex_TD)
-        print("\tAdjoint TD      = ", self.adjoint_TD)
-        print("\tRelative error        = ", self.rel_error)
+        if self.root_proc:
+            print(f"Test Result - {self.name}")
+            print("\tFunctions = ", self.func_names)
+            print("\tComplex step TD  = ", self.complex_TD)
+            print("\tAdjoint TD      = ", self.adjoint_TD)
+            print("\tRelative error        = ", self.rel_error)
         return self
 
     @classmethod
@@ -734,10 +741,15 @@ class TestResult:
         rel_error = [_.real for _ in rel_error]
 
         # make test results object and write it to file
-        file_hdl = open(status_file, "a")
-        cls(test_name, func_names, complex_TD, adjoint_TD, rel_error).write(
-            file_hdl
-        ).report()
+        file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
+        cls(
+            test_name,
+            func_names,
+            complex_TD,
+            adjoint_TD,
+            rel_error,
+            comm=driver.comm,
+        ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
@@ -791,10 +803,15 @@ class TestResult:
         ]
 
         # make test results object and write to file
-        file_hdl = open(status_file, "a")
-        cls(test_name, func_names, finite_diff_TD, adjoint_TD, rel_error).write(
-            file_hdl
-        ).report()
+        file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
+        cls(
+            test_name,
+            func_names,
+            finite_diff_TD,
+            adjoint_TD,
+            rel_error,
+            comm=driver.comm,
+        ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
         return max_rel_error
