@@ -39,7 +39,8 @@ class TacsSteadyAnalysisDriver:
     TACS analysis from aerodynamic loads.
     """
 
-    def __init__(self, tacs_interface: TacsSteadyInterface, model):
+    def __init__(self, comm, tacs_interface: TacsSteadyInterface, model):
+        self.comm = comm
         self.tacs_interface = tacs_interface
         self.model = model
 

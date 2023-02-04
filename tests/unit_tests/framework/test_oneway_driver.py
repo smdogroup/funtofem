@@ -53,7 +53,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         coupled_driver.solve_forward()
@@ -105,7 +105,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         # to obtain fixed aero loads
@@ -158,7 +158,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers.structural, model)
+        oneway_driver = TacsSteadyAnalysisDriver(comm, solvers.structural, model)
 
         # prime the oneway driver by running one forward analysis of coupled driver
         # to obtain fixed aero loads
