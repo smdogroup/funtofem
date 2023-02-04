@@ -145,15 +145,17 @@ class TestAerodynamicSolver(SolverInterface):
         # Allocate space for the aero dvs
         self.aero_dvs = np.array(self.aero_dvs, dtype=TransferScheme.dtype)
 
-        # Aerodynaimic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs
+        # Aerodynaimic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
         self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.c1 = 0.01 * (np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5)
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
-        # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs
+        # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
         self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
         self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
+        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Set random initial node locations
         self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -301,6 +303,7 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_loads[:] = np.dot(self.Jac1, aero_disps)
                 aero_loads[:] += np.dot(self.b1, self.aero_X)
                 aero_loads[:] += np.dot(self.c1, self.aero_dvs)
+                if not scenario.steady: aero_loads[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario)
@@ -309,6 +312,7 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux[:] = np.dot(self.Jac2, aero_temps)
                 aero_flux[:] += np.dot(self.b2, self.aero_X)
                 aero_flux[:] += np.dot(self.c2, self.aero_dvs)
+                if not scenario.steady: aero_flux[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -406,7 +410,7 @@ class TestStructuralSolver(SolverInterface):
         elastic_scale = 1.0 / elastic_k
         thermal_scale = 1.0 / thermal_k
 
-        # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs
+        # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
         self.Jac1 = (
             0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         )
@@ -418,8 +422,9 @@ class TestStructuralSolver(SolverInterface):
             * elastic_scale
             * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
         )
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
-        # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs
+        # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
         self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
         self.c2 = (
@@ -427,6 +432,7 @@ class TestStructuralSolver(SolverInterface):
             * thermal_scale
             * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
         )
+        self.omega2 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -577,6 +583,7 @@ class TestStructuralSolver(SolverInterface):
                 struct_disps[:] = np.dot(self.Jac1, struct_loads)
                 struct_disps[:] += np.dot(self.b1, self.struct_X)
                 struct_disps[:] += np.dot(self.c1, self.struct_dvs)
+                if not scenario.steady: struct_disps[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario)
@@ -585,6 +592,7 @@ class TestStructuralSolver(SolverInterface):
                 struct_temps[:] = np.dot(self.Jac2, struct_flux)
                 struct_temps[:] += np.dot(self.b2, self.struct_X)
                 struct_temps[:] += np.dot(self.c2, self.struct_dvs)
+                if not scenario.steady: struct_temps[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
