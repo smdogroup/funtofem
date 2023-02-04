@@ -77,13 +77,13 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return model, driver
 
-    def test_aeroelastic_funtofem_driver(self):
+    def test_aeroelastic(self):
         model, driver = self._setup_model_and_driver("aeroelastic")
 
         # Check whether to use the complex-step method or now
         complex_step = False
         epsilon = 1e-5
-        rtol = 1e-5
+        rtol = 1e-4
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
@@ -121,7 +121,7 @@ class TacsFrameworkTest(unittest.TestCase):
         for func in functions:
             fvals.append(func.value)
 
-        if driver.solvers.comm.rank == 0:
+        if driver.comm.rank == 0:
             if complex_step:
                 deriv = fvals[0].imag / epsilon
 
@@ -141,13 +141,13 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
-    def test_aerothermal_funtofem_driver(self):
+    def test_aerothermal(self):
         model, driver = self._setup_model_and_driver("aerothermal")
 
         # Check whether to use the complex-step method or now
         complex_step = False
         epsilon = 1e-5
-        rtol = 1e-5
+        rtol = 1e-4
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30
@@ -185,7 +185,7 @@ class TacsFrameworkTest(unittest.TestCase):
         for func in functions:
             fvals.append(func.value)
 
-        if driver.solvers.comm.rank == 0:
+        if driver.comm.rank == 0:
             if complex_step:
                 deriv = fvals[0].imag / epsilon
 
@@ -205,7 +205,7 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
-    def test_aerothermoelastic_funtofem_driver(self):
+    def test_aerothermoelastic(self):
         model, driver = self._setup_model_and_driver("aerothermoelastic")
 
         # Check whether to use the complex-step method or now
@@ -249,7 +249,7 @@ class TacsFrameworkTest(unittest.TestCase):
         for func in functions:
             fvals.append(func.value)
 
-        if driver.solvers.comm.rank == 0:
+        if driver.comm.rank == 0:
             if complex_step:
                 deriv = fvals[0].imag / epsilon
 

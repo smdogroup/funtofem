@@ -209,6 +209,7 @@ class TacsSteadyShapeDriver:
 
         # make a tacs driver
         self.tacs_driver = TacsSteadyAnalysisDriver(
+            comm=comm,
             tacs_interface=self.tacs_interface,
             model=self.model,
         )
