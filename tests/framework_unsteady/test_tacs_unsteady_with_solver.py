@@ -25,12 +25,7 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 
-# use fun3d loader to check if we are on github unittest or local
-fun3d_loader = importlib.util.find_spec("fun3d")
-on_github = fun3d_loader is None
 
-
-@unittest.skipIf(on_github, "still developing this test")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
 
