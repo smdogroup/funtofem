@@ -66,7 +66,7 @@ class TacsSteadyShapeDriver:
         if prime_loads:
             self._prime_driver()
 
-    @classmetod
+    @classmethod
     def prime_loads(cls, funtofem_driver, n_tacs_procs, tacs_aim):
         """
         build directly from a funtofem driver on initial bdf and prime loads
