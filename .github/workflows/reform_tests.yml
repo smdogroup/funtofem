@@ -105,5 +105,5 @@ jobs:
           echo "Running all tests";
           echo "=============================================================";
           cd ${GITHUB_WORKSPACE}
-          testflo ${GITHUB_WORKSPACE}/tests/unit_tests/; 
+          testflo ${GITHUB_WORKSPACE}/tests/; 
           
