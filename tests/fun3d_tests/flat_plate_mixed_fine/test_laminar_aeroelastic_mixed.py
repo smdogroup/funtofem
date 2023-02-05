@@ -24,10 +24,10 @@ has_fun3d = fun3d_loader is not None
 if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
-    comm = MPI.COMM_WORLD
-    results_folder = os.path.join(os.getcwd(), "results")
-    if not os.path.exists(results_folder) and self.comm.rank == 0:
-        os.mkdir(results_folder)
+comm = MPI.COMM_WORLD
+results_folder = os.path.join(os.getcwd(), "results")
+if not os.path.exists(results_folder) and self.comm.rank == 0:
+    os.mkdir(results_folder)
 
 
 # define a function to suppress stdout

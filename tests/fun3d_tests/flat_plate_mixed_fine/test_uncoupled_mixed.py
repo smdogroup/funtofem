@@ -16,11 +16,11 @@ has_fun3d = fun3d_loader is not None
 if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
-    comm = MPI.COMM_WORLD
-    np.random.seed(1234567)
-    results_folder = os.path.join(os.getcwd(), "results")
-    if not os.path.exists(results_folder) and self.comm.rank == 0:
-        os.mkdir(results_folder)
+comm = MPI.COMM_WORLD
+np.random.seed(1234567)
+results_folder = os.path.join(os.getcwd(), "results")
+if not os.path.exists(results_folder) and self.comm.rank == 0:
+    os.mkdir(results_folder)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
