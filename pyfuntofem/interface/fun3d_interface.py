@@ -543,9 +543,10 @@ class Fun3dInterface(SolverInterface):
         self._forward_done = True
         self._forward_resid = resid
         if abs(resid.real) > 1.0e-10:
-            print(
-                f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large..."
-            )
+            if self.comm.rank == 0:
+                print(
+                    f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large..."
+                )
 
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
@@ -808,9 +809,10 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_done = True
         self._adjoint_resid = resid
         if abs(resid.real) > 1.0e-10:
-            print(
-                f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large..."
-            )
+            if self.comm.rank == 0:
+                print(
+                    f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large..."
+                )
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
