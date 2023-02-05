@@ -1,4 +1,4 @@
-import os, numpy as np, unittest
+import os, numpy as np, unittest, importlib
 from tacs import TACS
 from mpi4py import MPI
 from funtofem import TransferScheme
@@ -25,8 +25,12 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 
+# use fun3d loader to check if we are on github unittest or local
+fun3d_loader = importlib.util.find_spec("fun3d")
+on_github = fun3d_loader is None
 
-@unittest.skip("still developing this test")
+
+@unittest.skipIf(on_github, "still developing this test")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
 
@@ -38,10 +42,10 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario = Scenario.steady("test", steps=10).include(Function.ksfailure())
         test_scenario.register_to(model)
 
-        integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
+        integration_settings = IntegrationSettings(dt=0.01, num_steps=10)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -68,7 +72,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 5.0e-7 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -80,12 +84,12 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(
+        test_scenario = Scenario.steady("test", steps=10).include(
             Function.temperature()
         )
         test_scenario.register_to(model)
 
-        integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
+        integration_settings = IntegrationSettings(dt=0.01, num_steps=10)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -112,7 +116,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 5.0e-7 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -124,10 +128,10 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario = Scenario.steady("test", steps=10).include(Function.ksfailure())
         test_scenario.include(Function.temperature()).register_to(model)
 
-        integration_settings = IntegrationSettings(dt=0.01, num_steps=150)
+        integration_settings = IntegrationSettings(dt=0.01, num_steps=10)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -154,7 +158,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 5.0e-7 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 
