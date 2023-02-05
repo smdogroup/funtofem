@@ -22,6 +22,7 @@ if has_fun3d:
     if not os.path.exists(results_folder) and self.comm.rank == 0:
         os.mkdir(results_folder)
 
+
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dUncoupled(unittest.TestCase):
     FILENAME = "fun3d-fake-laminar.txt"
@@ -46,7 +47,9 @@ class TestFun3dUncoupled(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
+            qinf=1.0
+        )
         solvers.structural = TestStructuralSolver(comm, model, elastic_k=1.0e5)
         transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
@@ -112,7 +115,9 @@ class TestFun3dUncoupled(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
+            qinf=1.0
+        )
         solvers.structural = TestStructuralSolver(
             comm, model, elastic_k=1000.0, thermal_k=1.0
         )

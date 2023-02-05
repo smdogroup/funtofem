@@ -25,6 +25,8 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 
+
+@unittest.skip("still developing this test")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
 
