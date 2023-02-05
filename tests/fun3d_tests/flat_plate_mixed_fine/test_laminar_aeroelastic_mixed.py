@@ -26,7 +26,7 @@ if has_fun3d:
 
 comm = MPI.COMM_WORLD
 results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder) and self.comm.rank == 0:
+if not os.path.exists(results_folder) and comm.rank == 0:
     os.mkdir(results_folder)
 
 
