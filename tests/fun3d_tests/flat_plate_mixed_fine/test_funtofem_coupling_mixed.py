@@ -1,4 +1,4 @@
-import importlib
+import importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
@@ -35,7 +35,7 @@ if has_fun3d:
         lower=0.001, value=0.1, upper=2.0
     ).register_to(plate)
     plate.register_to(model)
-    test_scenario = Scenario.steady("laminar1", steps=200).set_temperature(
+    test_scenario = Scenario.steady("fortran_laminar", steps=200).set_temperature(
         T_ref=300.0, T_inf=300.0
     )
     test_scenario.include(Function.lift())
@@ -44,7 +44,7 @@ if has_fun3d:
     # build the solvers and coupled driver
     comm = MPI.COMM_WORLD
     solvers = SolverManager(comm)
-    solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e4)
+    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
 
     # build a tacs communicator on one proc
     n_tacs_procs = 1
@@ -81,7 +81,8 @@ if has_fun3d:
 
         # Load in the mesh
         mesh = TACS.MeshLoader(tacs_comm)
-        mesh.scanBDFFile("tacs_aero.bdf")
+        bdf_path = os.path.join(os.getcwd(), "meshes", "tacs_aero.bdf")
+        mesh.scanBDFFile(bdf_path)
 
         # Set the element
         mesh.setElement(0, element_plate)
@@ -93,7 +94,7 @@ if has_fun3d:
         comm, model, assembler, gen_output=None, thermal_index=3
     )
     # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-    transfer_settings = TransferSettings(npts=5)
+    transfer_settings = TransferSettings()
     driver = FUNtoFEMnlbgs(
         solvers,
         transfer_settings=transfer_settings,

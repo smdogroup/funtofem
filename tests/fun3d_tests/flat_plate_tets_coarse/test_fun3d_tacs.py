@@ -33,7 +33,7 @@ if has_fun3d:
             os.mkdir(results_folder)
 
 
-@unittest.skipIf(not has_fun3d)
+@unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)

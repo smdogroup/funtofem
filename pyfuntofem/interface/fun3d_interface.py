@@ -833,7 +833,8 @@ class Fun3dInterface(SolverInterface):
         """
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
-            print(f"Forward residuals = {residuals}")
+            if self.comm.rank == 0:
+                print(f"Forward residuals = {residuals}")
             if norm:
                 return np.linalg.norm(residuals)
             else:
@@ -855,7 +856,8 @@ class Fun3dInterface(SolverInterface):
         """
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            print(f"Adjoint residuals = {residuals}")
+            if self.comm.rank == 0:
+                print(f"Adjoint residuals = {residuals}")
             if norm:
                 return np.linalg.norm(residuals)
             else:

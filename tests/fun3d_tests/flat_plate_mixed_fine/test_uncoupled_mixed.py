@@ -22,7 +22,7 @@ if has_fun3d:
     if not os.path.exists(results_folder) and self.comm.rank == 0:
         os.mkdir(results_folder)
 
-
+@unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dUncoupled(unittest.TestCase):
     FILENAME = "fun3d-fake-laminar.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
@@ -46,8 +46,8 @@ class TestFun3dUncoupled(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e2)
-        solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
+        solvers.structural = TestStructuralSolver(comm, model, elastic_k=1.0e5)
         transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
@@ -59,6 +59,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
+    @unittest.skip("test aero solver thermal")
     def _laminar_aerothermal(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
@@ -78,7 +79,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TestStructuralSolver(comm, model, thermal_k=1.0)
         transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
@@ -91,7 +92,8 @@ class TestFun3dUncoupled(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
-    def _laminar_aerothermoelastic(self):
+    @unittest.skip("test aero solver thermal")
+    def test_laminar_aerothermoelastic(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aerothermoelastic("plate", boundary=1)
@@ -110,7 +112,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model).set_units(qinf=1.0e2)
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
         solvers.structural = TestStructuralSolver(
             comm, model, elastic_k=1000.0, thermal_k=1.0
         )
