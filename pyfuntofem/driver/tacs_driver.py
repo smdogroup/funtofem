@@ -55,20 +55,15 @@ class TacsSteadyAnalysisDriver:
         # self._zero_tacs_data()
         # self._zero_adjoint_data()
 
-    def create_manager(self, hot_start: bool = True, write_designs: bool = True):
+    @property
+    def manager(self, hot_start: bool = False):
         """
         create an optimization manager for optimizing this driver
         """
-        return OptimizationManager(
-            comm=self.tacs_interface.comm,
-            model=self.model,
-            driver=self,
-            write_designs=write_designs,
-            hot_start=hot_start,
-        )
+        return OptimizationManager(driver=self, hot_start=hot_start)
 
     @classmethod
-    def prime(cls, funtofem_driver):
+    def prime_loads(cls, funtofem_driver):
         """
         Construct a TacsSteadyAnalysisDriver from a FUNtoFEMnlbgs driver
         and automatically prime and compute the aerodynamic loads during construction

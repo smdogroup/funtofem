@@ -3,3 +3,4 @@
 
 from .optimization_manager import *
 from .pyopt_optimization import *
+from .openmdao_component import *

@@ -67,13 +67,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return
 
-    def create_manager(self, hot_start: bool = True, write_designs: bool = True):
+    @property
+    def manager(self, hot_start: bool = False, write_designs: bool = True):
         """
         Create an optimization manager object for this driver
         """
         return OptimizationManager(
-            comm=self.comm,
-            model=self.model,
             driver=self,
             write_designs=write_designs,
             hot_start=hot_start,
