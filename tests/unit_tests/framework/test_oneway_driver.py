@@ -53,10 +53,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
-
-        # prime the oneway driver by running one forward analysis of coupled driver
-        coupled_driver.solve_forward()
+        oneway_driver = TacsSteadyAnalysisDriver.prime(coupled_driver)
 
         complex_mode = False
         rtol = 1e-4
@@ -104,11 +101,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
-
-        # prime the oneway driver by running one forward analysis of coupled driver
-        # to obtain fixed aero loads
-        coupled_driver.solve_forward()
+        oneway_driver = TacsSteadyAnalysisDriver.prime(coupled_driver)
 
         complex_mode = False
         rtol = 1e-3
@@ -156,11 +149,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver(solvers, model)
-
-        # prime the oneway driver by running one forward analysis of coupled driver
-        # to obtain fixed aero loads
-        coupled_driver.solve_forward()
+        oneway_driver = TacsSteadyAnalysisDriver.prime(coupled_driver)
 
         complex_mode = False
         rtol = 1e-3

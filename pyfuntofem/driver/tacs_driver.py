@@ -67,6 +67,18 @@ class TacsSteadyAnalysisDriver:
             hot_start=hot_start,
         )
 
+    @classmethod
+    def prime(cls, funtofem_driver):
+        """
+        Construct a TacsSteadyAnalysisDriver from a FUNtoFEMnlbgs driver
+        and automatically prime and compute the aerodynamic loads during construction
+        """
+        # compute the fixed aerodynamic loads by running a forward analysis
+        funtofem_driver.solve_forward()
+
+        # construct the one-way coupled TacsSteadnAnalysisDriver
+        return cls(solvers=funtofem_driver.solvers, model=funtofem_driver.model)
+
     def solve_forward(self):
         """
         solve the forward analysis of TACS analysis with aerodynamic loads
