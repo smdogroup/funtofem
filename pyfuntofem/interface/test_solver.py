@@ -689,6 +689,7 @@ class TestResult:
                 file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
                 file_hdl.write(f"\tRelative error = {self.rel_error}\n")
                 file_hdl.flush()
+            file_hdl.close()
         return self
 
     def report(self):

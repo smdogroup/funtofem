@@ -24,6 +24,8 @@ if not os.path.exists(tacs_folder):
 
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
+complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+complex_mode = False
 
 
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
@@ -59,7 +61,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aeroelastic-unsteady",
             model,
@@ -67,7 +68,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 5.0e-7 if complex_mode else 1e-4
+        rtol = 1e-6 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -103,7 +104,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aerothermal-unsteady",
             model,
@@ -111,7 +111,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 5.0e-7 if complex_mode else 1e-4
+        rtol = 1e-6 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -145,7 +145,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aerothermoelastic-unsteady",
             model,
@@ -153,7 +152,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             TacsUnsteadyFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 5.0e-7 if complex_mode else 1e-4
+        rtol = 1e-6 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
 

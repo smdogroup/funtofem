@@ -12,6 +12,7 @@ from pyfuntofem.interface import (
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 from tacs import TACS, elements, functions, constitutive
 
+
 class CoupledFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
         # Build the model
@@ -210,6 +211,7 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         return
 
+
 def OneraPlate(tacs_comm):
     # Set the creator object
     ndof = 6
@@ -289,7 +291,6 @@ def OneraPlate(tacs_comm):
     assembler = creator.createTACS()
 
     return assembler
-
 
 
 if __name__ == "__main__":
