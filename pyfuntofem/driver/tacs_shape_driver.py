@@ -27,6 +27,7 @@ __all__ = ["TacsSteadyShapeDriver"]
 from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
 from .tacs_driver import TacsSteadyAnalysisDriver
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
+from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
 import os
 from mpi4py import MPI
@@ -40,16 +41,16 @@ class TacsSteadyShapeDriver:
         model,
         n_tacs_procs,
         tacs_aim,
-        flow_solver,
-        transfer_options,
+        transfer_settings,
         initial_bdf=None,
+        prime_loads=True,
     ):
         self.comm = comm
         self.tacs_aim = tacs_aim
         self.model = model
         self.n_tacs_procs = n_tacs_procs
         self.flow_solver = flow_solver
-        self.transfer_options = transfer_options
+        self.transfer_settings = transfer_settings
         self.initial_bdf = initial_bdf
 
         # temp interface, driver attributes
@@ -62,7 +63,27 @@ class TacsSteadyShapeDriver:
         ]
 
         # prime the driver upon construction
-        self._prime_driver()
+        if prime_loads:
+            self._prime_driver()
+
+    @classmethod
+    def prime_loads(cls, funtofem_driver, n_tacs_procs, tacs_aim):
+        """
+        build directly from a funtofem driver on initial bdf and prime loads
+        """
+        funtofem_driver.solve_forward()
+        return cls(
+            comm=funtofem_driver.comm,
+            model=funtofem_driver.model,
+            n_tacs_procs=n_tacs_procs,
+            tacs_aim=tacs_aim,
+            transfer_settings=funtofem_driver.transfer_settings,
+            prime_loads=False,
+        )
+
+    @property
+    def manager(self, hot_start: bool = False):
+        return OptimizationManager(self, hot_start=hot_start)
 
     @property
     def tacs_comm(self):
@@ -107,23 +128,18 @@ class TacsSteadyShapeDriver:
             comm=self.comm,
             nprocs=self.n_tacs_procs,
             bdf_file=self.initial_bdf,
-            callback=None,
             prefix=self.analysis_dir,
-            struct_options={},
         )
 
         # create the solvers dictionary
-        solvers = {"flow": self.flow_solver, "structural": tacs_interface}
+        solvers = SolverManager(self.comm)
+        solvers.flow = self.flow_solver
+        solvers.structural = tacs_interface
 
         # build the funtofem driver
         funtofem_driver = FUNtoFEMnlbgs(
             solvers=solvers,
-            comm=self.comm,
-            struct_comm=self.tacs_comm,
-            struct_root=0,
-            aero_comm=self.comm,
-            aero_root=0,
-            transfer_options=self.transfer_options,
+            transfer_settings=self.transfer_settings,
             model=self.model,
         )
 
@@ -202,13 +218,12 @@ class TacsSteadyShapeDriver:
             comm=self.comm,
             nprocs=self.n_tacs_procs,
             bdf_file=os.path.join(self.analysis_dir, "nastran_CAPS.dat"),
-            callback=None,
             prefix=self.analysis_dir,
-            struct_options={},
         )
 
         # make a tacs driver
         self.tacs_driver = TacsSteadyAnalysisDriver(
+            comm=comm,
             tacs_interface=self.tacs_interface,
             model=self.model,
         )

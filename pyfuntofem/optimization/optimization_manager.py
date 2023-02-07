@@ -32,9 +32,7 @@ class OptimizationManager:
     Performs a gatekeeper feature to prevent double-running the forward analysis
     """
 
-    def __init__(
-        self, comm, model, driver, write_designs: bool = True, hot_start: bool = False
-    ):
+    def __init__(self, driver, write_designs: bool = True, hot_start: bool = False):
         """
         Constructs the optimization manager class using a funtofem model and driver
         Parameters
@@ -44,8 +42,8 @@ class OptimizationManager:
         driver : any driver coupled or oneway coupled, must have solve_forward and solve_adjoint methods
         """
         # main attributes of the manager
-        self.comm = comm
-        self.model = model
+        self.comm = driver.comm
+        self.model = driver.model
         self.driver = driver
 
         # optimization meta data

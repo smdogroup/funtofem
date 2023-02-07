@@ -2,6 +2,10 @@ from __future__ import print_function
 
 __all__ = ["FuntofemComponent"]
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 from openmdao.api import ExplicitComponent
 
 

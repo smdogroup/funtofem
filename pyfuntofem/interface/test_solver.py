@@ -145,12 +145,12 @@ class TestAerodynamicSolver(SolverInterface):
         # Allocate space for the aero dvs
         self.aero_dvs = np.array(self.aero_dvs, dtype=TransferScheme.dtype)
 
-        # Aerodynaimic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs
+        # Aerodynaimic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
         self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         self.c1 = 0.01 * (np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5)
 
-        # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs
+        # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
         self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
         self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
@@ -161,6 +161,10 @@ class TestAerodynamicSolver(SolverInterface):
         # Data for generating functional output values
         self.func_coefs1 = np.random.rand(3 * self.npts)
         self.func_coefs2 = np.random.rand(self.npts)
+
+        # omega values
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
+        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the aerodynamic or structural mesh
         for body in model.bodies:
@@ -301,6 +305,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_loads[:] = np.dot(self.Jac1, aero_disps)
                 aero_loads[:] += np.dot(self.b1, self.aero_X)
                 aero_loads[:] += np.dot(self.c1, self.aero_dvs)
+                if not scenario.steady:
+                    aero_loads[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario)
@@ -309,6 +315,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux[:] = np.dot(self.Jac2, aero_temps)
                 aero_flux[:] += np.dot(self.b2, self.aero_X)
                 aero_flux[:] += np.dot(self.c2, self.aero_dvs)
+                if not scenario.steady:
+                    aero_flux[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -406,7 +414,7 @@ class TestStructuralSolver(SolverInterface):
         elastic_scale = 1.0 / elastic_k
         thermal_scale = 1.0 / thermal_k
 
-        # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs
+        # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
         self.Jac1 = (
             0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
         )
@@ -418,8 +426,9 @@ class TestStructuralSolver(SolverInterface):
             * elastic_scale
             * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
         )
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
-        # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs
+        # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
         self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
         self.b2 = 0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
         self.c2 = (
@@ -427,6 +436,7 @@ class TestStructuralSolver(SolverInterface):
             * thermal_scale
             * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
         )
+        self.omega2 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -577,6 +587,8 @@ class TestStructuralSolver(SolverInterface):
                 struct_disps[:] = np.dot(self.Jac1, struct_loads)
                 struct_disps[:] += np.dot(self.b1, self.struct_X)
                 struct_disps[:] += np.dot(self.c1, self.struct_dvs)
+                if not scenario.steady:
+                    struct_disps[:] += self.omega1
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario)
@@ -585,6 +597,8 @@ class TestStructuralSolver(SolverInterface):
                 struct_temps[:] = np.dot(self.Jac2, struct_flux)
                 struct_temps[:] += np.dot(self.b2, self.struct_X)
                 struct_temps[:] += np.dot(self.c2, self.struct_dvs)
+                if not scenario.steady:
+                    struct_temps[:] += self.omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -636,7 +650,7 @@ class TestStructuralSolver(SolverInterface):
 
 
 class TestResult:
-    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error):
+    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error, comm=None):
         """
         Class to store test results from complex step method
         """
@@ -645,6 +659,7 @@ class TestResult:
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
         self.rel_error = rel_error
+        self.comm = comm
 
         self.nfuncs = len(func_names)
 
@@ -652,35 +667,42 @@ class TestResult:
         self.name = new_name
         return self
 
+    @property
+    def root_proc(self) -> bool:
+        return self.comm is None or self.comm.rank == 0
+
     def write(self, file_hdl):
         """
         write the test result out to a file handle
         """
-        file_hdl.write(f"Test: {self.name}\n")
-        if isinstance(self.func_names, list):
-            for ifunc in range(self.nfuncs):
-                file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
-                file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
-                file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
-                file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
-            file_hdl.flush()
-        else:
-            file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
-            file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
-            file_hdl.write(f"\tRelative error = {self.rel_error}\n")
-            file_hdl.flush()
+        if self.root_proc:
+            file_hdl.write(f"Test: {self.name}\n")
+            if isinstance(self.func_names, list):
+                for ifunc in range(self.nfuncs):
+                    file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
+                    file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                    file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
+                    file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
+                file_hdl.flush()
+            else:
+                file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+                file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
+                file_hdl.write(f"\tRelative error = {self.rel_error}\n")
+                file_hdl.flush()
+            file_hdl.close()
         return self
 
     def report(self):
-        print(f"Test Result - {self.name}")
-        print("\tFunctions = ", self.func_names)
-        print("\tComplex step TD  = ", self.complex_TD)
-        print("\tAdjoint TD      = ", self.adjoint_TD)
-        print("\tRelative error        = ", self.rel_error)
+        if self.root_proc:
+            print(f"Test Result - {self.name}")
+            print("\tFunctions = ", self.func_names)
+            print("\tComplex step TD  = ", self.complex_TD)
+            print("\tAdjoint TD      = ", self.adjoint_TD)
+            print("\tRelative error        = ", self.rel_error)
         return self
 
     @classmethod
-    def complex_step(cls, test_name, model, driver, status_file, has_fun3d=True):
+    def complex_step(cls, test_name, model, driver, status_file):
         """
         perform complex step test on a model and driver for multiple functions & variables
         used for fun3d+tacs coupled derivative tests only...
@@ -695,7 +717,7 @@ class TestResult:
         dxds = np.random.rand(nvariables)
 
         # solve the adjoint
-        if has_fun3d:
+        if driver.solvers.uses_fun3d:
             driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
@@ -708,7 +730,7 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform complex step method
-        if has_fun3d:
+        if driver.solvers.uses_fun3d:
             driver.solvers.make_flow_complex()
         epsilon = 1e-30
         variables = model.get_variables()
@@ -734,10 +756,15 @@ class TestResult:
         rel_error = [_.real for _ in rel_error]
 
         # make test results object and write it to file
-        file_hdl = open(status_file, "a")
-        cls(test_name, func_names, complex_TD, adjoint_TD, rel_error).write(
-            file_hdl
-        ).report()
+        file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
+        cls(
+            test_name,
+            func_names,
+            complex_TD,
+            adjoint_TD,
+            rel_error,
+            comm=driver.comm,
+        ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
@@ -746,7 +773,12 @@ class TestResult:
 
     @classmethod
     def finite_difference(
-        cls, test_name, model, driver, status_file, epsilon=1e-5, has_fun3d=True
+        cls,
+        test_name,
+        model,
+        driver,
+        status_file,
+        epsilon=1e-5,
     ):
         """
         perform finite difference test on a model and driver for multiple functions & variables
@@ -791,26 +823,35 @@ class TestResult:
         ]
 
         # make test results object and write to file
-        file_hdl = open(status_file, "a")
-        cls(test_name, func_names, finite_diff_TD, adjoint_TD, rel_error).write(
-            file_hdl
-        ).report()
+        file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
+        cls(
+            test_name,
+            func_names,
+            finite_diff_TD,
+            adjoint_TD,
+            rel_error,
+            comm=driver.comm,
+        ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
         return max_rel_error
 
     @classmethod
-    def derivative_test(
-        cls, test_name, model, driver, status_file, has_fun3d=True, complex_mode=True
-    ):
+    def derivative_test(cls, test_name, model, driver, status_file, complex_mode=True):
         """
         call either finite diff or complex step test depending on real mode of funtofem + TACS
         """
         if complex_mode:
             return cls.complex_step(
-                test_name, model, driver, status_file, has_fun3d=has_fun3d
+                test_name,
+                model,
+                driver,
+                status_file,
             )
         else:
             return cls.finite_difference(
-                test_name, model, driver, status_file, has_fun3d=has_fun3d
+                test_name,
+                model,
+                driver,
+                status_file,
             )

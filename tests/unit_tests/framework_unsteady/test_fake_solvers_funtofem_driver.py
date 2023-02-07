@@ -4,113 +4,73 @@ from funtofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (
-    PistonInterface,
-    TacsSteadyInterface,
+    TestAerodynamicSolver,
+    TestStructuralSolver,
     SolverManager,
-    CommManager,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from structural_model import OneraPlate
 import unittest
 
 
-class CoupledFrameworkTest(unittest.TestCase):
+class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     def _setup_model_and_driver(self):
         # Build the model
         model = FUNtoFEMmodel("model")
-        wing = Body("plate", "aeroelastic", group=0, boundary=1)
+        plate = Body("plate", "aerothermal", group=0, boundary=1)
 
-        # Create structural variable
-        thickness = 0.025
-        svar = Variable("thickness", value=thickness, lower=0.001, upper=1.0)
-        # wing.add_variable("structural", svar)
+        # Create a structural variable
+        for i in range(5):
+            thickness = np.random.rand()
+            svar = Variable(
+                "thickness %d" % (i), value=thickness, lower=0.01, upper=0.1
+            )
+            plate.add_variable("structural", svar)
 
-        model.add_body(wing)
+        model.add_body(plate)
 
         # Create a scenario to run
         steady = Scenario("steady", group=0, steps=100)
-        steady.set_variable(
-            "aerodynamic", name="AOA", value=5.0, lower=0.0, upper=15.0, active=True
-        )
+
+        # Add the aerodynamic variables to the scenario
+        for i in range(4):
+            value = np.random.rand()
+            avar = Variable("aero var %d" % (i), value=value, lower=-10.0, upper=10.0)
+            steady.add_variable("aerodynamic", avar)
 
         # Add a function to the scenario
-        # cl = Function("cl", analysis_type="aerodynamic")
-        # steady.add_function(cl)
-
-        ks = Function("ksfailure", analysis_type="structural")
-        steady.add_function(ks)
+        temp = Function("temperature", analysis_type="structural")
+        steady.add_function(temp)
 
         # Add the steady-state scenario
         model.add_scenario(steady)
 
         # Instantiate a test solver for the flow and structures
         comm = MPI.COMM_WORLD
-
-        n_tacs_procs = 1
-        world_rank = comm.Get_rank()
-        if world_rank < n_tacs_procs:
-            color = 55
-            key = world_rank
-        else:
-            color = MPI.UNDEFINED
-            key = world_rank
-        tacs_comm = comm.Split(color, key)
-
-        qinf = 101325.0
-        M = 1.5
-        U_inf = 411
-        x0 = np.array([0, 0, 0])
-        alpha = 5.0
-        length_dir = np.array(
-            [np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)]
-        )
-        width_dir = np.array([0, 1, 0])
-        L = 1.2
-        nL = 10
-        w = 1.2
-        nw = 20
-
-        # create solver and comm manager
         solvers = SolverManager(comm)
-        solvers.flow = PistonInterface(
-            comm, model, qinf, M, U_inf, x0, length_dir, width_dir, L, w, nL, nw
-        )
-
-        # create a comm manager
-        comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-
-        assembler = None
-        if world_rank < n_tacs_procs:
-            assembler = OneraPlate(tacs_comm)
-        solvers.structural = TacsSteadyInterface(comm, model, assembler=assembler)
+        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.structural = TestStructuralSolver(comm, model)
 
         # L&D transfer options
-        transfer_settings = TransferSettings(npts=10, beta=10, isym=1)
+        transfer_settings = TransferSettings(npts=5)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers,
-            comm_manager=comm_manager,
-            transfer_settings=transfer_settings,
-            model=model,
+            solvers, transfer_settings=transfer_settings, model=model
         )
-        # model.print_summary()
 
         return model, driver
 
     def test_model_derivatives(self):
         model, driver = self._setup_model_and_driver()
 
-        # Check whether to use the complex-step method or not
+        # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon_flow = 1e-8
-        epsilon_struct = 1e-6
-        rtol = 1e-5
+        epsilon = 1e-6
+        rtol = 1e-6
         if TransferScheme.dtype == complex:
             complex_step = True
-            epsilon_flow = 1e-30
-            epsilon_struct = 1e-30
+            epsilon = 1e-30
             rtol = 1e-9
 
         # Manual test of the disciplinary solvers
@@ -122,17 +82,17 @@ class CoupledFrameworkTest(unittest.TestCase):
             "flow",
             scenario,
             bodies,
-            epsilon=epsilon_flow,
+            epsilon=epsilon,
             complex_step=complex_step,
             rtol=rtol,
         )
         assert fail == False
 
-        fail = solvers.structural.test_adjoint(
+        solvers.structural.test_adjoint(
             "structural",
             scenario,
             bodies,
-            epsilon=epsilon_struct,
+            epsilon=epsilon,
             complex_step=complex_step,
             rtol=rtol,
         )
@@ -145,14 +105,16 @@ class CoupledFrameworkTest(unittest.TestCase):
 
         # Check whether to use the complex-step method or now
         complex_step = False
-        epsilon = 1e-9
+        epsilon = 1e-6
         rtol = 1e-5
         if TransferScheme.dtype == complex:
             complex_step = True
             epsilon = 1e-30
             rtol = 1e-9
 
+        # Solve the forward analysis
         driver.solve_forward()
+        driver.solve_adjoint()
 
         # Get the functions
         functions = model.get_functions()
@@ -209,7 +171,7 @@ class CoupledFrameworkTest(unittest.TestCase):
                 print("Pass flag             = ", pass_)
 
             pass_ = driver.comm.bcast(pass_, root=0)
-            # assert pass_
+            assert pass_
 
         return
 
