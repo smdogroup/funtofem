@@ -44,7 +44,7 @@ if has_fun3d:
     # build the solvers and coupled driver
     comm = MPI.COMM_WORLD
     solvers = SolverManager(comm)
-    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
+    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0)
 
     # build a tacs communicator on one proc
     n_tacs_procs = 1
@@ -94,7 +94,7 @@ if has_fun3d:
         comm, model, assembler, gen_output=None, thermal_index=3
     )
     # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-    transfer_settings = TransferSettings(npts=5)
+    transfer_settings = TransferSettings()
     driver = FUNtoFEMnlbgs(
         solvers,
         transfer_settings=transfer_settings,
