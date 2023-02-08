@@ -43,6 +43,12 @@ class PistonTheoryGrid:
     n_length: int  # num length x num width elements of the rectangular grid
     n_width: int
 
+    def __post__init__(self):
+        # convert any lists to np arrays
+        for array in [self.origin, self.length_dir, self.width_dir]:
+            if isinstance(array, list):
+                array = np.array(array)
+
 
 @dataclass
 class PistonTheoryFlow:
@@ -87,6 +93,7 @@ class PistonInterface(SolverInterface):
         """
 
         self.comm = comm
+        self.model = model
 
         self.qinf = piston_flow.qinf  # dynamic pressure
         self.M = piston_flow.mach
@@ -95,11 +102,7 @@ class PistonInterface(SolverInterface):
         self.flow_dt = piston_flow.flow_dt
 
         # retrieve aerodynamic grid values
-        self.x0 = (
-            piston_grid.origin
-            if not (isinstance(piston_grid.origin, list))
-            else np.array(piston_grid.origin)
-        )
+        self.x0 = piston_grid.origin
         self.length_dir = (
             piston_grid.length_dir
             if not (isinstance(piston_grid.length_dir, list))
@@ -209,11 +212,13 @@ class PistonInterface(SolverInterface):
                     self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
 
         class ScenarioData:
-            def __init__(self, bodies):
+            def __init__(self):
                 """
                 store unsteady state history for each body
                 """
                 self.w_hist = {}
+
+            def initialize(self, bodies):
                 for body in bodies:
                     self.w_hist[body.id] = []
 
@@ -224,7 +229,7 @@ class PistonInterface(SolverInterface):
         if self._has_unsteady:
             self.scenario_data = {}
             for scenario in model.scenarios:
-                self.scenario_data[scenario.id] = ScenarioData(model.bodies)
+                self.scenario_data[scenario.id] = ScenarioData()
 
     def initialize(self, scenario, bodies):
         """
@@ -240,6 +245,8 @@ class PistonInterface(SolverInterface):
         fail: int
             If the grid deformation failed, the intiialization will return 1
         """
+        for scenario in self.model.scenarios:
+            self.scenario_data[scenario.id].initialize(self.model.bodies)
 
         return 0
 
@@ -372,7 +379,7 @@ class PistonInterface(SolverInterface):
         return
 
     def compute_dwdt(self, scenario, body, step):
-        if scenario.steady or len(w_hist) <= 1:
+        if scenario.steady or step == 0:
             dw_dt = np.zeros(self.aero_nnodes)
         else:
             w_hist = self.scenario_data[scenario.id].w_hist[body.id]

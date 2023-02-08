@@ -23,50 +23,50 @@ limitations under the License.
 from __future__ import print_function
 
 __all__ = [
-    "IntegrationSettings",
+    "TacsIntegrationSettings",
     "TacsUnsteadyInterface",
 ]
 
 from mpi4py import MPI
 from tacs import TACS, pytacs, functions
+from dataclasses import dataclass
 from .utils import f2f_callback
 from ._solver_interface import SolverInterface
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 import os
 
 
-class IntegrationSettings:
-    INTEGRATION_TYPES = ["BDF", "DIRK"]
+@dataclass
+class TacsIntegrationSettings:
+    INTEGRATION_TYPES: ClassVar[str] = [
+        "BDF",
+        "DIRK",
+    ]  # class constant not instance attribute\
 
-    def __init__(
-        self,
-        integration_type: str = "BDF",
-        integration_order: int = 2,
-        L2_convergence: float = 1e-12,
-        L2_convergence_rel: float = 1e-12,
-        jac_assembly_freq: int = 1,
-        write_solution: bool = True,
-        number_solution_files: bool = True,
-        print_timing_info: bool = False,
-        print_level: int = 0,
-        start_time: float = 0.0,
-        dt: float = 0.1,
-        num_steps: int = 10,
-    ):
-        assert integration_type in IntegrationSettings.INTEGRATION_TYPES
+    # all of the following are main inputs of the dataclass constructor as kwargs
+    integration_type: str = "BDF"  # which TACS integrator class to build BDF or DIRK
+    integration_order: int = 2
+    start_time: float = 0.0  # time step information
+    dt: float = 0.1
+    num_steps: int = 10
 
-        self.integration_type = integration_type
-        self.integration_order = integration_order
-        self.L2_convergence = L2_convergence
-        self.L2_convergence_rel = L2_convergence_rel
-        self.jac_assembly_freq = jac_assembly_freq
-        self.write_solution = write_solution
-        self.number_solution_files = number_solution_files
-        self.print_timing_info = print_timing_info
-        self.print_level = print_level
-        self.start_time = start_time
-        self.end_time = start_time + dt * num_steps
-        self.num_steps = num_steps
+    # less important settings
+    L2_convergence: float = 1e-12
+    L2_convergence_rel: float = 1e-12
+    jac_assembly_freq: int = 1
+    write_solution: bool = True
+    number_solution_files: bool = True
+    print_timing_info: bool = False
+    print_level: int = 0
+
+    def __post_init__(self):
+        # check construction is reasonable, inputs are reasonable
+        assert self.integration_type in TacsIntegrationSettings.INTEGRATION_TYPES
+        return
+
+    @property
+    def end_time(self) -> float:
+        return self.start_time + self.dt + self.num_steps
 
     @property
     def is_bdf(self) -> bool:
@@ -110,7 +110,7 @@ class TacsUnsteadyInterface(SolverInterface):
         gen_output: TacsOutputGeneratorUnsteady = None,
         thermal_index: int = 0,
         struct_id: int = None,
-        integration_settings: IntegrationSettings = None,
+        integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
     ):
         self.comm = comm
@@ -183,10 +183,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # Create the time integrator and allocate the load data structures
             if self.integration_settings.is_bdf:
-                print(
-                    f"start time={self.integration_settings.start_time}, final time = {self.integration_settings.end_time}, numstep = {float(self.integration_settings.num_steps)}, order={self.integration_settings.integration_order},proc={self.comm.rank}",
-                    flush=True,
-                )
                 self.integrator[scenario.id] = TACS.BDFIntegrator(
                     self.assembler,
                     self.integration_settings.start_time,
@@ -242,9 +238,6 @@ class TacsUnsteadyInterface(SolverInterface):
         self,
         model,
         assembler=None,
-        mat=None,
-        pc=None,
-        gmres=None,
         struct_id=None,
         thermal_index=0,
     ):
@@ -265,9 +258,6 @@ class TacsUnsteadyInterface(SolverInterface):
         self.update = None
 
         if assembler is not None:
-            print(
-                f"Proc={self.comm.rank} inside assembler {assembler} check", flush=True
-            )
             # Set the assembler
             self.assembler = assembler
             self.tacs_proc = True
@@ -459,6 +449,7 @@ class TacsUnsteadyInterface(SolverInterface):
         """
 
         if self.tacs_proc:
+            print("Starting tacs unsteady interface initialize")
             for body in bodies:
                 # get an in-place array of the structural nodes
                 struct_X = self.struct_X.getArray()
@@ -482,6 +473,8 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # zeroth-iteration of integrator before full iteration loop
             self.integrator[scenario.id].iterate(0)
+            print("Finished tacs unsteady interface initialize")
+        return 0
 
     def iterate(self, scenario, bodies, step):
         """
@@ -500,6 +493,7 @@ class TacsUnsteadyInterface(SolverInterface):
         fail = 0
 
         if self.tacs_proc:
+            # print(f"tacs unsteady step = {step}")
             # get the external force vector for the integrator & zero it
             self.ext_force.zeroEntries()
             ext_force_array = self.ext_force.getArray()
@@ -653,7 +647,6 @@ class TacsUnsteadyInterface(SolverInterface):
         """
 
         fail = 0
-        rev_step = scenario.steps - step + 1
 
         if self.tacs_proc:
             # extract the list of functions, dfdu, etc
@@ -690,14 +683,14 @@ class TacsUnsteadyInterface(SolverInterface):
                         ].astype(TACS.dtype)
 
             # iterate the integrator solver, outside of function loop
-            self.integrator[scenario.id].initAdjoint(rev_step)
-            self.integrator[scenario.id].iterateAdjoint(rev_step, self.struct_rhs_vec)
-            self.integrator[scenario.id].postAdjoint(rev_step)
+            self.integrator[scenario.id].initAdjoint(step)
+            self.integrator[scenario.id].iterateAdjoint(step, self.struct_rhs_vec)
+            self.integrator[scenario.id].postAdjoint(step)
 
             # function loop to extract struct load, heat flux adjoints for each func
             for ifunc in range(len(func_list)):
                 # get the struct load, flux sensitivities out of integrator
-                psi = self.integrator[scenario.id].getAdjoint(rev_step, ifunc)
+                psi = self.integrator[scenario.id].getAdjoint(step, ifunc)
                 psi_array = psi.getArray()
 
                 # pass sensitivities back to each body for loads, heat flux
@@ -719,49 +712,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
         return fail
 
-    def _final_iterate_adjoint(self, scenario, bodies):
-        """
-        final iteration of adjoint -> step 0
-        """
-        if self.tacs_proc:
-            # extract the list of functions, dfdu, etc
-            func_list = self.scenario_data[scenario.id].func_list
-            func_tags = self.scenario_data[scenario.id].func_tags
-
-            psi = self.scenario_data[scenario.id].psi
-
-            # iterate over each function
-            for ifunc in range(len(func_list)):
-                # get the solution data for this function
-                rhs_func = self.struct_rhs_vec[ifunc].getArray()
-                # ext_force_adjoint = self.res.getArray()
-
-                # if not an adjoint function, move onto next function
-                if func_tags[ifunc] == -1:
-                    continue
-
-                ndof = self.assembler.getVarsPerNode()
-                # add struct_disps, struct_flux ajps to the res_adjoint or
-                # the residual of the TACS structural adjoint system
-                for body in bodies:
-                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
-                    if struct_disps_ajp is not None:
-                        for i in range(3):
-                            rhs_func[i::ndof] -= struct_disps_ajp[i::3, ifunc].astype(
-                                TACS.dtype
-                            )
-
-                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
-                    if struct_temps_ajp is not None:
-                        rhs_func[self.thermal_index :: ndof] -= struct_temps_ajp[
-                            :, ifunc
-                        ].astype(TACS.dtype)
-
-            # iterate the integrator solver, outside of function loop
-            self.integrator[scenario.id].initAdjoint(0)
-            self.integrator[scenario.id].iterateAdjoint(0, self.struct_rhs_vec)
-            self.integrator[scenario.id].postAdjoint(0)
-
     def post_adjoint(self, scenario, bodies):
         """
         This function is called after the adjoint variables have been computed.
@@ -779,8 +729,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
         if self.tacs_proc:
             func_grad = []
-
-            # self._final_iterate_adjoint(scenario, bodies)
 
             for ifunc, func in enumerate(scenario.functions):
                 # ff = self.integrator[scenario.id].getStates(1)
@@ -841,7 +789,7 @@ class TacsUnsteadyInterface(SolverInterface):
         comm,
         nprocs,
         bdf_file,
-        integration_settings: IntegrationSettings,
+        integration_settings: TacsIntegrationSettings,
         output_dir=None,
         callback=None,
         struct_options={},

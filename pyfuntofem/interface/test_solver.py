@@ -426,7 +426,6 @@ class TestStructuralSolver(SolverInterface):
             * elastic_scale
             * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
         )
-        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
         # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
         self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
@@ -436,7 +435,6 @@ class TestStructuralSolver(SolverInterface):
             * thermal_scale
             * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
         )
-        self.omega2 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -444,6 +442,9 @@ class TestStructuralSolver(SolverInterface):
         # Data for output functional values
         self.func_coefs1 = np.random.rand(3 * self.npts)
         self.func_coefs2 = np.random.rand(self.npts)
+
+        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
+        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the structural mesh
         for body in model.bodies:
