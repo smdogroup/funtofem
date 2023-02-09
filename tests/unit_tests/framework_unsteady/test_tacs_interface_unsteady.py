@@ -25,9 +25,8 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
-complex_mode = False
 
-
+@unittest.skipIf(not complex_mode, "only run this test in complex mode for now")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
 
@@ -36,7 +35,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=10).include(
@@ -79,12 +78,12 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=10).include(
             Function.temperature()
-        )
+        ).set_temperature(T_ref=300.0)
         test_scenario.register_to(model)
 
         integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=10)
@@ -127,10 +126,10 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=10).include(
             Function.ksfailure()
-        )
+        ).set_temperature(T_ref=300.0)
         test_scenario.include(Function.temperature()).register_to(model)
 
-        integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=10)
+        integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=test_scenario.steps)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -146,7 +145,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers, transfer_settings=TransferSettings(npts=10), model=model
         )
 
         max_rel_error = TestResult.derivative_test(

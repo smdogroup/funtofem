@@ -108,6 +108,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             Number of iterations if not set by the model
         """
 
+        assert scenario.steady
         fail = 0
 
         # Determine if we're using the scenario's number of steps or the argument
@@ -182,6 +183,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             The current scenario
         """
 
+        assert scenario.steady
         fail = 0
 
         # how many steps to take for the block Gauss Seidel
@@ -250,6 +252,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             fail flag for the coupled solver
 
         """
+        assert not scenario.steady
         fail = 0
 
         if not steps:
@@ -313,6 +316,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         """
 
+        assert not scenario.steady
         fail = 0
 
         # how many steps to take
