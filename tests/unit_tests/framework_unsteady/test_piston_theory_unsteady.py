@@ -37,10 +37,9 @@ class PistonSteadyTest(unittest.TestCase):
         # Instantiate a test solver for the flow and structures
         comm = MPI.COMM_WORLD
 
-        alpha = 5.0
         piston_grid = PistonTheoryGrid(
             origin=[0, 0, 0],
-            length_dir=[np.cos(alpha * np.pi / 180), 0, np.sin(alpha * np.pi / 180)],
+            length_dir=PistonTheoryGrid.aoa_dir(aoa=5.0),
             width_dir=[0, 1, 0],
             length=1.2,
             width=1.2,
