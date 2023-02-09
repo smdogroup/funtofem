@@ -146,7 +146,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         for iS in range(5):
             Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("test", steps=3)
+        test_scenario = Scenario.unsteady("test", steps=10)
         test_scenario.include(Function.ksfailure()).include(Function.lift())
         test_scenario.register_to(model)
 

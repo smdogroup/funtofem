@@ -17,3 +17,7 @@ fake_interface*
 .vscode/settings.json
 docs/.DS_Store
 *.DS_Store
+**/*.f5
+**/*.vtk
+**/*.tar.gz
+**/*.pbs

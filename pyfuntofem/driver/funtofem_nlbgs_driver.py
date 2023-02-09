@@ -266,10 +266,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 steps = 1000
 
         for time_index in range(1, steps + 1):
+
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index)
-                body.transfer_temps(scenario, time_index)
+                body.transfer_disps(scenario, time_index-1, jump=True)
+                body.transfer_temps(scenario, time_index-1, jump=True)
 
             # Take a step in the flow solver
             fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
@@ -326,7 +327,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for body in self.model.bodies:
             body.transfer_disps(scenario, time_index=steps)
             body.transfer_temps(scenario, time_index=steps)
-            # body.transfer_loads(scenario, time_index=steps)
 
         # Initialize the adjoint variables
         nfunctions = scenario.count_adjoint_functions()
@@ -335,7 +335,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # Loop over each time step in the reverse order
         for step in range(1, steps + 1):
             rev_step = steps - step + 1
-            # print(f"funtofem driver step = {step}, rev_step = {rev_step}")
 
             self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)
@@ -343,7 +342,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             for body in self.model.bodies:
                 body.transfer_disps_adjoint(scenario)
-                # body.transfer_loads_adjoint(scenario)
                 body.transfer_temps_adjoint(scenario)
 
             # take a step in the structural adjoint

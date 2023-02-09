@@ -475,33 +475,7 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "rbf":
-                basis = TransferScheme.PY_THIN_PLATE_SPLINE
-
-                if "basis function" in transfer_settings.options:
-                    if (
-                        transfer_settings.options["basis function"].lower()
-                        == "thin plate spline"
-                    ):
-                        basis = TransferScheme.PY_THIN_PLATE_SPLINE
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "gaussian"
-                    ):
-                        basis = TransferScheme.PY_GAUSSIAN
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "multiquadric"
-                    ):
-                        basis = TransferScheme.PY_MULTIQUADRIC
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "inverse multiquadric"
-                    ):
-                        basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
-                    else:
-                        print("Unknown RBF basis function for body number")
-                        quit()
-
+                basis = transfer_settings.basis_function
                 self.transfer = TransferScheme.pyRBF(
                     comm, struct_comm, struct_root, aero_comm, aero_root, basis, 1
                 )
@@ -531,17 +505,16 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "beam":
-                self.xfer_ndof = ndof
                 self.transfer = TransferScheme.pyBeamTransfer(
                     comm,
                     struct_comm,
                     struct_root,
                     aero_comm,
                     aero_root,
-                    transfer_settings.options["conn"],
-                    transfer_settings.options["nelems"],
-                    transfer_settings.options["order"],
-                    transfer_settings.options["ndof"],
+                    transfer_settings.conn,
+                    transfer_settings.nelems,
+                    transfer_settings.order,
+                    transfer_settings.ndof,
                 )
             else:
                 print("Error: Unknown transfer scheme for body")
@@ -896,7 +869,7 @@ class Body(Base):
         else:
             return None
 
-    def transfer_disps(self, scenario, time_index=0):
+    def transfer_disps(self, scenario, time_index=0, jump=False):
         """
         Transfer the displacements on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -907,13 +880,16 @@ class Body(Base):
             The current scenario
         time_index: int
             The time-index for time-dependent problems
+        jump : bool
+            whether to transfer from time_index -> time_index + 1
         """
         if self.transfer is not None:
             if scenario.steady:
                 aero_disps = self.aero_disps[scenario.id]
                 struct_disps = self.struct_disps[scenario.id]
             else:
-                aero_disps = self.aero_disps[scenario.id][time_index]
+                aero_time_index = time_index+1 if jump else time_index
+                aero_disps = self.aero_disps[scenario.id][aero_time_index]
                 struct_disps = self.struct_disps[scenario.id][time_index]
             self.transfer.transferDisps(struct_disps, aero_disps)
 
@@ -942,7 +918,7 @@ class Body(Base):
 
         return
 
-    def transfer_temps(self, scenario, time_index=0):
+    def transfer_temps(self, scenario, time_index=0, jump=False):
         """
         Transfer the temperatures on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -953,14 +929,17 @@ class Body(Base):
             The current scenario
         time_index: int
             The time-index for time-dependent problems
+        jump : bool
+            Whether to jump from time_index -> time_index + 1
         """
         if self.thermal_transfer is not None:
             if scenario.steady:
                 struct_temps = self.struct_temps[scenario.id]
                 aero_temps = self.aero_temps[scenario.id]
             else:
+                aero_time_index = time_index + 1 if jump else time_index
                 struct_temps = self.struct_temps[scenario.id][time_index]
-                aero_temps = self.aero_temps[scenario.id][time_index]
+                aero_temps = self.aero_temps[scenario.id][aero_time_index]
             self.thermal_transfer.transferTemp(struct_temps, aero_temps)
 
         return

@@ -120,6 +120,18 @@ class Variable(object):
         # return the object for method cascading
         return self
 
+    def register_to(self, base):
+        """
+        register a variable with previously defined analysis type to
+        a body or scenario
+        """
+        assert self.analysis_type is not None
+        assert isinstance(base, Base)
+
+        # add variable to the base object - either scenario or body
+        base.add_variable(vartype=self.analysis_type, var=self)
+        return self
+
     @classmethod
     def structural(cls, name: str):
         """
@@ -153,16 +165,4 @@ class Variable(object):
         self.upper *= factor
 
         # return the object for method cascading
-        return self
-
-    def register_to(self, base):
-        """
-        register a variable with previously defined analysis type to
-        a body or scenario
-        """
-        assert self.analysis_type is not None
-        assert isinstance(base, Base)
-
-        # add variable to the base object - either scenario or body
-        base.add_variable(vartype=self.analysis_type, var=self)
         return self
