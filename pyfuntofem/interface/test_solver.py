@@ -163,8 +163,9 @@ class TestAerodynamicSolver(SolverInterface):
         self.func_coefs2 = np.random.rand(self.npts)
 
         # omega values
-        self.omega1 = 0.001 * (np.random.rand(3 * self.npts) - 0.5)
-        self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
+        rate = 0.001
+        self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
+        self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the aerodynamic or structural mesh
         for body in model.bodies:
@@ -299,8 +300,8 @@ class TestAerodynamicSolver(SolverInterface):
             # Perform the "analysis"
             # Note that the body class expects that you will write the new
             # aerodynamic loads into the aero_loads array.
-            aero_disps = body.get_aero_disps(scenario)
-            aero_loads = body.get_aero_loads(scenario)
+            aero_disps = body.get_aero_disps(scenario, step)
+            aero_loads = body.get_aero_loads(scenario, step)
             if aero_disps is not None:
                 aero_loads[:] = np.dot(self.Jac1, aero_disps)
                 aero_loads[:] += np.dot(self.b1, self.aero_X)
@@ -309,8 +310,8 @@ class TestAerodynamicSolver(SolverInterface):
                     aero_loads[:] += self.omega1
 
             # Perform the heat transfer "analysis"
-            aero_temps = body.get_aero_temps(scenario)
-            aero_flux = body.get_aero_heat_flux(scenario)
+            aero_temps = body.get_aero_temps(scenario, step)
+            aero_flux = body.get_aero_heat_flux(scenario, step)
             if aero_temps is not None:
                 aero_flux[:] = np.dot(self.Jac2, aero_temps)
                 aero_flux[:] += np.dot(self.b2, self.aero_X)
@@ -582,8 +583,8 @@ class TestStructuralSolver(SolverInterface):
 
         for body in bodies:
             # Perform the "analysis"
-            struct_loads = body.get_struct_loads(scenario)
-            struct_disps = body.get_struct_disps(scenario)
+            struct_loads = body.get_struct_loads(scenario, step)
+            struct_disps = body.get_struct_disps(scenario, step)
             if struct_loads is not None:
                 struct_disps[:] = np.dot(self.Jac1, struct_loads)
                 struct_disps[:] += np.dot(self.b1, self.struct_X)
@@ -592,8 +593,8 @@ class TestStructuralSolver(SolverInterface):
                     struct_disps[:] += self.omega1
 
             # Perform the heat transfer "analysis"
-            struct_flux = body.get_struct_heat_flux(scenario)
-            struct_temps = body.get_struct_temps(scenario)
+            struct_flux = body.get_struct_heat_flux(scenario, step)
+            struct_temps = body.get_struct_temps(scenario, step)
             if struct_flux is not None:
                 struct_temps[:] = np.dot(self.Jac2, struct_flux)
                 struct_temps[:] += np.dot(self.b2, self.struct_X)

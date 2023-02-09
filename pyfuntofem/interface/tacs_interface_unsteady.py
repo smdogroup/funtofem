@@ -50,7 +50,6 @@ class TacsIntegrationSettings:
     dt: float = 0.1
     num_steps: int = 10
 
-    # less important settings
     L2_convergence: float = 1e-12
     L2_convergence_rel: float = 1e-12
     jac_assembly_freq: int = 1
@@ -160,6 +159,10 @@ class TacsUnsteadyInterface(SolverInterface):
             if self.assembler is not None:
                 # Store the solution variables
                 self.u = self.assembler.createVec()
+
+                self.q = self.assembler.createVec()
+                self.qdot = self.assembler.createVec()
+                self.qddot = self.assembler.createVec()
 
                 # Store information about the adjoint
                 for func in self.func_list:
@@ -398,6 +401,7 @@ class TacsUnsteadyInterface(SolverInterface):
         # Evaluate the list of functions of interest using TACS integrator
         feval = None
         if self.tacs_proc:
+            self.set_functions(scenario, bodies)
             feval = self.integrator[scenario.id].evalFunctions(
                 self.scenario_data[scenario.id].func_list
             )
@@ -430,9 +434,35 @@ class TacsUnsteadyInterface(SolverInterface):
 
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.struct_variables):
-                func.set_gradient_component(var, func_grad[ifunc][ivar])
+                func.add_gradient_component(var, func_grad[ifunc][ivar])
 
         return
+
+    def _update_assembler_vars(self, scenario, bodies):
+        """
+        make the call to update the
+        """
+
+        self.set_variables(
+            scenario, bodies
+        )  # set the design variables into the assembler
+
+        if self.tacs_proc:
+            for body in bodies:
+                # get an in-place array of the structural nodes
+                struct_X = self.struct_X.getArray()
+
+                # set the structural node locations into the array
+                struct_X[:] = body.get_struct_nodes()
+
+                # Reset the node locations in TACS (possibly distributing
+                # the node locations across TACS processors
+                self.assembler.setNodes(self.struct_X)
+
+            vars0 = self.scenario_data[scenario.id].q
+            dvars0 = self.scenario_data[scenario.id].qdot
+            ddvars0 = self.scenario_data[scenario.id].qddot
+            self.assembler.setInitConditions(vec=vars0, dvec=dvars0, ddvec=ddvars0)
 
     def initialize(self, scenario, bodies):
         """
@@ -448,32 +478,7 @@ class TacsUnsteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        if self.tacs_proc:
-            print("Starting tacs unsteady interface initialize")
-            for body in bodies:
-                # get an in-place array of the structural nodes
-                struct_X = self.struct_X.getArray()
-
-                # set the structural node locations into the array
-                struct_X[:] = body.get_struct_nodes()
-
-                # Reset the node locations in TACS (possibly distributing
-                # the node locations across TACS processors
-                self.assembler.setNodes(self.struct_X)
-
-            # Set the solution to zero
-            self.ans.zeroEntries()
-
-            # Set the boundary conditions
-            self.assembler.setBCs(self.ans)
-
-            # Set the state variables into the assembler object
-            # need to do this also for integrator?
-            self.assembler.setVariables(self.ans)
-
-            # zeroth-iteration of integrator before full iteration loop
-            self.integrator[scenario.id].iterate(0)
-            print("Finished tacs unsteady interface initialize")
+        self._update_assembler_vars(scenario, bodies)
         return 0
 
     def iterate(self, scenario, bodies, step):
@@ -493,7 +498,6 @@ class TacsUnsteadyInterface(SolverInterface):
         fail = 0
 
         if self.tacs_proc:
-            # print(f"tacs unsteady step = {step}")
             # get the external force vector for the integrator & zero it
             self.ext_force.zeroEntries()
             ext_force_array = self.ext_force.getArray()
@@ -523,7 +527,7 @@ class TacsUnsteadyInterface(SolverInterface):
             self.integrator[scenario.id].iterate(step, self.ext_force)
 
             # extract the structural disps, temps from the assembler
-            self.assembler.setVariables(self.ans)
+            self.assembler.getVariables(self.ans)
             ans_array = self.ans.getArray()
 
             # extract the disps, temps to the body
@@ -586,11 +590,13 @@ class TacsUnsteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        # TODO : finish initialize adjoint
+        self._update_assembler_vars(scenario, bodies)
+
         if self.tacs_proc:
             self.struct_rhs_vec = []
             func_list = self.scenario_data[scenario.id].func_list
             self.integrator[scenario.id].setFunctions(func_list)
+            self.integrator[scenario.id].evalFunctions(func_list)
 
             for func in range(len(func_list)):
                 self.struct_rhs_vec.append(self.assembler.createVec())
@@ -619,18 +625,18 @@ class TacsUnsteadyInterface(SolverInterface):
 
         if self.tacs_proc:
             _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
-            disps = self.ans.getArray()
+            states = self.ans.getArray()
             ndof = self.assembler.getVarsPerNode()
 
             for body in bodies:
                 struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
-                        struct_disps[i::3] = disps[i::ndof].astype(body.dtype)
+                        struct_disps[i::3] = states[i::ndof].astype(body.dtype)
 
                 struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
-                    struct_temps[:] = disps[self.thermal_index :: ndof].astype(
+                    struct_temps[:] = states[self.thermal_index :: ndof].astype(
                         body.dtype
                     )
 
@@ -887,14 +893,17 @@ class TacsUnsteadyInterface(SolverInterface):
             ]
             struct_id = global_owned_struct_ids
 
-        # We might need to clean up this code. This is making educated guesses
-        # about what index the temperature is stored. This could be wrong if things
-        # change later. May query from TACS directly?
+
         if assembler is not None and thermal_index == -1:
             varsPerNode = assembler.getVarsPerNode()
 
             # This is the likely index of the temperature variable
-            thermal_index = varsPerNode - 1
+            if varsPerNode == 1:  # Thermal only
+                thermal_index = 0
+            elif varsPerNode == 4:  # Solid + thermal
+                thermal_index = 3
+            elif varsPerNode >= 7:  # Shell or beam + thermal
+                thermal_index = varsPerNode - 1
 
         # Broad cast the thermal index to ensure it's the same on all procs
         thermal_index = comm.bcast(thermal_index, root=0)
