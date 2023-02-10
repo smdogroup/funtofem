@@ -665,7 +665,6 @@ class TacsUnsteadyInterface(SolverInterface):
             for ifunc in range(len(func_list)):
                 # get the solution data for this function
                 rhs_func = self.struct_rhs_vec[ifunc].getArray()
-                # ext_force_adjoint = self.res.getArray()
 
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:
@@ -892,7 +891,6 @@ class TacsUnsteadyInterface(SolverInterface):
                 inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
             ]
             struct_id = global_owned_struct_ids
-
 
         if assembler is not None and thermal_index == -1:
             varsPerNode = assembler.getVarsPerNode()

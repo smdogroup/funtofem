@@ -16,6 +16,7 @@ import unittest
 complex_mode = TransferScheme.dtype == complex
 comm = MPI.COMM_WORLD
 
+
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
 
@@ -39,23 +40,23 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         plate.initialize_variables(test)
         plate.initialize_adjoint_variables(test)
 
-        # random covariant and contravariant tensors        
+        # random covariant and contravariant tensors
         na = plate.get_num_aero_nodes()
-        dua_ds = np.random.rand(3*na) # contravariants of input states
+        dua_ds = np.random.rand(3 * na)  # contravariants of input states
         dta_ds = np.random.rand(na)
-        dL_dfa = np.random.rand(3*na) # covariants of output states
+        dL_dfa = np.random.rand(3 * na)  # covariants of output states
         dL_dha = np.random.rand(na)
 
         # adjoint evaluation
         aero_loads_ajp = plate.get_aero_loads_ajp(test)
         aero_flux_ajp = plate.get_aero_heat_flux_ajp(test)
-        aero_loads_ajp[:,0] = dL_dfa[:]
-        aero_flux_ajp[:,0] = dL_dha[:]
+        aero_loads_ajp[:, 0] = dL_dfa[:]
+        aero_flux_ajp[:, 0] = dL_dha[:]
 
         flow_solver.iterate_adjoint(test, model.bodies, step=0)
 
-        aero_disps_ajp = plate.get_aero_disps_ajp(test)[:,0]
-        aero_temps_ajp = plate.get_aero_temps_ajp(test)[:,0]
+        aero_disps_ajp = plate.get_aero_disps_ajp(test)[:, 0]
+        aero_temps_ajp = plate.get_aero_temps_ajp(test)[:, 0]
         adjoint_TD = aero_disps_ajp @ dua_ds + aero_temps_ajp @ dta_ds
         adjoint_TD = float(adjoint_TD.real)
 
@@ -69,13 +70,20 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         flow_solver.iterate(test, model.bodies, step=0)
 
         fa = list(plate.get_aero_loads(test, 0))
-        dfa_ds = np.array([_.imag/h for _ in fa])
+        dfa_ds = np.array([_.imag / h for _ in fa])
         ha = list(plate.get_aero_heat_flux(test, 0))
-        dha_ds = np.array([_.imag/h for _ in ha])
+        dha_ds = np.array([_.imag / h for _ in ha])
         complex_step_TD = dL_dfa @ dfa_ds + dL_dha @ dha_ds
 
         rel_error = (adjoint_TD - complex_step_TD) / complex_step_TD
-        TestResult("aero_solver", ["ksfailure"], [complex_step_TD], [adjoint_TD], [rel_error], comm).report()
+        TestResult(
+            "aero_solver",
+            ["ksfailure"],
+            [complex_step_TD],
+            [adjoint_TD],
+            [rel_error],
+            comm,
+        ).report()
         self.assertTrue(abs(rel_error) < 1e-9)
         return
 
@@ -99,23 +107,23 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         plate.initialize_variables(test)
         plate.initialize_adjoint_variables(test)
 
-        # random covariant and contravariant tensors        
+        # random covariant and contravariant tensors
         ns = plate.get_num_struct_nodes()
-        dfs_ds = np.random.rand(3*ns) # contravariants of input states
+        dfs_ds = np.random.rand(3 * ns)  # contravariants of input states
         dhs_ds = np.random.rand(ns)
-        dL_dus = np.random.rand(3*ns) # covariants of output states
+        dL_dus = np.random.rand(3 * ns)  # covariants of output states
         dL_dts = np.random.rand(ns)
 
         # adjoint evaluation
         struct_disps_ajp = plate.get_struct_disps_ajp(test)
         struct_temps_ajp = plate.get_struct_temps_ajp(test)
-        struct_disps_ajp[:,0] = dL_dus[:]
-        struct_temps_ajp[:,0] = dL_dts[:]
+        struct_disps_ajp[:, 0] = dL_dus[:]
+        struct_temps_ajp[:, 0] = dL_dts[:]
 
         structural_solver.iterate_adjoint(test, model.bodies, step=0)
 
-        dL_dfs = plate.get_struct_loads_ajp(test)[:,0]
-        dL_dhs = plate.get_struct_heat_flux_ajp(test)[:,0]
+        dL_dfs = plate.get_struct_loads_ajp(test)[:, 0]
+        dL_dhs = plate.get_struct_heat_flux_ajp(test)[:, 0]
         adjoint_TD = dL_dfs @ dfs_ds + dL_dhs @ dhs_ds
         adjoint_TD = adjoint_TD.real
 
@@ -129,13 +137,20 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         structural_solver.iterate(test, model.bodies, step=0)
 
         us = list(plate.get_struct_disps(test, 0))
-        dus_ds = np.array([_.imag/h for _ in us])
+        dus_ds = np.array([_.imag / h for _ in us])
         ts = list(plate.get_struct_temps(test, 0))
-        dts_ds = np.array([_.imag/h for _ in ts])
+        dts_ds = np.array([_.imag / h for _ in ts])
         complex_step_TD = dL_dus @ dus_ds + dL_dts @ dts_ds
 
         rel_error = (adjoint_TD - complex_step_TD) / complex_step_TD
-        TestResult("struct_solver", ["ksfailure"], [complex_step_TD], [adjoint_TD], [rel_error], comm).report()
+        TestResult(
+            "struct_solver",
+            ["ksfailure"],
+            [complex_step_TD],
+            [adjoint_TD],
+            [rel_error],
+            comm,
+        ).report()
         self.assertTrue(abs(rel_error) < 1e-9)
         return
 
@@ -154,7 +169,9 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TestStructuralSolver(comm, model)
-        driver = FUNtoFEMnlbgs(solvers, transfer_settings=TransferSettings(npts=10), model=model)
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=10), model=model
+        )
 
         rtol = 1e-7 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
@@ -162,7 +179,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             model,
             driver,
             CoupledUnsteadyFrameworkTest.FILENAME,
-            complex_mode
+            complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
         return
@@ -182,7 +199,9 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TestStructuralSolver(comm, model)
-        driver = FUNtoFEMnlbgs(solvers, transfer_settings=TransferSettings(npts=10), model=model)
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=10), model=model
+        )
 
         rtol = 1e-7 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
@@ -190,16 +209,13 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             model,
             driver,
             CoupledUnsteadyFrameworkTest.FILENAME,
-            complex_mode
+            complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
         return
-    
 
-
-        
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(CoupledUnsteadyFrameworkTest.FILENAME, "w").close() # clear file
+        open(CoupledUnsteadyFrameworkTest.FILENAME, "w").close()  # clear file
     unittest.main()

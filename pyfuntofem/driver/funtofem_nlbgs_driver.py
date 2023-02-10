@@ -266,11 +266,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 steps = 1000
 
         for time_index in range(1, steps + 1):
-
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index-1, jump=True)
-                body.transfer_temps(scenario, time_index-1, jump=True)
+                body.transfer_disps(scenario, time_index - 1, jump=True)
+                body.transfer_temps(scenario, time_index - 1, jump=True)
 
             # Take a step in the flow solver
             fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
@@ -336,7 +335,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for step in range(1, steps + 1):
             rev_step = steps - step + 1
 
-            self.solvers.flow.set_states(scenario, self.model.bodies, step)
+            self.solvers.flow.set_states(scenario, self.model.bodies, rev_step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)
             self.solvers.structural.set_states(scenario, self.model.bodies, rev_step)
 
@@ -359,7 +358,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads_adjoint(scenario)
                 body.transfer_heat_flux_adjoint(scenario)
 
-            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
+            fail = self.solvers.flow.iterate_adjoint(
+                scenario, self.model.bodies, rev_step
+            )
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
@@ -368,7 +369,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 return fail
 
             # extract and accumulate coordinate derivative every step
-            self._extract_coordinate_derivatives(scenario, self.model.bodies, step)
+            self._extract_coordinate_derivatives(scenario, self.model.bodies, rev_step)
 
         # end of solve loop
 

@@ -23,7 +23,7 @@ limitations under the License.
 __all__ = ["PistonTheoryGrid", "PistonTheoryFlow", "PistonInterface"]
 
 import numpy as np, sys
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
@@ -47,24 +47,19 @@ class PistonTheoryGrid:
         """
         check the object has been built with reasonable attributes
         """
-        # convert any lists to np arrays
-        for array in [self.origin, self.length_dir, self.width_dir]:
-            if isinstance(array, list):
-                array = np.array(array)
 
         # check direction vectors are unit vectors and orthogonal
         tol = 0.01
-        assert abs(1.0 - np.linalg.norm(self.length_dir)) < tol
-        assert abs(1.0 - np.linalg.norm(self.width_dir)) < tol
-        assert abs(np.dot(self.length_dir, self.width_dir) < tol)
+        assert abs(1.0 - np.linalg.norm(self.len_dir)) < tol
+        assert abs(1.0 - np.linalg.norm(self.wid_dir)) < tol
+        assert abs(np.dot(self.len_dir, self.wid_dir) < tol)
 
         return
 
     @classmethod
     def aoa_dir(cls, aoa: float) -> np.ndarray:
         # return a length dir entry along angle of attack
-        length_dir = np.array([np.cos(aoa * np.pi / 180), 0, np.sin(aoa * np.pi / 180)])
-        return length_dir
+        return np.array([np.cos(aoa * np.pi / 180), 0, np.sin(aoa * np.pi / 180)])
 
 
 @dataclass
@@ -125,7 +120,7 @@ class PistonInterface(SolverInterface):
         self.nL = piston_grid.n_length  # num elems in xi direction
         self.nw = piston_grid.n_width  # num elems in eta direction
         self.length_dir = piston_grid.length_dir
-        self.width_dir = piston_grid.length_dir
+        self.width_dir = piston_grid.width_dir
 
         self.n = np.cross(
             self.width_dir, self.length_dir
@@ -142,9 +137,6 @@ class PistonInterface(SolverInterface):
         for var in self.variables:
             if var.analysis_type == "aerodynamic":
                 self.aero_variables.append(var)
-
-        # heat flux
-        self.thermal_scale = 1.0  # = 1/2 * rho_inf * (V_inf)^3
 
         # TODO : this doesn't actually store different data for each body, fix later, one body only for now
         for ibody, body in enumerate(model.bodies, 1):
@@ -210,6 +202,10 @@ class PistonInterface(SolverInterface):
             def initialize(self, bodies):
                 for body in bodies:
                     self.w_hist[body.id] = []
+                    na = body.get_num_aero_nodes()
+                    self.w_hist[body.id].append(
+                        np.zeros((na), dtype=TransferScheme.dtype)
+                    )
 
         # store state history for the unsteady adjoint any unsteady scenarios
         self._has_unsteady = any(
@@ -235,7 +231,8 @@ class PistonInterface(SolverInterface):
             If the grid deformation failed, the intiialization will return 1
         """
         for scenario in self.model.scenarios:
-            self.scenario_data[scenario.id].initialize(self.model.bodies)
+            if not scenario.steady:
+                self.scenario_data[scenario.id].initialize(self.model.bodies)
 
         return 0
 
@@ -327,7 +324,7 @@ class PistonInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.analysis_type == "aerodynamic":
-                if self.comm.Get_rank() == 0:
+                if self.comm.rank == 0:
                     if function.name == "cl":
                         function.value = self.compute_cl(scenario, bodies)
                 function.value = self.comm.bcast(function.value, root=0)
@@ -353,8 +350,8 @@ class PistonInterface(SolverInterface):
             list of FUNtoFEM bodies. Bodies contains unused but necessary rigid motion variables
         """
 
-        for findex, func in enumerate(scenario.functions):
-            for vindex, var in enumerate(self.aero_variables):
+        for func in scenario.functions:
+            for var in self.aero_variables:
                 if var.name == "AOA":
                     if func.name == "cl":
                         value = self.compute_cl_deriv(scenario, bodies)
@@ -366,9 +363,21 @@ class PistonInterface(SolverInterface):
         return
 
     def compute_dwdt(self, scenario, body, step):
+        """
+        Computes time derivative of piston displacement w
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The scenario. Contains the global aerodynamic list
+        bodies: :class:`~body.Body`
+            list of FUNtoFEM bodies. Bodies contains unused but necessary rigid motion variables
+        step : int
+            unsteady time index
+        """
         if scenario.steady or step == 0:
             dw_dt = np.zeros(self.aero_nnodes)
-        elif step >= scenario.steps:
+        elif step > scenario.steps:
             raise AssertionError(f"Step index {step} past the #steps in the scenario")
         else:
             w_hist = self.scenario_data[scenario.id].w_hist[body.id]
@@ -445,10 +454,13 @@ class PistonInterface(SolverInterface):
                 areas = self.compute_Areas()
 
                 dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
-                dAeroX_dAlpha = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
+                dAeroX_dAlpha = np.zeros(
+                    body.aero_nnodes * 3, dtype=TransferScheme.dtype
+                )
                 for i in range(body.aero_nnodes):
                     r = np.sqrt(
-                        self.piston_aero_X[3 * i] ** 2 + self.piston_aero_X[3 * i + 2] ** 2
+                        self.piston_aero_X[3 * i] ** 2
+                        + self.piston_aero_X[3 * i + 2] ** 2
                     )
                     dAeroX_dAlpha[3 * i : 3 * i + 3] = np.array(
                         [
@@ -512,7 +524,6 @@ class PistonInterface(SolverInterface):
             aero_loads = body.get_aero_loads(scenario)
 
             if aero_disps is not None:
-
                 # Compute w for piston theory: [dx,dy,dz] DOT freestream normal
                 w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
 
@@ -553,17 +564,15 @@ class PistonInterface(SolverInterface):
         governing equation
         """
 
+        dw_dxi_total = dw_dt / self.U_inf + dw_dxi
         press = (
             2
             * self.qinf
             / self.M
             * (
-                (1 / self.U_inf * dw_dt + dw_dxi)
-                + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
-                + (self.gamma + 1)
-                / 12
-                * self.M**2
-                * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
+                dw_dxi_total
+                + (self.gamma + 1) / 4 * self.M * dw_dxi_total**2
+                + (self.gamma + 1) / 12 * self.M**2 * dw_dxi_total**3
             )
         )
 
@@ -671,9 +680,8 @@ class PistonInterface(SolverInterface):
         """
 
         fail = 0
-        rev_step = scenario.steps - step + 1
         if scenario.steady:
-            rev_step = 0
+            step = 0
 
         nfunctions = scenario.count_adjoint_functions()
 
@@ -695,7 +703,7 @@ class PistonInterface(SolverInterface):
                 )
                 w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
                 dw_dxi = self.CD_mat @ w
-                dw_dt = self.compute_dwdt(scenario, body, rev_step)
+                dw_dt = self.compute_dwdt(scenario, body, step)
                 areas = self.compute_Areas()
 
                 dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)

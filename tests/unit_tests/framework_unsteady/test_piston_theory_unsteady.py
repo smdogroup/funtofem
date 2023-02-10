@@ -10,6 +10,9 @@ from pyfuntofem.interface import (
     TacsUnsteadyInterface,
     SolverManager,
     TacsIntegrationSettings,
+    TestStructuralSolver,
+    CommManager,
+    TestResult,
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 from tacs import TACS, elements, functions, constitutive
@@ -19,9 +22,14 @@ tacs_folder = os.path.join(base_dir, "tacs")
 if not os.path.exists(tacs_folder):
     os.mkdir(tacs_folder)
 
+comm = MPI.COMM_WORLD
+complex_mode = TACS.dtype == complex and TransferScheme.dtype == complex
 
-class PistonSteadyTest(unittest.TestCase):
-    def _setup_model_and_driver(self):
+
+class TestUnsteadyPistonTheory(unittest.TestCase):
+    FILENAME = "piston-theory-unsteady.txt"
+
+    def test_with_fake_struct(self):
         # Build the model
         model = FUNtoFEMmodel("model")
         plate = Body.aeroelastic("plate")
@@ -38,9 +46,9 @@ class PistonSteadyTest(unittest.TestCase):
         comm = MPI.COMM_WORLD
 
         piston_grid = PistonTheoryGrid(
-            origin=[0, 0, 0],
+            origin=np.array([0, 0, 0]),
             length_dir=PistonTheoryGrid.aoa_dir(aoa=5.0),
-            width_dir=[0, 1, 0],
+            width_dir=np.array([0, 1, 0]),
             length=1.2,
             width=1.2,
             n_length=10,
@@ -51,46 +59,20 @@ class PistonSteadyTest(unittest.TestCase):
         # create solver and comm manager
         solvers = SolverManager(comm)
         solvers.flow = PistonInterface(comm, model, piston_grid, piston_flow)
-
-        integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=10)
-
-        ntacs_procs = 1
-        bdf_filename = os.path.join(os.getcwd(), "input_files", "test_bdf_file.bdf")
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
-            model,
-            comm,
-            ntacs_procs,
-            bdf_filename,
-            callback=elasticity_callback,
-            integration_settings=integration_settings,
-            output_dir=tacs_folder,
-        )
-
-        # L&D transfer options
-        transfer_settings = TransferSettings(npts=10, beta=10, isym=1)
-
-        # instantiate the driver
+        solvers.structural = TestStructuralSolver(comm, model)
         driver = FUNtoFEMnlbgs(
             solvers,
-            transfer_settings=transfer_settings,
+            transfer_settings=TransferSettings(npts=10, beta=10, isym=1),
             model=model,
         )
-        # model.print_summary()
-
-        return model, driver
-
-    def test_model_derivatives(self):
-        model, driver = self._setup_model_and_driver()
 
         # Check whether to use the complex-step method or not
         complex_step = False
         epsilon_flow = 1e-8
-        epsilon_struct = 1e-6
         rtol = 1e-5
         if TransferScheme.dtype == complex:
             complex_step = True
             epsilon_flow = 1e-30
-            epsilon_struct = 1e-30
             rtol = 1e-9
 
         # Manual test of the disciplinary solvers
@@ -108,88 +90,70 @@ class PistonSteadyTest(unittest.TestCase):
         )
         assert fail == False
 
-        fail = solvers.structural.test_adjoint(
-            "structural",
-            scenario,
-            bodies,
-            epsilon=epsilon_struct,
-            complex_step=complex_step,
-            rtol=rtol,
-        )
-        assert fail == False
-
         return
 
-    def test_coupled_derivatives(self):
-        model, driver = self._setup_model_and_driver()
+    def test_with_onera(self):
+        # Build the model
+        model = FUNtoFEMmodel("model")
+        plate = Body.aeroelastic("plate")
+        Variable.structural("thickness").set_bounds(value=0.025).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.unsteady("piston-unsteady", steps=10).include(
+            Function.ksfailure()
+        )
+        test_scenario.set_variable("aerodynamic", name="AOA", value=5.0)
+        test_scenario.register_to(model)
 
-        # Check whether to use the complex-step method or now
-        complex_step = False
-        epsilon = 1e-9
-        rtol = 1e-5
-        if TransferScheme.dtype == complex:
-            complex_step = True
-            epsilon = 1e-30
-            rtol = 1e-9
+        # Instantiate a test solver for the flow and structures
+        piston_grid = PistonTheoryGrid(
+            origin=np.array([0, 0, 0]),
+            length_dir=PistonTheoryGrid.aoa_dir(aoa=5.0),
+            width_dir=np.array([0, 1, 0]),
+            length=1.2,
+            width=1.2,
+            n_length=10,
+            n_width=20,
+        )
+        piston_flow = PistonTheoryFlow(qinf=101325.0, mach=1.5, U_inf=411, flow_dt=0.01)
 
-        driver.solve_forward()
-
-        # Get the functions
-        functions = model.get_functions()
-        variables = model.get_variables()
-
-        # Store the function values
-        fvals_init = []
-        for func in functions:
-            fvals_init.append(func.value)
-
-        # Solve the adjoint and get the function gradients
-        driver.solve_adjoint()
-        grads = model.get_function_gradients()
-
-        # Set the new variable values
-        if complex_step:
-            variables[0].value = variables[0].value + 1j * epsilon
-            model.set_variables(variables)
+        # create solver and comm manager
+        solvers = SolverManager(comm)
+        solvers.flow = PistonInterface(comm, model, piston_grid, piston_flow)
+        n_tacs_procs = 1
+        world_rank = comm.Get_rank()
+        if world_rank < n_tacs_procs:
+            color = 55
+            key = world_rank
         else:
-            variables[0].value = variables[0].value + epsilon
-            model.set_variables(variables)
+            color = MPI.UNDEFINED
+            key = world_rank
+        tacs_comm = comm.Split(color, key)
+        assembler = OneraPlate(tacs_comm)
+        solvers.structural = TacsUnsteadyInterface(
+            comm,
+            model,
+            assembler,
+            integration_settings=TacsIntegrationSettings(dt=0.01, num_steps=10),
+            tacs_comm=tacs_comm,
+        )
+        comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
 
-        driver.solve_forward()
+        driver = FUNtoFEMnlbgs(
+            solvers,
+            comm_manager,
+            transfer_settings=TransferSettings(npts=10, beta=10, isym=1),
+            model=model,
+        )
 
-        # Store the function values
-        fvals = []
-        for func in functions:
-            fvals.append(func.value)
-
-        if complex_step:
-            deriv = fvals[0].imag / epsilon
-
-            rel_error = (deriv - grads[0][0]) / deriv
-            pass_ = False
-            if driver.comm.rank == 0:
-                pass_ = abs(rel_error) < rtol
-                print("Approximate gradient  = ", deriv.real)
-                print("Adjoint gradient      = ", grads[0][0].real)
-                print("Relative error        = ", rel_error.real)
-                print("Pass flag             = ", pass_)
-
-            pass_ = driver.comm.bcast(pass_, root=0)
-            assert pass_
-        else:
-            deriv = (fvals[0] - fvals_init[0]) / epsilon
-
-            rel_error = (deriv - grads[0][0]) / deriv
-            pass_ = False
-            if driver.comm.rank == 0:
-                pass_ = abs(rel_error) < rtol
-                print("Approximate gradient  = ", deriv)
-                print("Adjoint gradient      = ", grads[0][0])
-                print("Relative error        = ", rel_error)
-                print("Pass flag             = ", pass_)
-
-            pass_ = driver.comm.bcast(pass_, root=0)
-            # assert pass_
+        rtol = 1e-9 if complex_mode else 1e-5
+        max_rel_error = TestResult.derivative_test(
+            "piston+tacs-unsteady-onera",
+            model,
+            driver,
+            TestUnsteadyPistonTheory.FILENAME,
+            complex_mode,
+        )
+        self.assertTrue(max_rel_error < rtol)
 
         return
 
