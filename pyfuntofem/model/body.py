@@ -38,11 +38,7 @@ class AitkenRelaxation:
     """
 
     def __init__(
-        self,
-        theta_init=0.125,
-        theta_therm_init=0.125,
-        theta_min=0.01,
-        theta_max=1.0,
+        self, theta_init=0.125, theta_therm_init=0.125, theta_min=0.01, theta_max=1.0,
     ):
         """
         Construct an aitken relaxation setting object
@@ -559,8 +555,8 @@ class Body(Base):
                     aero_comm,
                     aero_root,
                     transfer_settings.isym,
-                    transfer_settings.npts,
-                    transfer_settings.beta,
+                    transfer_settings.thermal_npts,
+                    transfer_settings.thermal_beta,
                 )
             else:
                 print("Error: Unknown thermal transfer scheme for body")
