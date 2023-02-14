@@ -5,50 +5,63 @@ from dataclasses import dataclass
 from funtofem import TransferScheme
 
 
-@dataclass  # dataclass decorator includes any variables below as fields and in the constructor
+__all__ = ["TransferSettings"]
+
+from typing import TYPE_CHECKING
+
+
 class TransferSettings:
-    # class attributes, not included in the constructor
-    ELASTIC_SCHEMES: ClassVar[str] = [
-        "hermes",
-        "rbf",
-        "meld",
-        "linearized meld",
-        "beam",
-    ]
-    THERMAL_SCHEMES: ClassVar[str] = ["meld"]
+    ELASTIC_SCHEMES = ["hermes", "rbf", "meld", "linearized meld", "beam"]
+    THERMAL_SCHEMES = ["meld"]
 
-    # arguments put in the constructor with @dataclass
-    elastic_scheme: str = "meld"  # elastic scheme for loads, displacements
-    thermal_scheme: str = "meld"  # transfer scheme for heat loads, temperatures
-    npts: int = 200  # number of nearest neighbors
-    beta: float = 0.5  # exp decay factor of neighbors
-    isym: int = -1  # flag to use symmetries in transfer
+    # TODO : determine whether we should put analysis type back in transfer settings?
+    def __init__(
+        self,
+        elastic_scheme="meld",
+        thermal_scheme="meld",
+        npts: int = 200,
+        beta: float = 0.5,
+        isym: int = -1,
+        options: dict = {},
+    ):
+        """
+        Transfer settings for the fully-coupled funtofem analysis across different fluid, structural meshes
+        Parameters
+        ---------------------------------
+        elastic_scheme: the transfer scheme used for loads, displacements
+        thermal_scheme: the transfer scheme used for heat loads, temperatures
+        npts: the number of nearest neighbors included in the transfers
+        beta: the exponential decay factor used to average loads, displacements, etc.
+        isym: whether to search for symmetries in the geometry for transfer
+        options: additional options dictionary like for beam and rbf basis functions
+        """
+        assert elastic_scheme in TransferSettings.ELASTIC_SCHEMES
+        assert thermal_scheme in TransferSettings.THERMAL_SCHEMES
+        self.elastic_scheme = elastic_scheme
+        self.thermal_scheme = thermal_scheme
+        self.npts = npts
+        self.beta = beta
+        self.isym = isym
+        self.options = options
 
-    def __post__init__(self):
-        # check if inputs are valid
-        assert self.elastic_scheme in TransferSettings.ELASTIC_SCHEMES
-        assert self.thermal_scheme in TransferSettings.THERMAL_SCHEMES
+    def scheme(self, new_scheme):
+        """
+        elastic and thermal scheme setter with method cascading
+        """
+        self.elastic_scheme = new_scheme
+        self.thermal_scheme = new_scheme
+        return self
+
+    def elastic_scheme(self, new_scheme):
+        """
+        elastic scheme setter with method cascading
+        """
+        self.elastic_scheme = new_scheme
+        return self
+
+    def thermal_scheme(self, new_scheme):
+        """
+        thermal scheme setter with method cascading
+        """
+        self.thermal_scheme = new_scheme
         return
-
-
-@dataclass
-class RbfTransferSettings(TransferSettings):
-    # RBF Class options
-    BASIS_FUNCTIONS: ClassVar[object] = [
-        TransferScheme.PY_THIN_PLATE_SPLINE,
-        TransferScheme.PY_GAUSSIAN,
-        TransferScheme.PY_MULTIQUADRIC,
-        TransferScheme.PY_INVERSE_MULTIQUADRIC,
-    ]
-
-    # Additional constructor arguments
-    basis_function = TransferScheme.PY_THIN_PLATE_SPLINE
-
-
-@dataclass
-class BeamTransferSettings(TransferSettings):
-    # Beam Transfer Settings
-    conn = []
-    nelems = 10
-    order = 1
-    ndof = 10

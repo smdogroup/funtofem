@@ -475,7 +475,33 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "rbf":
-                basis = transfer_settings.basis_function
+                basis = TransferScheme.PY_THIN_PLATE_SPLINE
+
+                if "basis function" in transfer_settings.options:
+                    if (
+                        transfer_settings.options["basis function"].lower()
+                        == "thin plate spline"
+                    ):
+                        basis = TransferScheme.PY_THIN_PLATE_SPLINE
+                    elif (
+                        transfer_settings.options["basis function"].lower()
+                        == "gaussian"
+                    ):
+                        basis = TransferScheme.PY_GAUSSIAN
+                    elif (
+                        transfer_settings.options["basis function"].lower()
+                        == "multiquadric"
+                    ):
+                        basis = TransferScheme.PY_MULTIQUADRIC
+                    elif (
+                        transfer_settings.options["basis function"].lower()
+                        == "inverse multiquadric"
+                    ):
+                        basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
+                    else:
+                        print("Unknown RBF basis function for body number")
+                        quit()
+
                 self.transfer = TransferScheme.pyRBF(
                     comm, struct_comm, struct_root, aero_comm, aero_root, basis, 1
                 )
@@ -511,10 +537,10 @@ class Body(Base):
                     struct_root,
                     aero_comm,
                     aero_root,
-                    transfer_settings.conn,
-                    transfer_settings.nelems,
-                    transfer_settings.order,
-                    transfer_settings.ndof,
+                    transfer_settings.options["conn"],
+                    transfer_settings.options["nelems"],
+                    transfer_settings.options["order"],
+                    transfer_settings.options["ndof"],
                 )
             else:
                 print("Error: Unknown transfer scheme for body")
@@ -888,7 +914,7 @@ class Body(Base):
                 aero_disps = self.aero_disps[scenario.id]
                 struct_disps = self.struct_disps[scenario.id]
             else:
-                aero_time_index = time_index+1 if jump else time_index
+                aero_time_index = time_index + 1 if jump else time_index
                 aero_disps = self.aero_disps[scenario.id][aero_time_index]
                 struct_disps = self.struct_disps[scenario.id][time_index]
             self.transfer.transferDisps(struct_disps, aero_disps)
