@@ -12,11 +12,11 @@ Methods on this page with **[driver call]** and **[model call]** are calls that 
 
 Assembling the model
 --------------------
-A model is assembled using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
-:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. See `bodies and scenarios`_ for details about their creation.
+One way to build a model is using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
+:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. New classmethods are available for these classes
+which provide shortcuts to their creation. See `bodies and scenarios`_ for details about their creation.
 
 The bodies and scenarios are kept in lists in the same order that they are input.
-
 
 Exchanging the model data with an optimizer
 -------------------------------------------
