@@ -2,12 +2,13 @@ FUNtoFEM Driver
 ***************
 
 While the FUNtoFEM model holds a lot of the aeroelastic and design data, the driver is what solves the coupled problems. 
-The nonlinear block Gauss Seidel is the current driver.
+The nonlinear block Gauss Seidel is the current driver. The 
 
 To use the driver:
 
-#. Create the solver dictionary
-#. Set up the transfer scheme options
+#. Create the SolverManager class
+#. (optional) Define a CommManager class. If not, it uses the default CommManager created in the SolverManager.
+#. Define the TransferSettings object
 #. Instantiate the driver then call the run methods.
 
 
@@ -22,9 +23,9 @@ Here's some pseudocode to create the solvers for the NLBGS driver.
 
 .. code-block:: python
 
-    solvers = {}
-    solvers['flow'] = flow_solver()
-    solvers['structural'] = structural_solver()
+    solvers = SolverManager
+    solvers.flow = flow_solver
+    solvers.structural = structural_solver
 
 Transfer scheme set up
 ----------------------
@@ -41,25 +42,23 @@ If no transfer scheme options are provide, MELD with the default options is used
 MELD
 ====
 The MELD scheme is the only scheme in FUNtoFEM that currently has implemented all of the derivatives necessary for shape derivatives in optimization.
-The default options for MELD are:
+The default options for MELD are the following. The argument `isym` uses 
 
 
 .. code-block:: python
 
-    transfer_options = {'scheme':'MELD'}
-
-    # symmetry plane -1-> no symmetry
+    # isym : symmetry plane -1-> no symmetry
     #                 0-> x=0 plane symmetry
     #                 1-> y=0 plane symmetry
     #                 2-> z=0 sym
-    transfer_options['isym'] = -1
-
-    # weighting function parameter. As lower values of beta -> more equal weighting
-    transfer_options['beta'] = 0.5
-
+    # beta is a weighting function parameter. As lower values of beta -> more equal weighting
     # number of structural nodes each aerodynamic node is connected to
-    transfer_options['npts'] = 200
-
+    transfer_settings = TransferSettings(
+        elastic_scheme="meld",
+        isym=-1,
+        beta=0.5,
+        npts=200,
+    )
 
 Linearized MELD
 ===============
