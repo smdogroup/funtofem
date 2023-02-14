@@ -18,6 +18,8 @@ from tacs import TACS, constitutive, elements
 
 comm = MPI.COMM_WORLD
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+base_dir = os.path.dirname(os.path.abspath(__file__))
+bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 
 class TestSteadyPistonTheory(unittest.TestCase):
@@ -45,17 +47,24 @@ class TestSteadyPistonTheory(unittest.TestCase):
         )
         piston_flow = PistonTheoryFlow(qinf=101325.0, mach=1.5, U_inf=411)
         solvers.flow = PistonInterface(comm, model, piston_grid, piston_flow)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model,
-            comm,
-            nprocs=1,
-            bdf_file=os.path.join(os.getcwd(), "input_files", "test_bdf_file.bdf"),
-            callback=elasticity_callback,
-        )
 
-        # instantiate the driver to auto-construct some settings in the body
-        FUNtoFEMnlbgs(
+        n_tacs_procs = 1
+        world_rank = comm.Get_rank()
+        if world_rank < n_tacs_procs:
+            color = 55
+            key = world_rank
+        else:
+            color = MPI.UNDEFINED
+            key = world_rank
+        tacs_comm = comm.Split(color, key)
+        assembler = OneraPlate(tacs_comm)
+        solvers.structural = TacsSteadyInterface(comm, model, assembler)
+        comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
+
+        # instantiate the driver
+        driver = FUNtoFEMnlbgs(
             solvers,
+            comm_manager,
             transfer_settings=TransferSettings(npts=10, beta=10, isym=1),
             model=model,
         )
