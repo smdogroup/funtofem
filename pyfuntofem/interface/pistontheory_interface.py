@@ -50,9 +50,9 @@ class PistonTheoryGrid:
 
         # check direction vectors are unit vectors and orthogonal
         tol = 0.01
-        assert abs(1.0 - np.linalg.norm(self.len_dir)) < tol
-        assert abs(1.0 - np.linalg.norm(self.wid_dir)) < tol
-        assert abs(np.dot(self.len_dir, self.wid_dir) < tol)
+        assert abs(1.0 - np.linalg.norm(self.length_dir)) < tol
+        assert abs(1.0 - np.linalg.norm(self.width_dir)) < tol
+        assert abs(np.dot(self.length_dir, self.width_dir) < tol)
 
         return
 
@@ -191,6 +191,8 @@ class PistonInterface(SolverInterface):
                     self.piston_aero_X[3 * (self.nw + 1) * i + j * 3] = coord[0]
                     self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 1] = coord[1]
                     self.piston_aero_X[3 * (self.nw + 1) * i + j * 3 + 2] = coord[2]
+
+            print(f"length dir = {self.length_dir}")
 
         class ScenarioData:
             def __init__(self):
@@ -540,7 +542,6 @@ class PistonInterface(SolverInterface):
 
                 # Call function to compute pressure
                 press_i = self.compute_Pressure(dw_dxi, dw_dt)
-
                 # Compute forces from pressure
                 areas = self.compute_Areas()
                 aero_loads[:] = self.nmat @ np.diag(areas) @ press_i
@@ -732,7 +733,6 @@ class PistonInterface(SolverInterface):
     def compute_dCLdua(self, aero_disps, aero_loads, aero_X, aero_nnodes, dw_dt):
         w = aero_X[2::3] + self.nmat.T @ aero_disps
         dw_dxi = self.CD_mat @ w
-        dw_dt = np.zeros(self.aero_nnodes)  # Set dw/dt = 0  for now (steady)
         areas = self.compute_Areas()
         dwdxi_deriv = self.compute_Pressure_deriv(dw_dxi, dw_dt)
         df_dua = (

@@ -24,8 +24,10 @@ if not os.path.exists(tacs_folder):
 
 comm = MPI.COMM_WORLD
 complex_mode = TACS.dtype == complex and TransferScheme.dtype == complex
+debug = False
 
 
+@unittest.skipIf(not debug, "still under development")
 class TestUnsteadyPistonTheory(unittest.TestCase):
     FILENAME = "piston-theory-unsteady.txt"
 

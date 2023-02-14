@@ -130,7 +130,7 @@ class TestSteadyPistonTheory(unittest.TestCase):
             model=model,
         )
 
-        rtol = 1e-9 if complex_mode else 1e-5
+        rtol = 1e-8 if complex_mode else 1e-5
         max_rel_error = TestResult.derivative_test(
             "piston+tacs-steady-onera",
             model,

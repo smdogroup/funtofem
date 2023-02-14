@@ -266,7 +266,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 steps = 1000
 
         for time_index in range(1, steps + 1):
-            # Transfer displacements and temperatures
+            # Transfer displacements and temperatures from time_index - 1 => time_index
             for body in self.model.bodies:
                 body.transfer_disps(scenario, time_index - 1, jump=True)
                 body.transfer_temps(scenario, time_index - 1, jump=True)

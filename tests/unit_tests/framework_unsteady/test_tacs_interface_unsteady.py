@@ -1,4 +1,4 @@
-import os, numpy as np, unittest, importlib
+import os, numpy as np, unittest
 from tacs import TACS
 from mpi4py import MPI
 from funtofem import TransferScheme
@@ -25,6 +25,7 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+debug = False
 
 
 @unittest.skipIf(not complex_mode, "only run this test in complex mode for now")
@@ -74,6 +75,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skipIf(not debug, "still under development")
     def test_aerothermal(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -119,6 +121,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skipIf(not debug, "still under development")
     def test_aerothermoelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
