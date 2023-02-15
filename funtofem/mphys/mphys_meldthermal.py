@@ -269,9 +269,10 @@ class MeldHeatXfer(om.ExplicitComponent):
                         raise ValueError("forward mode requested but not implemented")
 
         if mode == "rev":
-
             if "q_conduct" in d_outputs:
-                dq_conduct = np.array(d_outputs["q_conduct"], dtype=TransferScheme.dtype)
+                dq_conduct = np.array(
+                    d_outputs["q_conduct"], dtype=TransferScheme.dtype
+                )
                 if "q_convect" in d_inputs:
 
                     prod = np.zeros(
