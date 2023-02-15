@@ -24,8 +24,7 @@ if not os.path.exists(tacs_folder):
 
 comm = MPI.COMM_WORLD
 complex_mode = TACS.dtype == complex and TransferScheme.dtype == complex
-debug = False
-
+debug = True
 
 @unittest.skipIf(not debug, "still under development")
 class TestUnsteadyPistonTheory(unittest.TestCase):
@@ -98,9 +97,10 @@ class TestUnsteadyPistonTheory(unittest.TestCase):
         # Build the model
         model = FUNtoFEMmodel("model")
         plate = Body.aeroelastic("plate")
-        Variable.structural("thickness").set_bounds(value=0.025).register_to(plate)
+        nsteps = 10
+        #Variable.structural("thickness").set_bounds(value=0.025).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("piston-unsteady", steps=10).include(
+        test_scenario = Scenario.unsteady("piston-unsteady", steps=nsteps).include(
             Function.ksfailure()
         )
         test_scenario.set_variable("aerodynamic", name="AOA", value=5.0)
@@ -113,8 +113,8 @@ class TestUnsteadyPistonTheory(unittest.TestCase):
             width_dir=np.array([0, 1, 0]),
             length=1.2,
             width=1.2,
-            n_length=10,
-            n_width=20,
+            n_length=3,
+            n_width=3,
         )
         piston_flow = PistonTheoryFlow(qinf=101325.0, mach=1.5, U_inf=411, flow_dt=0.01)
 
@@ -135,7 +135,7 @@ class TestUnsteadyPistonTheory(unittest.TestCase):
             comm,
             model,
             assembler,
-            integration_settings=TacsIntegrationSettings(dt=0.01, num_steps=10),
+            integration_settings=TacsIntegrationSettings(dt=0.01, num_steps=nsteps),
             tacs_comm=tacs_comm,
         )
         comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)

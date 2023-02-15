@@ -373,24 +373,24 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # end of solve loop
 
-        # evaluate the initial conditions
-        fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step=0)
-        fail = self.comm.allreduce(fail)
-        if fail != 0:
-            if self.comm.Get_rank() == 0:
-                print("Flow solver returned fail flag")
-            return fail
+        # # evaluate the initial conditions
+        # fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step=0)
+        # fail = self.comm.allreduce(fail)
+        # if fail != 0:
+        #     if self.comm.Get_rank() == 0:
+        #         print("Flow solver returned fail flag")
+        #     return fail
 
-        fail = self.solvers.structural.iterate_adjoint(
-            scenario, self.model.bodies, step=0
-        )
-        fail = self.comm.allreduce(fail)
-        if fail != 0:
-            if self.comm.Get_rank() == 0:
-                print("Structural solver returned fail flag")
-            return fail
+        # fail = self.solvers.structural.iterate_adjoint(
+        #     scenario, self.model.bodies, step=0
+        # )
+        # fail = self.comm.allreduce(fail)
+        # if fail != 0:
+        #     if self.comm.Get_rank() == 0:
+        #         print("Structural solver returned fail flag")
+        #     return fail
 
-        # extract coordinate derivative term from initial condition
-        self._extract_coordinate_derivatives(scenario, self.model.bodies, step=0)
+        # # extract coordinate derivative term from initial condition
+        # self._extract_coordinate_derivatives(scenario, self.model.bodies, step=0)
 
         return 0

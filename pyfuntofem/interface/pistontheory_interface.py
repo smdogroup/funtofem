@@ -129,6 +129,11 @@ class PistonInterface(SolverInterface):
         self.CD_mat = []
         self.nmat = []
         self.aero_nnodes = []
+
+        unsteady = False
+        for scenario in model.scenarios:
+            if not scenario.steady:
+                unsteady = True
         self.psi_P = None
 
         self.variables = model.get_variables()
@@ -149,15 +154,26 @@ class PistonInterface(SolverInterface):
             self.CD_mat = np.zeros(
                 (aero_nnodes, aero_nnodes)
             )  # Matrix for central difference
-            diag_ones = np.ones(aero_nnodes - 1)
-            diag_neg = -np.ones(aero_nnodes - 1)
-            self.CD_mat += np.diag(diag_ones, 1)
-            self.CD_mat += np.diag(diag_neg, -1)
-            self.CD_mat[0][0] = -2.0
-            self.CD_mat[0][1] = 2.0
-            self.CD_mat[-1][-2] = -2.0
-            self.CD_mat[-1][-1] = 2.0
-            self.CD_mat *= 1.0 / (2.0 * self.L / self.nL)
+            # . . . . . . . .
+            # . . . . . . . .
+            # . . . . . . . .
+            # first row FD
+            nrow = self.nw + 1
+            for iw in range(self.nw + 1):
+                self.CD_mat[iw][iw] = -2.0
+                self.CD_mat[iw][iw + nrow] = 2.0
+            # intermediate row FD
+            for iL in range(1, self.nL):
+                offset = iL * nrow
+                for iw in range(nrow):
+                    self.CD_mat[offset + iw][offset + iw - nrow] = -1.0
+                    self.CD_mat[offset + iw][offset + iw + nrow] = 1.0
+            # last row FD
+            iL = self.nL
+            offset = iL * nrow
+            for iw in range(nrow):
+                self.CD_mat[offset + iw][offset + iw - nrow] = -2.0
+                self.CD_mat[offset + iw][offset + iw] = 2.0
 
             self.nmat = np.zeros((3 * aero_nnodes, aero_nnodes))
             self.n = np.array([0, 0, 1])
@@ -195,11 +211,17 @@ class PistonInterface(SolverInterface):
             print(f"length dir = {self.length_dir}")
 
         class ScenarioData:
-            def __init__(self):
+            def __init__(self, steady: bool):
                 """
-                store unsteady state history for each body
+                store unsteady state and aero_load_ajp history for each body
                 """
-                self.w_hist = {}
+                # for storing aero_load_ajps to compute total derivatives
+                if steady:
+                    self.psi_P = None
+                    self.w_hist = None
+                else:
+                    self.psi_P = {}  # for each step index holds aero load ajp or psi_P
+                    self.w_hist = {}
 
             def initialize(self, bodies):
                 for body in bodies:
@@ -213,10 +235,9 @@ class PistonInterface(SolverInterface):
         self._has_unsteady = any(
             [not (scenario.steady) for scenario in model.scenarios]
         )
-        if self._has_unsteady:
-            self.scenario_data = {}
-            for scenario in model.scenarios:
-                self.scenario_data[scenario.id] = ScenarioData()
+        self.scenario_data = {}
+        for scenario in model.scenarios:
+            self.scenario_data[scenario.id] = ScenarioData(steady=scenario.steady)
 
     def initialize(self, scenario, bodies):
         """
@@ -335,7 +356,7 @@ class PistonInterface(SolverInterface):
 
     def compute_cl(self, scenario, bodies):
         for ibody, body in enumerate(bodies, 1):
-            aero_loads = body.get_aero_loads(scenario)
+            aero_loads = body.get_aero_loads(scenario, time_index=scenario.steps)
             lift = np.sum(aero_loads[2::3])
             cl = lift / (self.qinf * self.L * self.width)
         return cl
@@ -389,9 +410,15 @@ class PistonInterface(SolverInterface):
     def compute_cl_deriv(self, scenario, bodies):
         nsteps = 1 if scenario.steady else scenario.steps
         cl_grad = 0.0
-        for step in range(nsteps):
+        for step in range(1, nsteps + 1):  # sum psi_P^T dcl/dx for each time step
+            # get psi_P the - aero_loads_ajp
+            if scenario.steady:
+                psi_P = self.scenario_data[scenario.id].psi_P
+            else:
+                psi_P = self.scenario_data[scenario.id].psi_P[step]
+
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
+                aero_disps = body.get_aero_disps(scenario, time_index=step)
                 # w = body.aero_X[2::3] + self.nmat.T @ aero_disps
                 w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
                 dw_dxi = self.CD_mat @ w
@@ -440,16 +467,22 @@ class PistonInterface(SolverInterface):
                     @ dAeroX_dAlpha
                 )
 
-                cl_grad += dCL_dAlpha + self.psi_P.T @ dP_dAlpha
+                cl_grad += dCL_dAlpha + psi_P.T @ dP_dAlpha
 
         return cl_grad
 
     def compute_ks_deriv(self, scenario, bodies):
         nsteps = 1 if scenario.steady else scenario.steps
         ks_grad = 0.0
-        for step in range(nsteps):
+        for step in range(1, nsteps + 1):  # sum psi_P^T dks/dx for each time step
+            # get psi_P the - aero_loads_ajp
+            if scenario.steady:
+                psi_P = self.scenario_data[scenario.id].psi_P
+            else:
+                psi_P = self.scenario_data[scenario.id].psi_P[step]
+
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
+                aero_disps = body.get_aero_disps(scenario, time_index=step)
                 w = self.piston_aero_X[2::3] + self.nmat.T @ aero_disps
                 dw_dxi = self.CD_mat @ w
                 dw_dt = self.compute_dwdt(scenario, body, step)
@@ -481,7 +514,8 @@ class PistonInterface(SolverInterface):
                     @ dAeroX_dAlpha
                 )
 
-                ks_grad += self.psi_P.T @ dP_dAlpha
+                ks_grad += psi_P.T @ dP_dAlpha
+                print(f"step {step}, ks_grad = {ks_grad}")
         return ks_grad
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
@@ -522,8 +556,10 @@ class PistonInterface(SolverInterface):
 
         # Calculate aero_loads from aero_disps
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(scenario)
-            aero_loads = body.get_aero_loads(scenario)
+            aero_disps = body.get_aero_disps(scenario, time_index=step)
+            aero_loads = body.get_aero_loads(scenario, time_index=step)
+
+            print(f"step = {step}")
 
             if aero_disps is not None:
                 # Compute w for piston theory: [dx,dy,dz] DOT freestream normal
@@ -537,7 +573,7 @@ class PistonInterface(SolverInterface):
                 # First compute dw/dxi
                 dw_dxi = self.CD_mat @ w
 
-                # Set dw/dt = 0  for now (steady)
+                # get time derivative of w
                 dw_dt = self.compute_dwdt(scenario, body, step)
 
                 # Call function to compute pressure
@@ -689,14 +725,19 @@ class PistonInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             if aero_loads_ajp is not None:
-                self.psi_P = -aero_loads_ajp
+                psi_P = -aero_loads_ajp
+                print(f"psi_P stored at step {step}")
+                if scenario.steady:
+                    self.scenario_data[scenario.id].psi_P = psi_P
+                else:
+                    self.scenario_data[scenario.id].psi_P[step] = psi_P
 
         for ibody, body in enumerate(bodies, 1):
             # Extract the equivalent of dG/du_a^T psi_G from Piston Theory (dP/du_a^T psi_P)
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
-            aero_disps = body.get_aero_disps(scenario)
-            aero_loads = body.get_aero_loads(scenario)
+            aero_disps = body.get_aero_disps(scenario, time_index=step)
+            aero_loads = body.get_aero_loads(scenario, time_index=step)
 
             if aero_disps_ajp is not None:
                 dPdua = np.zeros(
@@ -717,7 +758,7 @@ class PistonInterface(SolverInterface):
                 )
 
                 for k, func in enumerate(scenario.functions):
-                    aero_disps_ajp[:, k] = -dPdua.T @ self.psi_P[:, k].flatten()
+                    aero_disps_ajp[:, k] = -dPdua.T @ psi_P[:, k].flatten()
 
                     if func.name == "cl":
                         aero_disps_ajp[:, k] += self.compute_dCLdua(

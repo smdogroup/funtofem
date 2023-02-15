@@ -34,18 +34,19 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
     def test_aeroelastic(self):
         # Build the model
+        nsteps = 10
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
         Variable.structural("thickness").set_bounds(
             lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("test", steps=10).include(
+        test_scenario = Scenario.unsteady("test", steps=nsteps).include(
             Function.ksfailure()
         )
         test_scenario.register_to(model)
 
-        integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=10)
+        integration_settings = TacsIntegrationSettings(dt=0.01, num_steps=nsteps)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
