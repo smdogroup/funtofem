@@ -2,6 +2,7 @@ __all__ = ["f2f_callback"]
 
 from tacs import constitutive, elements
 
+
 # define custom funtofem element callback for appropriate assignment of DVs and for elastic/thermoelastic shells
 def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=False):
     def element_callback(
@@ -94,10 +95,7 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                 E2 = C22 * (1 - nu12 * nu21)
                 G12 = G13 = G23 = C33
                 mat = constitutive.MaterialProperties(
-                    rho=matInfo.rho,
-                    E1=E1,
-                    E2=E2,
-                    nu12=nu12,
+                    rho=matInfo.rho, E1=E1, E2=E2, nu12=nu12,
                 )
 
             else:
