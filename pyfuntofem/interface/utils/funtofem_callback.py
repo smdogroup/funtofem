@@ -138,3 +138,5 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
         # Add scale for thickness dv
         scale = [1.0]
         return elemList, scale
+
+    return element_callback
