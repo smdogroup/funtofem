@@ -274,7 +274,6 @@ class MeldHeatXfer(om.ExplicitComponent):
                     d_outputs["q_conduct"], dtype=TransferScheme.dtype
                 )
                 if "q_convect" in d_inputs:
-
                     prod = np.zeros(
                         d_inputs["q_convect"].size, dtype=TransferScheme.dtype
                     )
