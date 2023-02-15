@@ -38,7 +38,11 @@ class AitkenRelaxation:
     """
 
     def __init__(
-        self, theta_init=0.125, theta_therm_init=0.125, theta_min=0.01, theta_max=1.0,
+        self, 
+        theta_init=0.125, 
+        theta_therm_init=0.125, 
+        theta_min=0.01, 
+        theta_max=1.0,
     ):
         """
         Construct an aitken relaxation setting object
