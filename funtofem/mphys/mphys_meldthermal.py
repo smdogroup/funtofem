@@ -74,8 +74,12 @@ class MeldTempXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         if not self.meld_initialized:
-            x_thermal_surface0 = np.array(inputs["x_thermal_surface0"], dtype=TransferScheme.dtype)
-            x_aero_surface0 = np.array(inputs["x_aero_surface0"], dtype=TransferScheme.dtype)
+            x_thermal_surface0 = np.array(
+                inputs["x_thermal_surface0"], dtype=TransferScheme.dtype
+            )
+            x_aero_surface0 = np.array(
+                inputs["x_aero_surface0"], dtype=TransferScheme.dtype
+            )
 
             self.meldThermal.setStructNodes(x_thermal_surface0)
             self.meldThermal.setAeroNodes(x_aero_surface0)
@@ -102,10 +106,13 @@ class MeldTempXfer(om.ExplicitComponent):
         if mode == "fwd":
             if "T_convect" in d_outputs:
                 if "T_conduct" in d_inputs:
+                    d_T_conduct = np.array(
+                        d_inputs["T_conduct"], dtype=TransferScheme.dtype
+                    )
 
-                    d_T_conduct = np.array(d_inputs["T_conduct"], dtype=TransferScheme.dtype)
-
-                    prod = np.zeros(d_outputs["T_convect"].size, dtype=TransferScheme.dtype)
+                    prod = np.zeros(
+                        d_outputs["T_convect"].size, dtype=TransferScheme.dtype
+                    )
 
                     meld.applydTdtS(d_T_conduct, prod)
                     d_outputs["T_convect"] += np.array(prod, dtype=float)
@@ -124,11 +131,15 @@ class MeldTempXfer(om.ExplicitComponent):
 
         if mode == "rev":
             if "T_convect" in d_outputs:
-                dT_convect = np.array(d_outputs["T_convect"], dtype=TransferScheme.dtype)
+                dT_convect = np.array(
+                    d_outputs["T_convect"], dtype=TransferScheme.dtype
+                )
                 if "T_conduct" in d_inputs:
                     # dT_convect/dT_conduct^T * psi = - dD/dT_conduct^T psi
 
-                    prod = np.zeros(d_inputs["T_conduct"].size, dtype=TransferScheme.dtype)
+                    prod = np.zeros(
+                        d_inputs["T_conduct"].size, dtype=TransferScheme.dtype
+                    )
 
                     meld.applydTdtSTrans(dT_convect, prod)
 
@@ -203,8 +214,12 @@ class MeldHeatXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         if not self.meld_initialized:
-            x_thermal_surface0 = np.array(inputs["x_thermal_surface0"], dtype=TransferScheme.dtype)
-            x_aero_surface0 = np.array(inputs["x_aero_surface0"], dtype=TransferScheme.dtype)
+            x_thermal_surface0 = np.array(
+                inputs["x_thermal_surface0"], dtype=TransferScheme.dtype
+            )
+            x_aero_surface0 = np.array(
+                inputs["x_aero_surface0"], dtype=TransferScheme.dtype
+            )
 
             self.meldThermal.setStructNodes(x_thermal_surface0)
             self.meldThermal.setAeroNodes(x_aero_surface0)
@@ -230,10 +245,13 @@ class MeldHeatXfer(om.ExplicitComponent):
         if mode == "fwd":
             if "q_conduct" in d_outputs:
                 if "q_convect" in d_inputs:
+                    d_q_convect = np.array(
+                        d_inputs["q_convect"], dtype=TransferScheme.dtype
+                    )
 
-                    d_q_convect = np.array(d_inputs["q_convect"], dtype=TransferScheme.dtype)
-
-                    prod = np.zeros(d_outputs["q_conduct"].size, dtype=TransferScheme.dtype)
+                    prod = np.zeros(
+                        d_outputs["q_conduct"].size, dtype=TransferScheme.dtype
+                    )
 
                     meld.applydQdqA(d_q_convect, prod)
                     d_outputs["q_conduct"] += np.array(prod, dtype=np.float64)
@@ -256,7 +274,9 @@ class MeldHeatXfer(om.ExplicitComponent):
                 dq_conduct = np.array(d_outputs["q_conduct"], dtype=TransferScheme.dtype)
                 if "q_convect" in d_inputs:
 
-                    prod = np.zeros(d_inputs["q_convect"].size, dtype=TransferScheme.dtype)
+                    prod = np.zeros(
+                        d_inputs["q_convect"].size, dtype=TransferScheme.dtype
+                    )
 
                     meld.applydQdqATrans(dq_conduct, prod)
 
