@@ -21,6 +21,7 @@ from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
+
 if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
 
@@ -28,11 +29,11 @@ np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 
 results_folder = os.path.join(os.getcwd(), "results")
-if comm.rank == 0:
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+if not os.path.exists(results_folder) and comm.rank == 0:
+    os.mkdir(results_folder)
 
 
+@unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
