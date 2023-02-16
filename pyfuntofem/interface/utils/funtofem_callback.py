@@ -95,7 +95,10 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                 E2 = C22 * (1 - nu12 * nu21)
                 G12 = G13 = G23 = C33
                 mat = constitutive.MaterialProperties(
-                    rho=matInfo.rho, E1=E1, E2=E2, nu12=nu12,
+                    rho=matInfo.rho,
+                    E1=E1,
+                    E2=E2,
+                    nu12=nu12,
                 )
 
             else:
@@ -130,6 +133,7 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                     elem = elements.Quad4ThermalShell(transform, con)
                 else:
                     elem = elements.Quad4Shell(transform, con)
+                elemList.append(elem)
             else:
                 print("Uh oh, '%s' not recognized" % (elemDescript))
                 elemList.append(elem)
