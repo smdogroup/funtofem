@@ -16,6 +16,8 @@ class TransferSettings:
         beta: float = 0.5,
         isym: int = -1,
         options: dict = {},
+        thermal_npts: int = None,
+        thermal_beta: float = None,
     ):
         """
         Transfer settings for the fully-coupled funtofem analysis across different fluid, structural meshes
@@ -27,6 +29,8 @@ class TransferSettings:
         beta: the exponential decay factor used to average loads, displacements, etc.
         isym: whether to search for symmetries in the geometry for transfer
         options: additional options dictionary like for beam and rbf basis functions
+        thermal_pts: optional setting for number of nearest neighbors for the thermal transfer scheme, defaults to same as elastic scheme
+        thermal_beta: optional setting for exponential decay factor for thermal scheme, defaults to elastic value
         """
         assert elastic_scheme in TransferSettings.ELASTIC_SCHEMES
         assert thermal_scheme in TransferSettings.THERMAL_SCHEMES
@@ -36,6 +40,15 @@ class TransferSettings:
         self.beta = beta
         self.isym = isym
         self.options = options
+        if thermal_npts is None:
+            self.thermal_npts = self.npts
+        else:
+            self.thermal_npts = thermal_npts
+
+        if thermal_beta is None:
+            self.thermal_beta = self.beta
+        else:
+            self.thermal_beta = thermal_beta
 
     def scheme(self, new_scheme):
         """
