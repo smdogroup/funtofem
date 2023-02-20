@@ -1,5 +1,6 @@
 __all__ = ["f2f_callback"]
 
+from tacs import constitutive, elements
 
 # define custom funtofem element callback for appropriate assignment of DVs and for elastic/thermoelastic shells
 def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=False):
@@ -131,9 +132,9 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                     elem = elements.Quad4ThermalShell(transform, con)
                 else:
                     elem = elements.Quad4Shell(transform, con)
+                elemList.append(elem)
             else:
                 print("Uh oh, '%s' not recognized" % (elemDescript))
-                elemList.append(elem)
 
         # Add scale for thickness dv
         scale = [1.0]
