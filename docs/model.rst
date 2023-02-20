@@ -48,6 +48,8 @@ in the order added to the body/scenario.**
                                          lower=var.lower/var.scaling,
                                          upper=var.upper/var.scaling)
 
+Shortcuts for the 
+
 Optimizers such as PyOpt will typically provide a list of new values at each design point. 
 These can be set back into model type using :func:`~funtofem_model.FUNtoFEMmodel.set_variables`.
 The variables can be pre-scaled and passed directing into this call, or with the scale argument set to 

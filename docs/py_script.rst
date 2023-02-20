@@ -29,15 +29,6 @@ The next section of the Python script handles the MPI set-up.
    n_tacs_procs = 1
    comm = MPI.COMM_WORLD
 
-   world_rank = comm.Get_rank()
-   if world_rank < n_tacs_procs:
-        color = 55
-        key = world_rank
-   else:
-        color = MPI.UNDEFINED
-        key = world_rank
-   tacs_comm = comm.Split(color, key)
-
 Model Architecture
 ==================
 FUNtoFEM uses model classes to organize the design and coupling data related to a given problem. 
@@ -70,6 +61,33 @@ Bodies, scenarios, and design variables can then be added to the model. For exam
      # Add the body to the model after the variables
      model.add_body(body0)
 
+Shortcuts to creating bodies, scenarios, and a FUNtoFEMmodel are available with new formulation. Classmethods
+for variables include :func:`~Variable.structural`, :func:`~Variable.aerodynamic`, :func:`~Variable.shape`.
+Classmethods for bodies include :func:`~Body.aeroelastic`, :func:`~Body.aerothermal`, :func:`~Body.aerothermoelastic`.
+Classmethods for scenarios include :func:`~Scenario.steady`, :func:`~Scenario.unsteady`. Classmethods for functions
+include :func:`~Function.ksfailure`, :func:`~Function.mass`, :func:`~Function.lift`, :func:`~Function.drag`. Registration methods
+are available for bodies and scenarios to the model, variables to the body or scenario, and functions to be included in a scenario.
+
+.. code-block:: python
+
+     # Create model
+     model = FUNtoFEMmodel('myModel')
+
+     # Create a body called 'body0'
+     body0 = Body.aeroelastic('body0', boundary=1)
+
+     # Add thickness as a structural design variable to the body
+     Variable.structural('thickness').set_bounds(
+          lower=1e-3, value=0.025, upper=1.0
+     ).register_to(body0)
+
+     # register body to model
+     body0.register_to(model)
+
+     # Add a 'cruise' scenario
+     cruise = Scenario.steady('cruise', steps=20).include(Function.drag()).include(Function.mass())
+     cruise.register_to(model)
+
 Discipline Solvers
 ==================
 After the model has been defined, instantiate the specific discipline solvers with a call to 
@@ -78,10 +96,12 @@ Fun3dInterface for the fluid solver and a call to your structural model (e.g., m
 .. code-block:: python
 
      # Instantiate the flow and structural solvers
-     solvers = {}
-     solvers['flow'] = Fun3dInterface(comm, model, flow_dt=1.0, qinf=1.0, 
-          thermal_scale=1.0, fun3d_dir=None, forward_options=None, adjoint_options=None)
-     solvers['structural'] = modelTACS(comm, tacs_comm, model, n_tacs_procs)
+     comm = MPI.COMM_WORLD
+     bdf_filename = os.path.join(os.getcwd(), "meshes", "nastran_CAPS.dat") # dat file from tacsAIM includes .bdf file + constraints, loads, dvs
+     solvers = SolverManager(comm)
+     solvers.flow = Fun3dInterface(comm, model, fun3d_dir=None, forward_options=None, adjoint_options=None)
+     solvers.flow.set_units(flow_dt=1.0, qinf=1.0)
+     solvers.structural = TacsSteadyInterface.create_from_bdf(model, comm, n_tacs_procs=1, bdf_filename=bdf_filename)
 
 Driver Set-up
 =============
@@ -90,14 +110,13 @@ The problem driver is instantiated with a call to FUNtoFEMnlbgs.
 .. code-block:: python
 
      # Specify the transfer scheme options
-     options = {'scheme': 'meld', 'beta': 0.5, 'npts': 50, 'isym': 1}
+     transfer_settings = TransferSettings(
+          elastic_scheme="meld", thermal_scheme="meld",
+          beta=0.5, npts=50, isym=1
+     )
 
      # Instantiate the driver
-     struct_master = 0
-     aero_master = 0
-     driver = FUNtoFEMnlbgs(solvers, comm, tacs_comm, struct_master, comm, 
-                    aero_master, model=model, transfer_options=options, 
-                    theta_init=0.5, theta_min=0.1)
+     driver = FUNtoFEMnlbgs(solvers, transfer_settings=transfer_settings, model=model)
 
 Driver Call
 ===========
