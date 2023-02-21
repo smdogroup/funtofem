@@ -558,8 +558,8 @@ class Body(Base):
                     aero_comm,
                     aero_root,
                     transfer_settings.isym,
-                    transfer_settings.npts,
-                    transfer_settings.beta,
+                    transfer_settings.thermal_npts,
+                    transfer_settings.thermal_beta,
                 )
             else:
                 print("Error: Unknown thermal transfer scheme for body")
