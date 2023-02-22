@@ -55,6 +55,8 @@ class FUNtoFEMmodel(object):
         self.scenarios = []
         self.bodies = []
 
+        self._tacs_model = None
+
     def add_body(self, body):
         """
         Add a body to the model. The body must be completely defined before adding to the model
@@ -377,3 +379,11 @@ class FUNtoFEMmodel(object):
                 fp.write(data)
 
         return
+
+    @property
+    def tacs_model(self):
+        return self._tacs_model
+
+    @tacs_model.setter
+    def tacs_model(self, m_tacs_model):
+        self._tacs_model = m_tacs_model

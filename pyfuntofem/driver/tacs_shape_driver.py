@@ -27,6 +27,7 @@ __all__ = ["TacsSteadyShapeDriver"]
 from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
 from .tacs_driver import TacsSteadyAnalysisDriver
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
+from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
 import os
@@ -39,18 +40,16 @@ class TacsSteadyShapeDriver:
         self,
         comm,
         model,
+        flow_solver,
         n_tacs_procs,
         tacs_aim,
-        transfer_settings,
         initial_bdf=None,
-        prime_loads=True,
     ):
         self.comm = comm
         self.tacs_aim = tacs_aim
         self.model = model
         self.n_tacs_procs = n_tacs_procs
         self.flow_solver = flow_solver
-        self.transfer_settings = transfer_settings
         self.initial_bdf = initial_bdf
 
         # temp interface, driver attributes
@@ -61,10 +60,6 @@ class TacsSteadyShapeDriver:
         self.shape_variables = [
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
-
-        # prime the driver upon construction
-        if prime_loads:
-            self._prime_driver()
 
     @classmethod
     def prime_loads(cls, funtofem_driver, n_tacs_procs, tacs_aim):
@@ -77,7 +72,6 @@ class TacsSteadyShapeDriver:
             model=funtofem_driver.model,
             n_tacs_procs=n_tacs_procs,
             tacs_aim=tacs_aim,
-            transfer_settings=funtofem_driver.transfer_settings,
             prime_loads=False,
         )
 
