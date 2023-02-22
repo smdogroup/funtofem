@@ -15,11 +15,17 @@ from bdf_test_utils import thermoelasticity_callback, elasticity_callback
 
 np.random.seed(1234567)
 
+comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
+if comm.rank == 0:  # make the results folder if doesn't exist
+    results_folder = os.path.join(base_dir, "results")
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
 
-class TestOnewayDriverNoShape(unittest.TestCase):
+
+class TestTacsOnewayDriver(unittest.TestCase):
 
     """
     This class performs unit test on the oneway-coupled TacsSteadyAnalysisDriver
@@ -28,6 +34,7 @@ class TestOnewayDriverNoShape(unittest.TestCase):
     """
 
     FILENAME = "oneway-driver.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aeroelastic(self):
         # build the model and driver
@@ -66,7 +73,7 @@ class TestOnewayDriverNoShape(unittest.TestCase):
             "oneway-aeroelastic",
             model,
             oneway_driver,
-            TestOnewayDriverNoShape.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -114,7 +121,7 @@ class TestOnewayDriverNoShape(unittest.TestCase):
             "oneway-aerothermal",
             model,
             oneway_driver,
-            TestOnewayDriverNoShape.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -162,7 +169,7 @@ class TestOnewayDriverNoShape(unittest.TestCase):
             "oneway-aerothermoelastic",
             model,
             oneway_driver,
-            TestOnewayDriverNoShape.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -170,5 +177,5 @@ class TestOnewayDriverNoShape(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestOnewayDriverNoShape.FILENAME, "w").close()
+    open(TestTacsOnewayDriver.FILEPATH, "w").close()
     unittest.main()

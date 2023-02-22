@@ -101,8 +101,8 @@ class FUNtoFEMmodel(object):
             for var in struct_variables:
                 # check if matching shell property exists
                 matching_prop = False
-                for prop in self.tacs_model.tacs_aim.properties:
-                    if prop.name == var.name:
+                for prop in self.tacs_model.tacs_aim._properties:
+                    if prop.caps_group == var.name:
                         matching_prop = True
                         break
 
@@ -125,7 +125,6 @@ class FUNtoFEMmodel(object):
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
             for var in shape_variables:
-                # TODO : check if already have shape variable in tacs model
                 matching_despmtr = False
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:

@@ -43,8 +43,7 @@ class TacsOnewayDriver:
         nprocs=None,
     ):
         """
-        TODO : only supports steady problems right now
-        build the shape driver, assumes you have already primed the loads (see class method to assist with that)
+        build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
 
         Parameters
         """
@@ -102,14 +101,18 @@ class TacsOnewayDriver:
         return cls(funtofem_driver.solvers, funtofem_driver.model)
 
     @classmethod
-    def prime_loads_shape(cls, flow_solver, n_tacs_procs, tacs_aim, transfer_settings):
+    def prime_loads_shape(
+        cls, flow_solver, tacs_aim, transfer_settings, nprocs, bdf_file=None
+    ):
         """
         used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
         """
 
         # generate the geometry if necessary
-        tacs_aim.pre_analysis()
-        bdf_file = tacs_aim.dat_file_path
+        make_bdf = bdf_file is None
+        if make_bdf:
+            tacs_aim.pre_analysis()
+            bdf_file = tacs_aim.dat_file_path
 
         # copy comm and model from other objects
         comm = tacs_aim.comm
@@ -121,7 +124,7 @@ class TacsOnewayDriver:
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model=model,  # copy model from flow solver
             comm=comm,
-            nprocs=n_tacs_procs,
+            nprocs=nprocs,
             bdf_file=bdf_file,
             prefix=tacs_aim.analysis_dir,
         )
@@ -131,22 +134,23 @@ class TacsOnewayDriver:
             solvers, transfer_settings=transfer_settings, model=model
         ).solve_forward()
 
-        # initialize adjoint variables for each body to initialize struct_shape_term
-        for scenario in model.scenarios:
-            for body in model.bodies:
-                body.initialize_adjoint_variables(scenario)
+        if make_bdf:
+            # initialize adjoint variables for each body to initialize struct_shape_term
+            for scenario in model.scenarios:
+                for body in model.bodies:
+                    body.initialize_adjoint_variables(scenario)
 
-        # write the model sensitivity file with zero derivatives
-        model.write_sensitivity_file(
-            comm=comm,
-            filename=tacs_aim.sens_file_path,
-            discipline="structural",
-        )
+            # write the model sensitivity file with zero derivatives
+            model.write_sensitivity_file(
+                comm=comm,
+                filename=tacs_aim.sens_file_path,
+                discipline="structural",
+            )
 
-        # run postAnalysis to prevent CAPS_DIRTY error
-        tacs_aim.post_analysis()
+            # run postAnalysis to prevent CAPS_DIRTY error
+            tacs_aim.post_analysis()
 
-        return cls(solvers, model, nprocs=n_tacs_procs, tacs_aim=tacs_aim)
+        return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
 
     @property
     def manager(self, hot_start: bool = False):
@@ -212,11 +216,10 @@ class TacsOnewayDriver:
         """
 
         if self.change_shape:
-            # set the new shape variables into the model
-            # TODO : use tacs model update design method here
-            if self.root_proc:
-                for var in self.shape_variables:
-                    self.tacs_aim.geometry.despmtr[var.name].value = var.value
+            # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
+            input_dict = {var.name: var.value for var in self.model.variables}
+            self.model.tacs_model.update_design(input_dict)
+            self.tacs_aim.setup_aim()
 
             # build the new structure geometry
             self.tacs_aim.pre_analysis()
@@ -226,7 +229,7 @@ class TacsOnewayDriver:
             self.tacs_interface = TacsSteadyInterface.create_from_bdf(
                 model=self.model,
                 comm=self.comm,
-                nprocs=self.n_tacs_procs,
+                nprocs=self.nprocs,
                 bdf_file=self.tacs_aim.dat_file_path,
                 prefix=self.tacs_aim.analysis_dir,
             )
