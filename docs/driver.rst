@@ -124,6 +124,7 @@ Running the driver
 ------------------
 Once the model, solver dictionary, transfer settings are created, you can instantiate the driver and run the coupled forward and adjoint solvers.
 Often times, we use the default comm manager and don't specify it as follows.
+
 .. code-block:: python
 
    driver = FUNtoFEMnlbgs(solvers, transfer_settings=transfer_settings, model=model)
@@ -151,14 +152,21 @@ Driver Classes
 
 FUNtoFEM Driver Class
 =====================
-.. currentmodule:: pyfuntofem.funtofem_driver
+.. currentmodule:: pyfuntofem.driver
 
 .. autoclass:: FUNtoFEMDriver
     :members:
 
 FUNtoFEM NLBGS Driver Class
 ===========================
-.. currentmodule:: pyfuntofem.funtofem_nlbgs_driver
+.. currentmodule:: pyfuntofem.driver
 
 .. autoclass:: FUNtoFEMnlbgs
+    :members:
+
+TACS Oneway-Coupled Driver Class
+================================
+.. currentmodule:: pyfuntofem.driver
+
+.. autoclass:: TacsSteadyAnalysisDriver
     :members:

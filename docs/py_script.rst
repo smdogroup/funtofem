@@ -103,8 +103,8 @@ Fun3dInterface for the fluid solver and a call to your structural model (e.g., m
      solvers.flow.set_units(flow_dt=1.0, qinf=1.0)
      solvers.structural = TacsSteadyInterface.create_from_bdf(model, comm, n_tacs_procs=1, bdf_filename=bdf_filename)
 
-Driver Set-up
-=============
+Building a Coupled Funtofem Driver
+==================================
 The problem driver is instantiated with a call to FUNtoFEMnlbgs.
 
 .. code-block:: python
@@ -117,6 +117,27 @@ The problem driver is instantiated with a call to FUNtoFEMnlbgs.
 
      # Instantiate the driver
      driver = FUNtoFEMnlbgs(solvers, transfer_settings=transfer_settings, model=model)
+
+Building a Tacs Oneway-Coupled Driver
+=====================================
+Once a coupled driver is created with the ability to compute aerodynamic loads, the
+class method :func:`~TacsSteadyAnalysisDriver.prime_loads` is used to create the driver.
+It automatically runs a forward analysis of the coupled driver, saves the aero loads and heat
+fluxes as states in the bodies and constructs the driver. An optimization manager for pyoptsparse
+or an openmdao component can then be made to proceed to optimization.
+
+.. code-block:: python
+
+     # option 1 use class method to prime loads
+     tacs_driver = TacsSteadyAnalysisDriver.prime_loads(funtofem_driver)
+
+     # option 2 prime the loads yourself
+     funtofem_driver.solve_forward()
+     tacs_driver = TacsSteadyAnalysisDriver(solvers, model)
+
+     # then use solve_forward and solve_adjoint inside an optimizer function
+     tacs_driver.solve_forward()
+     tacs_driver.solve_adjoint()
 
 Driver Call
 ===========
