@@ -11,12 +11,8 @@ In the following code excerpt, modelTACS refers to a Python class which defines 
 .. code-block:: python
 
    import os, sys
-   from pyfuntofem.model import *
-   from pyfuntofem.driver import *
-   from pyfuntofem.fun3d_interface import *
-
-   from tacs_model import modelTACS
-   from pyOpt import Optimization
+   from pyfuntofem import *
+   from pyoptsparse import SNOPT, Optimization
    from mpi4py import MPI
 
 MPI
@@ -26,7 +22,6 @@ The next section of the Python script handles the MPI set-up.
 
 .. code-block:: python
 
-   n_tacs_procs = 1
    comm = MPI.COMM_WORLD
 
 Model Architecture
@@ -70,34 +65,34 @@ are available for bodies and scenarios to the model, variables to the body or sc
 
 .. code-block:: python
 
-     # Create model
+     # Create model and body
      model = FUNtoFEMmodel('myModel')
-
-     # Create a body called 'body0'
-     body0 = Body.aeroelastic('body0', boundary=1)
+     body = Body.aeroelastic('body0', boundary=1)
 
      # Add thickness as a structural design variable to the body
      Variable.structural('thickness').set_bounds(
           lower=1e-3, value=0.025, upper=1.0
-     ).register_to(body0)
+     ).register_to(body)
 
      # register body to model
-     body0.register_to(model)
+     body.register_to(model)
 
-     # Add a 'cruise' scenario
+     # Add a 'cruise' scenario and register to model
      cruise = Scenario.steady('cruise', steps=20).include(Function.drag()).include(Function.mass())
      cruise.register_to(model)
 
 Discipline Solvers
 ==================
 After the model has been defined, instantiate the specific discipline solvers with a call to 
-Fun3dInterface for the fluid solver and a call to your structural model (e.g., modelTACS ) for the structural solver.
+Fun3dInterface for the fluid solver and a call to TacsSteadyInterface or TacsUnsteadyinterface
+for the structural solver.
 
 .. code-block:: python
 
      # Instantiate the flow and structural solvers
      comm = MPI.COMM_WORLD
      bdf_filename = os.path.join(os.getcwd(), "meshes", "nastran_CAPS.dat") # dat file from tacsAIM includes .bdf file + constraints, loads, dvs
+
      solvers = SolverManager(comm)
      solvers.flow = Fun3dInterface(comm, model, fun3d_dir=None, forward_options=None, adjoint_options=None)
      solvers.flow.set_units(flow_dt=1.0, qinf=1.0)
@@ -115,8 +110,8 @@ The problem driver is instantiated with a call to FUNtoFEMnlbgs.
           beta=0.5, npts=50, isym=1
      )
 
-     # Instantiate the driver
-     driver = FUNtoFEMnlbgs(solvers, transfer_settings=transfer_settings, model=model)
+     # Instantiate the funtofem coupled driver
+     funtofem_driver = FUNtoFEMnlbgs(solvers, transfer_settings=transfer_settings, model=model)
 
 Building a Tacs Oneway-Coupled Driver
 =====================================
