@@ -12,11 +12,11 @@ Methods on this page with **[driver call]** and **[model call]** are calls that 
 
 Assembling the model
 --------------------
-A model is assembled using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
-:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. See `bodies and scenarios`_ for details about their creation.
+One way to build a model is using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
+:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. New classmethods are available for these classes
+which provide shortcuts to their creation. See `bodies and scenarios`_ for details about their creation.
 
 The bodies and scenarios are kept in lists in the same order that they are input.
-
 
 Exchanging the model data with an optimizer
 -------------------------------------------
@@ -47,6 +47,8 @@ in the order added to the body/scenario.**
        opt_prob.addVar(var.name,type='c',value=var.value/var.scaling,
                                          lower=var.lower/var.scaling,
                                          upper=var.upper/var.scaling)
+
+Shortcuts for the 
 
 Optimizers such as PyOpt will typically provide a list of new values at each design point. 
 These can be set back into model type using :func:`~funtofem_model.FUNtoFEMmodel.set_variables`.
@@ -135,7 +137,7 @@ The following is a pseudo code would be a gradient evaluation for pyOpt.
 FUNtoFEM Model Class
 ====================
 
-.. currentmodule:: pyfuntofem.funtofem_model
+.. currentmodule:: pyfuntofem.model
 
 .. autoclass:: FUNtoFEMmodel
     :members:
@@ -158,7 +160,7 @@ An example of a scenario variable could be flow variables such as angle of attac
 
 .. figure:: images/scenario.png
 
-.. currentmodule:: pyfuntofem.scenario
+.. currentmodule:: pyfuntofem.model.scenario
 
 .. autoclass:: Scenario
    :members:
@@ -173,7 +175,7 @@ The aero_loads array is of size 3 x aero_nnodes.
 
 .. figure:: images/body.png
 
-.. currentmodule:: pyfuntofem.body
+.. currentmodule:: pyfuntofem.model.body
 
 .. autoclass:: Body
    :members:
@@ -228,7 +230,7 @@ allows the user to change attributes of existing `variables`_ in the body or sce
 For example, if the shape parameterization created a specific number of variables, but you do not want to use all 
 of them in the optimization, you can set the variable to be inactive.
 
-.. currentmodule:: pyfuntofem.base
+.. currentmodule:: pyfuntofem.model
 
 .. autoclass:: Base
    :members:
@@ -248,7 +250,7 @@ the variable but it won't be returned when calling :func:`~funtofem_model.FUNtoF
 When the variable is added to a :class:`~scenario.Scenario` or :class:`~body.Body` using :func:`~base.Base.add_variable`, 
 the vartype argument specifies what discipline the variable is associated with.
 
-.. currentmodule:: pyfuntofem.variable
+.. currentmodule:: pyfuntofem.model
 
 .. autoclass:: Variable
    :members:
@@ -268,7 +270,7 @@ For functions that do not need an adjoint, such as structural mass, the boolean,
 Some functions are associated with particular bodies, for instance, if you wanted the thrust or torque of a rotor 
 without including that of the sting model, you can use the body argument to pass that information to the solver.
 
-.. currentmodule:: pyfuntofem.function
+.. currentmodule:: pyfuntofem.model
 
 .. autoclass:: Function
    :members:
