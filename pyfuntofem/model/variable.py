@@ -139,7 +139,7 @@ class Variable(object):
     @classmethod
     def aerodynamic(cls, name: str, value=0.0):
         """
-        create an aerodynamic analysis variable
+        Create an aerodynamic analysis variable.
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, value=value, analysis_type="aerodynamic")
