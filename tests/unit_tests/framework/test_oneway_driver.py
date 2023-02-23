@@ -19,14 +19,13 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
+results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
-    results_folder = os.path.join(base_dir, "results")
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
 
 class TestTacsOnewayDriver(unittest.TestCase):
-
     """
     This class performs unit test on the oneway-coupled TacsSteadyAnalysisDriver
     which uses fixed aero loads

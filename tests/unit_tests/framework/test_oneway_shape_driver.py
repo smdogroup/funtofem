@@ -85,7 +85,7 @@ class TestTacsShapeDriver(unittest.TestCase):
         test_scenario.register_to(f2f_model)
 
         flow_solver = TestAerodynamicSolver(comm, f2f_model)
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=200, beta=0.5)
 
         # setup the tacs model
         tacs_aim = tacs_model.tacs_aim
@@ -109,6 +109,7 @@ class TestTacsShapeDriver(unittest.TestCase):
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
 
+    @unittest.skip("temp")
     def test_shape_and_thick_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")

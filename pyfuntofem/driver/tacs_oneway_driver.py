@@ -371,11 +371,13 @@ class TacsOnewayDriver:
             self.tacs_interface.iterate_adjoint(scenario, self.model.bodies, step=0)
             self.tacs_interface.post_adjoint(scenario, self.model.bodies)
 
+            # transfer loads adjoint since fa -> fs has shape dependency
+            if self.change_shape:
+                for body in self.model.bodies:
+                    body.transfer_loads_adjoint(scenario)
+
             # call get function gradients to store  the gradients from tacs
             self.tacs_interface.get_function_gradients(scenario, self.model.bodies)
-            self.tacs_interface.get_coordinate_derivatives(
-                scenario, self.model.bodies, step=0
-            )
 
     def _zero_tacs_data(self):
         """
