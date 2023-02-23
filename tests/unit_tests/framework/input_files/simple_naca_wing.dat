@@ -506,6 +506,6 @@ DVPREL1*            600          PSHELL               1               T *0
 *0                                                   0.                 *1      
 *1                    7              1. 
 
-INCLUDE 'nastran_CAPS.bdf'
+INCLUDE 'simple_naca_wing.bdf'
 
 ENDDATA
