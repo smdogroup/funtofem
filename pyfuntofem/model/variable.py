@@ -194,4 +194,4 @@ class Variable(object):
         elif isinstance(obj, caps2tacs.ShapeVariable):
             return Variable.shape(name=obj.name, value=obj.value)
         else:
-            raise AssertionError("Input caps2tacs object not appropriate type..")
+            raise AssertionError("Input caps2tacs object not appropriate type.")
