@@ -32,7 +32,7 @@ if tacs_loader is not None:
 
 class Variable(object):
     """
-    Design variable type for FUNtoFEM
+    Design variable type for FUNtoFEM. Valid variable types are "structural", "aerodynamic", and "shape". For example, invoked by "Variable.structural('thickness', 0.1)"
     """
 
     ANALYSIS_TYPES = ["structural", "aerodynamic", "shape"]
