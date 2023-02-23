@@ -32,7 +32,7 @@ from tacs import TACS, pytacs, functions
 from .utils import f2f_callback
 from ._solver_interface import SolverInterface
 from typing import TYPE_CHECKING
-import os
+import os, numpy as np
 
 
 class IntegrationSettings:
@@ -929,15 +929,27 @@ class TacsUnsteadyInterface(SolverInterface):
             # get list of local node IDs with global size, with -1 for nodes not owned by this proc
             num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
             bdfNodes = range(num_nodes)
-            local_struct_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+            tacs_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
                 bdfNodes, nastranOrdering=False
             )
 
-            # convert back to global IDs owned by this proc
-            global_owned_struct_ids = [
-                inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
-            ]
-            struct_id = global_owned_struct_ids
+            """
+            tacs ids are list of [-1, -1, tacs_id1, -1, tacs_id2, ...]
+            -1 corresponds to nastran nodes not owned by this processor
+            idx is nastran_id-1 and value if tacs_id we want to reverse this
+            """
+
+            # get number of non -1 tacs ids, total number of actual tacs_ids
+            n_tacs_ids = len([tacs_id for tacs_id in tacs_ids if tacs_id != -1])
+
+            # reverse the tacs id to nastran ids map since we want tacs_id => nastran_id - 1
+            nastran_ids = np.zeros((n_tacs_ids), dtype=np.int64)
+            for nastran_id_m1, tacs_id in enumerate(tacs_ids):
+                if tacs_id != -1:
+                    nastran_ids[tacs_id] = int(nastran_id_m1 + 1)
+
+            # convert back to list of nastran_ids owned by this processor in order
+            struct_id = list(nastran_ids)
 
         # We might need to clean up this code. This is making educated guesses
         # about what index the temperature is stored. This could be wrong if things
