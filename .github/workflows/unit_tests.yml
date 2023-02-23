@@ -82,6 +82,7 @@ jobs:
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis -q -y;
+          conda install -c conda-forge petsc=3.12 petsc4py -q -y;
           pip install cython;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
