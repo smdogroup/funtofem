@@ -101,7 +101,7 @@ jobs:
           make ${{ matrix.INTERFACE }};
 
       - name : Install optional ESP/CAPS
-        if: {{ matrix.NAME == 'Real' }}
+        if: ${{ matrix.NAME == 'Real' }}
         run: |
           echo "=============================================================";
           echo "Install ESP/CAPS";
