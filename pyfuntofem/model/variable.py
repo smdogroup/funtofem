@@ -147,7 +147,7 @@ class Variable(object):
     @classmethod
     def shape(cls, name: str, value=0.0):
         """
-        create a shape analysis variable
+        Create a shape analysis variable.
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, value=value, analysis_type="shape")
