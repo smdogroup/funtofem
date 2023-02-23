@@ -34,6 +34,7 @@ class TestTacsShapeDriver(unittest.TestCase):
     FILENAME = "oneway_shape_driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
+    @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -110,7 +111,6 @@ class TestTacsShapeDriver(unittest.TestCase):
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
 
-    @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_and_thick_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")

@@ -357,22 +357,6 @@ class FUNtoFEMmodel(object):
 
         return gradients
 
-    @property
-    def functions(self):
-        return self.get_functions()
-
-    @property
-    def gradients(self):
-        return self.get_function_gradients()
-
-    @property
-    def function_names(self):
-        return [func.name for func in self.functions]
-
-    @property
-    def variables(self):
-        return self.get_variables()
-
     def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
         """
         Write the sensitivity file.

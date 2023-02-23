@@ -921,22 +921,30 @@ class TacsSteadyInterface(SolverInterface):
             # get list of local node IDs with global size, with -1 for nodes not owned by this proc
             num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
             bdfNodes = range(num_nodes)
-            tacs_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+            local_tacs_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
                 bdfNodes, nastranOrdering=False
             )
 
             """
-            tacs ids are list of [-1, -1, tacs_id1, -1, tacs_id2, ...]
-            -1 corresponds to nastran nodes not owned by this processor
-            idx is nastran_id-1 and value if tacs_id we want to reverse this
+            the local_tacs_ids list maps nastran nodes to tacs indices with:
+                local_tacs_ids[nastran_node-1] = local_tacs_id
+            Only a subset of all tacs ids are owned by each processor
+                note: tacs_ids in [0, #local_tacs_ids], #local_tacs_ids <= nnodes
+                for nastran nodes not on this processor, local_tacs_id[nastran_node-1] = -1
+
+            The next lines of code invert this map to the list 'struct_id' with:
+                struct_id[local_tacs_id] = nastran_node
+
+            This is then later used by funtofem_model.write_sensitivity_file method to write
+            ESP/CAPS nastran_CAPS.sens files for the tacsAIM to compute shape derivatives
             """
 
             # get number of non -1 tacs ids, total number of actual tacs_ids
-            n_tacs_ids = len([tacs_id for tacs_id in tacs_ids if tacs_id != -1])
+            n_tacs_ids = len([tacs_id for tacs_id in local_tacs_ids if tacs_id != -1])
 
             # reverse the tacs id to nastran ids map since we want tacs_id => nastran_id - 1
             nastran_ids = np.zeros((n_tacs_ids), dtype=np.int64)
-            for nastran_id_m1, tacs_id in enumerate(tacs_ids):
+            for nastran_id_m1, tacs_id in enumerate(local_tacs_ids):
                 if tacs_id != -1:
                     nastran_ids[tacs_id] = int(nastran_id_m1 + 1)
 

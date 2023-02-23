@@ -46,6 +46,15 @@ class TacsOnewayDriver:
         build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
 
         Parameters
+        ----------
+        solvers: :class:`~interface.solver_manager.SolverManager`
+            The various disciplinary solvers.
+        model: :class:`~funtofem_model.FUNtoFEMmodel`
+            The model containing the design data.
+        tacs_aim: `caps2tacs.TacsAim`
+            Interface object for TACS and ESP/CAPS, wraps the tacsAIM.
+        nprocs: int
+            Number of processes that TACS is running on.
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -95,7 +104,12 @@ class TacsOnewayDriver:
     @classmethod
     def prime_loads(cls, funtofem_driver):
         """
-        used to prime struct loads for optimization over tacs analysis with no shape
+        Used to prime struct loads for optimization over tacs analysis with no shape variables
+
+        Parameters
+        ----------
+        funtofem_driver: :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
+            the coupled funtofem NLBGS driver
         """
         funtofem_driver.solve_forward()
         return cls(funtofem_driver.solvers, funtofem_driver.model)
@@ -105,7 +119,20 @@ class TacsOnewayDriver:
         cls, flow_solver, tacs_aim, transfer_settings, nprocs, bdf_file=None
     ):
         """
-        used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+
+        Parameters
+        ----------
+        flow_solver: [:class:`~fun3d_interface.Fun3dInterface or :class`~test_solver.TestAerodynamicSolver`]
+            Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver
+        tacs_aim: `caps2tacs.TacsAim`
+            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
+        transfer_settings: :class:`~transfer_settings.TransferSettings`
+            Settings for transfer of state variables across aero and struct meshes
+        nprocs: int
+            Number of processes that TACS is running on.
+        bdf_file: str or `os.path`
+            File or path to the bdf or dat file of structural mesh
         """
 
         # generate the geometry if necessary
@@ -217,7 +244,7 @@ class TacsOnewayDriver:
 
         if self.change_shape:
             # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
-            input_dict = {var.name: var.value for var in self.model.variables}
+            input_dict = {var.name: var.value for var in self.model.get_variables()}
             self.model.tacs_model.update_design(input_dict)
             self.tacs_aim.setup_aim()
 

@@ -475,7 +475,37 @@ PSHELL*               5               1           5.E-2               1 *0
 *0                  20.               1 0.8333333333333 
 PSHELL*               1               1           5.E-2               1 *0      
 *0                  20.               1 0.8333333333333 
+DESVAR*               1             OML           3.E-2          1.5E-2 *0      
+*0                6.E-2           3.E-3 
+DESVAR*               2            rib1           5.E-2          2.5E-2 *0      
+*0                  0.1           5.E-3 
+DESVAR*               3            rib2           5.E-2          2.5E-2 *0      
+*0                  0.1           5.E-3 
+DESVAR*               4            rib3           5.E-2          2.5E-2 *0      
+*0                  0.1           5.E-3 
+DESVAR*               5            rib4           5.E-2          2.5E-2 *0      
+*0                  0.1           5.E-3 
+DESVAR*               7           spar1           5.E-2          2.5E-2 *0      
+*0                  0.1           5.E-3 
+DVPREL1*            100          PSHELL               3               T *0      
+*0                                                   0.                 *1      
+*1                    1              1. 
+DVPREL1*            200          PSHELL               6               T *0      
+*0                                                   0.                 *1      
+*1                    2              1. 
+DVPREL1*            300          PSHELL               4               T *0      
+*0                                                   0.                 *1      
+*1                    3              1. 
+DVPREL1*            400          PSHELL               2               T *0      
+*0                                                   0.                 *1      
+*1                    4              1. 
+DVPREL1*            500          PSHELL               5               T *0      
+*0                                                   0.                 *1      
+*1                    5              1. 
+DVPREL1*            600          PSHELL               1               T *0      
+*0                                                   0.                 *1      
+*1                    7              1. 
 
-INCLUDE 'simple_naca_wing.bdf'
+INCLUDE 'nastran_CAPS.bdf'
 
 ENDDATA
