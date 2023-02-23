@@ -12,13 +12,13 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "input_files", "simple_naca_wing.csm")
 dat_filepath = os.path.join(base_dir, "input_files", "simple_naca_wing.dat")
 
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
+
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
-
-    results_folder = os.path.join(base_dir, "results")
-    if comm.rank == 0:  # make the results folder if doesn't exist
-        if not os.path.exists(results_folder):
-            os.mkdir(results_folder)
 
 # check if we're in github to run only online vs offline tests
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
