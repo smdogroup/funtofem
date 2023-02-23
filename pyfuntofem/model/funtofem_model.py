@@ -25,6 +25,13 @@ __all__ = ["FUNtoFEMmodel"]
 import numpy as np
 from .variable import Variable
 
+import importlib
+
+# optional tacs import for caps2tacs
+tacs_loader = importlib.util.find_spec("tacs")
+if tacs_loader is not None:
+    from tacs import caps2tacs
+
 
 class FUNtoFEMmodel(object):
     """
@@ -55,6 +62,8 @@ class FUNtoFEMmodel(object):
         self.scenarios = []
         self.bodies = []
 
+        self._tacs_model = None
+
     def add_body(self, body):
         """
         Add a body to the model. The body must be completely defined before adding to the model
@@ -78,6 +87,62 @@ class FUNtoFEMmodel(object):
             if by.group == body.group:
                 body.group_root = False
                 break
+
+        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
+        # in the case of defining shell properties
+        if tacs_loader is not None and self.tacs_model is not None:
+            struct_variables = []
+            shape_variables = []
+            if "structural" in body.variables:
+                struct_variables = body.variables["structural"]
+            if "shape" in body.variables:
+                shape_variables = body.variables["shape"]
+
+            for var in struct_variables:
+                # check if matching shell property exists
+                matching_prop = False
+                for prop in self.tacs_model.tacs_aim._properties:
+                    if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+
+                matching_dv = False
+                for dv in self.tacs_model.thickness_variables:
+                    if dv.name == var.name:
+                        matching_dv = True
+                        break
+
+                if matching_prop and not (matching_dv):
+                    caps2tacs.ThicknessVariable(
+                        caps_group=var.name, value=var.value, name=var.name
+                    ).register_to(self.tacs_model)
+
+            esp_caps_despmtrs = None
+            comm = self.tacs_model.comm
+            if self.tacs_model.root_proc:
+                esp_caps_despmtrs = list(self.tacs_model.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            for var in shape_variables:
+                matching_despmtr = False
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        matching_despmtr = True
+                        break
+
+                matching_shape_dv = False
+                for shape_var in self.tacs_model.shape_variables:
+                    if var.name == shape_var.name:
+                        matching_shape_dv = True
+                        break
+
+                # create a matching shape variable in caps2tacs
+                if matching_despmtr and not matching_shape_dv:
+                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
+                        self.tacs_model
+                    )
+
+        # end of tacs model auto registration of vars section
 
         self.bodies.append(body)
 
@@ -377,3 +442,11 @@ class FUNtoFEMmodel(object):
                 fp.write(data)
 
         return
+
+    @property
+    def tacs_model(self):
+        return self._tacs_model
+
+    @tacs_model.setter
+    def tacs_model(self, m_tacs_model):
+        self._tacs_model = m_tacs_model

@@ -23,10 +23,10 @@ limitations under the License.
 __all__ = ["TacsSteadyInterface"]
 
 from mpi4py import MPI
-from tacs import pytacs, TACS, functions, constitutive, elements
+from tacs import pytacs, TACS, functions
 from .utils import f2f_callback
 from ._solver_interface import SolverInterface
-import os
+import os, numpy as np
 
 
 class TacsSteadyInterface(SolverInterface):
@@ -921,15 +921,35 @@ class TacsSteadyInterface(SolverInterface):
             # get list of local node IDs with global size, with -1 for nodes not owned by this proc
             num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
             bdfNodes = range(num_nodes)
-            local_struct_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+            local_tacs_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
                 bdfNodes, nastranOrdering=False
             )
 
-            # convert back to global IDs owned by this proc
-            global_owned_struct_ids = [
-                inode + 1 for inode, lnode in enumerate(local_struct_ids) if lnode != -1
-            ]
-            struct_id = global_owned_struct_ids
+            """
+            the local_tacs_ids list maps nastran nodes to tacs indices with:
+                local_tacs_ids[nastran_node-1] = local_tacs_id
+            Only a subset of all tacs ids are owned by each processor
+                note: tacs_ids in [0, #local_tacs_ids], #local_tacs_ids <= nnodes
+                for nastran nodes not on this processor, local_tacs_id[nastran_node-1] = -1
+
+            The next lines of code invert this map to the list 'struct_id' with:
+                struct_id[local_tacs_id] = nastran_node
+
+            This is then later used by funtofem_model.write_sensitivity_file method to write
+            ESP/CAPS nastran_CAPS.sens files for the tacsAIM to compute shape derivatives
+            """
+
+            # get number of non -1 tacs ids, total number of actual tacs_ids
+            n_tacs_ids = len([tacs_id for tacs_id in local_tacs_ids if tacs_id != -1])
+
+            # reverse the tacs id to nastran ids map since we want tacs_id => nastran_id - 1
+            nastran_ids = np.zeros((n_tacs_ids), dtype=np.int64)
+            for nastran_id_m1, tacs_id in enumerate(local_tacs_ids):
+                if tacs_id != -1:
+                    nastran_ids[tacs_id] = int(nastran_id_m1 + 1)
+
+            # convert back to list of nastran_ids owned by this processor in order
+            struct_id = list(nastran_ids)
 
         # We might need to clean up this code. This is making educated guesses
         # about what index the temperature is stored. This could be wrong if things
@@ -959,15 +979,6 @@ class TacsSteadyInterface(SolverInterface):
             tacs_comm=tacs_comm,
             override_rotx=override_rotx,
         )
-
-    def create_driver(self):
-        """
-        directly create a tacs steady analysis driver from Tacs steady interface
-        """
-        # have to import here to prevent circular import dependency
-        from ..driver.tacs_driver import TacsSteadyAnalysisDriver
-
-        return TacsSteadyAnalysisDriver(tacs_interface=self, model=self.model)
 
 
 class TacsOutputGenerator:
