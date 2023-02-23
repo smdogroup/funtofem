@@ -15,14 +15,14 @@ dat_filepath = os.path.join(base_dir, "input_files", "simple_naca_wing.dat")
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
+    results_folder = os.path.join(base_dir, "results")
     if comm.rank == 0:  # make the results folder if doesn't exist
-        results_folder = os.path.join(base_dir, "results")
         if not os.path.exists(results_folder):
             os.mkdir(results_folder)
 
 # check if we're in github to run only online vs offline tests
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
-in_github_workflow = True
+optional = False  # skip optional tests
 
 
 @unittest.skipIf(
@@ -30,6 +30,7 @@ in_github_workflow = True
     "skipping test using caps2tacs if caps or tacs are unavailable",
 )
 class TestTacsShapeDriver(unittest.TestCase):
+    N_PROCS = 2
     FILENAME = "oneway_shape_driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
@@ -95,7 +96,7 @@ class TestTacsShapeDriver(unittest.TestCase):
             flow_solver,
             tacs_aim,
             transfer_settings,
-            nprocs=1,
+            nprocs=2,
             bdf_file=dat_filepath,
         )
 
@@ -109,7 +110,7 @@ class TestTacsShapeDriver(unittest.TestCase):
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
 
-    @unittest.skip("temp")
+    @unittest.skip(in_github_workflow)
     def test_shape_and_thick_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -192,7 +193,7 @@ class TestTacsShapeDriver(unittest.TestCase):
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
 
-    @unittest.skipIf(in_github_workflow, "this is an offline test")
+    @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
     def test_shape_aerothermoelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -269,7 +270,7 @@ class TestTacsShapeDriver(unittest.TestCase):
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
 
-    @unittest.skipIf(in_github_workflow, "this is an offline test")
+    @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
     def test_shape_and_thick_aerothermoelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")

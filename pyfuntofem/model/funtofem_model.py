@@ -121,7 +121,6 @@ class FUNtoFEMmodel(object):
             comm = self.tacs_model.comm
             if self.tacs_model.root_proc:
                 esp_caps_despmtrs = list(self.tacs_model.geometry.despmtr.keys())
-                print(esp_caps_despmtrs)
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
             for var in shape_variables:
