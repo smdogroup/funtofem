@@ -131,7 +131,7 @@ class Variable(object):
     @classmethod
     def structural(cls, name: str, value=0.0):
         """
-        create a structural analysis variable
+        Create a structural analysis variable.
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, value=value, analysis_type="structural")
