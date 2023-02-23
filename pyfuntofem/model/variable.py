@@ -178,7 +178,7 @@ class Variable(object):
     @classmethod
     def from_caps(self, obj):
         """
-        create a funtofem variable from a caps2tacs shell property, thickness variable or
+        Create a funtofem variable from a caps2tacs ThicknessVariable, ShellProperty, or ShapeVariable.
         """
         if tacs_loader is None:
             raise AssertionError(
