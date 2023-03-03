@@ -9,18 +9,23 @@ from pyfuntofem.interface import (
     SolverManager,
     TestResult,
 )
-from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsSteadyAnalysisDriver
+from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsOnewayDriver
 
 from bdf_test_utils import thermoelasticity_callback, elasticity_callback
 
 np.random.seed(1234567)
 
+comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
 
-class TestOnewayDriver(unittest.TestCase):
 
+class TestTacsOnewayDriver(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled TacsSteadyAnalysisDriver
     which uses fixed aero loads
@@ -28,6 +33,7 @@ class TestOnewayDriver(unittest.TestCase):
     """
 
     FILENAME = "oneway-driver.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aeroelastic(self):
         # build the model and driver
@@ -53,7 +59,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver.prime_loads(coupled_driver)
+        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
 
         complex_mode = False
         rtol = 1e-4
@@ -66,7 +72,7 @@ class TestOnewayDriver(unittest.TestCase):
             "oneway-aeroelastic",
             model,
             oneway_driver,
-            TestOnewayDriver.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -101,7 +107,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver.prime_loads(coupled_driver)
+        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
 
         complex_mode = False
         rtol = 1e-3
@@ -114,7 +120,7 @@ class TestOnewayDriver(unittest.TestCase):
             "oneway-aerothermal",
             model,
             oneway_driver,
-            TestOnewayDriver.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -149,7 +155,7 @@ class TestOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsSteadyAnalysisDriver.prime_loads(coupled_driver)
+        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
 
         complex_mode = False
         rtol = 1e-3
@@ -162,7 +168,7 @@ class TestOnewayDriver(unittest.TestCase):
             "oneway-aerothermoelastic",
             model,
             oneway_driver,
-            TestOnewayDriver.FILENAME,
+            TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -170,5 +176,5 @@ class TestOnewayDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestOnewayDriver.FILENAME, "w").close()
+    open(TestTacsOnewayDriver.FILEPATH, "w").close()
     unittest.main()

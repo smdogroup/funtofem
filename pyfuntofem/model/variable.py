@@ -22,12 +22,20 @@
 __all__ = ["Variable"]
 
 from ._base import Base
+import importlib
+
+# optional tacs import for caps2tacs
+tacs_loader = importlib.util.find_spec("tacs")
+if tacs_loader is not None:
+    from tacs import caps2tacs
 
 
 class Variable(object):
     """
-    Design variable type for FUNtoFEM
+    Design variable type for FUNtoFEM. Valid variable types are "structural", "aerodynamic", and "shape". For example, invoked by "Variable.structural('thickness', 0.1)"
     """
+
+    ANALYSIS_TYPES = ["structural", "aerodynamic", "shape"]
 
     def __init__(
         self,
@@ -121,28 +129,28 @@ class Variable(object):
         return self
 
     @classmethod
-    def structural(cls, name: str):
+    def structural(cls, name: str, value=0.0):
         """
-        create a structural analysis variable
+        Create a structural analysis variable.
         (make sure to set optimal settings and then register it)
         """
-        return cls(name=name, analysis_type="structural")
+        return cls(name=name, value=value, analysis_type="structural")
 
     @classmethod
-    def aerodynamic(cls, name: str):
+    def aerodynamic(cls, name: str, value=0.0):
         """
-        create an aerodynamic analysis variable
+        Create an aerodynamic analysis variable.
         (make sure to set optimal settings and then register it)
         """
-        return cls(name=name, analysis_type="aerodynamic")
+        return cls(name=name, value=value, analysis_type="aerodynamic")
 
     @classmethod
-    def shape(cls, name: str):
+    def shape(cls, name: str, value=0.0):
         """
-        create a shape analysis variable
+        Create a shape analysis variable.
         (make sure to set optimal settings and then register it)
         """
-        return cls(name=name, analysis_type="shape")
+        return cls(name=name, value=value, analysis_type="shape")
 
     def rescale(self, factor: float):
         """
@@ -166,3 +174,24 @@ class Variable(object):
         # add variable to the base object - either scenario or body
         base.add_variable(vartype=self.analysis_type, var=self)
         return self
+
+    @classmethod
+    def from_caps(self, obj):
+        """
+        Create a funtofem variable from a caps2tacs ThicknessVariable, ShellProperty, or ShapeVariable.
+        """
+        if tacs_loader is None:
+            raise AssertionError(
+                "Can't build from caps2tacs object if tacs module is not available"
+            )
+
+        if isinstance(obj, caps2tacs.ThicknessVariable):
+            return Variable.structural(name=obj.name, value=obj.value)
+        elif isinstance(obj, caps2tacs.ShellProperty):
+            return Variable.structural(
+                name=obj.caps_group, value=obj.membrane_thickness
+            )
+        elif isinstance(obj, caps2tacs.ShapeVariable):
+            return Variable.shape(name=obj.name, value=obj.value)
+        else:
+            raise AssertionError("Input caps2tacs object not appropriate type.")

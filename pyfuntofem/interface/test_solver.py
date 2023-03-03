@@ -125,6 +125,7 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         self.comm = comm
+        self.model = model
         self.npts = 10
         np.random.seed(0)
 

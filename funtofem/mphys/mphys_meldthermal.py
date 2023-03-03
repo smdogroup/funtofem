@@ -7,267 +7,332 @@ from mphys import Builder
 heat transfer rate between the convective and conductive analysis."""
 
 
-class MELDThermal_temp_xfer(om.ExplicitComponent):
+class MeldTempXfer(om.ExplicitComponent):
     """
-    Component to perform displacement transfer using MELD
+    Component to perform displacement transfer using Meld
     """
 
     def initialize(self):
-        self.options.declare("xfer_object")
-        self.options.declare("cond_ndof")
-        self.options.declare("cond_nnodes")
+        self.options.declare("xfer_object", recordable=False)
+        self.options.declare("thermal_ndof")
+        self.options.declare("thermal_nnodes")
 
-        self.options.declare("conv_nnodes")
+        self.options.declare("aero_nnodes")
         self.options.declare("check_partials")
-        self.options.declare("mapping")
 
         self.meldThermal = None
         self.initialized_meld = False
 
-        self.cond_ndof = None
-        self.cond_nnodes = None
-        self.conv_nnodes = None
+        self.thermal_ndof = None
+        self.thermal_nnodes = None
+        self.aero_nnodes = None
         self.check_partials = False
 
     def setup(self):
         self.meldThermal = self.options["xfer_object"]
 
-        self.cond_ndof = self.options["cond_ndof"]
-        self.cond_nnodes = self.options["cond_nnodes"]
-        self.conv_nnodes = self.options["conv_nnodes"]
+        self.thermal_ndof = self.options["thermal_ndof"]
+        self.thermal_nnodes = self.options["thermal_nnodes"]
+        self.aero_nnodes = self.options["aero_nnodes"]
         self.check_partials = self.options["check_partials"]
-        conv_nnodes = self.conv_nnodes
+        aero_nnodes = self.aero_nnodes
 
-        # inputs
+        # intialization inputs
         self.add_input(
-            "x_struct0",
+            "x_thermal_surface0",
             distributed=True,
             shape_by_conn=True,
-            desc="initial structural node coordinates",
+            desc="initial thermal node coordinates",
+            tags=["mphys_coordinates"],
         )
         self.add_input(
-            "x_aero0",
+            "x_aero_surface0",
             distributed=True,
             shape_by_conn=True,
             desc="initial aerodynamic surface node coordinates",
+            tags=["mphys_coordinates"],
         )
+        # inputs
         self.add_input(
             "T_conduct",
             distributed=True,
             shape_by_conn=True,
-            desc="conductive node displacements",
+            desc="thermalive node displacements",
+            tags=["mphys_coupling"],
         )
 
         # outputs
-        print("T_convect", conv_nnodes)
 
         self.add_output(
             "T_convect",
-            shape=conv_nnodes,
+            shape_by_conn=True,
             distributed=True,
-            val=np.ones(conv_nnodes) * 301,
-            desc="conv surface temperatures",
+            desc="aero surface temperatures",
+            tags=["mphys_coupling"],
         )
+        self.meld_initialized = False
 
     def compute(self, inputs, outputs):
-        x_s0 = np.array(inputs["x_struct0"], dtype=TransferScheme.dtype)
-        x_a0 = np.array(inputs["x_aero0"], dtype=TransferScheme.dtype)
-        mapping = self.options["mapping"]
+        if not self.meld_initialized:
+            x_thermal_surface0 = np.array(
+                inputs["x_thermal_surface0"], dtype=TransferScheme.dtype
+            )
+            x_aero_surface0 = np.array(
+                inputs["x_aero_surface0"], dtype=TransferScheme.dtype
+            )
 
-        # x_surface =  np.zeros((len(mapping), 3))
+            self.meldThermal.setStructNodes(x_thermal_surface0)
+            self.meldThermal.setAeroNodes(x_aero_surface0)
 
-        # for i in range(len(mapping)):
-        #     idx = mapping[i]*3
-        #     x_surface[i] = x_s0[idx:idx+3]
-
-        self.meldThermal.setStructNodes(x_s0)
-        self.meldThermal.setAeroNodes(x_a0)
-
-        # heat_xfer_cond0 = np.array(inputs['heat_xfer_cond0'],dtype=TransferScheme.dtype)
-        # heat_xfer_conv0 = np.array(inputs['heat_xfer_conv0'],dtype=TransferScheme.dtype)
-        temp_conv = np.array(outputs["T_convect"], dtype=TransferScheme.dtype)
-
-        temp_cond = np.array(inputs["T_conduct"], dtype=TransferScheme.dtype)
-        # for i in range(3):
-        #     temp_cond[i::3] = inputs['T_conduct'][i::self.cond_ndof]
-
-        if not self.initialized_meld:
             self.meldThermal.initialize()
-            self.initialized_meld = True
+            self.meld_initialized = True
 
-        self.meldThermal.transferTemp(temp_cond, temp_conv)
+        T_conduct = np.array(inputs["T_conduct"], dtype=TransferScheme.dtype)
+        T_convect = np.array(outputs["T_convect"], dtype=TransferScheme.dtype)
 
-        outputs["T_convect"] = temp_conv
+        self.meldThermal.transferTemp(T_conduct, T_convect)
+        outputs["T_convect"] = T_convect
+
+    def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
+        """
+        The explicit component is defined as:
+            u_a = g(u_s,x_a0,x_s0)
+        The Meld residual is defined as:
+            D = u_a - g(u_s,x_a0,x_s0)
+        So explicit partials below for u_a are negative partials of D
+        """
+
+        meld = self.meldThermal
+        if mode == "fwd":
+            if "T_convect" in d_outputs:
+                if "T_conduct" in d_inputs:
+                    d_T_conduct = np.array(
+                        d_inputs["T_conduct"], dtype=TransferScheme.dtype
+                    )
+
+                    prod = np.zeros(
+                        d_outputs["T_convect"].size, dtype=TransferScheme.dtype
+                    )
+
+                    meld.applydTdtS(d_T_conduct, prod)
+                    d_outputs["T_convect"] += np.array(prod, dtype=float)
+
+                if "x_aero_surface0" in d_inputs:
+                    if self.check_partials:
+                        pass
+                    else:
+                        raise ValueError("forward mode requested but not implemented")
+
+                if "x_thermal_surface0" in d_inputs:
+                    if self.check_partials:
+                        pass
+                    else:
+                        raise ValueError("forward mode requested but not implemented")
+
+        if mode == "rev":
+            if "T_convect" in d_outputs:
+                dT_convect = np.array(
+                    d_outputs["T_convect"], dtype=TransferScheme.dtype
+                )
+                if "T_conduct" in d_inputs:
+                    # dT_convect/dT_conduct^T * psi = - dD/dT_conduct^T psi
+
+                    prod = np.zeros(
+                        d_inputs["T_conduct"].size, dtype=TransferScheme.dtype
+                    )
+
+                    meld.applydTdtSTrans(dT_convect, prod)
+
+                    d_inputs["T_conduct"] -= np.array(prod, dtype=np.float64)
 
 
-class MELDThermal_heat_xfer_rate_xfer(om.ExplicitComponent):
+class MeldHeatXfer(om.ExplicitComponent):
     """
-    Component to perform load transfers using MELD
+    Component to perform load transfers using Meld
     """
 
     def initialize(self):
-        self.options.declare("xfer_object")
-        self.options.declare("cond_ndof")
-        self.options.declare("cond_nnodes")
+        self.options.declare("xfer_object", recordable=False)
+        self.options.declare("thermal_ndof")
+        self.options.declare("thermal_nnodes")
 
-        self.options.declare("conv_nnodes")
+        self.options.declare("aero_nnodes")
         self.options.declare("check_partials")
-        self.options.declare("mapping")
 
         self.meldThermal = None
         self.initialized_meld = False
 
-        self.cond_ndof = None
-        self.cond_nnodes = None
-        self.conv_nnodes = None
+        self.thermal_ndof = None
+        self.thermal_nnodes = None
+        self.aero_nnodes = None
         self.check_partials = False
 
     def setup(self):
         # get the transfer scheme object
         self.meldThermal = self.options["xfer_object"]
 
-        self.cond_ndof = self.options["cond_ndof"]
-        self.cond_nnodes = self.options["cond_nnodes"]
-        self.conv_nnodes = self.options["conv_nnodes"]
+        self.thermal_ndof = self.options["thermal_ndof"]
+        self.thermal_nnodes = self.options["thermal_nnodes"]
+        self.aero_nnodes = self.options["aero_nnodes"]
         self.check_partials = self.options["check_partials"]
 
-        # inputs
+        # initialization inputs
         self.add_input(
-            "x_struct0",
+            "x_thermal_surface0",
             distributed=True,
             shape_by_conn=True,
-            desc="initial structural node coordinates",
+            desc="initial thermal node coordinates",
+            tags=["mphys_coordinates"],
         )
         self.add_input(
-            "x_aero0",
+            "x_aero_surface0",
             distributed=True,
             shape_by_conn=True,
             desc="initial aerodynamic surface node coordinates",
+            tags=["mphys_coordinates"],
         )
+
+        # inputs
         self.add_input(
             "q_convect",
             distributed=True,
             shape_by_conn=True,
-            desc="initial conv heat transfer rate",
+            desc="initial aero heat transfer rate",
+            tags=["mphys_coupling"],
         )
-
-        print("q_conduct", self.cond_nnodes)
 
         # outputs
         self.add_output(
             "q_conduct",
             distributed=True,
-            shape=self.cond_nnodes,
-            desc="heat transfer rate on the conduction mesh at the interface",
+            shape_by_conn=True,
+            desc="heat transfer rate on the thermalion mesh at the interface",
+            tags=["mphys_coupling"],
         )
+
+        self.meld_initialized = False
 
     def compute(self, inputs, outputs):
-        heat_xfer_conv = np.array(inputs["q_convect"], dtype=TransferScheme.dtype)
-        heat_xfer_cond = np.zeros(self.cond_nnodes, dtype=TransferScheme.dtype)
+        if not self.meld_initialized:
+            x_thermal_surface0 = np.array(
+                inputs["x_thermal_surface0"], dtype=TransferScheme.dtype
+            )
+            x_aero_surface0 = np.array(
+                inputs["x_aero_surface0"], dtype=TransferScheme.dtype
+            )
 
-        # if self.check_partials:
-        #     x_s0 = np.array(inputs['x_struct0'],dtype=TransferScheme.dtype)
-        #     x_a0 = np.array(inputs['x_aero0'],dtype=TransferScheme.dtype)
-        #     self.meldThermal.setStructNodes(x_s0)
-        #     self.meldThermal.setAeroNodes(x_a0)
+            self.meldThermal.setStructNodes(x_thermal_surface0)
+            self.meldThermal.setAeroNodes(x_aero_surface0)
 
-        #     #TODO meld needs a set state rather requiring transferDisps to update the internal state
+            self.meldThermal.initialize()
+            self.meld_initialized = True
 
-        #     temp_conv = np.zeros(inputs['q_convect'].size,dtype=TransferScheme.dtype)
-        #     temp_cond  = np.zeros(self.cond_surface_nnodes,dtype=TransferScheme.dtype)
-        #     for i in range(3):
-        #         temp_cond[i::3] = inputs['T_conduct'][i::self.cond_ndof]
+        heat_convect = np.array(inputs["q_convect"], dtype=TransferScheme.dtype)
+        heat_conduct = np.array(outputs["q_conduct"], dtype=TransferScheme.dtype)
+        self.meldThermal.transferFlux(heat_convect, heat_conduct)
+        outputs["q_conduct"] = heat_conduct
 
-        #     self.meldThermal.transferTemp(temp_cond,temp_conv)
+    def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
+        """
+        The explicit component is defined as:
+            u_a = g(u_s,x_a0,x_s0)
+        The Meld residual is defined as:
+            D = u_a - g(u_s,x_a0,x_s0)
+        So explicit partials below for u_a are negative partials of D
+        """
 
-        self.meldThermal.transferFlux(heat_xfer_conv, heat_xfer_cond)
-        outputs["q_conduct"] = heat_xfer_cond
+        meld = self.meldThermal
+        if mode == "fwd":
+            if "q_conduct" in d_outputs:
+                if "q_convect" in d_inputs:
+                    d_q_convect = np.array(
+                        d_inputs["q_convect"], dtype=TransferScheme.dtype
+                    )
+
+                    prod = np.zeros(
+                        d_outputs["q_conduct"].size, dtype=TransferScheme.dtype
+                    )
+
+                    meld.applydQdqA(d_q_convect, prod)
+                    d_outputs["q_conduct"] += np.array(prod, dtype=np.float64)
+
+                if "x_aero_surface0" in d_inputs:
+                    if self.check_partials:
+                        pass
+                    else:
+                        raise ValueError("forward mode requested but not implemented")
+
+                if "x_thermal_surface0" in d_inputs:
+                    if self.check_partials:
+                        pass
+                    else:
+                        raise ValueError("forward mode requested but not implemented")
+
+        if mode == "rev":
+            if "q_conduct" in d_outputs:
+                dq_conduct = np.array(
+                    d_outputs["q_conduct"], dtype=TransferScheme.dtype
+                )
+                if "q_convect" in d_inputs:
+                    prod = np.zeros(
+                        d_inputs["q_convect"].size, dtype=TransferScheme.dtype
+                    )
+
+                    meld.applydQdqATrans(dq_conduct, prod)
+
+                    d_inputs["q_convect"] -= np.array(prod, dtype=np.float64)
 
 
-class MELDThermal_builder(Builder):
-    def __init__(self, options, conv_builder, cond_builder, check_partials=False):
-        super(MELDThermal_builder, self).__init__(options)
+class MeldThermalBuilder(Builder):
+    def __init__(
+        self,
+        aero_builder,
+        thermal_builder,
+        isym=-1,
+        n=200,
+        beta=0.5,
+        check_partials=False,
+    ):
+        # super(MeldThermalBuilder, self).__init__(options)
+        # TODO we can move the aero and thermal builder to init_xfer_object call so that user does not need to worry about this
+        self.aero_builder = aero_builder
+        self.thermal_builder = thermal_builder
+        self.isym = isym
+        self.n = n
+        self.beta = beta
         self.check_partials = check_partials
-        # TODO we can move the conv and cond builder to init_xfer_object call so that user does not need to worry about this
-        self.conv_builder = conv_builder
-        self.cond_builder = cond_builder
 
-    # api level method for all builders
-    def init_xfer_object(self, comm):
-        # create the transfer
-        self.xfer_object = TransferScheme.pyMELDThermal(
+    def initialize(self, comm):
+        self.nnodes_aero = self.aero_builder.get_number_of_nodes()
+        self.nnodes_thermal = self.thermal_builder.get_number_of_nodes()
+        self.ndof_thermal = self.thermal_builder.get_ndof()
+
+        self.meldthermal = TransferScheme.pyMELDThermal(
             comm,
             comm,
             0,
             comm,
             0,
-            self.options["isym"],
-            self.options["n"],
-            self.options["beta"],
+            self.isym,
+            self.n,
+            self.beta,
         )
 
-        # TODO also do the necessary calls to the cond and conv builders to fully initialize MELD
-        # for now, just save the counts
-        self.cond_ndof = self.cond_builder.get_ndof()
-        tacs = self.cond_builder.get_solver()
-        get_surface = self.cond_builder.options["get_surface"]
-
-        surface_nodes, mapping = get_surface(tacs)
-        # get mapping of flow edge
-        self.mapping = mapping
-        self.cond_nnodes = len(mapping)
-
-        self.conv_nnodes = self.conv_builder.get_nnodes(groupName="allIsothermalWalls")
-
-    # api level method for all builders
-    def get_xfer_object(self):
-        return self.xfer_object
-
-    # api level method for all builders
-    def get_element(self):
-        temp_xfer = MELDThermal_temp_xfer(
-            xfer_object=self.xfer_object,
-            cond_ndof=self.cond_ndof,
-            cond_nnodes=self.cond_nnodes,
-            conv_nnodes=self.conv_nnodes,
+    def get_coupling_group_subsystem(self, scenario_name=None):
+        heat_xfer = MeldHeatXfer(
+            xfer_object=self.meldthermal,
+            thermal_ndof=self.ndof_thermal,
+            thermal_nnodes=self.nnodes_thermal,
+            aero_nnodes=self.nnodes_aero,
             check_partials=self.check_partials,
         )
 
-        heat_xfer_xfer = MELDThermal_heat_xfer_rate_xfer(
-            xfer_object=self.xfer_object,
-            cond_ndof=self.cond_ndof,
-            cond_nnodes=self.cond_nnodes,
-            conv_nnodes=self.conv_nnodes,
+        temp_xfer = MeldTempXfer(
+            xfer_object=self.meldthermal,
+            thermal_ndof=self.ndof_thermal,
+            thermal_nnodes=self.nnodes_thermal,
+            aero_nnodes=self.nnodes_aero,
             check_partials=self.check_partials,
         )
 
-        return temp_xfer, heat_xfer_xfer
-
-    def build_object(self, comm):
-        self.init_xfer_object(comm)
-
-    def get_object(self):
-        return self.xfer_object()
-
-    def get_component(self):
-        temp_xfer = MELDThermal_temp_xfer(
-            xfer_object=self.xfer_object,
-            cond_ndof=self.cond_ndof,
-            cond_nnodes=self.cond_nnodes,
-            conv_nnodes=self.conv_nnodes,
-            check_partials=self.check_partials,
-            mapping=self.mapping,
-        )
-
-        yield "_temps", temp_xfer
-
-        heat_xfer_xfer = MELDThermal_heat_xfer_rate_xfer(
-            xfer_object=self.xfer_object,
-            cond_ndof=self.cond_ndof,
-            cond_nnodes=self.cond_nnodes,
-            conv_nnodes=self.conv_nnodes,
-            check_partials=self.check_partials,
-            mapping=self.mapping,
-        )
-
-        yield "_heat_rate", heat_xfer_xfer
+        return heat_xfer, temp_xfer
