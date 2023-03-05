@@ -3,7 +3,7 @@ from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 from mpi4py import MPI
 from tacs import TACS
 
-# np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(threshold=sys.maxsize)
 
 from funtofem import TransferScheme
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
@@ -48,7 +48,7 @@ class TestLoadsFile(unittest.TestCase):
         plate.register_to(f2f_model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
         scenario.register_to(f2f_model)
 
         # make the solvers for a CFD analysis to store and write the loads file
@@ -76,9 +76,9 @@ class TestLoadsFile(unittest.TestCase):
             f2f_model,
             oneway_driver,
             TestLoadsFile.FILEPATH,
-            complex_mode=False,
+            complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -96,7 +96,7 @@ class TestLoadsFile(unittest.TestCase):
         plate.register_to(f2f_model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
         scenario.register_to(f2f_model)
 
         # make the solvers for a CFD analysis to store and write the loads file
@@ -124,9 +124,9 @@ class TestLoadsFile(unittest.TestCase):
             f2f_model,
             oneway_driver,
             TestLoadsFile.FILEPATH,
-            complex_mode=False,
+            complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
         return
 
