@@ -471,7 +471,7 @@ class FUNtoFEMmodel(object):
             with open(filename, "r") as fp:
                 for line in fp.readlines():
                     entries = line.strip().split(" ")
-                    print("==> entries: ", entries)
+                    #print("==> entries: ", entries)
                     if len(entries) == 2:
                         assert int(entries[1]) == len(self.scenarios)
                         assert int(entries[0]) == len(self.bodies)
@@ -507,6 +507,7 @@ class FUNtoFEMmodel(object):
         loads_data = comm.bcast(loads_data, root=root)
         mesh_data = comm.bcast(mesh_data, root=root)
 
+        # initialize the mesh data
         for body in self.bodies:
             global_aero_x = np.array(mesh_data[body.name]["aeroX"])
             global_aero_ids = np.array(mesh_data[body.name]["aeroID"])
@@ -531,12 +532,9 @@ class FUNtoFEMmodel(object):
             local_aero_x = global_aero_x[aero_x_ind]
 
             body.initialize_aero_nodes(local_aero_x, local_aero_ids)
-
-            for scenario in self.scenarios:
-                body.initialize_variables(scenario)
-
-            body._distribute_aero_loads(comm, loads_data)
-        return
+            
+        # return the loads data
+        return loads_data
 
     def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
         """

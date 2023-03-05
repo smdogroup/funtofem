@@ -214,18 +214,25 @@ class TacsOnewayDriver:
         comm_manager = solvers.comm_manager
 
         # read in the loads from the file
-        model.read_aero_loads(comm, filename)
+        loads_data = model.read_aero_loads(comm, filename)
+        
+        # initialize the transfer scheme then distribute aero loads
+        for body in model.bodies:
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=tacs_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=transfer_settings,
+            )
+            for scenario in model.scenarios:
+                body.initialize_variables(scenario)
+            body._distribute_aero_loads(loads_data)
+            
 
         if tacs_aim is None:
             for body in model.bodies:
-                body.initialize_transfer(
-                    comm=comm,
-                    struct_comm=tacs_comm,
-                    struct_root=comm_manager.struct_root,
-                    aero_comm=comm_manager.aero_comm,
-                    aero_root=comm_manager.aero_root,
-                    transfer_settings=transfer_settings,
-                )
                 for scenario in model.scenarios:
                     body.transfer_loads(scenario)
                     body.transfer_heat_flux(scenario)
