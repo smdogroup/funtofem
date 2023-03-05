@@ -357,6 +357,185 @@ class FUNtoFEMmodel(object):
 
         return gradients
 
+    def write_aero_loads(self, comm, filename, root=0):
+        """
+        Write the aerodynamic loads file for the TacsOnewayDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        if comm.rank == root:
+            data = ""
+            # Specify the number of scenarios in file
+            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
+            data += "aeromesh" + "\n"
+
+        for body in self.bodies:
+            if comm.rank == root:
+                data += f"body_mesh {body.id} {body.name} {body.aero_nnodes} \n"
+
+            id, aeroX = body._collect_aero_mesh(comm, root=root)
+
+            if comm.rank == root:
+                for i in range(len(id)):
+                    data += "{} {} {} {} \n".format(
+                        int(id[i]),
+                        aeroX[3 * i + 0].real,
+                        aeroX[3 * i + 1].real,
+                        aeroX[3 * i + 2].real,
+                    )
+        if comm.rank == root:
+            data += f"aeroloads \n"
+
+        for scenario in self.scenarios:
+            if comm.rank == root:
+                data += f"scenario {scenario.id} {scenario.name} \n"
+
+            for body in self.bodies:
+                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
+
+                if comm.rank == root:
+                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    for i in range(len(id)):
+                        data += "{} {} {} {} {} \n".format(
+                            int(id[i]),
+                            load[3 * i + 0].real,
+                            load[3 * i + 1].real,
+                            load[3 * i + 2].real,
+                            float(hflux[i].real),
+                        )
+
+                    with open(filename, "w") as fp:
+                        fp.write(data)
+        return
+
+    def read_aero_loads(self, comm, filename, root=0):
+        """
+        Read the aerodynamic loads file for the TacsOnewayDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        loads_data = None
+        mesh_data = None
+
+        if comm.rank == root:
+            scenario_data = None
+            loads_data = {}
+            mesh_data = {}
+
+            with open(filename, "r") as fp:
+                for line in fp.readlines():
+                    entries = line.strip().split(" ")
+                    # print("==> entries: ", entries)
+                    if len(entries) == 2:
+                        assert int(entries[1]) == len(self.scenarios)
+                        assert int(entries[0]) == len(self.bodies)
+
+                    elif len(entries) == 3 and entries[0] == "scenario":
+                        matching_scenario = False
+                        for scenario in self.scenarios:
+                            if str(scenario.name).strip() == str(entries[2]).strip():
+                                matching_scenario = True
+                                break
+                        assert matching_scenario
+                        if scenario_data is not None:
+                            loads_data[scenario.id] = scenario_data
+                        scenario_data = []
+                    elif len(entries) == 4 and entries[0] == "body_mesh":
+                        body_name = entries[2]
+                        mesh_data[body_name] = {"aeroID": [], "aeroX": []}
+                    elif len(entries) == 4 and entries[0] != "body":
+                        mesh_data[body_name]["aeroID"] += [entries[0]]
+                        mesh_data[body_name]["aeroX"] += entries[1:4]
+
+                    elif len(entries) == 5:
+                        entry = {
+                            "bodyName": body_name,
+                            "aeroID": entries[0],
+                            "load": entries[1:4],
+                            "hflux": entries[4],
+                        }
+                        scenario_data.append(entry)
+
+            loads_data[scenario.id] = scenario_data
+
+        loads_data = comm.bcast(loads_data, root=root)
+        mesh_data = comm.bcast(mesh_data, root=root)
+
+        # initialize the mesh data
+        for body in self.bodies:
+            global_aero_x = np.array(mesh_data[body.name]["aeroX"])
+            global_aero_ids = np.array(mesh_data[body.name]["aeroID"])
+
+            body_ind = np.array([_ for _ in range(len(global_aero_ids))])
+            if comm.rank == root:
+                split_body_ind = np.array_split(body_ind, comm.Get_size())
+            else:
+                split_body_ind = None
+
+            local_body_ind = comm.scatter(split_body_ind, root=root)
+
+            local_aero_ids = global_aero_ids[local_body_ind]
+
+            aero_x_ind = (
+                [3 * i for i in local_body_ind]
+                + [3 * i + 1 for i in local_body_ind]
+                + [3 * i + 2 for i in local_body_ind]
+            )
+            aero_x_ind = sorted(aero_x_ind)
+
+            local_aero_x = list(global_aero_x[aero_x_ind])
+
+            body.initialize_aero_nodes(local_aero_x, local_aero_ids)
+
+        # return the loads data
+        return loads_data
+
     def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
         """
         Write the sensitivity file.

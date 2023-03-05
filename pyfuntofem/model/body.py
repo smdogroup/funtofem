@@ -1577,6 +1577,109 @@ class Body(Base):
 
         return
 
+    def _distribute_aero_loads(self, data):
+        """
+        distribute the aero loads and heat flux from a loads file
+        """
+        for scenario_id in data:
+            scenario_data = data[scenario_id]
+            for entry in scenario_data:
+                for ind, aero_id in enumerate(self.aero_id):
+                    if entry["aeroID"] == aero_id and entry["bodyName"] == self.name:
+                        if self.transfer is not None:
+                            self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = entry[
+                                "load"
+                            ]
+                        if self.thermal_transfer is not None:
+                            self.aero_heat_flux[scenario_id][ind] = entry["hflux"]
+                        break
+
+    def _collect_aero_mesh(self, comm, root=0):
+        """
+        gather the aero ids, and aero mesh coordinates or aero_X onto the root processor
+        these will later be written to the loads file
+        """
+        all_aero_ids = comm.gather(self.aero_id, root=root)
+        all_aero_X = comm.gather(self.aero_X, root=root)
+
+        aero_ids = []
+        aero_X = []
+
+        if comm.rank == root:
+            aero_ids = []
+            for d in all_aero_ids:
+                if d is not None:
+                    aero_ids.append(d)
+
+            aero_X = []
+            for d in all_aero_X:
+                if d is not None:
+                    aero_X.append(d)
+
+            if len(aero_ids) == 0:
+                aero_ids = np.arange(aero_X.shape[0] // 3, dtype=int)
+            else:
+                aero_ids = np.concatenate(aero_ids)
+
+            if len(aero_X) == 0:
+                aero_X = np.zeros((3 * len(aero_ids), 1))
+            else:
+                aero_X = np.concatenate(aero_X)
+
+        return aero_ids, aero_X
+
+    def _collect_aero_loads(self, comm, scenario, root=0):
+        """
+        gather the aerodynamic load and heat flux from each MPI processor onto the root
+        Then return the global aero ids, heat fluxes, and loads, which are later written to a file
+        """
+        all_aero_ids = comm.gather(self.aero_id, root=root)
+        if self.transfer is not None:
+            all_aero_loads = comm.gather(self.aero_loads[scenario.id], root=root)
+        else:
+            all_aero_loads = []
+        if self.thermal_transfer is not None:
+            all_aero_hflux = comm.gather(self.aero_heat_flux[scenario.id], root=root)
+        else:
+            all_aero_hflux = []
+
+        aero_ids = []
+        aero_loads = []
+        aero_hflux = []
+
+        if comm.rank == root:
+            aero_ids = []
+            for d in all_aero_ids:
+                if d is not None:
+                    aero_ids.append(d)
+
+            aero_loads = []
+            for d in all_aero_loads:
+                if d is not None:
+                    aero_loads.append(d)
+
+            aero_hflux = []
+            for d in all_aero_hflux:
+                if d is not None:
+                    aero_hflux.append(d)
+
+            if len(aero_ids) == 0:
+                aero_ids = np.arange(aero_loads.shape[0] // 3, dtype=int)
+            else:
+                aero_ids = np.concatenate(aero_ids)
+
+            if len(aero_loads) > 0:
+                aero_loads = np.concatenate(aero_loads)
+            else:
+                aero_loads = np.zeros((3 * len(aero_ids), 1))
+
+            if len(aero_hflux) > 0:
+                aero_hflux = np.concatenate(aero_hflux)
+            else:
+                aero_hflux = np.zeros((1 * len(aero_ids), 1))
+
+        return aero_ids, aero_hflux, aero_loads
+
     def collect_coordinate_derivatives(self, comm, discipline, root=0):
         """
         Write the sensitivity files for the aerodynamic and structural meshes on

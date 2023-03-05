@@ -168,8 +168,9 @@ class TestAerodynamicSolver(SolverInterface):
         self.omega2 = 0.001 * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the aerodynamic or structural mesh
+        aero_id = np.arange(1, self.npts + 1)
         for body in model.bodies:
-            body.initialize_aero_nodes(self.aero_X)
+            body.initialize_aero_nodes(self.aero_X, aero_id)
 
         return
 
@@ -447,8 +448,9 @@ class TestStructuralSolver(SolverInterface):
         self.func_coefs2 = np.random.rand(self.npts)
 
         # Initialize the coordinates of the structural mesh
+        struct_id = np.arange(1, self.npts + 1)
         for body in model.bodies:
-            body.initialize_struct_nodes(self.struct_X)
+            body.initialize_struct_nodes(self.struct_X, struct_id)
 
         return
 

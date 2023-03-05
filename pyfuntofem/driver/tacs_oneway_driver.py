@@ -123,7 +123,7 @@ class TacsOnewayDriver:
 
         Parameters
         ----------
-        flow_solver: [:class:`~fun3d_interface.Fun3dInterface or :class`~test_solver.TestAerodynamicSolver`]
+        flow_solver: [:class:`~interface.Fun3dInterface or :class`~interface.TestAerodynamicSolver`]
             Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver
         tacs_aim: `caps2tacs.TacsAim`
             Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
@@ -176,6 +176,68 @@ class TacsOnewayDriver:
 
             # run postAnalysis to prevent CAPS_DIRTY error
             tacs_aim.post_analysis()
+
+        return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
+
+    @classmethod
+    def prime_loads_from_file(
+        cls, filename, solvers, model, nprocs, transfer_settings, tacs_aim=None
+    ):
+        """
+        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+        Built from an aero loads file of a previous CFD analysis in FuntofemNlbgs driver (TODO : make uncoupled fluid solver features)
+        The loads file is written from the FUNtoFEM model after a forward analysis of a flow solver
+
+        Parameters
+        ----------
+        filename : str or path to aero loads file
+            the filepath of the aerodynamic loads file from a previous CFD analysis (written from FUNtoFEM model)
+        solvers: :class:`~interface.SolverManager`
+            Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver
+        model : :class:`~model.FUNtoFEMmodel
+        nprocs: int
+            Number of processes that TACS is running on.
+        transfer_settings: :class:`~transfer_settings.TransferSettings`
+            Settings for transfer of state variables across aero and struct meshes
+        tacs_aim: `caps2tacs.TacsAim`
+            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
+        """
+        comm = solvers.comm
+        world_rank = comm.Get_rank()
+        if world_rank < nprocs:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        tacs_comm = comm.Split(color, world_rank)
+
+        # initialize transfer settings
+        comm_manager = solvers.comm_manager
+
+        # read in the loads from the file
+        loads_data = model.read_aero_loads(comm, filename)
+
+        # initialize the transfer scheme then distribute aero loads
+        for body in model.bodies:
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=tacs_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=transfer_settings,
+            )
+            for scenario in model.scenarios:
+                body.initialize_variables(scenario)
+            body._distribute_aero_loads(loads_data)
+
+        if tacs_aim is None:
+            for body in model.bodies:
+                for scenario in model.scenarios:
+                    # perform disps transfer first to prevent seg fault
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
+                    body.transfer_loads(scenario)
+                    body.transfer_heat_flux(scenario)
 
         return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
 
