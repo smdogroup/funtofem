@@ -644,7 +644,6 @@ class Body(Base):
             na = 3 * self.aero_nnodes
 
             if scenario.steady:
-                print(f"scenario id = {scenario.id}, {type(scenario.id)}")
                 self.struct_loads[scenario.id] = np.zeros(ns, dtype=self.dtype)
                 self.aero_loads[scenario.id] = np.zeros(na, dtype=self.dtype)
                 self.struct_disps[scenario.id] = np.zeros(ns, dtype=self.dtype)

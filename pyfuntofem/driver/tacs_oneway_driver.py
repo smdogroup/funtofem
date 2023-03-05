@@ -200,7 +200,7 @@ class TacsOnewayDriver:
         transfer_settings: :class:`~transfer_settings.TransferSettings`
             Settings for transfer of state variables across aero and struct meshes
         tacs_aim: `caps2tacs.TacsAim`
-            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.        
+            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
         """
         comm = solvers.comm
         world_rank = comm.Get_rank()
@@ -215,7 +215,7 @@ class TacsOnewayDriver:
 
         # read in the loads from the file
         loads_data = model.read_aero_loads(comm, filename)
-        
+
         # initialize the transfer scheme then distribute aero loads
         for body in model.bodies:
             body.initialize_transfer(
@@ -229,11 +229,13 @@ class TacsOnewayDriver:
             for scenario in model.scenarios:
                 body.initialize_variables(scenario)
             body._distribute_aero_loads(loads_data)
-            
 
         if tacs_aim is None:
             for body in model.bodies:
                 for scenario in model.scenarios:
+                    # perform disps transfer first to prevent seg fault
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
                     body.transfer_loads(scenario)
                     body.transfer_heat_flux(scenario)
 

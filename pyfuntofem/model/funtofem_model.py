@@ -471,7 +471,7 @@ class FUNtoFEMmodel(object):
             with open(filename, "r") as fp:
                 for line in fp.readlines():
                     entries = line.strip().split(" ")
-                    #print("==> entries: ", entries)
+                    # print("==> entries: ", entries)
                     if len(entries) == 2:
                         assert int(entries[1]) == len(self.scenarios)
                         assert int(entries[0]) == len(self.bodies)
@@ -529,10 +529,10 @@ class FUNtoFEMmodel(object):
             )
             aero_x_ind = sorted(aero_x_ind)
 
-            local_aero_x = global_aero_x[aero_x_ind]
+            local_aero_x = list(global_aero_x[aero_x_ind])
 
             body.initialize_aero_nodes(local_aero_x, local_aero_ids)
-            
+
         # return the loads data
         return loads_data
 
