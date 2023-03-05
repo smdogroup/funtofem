@@ -133,7 +133,10 @@ class SolverManager:
 
     @property
     def aero_comm(self):
-        return self.flow.comm
+        if self.flow is not None:
+            return self.flow.comm
+        else:
+            return self.comm
 
     @property
     def aero_root(self):
@@ -148,8 +151,10 @@ class SolverManager:
             is_tacs
         ):  # TODO : change tacs_comm -> comm and comm -> master_comm so simpler
             return self.structural.tacs_comm
-        else:
+        elif self.structural is not None:
             return self.structural.comm
+        else:
+            return self.comm
 
     @property
     def struct_root(self):
