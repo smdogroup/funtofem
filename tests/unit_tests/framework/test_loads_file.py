@@ -35,7 +35,6 @@ class TestLoadsFile(unittest.TestCase):
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_loads_file_aeroelastic(self):
-
         # ---------------------------
         # Write the loads file
         # ---------------------------
@@ -83,7 +82,6 @@ class TestLoadsFile(unittest.TestCase):
         return
 
     def test_loads_file_aerothermoelastic(self):
-
         # ---------------------------
         # Write the loads file
         # ---------------------------
