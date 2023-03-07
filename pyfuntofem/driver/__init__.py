@@ -19,5 +19,4 @@ from .transfer_settings import *
 
 # import the two tacs drivers if tacs is available
 if tacs_loader is not None:
-    from .tacs_driver import *
-    from .tacs_shape_driver import *
+    from .tacs_oneway_driver import *
