@@ -26,6 +26,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="transfer_scheme.html" title="Transfer Scheme"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -44,27 +47,46 @@
   <section id="funtofem-driver">
 <h1>FUNtoFEM Driver<a class="headerlink" href="#funtofem-driver" title="Permalink to this heading">¶</a></h1>
 <p>While the FUNtoFEM model holds a lot of the aeroelastic and design data, the driver is what solves the coupled problems.
-The nonlinear block Gauss Seidel is the current driver.</p>
+The nonlinear block Gauss Seidel is the current driver. The</p>
 <p>To use the driver:</p>
 <ol class="arabic simple">
-<li><p>Create the solver dictionary</p></li>
-<li><p>Set up the transfer scheme options</p></li>
+<li><p>Create the SolverManager class</p></li>
+<li><p>(optional) Define a CommManager class. If not, it uses the default CommManager created in the SolverManager.</p></li>
+<li><p>Define the TransferSettings object</p></li>
 <li><p>Instantiate the driver then call the run methods.</p></li>
 </ol>
-<section id="creating-the-solver-dictionary">
-<h2>Creating the solver dictionary<a class="headerlink" href="#creating-the-solver-dictionary" title="Permalink to this heading">¶</a></h2>
-<p>The disciplinary solvers in FUNtoFEM are a dictionary of the solver interface objects.
-The solver interface objects exchange data and ask the disciplinary solvers to do tasks like
-taking forward and adjoint interations and calculating coordinate derivatives.</p>
+<section id="creating-the-solver-manager">
+<h2>Creating the solver manager<a class="headerlink" href="#creating-the-solver-manager" title="Permalink to this heading">¶</a></h2>
+<p>The disciplinary solvers in FUNtoFEM are a collection of the solver interface objects stored in
+the <cite>SolverManager</cite> class. The solver interface objects exchange data and ask the disciplinary
+solvers to do tasks like taking forward and adjoint interations and calculating coordinate derivatives.</p>
 <p>Here’s some pseudocode to create the solvers for the NLBGS driver.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">solvers</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flow_solver</span><span class="p">()</span>
-<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">structural_solver</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+<span class="n">solvers</span> <span class="o">=</span> <span class="n">SolverManager</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">flow</span> <span class="o">=</span> <span class="n">flow_solver</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">structural</span> <span class="o">=</span> <span class="n">structural_solver</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-the-comm-manager">
+<h2>Creating the comm manager<a class="headerlink" href="#creating-the-comm-manager" title="Permalink to this heading">¶</a></h2>
+<p>The disciplinary comms in FUNtoFEM are used in each TransferScheme’s in funtofem and setup by the CommManager.
+If the CommManager is not defined and input into the FUNtoFEMnlbgs driver then the CommManager will be built
+as below with the tacs_comm copied from the tacs_interface. Default CommManager’s are not available for other
+structural solvers at this time.</p>
+<p>Here’s some pseudocode to create the solvers for the NLBGS driver.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">comm_manager</span> <span class="o">=</span> <span class="n">CommManager</span><span class="p">(</span>
+    <span class="n">master_comm</span><span class="o">=</span><span class="n">comm</span><span class="p">,</span>
+    <span class="n">struct_comm</span><span class="o">=</span><span class="n">tacs_comm</span><span class="p">,</span>
+    <span class="n">struct_root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">aero_comm</span><span class="o">=</span><span class="n">comm</span><span class="p">,</span>
+    <span class="n">aero_root</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="transfer-scheme-set-up">
-<h2>Transfer scheme set up<a class="headerlink" href="#transfer-scheme-set-up" title="Permalink to this heading">¶</a></h2>
+<h2>Transfer Scheme Set Up<a class="headerlink" href="#transfer-scheme-set-up" title="Permalink to this heading">¶</a></h2>
 <p>Several transfer schemes have been implemented in FUNtoFEM.
 The transfer schemes are stored in the FUNtoFEM bodies.
 Since each body in the model has it’s own transfer scheme instance, different bodies can use different schemes within the same model.
@@ -75,20 +97,22 @@ If no transfer scheme options are provide, MELD with the default options is used
 <section id="meld">
 <h3>MELD<a class="headerlink" href="#meld" title="Permalink to this heading">¶</a></h3>
 <p>The MELD scheme is the only scheme in FUNtoFEM that currently has implemented all of the derivatives necessary for shape derivatives in optimization.
-The default options for MELD are:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;MELD&#39;</span><span class="p">}</span>
-
-<span class="c1"># symmetry plane -1-&gt; no symmetry</span>
-<span class="c1">#                 0-&gt; x=0 plane symmetry</span>
-<span class="c1">#                 1-&gt; y=0 plane symmetry</span>
-<span class="c1">#                 2-&gt; z=0 sym</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;isym&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-
-<span class="c1"># weighting function parameter. As lower values of beta -&gt; more equal weighting</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-
-<span class="c1"># number of structural nodes each aerodynamic node is connected to</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;npts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+The default options for MELD are listed below. The argument <cite>isym</cite> is used to specify a symmetry plane. The <cite>beta</cite> argument is a weighting function
+parameter, with lower values of beta giving higher weight among the nearest neighbors. The <cite>npts</cite> argument specifies how many nearest neighbors are
+used in the transfer scheme from structural to aerodynamic mesh and vice versa.</p>
+<p>Options for <cite>isym</cite>:</p>
+<ul class="simple">
+<li><p>-1 for no symmetry</p></li>
+<li><p>0 for symmetry across x = 0</p></li>
+<li><p>1 for symmetry across y = 0</p></li>
+<li><p>2 for symmetry across z = 0</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span>
+    <span class="n">isym</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -96,13 +120,11 @@ The default options for MELD are:</p>
 <h3>Linearized MELD<a class="headerlink" href="#linearized-meld" title="Permalink to this heading">¶</a></h3>
 <p>The linearized version of MELD has a lower computational cost than the full version, but it also more error prone for larger deflections and extrapolations.
 It cannot reproduce rigid motion, and should not be used for case such as rotors.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;linearized MELD&#39;</span><span class="p">}</span>
-
-<span class="c1"># weighting function parameter. As lower values of beta -&gt; more equal weighting</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-
-<span class="c1"># number of structural nodes each aerodynamic node is connected to</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;npts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;linearized meld&quot;</span><span class="p">,</span>
+    <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -110,14 +132,17 @@ It cannot reproduce rigid motion, and should not be used for case such as rotors
 <h3>Radial Basis Function<a class="headerlink" href="#radial-basis-function" title="Permalink to this heading">¶</a></h3>
 <p>Radial basis function (RBF) interpolation is available in FUNtoFEM with various basis functions.</p>
 <p>The options available for the RBF scheme are the different basis functions:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span><span class="s1">&#39;RBF&#39;</span><span class="p">}</span>
-
-<span class="c1"># Available basis functions:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Available basis functions:</span>
 <span class="c1"># &#39;thin plate spline&#39;</span>
 <span class="c1"># &#39;gaussian&#39;</span>
 <span class="c1"># &#39;multiquadric&#39;</span>
 <span class="c1"># &#39;inverse multiquadric&#39;</span>
-<span class="n">transfer_options</span><span class="p">[</span><span class="s1">&#39;basis function&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;thin plate spline&#39;</span>
+<span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">,</span>
+    <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;basis function&#39;</span> <span class="p">:</span> <span class="s1">&#39;thin plate spline&#39;</span><span class="p">},</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -130,10 +155,19 @@ additional degrees of freedom are the Euler parameter vector for the rotation.
 For the aerodynamic nodes, the force integration and displacement transfer still only three degrees of freedom.</p>
 </section>
 </section>
-<section id="running-the-driver">
-<h2>Running the driver<a class="headerlink" href="#running-the-driver" title="Permalink to this heading">¶</a></h2>
-<p>Once the model, solver dictionary, transfer options are created, you can instantiate the driver and run the coupled forward and adjoint solvers.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">transfer_options</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+<section id="running-the-coupled-funtofem-driver">
+<h2>Running the coupled FUNtoFEM driver<a class="headerlink" href="#running-the-coupled-funtofem-driver" title="Permalink to this heading">¶</a></h2>
+<p>Once the model, solver dictionary, transfer settings are created, you can instantiate the driver and run the coupled forward and adjoint solvers.
+Often times, we use the default comm manager and don’t specify it as follows.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">transfer_settings</span><span class="o">=</span><span class="n">transfer_settings</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If a user-defined CommManager is built, then the coupled funtofem driver is built as follows.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm_manager</span><span class="p">,</span> <span class="n">transfer_settings</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
 
 <span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 
@@ -144,14 +178,190 @@ For the aerodynamic nodes, the force integration and displacement transfer still
 <section id="setting-up-a-design-optimization">
 <h2>Setting up a design optimization<a class="headerlink" href="#setting-up-a-design-optimization" title="Permalink to this heading">¶</a></h2>
 <p>See <a class="reference internal" href="model.html"><span class="doc">FUNtoFEM Model</span></a> for explanation of using the driver and model class for a design optimization. There is also an example in the examples directory.</p>
+<p>If the user wants a better initial design before optimization with the fully-coupled funtofem driver above, the
+<cite>TacsOnewayDriver</cite> can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not
+include shape variables directly in the driver at the moment, the tacs oneway driver supports shape optimization
+with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.</p>
+</section>
+<section id="building-and-using-the-tacsonewaydriver">
+<h2>Building and using the TacsOnewayDriver<a class="headerlink" href="#building-and-using-the-tacsonewaydriver" title="Permalink to this heading">¶</a></h2>
+<p>Without shape optimization</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsOnewayDriver</span><span class="o">.</span><span class="n">prime_loads</span><span class="p">(</span><span class="n">funtofem_driver</span><span class="p">)</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With the shape optimization</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsOnewayDriver</span><span class="o">.</span><span class="n">prime_loads_from_shape</span><span class="p">(</span>
+     <span class="n">solvers</span><span class="o">.</span><span class="n">flow</span><span class="p">,</span>
+     <span class="n">tacs_aim</span><span class="p">,</span>
+     <span class="n">transfer_settings</span><span class="p">,</span>
+     <span class="n">nprocs</span>
+ <span class="p">)</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+
+<span class="n">fail</span> <span class="o">=</span> <span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
+</pre></div>
+</div>
 </section>
 <section id="driver-classes">
 <h2>Driver Classes<a class="headerlink" href="#driver-classes" title="Permalink to this heading">¶</a></h2>
 <section id="funtofem-driver-class">
 <h3>FUNtoFEM Driver Class<a class="headerlink" href="#funtofem-driver-class" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMDriver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.driver.</span></span><span class="sig-name descname"><span class="pre">FUNtoFEMDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comm_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/_funtofem_driver.html#FUNtoFEMDriver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMDriver" title="Permalink to this definition">¶</a></dt>
+<dd><p>The FUNtoFEM driver base class has all of the driver except for the coupling algorithms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solvers</strong> (<em>SolverManager</em>) – the various disciplinary solvers</p></li>
+<li><p><strong>comm_manager</strong> (<em>CommManager</em>) – manager of discipline communicators</p></li>
+<li><p><strong>transfer_settings</strong> (<em>TransferSettings</em>) – options of the load and displacement transfer scheme</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMmodel</span></code>) – The model containing the design data</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMDriver.update_model">
+<span class="sig-name descname"><span class="pre">update_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/_funtofem_driver.html#FUNtoFEMDriver.update_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMDriver.update_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the model object that the driver sees</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>FUNtoFEM model type</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMDriver.solve_forward">
+<span class="sig-name descname"><span class="pre">solve_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/_funtofem_driver.html#FUNtoFEMDriver.solve_forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMDriver.solve_forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the coupled forward problem</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – number of coupled solver steps. Only for use if a FUNtoFEM model is not defined</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMDriver.solve_adjoint">
+<span class="sig-name descname"><span class="pre">solve_adjoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/_funtofem_driver.html#FUNtoFEMDriver.solve_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMDriver.solve_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the coupled adjoint problem and computes gradients</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="funtofem-nlbgs-driver-class">
 <h3>FUNtoFEM NLBGS Driver Class<a class="headerlink" href="#funtofem-nlbgs-driver-class" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMnlbgs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.driver.</span></span><span class="sig-name descname"><span class="pre">FUNtoFEMnlbgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comm_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/funtofem_nlbgs_driver.html#FUNtoFEMnlbgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMnlbgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
+solvers for steady and unsteady coupled adjoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solvers</strong> (<em>SolverManager</em>) – the various disciplinary solvers</p></li>
+<li><p><strong>comm_manager</strong> (<em>CommManager</em>) – manager for various discipline communicators</p></li>
+<li><p><strong>transfer_settings</strong> (<em>TransferSettings</em>) – options of the load and displacement transfer scheme</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMmodel</span></code>) – The model containing the design data</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyfuntofem.driver.FUNtoFEMnlbgs.manager">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">manager</span></span><a class="headerlink" href="#pyfuntofem.driver.FUNtoFEMnlbgs.manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an optimization manager object for this driver</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="tacs-oneway-coupled-driver-class">
+<h3>TACS Oneway-Coupled Driver Class<a class="headerlink" href="#tacs-oneway-coupled-driver-class" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.driver.</span></span><span class="sig-name descname"><span class="pre">TacsOnewayDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver" title="Permalink to this definition">¶</a></dt>
+<dd><p>build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solvers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">SolverManager</span></code>) – The various disciplinary solvers.</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMmodel</span></code>) – The model containing the design data.</p></li>
+<li><p><strong>tacs_aim</strong> (<cite>caps2tacs.TacsAim</cite>) – Interface object for TACS and ESP/CAPS, wraps the tacsAIM.</p></li>
+<li><p><strong>nprocs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Number of processes that TACS is running on.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.prime_loads">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prime_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">funtofem_driver</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.prime_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.prime_loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to prime struct loads for optimization over tacs analysis with no shape variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>funtofem_driver</strong> (<a class="reference internal" href="#pyfuntofem.driver.FUNtoFEMnlbgs" title="pyfuntofem.driver.funtofem_nlbgs_driver.FUNtoFEMnlbgs"><code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMnlbgs</span></code></a>) – the coupled funtofem NLBGS driver</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.prime_loads_shape">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prime_loads_shape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flow_solver</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bdf_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.prime_loads_shape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.prime_loads_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>flow_solver</strong> ([<code class="xref py py-class docutils literal notranslate"><span class="pre">TestAerodynamicSolver</span></code>]) – Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver</p></li>
+<li><p><strong>tacs_aim</strong> (<cite>caps2tacs.TacsAim</cite>) – Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.</p></li>
+<li><p><strong>transfer_settings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">TransferSettings</span></code>) – Settings for transfer of state variables across aero and struct meshes</p></li>
+<li><p><strong>nprocs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Number of processes that TACS is running on.</p></li>
+<li><p><strong>bdf_file</strong> (str or <cite>os.path</cite>) – File or path to the bdf or dat file of structural mesh</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prime_loads_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.prime_loads_from_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+Built from an aero loads file of a previous CFD analysis in FuntofemNlbgs driver (TODO : make uncoupled fluid solver features)
+The loads file is written from the FUNtoFEM model after a forward analysis of a flow solver</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a><em> or </em><em>path to aero loads file</em>) – the filepath of the aerodynamic loads file from a previous CFD analysis (written from FUNtoFEM model)</p></li>
+<li><p><strong>solvers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">SolverManager</span></code>) – Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver</p></li>
+<li><p><strong>model</strong> (:class:<a href="#id1"><span class="problematic" id="id2">`</span></a>~model.FUNtoFEMmodel) – </p></li>
+<li><p><strong>nprocs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Number of processes that TACS is running on.</p></li>
+<li><p><strong>transfer_settings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">TransferSettings</span></code>) – Settings for transfer of state variables across aero and struct meshes</p></li>
+<li><p><strong>tacs_aim</strong> (<cite>caps2tacs.TacsAim</cite>) – Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.solve_forward">
+<span class="sig-name descname"><span class="pre">solve_forward</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.solve_forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.solve_forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>forward analysis for the given shape and functionals
+assumes shape variables have already been changed</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.solve_adjoint">
+<span class="sig-name descname"><span class="pre">solve_adjoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.solve_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.solve_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>solve the adjoint analysis for the given shape
+assumes the forward analysis for this shape has already been performed</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 </section>
@@ -167,19 +377,22 @@ For the aerodynamic nodes, the force integration and displacement transfer still
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">FUNtoFEM Driver</a><ul>
-<li><a class="reference internal" href="#creating-the-solver-dictionary">Creating the solver dictionary</a></li>
-<li><a class="reference internal" href="#transfer-scheme-set-up">Transfer scheme set up</a><ul>
+<li><a class="reference internal" href="#creating-the-solver-manager">Creating the solver manager</a></li>
+<li><a class="reference internal" href="#creating-the-comm-manager">Creating the comm manager</a></li>
+<li><a class="reference internal" href="#transfer-scheme-set-up">Transfer Scheme Set Up</a><ul>
 <li><a class="reference internal" href="#meld">MELD</a></li>
 <li><a class="reference internal" href="#linearized-meld">Linearized MELD</a></li>
 <li><a class="reference internal" href="#radial-basis-function">Radial Basis Function</a></li>
 <li><a class="reference internal" href="#beam">Beam</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-the-driver">Running the driver</a></li>
+<li><a class="reference internal" href="#running-the-coupled-funtofem-driver">Running the coupled FUNtoFEM driver</a></li>
 <li><a class="reference internal" href="#setting-up-a-design-optimization">Setting up a design optimization</a></li>
+<li><a class="reference internal" href="#building-and-using-the-tacsonewaydriver">Building and using the TacsOnewayDriver</a></li>
 <li><a class="reference internal" href="#driver-classes">Driver Classes</a><ul>
 <li><a class="reference internal" href="#funtofem-driver-class">FUNtoFEM Driver Class</a></li>
 <li><a class="reference internal" href="#funtofem-nlbgs-driver-class">FUNtoFEM NLBGS Driver Class</a></li>
+<li><a class="reference internal" href="#tacs-oneway-coupled-driver-class">TACS Oneway-Coupled Driver Class</a></li>
 </ul>
 </li>
 </ul>
@@ -217,6 +430,9 @@ For the aerodynamic nodes, the force integration and displacement transfer still
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="transfer_scheme.html" title="Transfer Scheme"
              >next</a> |</li>

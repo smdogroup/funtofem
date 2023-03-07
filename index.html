@@ -25,6 +25,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="analysis_framework.html" title="Analysis Framework"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">FUNtoFEM .0 documentation</a> &#187;</li>
@@ -62,10 +65,12 @@ If you wish to create a new interface or a new driver, see the <a class="referen
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="driver.html">FUNtoFEM Driver</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="driver.html#creating-the-solver-dictionary">Creating the solver dictionary</a></li>
-<li class="toctree-l2"><a class="reference internal" href="driver.html#transfer-scheme-set-up">Transfer scheme set up</a></li>
-<li class="toctree-l2"><a class="reference internal" href="driver.html#running-the-driver">Running the driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver.html#creating-the-solver-manager">Creating the solver manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver.html#creating-the-comm-manager">Creating the comm manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver.html#transfer-scheme-set-up">Transfer Scheme Set Up</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver.html#running-the-coupled-funtofem-driver">Running the coupled FUNtoFEM driver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="driver.html#setting-up-a-design-optimization">Setting up a design optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver.html#building-and-using-the-tacsonewaydriver">Building and using the TacsOnewayDriver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="driver.html#driver-classes">Driver Classes</a></li>
 </ul>
 </li>
@@ -81,7 +86,8 @@ If you wish to create a new interface or a new driver, see the <a class="referen
 <li class="toctree-l2"><a class="reference internal" href="py_script.html#mpi">MPI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="py_script.html#model-architecture">Model Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="py_script.html#discipline-solvers">Discipline Solvers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="py_script.html#driver-set-up">Driver Set-up</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_script.html#building-a-coupled-funtofem-driver">Building a Coupled Funtofem Driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_script.html#building-a-tacs-oneway-coupled-driver">Building a Tacs Oneway-Coupled Driver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="py_script.html#driver-call">Driver Call</a></li>
 </ul>
 </li>
@@ -113,6 +119,7 @@ If you wish to create a new interface or a new driver, see the <a class="referen
 <li><p>Lenard Halim</p></li>
 <li><p>Sejal Sahu</p></li>
 <li><p>Brian Burke</p></li>
+<li><p>Sean Engelstad</p></li>
 </ul>
 </section>
 <section id="external-resources">
@@ -181,6 +188,9 @@ limitations under the License.</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="analysis_framework.html" title="Analysis Framework"
              >next</a> |</li>

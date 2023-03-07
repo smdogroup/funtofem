@@ -14,6 +14,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="pyFUNtoFEM" href="py_script.html" />
@@ -25,6 +26,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="py_script.html" title="pyFUNtoFEM"
              accesskey="N">next</a> |</li>
@@ -63,8 +67,576 @@ aero_X is a flattened array of length 3*aero_nnodes.
 For a structural solver, the <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> holds the entire structural mesh and number of nodes: body.struct_X and body.struct_nnodes.
 struct_X is a flattened array of length 3*struct_nnodes.</p>
 </section>
-<section id="solver-interface-class">
-<h3>Solver Interface Class<a class="headerlink" href="#solver-interface-class" title="Permalink to this heading">¶</a></h3>
+<section id="module-pyfuntofem.interface">
+<span id="solver-interface-class"></span><h3>Solver Interface Class<a class="headerlink" href="#module-pyfuntofem.interface" title="Permalink to this heading">¶</a></h3>
+<p>This file is part of the package FUNtoFEM for coupled aeroelastic simulation
+and design optimization.</p>
+<p>Copyright (C) 2015 Georgia Tech Research Corporation.
+Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
+All rights reserved.</p>
+<p>FUNtoFEM is licensed under the Apache License, Version 2.0 (the “License”);
+you may not use this software except in compliance with the License.
+You may obtain a copy of the License at</p>
+<blockquote>
+<div><p><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
+</div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an “AS IS” BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.interface.</span></span><span class="sig-name descname"><span class="pre">SolverInterface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>A base class to define what functions solver interfaces in FUNtoFEM need</p>
+<p>The solver constructor is required to set discipline node locations (either <span class="math notranslate nohighlight">\(x_a\)</span> or <span class="math notranslate nohighlight">\(x_s\)</span>)
+in the funtofem body class. These values are passed via a call to either
+<code class="docutils literal notranslate"><span class="pre">body.initialize_struct_nodes(struct_X)</span></code> or <code class="docutils literal notranslate"><span class="pre">body.initialize_aero_nodes(aero_X)</span></code>.
+The constructor can be used flexibly for other discipline solver specific activities (e.g. solver
+instantiation, reading mesh, allocating solver data).</p>
+<p class="rubric">Examples</p>
+<p>Notional aerodynamic solver implementation <code class="docutils literal notranslate"><span class="pre">solver</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set aerodynamic surface meshes</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">aero_X</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_mesh</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+    <span class="n">body</span><span class="o">.</span><span class="n">initialize_aero_nodes</span><span class="p">(</span><span class="n">aero_X</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notional structural solver implementation <code class="docutils literal notranslate"><span class="pre">solver</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set structural meshes</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">struct_X</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_mesh</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+    <span class="n">body</span><span class="o">.</span><span class="n">initialize_struct_nodes</span><span class="p">(</span><span class="n">struct_X</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.set_variables">
+<span class="sig-name descname"><span class="pre">set_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.set_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.set_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the design variables into the solver.
+The scenario and bodies objects have dictionaries of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code> objects.
+The interface class should pick out which type of variables it needs and pass them into the solver</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">):</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">):</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_variable</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.set_functions">
+<span class="sig-name descname"><span class="pre">set_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.set_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.set_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the function definitions into the solver.
+The scenario has a list of function objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+
+    <span class="c1"># Set the structural functions in</span>
+    <span class="k">if</span> <span class="n">function</span><span class="o">.</span><span class="n">adjoint</span> <span class="ow">and</span> <span class="n">function</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_adjoint_function</span><span class="p">(</span><span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span><span class="n">stop</span><span class="p">)</span>
+
+    <span class="c1"># Tell the solver that an adjoint is needed, but the function is</span>
+    <span class="c1"># not explicitly dependent on structural states</span>
+    <span class="k">elif</span> <span class="n">function</span><span class="o">.</span><span class="n">adjoint</span> <span class="ow">and</span> <span class="n">function</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">!=</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_dummy_function</span><span class="p">()</span>
+
+    <span class="c1"># Functions such as structural mass do not need and adjoint</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">function</span><span class="o">.</span><span class="n">adjoint</span> <span class="ow">and</span> <span class="n">function</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">set_nonadjoint_function</span><span class="p">(</span><span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.get_functions">
+<span class="sig-name descname"><span class="pre">get_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.get_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.get_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put the function values from the solver in the value attribute of the scneario’s functions.
+The scenario has the list of function objects where the functions owned by this solver will be set.
+You can evaluate the functions based on the name or based on the functions set during
+<code class="xref py py-func docutils literal notranslate"><span class="pre">set_functions()</span></code>.
+The solver is only responsible for returning the values of functions it owns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+
+    <span class="c1"># Set the structural functions in</span>
+    <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">==</span> <span class="s2">&quot;structural&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;mass&quot;</span><span class="p">:</span>
+            <span class="n">func</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">evaluate_mass</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ksfailure&quot;</span><span class="p">:</span>
+            <span class="n">func</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_ksfailure</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unknown structural function in get_functions&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.get_function_gradients">
+<span class="sig-name descname"><span class="pre">get_function_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.get_function_gradients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.get_function_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the derivatives of all the functions with respect to design variables associated with this solver.</p>
+<p>Each solver sets the function gradients for its own variables into the function objects using either
+<code class="docutils literal notranslate"><span class="pre">function.set_gradient(var,</span> <span class="pre">value)</span></code> or <code class="docutils literal notranslate"><span class="pre">function.add_gradient(var,</span> <span class="pre">vaule)</span></code>. Note that before
+this function is called, all gradient components are zeroed.</p>
+<p>The derivatives are stored in a dictionary in each function class. As a result, the gradients are
+stored in an unordered format. The gradients returned by <code class="docutils literal notranslate"><span class="pre">model.get_function_gradients()</span></code> are
+flattened into a list of lists whose order is determined by the variable list stored in the model
+class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make sure the gradient is consistent across all processors before setting</span>
+<span class="c1"># the values</span>
+<span class="n">grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">):</span>
+        <span class="n">func</span><span class="o">.</span><span class="n">set_derivatives</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.get_coordinate_derivatives">
+<span class="sig-name descname"><span class="pre">get_coordinate_derivatives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.get_coordinate_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.get_coordinate_derivatives" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the solver’s contributions to the coordinate derivatives for this time step or the total value
+for the steady case. The coordinate derivatives are stored in the body objects in the aero_shape_term
+and struct_shape_term attributes.</p>
+<p>For time dependent problems, this is called at the end of every time step during reverse marching.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The time step number</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">lam_x</span><span class="p">,</span> <span class="n">lam_y</span><span class="p">,</span> <span class="n">lam_Z</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">extract_coordinate_derivatives</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+
+    <span class="n">aero_shape_term</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="n">aero_shape_term</span><span class="p">[</span> <span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_x</span><span class="p">[:,:]</span>
+    <span class="n">aero_shape_term</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_y</span><span class="p">[:,:]</span>
+    <span class="n">aero_shape_term</span><span class="p">[</span><span class="mi">2</span><span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_z</span><span class="p">[:,:]</span>
+</pre></div>
+</div>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="c1"># Add the derivatives to the body</span>
+    <span class="n">lam_x</span><span class="p">,</span> <span class="n">lam_y</span><span class="p">,</span> <span class="n">lam_Z</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">extract_coordinate_derivatives</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+
+    <span class="n">struct_shape_term</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="n">struct_shape_term</span><span class="p">[</span> <span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_x</span><span class="p">[:,:]</span>
+    <span class="n">struct_shape_term</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_y</span><span class="p">[:,:]</span>
+    <span class="n">struct_shape_term</span><span class="p">[</span><span class="mi">2</span><span class="p">::</span><span class="mi">3</span><span class="p">,:</span><span class="n">nfunctions</span><span class="p">]</span> <span class="o">+=</span> <span class="n">lam_z</span><span class="p">[:,:]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.initialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up anything that is necessary for a specific scenario prior to calls to <code class="docutils literal notranslate"><span class="pre">iterate</span></code>.
+A requirement is that discipline solvers update their mesh representations to be consistent
+with the coordinates in the bodies. These coordinate locations can be obtained by
+calling <code class="docutils literal notranslate"><span class="pre">body.get_aero_nodes</span></code> (<span class="math notranslate nohighlight">\(x_a\)</span>) or <code class="docutils literal notranslate"><span class="pre">body.get_struct_nodes</span></code> (<span class="math notranslate nohighlight">\(x_s\)</span>),
+respectively. These coordinates may be updated as a result of design changes.</p>
+<p>Note, it is possible that a discipline solver mesh representation is updated by reading a mesh file
+instead of accepting the funtofem body representation. Ultimately, the requirement is that the funtofem
+body mesh representations <code class="docutils literal notranslate"><span class="pre">body.aero_X</span></code> and <code class="docutils literal notranslate"><span class="pre">body.struct_X</span></code> and their corresponding discipline solver
+mesh representations are consistent.</p>
+<p>The initialize step may accomodate other useful activities such as data allocation,
+setting initial conditions, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Set in the new aerodynamic surface meshes</span>
+ <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+     <span class="n">aero_X</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_nodes</span><span class="p">()</span>
+     <span class="n">solver</span><span class="o">.</span><span class="n">set_surface_node_locations</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">aero_X</span><span class="p">)</span>
+
+<span class="c1"># Initialize internal solver data in preparation for a flow solver iterations</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the new structural surface mesh</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">struct_X</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_nodes</span><span class="p">()</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">set_structural_node_locations</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">struct_X</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.iterate">
+<span class="sig-name descname"><span class="pre">iterate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.iterate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate on the primal residual equation for the present discipline solver. Called in NLBGS solver.</p>
+<p>For an aerodynamic solver, this might include:</p>
+<ol class="arabic simple">
+<li><p>Obtain displacements at aerodynamic surface nodes <span class="math notranslate nohighlight">\(u_a\)</span> from funtofem body objects</p></li>
+<li><p>Deform the meshes</p></li>
+<li><p>Solve for the new aerodynamic state <span class="math notranslate nohighlight">\(q\)</span></p></li>
+<li><p>Integrate and localize aerodynamic surface forces <span class="math notranslate nohighlight">\(f_a\)</span> at aerodynamic surface node locations</p></li>
+</ol>
+<p>For a structural solver:</p>
+<ol class="arabic simple">
+<li><p>Obtain the forces at structural nodes <span class="math notranslate nohighlight">\(f_s\)</span></p></li>
+<li><p>Solve for new displacement state <span class="math notranslate nohighlight">\(u_s\)</span></p></li>
+<li><p>Set new structural displacements <span class="math notranslate nohighlight">\(u_s\)</span></p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the surface node locations and temperatures</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">aero_disps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span> <span class="c1"># May return None if not aeroelastic</span>
+    <span class="k">if</span> <span class="n">aero_disps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">input_surface_deformation</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">aero_disps</span><span class="p">)</span>
+
+    <span class="n">aero_temps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_temps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span> <span class="c1"># May return None if not aerothermal</span>
+    <span class="k">if</span> <span class="n">aero_temps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">input_surface_temperatures</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">)</span>
+
+<span class="c1"># Advance the solver</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">iterate</span><span class="p">()</span>
+
+<span class="c1"># Extract the aerodynamic forces at the nodes and the corresponding</span>
+<span class="c1"># area-weighted normal component of the heat flux</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">aero_loads</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_loads</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">aero_loads</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_surface_forces</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+
+    <span class="n">aero_flux</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_heat_flux</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_flux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">aero_flux</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_surface_heat_flux</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Input the forces and/or heat flux to the structure</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">struct_loads</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struct_loads</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">input_forces</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">struct_loads</span><span class="p">)</span>
+
+    <span class="n">struct_flux</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_heat_flux</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struct_flux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">input_heat_flux</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">struct_flux</span><span class="p">)</span>
+
+<span class="c1"># Solve the problem with the forces/heat loads</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">iterate</span><span class="p">()</span>
+
+<span class="c1"># Extract the displacemets</span>
+    <span class="n">struct_disps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_disps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struct_disps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">struct_disps</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_displacements</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+
+    <span class="n">struct_temps</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_temps</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">struct_temps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">struct_disps</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_temperatures</span><span class="p">(</span><span class="n">ibody</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform any tasks the solver needs to do after the forward steps are complete, e.g., evaluate functions,
+post-process, deallocate unneeded memory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.initialize_adjoint">
+<span class="sig-name descname"><span class="pre">initialize_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.initialize_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.initialize_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform any tasks the solver needs to do before taking adjoint steps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.iterate_adjoint">
+<span class="sig-name descname"><span class="pre">iterate_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.iterate_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.iterate_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjoint iteration for the solver.</p>
+<p>For an aerodynamic solver this will include:</p>
+<ol class="arabic simple">
+<li><p>Obtain the adjoint-Jacobian product of the surface forces from the body classes</p></li>
+<li><p>Obtain the adjoint-Jacobian product of the surface heat fluxes from the body classes</p></li>
+<li><p>Set these values into the adjoint solver</p></li>
+<li><p>Solve for the aerodynamic adjoint</p></li>
+<li><p>Solve the grid adjoint</p></li>
+<li><p>Compute the output adjoint-Jacobian products</p></li>
+<li><p>Set the adjoint-Jacobian product of the aerodynamic displacements into the body classes</p></li>
+<li><p>Set the adjoint-Jacobian product of the aerodynamic surface temperatures into the body classes</p></li>
+</ol>
+<p>For a structural solver this will include:</p>
+<ol class="arabic simple">
+<li><p>Get the displacement adjoint-Jacobian product from the body classes</p></li>
+<li><p>Get the temperature adjoint-Jacobian product from the body classes</p></li>
+<li><p>Set the adjoint-Jacobian products into the right-hand-side of the structural solver</p></li>
+<li><p>Solve the structural or thermomechanical adjoint equations</p></li>
+<li><p>Compute the output adjoint-Jacobian products</p></li>
+<li><p>Set the adjoint-Jacobian product of the structural forces into the body classes</p></li>
+<li><p>Set the adjoint-Jacobian product of the structural heat flux into the body classes</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Aerodynamic Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the inputs to the aerodynamic adjoint</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="c1"># Get the adjoint-Jacobian product for the aero_loads. This may be None</span>
+    <span class="c1"># if it is not defined</span>
+    <span class="n">aero_loads_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_loads_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_loads_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Note: This part may or may not be in the solver itself. This</span>
+        <span class="c1"># hypothetical code is like FUN3D where the integration adjoint</span>
+        <span class="c1"># terms are solved externally and then set into the solver.</span>
+
+        <span class="c1"># Solve the aero force integration adjoint equation</span>
+        <span class="c1"># dF/dfA^{T} * psi_{F} = - dL/dfA^{T} * psi_L = - aero_loads_ajp.</span>
+        <span class="c1"># Note that in this case dF/dfA = I.</span>
+        <span class="n">psi_F</span> <span class="o">=</span> <span class="o">-</span><span class="n">aero_loads_ajp</span>
+
+        <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">set_aero_forces_adjoint</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">psi_F</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">])</span>
+
+    <span class="c1"># Get the adjoint-Jacobian product for the aero_flux. This may be</span>
+    <span class="c1"># None if it is not defined</span>
+    <span class="n">aero_flux_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_heat_flux_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_flux_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Solve the aero heat flux integration</span>
+        <span class="c1"># dH/dhA^{T} * psi_H = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp</span>
+        <span class="n">psi_H</span> <span class="o">=</span> <span class="o">-</span><span class="n">aero_flux_ajp</span>
+
+        <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">set_aero_flux_adjoint</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">psi_H</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">])</span>
+
+<span class="c1"># Iterate on the adjoint equations</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">iterate_adjoint</span><span class="p">()</span>
+
+<span class="c1"># Extract the output adjoint-Jacobian products from the solver</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">aero_disps_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_disps_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_disps_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+            <span class="n">dfdxA</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_disp_adjoint_product</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">ifunc</span><span class="p">)</span>
+            <span class="n">aero_disps_ajp</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="n">dfdxA</span>
+
+    <span class="n">aero_temps_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_aero_temps_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">aero_temps_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+            <span class="n">dfdtA</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_temp_adjoint_product</span><span class="p">(</span><span class="n">ibody</span><span class="p">,</span> <span class="n">ifunc</span><span class="p">)</span>
+            <span class="n">aero_temps_ajp</span><span class="p">[:,</span> <span class="n">ifunc</span><span class="p">]</span> <span class="o">=</span> <span class="n">dfdtA</span>
+</pre></div>
+</div>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Outer loop over the number of functions of interest</span>
+<span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">):</span>
+    <span class="n">rhs</span><span class="p">[:]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dfdu</span><span class="p">[</span><span class="n">ifunc</span><span class="p">]</span> <span class="c1"># Set the right-hand-side</span>
+
+    <span class="c1"># Set the inputs to the structural adjoint</span>
+    <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="n">struct_disps_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_disps_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">struct_disps_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Add the contributions to the adjoint right-hand-side</span>
+            <span class="n">rhs</span><span class="p">[</span><span class="n">load_locations</span><span class="p">]</span> <span class="o">-=</span> <span class="n">struct_disps_ajp</span>
+
+        <span class="n">struct_temps_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_temps_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">struct_temps_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rhs</span><span class="p">[</span><span class="n">temp_locations</span><span class="p">]</span> <span class="o">-=</span> <span class="n">struct_temps_ajp</span>
+
+    <span class="c1"># Solve the adjoint</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+
+    <span class="c1"># Extract the load and heat-flux ajdoint-vector products</span>
+    <span class="n">psi_S</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">get_adjoint</span><span class="p">()</span>
+
+    <span class="c1"># Here the required adjoint vector products are</span>
+    <span class="c1"># struct_loads_ajp = psi_S^{T} * dS/dfS</span>
+    <span class="c1"># struct_flux_ajp = psi_S^{T} * dS/fhS</span>
+    <span class="c1"># We use the residual S = r(u) - fS - hS</span>
+    <span class="k">for</span> <span class="n">ibody</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+        <span class="n">struct_loads_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_loads_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">struct_loads_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">struct_loads_ajp</span><span class="p">[:]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_S</span><span class="p">[</span><span class="n">load_locations</span><span class="p">]</span>
+
+        <span class="n">struct_flux_ajp</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get_struct_heat_flux_ajp</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">struct_flux_ajp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">struct_flux_ajp</span><span class="p">[:]</span> <span class="o">=</span> <span class="o">-</span><span class="n">psi_S</span><span class="p">[</span><span class="n">temp_locations</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.post_adjoint">
+<span class="sig-name descname"><span class="pre">post_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.post_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.post_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.set_states">
+<span class="sig-name descname"><span class="pre">set_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.set_states"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.set_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the states (aero_loads, struct_disps) associated with this step either from memory or the disk for
+the transfer scheme to linearize about. This function is called at the beginning of each adjoint
+step in time dependent problems.</p>
+<p><strong>Note: in the NLBGS algorithm the transfer scheme uses the structural displacements from the prior step.
+set_states will request the states from the previous step but then ask the structural solver to linearize
+about the current step in iterate_adjoint</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The time step number that the driver wants the states from</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Structural Solver:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the step&#39;s values on the disk</span>
+<span class="n">disps_hist</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+<span class="c1"># Set the structural displacements for the transfer scheme residuals to linearize about</span>
+<span class="k">for</span> <span class="n">ibody</span><span class="p">,</span><span class="n">body</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bodies</span><span class="p">):</span>
+    <span class="n">body</span><span class="o">.</span><span class="n">struct_disps</span> <span class="o">=</span> <span class="n">disps_hist</span><span class="p">[</span><span class="n">ibody</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.step_pre">
+<span class="sig-name descname"><span class="pre">step_pre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.step_pre"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.step_pre" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operations before at a step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.step_solver">
+<span class="sig-name descname"><span class="pre">step_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsi_subiter</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.step_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.step_solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</p></li>
+<li><p><strong>fsi_subiter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The FSI subiteration number</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.step_post">
+<span class="sig-name descname"><span class="pre">step_post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.step_post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.step_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Operations after at a step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
+<li><p><strong>bodies</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Body</span></code> objects) – The bodies in the model</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The step number. Will start at the final step and march backwards to 0, the initial condition.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.interface.SolverInterface.test_adjoint">
+<span class="sig-name descname"><span class="pre">test_adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solver_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/interface/_solver_interface.html#SolverInterface.test_adjoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.interface.SolverInterface.test_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test the adjoint implementation depending on the solver type.</p>
+<p>This test evaluates the consistency between the forward and adjoint modes.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 <section id="create-a-body-class-with-shape-parameterization">
@@ -103,7 +675,7 @@ Within the driver, the programmer has the freedom to make calls in certain order
 <li><a class="reference internal" href="#">Programmer’s Guide</a><ul>
 <li><a class="reference internal" href="#create-an-interface-class-for-a-solver">Create an interface class for a solver</a><ul>
 <li><a class="reference internal" href="#data-to-be-set-during-initialization">Data to be set during initialization</a></li>
-<li><a class="reference internal" href="#solver-interface-class">Solver Interface Class</a></li>
+<li><a class="reference internal" href="#module-pyfuntofem.interface">Solver Interface Class</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#create-a-body-class-with-shape-parameterization">Create a body class with shape parameterization</a><ul>
@@ -148,6 +720,9 @@ Within the driver, the programmer has the freedom to make calls in certain order
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="py_script.html" title="pyFUNtoFEM"
              >next</a> |</li>

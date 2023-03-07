@@ -26,6 +26,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="fun3d_config.html" title="FUN3D Configuration Requirements"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -50,12 +53,8 @@ Tha main components are the import section, MPI set-up, model creation, instanti
 <p>At the beginning of your Python script, it is important to import the appropriate modules.
 In the following code excerpt, modelTACS refers to a Python class which defines the structural model.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">pyfuntofem.model</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyfuntofem.driver</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyfuntofem.fun3d_interface</span> <span class="kn">import</span> <span class="o">*</span>
-
-<span class="kn">from</span> <span class="nn">tacs_model</span> <span class="kn">import</span> <span class="n">modelTACS</span>
-<span class="kn">from</span> <span class="nn">pyOpt</span> <span class="kn">import</span> <span class="n">Optimization</span>
+<span class="kn">from</span> <span class="nn">pyfuntofem</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyoptsparse</span> <span class="kn">import</span> <span class="n">SNOPT</span><span class="p">,</span> <span class="n">Optimization</span>
 <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
 </pre></div>
 </div>
@@ -64,17 +63,7 @@ In the following code excerpt, modelTACS refers to a Python class which defines 
 <h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this heading">¶</a></h2>
 <p>FUNtoFEM employs MPI to enable multiple processes to run in parallel.
 The next section of the Python script handles the MPI set-up.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">n_tacs_procs</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
-
-<span class="n">world_rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
-<span class="k">if</span> <span class="n">world_rank</span> <span class="o">&lt;</span> <span class="n">n_tacs_procs</span><span class="p">:</span>
-     <span class="n">color</span> <span class="o">=</span> <span class="mi">55</span>
-     <span class="n">key</span> <span class="o">=</span> <span class="n">world_rank</span>
-<span class="k">else</span><span class="p">:</span>
-     <span class="n">color</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">UNDEFINED</span>
-     <span class="n">key</span> <span class="o">=</span> <span class="n">world_rank</span>
-<span class="n">tacs_comm</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Split</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
 </pre></div>
 </div>
 </section>
@@ -108,31 +97,77 @@ Bodies, scenarios, and design variables can then be added to the model. For exam
 <span class="n">model</span><span class="o">.</span><span class="n">add_body</span><span class="p">(</span><span class="n">body0</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Shortcuts to creating bodies, scenarios, and a FUNtoFEMmodel are available with new formulation. Classmethods
+for variables include <code class="xref py py-func docutils literal notranslate"><span class="pre">structural()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">aerodynamic()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">shape()</span></code>.
+Classmethods for bodies include <code class="xref py py-func docutils literal notranslate"><span class="pre">aeroelastic()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">aerothermal()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">aerothermoelastic()</span></code>.
+Classmethods for scenarios include <code class="xref py py-func docutils literal notranslate"><span class="pre">steady()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">unsteady()</span></code>. Classmethods for functions
+include <code class="xref py py-func docutils literal notranslate"><span class="pre">ksfailure()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">mass()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">lift()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">drag()</span></code>. Registration methods
+are available for bodies and scenarios to the model, variables to the body or scenario, and functions to be included in a scenario.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create model and body</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">&#39;myModel&#39;</span><span class="p">)</span>
+<span class="n">body</span> <span class="o">=</span> <span class="n">Body</span><span class="o">.</span><span class="n">aeroelastic</span><span class="p">(</span><span class="s1">&#39;body0&#39;</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Add thickness as a structural design variable to the body</span>
+<span class="n">Variable</span><span class="o">.</span><span class="n">structural</span><span class="p">(</span><span class="s1">&#39;thickness&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bounds</span><span class="p">(</span>
+     <span class="n">lower</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.025</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span>
+<span class="p">)</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+
+<span class="c1"># register body to model</span>
+<span class="n">body</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># Add a &#39;cruise&#39; scenario and register to model</span>
+<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">(</span><span class="s1">&#39;cruise&#39;</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">drag</span><span class="p">())</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">mass</span><span class="p">())</span>
+<span class="n">cruise</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="discipline-solvers">
 <h2>Discipline Solvers<a class="headerlink" href="#discipline-solvers" title="Permalink to this heading">¶</a></h2>
 <p>After the model has been defined, instantiate the specific discipline solvers with a call to
-Fun3dInterface for the fluid solver and a call to your structural model (e.g., modelTACS ) for the structural solver.</p>
+Fun3dInterface for the fluid solver and a call to TacsSteadyInterface or TacsUnsteadyinterface
+for the structural solver.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instantiate the flow and structural solvers</span>
-<span class="n">solvers</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fun3dInterface</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">flow_dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">qinf</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-     <span class="n">thermal_scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">fun3d_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">forward_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adjoint_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="n">solvers</span><span class="p">[</span><span class="s1">&#39;structural&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">modelTACS</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">tacs_comm</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">n_tacs_procs</span><span class="p">)</span>
+<span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+<span class="n">bdf_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;meshes&quot;</span><span class="p">,</span> <span class="s2">&quot;nastran_CAPS.dat&quot;</span><span class="p">)</span> <span class="c1"># dat file from tacsAIM includes .bdf file + constraints, loads, dvs</span>
+
+<span class="n">solvers</span> <span class="o">=</span> <span class="n">SolverManager</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">flow</span> <span class="o">=</span> <span class="n">Fun3dInterface</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">fun3d_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">forward_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adjoint_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">flow</span><span class="o">.</span><span class="n">set_units</span><span class="p">(</span><span class="n">flow_dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">qinf</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">structural</span> <span class="o">=</span> <span class="n">TacsSteadyInterface</span><span class="o">.</span><span class="n">create_from_bdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">n_tacs_procs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bdf_filename</span><span class="o">=</span><span class="n">bdf_filename</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="driver-set-up">
-<h2>Driver Set-up<a class="headerlink" href="#driver-set-up" title="Permalink to this heading">¶</a></h2>
+<section id="building-a-coupled-funtofem-driver">
+<h2>Building a Coupled Funtofem Driver<a class="headerlink" href="#building-a-coupled-funtofem-driver" title="Permalink to this heading">¶</a></h2>
 <p>The problem driver is instantiated with a call to FUNtoFEMnlbgs.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the transfer scheme options</span>
-<span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scheme&#39;</span><span class="p">:</span> <span class="s1">&#39;meld&#39;</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;npts&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;isym&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
+     <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span> <span class="n">thermal_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span>
+     <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">npts</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">isym</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
 
-<span class="c1"># Instantiate the driver</span>
-<span class="n">struct_master</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">aero_master</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">tacs_comm</span><span class="p">,</span> <span class="n">struct_master</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span>
-               <span class="n">aero_master</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">transfer_options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
-               <span class="n">theta_init</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">theta_min</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="c1"># Instantiate the funtofem coupled driver</span>
+<span class="n">funtofem_driver</span> <span class="o">=</span> <span class="n">FUNtoFEMnlbgs</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">transfer_settings</span><span class="o">=</span><span class="n">transfer_settings</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="building-a-tacs-oneway-coupled-driver">
+<h2>Building a Tacs Oneway-Coupled Driver<a class="headerlink" href="#building-a-tacs-oneway-coupled-driver" title="Permalink to this heading">¶</a></h2>
+<p>Once a coupled driver is created with the ability to compute aerodynamic loads, the
+class method <code class="xref py py-func docutils literal notranslate"><span class="pre">prime_loads()</span></code> is used to create the driver.
+It automatically runs a forward analysis of the coupled driver, saves the aero loads and heat
+fluxes as states in the bodies and constructs the driver. An optimization manager for pyoptsparse
+or an openmdao component can then be made to proceed to optimization.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># option 1 use class method to prime loads</span>
+<span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsSteadyAnalysisDriver</span><span class="o">.</span><span class="n">prime_loads</span><span class="p">(</span><span class="n">funtofem_driver</span><span class="p">)</span>
+
+<span class="c1"># option 2 prime the loads yourself</span>
+<span class="n">funtofem_driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+<span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsSteadyAnalysisDriver</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># then use solve_forward and solve_adjoint inside an optimizer function</span>
+<span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
+<span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
@@ -180,7 +215,8 @@ Then <code class="xref py py-func docutils literal notranslate"><span class="pre
 <li><a class="reference internal" href="#mpi">MPI</a></li>
 <li><a class="reference internal" href="#model-architecture">Model Architecture</a></li>
 <li><a class="reference internal" href="#discipline-solvers">Discipline Solvers</a></li>
-<li><a class="reference internal" href="#driver-set-up">Driver Set-up</a></li>
+<li><a class="reference internal" href="#building-a-coupled-funtofem-driver">Building a Coupled Funtofem Driver</a></li>
+<li><a class="reference internal" href="#building-a-tacs-oneway-coupled-driver">Building a Tacs Oneway-Coupled Driver</a></li>
 <li><a class="reference internal" href="#driver-call">Driver Call</a></li>
 </ul>
 </li>
@@ -217,6 +253,9 @@ Then <code class="xref py py-func docutils literal notranslate"><span class="pre
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="fun3d_config.html" title="FUN3D Configuration Requirements"
              >next</a> |</li>
