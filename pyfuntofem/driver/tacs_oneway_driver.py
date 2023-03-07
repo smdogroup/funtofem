@@ -30,8 +30,9 @@ from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
 import importlib
+
 caps_loader = importlib.util.find_spec("pyCAPS")
-if caps_loader is not None: # tacs loader not None check for this file anyways
+if caps_loader is not None:  # tacs loader not None check for this file anyways
     from tacs import caps2tacs
 
 from mpi4py import MPI
@@ -90,7 +91,9 @@ class TacsOnewayDriver:
             if caps_loader is not None:
                 assert isinstance(tacs_aim, caps2tacs.TacsAim)
             else:
-                raise AssertionError("Need to have ESP/CAPS pyCAPS package to use shape change")
+                raise AssertionError(
+                    "Need to have ESP/CAPS pyCAPS package to use shape change"
+                )
         else:
             assert self.tacs_interface is not None
             assert isinstance(self.tacs_interface, TacsSteadyInterface)

@@ -26,7 +26,8 @@ import importlib
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
-if tacs_loader is not None:
+caps_loader = importlib.util.find_spec("caps")
+if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
 
@@ -183,6 +184,10 @@ class Variable(object):
         if tacs_loader is None:
             raise AssertionError(
                 "Can't build from caps2tacs object if tacs module is not available"
+            )
+        if caps_loader is None:
+            raise AssertionError(
+                "Can't use caps2tacs module if esp-caps is not available"
             )
 
         if isinstance(obj, caps2tacs.ThicknessVariable):
