@@ -12,8 +12,8 @@ Methods on this page with **[driver call]** and **[model call]** are calls that 
 
 Assembling the model
 --------------------
-One way to build a model is using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
-:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. New classmethods are available for these classes
+One way to build a model is by using the :func:`~funtofem_model.FUNtoFEMmodel.add_body` and 
+:func:`~funtofem_model.FUNtoFEMmodel.add_scenario` calls. New class methods are available for these classes
 which provide shortcuts to their creation. See `bodies and scenarios`_ for details about their creation.
 
 The bodies and scenarios are kept in lists in the same order that they are input.
@@ -47,8 +47,6 @@ in the order added to the body/scenario.**
        opt_prob.addVar(var.name,type='c',value=var.value/var.scaling,
                                          lower=var.lower/var.scaling,
                                          upper=var.upper/var.scaling)
-
-Shortcuts for the 
 
 Optimizers such as PyOpt will typically provide a list of new values at each design point. 
 These can be set back into model type using :func:`~funtofem_model.FUNtoFEMmodel.set_variables`.
