@@ -48,7 +48,7 @@ Here's some pseudocode to create the solvers for the NLBGS driver.
         aero_root=0
     )
 
-Transfer scheme set up
+Transfer Scheme Set Up
 ----------------------
 
 Several transfer schemes have been implemented in FUNtoFEM.
@@ -63,11 +63,16 @@ If no transfer scheme options are provide, MELD with the default options is used
 MELD
 ====
 The MELD scheme is the only scheme in FUNtoFEM that currently has implemented all of the derivatives necessary for shape derivatives in optimization.
-The default options for MELD are the following. The argument `isym` if a symmetry plane is used and which one with -1 indicating no symmetry, 0
-indicating x=0 sym plane, 1 for y=0 sym plane, and 2 for z=0 sym plane. The `beta` argument is a weighting function parameter, with lower values
-of beta giving higher weight among the nearest neighbors. The `npts` argument specifies how many nearest neighbors are used in the transfer scheme
-from structural to aerodynamic mesh and vice versa.
+The default options for MELD are listed below. The argument `isym` is used to specify a symmetry plane. The `beta` argument is a weighting function 
+parameter, with lower values of beta giving higher weight among the nearest neighbors. The `npts` argument specifies how many nearest neighbors are 
+used in the transfer scheme from structural to aerodynamic mesh and vice versa.
 
+Options for `isym`: 
+
+* -1 for no symmetry
+* 0 for symmetry across x = 0
+* 1 for symmetry across y = 0
+* 2 for symmetry across z = 0
 
 .. code-block:: python
 
@@ -120,7 +125,7 @@ Unlike the other transfer schemes, the beam transfer has six degrees of freedom 
 additional degrees of freedom are the Euler parameter vector for the rotation.
 For the aerodynamic nodes, the force integration and displacement transfer still only three degrees of freedom.
 
-Running the coupled funtofem driver
+Running the coupled FUNtoFEM driver
 -----------------------------------
 Once the model, solver dictionary, transfer settings are created, you can instantiate the driver and run the coupled forward and adjoint solvers.
 Often times, we use the default comm manager and don't specify it as follows.
