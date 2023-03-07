@@ -120,8 +120,8 @@ Unlike the other transfer schemes, the beam transfer has six degrees of freedom 
 additional degrees of freedom are the Euler parameter vector for the rotation.
 For the aerodynamic nodes, the force integration and displacement transfer still only three degrees of freedom.
 
-Running the driver
-------------------
+Running the coupled funtofem driver
+-----------------------------------
 Once the model, solver dictionary, transfer settings are created, you can instantiate the driver and run the coupled forward and adjoint solvers.
 Often times, we use the default comm manager and don't specify it as follows.
 
@@ -146,6 +146,36 @@ Setting up a design optimization
 --------------------------------
 See :doc:`model` for explanation of using the driver and model class for a design optimization. There is also an example in the examples directory.
 
+If the user wants a better initial design before optimization with the fully-coupled funtofem driver above, the
+`TacsOnewayDriver` can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not 
+include shape variables directly in the driver at the moment, the tacs oneway driver supports shape optimization
+with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.
+
+Build a oneway-coupled driver, without shape optimization
+---------------------------------------------------------
+.. code-block:: python
+
+   tacs_driver = TacsOnewayDriver.prime_loads(funtofem_driver)
+
+   fail = tacs_driver.solve_forward()
+
+   fail = tacs_driver.solve_adjoint()
+
+Build a oneway-coupled driver, with shape optimization
+------------------------------------------------------
+.. code-block:: python
+
+   tacs_driver = TacsOnewayDriver.prime_loads_from_shape(
+        solvers.flow, 
+        tacs_aim, 
+        transfer_settings, 
+        nprocs
+    )
+
+   fail = tacs_driver.solve_forward()
+
+   fail = tacs_driver.solve_adjoint()
+
 
 Driver Classes
 --------------
@@ -168,5 +198,5 @@ TACS Oneway-Coupled Driver Class
 ================================
 .. currentmodule:: pyfuntofem.driver
 
-.. autoclass:: TacsSteadyAnalysisDriver
+.. autoclass:: TacsOnewayDriver
     :members:
