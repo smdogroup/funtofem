@@ -154,6 +154,7 @@ with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.
 Building and using the TacsOnewayDriver
 ---------------------------------------
 Without shape optimization
+
 .. code-block:: python
 
    tacs_driver = TacsOnewayDriver.prime_loads(funtofem_driver)
@@ -163,6 +164,7 @@ Without shape optimization
    fail = tacs_driver.solve_adjoint()
 
 With the shape optimization 
+
 .. code-block:: python
 
    tacs_driver = TacsOnewayDriver.prime_loads_from_shape(
