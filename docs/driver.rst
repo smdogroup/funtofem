@@ -134,6 +134,7 @@ Often times, we use the default comm manager and don't specify it as follows.
    fail = driver.solve_adjoint()
    
 If a user-defined CommManager is built, then the coupled funtofem driver is built as follows.
+
 .. code-block:: python
 
    driver = FUNtoFEMnlbgs(solvers, comm_manager, transfer_settings, model)
