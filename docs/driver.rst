@@ -132,7 +132,7 @@ Often times, we use the default comm manager and don't specify it as follows.
    fail = driver.solve_forward()
 
    fail = driver.solve_adjoint()
-
+   
 If a user-defined CommManager is built, then the coupled funtofem driver is built as follows.
 .. code-block:: python
 
@@ -151,8 +151,9 @@ If the user wants a better initial design before optimization with the fully-cou
 include shape variables directly in the driver at the moment, the tacs oneway driver supports shape optimization
 with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.
 
-Build a oneway-coupled driver, without shape optimization
----------------------------------------------------------
+Building and using the TacsOnewayDriver
+---------------------------------------
+Without shape optimization
 .. code-block:: python
 
    tacs_driver = TacsOnewayDriver.prime_loads(funtofem_driver)
@@ -161,8 +162,7 @@ Build a oneway-coupled driver, without shape optimization
 
    fail = tacs_driver.solve_adjoint()
 
-Build a oneway-coupled driver, with shape optimization
-------------------------------------------------------
+With the shape optimization 
 .. code-block:: python
 
    tacs_driver = TacsOnewayDriver.prime_loads_from_shape(
