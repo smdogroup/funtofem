@@ -19,10 +19,9 @@ on:
 jobs:
   # This job is called test_docs.
   unit_tests:
-    # Recommended if you intend to make multiple deployments in quick succession
-    concurrency: ci-${{ github.ref }}
     # Run on Ubuntu
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Necessary to prevent mpi tests failing due to lack of slots
     env:
       OMPI_MCA_btl: self,tcp
@@ -47,6 +46,9 @@ jobs:
             OPTIONAL: 'complex'
             INTERFACE: 'complex_interface'
             PUBLISH_DOCS: false
+
+    # Recommended if you intend to make multiple deployments in quick succession
+    concurrency: ci-${{ github.ref }}-${{ matrix.NAME }}
 
     name: FUNtoFEM ${{ matrix.NAME }} Build/Test
 
@@ -80,6 +82,7 @@ jobs:
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis -q -y;
+          conda install -c conda-forge petsc=3.12 petsc4py -q -y;
           pip install cython;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
@@ -100,11 +103,41 @@ jobs:
           cd $F2F_DIR;
           make ${{ matrix.INTERFACE }};
 
+      - name : Install optional ESP/CAPS
+        if: ${{ matrix.NAME == 'Real' }}
+        run: |
+          echo "=============================================================";
+          echo "Install ESP/CAPS";
+          echo "=============================================================";
+          # Install ESP/CAPS prebuilt for shape derivatives, only in Real mode
+          cd $F2F_DIR;
+          mkdir extern
+          cd $F2F_DIR/extern/
+          wget https://acdl.mit.edu/ESP/PreBuilts/ESP122Lin.tgz
+          tar -xvf ESP122Lin.tgz
+          export ESP_ROOT=${F2F_DIR}/extern/ESP122/EngSketchPad
+          export CASROOT=${F2F_DIR}/extern/ESP122/OpenCASCADE-7.6.0
+          export CASARCH=
+          export PATH=$PATH:$CASROOT/bin
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASROOT/lib
+          cd $ESP_ROOT
+          ./config/makeEnv ${CASROOT}
+          source $ESP_ROOT/../ESPenv.sh
+          cd ./src/CAPS/aim
+          make
+          cd $F2F_DIR/extern/ESP122/
+          # remove all ESP/CAPS unit test files with recursive delete
+          find . -name "test*" -type f -delete
+          cd $F2F_DIR
+
       - name: Run unit tests
         run: |
           echo "=============================================================";
           echo "Running Tests";
           echo "=============================================================";
+          if [[ ${{ matrix.NAME }} == 'Real' ]]; then
+            source ${F2F_DIR}/extern/ESP122/ESPenv.sh
+          fi
           testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
 
   make-docs:
