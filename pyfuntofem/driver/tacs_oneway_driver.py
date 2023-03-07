@@ -29,7 +29,7 @@ from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
-import importlib
+import importlib.util
 
 caps_loader = importlib.util.find_spec("pyCAPS")
 if caps_loader is not None:  # tacs loader not None check for this file anyways
