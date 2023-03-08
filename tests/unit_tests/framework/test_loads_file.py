@@ -34,7 +34,6 @@ class TestLoadsFile(unittest.TestCase):
     FILENAME = "oneway_loads_file.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    # @unittest.skip("temp")
     def test_aero_loads_file(self):
         # ---------------------------
         # Write the loads file
@@ -84,7 +83,6 @@ class TestLoadsFile(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    # @unittest.skip("temp")
     def test_struct_loads_file(self):
         # ---------------------------
         # Write the loads file
