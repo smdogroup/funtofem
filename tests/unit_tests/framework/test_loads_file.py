@@ -30,58 +30,12 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 
 class TestLoadsFile(unittest.TestCase):
-    # N_PROCS = 2
+    N_PROCS = 2
     FILENAME = "oneway_loads_file.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_loads_file_aeroelastic(self):
-        # ---------------------------
-        # Write the loads file
-        # ---------------------------
-        # build the model and driver
-        f2f_model = FUNtoFEMmodel("wedge")
-        plate = Body.aeroelastic("plate", boundary=1)
-        Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
-        ).register_to(plate)
-        plate.register_to(f2f_model)
-
-        # build the scenario
-        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        scenario.register_to(f2f_model)
-
-        # make the solvers for a CFD analysis to store and write the loads file
-        solvers = SolverManager(comm)
-        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            f2f_model, comm, 1, bdf_filename, callback=elasticity_callback
-        )
-        transfer_settings = TransferSettings(npts=5)
-        FUNtoFEMnlbgs(
-            solvers, transfer_settings=transfer_settings, model=f2f_model
-        ).solve_forward()
-        f2f_model.write_aero_loads(comm, "aero_loads.txt", root=0)
-
-        # -----------------------------------------------
-        # Read the loads file and test the oneway driver
-        # -----------------------------------------------
-        solvers.flow = None
-        oneway_driver = TacsOnewayDriver.prime_loads_from_file(
-            "aero_loads.txt", solvers, f2f_model, 1, transfer_settings, tacs_aim=None
-        )
-
-        max_rel_error = TestResult.derivative_test(
-            "testaero=>tacs_loads-aeroelastic",
-            f2f_model,
-            oneway_driver,
-            TestLoadsFile.FILEPATH,
-            complex_mode=complex_mode,
-        )
-        rtol = 1e-7 if complex_mode else 1e-3
-        self.assertTrue(max_rel_error < rtol)
-        return
-
-    def test_loads_file_aerothermoelastic(self):
+    # @unittest.skip("temp")
+    def test_aero_loads_file(self):
         # ---------------------------
         # Write the loads file
         # ---------------------------
@@ -107,7 +61,12 @@ class TestLoadsFile(unittest.TestCase):
         FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=f2f_model
         ).solve_forward()
-        f2f_model.write_aero_loads(comm, "aero_loads.txt", root=0)
+
+        loads_file = "aero_loads.txt"
+        f2f_model.write_loads_file(comm, loads_file, discipline="aerodynamic", root=0)
+
+        struct_loads = plate.struct_loads[scenario.id]
+        print(f"struct_loads = {struct_loads}")
 
         # -----------------------------------------------
         # Read the loads file and test the oneway driver
@@ -118,7 +77,59 @@ class TestLoadsFile(unittest.TestCase):
         )
 
         max_rel_error = TestResult.derivative_test(
-            "testaero=>tacs_loads-aerothermoelastic",
+            "testaero=>tacs_aero_loads-aerothermoelastic",
+            f2f_model,
+            oneway_driver,
+            TestLoadsFile.FILEPATH,
+            complex_mode=complex_mode,
+        )
+        rtol = 1e-7 if complex_mode else 1e-3
+        self.assertTrue(max_rel_error < rtol)
+        return
+
+    # @unittest.skip("temp")
+    def test_struct_loads_file(self):
+        # ---------------------------
+        # Write the loads file
+        # ---------------------------
+        # build the model and driver
+        f2f_model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermoelastic("plate", boundary=1)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
+        plate.register_to(f2f_model)
+
+        # build the scenario
+        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        scenario.register_to(f2f_model)
+
+        # make the solvers for a CFD analysis to store and write the loads file
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            f2f_model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        )
+        transfer_settings = TransferSettings(npts=5)
+        FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=f2f_model
+        ).solve_forward()
+        loads_file = "struct_loads.txt"
+        f2f_model.write_loads_file(comm, loads_file, discipline="structural", root=0)
+
+        # -----------------------------------------------
+        # Read the loads file and test the oneway driver
+        # -----------------------------------------------
+        solvers.flow = None
+        oneway_driver = TacsOnewayDriver.prime_loads_from_file(
+            loads_file, solvers, f2f_model, 1, transfer_settings, tacs_aim=None
+        )
+
+        struct_loads = plate.struct_loads[scenario.id]
+        print(f"struct_loads = {struct_loads}")
+
+        max_rel_error = TestResult.derivative_test(
+            "testaero=>tacs_struct_loads-aerothermoelastic",
             f2f_model,
             oneway_driver,
             TestLoadsFile.FILEPATH,

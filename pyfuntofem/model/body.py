@@ -1577,22 +1577,42 @@ class Body(Base):
 
         return
 
-    def _distribute_aero_loads(self, data):
+    def _distribute_loads(self, data, discipline="aerodynamic"):
         """
         distribute the aero loads and heat flux from a loads file
         """
+        assert discipline in ["aerodynamic", "structural"]
+        is_aero = discipline == "aerodynamic"
+        local_ids = self.aero_id if is_aero else self.struct_id
+        prefix = "aero" if is_aero else "struct"
+
+        print(f"local ids = {local_ids}")
+
         for scenario_id in data:
             scenario_data = data[scenario_id]
             for entry in scenario_data:
-                for ind, aero_id in enumerate(self.aero_id):
-                    if entry["aeroID"] == aero_id and entry["bodyName"] == self.name:
+                for ind, local_id in enumerate(local_ids):
+                    if (
+                        entry[f"{prefix}ID"] == local_id
+                        and entry["bodyName"] == self.name
+                    ):
                         if self.transfer is not None:
-                            self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = entry[
-                                "load"
-                            ]
+                            if is_aero:
+                                self.aero_loads[scenario_id][
+                                    3 * ind : 3 * ind + 3
+                                ] = entry["load"]
+                            else:
+                                self.struct_loads[scenario_id][
+                                    3 * ind : 3 * ind + 3
+                                ] = entry["load"]
+
                         if self.thermal_transfer is not None:
-                            self.aero_heat_flux[scenario_id][ind] = entry["hflux"]
-                        break
+                            if is_aero:
+                                self.aero_heat_flux[scenario_id][ind] = entry["hflux"]
+                            else:
+                                self.struct_heat_flux[scenario_id][ind] = entry["hflux"]
+                        break  # if found the correct ID quit the id match loop
+        return
 
     def _collect_aero_mesh(self, comm, root=0):
         """
@@ -1628,38 +1648,110 @@ class Body(Base):
 
         return aero_ids, aero_X
 
-    def _collect_aero_loads(self, comm, scenario, root=0):
+    def _collect_loads(self, comm, scenario, discipline="aerodynamic", root=0):
         """
         gather the aerodynamic load and heat flux from each MPI processor onto the root
         Then return the global aero ids, heat fluxes, and loads, which are later written to a file
         """
-        all_aero_ids = comm.gather(self.aero_id, root=root)
-        if self.transfer is not None:
-            all_aero_loads = comm.gather(self.aero_loads[scenario.id], root=root)
-        else:
-            all_aero_loads = []
-        if self.thermal_transfer is not None:
-            all_aero_hflux = comm.gather(self.aero_heat_flux[scenario.id], root=root)
-        else:
-            all_aero_hflux = []
+        assert discipline in ["aerodynamic", "structural"]
+        is_aero = discipline == "aerodynamic"
+        local_ids = self.aero_id if is_aero else self.struct_id
+        all_ids = comm.gather(local_ids, root=root)
 
-        aero_ids = []
-        aero_loads = []
-        aero_hflux = []
+        if self.transfer is not None:
+            local_loads = (
+                self.aero_loads[scenario.id]
+                if is_aero
+                else self.struct_loads[scenario.id]
+            )
+            all_loads = comm.gather(local_loads, root=root)
+        else:
+            all_loads = []
+
+        if self.thermal_transfer is not None:
+            local_hflux = (
+                self.aero_heat_flux[scenario.id]
+                if is_aero
+                else self.struct_heat_flux[scenario.id]
+            )
+            all_hflux = comm.gather(local_hflux, root=root)
+        else:
+            all_hflux = []
+
+        # give values for non root processors before future broadcast
+        ids = None
+        loads = None
+        hflux = None
 
         if comm.rank == root:
-            aero_ids = []
-            for d in all_aero_ids:
+            # combine local proc lists into one list of lists
+            ids = []
+            for d in all_ids:
+                if d is not None:
+                    ids.append(d)
+
+            loads = []
+            for d in all_loads:
+                if d is not None:
+                    loads.append(d)
+
+            hflux = []
+            for d in all_hflux:
+                if d is not None:
+                    hflux.append(d)
+
+            # turn list of lists from each proc into one list for each ids, loads, hflux
+            if len(ids) == 0:
+                ids = np.arange(loads.shape[0] // 3, dtype=int)
+            else:
+                ids = np.concatenate(ids)
+
+            if len(loads) > 0:
+                loads = np.concatenate(loads)
+            else:
+                loads = np.zeros((3 * len(ids), 1))
+
+            if len(hflux) > 0:
+                hflux = np.concatenate(hflux)
+            else:
+                hflux = np.zeros((1 * len(ids), 1))
+
+        return ids, hflux, loads
+
+    def _collect_struct_loads(self, comm, scenario, root=0):
+        """
+        gather the aerodynamic load and heat flux from each MPI processor onto the root
+        Then return the global aero ids, heat fluxes, and loads, which are later written to a file
+        """
+        all_struct_ids = comm.gather(self.struct_id, root=root)
+        if self.transfer is not None:
+            all_struct_loads = comm.gather(self.struct_loads[scenario.id], root=root)
+        else:
+            all_struct_loads = []
+        if self.thermal_transfer is not None:
+            all_struct_hflux = comm.gather(
+                self.struct_heat_flux[scenario.id], root=root
+            )
+        else:
+            all_struct_hflux = []
+
+        struct_ids = []
+        struct_loads = []
+        struct_hflux = []
+
+        if comm.rank == root:
+            struct_ids = []
+            for d in all_struct_ids:
                 if d is not None:
                     aero_ids.append(d)
 
             aero_loads = []
-            for d in all_aero_loads:
+            for d in all_struct_loads:
                 if d is not None:
                     aero_loads.append(d)
 
             aero_hflux = []
-            for d in all_aero_hflux:
+            for d in all_struct_hflux:
                 if d is not None:
                     aero_hflux.append(d)
 

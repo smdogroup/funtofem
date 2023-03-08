@@ -214,9 +214,11 @@ class TacsOnewayDriver:
         comm_manager = solvers.comm_manager
 
         # read in the loads from the file
-        loads_data = model.read_aero_loads(comm, filename)
+        loads_data, discipline = model.read_loads_file(comm, filename)
+        print(f"loads data = {loads_data}")
+        print(f"discipline = {discipline}")
 
-        # initialize the transfer scheme then distribute aero loads
+        # initialize the transfer scheme since the load if statements depend on this
         for body in model.bodies:
             body.initialize_transfer(
                 comm=comm,
@@ -228,16 +230,25 @@ class TacsOnewayDriver:
             )
             for scenario in model.scenarios:
                 body.initialize_variables(scenario)
-            body._distribute_aero_loads(loads_data)
 
-        if tacs_aim is None:
-            for body in model.bodies:
-                for scenario in model.scenarios:
-                    # perform disps transfer first to prevent seg fault
-                    body.transfer_disps(scenario)
-                    body.transfer_temps(scenario)
-                    body.transfer_loads(scenario)
-                    body.transfer_heat_flux(scenario)
+            # distribute the loads into each body
+            body._distribute_loads(loads_data, discipline=discipline)
+
+        # transfer aero loads to struct loads if aero loads were read in and we have no shape change
+        if discipline == "aerodynamic" and tacs_aim is None:
+            # transfer aero loads to struct loads if no shape change
+            if tacs_aim is None:
+                for body in model.bodies:
+                    for scenario in model.scenarios:
+                        # perform disps transfer first to prevent seg fault
+                        body.transfer_disps(scenario)
+                        body.transfer_temps(scenario)
+                        body.transfer_loads(scenario)
+                        body.transfer_heat_flux(scenario)
+
+        else:  # struct discipline case, meaning struct loads were written
+            # can't do shape change under fixed struct loads
+            assert tacs_aim is None
 
         return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
 
