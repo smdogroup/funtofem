@@ -65,9 +65,6 @@ class TestLoadsFile(unittest.TestCase):
         loads_file = "aero_loads.txt"
         f2f_model.write_loads_file(comm, loads_file, discipline="aerodynamic", root=0)
 
-        struct_loads = plate.struct_loads[scenario.id]
-        print(f"struct_loads = {struct_loads}")
-
         # -----------------------------------------------
         # Read the loads file and test the oneway driver
         # -----------------------------------------------
@@ -124,9 +121,6 @@ class TestLoadsFile(unittest.TestCase):
         oneway_driver = TacsOnewayDriver.prime_loads_from_file(
             loads_file, solvers, f2f_model, 1, transfer_settings, tacs_aim=None
         )
-
-        struct_loads = plate.struct_loads[scenario.id]
-        print(f"struct_loads = {struct_loads}")
 
         max_rel_error = TestResult.derivative_test(
             "testaero=>tacs_struct_loads-aerothermoelastic",

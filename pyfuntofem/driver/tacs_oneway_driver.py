@@ -215,8 +215,6 @@ class TacsOnewayDriver:
 
         # read in the loads from the file
         loads_data, discipline = model.read_loads_file(comm, filename)
-        print(f"loads data = {loads_data}")
-        print(f"discipline = {discipline}")
 
         # initialize the transfer scheme since the load if statements depend on this
         for body in model.bodies:
