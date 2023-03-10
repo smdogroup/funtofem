@@ -1,6 +1,6 @@
 export F2F_DIR=${SRC_DIR}
 # to test the build run the following command from the F2F root folder
-# conda build -c conda-forge -c smdogroup conda
+# conda build -c conda-forge -c "smdogroup/label/complex" -c smdogroup conda;
 
 # platform specific environment variables
 if [[ $(uname) == Darwin ]]; then

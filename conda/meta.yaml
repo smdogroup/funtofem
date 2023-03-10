@@ -60,6 +60,7 @@ requirements:
     - mpi4py
     - cython
     - setuptools
+    - tacs
 
   run:
     - python
@@ -87,6 +88,8 @@ test:
   imports:
     - funtofem
     - funtofem.TransferScheme
+    - tacs
+    - tacs.pytacs
     - pyfuntofem
     - pyfuntofem.driver
     - pyfuntofem.model
