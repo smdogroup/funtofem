@@ -1,9 +1,10 @@
 {% set name = "funtofem" %}
 
-{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
-{% if version.startswith('v') %}
-{% set version = version[1:] %}
-{% endif %}
+#{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
+#{% if version.startswith('v') %}
+#{% set version = version[1:] %}
+#{% endif %}
+{% set version = 0.2 %}
 
 {% set build = 0 %}
 
@@ -12,12 +13,15 @@
 {% set build = build + 100 %}
 {% endif %}
 
+# to test the build run the following command from the F2F root folder
+# conda build -c conda-forge -c "smdogroup/label/complex" -c smdogroup conda;
+
 package:
   name: "funtofem"
   version: "{{ version }}"
 
 source:
-  git_url: https://github.com/smdogroup/funtofem.git
+  git_url: https://github.com/sean-engelstad/funtofem.git # https://github.com/smdogroup/funtofem.git
 
 build:
   number: {{ build }}
