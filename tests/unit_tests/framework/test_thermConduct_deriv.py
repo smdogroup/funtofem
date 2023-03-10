@@ -3,6 +3,7 @@ from funtofem import TransferScheme
 from pyfuntofem.model import Scenario
 import unittest
 
+np.random.seed(343)
 
 class ThermalConductTest(unittest.TestCase):
     def test_thermal_conduct_deriv(self):
@@ -25,7 +26,7 @@ class ThermalConductTest(unittest.TestCase):
         rtol = 1e-6
 
         p = np.ones(aero_temps.shape, dtype=TransferScheme.dtype)
-        h = 1e-6
+        h = 1e-5
 
         v = np.random.randn(*aero_temps.shape)
         v = np.array(v, dtype=TransferScheme.dtype)

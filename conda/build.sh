@@ -6,7 +6,7 @@ export F2F_DIR=${SRC_DIR}
 if [[ $(uname) == Darwin ]]; then
   export SO_EXT="dylib"
   export SO_LINK_FLAGS="-fPIC -dynamiclib"
-  export LIB_SLF="${SO_LINK_FLAGS} -install_name @rpath/libtacs.dylib"
+  export LIB_SLF="${SO_LINK_FLAGS} -install_name @rpath/libtransfer_schemes.dylib"
   export LAPACK_LIBS="-framework accelerate"
 elif [[ "$target_platform" == linux-* ]]; then
   export SO_EXT="so"
