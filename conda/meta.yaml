@@ -1,10 +1,10 @@
 {% set name = "funtofem" %}
 
-#{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
-#{% if version.startswith('v') %}
-#{% set version = version[1:] %}
-#{% endif %}
-{% set version = 0.2 %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
+{% if version.startswith('v') %}
+{% set version = version[1:] %}
+{% endif %}
+# {% set version = 0.2 %}
 
 {% set build = 0 %}
 
@@ -14,14 +14,16 @@
 {% endif %}
 
 # to test the build run the following command from the F2F root folder
-# conda build -c conda-forge -c "smdogroup/label/complex" -c smdogroup conda;
+# conda build -c conda-forge -c smdogroup/label/complex -c smdogroup conda;
+# how to install conda for testing
+# conda install -c smdogroup -c conda-forge -c sean-engelstad funtofem
 
 package:
   name: "funtofem"
   version: "{{ version }}"
 
 source:
-  git_url: https://github.com/sean-engelstad/funtofem.git # https://github.com/smdogroup/funtofem.git
+  git_url: https://github.com/smdogroup/funtofem.git
 
 build:
   number: {{ build }}
@@ -42,6 +44,8 @@ requirements:
     - openmpi-mpicxx  # [mpi == "openmpi"]
     - mpich-mpicxx  # [mpi == "mpich"]
     - {{ compiler('cxx') }}
+    - libopenblas
+    - lapack
     - make
     - mpi4py
     - cython
