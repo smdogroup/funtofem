@@ -29,7 +29,8 @@ import importlib
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
-if tacs_loader is not None:
+caps_loader = importlib.util.find_spec("pyCAPS")
+if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
 
