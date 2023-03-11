@@ -5,6 +5,7 @@ import unittest
 
 np.random.seed(343)
 
+
 class ThermalConductTest(unittest.TestCase):
     def test_thermal_conduct_deriv(self):
         """
