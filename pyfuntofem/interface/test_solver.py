@@ -449,7 +449,7 @@ class TestStructuralSolver(SolverInterface):
         # unsteady state variable drift
         rate = 0.001
         self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
-        self.omega2 = rate * (np.random.rand(3 * self.npts) - 0.5)
+        self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the structural mesh
         struct_id = np.arange(1, self.npts + 1)

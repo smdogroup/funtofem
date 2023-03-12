@@ -496,7 +496,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads_adjoint(scenario)
                 body.transfer_heat_flux_adjoint(scenario)
 
-            fail = self.solver.flow.iterate_adjoint(scenario, self.model.bodies, step)
+            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
 
             fail = self.comm.allreduce(fail)
             if fail != 0:
