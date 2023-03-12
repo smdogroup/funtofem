@@ -181,7 +181,6 @@ class TacsUnsteadyInterface(SolverInterface):
         self.F = {}
         self.auxElems = {}
         for scenario in model.scenarios:
-
             # Create the time integrator and allocate the load data structures
             if self.integration_settings.is_bdf:
                 self.integrator[scenario.id] = TACS.BDFIntegrator(
@@ -434,7 +433,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
     def _update_assembler_vars(self, scenario, bodies):
         """
-        Update the internal data in the assembler before 
+        Update the internal data in the assembler before
         forward / adjoint analysis in TACS
         """
         # set the design variables into the assembler
@@ -459,7 +458,6 @@ class TacsUnsteadyInterface(SolverInterface):
             self.assembler.setInitConditions(vec=vars0, dvec=dvars0, ddvec=ddvars0)
 
         return
-        
 
     def initialize(self, scenario, bodies):
         """
@@ -633,9 +631,10 @@ class TacsUnsteadyInterface(SolverInterface):
 
                 struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
-                    struct_temps[:] = states[self.thermal_index :: ndof].astype(
-                        body.dtype
-                    ) + scenario.T_ref
+                    struct_temps[:] = (
+                        states[self.thermal_index :: ndof].astype(body.dtype)
+                        + scenario.T_ref
+                    )
         return
 
     def iterate_adjoint(self, scenario, bodies, step):
@@ -651,7 +650,7 @@ class TacsUnsteadyInterface(SolverInterface):
         """
 
         fail = 0
-        #rev_step = scenario.steps - step + 1
+        # rev_step = scenario.steps - step + 1
         print(f"step = {step}")
 
         if self.tacs_proc:
@@ -748,9 +747,7 @@ class TacsUnsteadyInterface(SolverInterface):
                 func_grad.append(dfdx.getArray().copy())
 
         # Broadcast gradients to all processors
-        self.scenario_data[scenario.id].func_grad = self.comm.bcast(
-            func_grad, root=0
-        )
+        self.scenario_data[scenario.id].func_grad = self.comm.bcast(func_grad, root=0)
         return
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
