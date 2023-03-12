@@ -896,7 +896,7 @@ class Body(Base):
         else:
             return None
 
-    def transfer_disps(self, scenario, time_index=0):
+    def transfer_disps(self, scenario, time_index=0, jump=False):
         """
         Transfer the displacements on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -907,13 +907,16 @@ class Body(Base):
             The current scenario
         time_index: int
             The time-index for time-dependent problems
+        jump: bool
+            Whether to transfer from current to next time index
         """
         if self.transfer is not None:
             if scenario.steady:
                 aero_disps = self.aero_disps[scenario.id]
                 struct_disps = self.struct_disps[scenario.id]
             else:
-                aero_disps = self.aero_disps[scenario.id][time_index]
+                aero_time_index = time_index + 1 if jump else time_index
+                aero_disps = self.aero_disps[scenario.id][aero_time_index]
                 struct_disps = self.struct_disps[scenario.id][time_index]
             self.transfer.transferDisps(struct_disps, aero_disps)
 
@@ -942,7 +945,7 @@ class Body(Base):
 
         return
 
-    def transfer_temps(self, scenario, time_index=0):
+    def transfer_temps(self, scenario, time_index=0, jump=False):
         """
         Transfer the temperatures on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -959,8 +962,9 @@ class Body(Base):
                 struct_temps = self.struct_temps[scenario.id]
                 aero_temps = self.aero_temps[scenario.id]
             else:
+                aero_time_index = time_index + 1 if jump else time_index
                 struct_temps = self.struct_temps[scenario.id][time_index]
-                aero_temps = self.aero_temps[scenario.id][time_index]
+                aero_temps = self.aero_temps[scenario.id][aero_time_index]
             self.thermal_transfer.transferTemp(struct_temps, aero_temps)
 
         return
