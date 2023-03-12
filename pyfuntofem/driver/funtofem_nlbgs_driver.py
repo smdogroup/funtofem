@@ -108,6 +108,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             Number of iterations if not set by the model
         """
 
+        assert scenario.steady
         fail = 0
 
         # Determine if we're using the scenario's number of steps or the argument
@@ -182,6 +183,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             The current scenario
         """
 
+        assert scenario.steady
         fail = 0
 
         # how many steps to take for the block Gauss Seidel
@@ -250,6 +252,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             fail flag for the coupled solver
 
         """
+
+        assert not scenario.steady
         fail = 0
 
         if not steps:
@@ -265,8 +269,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for time_index in range(1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index)
-                body.transfer_temps(scenario, time_index)
+                body.transfer_disps(scenario, time_index - 1, jump=True)
+                body.transfer_temps(scenario, time_index - 1, jump=True)
 
             # Take a step in the flow solver
             fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
@@ -393,6 +397,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         """
 
+        assert not scenario.steady
         fail = 0
 
         # how many steps to take
