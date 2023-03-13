@@ -320,6 +320,33 @@ for node in surface_nodes:</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.write_struct_loads">
+<span class="sig-name descname"><span class="pre">write_struct_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.write_struct_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.write_struct_loads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the struct loads file for the TacsOnewayDriver.</p>
+<p>This file contains the following information:</p>
+<p># of Bodies, # of Scenarios</p>
+<p># struct loads section
+for each body and scenario:</p>
+<blockquote>
+<div><p>Scenario name
+Body name
+for node in surface_nodes:</p>
+<blockquote>
+<div><p>id hflux xload yload zload</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comm</strong> (<em>MPI communicator</em>) – Global communicator across all FUNtoFEM processors</p></li>
+<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><em>str</em></a>) – The name of the file to be generated</p></li>
+<li><p><strong>root</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The rank of the processor that will write the file</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.read_aero_loads">
 <span class="sig-name descname"><span class="pre">read_aero_loads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.read_aero_loads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.read_aero_loads" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the aerodynamic loads file for the TacsOnewayDriver.</p>
