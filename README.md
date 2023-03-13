@@ -10,12 +10,18 @@ This repository contains the FUNtoFEM coupling framework and load and displaceme
 
 [Documentation for users and developers](https://smdogroup.github.io/funtofem/index.html)
 
-### Installation ###
+### Installing FUNtoFEM for Users ###
+For those intending to be users of funtofem and not developers, the easiest way to install FUNtoFEM is by installing our anaconda package.
+Conda packages of funtofem are available for the Linux and Mac OS from our smdogroup channel. The user should first open a terminal and create
+a conda environment, such as `F2F`, and then install funtofem as follows with conda install.
+```
+conda create -n F2F python=3.8
+conda activate F2F
+conda install -c conda-forge -c smdogroup funtofem
+```
 
-* Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
-* In the funtofem/ directory, copy Makefile.in.info to Makefile.in and edit
-* For real mode: `make` and `make interface` (Python interface) in the funtofem/ directory
-* For complex mode: `make complex` and `make complex_interface` in the funtofem/ directory
+All dependencies including linear algebra libraries, and our group's FEA software [TACS](https://github.com/smdogroup/tacs) will be automatically
+installed including C++ and Python libraries of funtofem. Optional dependencies such as [OpenMDAO](https://github.com/OpenMDAO/OpenMDAO), [ESP/CAPS](https://acdl.mit.edu/ESP/) will need to be installed by the user.
 
 ### License ###
 
@@ -42,3 +48,9 @@ limitations under the License.
 * Brian Burke
 * Rohan Patel
 * Sean Engelstad
+
+### Installing FUNtoFEM for Developers ###
+* Dependencies include: MPI, mpi4py, Cython, Lapack/BLAS
+* In the funtofem/ directory, copy Makefile.in.info to Makefile.in and edit
+* For real mode: `make` and `make interface` (Python interface) in the funtofem/ directory
+* For complex mode: `make complex` and `make complex_interface` in the funtofem/ directory
