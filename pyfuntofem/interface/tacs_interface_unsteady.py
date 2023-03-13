@@ -187,7 +187,9 @@ class TacsUnsteadyInterface(SolverInterface):
                     self.assembler,
                     self.integration_settings.start_time,
                     self.integration_settings.end_time,
-                    float(self.integration_settings.num_steps),
+                    float(
+                        self.integration_settings.num_steps
+                    ),  # should this be -1 here?
                     self.integration_settings.integration_order,
                 )
 
@@ -474,6 +476,8 @@ class TacsUnsteadyInterface(SolverInterface):
         """
 
         self._update_assembler_vars(scenario, bodies)
+        self.ext_force.zeroEntries()
+        self.integrator[scenario.id].iterate(0, self.ext_force)
         return 0
 
     def iterate(self, scenario, bodies, step):
@@ -651,7 +655,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         fail = 0
         # rev_step = scenario.steps - step + 1
-        print(f"step = {step}")
+        # print(f"step = {step}")
 
         if self.tacs_proc:
             # extract the list of functions, dfdu, etc
