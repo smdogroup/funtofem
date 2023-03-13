@@ -433,7 +433,7 @@ class FUNtoFEMmodel(object):
 
     def write_struct_loads(self, comm, filename, root=0):
         """
-        Write the aerodynamic loads file for the TacsOnewayDriver.
+        Write the struct loads file for the TacsOnewayDriver.
 
         This file contains the following information:
 

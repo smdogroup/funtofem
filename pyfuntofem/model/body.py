@@ -1699,7 +1699,7 @@ class Body(Base):
 
         struct_ids = []
         struct_loads = []
-        aero_hflux = []
+        struct_hflux = []
 
         if comm.rank == root:
             struct_ids = []
@@ -1727,7 +1727,7 @@ class Body(Base):
             else:
                 struct_loads = np.zeros((3 * len(struct_ids), 1))
 
-            if len(aero_hflux) > 0:
+            if len(struct_hflux) > 0:
                 struct_hflux = np.concatenate(struct_hflux)
             else:
                 struct_hflux = np.zeros((1 * len(struct_ids), 1))
