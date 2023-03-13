@@ -910,7 +910,7 @@ scenarios at the same time.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.body.Body.transfer_disps">
-<span class="sig-name descname"><span class="pre">transfer_disps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/body.html#Body.transfer_disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.body.Body.transfer_disps" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">transfer_disps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jump</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/body.html#Body.transfer_disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.body.Body.transfer_disps" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfer the displacements on the structural mesh to the aerodynamic mesh
 for the given scenario.</p>
 <dl class="field-list simple">
@@ -918,6 +918,7 @@ for the given scenario.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>scenario</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Scenario</span></code>) – The current scenario</p></li>
 <li><p><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The time-index for time-dependent problems</p></li>
+<li><p><strong>jump</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – Whether to transfer from current to next time index</p></li>
 </ul>
 </dd>
 </dl>
@@ -940,7 +941,7 @@ structural mesh for the given scenario.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.body.Body.transfer_temps">
-<span class="sig-name descname"><span class="pre">transfer_temps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/body.html#Body.transfer_temps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.body.Body.transfer_temps" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">transfer_temps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jump</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/body.html#Body.transfer_temps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.body.Body.transfer_temps" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfer the temperatures on the structural mesh to the aerodynamic mesh
 for the given scenario.</p>
 <dl class="field-list simple">

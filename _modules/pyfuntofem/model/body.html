@@ -935,7 +935,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Body.transfer_disps"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.transfer_disps">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_disps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="Body.transfer_disps"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.transfer_disps">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_disps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">jump</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Transfer the displacements on the structural mesh to the aerodynamic mesh</span>
 <span class="sd">        for the given scenario.</span>
@@ -946,13 +946,16 @@
 <span class="sd">            The current scenario</span>
 <span class="sd">        time_index: int</span>
 <span class="sd">            The time-index for time-dependent problems</span>
+<span class="sd">        jump: bool</span>
+<span class="sd">            Whether to transfer from current to next time index</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">:</span>
                 <span class="n">aero_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
                 <span class="n">struct_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">aero_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">time_index</span><span class="p">]</span>
+                <span class="n">aero_time_index</span> <span class="o">=</span> <span class="n">time_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">jump</span> <span class="k">else</span> <span class="n">time_index</span>
+                <span class="n">aero_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_disps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">aero_time_index</span><span class="p">]</span>
                 <span class="n">struct_disps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_disps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">time_index</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">transferDisps</span><span class="p">(</span><span class="n">struct_disps</span><span class="p">,</span> <span class="n">aero_disps</span><span class="p">)</span>
 
@@ -981,7 +984,7 @@
 
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Body.transfer_temps"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.transfer_temps">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_temps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="Body.transfer_temps"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.transfer_temps">[docs]</a>    <span class="k">def</span> <span class="nf">transfer_temps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">time_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">jump</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Transfer the temperatures on the structural mesh to the aerodynamic mesh</span>
 <span class="sd">        for the given scenario.</span>
@@ -998,8 +1001,9 @@
                 <span class="n">struct_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_temps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
                 <span class="n">aero_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
+                <span class="n">aero_time_index</span> <span class="o">=</span> <span class="n">time_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">jump</span> <span class="k">else</span> <span class="n">time_index</span>
                 <span class="n">struct_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_temps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">time_index</span><span class="p">]</span>
-                <span class="n">aero_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">time_index</span><span class="p">]</span>
+                <span class="n">aero_temps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_temps</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">][</span><span class="n">aero_time_index</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">thermal_transfer</span><span class="o">.</span><span class="n">transferTemp</span><span class="p">(</span><span class="n">struct_temps</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">)</span>
 
         <span class="k">return</span></div>
