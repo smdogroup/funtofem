@@ -128,6 +128,35 @@ class TestLoadsFile(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    def test_struct_loads_file_aerothermoelastic(self):
+        # ---------------------------
+        # Write the loads file
+        # ---------------------------
+        # build the model and driver
+        f2f_model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermoelastic("plate", boundary=1)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
+        plate.register_to(f2f_model)
+
+        # build the scenario
+        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        scenario.register_to(f2f_model)
+
+        # make the solvers for a CFD analysis to store and write the loads file
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            f2f_model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        )
+        transfer_settings = TransferSettings(npts=5)
+        FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=f2f_model
+        ).solve_forward()
+        f2f_model.write_struct_loads(comm, "struct_loads.txt", root=0)
+        return
+
 
 if __name__ == "__main__":
     unittest.main()
