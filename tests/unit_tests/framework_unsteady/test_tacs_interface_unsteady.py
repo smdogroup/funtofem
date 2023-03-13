@@ -45,7 +45,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         integration_settings = TacsIntegrationSettings(
-            dt=0.01, num_steps=test_scenario.steps
+            dt=0.001, num_steps=test_scenario.steps
         )
 
         solvers = SolverManager(comm)
@@ -90,7 +90,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         integration_settings = TacsIntegrationSettings(
-            dt=0.01, num_steps=test_scenario.steps
+            dt=0.001, num_steps=test_scenario.steps
         )
 
         solvers = SolverManager(comm)
@@ -107,7 +107,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers, transfer_settings=TransferSettings(npts=10), model=model
         )
 
         max_rel_error = TestResult.derivative_test(
