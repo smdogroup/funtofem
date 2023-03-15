@@ -775,13 +775,11 @@ class TacsUnsteadyInterface(SolverInterface):
                                 self.assembler.evalXptSens(tacsfunc, fXptSens_vec)
 
                             fxptSens = fXptSens_vec.getArray()
-                            body.struct_shape_term = (
-                                body.get_struct_coordinate_derivatives(scenario)
+                            struct_shape_term = body.get_struct_coordinate_derivatives(
+                                scenario
                             )
 
-                            body.struct_shape_term[:, nfunc] += fxptSens.astype(
-                                body.dtype
-                            )
+                            struct_shape_term[:, nfunc] += fxptSens.astype(body.dtype)
 
         pass
 
