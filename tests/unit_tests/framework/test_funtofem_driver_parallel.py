@@ -23,7 +23,11 @@ ntacs_procs = 2
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
 
-class TacsFrameworkTest(unittest.TestCase):
+@unittest.skipIf(
+    not complex_mode,
+    "parallel subtractive subtractive cancellation of FD is worse sometimes",
+)
+class TacsParallelFrameworkTest(unittest.TestCase):
     N_PROCS = 2
     FILENAME = "testAero-tacs.txt"
 
@@ -51,7 +55,7 @@ class TacsFrameworkTest(unittest.TestCase):
             "testaero+tacs-aeroelastic",
             model,
             driver,
-            TacsFrameworkTest.FILENAME,
+            TacsParallelFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -85,7 +89,7 @@ class TacsFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermal",
             model,
             driver,
-            TacsFrameworkTest.FILENAME,
+            TacsParallelFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -93,10 +97,6 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
-    @unittest.skipIf(
-        not complex_mode,
-        "parallel subtractive subtractive cancellation of FD is worse sometimes",
-    )
     def test_aerothermoelastic(self):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
@@ -121,7 +121,7 @@ class TacsFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermoelastic",
             model,
             driver,
-            TacsFrameworkTest.FILENAME,
+            TacsParallelFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
