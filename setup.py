@@ -74,12 +74,28 @@ for mod in ["TransferScheme"]:
 for e in exts:
     e.cython_directives = {"embedsignature": True, "binding": True}
 
+optional_dependencies = {
+    "testing": ["testflo>=1.4.7"],
+    "docs": ["sphinx"],
+    "mphys": ["mphys>=1.1.0", "openmdao>=3.25.0"],
+}
+
+# Add an optional dependency that concatenates all others
+optional_dependencies["all"] = sorted(
+    [
+        dependency
+        for dependencies in optional_dependencies.values()
+        for dependency in dependencies
+    ]
+)
+
 setup(
     name="funtofem",
     version=0.1,
     description="Aeroelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
-    packages=find_packages(include=["pyfuntofem*"]),
+    extras_require=optional_dependencies,
+    packages=find_packages(include=["funtofem*", "pyfuntofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )
