@@ -622,7 +622,9 @@ class FUNtoFEMmodel(object):
         ids = []
         derivs = []
         for body in self.bodies:
-            id, deriv = body.collect_coordinate_derivatives(comm, discipline, root=root)
+            id, deriv = body.collect_coordinate_derivatives(
+                comm, discipline, self.scenarios, root=root
+            )
             count += len(id)
             ids.append(id)
             derivs.append(deriv)

@@ -146,27 +146,40 @@ class TestAerodynamicSolver(SolverInterface):
         # Allocate space for the aero dvs
         self.aero_dvs = np.array(self.aero_dvs, dtype=TransferScheme.dtype)
 
-        # Aerodynaimic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
-        self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        self.c1 = 0.01 * (np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5)
-
-        # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
-        self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
-        self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
-        self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
-
         # Set random initial node locations
         self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
-        # Data for generating functional output values
-        self.func_coefs1 = np.random.rand(3 * self.npts)
-        self.func_coefs2 = np.random.rand(self.npts)
+        # define data owned by each scenario
+        class ScenarioData:
+            def __init__(self, npts, dvs):
+                self.npts = npts
+                self.aero_dvs = dvs
 
-        # omega values
-        rate = 0.001
-        self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
-        self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
+                # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
+                self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                self.c1 = 0.01 * (
+                    np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5
+                )
+
+                # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
+                self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
+                self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
+                self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
+
+                # Data for generating functional output values
+                self.func_coefs1 = np.random.rand(3 * self.npts)
+                self.func_coefs2 = np.random.rand(self.npts)
+
+                # omega values
+                rate = 0.001
+                self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
+                self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
+
+        # make scenario data classes for each available scenario
+        self.scenario_data = {}
+        for scenario in model.scenarios:
+            self.scenario_data[scenario.id] = ScenarioData(self.npts, self.aero_dvs)
 
         # Initialize the coordinates of the aerodynamic or structural mesh
         aero_id = np.arange(1, self.npts + 1)
@@ -203,34 +216,22 @@ class TestAerodynamicSolver(SolverInterface):
         the scenario.functions objects
         """
 
-        if scenario.steady:
-            for index, func in enumerate(scenario.functions):
-                if func.analysis_type == "aerodynamic":
-                    value = 0.0
-                    for body in bodies:
-                        aero_disps = body.get_aero_disps(scenario)
-                        if aero_disps is not None:
-                            value += np.dot(self.func_coefs1, aero_disps)
-                        aero_temps = body.get_aero_temps(scenario)
-                        if aero_temps is not None:
-                            value += np.dot(self.func_coefs2, aero_temps)
-                    func.value = self.comm.allreduce(value)
-        else:
-            # Set the time index to the final time step
-            time_index = scenario.steps
-
-            for index, func in enumerate(scenario.functions):
-                if func.analysis_type == "aerodynamic":
-                    value = 0.0
-                    for body in bodies:
-                        aero_disps = body.get_aero_disps(scenario, time_index)
-                        if aero_disps is not None:
-                            value += np.dot(self.func_coefs1, aero_disps)
-                        aero_temps = body.get_aero_temps(scenario, time_index)
-                        if aero_temps is not None:
-                            value += np.dot(self.func_coefs2, aero_temps)
-                    func.value = self.comm.allreduce(value)
-
+        time_index = 0 if scenario.steady else scenario.steps
+        for func in scenario.functions:
+            if func.analysis_type == "aerodynamic":
+                value = 0.0
+                for body in bodies:
+                    aero_disps = body.get_aero_disps(scenario, time_index)
+                    if aero_disps is not None:
+                        value += np.dot(
+                            self.scenario_data[scenario.id].func_coefs1, aero_disps
+                        )
+                    aero_temps = body.get_aero_temps(scenario, time_index)
+                    if aero_temps is not None:
+                        value += np.dot(
+                            self.scenario_data[scenario.id].func_coefs2, aero_temps
+                        )
+                func.value = self.comm.allreduce(value)
         return
 
     def get_function_gradients(self, scenario, bodies):
@@ -244,12 +245,18 @@ class TestAerodynamicSolver(SolverInterface):
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                     if aero_loads_ajp is not None:
-                        value = np.dot(aero_loads_ajp[:, findex], self.c1[:, vindex])
+                        value = np.dot(
+                            aero_loads_ajp[:, findex],
+                            self.scenario_data[scenario.id].c1[:, vindex],
+                        )
                         func.add_gradient_component(var, value)
 
                     aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                     if aero_flux_ajp is not None:
-                        value = np.dot(aero_flux_ajp[:, findex], self.c2[:, vindex])
+                        value = np.dot(
+                            aero_flux_ajp[:, findex],
+                            self.scenario_data[scenario.id].c2[:, vindex],
+                        )
                         func.add_gradient_component(var, value)
 
         return
@@ -265,13 +272,13 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                 if aero_loads_ajp is not None:
                     aero_shape_term[:, findex] += np.dot(
-                        aero_loads_ajp[:, findex], self.b1
+                        aero_loads_ajp[:, findex], self.scenario_data[scenario.id].b1
                     )
 
                 aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
                     aero_shape_term[:, findex] += np.dot(
-                        aero_flux_ajp[:, findex], self.b2
+                        aero_flux_ajp[:, findex], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -305,21 +312,25 @@ class TestAerodynamicSolver(SolverInterface):
             aero_disps = body.get_aero_disps(scenario, step)
             aero_loads = body.get_aero_loads(scenario, step)
             if aero_disps is not None:
-                aero_loads[:] = np.dot(self.Jac1, aero_disps)
-                aero_loads[:] += np.dot(self.b1, self.aero_X)
-                aero_loads[:] += np.dot(self.c1, self.aero_dvs)
+                aero_loads[:] = np.dot(self.scenario_data[scenario.id].Jac1, aero_disps)
+                aero_loads[:] += np.dot(self.scenario_data[scenario.id].b1, self.aero_X)
+                aero_loads[:] += np.dot(
+                    self.scenario_data[scenario.id].c1, self.aero_dvs
+                )
                 if not scenario.steady:
-                    aero_loads[:] += self.omega1
+                    aero_loads[:] += self.scenario_data[scenario.id].omega1
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario, step)
             aero_flux = body.get_aero_heat_flux(scenario, step)
             if aero_temps is not None:
-                aero_flux[:] = np.dot(self.Jac2, aero_temps)
-                aero_flux[:] += np.dot(self.b2, self.aero_X)
-                aero_flux[:] += np.dot(self.c2, self.aero_dvs)
+                aero_flux[:] = np.dot(self.scenario_data[scenario.id].Jac2, aero_temps)
+                aero_flux[:] += np.dot(self.scenario_data[scenario.id].b2, self.aero_X)
+                aero_flux[:] += np.dot(
+                    self.scenario_data[scenario.id].c2, self.aero_dvs
+                )
                 if not scenario.steady:
-                    aero_flux[:] += self.omega2
+                    aero_flux[:] += self.scenario_data[scenario.id].omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -351,17 +362,25 @@ class TestAerodynamicSolver(SolverInterface):
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             if aero_loads_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    aero_disps_ajp[:, k] = np.dot(self.Jac1.T, aero_loads_ajp[:, k])
+                    aero_disps_ajp[:, k] = np.dot(
+                        self.scenario_data[scenario.id].Jac1.T, aero_loads_ajp[:, k]
+                    )
                     if func.analysis_type == "aerodynamic":
-                        aero_disps_ajp[:, k] += self.func_coefs1
+                        aero_disps_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs1
 
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             if aero_flux_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    aero_temps_ajp[:, k] = np.dot(self.Jac2.T, aero_flux_ajp[:, k])
+                    aero_temps_ajp[:, k] = np.dot(
+                        self.scenario_data[scenario.id].Jac2.T, aero_flux_ajp[:, k]
+                    )
                     if func.analysis_type == "aerodynamic":
-                        aero_temps_ajp[:, k] += self.func_coefs2
+                        aero_temps_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs2
 
         fail = 0
         return fail
@@ -417,39 +436,60 @@ class TestStructuralSolver(SolverInterface):
         elastic_scale = 1.0 / elastic_k
         thermal_scale = 1.0 / thermal_k
 
-        # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
-        self.Jac1 = (
-            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        )
-        self.b1 = (
-            0.01 * elastic_scale * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
-        )
-        self.c1 = (
-            0.01
-            * elastic_scale
-            * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
-        )
+        # scenario data for the multi scenario case
+        class ScenarioData:
+            def __init__(self, npts, struct_dvs):
+                self.npts = npts
+                self.struct_dvs = struct_dvs
 
-        # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
-        self.Jac2 = 0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
-        self.b2 = 0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
-        self.c2 = (
-            0.01
-            * thermal_scale
-            * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
-        )
+                # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
+                self.Jac1 = (
+                    0.01
+                    * elastic_scale
+                    * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                )
+                self.b1 = (
+                    0.01
+                    * elastic_scale
+                    * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                )
+                self.c1 = (
+                    0.01
+                    * elastic_scale
+                    * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
+                )
+
+                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
+                self.Jac2 = (
+                    0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
+                )
+                self.b2 = (
+                    0.1
+                    * thermal_scale
+                    * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
+                )
+                self.c2 = (
+                    0.01
+                    * thermal_scale
+                    * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+                )
+
+                # Data for output functional values
+                self.func_coefs1 = np.random.rand(3 * self.npts)
+                self.func_coefs2 = np.random.rand(self.npts)
+
+                # unsteady state variable drift
+                rate = 0.001
+                self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
+                self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
+
+        # create scenario data for each scenario
+        self.scenario_data = {}
+        for scenario in model.scenarios:
+            self.scenario_data[scenario.id] = ScenarioData(self.npts, self.struct_dvs)
 
         # Set random initial node locations
         self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
-
-        # Data for output functional values
-        self.func_coefs1 = np.random.rand(3 * self.npts)
-        self.func_coefs2 = np.random.rand(self.npts)
-
-        # unsteady state variable drift
-        rate = 0.001
-        self.omega1 = rate * (np.random.rand(3 * self.npts) - 0.5)
-        self.omega2 = rate * (np.random.rand(self.npts) - 0.5)
 
         # Initialize the coordinates of the structural mesh
         struct_id = np.arange(1, self.npts + 1)
@@ -486,34 +526,22 @@ class TestStructuralSolver(SolverInterface):
         the scenario.functions objects
         """
 
-        if scenario.steady:
-            for index, func in enumerate(scenario.functions):
-                if func.analysis_type == "structural":
-                    value = 0.0
-                    for body in bodies:
-                        struct_loads = body.get_struct_loads(scenario)
-                        if struct_loads is not None:
-                            value += np.dot(self.func_coefs1, struct_loads)
-                        struct_flux = body.get_struct_heat_flux(scenario)
-                        if struct_flux is not None:
-                            value += np.dot(self.func_coefs2, struct_flux)
-                    func.value = self.comm.allreduce(value)
-        else:
-            # Set the time index to the final time step
-            time_index = scenario.steps
-
-            for index, func in enumerate(scenario.functions):
-                if func.analysis_type == "structural":
-                    value = 0.0
-                    for body in bodies:
-                        struct_loads = body.get_struct_loads(scenario, time_index)
-                        if struct_loads is not None:
-                            value += np.dot(self.func_coefs1, struct_loads)
-                        struct_flux = body.get_struct_heat_flux(scenario, time_index)
-                        if struct_flux is not None:
-                            value += np.dot(self.func_coefs2, struct_flux)
-                    func.value = self.comm.allreduce(value)
-
+        time_index = 0 if scenario.steady else scenario.steps
+        for func in scenario.functions:
+            if func.analysis_type == "structural":
+                value = 0.0
+                for body in bodies:
+                    struct_loads = body.get_struct_loads(scenario, time_index)
+                    if struct_loads is not None:
+                        value += np.dot(
+                            self.scenario_data[scenario.id].func_coefs1, struct_loads
+                        )
+                    struct_flux = body.get_struct_heat_flux(scenario, time_index)
+                    if struct_flux is not None:
+                        value += np.dot(
+                            self.scenario_data[scenario.id].func_coefs2, struct_flux
+                        )
+                func.value = self.comm.allreduce(value)
         return
 
     def get_function_gradients(self, scenario, bodies):
@@ -531,12 +559,18 @@ class TestStructuralSolver(SolverInterface):
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
-                        value = np.dot(struct_disps_ajp[:, findex], self.c1[:, vindex])
+                        value = np.dot(
+                            struct_disps_ajp[:, findex],
+                            self.scenario_data[scenario.id].c1[:, vindex],
+                        )
                         func.add_gradient_component(var, value)
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
-                        value = np.dot(struct_temps_ajp[:, findex], self.c2[:, vindex])
+                        value = np.dot(
+                            struct_temps_ajp[:, findex],
+                            self.scenario_data[scenario.id].c2[:, vindex],
+                        )
                         func.add_gradient_component(var, value)
 
         return
@@ -552,13 +586,13 @@ class TestStructuralSolver(SolverInterface):
                 struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                 if struct_disps_ajp is not None:
                     struct_shape_term[:, findex] += np.dot(
-                        struct_disps_ajp[:, findex], self.b1
+                        struct_disps_ajp[:, findex], self.scenario_data[scenario.id].b1
                     )
 
                 struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                 if struct_temps_ajp is not None:
                     struct_shape_term[:, findex] += np.dot(
-                        struct_temps_ajp[:, findex], self.b2
+                        struct_temps_ajp[:, findex], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -591,21 +625,33 @@ class TestStructuralSolver(SolverInterface):
             struct_loads = body.get_struct_loads(scenario, step)
             struct_disps = body.get_struct_disps(scenario, step)
             if struct_loads is not None:
-                struct_disps[:] = np.dot(self.Jac1, struct_loads)
-                struct_disps[:] += np.dot(self.b1, self.struct_X)
-                struct_disps[:] += np.dot(self.c1, self.struct_dvs)
+                struct_disps[:] = np.dot(
+                    self.scenario_data[scenario.id].Jac1, struct_loads
+                )
+                struct_disps[:] += np.dot(
+                    self.scenario_data[scenario.id].b1, self.struct_X
+                )
+                struct_disps[:] += np.dot(
+                    self.scenario_data[scenario.id].c1, self.struct_dvs
+                )
                 if not scenario.steady:
-                    struct_disps[:] += self.omega1
+                    struct_disps[:] += self.scenario_data[scenario.id].omega1
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario, step)
             struct_temps = body.get_struct_temps(scenario, step)
             if struct_flux is not None:
-                struct_temps[:] = np.dot(self.Jac2, struct_flux)
-                struct_temps[:] += np.dot(self.b2, self.struct_X)
-                struct_temps[:] += np.dot(self.c2, self.struct_dvs)
+                struct_temps[:] = np.dot(
+                    self.scenario_data[scenario.id].Jac2, struct_flux
+                )
+                struct_temps[:] += np.dot(
+                    self.scenario_data[scenario.id].b2, self.struct_X
+                )
+                struct_temps[:] += np.dot(
+                    self.scenario_data[scenario.id].c2, self.struct_dvs
+                )
                 if not scenario.steady:
-                    struct_temps[:] += self.omega2
+                    struct_temps[:] += self.scenario_data[scenario.id].omega2
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -637,17 +683,25 @@ class TestStructuralSolver(SolverInterface):
             struct_loads_ajp = body.get_struct_loads_ajp(scenario)
             if struct_disps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    struct_loads_ajp[:, k] = np.dot(self.Jac1.T, struct_disps_ajp[:, k])
+                    struct_loads_ajp[:, k] = np.dot(
+                        self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
+                    )
                     if func.analysis_type == "structural":
-                        struct_loads_ajp[:, k] += self.func_coefs1
+                        struct_loads_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs1
 
             struct_temps_ajp = body.get_struct_temps_ajp(scenario)
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
             if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    struct_flux_ajp[:, k] = np.dot(self.Jac2.T, struct_temps_ajp[:, k])
+                    struct_flux_ajp[:, k] = np.dot(
+                        self.scenario_data[scenario.id].Jac2.T, struct_temps_ajp[:, k]
+                    )
                     if func.analysis_type == "structural":
-                        struct_flux_ajp[:, k] += self.func_coefs2
+                        struct_flux_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs2
 
         fail = 0
         return fail
@@ -709,6 +763,16 @@ class TestResult:
         return self
 
     @classmethod
+    def relative_error(cls, truth, pred):
+        if truth == 0.0 and pred == 0.0:
+            print("Warning the derivative test is indeterminate!")
+            return 0.0
+        elif truth == 0.0 and pred != 0.0:
+            return 1.0  # arbitrary 100% error provided to fail test avoiding /0
+        else:
+            return (pred - truth) / truth
+
+    @classmethod
     def complex_step(cls, test_name, model, driver, status_file):
         """
         perform complex step test on a model and driver for multiple functions & variables
@@ -757,10 +821,11 @@ class TestResult:
 
         # compute rel error between adjoint & complex step for each function
         rel_error = [
-            (adjoint_TD[ifunc] - complex_TD[ifunc]) / complex_TD[ifunc]
+            TestResult.relative_error(
+                truth=complex_TD[ifunc], pred=adjoint_TD[ifunc]
+            ).real
             for ifunc in range(nfunctions)
         ]
-        rel_error = [_.real for _ in rel_error]
 
         # make test results object and write it to file
         file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
@@ -825,7 +890,9 @@ class TestResult:
 
         # compute relative error
         rel_error = [
-            (adjoint_TD[ifunc] - finite_diff_TD[ifunc]) / finite_diff_TD[ifunc]
+            TestResult.relative_error(
+                truth=finite_diff_TD[ifunc], pred=adjoint_TD[ifunc]
+            ).real
             for ifunc in range(nfunctions)
         ]
 

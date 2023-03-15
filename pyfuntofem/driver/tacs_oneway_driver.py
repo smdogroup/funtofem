@@ -287,7 +287,9 @@ class TacsOnewayDriver:
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 # TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios
-                body.struct_shape_term = np.zeros((3 * ns, nf), dtype=dtype)
+                body.struct_shape_term[scenario.id] = np.zeros(
+                    (3 * ns, nf), dtype=dtype
+                )
 
                 # initialize new elastic struct vectors
                 if body.transfer is not None:
@@ -363,12 +365,6 @@ class TacsOnewayDriver:
                 # add transfer scheme contributions
                 for body in self.model.bodies:
                     body.add_coordinate_derivative(scenario, step=0)
-
-            # collect the coordinate derivatives for each body
-            for body in self.model.bodies:
-                body.collect_coordinate_derivatives(
-                    comm=self.comm, discipline="structural"
-                )
 
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
