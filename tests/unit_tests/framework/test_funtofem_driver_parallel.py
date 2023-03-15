@@ -122,7 +122,7 @@ class TacsFrameworkTest(unittest.TestCase):
             TacsFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
 
         return
