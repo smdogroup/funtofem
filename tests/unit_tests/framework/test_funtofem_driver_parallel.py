@@ -20,7 +20,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 comm = MPI.COMM_WORLD
 ntacs_procs = 2
-
+complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
 class TacsFrameworkTest(unittest.TestCase):
     N_PROCS = 2
@@ -46,7 +46,6 @@ class TacsFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aeroelastic",
             model,
@@ -81,7 +80,6 @@ class TacsFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aerothermal",
             model,
@@ -94,6 +92,7 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
+    @unittest.skipIf(not complex_mode, "parallel subtractive subtractive cancellation of FD is worse sometimes")
     def test_aerothermoelastic(self):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
@@ -114,7 +113,6 @@ class TacsFrameworkTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=10), model=model
         )
 
-        complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
             "testaero+tacs-aerothermoelastic",
             model,
