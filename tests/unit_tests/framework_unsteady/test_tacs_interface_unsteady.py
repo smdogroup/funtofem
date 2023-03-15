@@ -14,7 +14,7 @@ from pyfuntofem.interface import (
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 
-np.random.seed(1234567)
+np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
