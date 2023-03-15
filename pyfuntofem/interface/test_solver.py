@@ -763,6 +763,16 @@ class TestResult:
         return self
 
     @classmethod
+    def relative_error(cls, truth, pred):
+        if truth == 0.0 and pred == 0.0:
+            print("Warning the derivative test is indeterminate!")
+            return 0.0
+        elif truth == 0.0 and pred != 0.0:
+            return 1.0  # arbitrary 100% error provided to fail test avoiding /0
+        else:
+            return (pred - truth) / truth
+
+    @classmethod
     def complex_step(cls, test_name, model, driver, status_file):
         """
         perform complex step test on a model and driver for multiple functions & variables
@@ -811,10 +821,11 @@ class TestResult:
 
         # compute rel error between adjoint & complex step for each function
         rel_error = [
-            (adjoint_TD[ifunc] - complex_TD[ifunc]) / complex_TD[ifunc]
+            TestResult.relative_error(
+                truth=complex_TD[ifunc], pred=adjoint_TD[ifunc]
+            ).real
             for ifunc in range(nfunctions)
         ]
-        rel_error = [_.real for _ in rel_error]
 
         # make test results object and write it to file
         file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None
@@ -879,7 +890,9 @@ class TestResult:
 
         # compute relative error
         rel_error = [
-            (adjoint_TD[ifunc] - finite_diff_TD[ifunc]) / finite_diff_TD[ifunc]
+            TestResult.relative_error(
+                truth=finite_diff_TD[ifunc], pred=adjoint_TD[ifunc]
+            ).real
             for ifunc in range(nfunctions)
         ]
 
