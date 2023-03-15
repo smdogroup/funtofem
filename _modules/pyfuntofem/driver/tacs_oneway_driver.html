@@ -326,7 +326,9 @@
                 <span class="c1"># initialize new struct shape term for new ns</span>
                 <span class="n">nf</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
                 <span class="c1"># TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">struct_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span> <span class="o">*</span> <span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+                <span class="n">body</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span>
+                <span class="p">)</span>
 
                 <span class="c1"># initialize new elastic struct vectors</span>
                 <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -402,12 +404,6 @@
                 <span class="c1"># add transfer scheme contributions</span>
                 <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
                     <span class="n">body</span><span class="o">.</span><span class="n">add_coordinate_derivative</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-            <span class="c1"># collect the coordinate derivatives for each body</span>
-            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-                <span class="n">body</span><span class="o">.</span><span class="n">collect_coordinate_derivatives</span><span class="p">(</span>
-                    <span class="n">comm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span>
-                <span class="p">)</span>
 
             <span class="c1"># write the sensitivity file for the tacs AIM</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">write_sensitivity_file</span><span class="p">(</span>

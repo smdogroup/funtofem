@@ -661,7 +661,9 @@
         <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">derivs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-            <span class="nb">id</span><span class="p">,</span> <span class="n">deriv</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">collect_coordinate_derivatives</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+            <span class="nb">id</span><span class="p">,</span> <span class="n">deriv</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">collect_coordinate_derivatives</span><span class="p">(</span>
+                <span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span>
+            <span class="p">)</span>
             <span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
             <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
             <span class="n">derivs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deriv</span><span class="p">)</span>

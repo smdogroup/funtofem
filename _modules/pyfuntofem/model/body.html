@@ -751,8 +751,8 @@
         <span class="c1"># Allocate the adjoint variables and internal body variables required</span>
         <span class="n">ns</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span>
         <span class="n">na</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_nnodes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">na</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">na</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ns</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span>
@@ -1364,7 +1364,7 @@
 <span class="sd">        scenario: :class:`~scenario.Scenario`</span>
 <span class="sd">            The current scenario</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Body.get_struct_coordinate_derivatives"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.get_struct_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">get_struct_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1376,7 +1376,7 @@
 <span class="sd">        scenario: :class:`~scenario.Scenario`</span>
 <span class="sd">            The current scenario</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Body.add_coordinate_derivative"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.add_coordinate_derivative">[docs]</a>    <span class="k">def</span> <span class="nf">add_coordinate_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1392,27 +1392,29 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">nfunctions</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
 
-            <span class="c1"># Aerodynamic coordinate derivatives</span>
+            <span class="c1"># Aerodynamic + Structural coordinate derivatives from transfer scheme</span>
             <span class="n">temp_xa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">aero_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="n">temp_xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct_nnodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">aero_shape_term</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_aero_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+            <span class="n">struct_shape_term</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_struct_coordinate_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfunctions</span><span class="p">):</span>
                 <span class="c1"># Solve for psi_L - Note that dL/dfS is the identity matrix. Ensure that</span>
                 <span class="c1"># the vector is in contiguous memory.</span>
                 <span class="n">psi_L</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_loads_ajp</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLdxA0</span><span class="p">(</span><span class="n">psi_L</span><span class="p">,</span> <span class="n">temp_xa</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xa</span>
+                <span class="n">aero_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xa</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydLdxS0</span><span class="p">(</span><span class="n">psi_L</span><span class="p">,</span> <span class="n">temp_xs</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xs</span>
+                <span class="n">struct_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xs</span>
 
                 <span class="c1"># Solve for psi_D - Note that dD/dua is the identity matrix</span>
                 <span class="c1"># Copy the values into contiguous memory.</span>
                 <span class="n">psi_D</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">aero_disps_ajp</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDdxA0</span><span class="p">(</span><span class="n">psi_D</span><span class="p">,</span> <span class="n">temp_xa</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xa</span>
+                <span class="n">aero_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xa</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDdxS0</span><span class="p">(</span><span class="n">psi_D</span><span class="p">,</span> <span class="n">temp_xs</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xs</span>
+                <span class="n">struct_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xs</span>
 
         <span class="k">return</span></div>
 
@@ -1777,7 +1779,7 @@
 
         <span class="k">return</span> <span class="n">struct_ids</span><span class="p">,</span> <span class="n">struct_hflux</span><span class="p">,</span> <span class="n">struct_loads</span>
 
-<div class="viewcode-block" id="Body.collect_coordinate_derivatives"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.collect_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">collect_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="Body.collect_coordinate_derivatives"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.collect_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">collect_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">discipline</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Write the sensitivity files for the aerodynamic and structural meshes on</span>
 <span class="sd">        the root processor.</span>
@@ -1788,7 +1790,14 @@
 
         <span class="k">if</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aerodynamic&quot;</span> <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;flow&quot;</span> <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aero&quot;</span><span class="p">:</span>
             <span class="n">all_aero_ids</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aero_id</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
-            <span class="n">all_aero_shape</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+
+            <span class="c1"># append struct shapes for each scenario</span>
+            <span class="n">full_aero_shape_term</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="n">scenarios</span><span class="p">:</span>
+                <span class="n">full_aero_shape_term</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aero_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+            <span class="n">full_aero_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">full_aero_shape_term</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">all_aero_shape</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">full_aero_shape_term</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
 
             <span class="n">aero_ids</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">aero_shape</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1823,7 +1832,15 @@
             <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;struct&quot;</span>
         <span class="p">):</span>
             <span class="n">all_struct_ids</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_id</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
-            <span class="n">all_struct_shape</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+
+            <span class="c1"># append struct shapes for each scenario</span>
+            <span class="n">full_struct_shape_term</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="n">scenarios</span><span class="p">:</span>
+                <span class="n">full_struct_shape_term</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+            <span class="n">full_struct_shape_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">full_struct_shape_term</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># gather the full struct shape terms across processors</span>
+            <span class="n">all_struct_shape</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">full_struct_shape_term</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
 
             <span class="n">struct_ids</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">struct_shape</span> <span class="o">=</span> <span class="p">[]</span>
