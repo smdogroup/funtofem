@@ -165,7 +165,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         rtol = 1e-6 if complex_mode else 1e-4
         self.assertTrue(max_rel_error < rtol)
         return
-    
+
     def test_multiscenario_aerothermoelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -209,7 +209,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         )
 
         max_rel_error = TestResult.derivative_test(
-            "testaero+tacs-aerothermoelastic-unsteady",
+            "testaero+tacs-aerothermoelastic-unsteady-multiscenario",
             model,
             driver,
             TacsUnsteadyFrameworkTest.FILENAME,
