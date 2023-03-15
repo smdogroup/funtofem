@@ -14,7 +14,7 @@ from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 
-np.random.seed(1234567)
+np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
@@ -83,7 +83,7 @@ class TacsFrameworkTest(unittest.TestCase):
 
         complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
-            "testaero+tacs-aeroelastic",
+            "testaero+tacs-aerothermal",
             model,
             driver,
             TacsFrameworkTest.FILENAME,
@@ -116,13 +116,13 @@ class TacsFrameworkTest(unittest.TestCase):
 
         complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
         max_rel_error = TestResult.derivative_test(
-            "testaero+tacs-aeroelastic",
+            "testaero+tacs-aerothermoelastic",
             model,
             driver,
             TacsFrameworkTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
 
         return

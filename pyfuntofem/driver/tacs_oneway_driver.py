@@ -366,12 +366,6 @@ class TacsOnewayDriver:
                 for body in self.model.bodies:
                     body.add_coordinate_derivative(scenario, step=0)
 
-            # collect the coordinate derivatives for each body
-            for body in self.model.bodies:
-                body.collect_coordinate_derivatives(
-                    comm=self.comm, discipline="structural"
-                )
-
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,

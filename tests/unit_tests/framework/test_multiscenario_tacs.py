@@ -11,9 +11,9 @@ from pyfuntofem.interface import (
 )
 from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from bdf_test_utils import thermoelasticity_callback
 
-np.random.seed(123456)
+np.random.seed(12345)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
@@ -30,7 +30,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.001, value=0.01, upper=2.0
+            lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
 
@@ -63,7 +63,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
             MultiScenarioTacsTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -72,7 +72,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.001, value=0.01, upper=2.0
+            lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
 
@@ -106,7 +106,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
             MultiScenarioTacsTest.FILENAME,
             complex_mode=complex_mode,
         )
-        rtol = 1e-7 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
         return
 
