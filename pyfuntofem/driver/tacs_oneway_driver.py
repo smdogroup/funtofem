@@ -287,7 +287,9 @@ class TacsOnewayDriver:
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 # TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios
-                body.struct_shape_term = np.zeros((3 * ns, nf), dtype=dtype)
+                body.struct_shape_term[scenario.id] = np.zeros(
+                    (3 * ns, nf), dtype=dtype
+                )
 
                 # initialize new elastic struct vectors
                 if body.transfer is not None:

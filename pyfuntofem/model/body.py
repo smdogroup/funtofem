@@ -712,8 +712,8 @@ class Body(Base):
         # Allocate the adjoint variables and internal body variables required
         ns = 3 * self.struct_nnodes
         na = 3 * self.aero_nnodes
-        self.aero_shape_term = np.zeros((na, nf), dtype=self.dtype)
-        self.struct_shape_term = np.zeros((ns, nf), dtype=self.dtype)
+        self.aero_shape_term[scenario.id] = np.zeros((na, nf), dtype=self.dtype)
+        self.struct_shape_term[scenario.id] = np.zeros((ns, nf), dtype=self.dtype)
 
         if self.transfer is not None:
             ns = 3 * self.struct_nnodes
@@ -1325,7 +1325,7 @@ class Body(Base):
         scenario: :class:`~scenario.Scenario`
             The current scenario
         """
-        return self.aero_shape_term
+        return self.aero_shape_term[scenario.id]
 
     def get_struct_coordinate_derivatives(self, scenario):
         """
@@ -1337,7 +1337,7 @@ class Body(Base):
         scenario: :class:`~scenario.Scenario`
             The current scenario
         """
-        return self.struct_shape_term
+        return self.struct_shape_term[scenario.id]
 
     def add_coordinate_derivative(self, scenario, step):
         """
@@ -1353,27 +1353,29 @@ class Body(Base):
         if self.transfer is not None:
             nfunctions = scenario.count_adjoint_functions()
 
-            # Aerodynamic coordinate derivatives
+            # Aerodynamic + Structural coordinate derivatives from transfer scheme
             temp_xa = np.zeros(3 * self.aero_nnodes, dtype=self.dtype)
             temp_xs = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            aero_shape_term = self.get_aero_coordinate_derivatives(scenario)
+            struct_shape_term = self.get_struct_coordinate_derivatives(scenario)
             for k in range(nfunctions):
                 # Solve for psi_L - Note that dL/dfS is the identity matrix. Ensure that
                 # the vector is in contiguous memory.
                 psi_L = -self.struct_loads_ajp[:, k].copy()
                 self.transfer.applydLdxA0(psi_L, temp_xa)
-                self.aero_shape_term[:, k] += temp_xa
+                aero_shape_term[:, k] += temp_xa
 
                 self.transfer.applydLdxS0(psi_L, temp_xs)
-                self.struct_shape_term[:, k] += temp_xs
+                struct_shape_term[:, k] += temp_xs
 
                 # Solve for psi_D - Note that dD/dua is the identity matrix
                 # Copy the values into contiguous memory.
                 psi_D = -self.aero_disps_ajp[:, k].copy()
                 self.transfer.applydDdxA0(psi_D, temp_xa)
-                self.aero_shape_term[:, k] += temp_xa
+                aero_shape_term[:, k] += temp_xa
 
                 self.transfer.applydDdxS0(psi_D, temp_xs)
-                self.struct_shape_term[:, k] += temp_xs
+                struct_shape_term[:, k] += temp_xs
 
         return
 
@@ -1738,7 +1740,7 @@ class Body(Base):
 
         return struct_ids, struct_hflux, struct_loads
 
-    def collect_coordinate_derivatives(self, comm, discipline, root=0):
+    def collect_coordinate_derivatives(self, comm, discipline, scenarios, root=0):
         """
         Write the sensitivity files for the aerodynamic and structural meshes on
         the root processor.
@@ -1749,7 +1751,14 @@ class Body(Base):
 
         if discipline == "aerodynamic" or discipline == "flow" or discipline == "aero":
             all_aero_ids = comm.gather(self.aero_id, root=root)
-            all_aero_shape = comm.gather(self.aero_shape_term, root=root)
+
+            # append struct shapes for each scenario
+            full_aero_shape_term = []
+            for scenario in scenarios:
+                full_aero_shape_term.append(self.aero_shape_term[scenario.id])
+            full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
+
+            all_aero_shape = comm.gather(full_aero_shape_term, root=root)
 
             aero_ids = []
             aero_shape = []
@@ -1784,7 +1793,15 @@ class Body(Base):
             or discipline == "struct"
         ):
             all_struct_ids = comm.gather(self.struct_id, root=root)
-            all_struct_shape = comm.gather(self.struct_shape_term, root=root)
+
+            # append struct shapes for each scenario
+            full_struct_shape_term = []
+            for scenario in scenarios:
+                full_struct_shape_term.append(self.struct_shape_term[scenario.id])
+            full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
+
+            # gather the full struct shape terms across processors
+            all_struct_shape = comm.gather(full_struct_shape_term, root=root)
 
             struct_ids = []
             struct_shape = []

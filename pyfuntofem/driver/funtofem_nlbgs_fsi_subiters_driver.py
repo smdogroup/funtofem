@@ -119,10 +119,10 @@ class FUNtoFEMnlbgsFSISubiters(FUNtoFEMDriver):
                 )
 
             if body.shape:
-                body.aero_shape_term = np.zeros(
+                body.aero_shape_term[scenario.id] = np.zeros(
                     (body.aero_nnodes * 3, nfunctions_total), dtype=TransferScheme.dtype
                 )
-                body.struct_shape_term = np.zeros(
+                body.struct_shape_term[scenario.id] = np.zeros(
                     (body.struct_nnodes * body.xfer_ndof, nfunctions_total),
                     dtype=TransferScheme.dtype,
                 )
