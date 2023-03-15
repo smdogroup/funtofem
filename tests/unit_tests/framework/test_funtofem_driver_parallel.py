@@ -22,6 +22,7 @@ comm = MPI.COMM_WORLD
 ntacs_procs = 2
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
+
 class TacsFrameworkTest(unittest.TestCase):
     N_PROCS = 2
     FILENAME = "testAero-tacs.txt"
@@ -92,7 +93,10 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
-    @unittest.skipIf(not complex_mode, "parallel subtractive subtractive cancellation of FD is worse sometimes")
+    @unittest.skipIf(
+        not complex_mode,
+        "parallel subtractive subtractive cancellation of FD is worse sometimes",
+    )
     def test_aerothermoelastic(self):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
