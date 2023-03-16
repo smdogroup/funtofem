@@ -212,3 +212,24 @@ class Function(object):
             stop=stop,
             body=body,
         )
+
+    @classmethod
+    def xcom(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """Class constructor for the x center of mass TACS function"""
+        return cls(
+            name="xcom", analysis_type="structural", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def ycom(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """Class constructor for the y center of mass TACS function"""
+        return cls(
+            name="ycom", analysis_type="structural", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def zcom(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """Class constructor for the z center of mass TACS function"""
+        return cls(
+            name="zcom", analysis_type="structural", start=start, stop=stop, body=body
+        )

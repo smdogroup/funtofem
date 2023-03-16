@@ -272,6 +272,24 @@ class TacsSteadyInterface(SolverInterface):
                     func_list.append(functions.HeatFlux(self.assembler))
                     func_tag.append(1)
 
+                elif func.name.lower() == "xcom":
+                    func_list.append(
+                        functions.CenterOfMass(self.assembler, direction=[1, 0, 0])
+                    )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "ycom":
+                    func_list.append(
+                        functions.CenterOfMass(self.assembler, direction=[0, 1, 0])
+                    )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "zcom":
+                    func_list.append(
+                        functions.CenterOfMass(self.assembler, direction=[0, 0, 1])
+                    )
+                    func_tag.append(1)
+
                 elif func.name == "mass":
                     func_list.append(functions.StructuralMass(self.assembler))
                     func_tag.append(-1)
