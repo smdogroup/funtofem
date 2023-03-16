@@ -85,6 +85,7 @@
         <span class="n">model</span><span class="p">,</span>
         <span class="n">tacs_aim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nprocs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">external_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)</span>
@@ -99,6 +100,8 @@
 <span class="sd">            Interface object for TACS and ESP/CAPS, wraps the tacsAIM.</span>
 <span class="sd">        nprocs: int</span>
 <span class="sd">            Number of processes that TACS is running on.</span>
+<span class="sd">        external_shape: bool</span>
+<span class="sd">            whether the tacs aim shape analysis is performed outside the class</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solvers</span> <span class="o">=</span> <span class="n">solvers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">comm</span> <span class="o">=</span> <span class="n">solvers</span><span class="o">.</span><span class="n">comm</span>
@@ -106,6 +109,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nprocs</span> <span class="o">=</span> <span class="n">nprocs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tacs_interface</span> <span class="o">=</span> <span class="n">solvers</span><span class="o">.</span><span class="n">structural</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span> <span class="o">=</span> <span class="n">tacs_aim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span> <span class="o">=</span> <span class="n">external_shape</span>
 
         <span class="c1"># store the shape variables list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shape_variables</span> <span class="o">=</span> <span class="p">[</span>
@@ -125,14 +129,19 @@
 
         <span class="c1"># assertion checks for no shape change vs shape change</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">change_shape</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="n">tacs_aim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">tacs_aim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">external_shape</span>
             <span class="k">assert</span> <span class="n">nprocs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">caps_loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tacs_aim</span><span class="p">,</span> <span class="n">caps2tacs</span><span class="o">.</span><span class="n">TacsAim</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">external_shape</span><span class="p">:</span>
+                <span class="c1"># define properties needed for external shape paths</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dat_file_path</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_dir</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
-                    <span class="s2">&quot;Need to have ESP/CAPS pyCAPS package to use shape change&quot;</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">caps_loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tacs_aim</span><span class="p">,</span> <span class="n">caps2tacs</span><span class="o">.</span><span class="n">TacsAim</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                        <span class="s2">&quot;Need to have ESP/CAPS pyCAPS package to use shape change&quot;</span>
+                    <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">tacs_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tacs_interface</span><span class="p">,</span> <span class="n">TacsSteadyInterface</span><span class="p">)</span>
@@ -230,7 +239,14 @@
 
 <div class="viewcode-block" id="TacsOnewayDriver.prime_loads_from_file"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">prime_loads_from_file</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nprocs</span><span class="p">,</span> <span class="n">transfer_settings</span><span class="p">,</span> <span class="n">tacs_aim</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">filename</span><span class="p">,</span>
+        <span class="n">solvers</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">nprocs</span><span class="p">,</span>
+        <span class="n">transfer_settings</span><span class="p">,</span>
+        <span class="n">tacs_aim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">external_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim</span>
@@ -250,6 +266,8 @@
 <span class="sd">            Settings for transfer of state variables across aero and struct meshes</span>
 <span class="sd">        tacs_aim: `caps2tacs.TacsAim`</span>
 <span class="sd">            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.</span>
+<span class="sd">        external_shape: bool</span>
+<span class="sd">            whether the tacs aim shape analysis is performed outside this class</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">comm</span> <span class="o">=</span> <span class="n">solvers</span><span class="o">.</span><span class="n">comm</span>
         <span class="n">world_rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
@@ -288,7 +306,13 @@
                     <span class="n">body</span><span class="o">.</span><span class="n">transfer_loads</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
                     <span class="n">body</span><span class="o">.</span><span class="n">transfer_heat_flux</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="n">nprocs</span><span class="p">,</span> <span class="n">tacs_aim</span><span class="o">=</span><span class="n">tacs_aim</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">solvers</span><span class="p">,</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="n">nprocs</span><span class="o">=</span><span class="n">nprocs</span><span class="p">,</span>
+            <span class="n">tacs_aim</span><span class="o">=</span><span class="n">tacs_aim</span><span class="p">,</span>
+            <span class="n">external_shape</span><span class="o">=</span><span class="n">external_shape</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">manager</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hot_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
@@ -309,6 +333,36 @@
     <span class="k">def</span> <span class="nf">root_proc</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dat_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dat_file_path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">dat_file_path</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">analysis_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_dir</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">analysis_dir</span>
+
+<div class="viewcode-block" id="TacsOnewayDriver.input_paths"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.TacsOnewayDriver.input_paths">[docs]</a>    <span class="k">def</span> <span class="nf">input_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dat_file_path</span><span class="p">,</span> <span class="n">analysis_dir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        receive path information if the user is handling the shape optimization externally</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dat_file_path: path object</span>
+<span class="sd">            path to nastran_CAPS.dat file of the tacsAIM (which includes the bdf file)</span>
+<span class="sd">        analysis_dir: path object</span>
+<span class="sd">            path to write output f5 binary files from TACS analysis (which can be converted to vtk/tec files later)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dat_file_path</span> <span class="o">=</span> <span class="n">dat_file_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analysis_dir</span> <span class="o">=</span> <span class="n">analysis_dir</span>
+        <span class="k">return</span></div>
+
     <span class="k">def</span> <span class="nf">_transfer_fixed_aero_loads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        transfer fixed aero loads over to the new</span>
@@ -325,7 +379,6 @@
             <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
                 <span class="c1"># initialize new struct shape term for new ns</span>
                 <span class="n">nf</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">count_adjoint_functions</span><span class="p">()</span>
-                <span class="c1"># TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios</span>
                 <span class="n">body</span><span class="o">.</span><span class="n">struct_shape_term</span><span class="p">[</span><span class="n">scenario</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
                     <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">ns</span><span class="p">,</span> <span class="n">nf</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span>
                 <span class="p">)</span>
@@ -356,13 +409,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">change_shape</span><span class="p">:</span>
-            <span class="c1"># set the new shape variables into the model using update design to prevent CAPS_CLEAN errors</span>
-            <span class="n">input_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tacs_model</span><span class="o">.</span><span class="n">update_design</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">setup_aim</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span><span class="p">:</span>
+                <span class="c1"># set the new shape variables into the model using update design to prevent CAPS_CLEAN errors</span>
+                <span class="n">input_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">var</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tacs_model</span><span class="o">.</span><span class="n">update_design</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">setup_aim</span><span class="p">()</span>
 
-            <span class="c1"># build the new structure geometry</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">pre_analysis</span><span class="p">()</span>
+                <span class="c1"># build the new structure geometry</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">pre_analysis</span><span class="p">()</span>
 
             <span class="c1"># make the new tacs interface of the structural geometry</span>
             <span class="c1"># TODO : need to make sure the InterfaceFromBDF method tells the struct_id properly</span>
@@ -370,8 +424,8 @@
                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
                 <span class="n">comm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span>
                 <span class="n">nprocs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nprocs</span><span class="p">,</span>
-                <span class="n">bdf_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">dat_file_path</span><span class="p">,</span>
-                <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">analysis_dir</span><span class="p">,</span>
+                <span class="n">bdf_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_file_path</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analysis_dir</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># make a solvers object to hold structural solver since flow is no longer used</span>
@@ -405,19 +459,20 @@
                 <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
                     <span class="n">body</span><span class="o">.</span><span class="n">add_coordinate_derivative</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-            <span class="c1"># write the sensitivity file for the tacs AIM</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">write_sensitivity_file</span><span class="p">(</span>
-                <span class="n">comm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span>
-                <span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">sens_file_path</span><span class="p">,</span>
-                <span class="n">discipline</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_shape</span><span class="p">:</span>
+                <span class="c1"># write the sensitivity file for the tacs AIM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">write_sensitivity_file</span><span class="p">(</span>
+                    <span class="n">comm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">comm</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">sens_file_path</span><span class="p">,</span>
+                    <span class="n">discipline</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
 
-            <span class="c1"># run the tacs aim postAnalysis to compute the chain rule product</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">post_analysis</span><span class="p">()</span>
+                <span class="c1"># run the tacs aim postAnalysis to compute the chain rule product</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tacs_aim</span><span class="o">.</span><span class="n">post_analysis</span><span class="p">()</span>
 
-            <span class="c1"># store the shape variables in the function gradients</span>
-            <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_get_shape_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span></div>
+                <span class="c1"># store the shape variables in the function gradients</span>
+                <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_get_shape_derivatives</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span></div>
         <span class="c1"># end of change shape section</span>
 
     <span class="k">def</span> <span class="nf">_get_shape_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>

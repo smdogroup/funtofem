@@ -286,7 +286,7 @@ solvers for steady and unsteady coupled adjoint.</p>
 <h3>TACS Oneway-Coupled Driver Class<a class="headerlink" href="#tacs-oneway-coupled-driver-class" title="Permalink to this heading">¶</a></h3>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.driver.</span></span><span class="sig-name descname"><span class="pre">TacsOnewayDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.driver.</span></span><span class="sig-name descname"><span class="pre">TacsOnewayDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">external_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver" title="Permalink to this definition">¶</a></dt>
 <dd><p>build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -295,6 +295,7 @@ solvers for steady and unsteady coupled adjoint.</p>
 <li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">FUNtoFEMmodel</span></code>) – The model containing the design data.</p></li>
 <li><p><strong>tacs_aim</strong> (<cite>caps2tacs.TacsAim</cite>) – Interface object for TACS and ESP/CAPS, wraps the tacsAIM.</p></li>
 <li><p><strong>nprocs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Number of processes that TACS is running on.</p></li>
+<li><p><strong>external_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether the tacs aim shape analysis is performed outside the class</p></li>
 </ul>
 </dd>
 </dl>
@@ -328,7 +329,7 @@ solvers for steady and unsteady coupled adjoint.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prime_loads_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.prime_loads_from_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prime_loads_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solvers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprocs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfer_settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_aim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">external_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.prime_loads_from_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.prime_loads_from_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
 Built from an aero loads file of a previous CFD analysis in FuntofemNlbgs driver (TODO : make uncoupled fluid solver features)
 The loads file is written from the FUNtoFEM model after a forward analysis of a flow solver</p>
@@ -341,6 +342,21 @@ The loads file is written from the FUNtoFEM model after a forward analysis of a 
 <li><p><strong>nprocs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – Number of processes that TACS is running on.</p></li>
 <li><p><strong>transfer_settings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">TransferSettings</span></code>) – Settings for transfer of state variables across aero and struct meshes</p></li>
 <li><p><strong>tacs_aim</strong> (<cite>caps2tacs.TacsAim</cite>) – Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.</p></li>
+<li><p><strong>external_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether the tacs aim shape analysis is performed outside this class</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.driver.TacsOnewayDriver.input_paths">
+<span class="sig-name descname"><span class="pre">input_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dat_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/driver/tacs_oneway_driver.html#TacsOnewayDriver.input_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.driver.TacsOnewayDriver.input_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>receive path information if the user is handling the shape optimization externally</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dat_file_path</strong> (<em>path object</em>) – path to nastran_CAPS.dat file of the tacsAIM (which includes the bdf file)</p></li>
+<li><p><strong>analysis_dir</strong> (<em>path object</em>) – path to write output f5 binary files from TACS analysis (which can be converted to vtk/tec files later)</p></li>
 </ul>
 </dd>
 </dl>

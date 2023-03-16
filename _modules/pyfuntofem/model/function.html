@@ -250,6 +250,38 @@
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span>
             <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Function.xcom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.xcom">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">xcom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class constructor for the x center of mass TACS function&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;xcom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Function.ycom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.ycom">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">ycom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class constructor for the y center of mass TACS function&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ycom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Function.zcom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.zcom">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">zcom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class constructor for the z center of mass TACS function&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zcom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Function.compliance"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.compliance">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">compliance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class constructor for the compliance TACS function&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;compliance&quot;</span><span class="p">,</span>
+            <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+            <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
         <span class="p">)</span></div></div>
 </pre></div>
 
