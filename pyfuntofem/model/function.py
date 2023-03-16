@@ -233,3 +233,14 @@ class Function(object):
         return cls(
             name="zcom", analysis_type="structural", start=start, stop=stop, body=body
         )
+
+    @classmethod
+    def compliance(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """Class constructor for the compliance TACS function"""
+        return cls(
+            name="compliance",
+            analysis_type="structural",
+            start=start,
+            stop=stop,
+            body=body,
+        )
