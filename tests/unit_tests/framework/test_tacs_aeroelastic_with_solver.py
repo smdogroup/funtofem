@@ -172,6 +172,40 @@ class TacsFrameworkTest(unittest.TestCase):
 
         return
 
+    def test_functions(self):
+        comm = MPI.COMM_WORLD
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aeroelastic("plate")
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=1.0, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = Scenario.steady("test", steps=150).include(Function.xcom())
+        test_scenario.include(Function.ycom()).include(Function.zcom())
+        test_scenario.include(Function.ksfailure()).include(Function.mass())
+        test_scenario.include(Function.compliance()).register_to(model)
+
+        solvers = SolverManager(comm)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            model, comm, 1, bdf_filename, callback=elasticity_callback
+        )
+        solvers.flow = TestAerodynamicSolver(comm, model)
+
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=5), model=model
+        )
+
+        driver.solve_forward()
+
+        funcs = model.get_functions()
+        print(f"x center of mass = {funcs[0].value}")
+        print(f"y center of mass = {funcs[1].value}")
+        print(f"z center of mass = {funcs[2].value}")
+        print(f"ksfailure = {funcs[3].value}")
+        print(f"structural mass = {funcs[4].value}")
+        print(f"compliance = {funcs[5].value}")
+        return
+
 
 if __name__ == "__main__":
     unittest.main()
