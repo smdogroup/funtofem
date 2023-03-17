@@ -29,7 +29,7 @@ struct_X is a flattened array of length 3*struct_nnodes.
 
 Solver Interface Class
 ======================
-.. automodule:: solver_interface
+.. automodule:: pyfuntofem.interface
 
 .. autoclass:: SolverInterface
     :members:

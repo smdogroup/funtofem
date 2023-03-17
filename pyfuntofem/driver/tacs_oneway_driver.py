@@ -28,7 +28,12 @@ from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
-from tacs import caps2tacs
+
+import importlib.util
+
+caps_loader = importlib.util.find_spec("pyCAPS")
+if caps_loader is not None:  # tacs loader not None check for this file anyways
+    from tacs import caps2tacs
 
 from mpi4py import MPI
 import numpy as np
@@ -41,6 +46,7 @@ class TacsOnewayDriver:
         model,
         tacs_aim=None,
         nprocs=None,
+        external_shape=False,
     ):
         """
         build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
@@ -55,6 +61,8 @@ class TacsOnewayDriver:
             Interface object for TACS and ESP/CAPS, wraps the tacsAIM.
         nprocs: int
             Number of processes that TACS is running on.
+        external_shape: bool
+            whether the tacs aim shape analysis is performed outside the class
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -62,6 +70,7 @@ class TacsOnewayDriver:
         self.nprocs = nprocs
         self.tacs_interface = solvers.structural
         self.tacs_aim = tacs_aim
+        self.external_shape = external_shape
 
         # store the shape variables list
         self.shape_variables = [
@@ -81,9 +90,19 @@ class TacsOnewayDriver:
 
         # assertion checks for no shape change vs shape change
         if self.change_shape:
-            assert tacs_aim is not None
+            assert tacs_aim is not None or external_shape
             assert nprocs is not None
-            assert isinstance(tacs_aim, caps2tacs.TacsAim)
+            if external_shape:
+                # define properties needed for external shape paths
+                self._dat_file_path = None
+                self._analysis_dir = None
+            else:
+                if caps_loader is not None:
+                    assert isinstance(tacs_aim, caps2tacs.TacsAim)
+                else:
+                    raise AssertionError(
+                        "Need to have ESP/CAPS pyCAPS package to use shape change"
+                    )
         else:
             assert self.tacs_interface is not None
             assert isinstance(self.tacs_interface, TacsSteadyInterface)
@@ -181,7 +200,14 @@ class TacsOnewayDriver:
 
     @classmethod
     def prime_loads_from_file(
-        cls, filename, solvers, model, nprocs, transfer_settings, tacs_aim=None
+        cls,
+        filename,
+        solvers,
+        model,
+        nprocs,
+        transfer_settings,
+        tacs_aim=None,
+        external_shape=False,
     ):
         """
         Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
@@ -201,6 +227,8 @@ class TacsOnewayDriver:
             Settings for transfer of state variables across aero and struct meshes
         tacs_aim: `caps2tacs.TacsAim`
             Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
+        external_shape: bool
+            whether the tacs aim shape analysis is performed outside this class
         """
         comm = solvers.comm
         world_rank = comm.Get_rank()
@@ -239,7 +267,13 @@ class TacsOnewayDriver:
                     body.transfer_loads(scenario)
                     body.transfer_heat_flux(scenario)
 
-        return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
+        return cls(
+            solvers,
+            model,
+            nprocs=nprocs,
+            tacs_aim=tacs_aim,
+            external_shape=external_shape,
+        )
 
     @property
     def manager(self, hot_start: bool = False):
@@ -260,6 +294,36 @@ class TacsOnewayDriver:
     def root_proc(self) -> bool:
         return self.comm.rank == 0
 
+    @property
+    def dat_file_path(self):
+        if self.external_shape:
+            return self._dat_file_path
+        else:
+            return self.tacs_aim.dat_file_path
+
+    @property
+    def analysis_dir(self):
+        if self.external_shape:
+            return self._analysis_dir
+        else:
+            return self.tacs_aim.analysis_dir
+
+    def input_paths(self, dat_file_path, analysis_dir):
+        """
+        receive path information if the user is handling the shape optimization externally
+
+        Parameters
+        ----------
+        dat_file_path: path object
+            path to nastran_CAPS.dat file of the tacsAIM (which includes the bdf file)
+        analysis_dir: path object
+            path to write output f5 binary files from TACS analysis (which can be converted to vtk/tec files later)
+        """
+        assert self.external_shape
+        self._dat_file_path = dat_file_path
+        self._analysis_dir = analysis_dir
+        return
+
     def _transfer_fixed_aero_loads(self):
         """
         transfer fixed aero loads over to the new
@@ -276,8 +340,9 @@ class TacsOnewayDriver:
             for scenario in self.model.scenarios:
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
-                # TODO : fix body.py struct_shape_term should be scenario dictionary for multiple scenarios
-                body.struct_shape_term = np.zeros((3 * ns, nf), dtype=dtype)
+                body.struct_shape_term[scenario.id] = np.zeros(
+                    (3 * ns, nf), dtype=dtype
+                )
 
                 # initialize new elastic struct vectors
                 if body.transfer is not None:
@@ -305,13 +370,14 @@ class TacsOnewayDriver:
         """
 
         if self.change_shape:
-            # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
-            input_dict = {var.name: var.value for var in self.model.get_variables()}
-            self.model.tacs_model.update_design(input_dict)
-            self.tacs_aim.setup_aim()
+            if not self.external_shape:
+                # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
+                input_dict = {var.name: var.value for var in self.model.get_variables()}
+                self.model.tacs_model.update_design(input_dict)
+                self.tacs_aim.setup_aim()
 
-            # build the new structure geometry
-            self.tacs_aim.pre_analysis()
+                # build the new structure geometry
+                self.tacs_aim.pre_analysis()
 
             # make the new tacs interface of the structural geometry
             # TODO : need to make sure the InterfaceFromBDF method tells the struct_id properly
@@ -319,8 +385,8 @@ class TacsOnewayDriver:
                 model=self.model,
                 comm=self.comm,
                 nprocs=self.nprocs,
-                bdf_file=self.tacs_aim.dat_file_path,
-                prefix=self.tacs_aim.analysis_dir,
+                bdf_file=self.dat_file_path,
+                prefix=self.analysis_dir,
             )
 
             # make a solvers object to hold structural solver since flow is no longer used
@@ -354,25 +420,20 @@ class TacsOnewayDriver:
                 for body in self.model.bodies:
                     body.add_coordinate_derivative(scenario, step=0)
 
-            # collect the coordinate derivatives for each body
-            for body in self.model.bodies:
-                body.collect_coordinate_derivatives(
-                    comm=self.comm, discipline="structural"
+            if not self.external_shape:
+                # write the sensitivity file for the tacs AIM
+                self.model.write_sensitivity_file(
+                    comm=self.comm,
+                    filename=self.tacs_aim.sens_file_path,
+                    discipline="structural",
                 )
 
-            # write the sensitivity file for the tacs AIM
-            self.model.write_sensitivity_file(
-                comm=self.comm,
-                filename=self.tacs_aim.sens_file_path,
-                discipline="structural",
-            )
+                # run the tacs aim postAnalysis to compute the chain rule product
+                self.tacs_aim.post_analysis()
 
-            # run the tacs aim postAnalysis to compute the chain rule product
-            self.tacs_aim.post_analysis()
-
-            # store the shape variables in the function gradients
-            for scenario in self.model.scenarios:
-                self._get_shape_derivatives(scenario)
+                # store the shape variables in the function gradients
+                for scenario in self.model.scenarios:
+                    self._get_shape_derivatives(scenario)
         # end of change shape section
 
     def _get_shape_derivatives(self, scenario):

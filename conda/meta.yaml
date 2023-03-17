@@ -1,0 +1,116 @@
+{% set name = "funtofem" %}
+
+{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
+{% if version.startswith('v') %}
+{% set version = version[1:] %}
+{% endif %}
+# {% set version = 0.2 %}
+
+{% set build = 0 %}
+
+{% set mpi = mpi or 'openmpi' %}
+{% if scalar == "real" %}
+{% set build = build + 100 %}
+{% endif %}
+
+# to test the build run the following command from the F2F root folder
+# conda build -c conda-forge -c smdogroup/label/complex -c smdogroup conda;
+# how to install conda for testing
+# conda install -c smdogroup -c conda-forge -c sean-engelstad funtofem
+
+package:
+  name: "funtofem"
+  version: "{{ version }}"
+
+source:
+  git_url: https://github.com/smdogroup/funtofem.git
+
+build:
+  number: {{ build }}
+  skip: true  # [py<=36]
+  string: py{{ CONDA_PY }}_{{ scalar }}_h{{ PKG_HASH }}_{{ build }}
+  track_features:
+    - funtofem_complex  # [scalar == "complex"]
+
+requirements:
+  build:
+    - python {{ python }}
+    - numpy   1.18   # [py==37]
+    - numpy   1.18   # [py==38]
+    - numpy   1.19   # [py==39]
+    - numpy   1.22   # [py==310]
+    - numpy   1.23   # [py==311]
+    - {{ mpi }}
+    - openmpi-mpicxx  # [mpi == "openmpi"]
+    - mpich-mpicxx  # [mpi == "mpich"]
+    - {{ compiler('cxx') }}
+    - libopenblas
+    - lapack
+    - make
+    - mpi4py
+    - cython
+    - setuptools
+    - tacs
+
+  host:
+    - python {{ python }}
+    - pip
+    - numpy   1.18   # [py==37]
+    - numpy   1.18   # [py==38]
+    - numpy   1.19   # [py==39]
+    - numpy   1.22   # [py==310]
+    - numpy   1.23   # [py==311]
+    - {{ mpi }}
+    - openmpi-mpicxx  # [mpi == "openmpi"]
+    - mpich-mpicxx  # [mpi == "mpich"]
+    - libopenblas
+    - lapack
+    - mpi4py
+    - cython
+    - setuptools
+    - tacs
+
+  run:
+    - python
+    - numpy >=1.18.5,<2.0.a0   # [py==37]
+    - numpy >=1.18.5,<2.0.a0   # [py==38]
+    - numpy >=1.19.5,<2.0.a0   # [py==39]
+    - numpy >=1.22.0,<2.0.a0   # [py==310]
+    - numpy >=1.23.0,<2.0.a0   # [py==311]
+    - scipy
+    - {{ mpi }}
+    - openmpi-mpicxx  # [mpi == "openmpi"]
+    - mpich-mpicxx  # [mpi == "mpich"]
+    - libopenblas
+    - lapack
+    - mpi4py
+    - tacs
+
+test:
+  requires:
+    - testflo
+
+  source_files:
+    - tests
+
+  imports:
+    - funtofem
+    - funtofem.TransferScheme
+    - tacs
+    - tacs.pytacs
+    - pyfuntofem
+    - pyfuntofem.driver
+    - pyfuntofem.model
+    - pyfuntofem.interface
+    - pyfuntofem.optimization
+
+  commands:
+    - |
+    - testflo --pre_announce --timeout 120 tests/ # [linux64]
+
+about:
+  home: https://github.com/smdogroup/funtofem
+  license: Apache
+  license_family: APACHE
+  summary: Aeroelastic analysis package with adjoint-based gradient optimization
+  doc_url: https://smdogroup.github.io/funtofem/

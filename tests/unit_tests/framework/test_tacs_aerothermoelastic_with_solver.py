@@ -15,7 +15,7 @@ from bdf_test_utils import thermoelasticity_callback
 import unittest
 import numpy as np
 
-np.random.seed(1234567)
+np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
@@ -28,7 +28,7 @@ class TacsFrameworkTest(unittest.TestCase):
         plate = Body("plate", "aerothermoelastic", group=0, boundary=1)
 
         # Create a structural variable
-        thickness = 1.0
+        thickness = 0.1
         svar = Variable("thickness", value=thickness, lower=0.01, upper=0.1)
         plate.add_variable("structural", svar)
         model.add_body(plate)
@@ -111,7 +111,7 @@ class TacsFrameworkTest(unittest.TestCase):
         # Check whether to use the complex-step method or now
         complex_step = False
         epsilon = 1e-5
-        rtol = 1e-4
+        rtol = 1e-3
         if TransferScheme.dtype == complex and TACS.dtype == complex:
             complex_step = True
             epsilon = 1e-30

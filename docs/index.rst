@@ -44,7 +44,7 @@ Authors
 * Lenard Halim
 * Sejal Sahu
 * Brian Burke
-
+* Sean Engelstad
 
 
 External Resources
