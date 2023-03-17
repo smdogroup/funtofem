@@ -327,6 +327,9 @@ class TacsUnsteadyInterface(SolverInterface):
                     func_list.append(functions.HeatFlux(self.assembler))
                     func_tag.append(1)
 
+                # note center of mass x,y,z functions are not meant for unsteady analyses according to the github TACS repo
+                # and are not included in this unsteady interface
+
                 elif func.name == "mass":
                     func_list.append(functions.StructuralMass(self.assembler))
                     func_tag.append(-1)
