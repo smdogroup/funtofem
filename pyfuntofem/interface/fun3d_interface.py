@@ -601,14 +601,6 @@ class Fun3dInterface(SolverInterface):
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
-                aero_nnodes = body.get_num_aero_nodes()
-                if aero_disps is not None and aero_nnodes > 0:
-                    dx = np.asfortranarray(aero_disps[0::3])
-                    dy = np.asfortranarray(aero_disps[1::3])
-                    dz = np.asfortranarray(aero_disps[2::3])
-                    self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
-
                 aero_temps = body.get_aero_temps(scenario)
                 if body.thermal_transfer is not None:
                     # Nondimensionalize by freestream temperature
