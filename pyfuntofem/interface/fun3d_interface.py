@@ -406,9 +406,10 @@ class Fun3dInterface(SolverInterface):
                 dx, dy, dz = self.fun3d_adjoint.extract_grid_adjoint_product(
                     aero_nnodes, nfunctions, body=ibody
                 )
-                body.aero_shape_term[0::3, :nfunctions] += dx[:, :] * self.flow_dt
-                body.aero_shape_term[1::3, :nfunctions] += dy[:, :] * self.flow_dt
-                body.aero_shape_term[2::3, :nfunctions] += dz[:, :] * self.flow_dt
+                aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
+                aero_shape_term[0::3, :nfunctions] += dx[:, :] * self.flow_dt
+                aero_shape_term[1::3, :nfunctions] += dy[:, :] * self.flow_dt
+                aero_shape_term[2::3, :nfunctions] += dz[:, :] * self.flow_dt
 
         return
 
