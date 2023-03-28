@@ -358,7 +358,7 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) / funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
