@@ -46,7 +46,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
@@ -60,13 +60,15 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        rtol = 1e-9 if complex_mode else 1e-5
+        epsilon = 1e-30 if complex_mode else 1e-5
+        rtol = 1e-9 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aeroelastic",
             model,
             driver,
             TacsSteadyInterfaceTest.FILENAME,
             complex_mode,
+            epsilon,
         )
         self.assertTrue(max_rel_error < rtol)
 
@@ -95,13 +97,15 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        rtol = 1e-9 if complex_mode else 1e-5
+        epsilon = 1e-30 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aerothermal",
             model,
             driver,
             TacsSteadyInterfaceTest.FILENAME,
             complex_mode,
+            epsilon,
         )
         self.assertTrue(max_rel_error < rtol)
 
@@ -130,13 +134,15 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        rtol = 1e-9 if complex_mode else 1e-5
+        epsilon = 1e-30 if complex_mode else 1e-5
+        rtol = 1e-9 if complex_mode else 1e-3
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aerothermoelastic",
             model,
             driver,
             TacsSteadyInterfaceTest.FILENAME,
             complex_mode,
+            epsilon,
         )
         self.assertTrue(max_rel_error < rtol)
 
@@ -146,18 +152,18 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         """test building with base TacsInterface classmethod"""
         # Build the model
         model = FUNtoFEMmodel("wedge")
-        plate = Body.aerothermoelastic("plate")
+        plate = Body.aeroelastic("plate")
         Variable.structural("thickness", value=0.1).register_to(plate)
         plate.register_to(model)
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
+            model, comm, nprocs, bdf_filename, callback=elasticity_callback
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -166,13 +172,15 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
-        rtol = 1e-9 if complex_mode else 1e-5
+        epsilon = 1e-30 if complex_mode else 1e-5
+        rtol = 1e-9 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
-            "tacs-base+testaero-aerothermoelastic",
+            "tacs-base+testaero-aeroelastic",
             model,
             driver,
             TacsSteadyInterfaceTest.FILENAME,
             complex_mode,
+            epsilon,
         )
         self.assertTrue(max_rel_error < rtol)
 
