@@ -149,7 +149,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         return
 
     def test_base_interface(self):
-        """test building with base TacsInterface classmethod"""
+        """test building tacs with base TacsInterface classmethod and run the driver"""
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
@@ -176,6 +176,67 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         rtol = 1e-9 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
             "tacs-base+testaero-aeroelastic",
+            model,
+            driver,
+            TacsSteadyInterfaceTest.FILENAME,
+            complex_mode,
+            epsilon,
+        )
+        self.assertTrue(max_rel_error < rtol)
+
+        return
+
+    def test_backwards_compatible(self):
+        """ensure the funtofem driver can be created in the old backwards compatible way"""
+        # Build the model
+        model = FUNtoFEMmodel("wedge")
+        plate = Body("plate", "aeroelastic", group=0, boundary=1)
+
+        # Create a structural variable
+        thickness = 1.0
+        svar = Variable("thickness", value=thickness, lower=0.01, upper=0.1)
+        plate.add_variable("structural", svar)
+        model.add_body(plate)
+
+        # Create a scenario to run
+        steps = 150
+        steady = Scenario("steady", group=0, steps=steps)
+
+        # Add a function to the scenario
+        ks = Function("ksfailure", analysis_type="structural")
+        steady.add_function(ks)
+
+        # Add a function to the scenario
+        temp = Function("temperature", analysis_type="structural")
+        steady.add_function(temp)
+
+        model.add_scenario(steady)
+
+        # Instantiate the solvers we'll use here
+        solvers = {}
+
+        # Build the TACS interface
+        nprocs = 1
+        comm = MPI.COMM_WORLD
+
+        solvers = SolverManager(comm)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            model, comm, nprocs, bdf_filename, callback=elasticity_callback
+        )
+        solvers.flow = TestAerodynamicSolver(comm, model)
+
+        # L&D transfer options
+        transfer_settings = TransferSettings(npts=5)
+
+        # instantiate the driver
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
+
+        epsilon = 1e-30 if complex_mode else 1e-5
+        rtol = 1e-9 if complex_mode else 1e-4
+        max_rel_error = TestResult.derivative_test(
+            "backwards-compatible-aeroelastic",
             model,
             driver,
             TacsSteadyInterfaceTest.FILENAME,
