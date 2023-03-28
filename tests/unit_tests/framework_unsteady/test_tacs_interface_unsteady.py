@@ -7,6 +7,7 @@ from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (
     TestAerodynamicSolver,
     TacsUnsteadyInterface,
+    TacsInterface,
     TacsIntegrationSettings,
     SolverManager,
     TestResult,
@@ -219,6 +220,54 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    def test_base_interface(self):
+        # Build the model
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aeroelastic("plate")
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=1.0, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+        test_scenario = (
+            Scenario.unsteady("test", steps=10)
+            .include(Function.ksfailure())
+            .register_to(model)
+        )
+
+        integration_settings = TacsIntegrationSettings(
+            dt=0.01, num_steps=test_scenario.steps
+        )
+
+        solvers = SolverManager(comm)
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            integration_settings=integration_settings,
+            output_dir=tacs_folder,
+        )
+        solvers.flow = TestAerodynamicSolver(comm, model)
+
+        # instantiate the driver
+        driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=10), model=model
+        )
+
+        max_rel_error = TestResult.derivative_test(
+            "testaero+tacs-aerothermoelastic-unsteady",
+            model,
+            driver,
+            TacsUnsteadyFrameworkTest.FILENAME,
+            complex_mode=complex_mode,
+        )
+        rtol = 1e-6 if complex_mode else 1e-4
+        self.assertTrue(max_rel_error < rtol)
+        return
+
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TacsUnsteadyFrameworkTest.FILENAME, "w").close()  # clear file
     unittest.main()

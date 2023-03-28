@@ -69,6 +69,9 @@ class Scenario(Base):
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
             Fluid freestream reference temperature in Kelvin.
+
+        Optional Parameters/Constants
+        -----------------------------
         suther1: double
             First constant in Sutherland's two-constant viscosity model. Units of kg/m-s-K^0.5
         suther2: double
@@ -79,7 +82,6 @@ class Scenario(Base):
             Specific gas constant of the working fluid (assumed air). Units of J/kg-K
         Pr: double
             Prandtl number.
-
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -107,7 +109,7 @@ class Scenario(Base):
         self.Pr = Pr
 
         # Heat capacity at constant pressure
-        cp = R_specific * gamma / (gamma - 1)
+        cp = self.R_specific * self.gamma / (self.gamma - 1)
         self.cp = cp
 
         if fun3d:
