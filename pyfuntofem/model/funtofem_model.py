@@ -62,6 +62,7 @@ class FUNtoFEMmodel(object):
 
         self.scenarios = []
         self.bodies = []
+        self.composite_functions = []
 
         self._tacs_model = None
 
@@ -146,6 +147,14 @@ class FUNtoFEMmodel(object):
         # end of tacs model auto registration of vars section
 
         self.bodies.append(body)
+
+    def add_composite_function(self, composite_function):
+        """
+        add a composite function
+        """
+
+        self.composite_functions.append(composite_function)
+        return
 
     def add_scenario(self, scenario):
         """
@@ -357,6 +366,21 @@ class FUNtoFEMmodel(object):
             gradients.append(grad)
 
         return gradients
+
+    def evaluate_composite_functions(self, compute_grad=True):
+        """
+        compute the values and gradients of composite functions
+        """
+        # reset each composite function first
+        for composite_func in self.composite_functions:
+            composite_func.reset()
+
+        # compute values and gradients of the composite functions
+        for composite_func in self.composite_functions:
+            composite_func.evaluate()
+            if compute_grad:
+                composite_func.evaluate_gradient()
+        return
 
     def write_aero_loads(self, comm, filename, root=0):
         """

@@ -24,7 +24,7 @@ __all__ = ["Scenario"]
 
 from ._base import Base
 from .variable import Variable
-from .function import Function, CompositeFunction
+from .function import Function
 
 
 class Scenario(Base):
@@ -94,7 +94,6 @@ class Scenario(Base):
         self.variables = {}
 
         self.functions = []
-        self.composite_functions = []
         self.steady = steady
         self.steps = steps
         self.preconditioner_steps = preconditioner_steps
@@ -156,6 +155,7 @@ class Scenario(Base):
 
         function.id = len(self.functions) + 1
         function.scenario = self.id
+        function._scenario_name = self.name
 
         if function.adjoint:
             for func in self.functions:
@@ -168,14 +168,6 @@ class Scenario(Base):
 
         self.functions.append(function)
         # return the object for method cascading
-        return self
-
-    def add_composite_function(self, comp_func):
-        """
-        add a new composite function (dependent on analysis functions) to this scenario
-        """
-
-        self.composite_functions.append(comp_func)
         return self
 
     def count_functions(self):
@@ -227,8 +219,6 @@ class Scenario(Base):
         """
         if isinstance(obj, Function):
             self.add_function(obj)
-        elif isinstance(obj, CompositeFunction):
-            self.add_composite_function(obj)
         elif isinstance(obj, Variable):
             assert obj.analysis_type is not None
             self.add_variable(vartype=obj.analysis_type, var=obj)
