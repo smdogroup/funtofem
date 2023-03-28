@@ -109,11 +109,7 @@ class Scenario(Base):
         self.Pr = Pr
 
         # Heat capacity at constant pressure
-        cp = (
-            self.scenario_constants.R_specific
-            * self.scenario_constants.gamma
-            / (self.scenario_constants.gamma - 1)
-        )
+        cp = self.R_specific * self.gamma / (self.gamma - 1)
         self.cp = cp
 
         if fun3d:
