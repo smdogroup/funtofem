@@ -45,7 +45,7 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         lift = Function.lift().register_to(test_scenario)
         drag = Function.drag().register_to(test_scenario)
         # random_composite = ksfailure + lift/drag
-        random_composite = ksfailure + lift / drag
+        random_composite = ksfailure + 1.5 * lift / drag
         random_composite.register_to(model)
         print(f"random composite functions = {random_composite.function_names}")
         test_scenario.register_to(model)
