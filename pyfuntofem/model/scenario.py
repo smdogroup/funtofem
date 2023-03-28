@@ -20,54 +20,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["ScenarioConstants", "Scenario"]
+__all__ = ["Scenario"]
 
 from ._base import Base
 from .variable import Variable
 from .function import Function
-
-
-class ScenarioConstants:
-    def __init__(
-        self,
-        T_ref=300,
-        T_inf=300,
-        suther1=1.458205e-6,
-        suther2=110.3333,
-        gamma=1.4,
-        R_specific=287.058,
-        Pr=0.72,
-    ):
-        """
-        Flow constants for computing viscosity and heat flux
-
-        Main Parameters
-        ---------------
-        T_ref: double
-            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
-        T_inf: double
-            Fluid freestream reference temperature in Kelvin.
-
-        Secondary Parameters
-        --------------------
-        suther1: double
-            First constant in Sutherland's two-constant viscosity model. Units of kg/m-s-K^0.5
-        suther2: double
-            Second constant in Sutherland's two-constant viscosity model. Units of K
-        gamma: double
-            Ratio of specific heats.
-        R_specific: double
-            Specific gas constant of the working fluid (assumed air). Units of J/kg-K
-        Pr: double
-            Prandtl number.
-        """
-        self.T_ref = T_ref
-        self.T_inf = T_inf
-        self.suther1 = suther1
-        self.suther2 = suther2
-        self.gamma = gamma
-        self.R_specific = R_specific
-        self.Pr = Pr
 
 
 class Scenario(Base):
@@ -82,7 +39,13 @@ class Scenario(Base):
         fun3d=True,
         steps=1000,
         preconditioner_steps=0,
-        scenario_constants: ScenarioConstants = None,
+        T_ref=300,
+        T_inf=300,
+        suther1=1.458205e-6,
+        suther2=110.3333,
+        gamma=1.4,
+        R_specific=287.058,
+        Pr=0.72,
     ):
         """
         Parameters
@@ -102,8 +65,23 @@ class Scenario(Base):
             the total number of fun3d time steps to run for the scenario
         preconditioner_steps: int
             the number of fun3d iterations ran before coupled iterations for preconditioning
-        scenario_constants: :class:`~model.ScenarioConstants`
-            the aerodynamic / structural scenario constants
+        T_ref: double
+            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
+        T_inf: double
+            Fluid freestream reference temperature in Kelvin.
+
+        Optional Parameters/Constants
+        -----------------------------
+        suther1: double
+            First constant in Sutherland's two-constant viscosity model. Units of kg/m-s-K^0.5
+        suther2: double
+            Second constant in Sutherland's two-constant viscosity model. Units of K
+        gamma: double
+            Ratio of specific heats.
+        R_specific: double
+            Specific gas constant of the working fluid (assumed air). Units of J/kg-K
+        Pr: double
+            Prandtl number.
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -122,17 +100,13 @@ class Scenario(Base):
         self.steps = steps
         self.preconditioner_steps = preconditioner_steps
 
-        if scenario_constants is not None:
-            self.scenario_constants = scenario_constants
-        else:
-            self.scenario_constants = ScenarioConstants()  # default settings
-        self.T_ref = self.scenario_constants.T_ref
-        self.T_inf = self.scenario_constants.T_inf
-        self.suther1 = self.scenario_constants.suther1
-        self.suther2 = self.scenario_constants.suther2
-        self.gamma = self.scenario_constants.gamma
-        self.R_specific = self.scenario_constants.R_specific
-        self.Pr = self.scenario_constants.Pr
+        self.T_ref = T_ref
+        self.T_inf = T_inf
+        self.suther1 = suther1
+        self.suther2 = suther2
+        self.gamma = gamma
+        self.R_specific = R_specific
+        self.Pr = Pr
 
         # Heat capacity at constant pressure
         cp = (
