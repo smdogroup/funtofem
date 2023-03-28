@@ -19,7 +19,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["Function"]
+__all__ = ["Function", "CompositeFunction"]
+
+import numpy as np
 
 
 class Function(object):
@@ -244,3 +246,160 @@ class Function(object):
             stop=stop,
             body=body,
         )
+
+
+class CompositeFunction:
+    def __init__(self, name: str, eval_hdl, deriv_hdl):
+        """
+        Define a function dependent on the analysis functions above
+
+        Parameters
+        ----------
+        eval_hdl: lambda expression
+            takes in dictionary of function names and returns the value
+        deriv_hdl: lambda expression
+            takes in dictionary of function values and derivs and returns a derivative (for arbitrary dv)
+        """
+
+        self.name = name
+        self.eval_hdl = eval_hdl
+        self.deriv_hdl = deriv_hdl
+
+        # Store the value of the function here
+        self.value = None
+
+        # Store the values of the derivatives w.r.t. this function
+        self.derivatives = {}
+
+    def evaluate(self, funcs: dict):
+        """evaluate the function value based on analysis functions of this scenario"""
+        self.value = self.eval_hdl(funcs)
+        return
+
+    def zero_derivatives(self):
+        """
+        Zero all the derivative values that are currently set
+        """
+
+        for var in self.derivatives:
+            self.derivatives[var] = 0.0
+
+        return
+
+    def eval_derivative(self, funcs: dict, derivs: dict, var):
+        """compute the derivative from derivs of functions in this scenario w.r.t. this var"""
+        self.derivatives[var] = self.deriv_hdl(funcs, derivs)
+        return
+
+    def get_gradient_component(self, var):
+        """
+        Get the gradient value stored - return 0 if not defined
+
+        Parameter
+        ---------
+        var: Variable object
+            Derivative of this function w.r.t. the given variable
+        """
+
+        if var in self.derivatives:
+            return self.derivatives[var]
+
+        return 0.0
+
+    @classmethod
+    def takeoff_gross_weight(cls, non_wing_mass):
+        # TODO : figure out what constants we need too for non-wing mass
+        def eval(funcs):
+            lift = funcs["lift"]
+            drag = funcs["drag"]
+            mass = funcs["mass"]
+            return lift / drag + mass  # don't remember exact expression
+
+        def eval_grad(funcs, derivs):
+            lift = funcs["lift"]
+            drag = funcs["drag"]
+            # mass = funcs["mass"]
+            dlift = derivs["lift"]
+            ddrag = derivs["drag"]
+            dmass = derivs["mass"]
+            return dlift / drag - lift * ddrag / drag / drag + dmass
+
+        return cls(name="togw", eval_hdl=eval, deriv_hdl=eval_grad)
+
+
+class AggregateFunction(CompositeFunction):
+    def __init__(self, base_name, func_name, eval_hdl, deriv_hdl):
+        """
+        aggregate an identical function across multiple scenarios
+        base_name: str
+            name given to this AggregateFunction in function outputs is {base_name}_{name}
+        func_name: str
+            name of the identical function for each scenario
+        eval_hdl: function handle
+            takes in list of function values and returns one scalar
+        deriv_hdl: function handle
+            takes in a list of function values and derivatives and returns a scalar
+        """
+        self.name = f"{base_name}_{func_name}"
+        self.func_name = func_name
+        self.eval_hdl
+        self.deriv_hdl
+
+        # Store the value of the function here
+        self.value = None
+
+        # Store the values of the derivatives w.r.t. this function
+        self.derivatives = {}
+
+    def evaluate(self, funcs):
+        return self.eval_hdl(funcs)
+
+    def zero_derivatives(self):
+        """
+        Zero all the derivative values that are currently set
+        """
+
+        for var in self.derivatives:
+            self.derivatives[var] = 0.0
+
+        return
+
+    def eval_derivative(self, funcs, derivs, var):
+        self.derivatives[var] = self.deriv_hdl(funcs, derivs)
+
+    def get_gradient_component(self, var):
+        """
+        Get the gradient value stored - return 0 if not defined
+
+        Parameter
+        ---------
+        var: Variable object
+            Derivative of this function w.r.t. the given variable
+        """
+
+        if var in self.derivatives:
+            return self.derivatives[var]
+
+        return 0.0
+
+    @classmethod
+    def ks_max(cls, name, ks_weight):
+        """compute the KS maximum of a function (so continuous and differentiable)"""
+
+        def eval(funcs: list):
+            sum = 0.0
+            for value in funcs:
+                sum += np.exp(ks_weight * value)
+            return np.log(sum) / ks_weight
+
+        def eval_grad(funcs, derivs):
+            sum = 0.0
+            for value in funcs:
+                sum += np.exp(ks_weight * value)
+            TD = 0.0
+            for i, deriv in enumerate(derivs):
+                # chain rule d(cKS)/df_i * df_i/dx
+                TD += np.exp(ks_weight * funcs[i]) * deriv / sum
+            return TD
+
+        return cls(base_name="ksmax", name=name, eval_hdl=eval, deriv_hdl=eval_grad)
