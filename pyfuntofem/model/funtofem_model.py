@@ -327,9 +327,14 @@ class FUNtoFEMmodel(object):
 
         return len(self.get_functions())
 
-    def get_functions(self):
+    def get_functions(self, optim=False):
         """
         Get all the functions in the model
+
+        Parameters
+        ----------
+        optim: bool
+            get functions for optimization when True otherwise just analysis functions within drivers
 
         Returns
         -------
@@ -341,11 +346,23 @@ class FUNtoFEMmodel(object):
         for scenario in self.scenarios:
             functions.extend(scenario.functions)
 
+        if optim:
+            # for optimization also include composite functions
+            functions += self.composite_functions
+
+            # filter out only functions with optim True flag, can be set with func.optimize()
+            functions = [func for func in functions if func.optim]
+
         return functions
 
-    def get_function_gradients(self):
+    def get_function_gradients(self, optim=False):
         """
         Get the function gradients for all the functions in the model
+
+        Parameters
+        ----------
+        optim: bool
+            get functions for optimization when True otherwise just analysis functions within drivers
 
         Returns
         -------
@@ -355,7 +372,7 @@ class FUNtoFEMmodel(object):
             2st index = variable number in the same order as get_variables
         """
 
-        functions = self.get_functions()
+        functions = self.get_functions(optim=optim)
         variables = self.get_variables()
 
         gradients = []

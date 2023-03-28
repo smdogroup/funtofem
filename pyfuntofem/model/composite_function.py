@@ -4,7 +4,7 @@ import numpy as np
 
 
 class CompositeFunction:
-    def __init__(self, name: str, eval_hdl, functions):
+    def __init__(self, name: str, eval_hdl, functions, optim=False):
         """
         Define a function dependent on the analysis functions above
 
@@ -14,11 +14,15 @@ class CompositeFunction:
             takes in dictionary of function names and returns the value
         functions: list[Function]
             list of the function objects Function/CompositeFunction used for the composite function class
+        optim: bool
+            whether to include this function in the optimization objective/constraints
+            (can be active but not an objective/constraint if it is used to compute composite functions)
         """
 
         self._name = name
         self.eval_hdl = eval_hdl
         self.functions = functions
+        self.optim = optim
 
         # Store the value of the function here
         self._eval_forward = False
@@ -33,6 +37,13 @@ class CompositeFunction:
         self._eval_forward = False
         self._eval_deriv = False
         return
+
+    def optimize(self):
+        """
+        set optim to True indicating this function will be an objective or constraint
+        """
+        self.optim = True
+        return self  # return function for method cascading
 
     @property
     def funcs(self) -> dict:
@@ -140,7 +151,105 @@ class CompositeFunction:
 
     @classmethod
     def takeoff_gross_weight(cls, lift, drag, mass, non_wing_mass):
+        # TODO : actually write the correct equation in here
         return (lift / drag + mass + non_wing_mass).set_name("togw")
+
+    """
+    this next block of code overloads the arithmetic operations +-*/ and **
+    for operations on composite functions or regular analysis functions
+    Also common mathematical functions are included as class methods such as
+    exp(), log(), etc.
+    """
+
+    @classmethod
+    def exp(cls, func):
+        """compute composite function for exp(func)"""
+        from .function import Function
+
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return np.exp(funcs_dict[func.full_name])
+
+            func_name = func.full_name
+            functions = [func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return np.exp(func.eval_hdl(funcs_dict))
+
+            func_name = func.name
+            functions = func.functions
+        else:
+            raise AssertionError(
+                "Can't take exp(func) for non func/composite func object."
+            )
+        return cls(name=func_name, eval_hdl=eval_hdl, functions=functions)
+
+    @classmethod
+    def log(cls, func):
+        """compute composite function for ln(func) the natural log"""
+        from .function import Function
+
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return np.log(funcs_dict[func.full_name])
+
+            func_name = func.full_name
+            functions = [func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return np.log(func.eval_hdl(funcs_dict))
+
+            func_name = func.name
+            functions = func.functions
+        else:
+            raise AssertionError(
+                "Can't take log(func) for non func/composite func object."
+            )
+        return cls(name=func_name, eval_hdl=eval_hdl, functions=functions)
+
+    @classmethod
+    def boltz_max(cls, functions, rho=1):
+        """
+        compute composite function for boltzmann_maximum(functions)
+        boltz_max(vec x) = sum(x_i * exp(rho*x_i)) / sum(exp(rho*x_i))
+        """
+        from .function import Function
+
+        def eval_hdl(funcs_dict):
+            numerator = 0.0
+            denominator = 0.0
+            for func in functions:
+                if isinstance(func, Function):
+                    value = funcs_dict[func.full_name]
+                    numerator += value * np.exp(rho * value)
+                    denominator += np.exp(rho * value)
+                elif isinstance(func, CompositeFunction):
+                    value = func.eval_hdl(
+                        funcs_dict
+                    )  # chain the functions dict into the composite func
+                    numerator += value * np.exp(rho * value)
+                    denominator += np.exp(rho * value)
+                # no need for else condition here since this is evaluated later and would be caught below
+            return numerator / denominator
+
+        func_name = ""
+        for func in functions:
+            assert isinstance(func, Function) or isinstance(func, CompositeFunction)
+            func_name += func.full_name
+        return cls(name=func_name, eval_hdl=eval_hdl, functions=functions)
+
+    @classmethod
+    def boltz_min(cls, functions, rho=1):
+        """
+        compute composite function for boltzman_min(functions)
+        boltz_min(vec x) = sum(x_i * exp(-rho*x_i)) / sum(exp(-rho*x_i))
+        """
+        # negative sign on rho makes it a minimum
+        return cls.boltz_max(functions, rho=-rho)
 
     def __add__(self, func):
         from .function import Function
@@ -148,14 +257,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) + funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) + func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -166,7 +275,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + func
+                return self.eval_hdl(funcs_dict) + func
 
             func_name = "float"
             functions = self.functions
@@ -182,14 +291,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) + funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) + func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -200,7 +309,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] + func
+                return self.eval_hdl(funcs_dict) + func
 
             func_name = "float"
             functions = self.functions
@@ -218,14 +327,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) - funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) - func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -236,7 +345,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - func
+                return self.eval_hdl(funcs_dict) - func
 
             func_name = "float"
             functions = self.functions
@@ -252,14 +361,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) - funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) - func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -270,7 +379,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] - func
+                return self.eval_hdl(funcs_dict) - func
 
             func_name = "float"
             functions = self.functions
@@ -288,14 +397,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) * funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) * func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -306,7 +415,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * func
+                return self.eval_hdl(funcs_dict) * func
 
             func_name = "float"
             functions = self.functions
@@ -322,14 +431,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) * funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) * func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -340,7 +449,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] * func
+                return self.eval_hdl(funcs_dict) * func
 
             func_name = "float"
             functions = self.functions
@@ -365,7 +474,7 @@ class CompositeFunction:
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) / func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -376,7 +485,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / func
+                return self.eval_hdl(funcs_dict) / func
 
             func_name = "float"
             functions = self.functions
@@ -392,14 +501,14 @@ class CompositeFunction:
         if isinstance(func, Function):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / funcs_dict[func.full_name]
+                return self.eval_hdl(funcs_dict) / funcs_dict[func.full_name]
 
             func_name = func.name
             functions = self.functions + [func]
         elif isinstance(func, CompositeFunction):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / func.eval_hdl(funcs_dict)
+                return self.eval_hdl(funcs_dict) / func.eval_hdl(funcs_dict)
 
             func_name = func.name
             functions = self.functions + func.functions
@@ -410,7 +519,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] / func
+                return self.eval_hdl(funcs_dict) / func
 
             func_name = "float"
             functions = self.functions
@@ -432,7 +541,7 @@ class CompositeFunction:
         ):
 
             def eval_hdl(funcs_dict):
-                return funcs_dict[self.full_name] ** func
+                return self.eval_hdl(funcs_dict) ** func
 
             func_name = "float"
             functions = self.functions

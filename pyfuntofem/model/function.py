@@ -40,6 +40,7 @@ class Function(object):
         adjoint=True,
         options=None,
         averaging=None,
+        optim=False,
     ):
         """
 
@@ -65,6 +66,9 @@ class Function(object):
             any options associated with the function and pass to the solvers
         averaging: bool
             whether the function is averaged or integrated or the function window. Ignored for steady functions
+        optim: bool
+            whether to include this function in the optimization objective/constraints
+            (can be active but not an objective/constraint if it is used to compute composite functions)
 
         Examples
         --------
@@ -79,6 +83,7 @@ class Function(object):
         self.start = start
         self.stop = stop
         self.averaging = averaging
+        self.optim = optim
 
         self.analysis_type = analysis_type
         self.scenario = None
@@ -113,6 +118,13 @@ class Function(object):
             self.derivatives[var] = 0.0
 
         return
+
+    def optimize(self):
+        """
+        set optim to True indicating this function will be an objective or constraint
+        """
+        self.optim = True
+        return self  # return function for method cascading
 
     def set_gradient_component(self, var, value):
         """
