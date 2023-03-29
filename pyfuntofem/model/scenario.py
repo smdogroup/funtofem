@@ -154,8 +154,10 @@ class Scenario(Base):
         function: Function
             function object to be added to scenario
         """
+
         function.id = len(self.functions) + 1
         function.scenario = self.id
+        function._scenario_name = self.name
 
         if function.adjoint:
             for func in self.functions:
@@ -167,7 +169,6 @@ class Scenario(Base):
                     exit()
 
         self.functions.append(function)
-
         # return the object for method cascading
         return self
 

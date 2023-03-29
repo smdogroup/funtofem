@@ -6,6 +6,7 @@
 from ._base import *
 from .body import *
 from .function import *
+from .composite_function import *
 from .funtofem_model import *
 from .scenario import *
 from .variable import *
