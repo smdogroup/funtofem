@@ -29,7 +29,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
+bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
@@ -44,17 +44,15 @@ class TestFun3dOnewayDriver(unittest.TestCase):
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "oneway-driver.txt"
+    FILENAME = "fun3d-oneway-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_nominal(self):
         """test no struct disps into FUN3D"""
         # build the funtofem model with one body and scenario
-        model = FUNtoFEMmodel("plate")
+        model = FUNtoFEMmodel("miniMesh")
         plate = Body.aeroelastic("plate", boundary=6).relaxation(AitkenRelaxation())
-        Variable.structural("thickness").set_bounds(
-            lower=0.001, value=0.1, upper=2.0
-        ).register_to(plate)
+        Variable.aerodynamic("aoa").set_bounds(value=1.0).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
@@ -70,14 +68,6 @@ class TestFun3dOnewayDriver(unittest.TestCase):
             qinf=1.0e4
         )
 
-        # TODO : make this into create_from_bdf here
-        solvers.structural = TacsSteadyInterface(
-            comm,
-            model,
-            assembler,
-            thermal_index=3,
-            tacs_comm=tacs_comm,
-        )
         # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
         driver = Fun3dOnewayDriver.nominal()
 
@@ -86,7 +76,7 @@ class TestFun3dOnewayDriver(unittest.TestCase):
             "fun3d+tacs-laminar-aeroelastic",
             model,
             driver,
-            TestFun3dTacs.FILEPATH,
+            TestFun3dOnewayDriver.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -94,5 +84,5 @@ class TestFun3dOnewayDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestTacsOnewayDriver.FILEPATH, "w").close()
+    open(TestFun3dOnewayDriver.FILEPATH, "w").close()
     unittest.main()
