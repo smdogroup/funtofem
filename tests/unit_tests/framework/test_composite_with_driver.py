@@ -98,7 +98,7 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         self.assertTrue(abs(rel_error.real) < rtol)
         return
 
-    def test_multiscenario_aerothermoelastic(self):
+    def test_multiscenario_aeroelastic(self):
         """
         test composite functions over two scenarios with aerothermoelastic coupling and a funtofem driver
         """
@@ -110,25 +110,23 @@ class CompositeFunctionDriverTest(unittest.TestCase):
 
         # climb scenario with random test composite function 1
         cruise = Scenario.steady("cruise", steps=100)
-        mass1 = Function.ksfailure(ks_weight=10.0).register_to(cruise)
+        ksfailure1 = Function.ksfailure(ks_weight=10.0).register_to(cruise)
         lift1 = Function.lift().register_to(cruise)
         drag1 = Function.drag().register_to(cruise)
-        ksfailure1 = Function.drag().register_to(cruise)
-        composite1 = ksfailure1 * CompositeFunction.exp(
-            mass1 + 1.5 * lift1**2 / (1 + lift1)
+        composite1 = drag1 * CompositeFunction.exp(
+            ksfailure1 + 1.5 * lift1**2 / (1 + lift1)
         )
         composite1.optimize().set_name("composite1").register_to(model)
         cruise.register_to(model)
 
         # cruise scenario with random test composite function 2
         climb = Scenario.steady("climb", steps=100)
-        mass2 = Function.ksfailure(ks_weight=10.0).register_to(climb)
+        ksfailure2 = Function.ksfailure(ks_weight=10.0).register_to(climb)
         lift2 = Function.lift().register_to(climb)
         drag2 = Function.drag().register_to(climb)
-        ksfailure2 = Function.drag().register_to(climb)
         composite2 = (
-            ksfailure2**3
-            / (1.532 - mass2)
+            drag2**3
+            / (1.532 - ksfailure2)
             * CompositeFunction.log(1 + (lift2 / drag2) ** 2)
         )
         composite2.optimize().set_name("composite2").register_to(model)
