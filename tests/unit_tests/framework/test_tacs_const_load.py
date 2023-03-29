@@ -11,7 +11,7 @@ from pyfuntofem.interface import (
     SolverManager,
     TestResult,
 )
-from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+from pyfuntofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 import unittest
 
 np.random.seed(123456)
@@ -35,15 +35,17 @@ class TacsConstLoadTest(unittest.TestCase):
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_gridforce_aeroelastic(self):
-        """test a constant hanging"""
+        """test a constant hanging load with aeroelastic coupling"""
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
-        Variable.structural("thickness", value=1.0).register_to(plate)
+        svar = Variable.structural("face2", value=0.1).register_to(plate)
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        steady = Scenario.steady("test", steps=1)
+        ksfailure = Function.ksfailure()
+        steady.include(ksfailure)
         steady.register_to(model)
 
         # Build the solver interfaces
@@ -53,10 +55,19 @@ class TacsConstLoadTest(unittest.TestCase):
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
-        # instantiate the driver
-        driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+        # random struct loads
+        funtofem_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=TransferSettings(npts=10, beta=1.0), model=model
         )
+
+        # instantiate the driver
+        driver = TacsOnewayDriver.prime_loads(funtofem_driver)
+
+        # # random struct loads
+        # struct_loads = plate.struct_loads[steady.id]
+        # ns = struct_loads.shape[0] // 3
+        # struct_loads[:] = np.random.rand(3 * ns)
+        # struct_loads[2::3] += 100.0
 
         epsilon = 1e-30 if complex_mode else 1e-5
         rtol = 1e-9 if complex_mode else 1e-4

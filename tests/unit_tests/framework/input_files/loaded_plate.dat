@@ -125,6 +125,21 @@ PSHELL*               2               1           3.E-2               1 *0
 *0                  20.               1 0.8333333333333 
 PSHELL*               1               1           3.E-2               1 *0      
 *0                  20.               1 0.8333333333333 
+DESVAR*               1           face1           3.E-2          1.5E-2 *0      
+*0                6.E-2           3.E-3 
+DESVAR*               2           face2           3.E-2          1.5E-2 *0      
+*0                6.E-2           3.E-3 
+DESVAR*               3           face3           3.E-2          1.5E-2 *0      
+*0                6.E-2           3.E-3 
+DVPREL1*            100          PSHELL               3               T *0      
+*0                                                   0.                 *1      
+*1                    1              1. 
+DVPREL1*            200          PSHELL               2               T *0      
+*0                                                   0.                 *1      
+*1                    2              1. 
+DVPREL1*            300          PSHELL               1               T *0      
+*0                                                   0.                 *1      
+*1                    3              1. 
 
 INCLUDE 'loaded_plate.bdf'
 

@@ -211,7 +211,7 @@ def addLoadsFromBDF(fea_assembler):
                             "Length of force vector must match varsPerNode specified "
                             "for problem, which is {}, "
                             "but length of vector provided was {}".format(
-                                vpn, len(F[0])
+                                vpn, len(loadArray[0])
                             )
                         )
 
@@ -228,7 +228,7 @@ def addLoadsFromBDF(fea_assembler):
                         # The node was found on this proc
                         if nodeID >= 0:
                             # Add contribution to global force array
-                            F_array2[nodeID, :] += F[i]
+                            F_array2[nodeID, :] += loadArray[i]
                             nodeFound[i] = 1
 
                 # # Add any gravity loads, TODO : add inertial fixed loads later
