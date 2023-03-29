@@ -194,6 +194,12 @@ derivative values as well as setting the design variables</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.add_composite_function">
+<span class="sig-name descname"><span class="pre">add_composite_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_function</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.add_composite_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.add_composite_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a composite function to the existing list of composite functions in the model.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.add_scenario">
 <span class="sig-name descname"><span class="pre">add_scenario</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.add_scenario"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.add_scenario" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a scenario to model. The scenario must be completely defined before adding to the model</p>
@@ -258,32 +264,44 @@ in the same order as get_variables</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.get_functions">
-<span class="sig-name descname"><span class="pre">get_functions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.get_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.get_functions" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.get_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.get_functions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get all the functions in the model</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>functions</strong> – list of all the functions in the model ordered by the scenarios</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – get functions for optimization when True otherwise just analysis functions within drivers</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>list of function objects</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>functions</strong> – list of all the functions in the model ordered by the scenarios</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of function objects</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.get_function_gradients">
-<span class="sig-name descname"><span class="pre">get_function_gradients</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.get_function_gradients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.get_function_gradients" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_function_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.get_function_gradients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.get_function_gradients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the function gradients for all the functions in the model</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>gradients</strong> – derivative values
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – get functions for optimization when True otherwise just analysis functions within drivers</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>gradients</strong> – derivative values
 1st index = function number in the same order as get_functions
 2st index = variable number in the same order as get_variables</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>list of list of floats</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of list of floats</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.evaluate_composite_functions">
+<span class="sig-name descname"><span class="pre">evaluate_composite_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compute_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.evaluate_composite_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.evaluate_composite_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute the values and gradients of composite functions</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1668,7 +1686,7 @@ Some functions are associated with particular bodies, for instance, if you wante
 without including that of the sting model, you can use the body argument to pass that information to the solver.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyfuntofem.model.Function">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.model.</span></span><span class="sig-name descname"><span class="pre">Function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averaging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/function.html#Function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.Function" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.model.</span></span><span class="sig-name descname"><span class="pre">Function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averaging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/function.html#Function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.Function" title="Permalink to this definition">¶</a></dt>
 <dd><p>holds component function information in FUNtoFEM</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1683,6 +1701,8 @@ without including that of the sting model, you can use the body argument to pass
 <li><p><strong>adjoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether or not an adjoint is required for a function</p></li>
 <li><p><strong>options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)"><em>dict</em></a>) – any options associated with the function and pass to the solvers</p></li>
 <li><p><strong>averaging</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether the function is averaged or integrated or the function window. Ignored for steady functions</p></li>
+<li><p><strong>optim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether to include this function in the optimization objective/constraints
+(can be active but not an objective/constraint if it is used to compute composite functions)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1694,6 +1714,12 @@ without including that of the sting model, you can use the body argument to pass
 <dt class="sig sig-object py" id="pyfuntofem.model.Function.zero_derivatives">
 <span class="sig-name descname"><span class="pre">zero_derivatives</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/function.html#Function.zero_derivatives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.Function.zero_derivatives" title="Permalink to this definition">¶</a></dt>
 <dd><p>Zero all the derivative values that are currently set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.Function.optimize">
+<span class="sig-name descname"><span class="pre">optimize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/function.html#Function.optimize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.Function.optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set optim=True indicating this function will be an objective or constraint.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1729,6 +1755,12 @@ without including that of the sting model, you can use the body argument to pass
 <dt>var: Variable object</dt><dd><p>Derivative of this function w.r.t. the given variable</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.Function.register_to">
+<span class="sig-name descname"><span class="pre">register_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scenario</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/function.html#Function.register_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.Function.register_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register the function to the scenario.</p>
 </dd></dl>
 
 <dl class="py method">

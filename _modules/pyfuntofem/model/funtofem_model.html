@@ -101,6 +101,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_tacs_model</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -185,6 +186,14 @@
         <span class="c1"># end of tacs model auto registration of vars section</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">body</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FUNtoFEMmodel.add_composite_function"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.add_composite_function">[docs]</a>    <span class="k">def</span> <span class="nf">add_composite_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">composite_function</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a composite function to the existing list of composite functions in the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">composite_function</span><span class="p">)</span>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMmodel.add_scenario"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.add_scenario">[docs]</a>    <span class="k">def</span> <span class="nf">add_scenario</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -357,9 +366,14 @@
 
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="FUNtoFEMmodel.get_functions"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_functions">[docs]</a>    <span class="k">def</span> <span class="nf">get_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FUNtoFEMmodel.get_functions"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_functions">[docs]</a>    <span class="k">def</span> <span class="nf">get_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optim</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get all the functions in the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optim: bool</span>
+<span class="sd">            get functions for optimization when True otherwise just analysis functions within drivers</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -371,11 +385,23 @@
         <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
             <span class="n">functions</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">optim</span><span class="p">:</span>
+            <span class="c1"># for optimization also include composite functions</span>
+            <span class="n">functions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span>
+
+            <span class="c1"># filter out only functions with optim True flag, can be set with func.optimize()</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="n">func</span> <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">functions</span> <span class="k">if</span> <span class="n">func</span><span class="o">.</span><span class="n">optim</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="n">functions</span></div>
 
-<div class="viewcode-block" id="FUNtoFEMmodel.get_function_gradients"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_function_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">get_function_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FUNtoFEMmodel.get_function_gradients"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_function_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">get_function_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optim</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the function gradients for all the functions in the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optim: bool</span>
+<span class="sd">            get functions for optimization when True otherwise just analysis functions within drivers</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -385,7 +411,7 @@
 <span class="sd">            2st index = variable number in the same order as get_variables</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">functions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
+        <span class="n">functions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="n">optim</span><span class="p">)</span>
         <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
 
         <span class="n">gradients</span> <span class="o">=</span> <span class="p">[]</span>
@@ -396,6 +422,21 @@
             <span class="n">gradients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">gradients</span></div>
+
+<div class="viewcode-block" id="FUNtoFEMmodel.evaluate_composite_functions"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.evaluate_composite_functions">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_composite_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compute_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        compute the values and gradients of composite functions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># reset each composite function first</span>
+        <span class="k">for</span> <span class="n">composite_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="p">:</span>
+            <span class="n">composite_func</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="c1"># compute values and gradients of the composite functions</span>
+        <span class="k">for</span> <span class="n">composite_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="p">:</span>
+            <span class="n">composite_func</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">compute_grad</span><span class="p">:</span>
+                <span class="n">composite_func</span><span class="o">.</span><span class="n">evaluate_gradient</span><span class="p">()</span>
+        <span class="k">return</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMmodel.write_aero_loads"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.write_aero_loads">[docs]</a>    <span class="k">def</span> <span class="nf">write_aero_loads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

@@ -60,6 +60,9 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Function&quot;</span><span class="p">]</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.composite_function</span> <span class="kn">import</span> <span class="n">CompositeFunction</span>
+
 
 <div class="viewcode-block" id="Function"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function">[docs]</a><span class="k">class</span> <span class="nc">Function</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;holds component function information in FUNtoFEM&quot;&quot;&quot;</span>
@@ -76,6 +79,7 @@
         <span class="n">adjoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">averaging</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">optim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
@@ -101,6 +105,9 @@
 <span class="sd">            any options associated with the function and pass to the solvers</span>
 <span class="sd">        averaging: bool</span>
 <span class="sd">            whether the function is averaged or integrated or the function window. Ignored for steady functions</span>
+<span class="sd">        optim: bool</span>
+<span class="sd">            whether to include this function in the optimization objective/constraints</span>
+<span class="sd">            (can be active but not an objective/constraint if it is used to compute composite functions)</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -115,6 +122,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">averaging</span> <span class="o">=</span> <span class="n">averaging</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optim</span> <span class="o">=</span> <span class="n">optim</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">=</span> <span class="n">analysis_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="kc">None</span>
@@ -132,7 +140,13 @@
         <span class="c1"># Store the values of the derivatives w.r.t. this function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span> <span class="o">=</span> <span class="p">{}</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scenario_name</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">return</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">full_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_scenario_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
 
 <div class="viewcode-block" id="Function.zero_derivatives"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.zero_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">zero_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -143,6 +157,13 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
         <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Function.optimize"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set optim=True indicating this function will be an objective or constraint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optim</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span>  <span class="c1"># return function for method cascading</span></div>
 
 <div class="viewcode-block" id="Function.set_gradient_component"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.set_gradient_component">[docs]</a>    <span class="k">def</span> <span class="nf">set_gradient_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -195,6 +216,13 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="mf">0.0</span></div>
+
+<div class="viewcode-block" id="Function.register_to"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.register_to">[docs]</a>    <span class="k">def</span> <span class="nf">register_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register the function to the scenario.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scenario</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Function.ksfailure"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.ksfailure">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">ksfailure</span><span class="p">(</span>
@@ -282,7 +310,313 @@
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span>
             <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
-        <span class="p">)</span></div></div>
+        <span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">composite_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">func1</span><span class="p">,</span> <span class="n">func2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func1</span><span class="p">,</span> <span class="n">Function</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func1</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">func1</span><span class="o">.</span><span class="n">full_name</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func1</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func1</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func1</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Func1 has unsupported type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">func1</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func2</span><span class="p">,</span> <span class="n">Function</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func2</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">func2</span><span class="o">.</span><span class="n">full_name</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func2</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func2</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func2</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Func2 has unsupported type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">func2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">left</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">right</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Addition Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">+</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                <span class="s2">&quot;Reflected Addition Overload failed for unsupported type.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">+</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Subtraction Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rsub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                <span class="s2">&quot;Reflected Subtraction Overload failed for unsupported type.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Multiple Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rmul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                <span class="s2">&quot;Reflected Multiple Overload failed for unsupported type.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Division Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rtruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="n">func</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">func</span><span class="o">.</span><span class="n">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">)</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">+</span> <span class="n">func</span><span class="o">.</span><span class="n">functions</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">/</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Division Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Function</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">CompositeFunction</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Don&#39;t raise a function to a function power.&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+        <span class="p">):</span>
+
+            <span class="k">def</span> <span class="nf">eval_hdl</span><span class="p">(</span><span class="n">funcs_dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">funcs_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">func</span>
+
+            <span class="n">func_name</span> <span class="o">=</span> <span class="s2">&quot;float&quot;</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Division Overload failed for unsupported type.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CompositeFunction</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">**</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eval_hdl</span><span class="o">=</span><span class="n">eval_hdl</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="n">functions</span>
+        <span class="p">)</span></div>
 </pre></div>
 
             <div class="clearer"></div>
