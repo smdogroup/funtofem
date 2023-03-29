@@ -20,13 +20,96 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TacsSteadyInterface"]
+__all__ = ["TacsInterface", "TacsSteadyInterface"]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions
 from .utils import f2f_callback
 from ._solver_interface import SolverInterface
 import os, numpy as np
+from .tacs_interface_unsteady import TacsUnsteadyInterface
+
+
+class TacsInterface:
+    """
+    Base Creator class for TacsSteadyInterface or TacsUnsteadyInterface
+    """
+
+    @classmethod
+    def create_from_bdf(
+        cls,
+        model,
+        comm,
+        nprocs,
+        bdf_file,
+        integration_settings=None,
+        output_dir=None,
+        callback=None,
+        struct_options={},
+        thermal_index=-1,
+    ):
+        """
+        Class method to create either a TacsSteadyInterface or TacsUnsteadyInterface instance using the pytacs BDF loader
+
+        Parameters
+        ----------
+        model: :class:`FUNtoFEMmodel`
+            The model class associated with the problem
+        comm: MPI.comm
+            MPI communicator (typically MPI_COMM_WORLD)
+        bdf_file: str
+            The BDF file name
+        output_dir: filepath
+            directory of output for .f5 files generated from TACS
+        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
+            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
+
+        Optional Parameters usually not specified
+        -----------------------------------------
+        struct_DVs: List
+            list of struct DV values for the built-in funtofem callback method
+        callback: function
+            The element callback function for pyTACS
+        struct_options: dictionary
+            The options passed to pyTACS
+        thermal_index: int
+            index for thermal index
+        """
+
+        # check whether each scenario is all steady or all unsteady
+        steady_list = [scenario.steady for scenario in model.scenarios]
+        unsteady_list = [not (scenario.steady) for scenario in model.scenarios]
+
+        if all(steady_list):
+            # create a TACS steady interface
+            prefix = output_dir if output_dir is not None else ""
+            return TacsSteadyInterface.create_from_bdf(
+                model=model,
+                comm=comm,
+                nprocs=nprocs,
+                bdf_file=bdf_file,
+                prefix=prefix,
+                callback=callback,
+                struct_options=struct_options,
+                thermal_index=thermal_index,
+            )
+        elif all(unsteady_list):
+            # create a TACS steady interface
+            return TacsUnsteadyInterface.create_from_bdf(
+                model=model,
+                comm=comm,
+                nprocs=nprocs,
+                bdf_file=bdf_file,
+                integration_settings=integration_settings,
+                output_dir=output_dir,
+                callback=callback,
+                struct_options=struct_options,
+                thermal_index=thermal_index,
+            )
+        else:
+            raise AssertionError(
+                "Can't built a Tacs Interface if scenarios are a mixture of steady and unsteady..."
+            )
 
 
 class TacsSteadyInterface(SolverInterface):
