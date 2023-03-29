@@ -74,10 +74,6 @@ class Fun3dOnewayDriver:
                 self._unsteady = True
                 break
 
-        # assertion check for unsteady
-        # TODO : unsteady not available yet, can add this feature
-        assert not self.unsteady
-
         # reset struct mesh positions for no shape, just tacs analysis
         if not self.change_shape:
             for body in self.model.bodies:
@@ -86,6 +82,10 @@ class Fun3dOnewayDriver:
     @property
     def change_shape(self) -> bool:
         return len(self.shape_variables) > 0
+
+    @property
+    def steady(self) -> bool:
+        return not (self._unsteady)
 
     @property
     def unsteady(self) -> bool:
@@ -149,18 +149,44 @@ class Fun3dOnewayDriver:
         # TODO : add an aero shape change section here
 
         # run the FUN3D forward analysis with no shape change
-        for scenario in self.model.scenarios:
-            # set functions and variables
-            self.fun3d_interface.set_variables(scenario, self.model.bodies)
-            self.fun3d_interface.set_functions(scenario, self.model.bodies)
+        if self.steady:
+            for scenario in self.model.scenarios:
+                self._solve_steady_forward(scenario, self.model.bodies)
 
-            # run the forward analysis via iterate
-            self.fun3d_interface.initialize(scenario, self.model.bodies)
-            self.fun3d_interface.iterate(scenario, self.model.bodies, step=0)
-            self.fun3d_interface.post(scenario, self.model.bodies)
+        if self.unsteady:
+            for scenario in self.model.scenarios:
+                self._solve_unsteady_forward(scenario, self.model.bodies)
 
-            # get functions to store the function values into the model
-            self.fun3d_interface.get_functions(scenario, self.model.bodies)
+        return
+
+    def _solve_steady_forward(self, scenario, bodies):
+        # set functions and variables
+        self.fun3d_interface.set_variables(scenario, bodies)
+        self.fun3d_interface.set_functions(scenario, bodies)
+
+        # run the forward analysis via iterate
+        self.fun3d_interface.initialize(scenario, bodies)
+        self.fun3d_interface.iterate(scenario, bodies, step=0)
+        self.fun3d_interface.post(scenario, bodies)
+
+        # get functions to store the function values into the model
+        self.fun3d_interface.get_functions(scenario, bodies)
+        return
+
+    def _solve_unsteady_forward(self, scenario, bodies):
+        # set functions and variables
+        self.fun3d_interface.set_variables(scenario, bodies)
+        self.fun3d_interface.set_functions(scenario, bodies)
+
+        # run the forward analysis via iterate
+        self.fun3d_interface.initialize(scenario, bodies)
+        for step in range(1, scenario.steps + 1):
+            self.fun3d_interface.iterate(scenario, bodies, step=step)
+        self.fun3d_interface.post(scenario, bodies)
+
+        # get functions to store the function values into the model
+        self.fun3d_interface.get_functions(scenario, bodies)
+        return
 
     def solve_adjoint(self):
         """
@@ -175,29 +201,66 @@ class Fun3dOnewayDriver:
         for func in functions:
             func.zero_derivatives()
 
-        for scenario in self.model.scenarios:
-            # set functions and variables
-            self.fun3d_interface.set_variables(scenario, self.model.bodies)
-            self.fun3d_interface.set_functions(scenario, self.model.bodies)
+        if self.steady:
+            for scenario in self.model.scenarios:
+                self._solve_steady_adjoint(scenario, self.model.bodies)
 
-            # zero all coupled adjoint variables in the body
-            for body in self.model.bodies:
-                body.initialize_adjoint_variables(scenario)
-
-            # initialize, run, and do post adjoint
-            self.fun3d_interface.initialize_adjoint(scenario, self.model.bodies)
-            self.fun3d_interface.iterate_adjoint(scenario, self.model.bodies, step=0)
-            self.fun3d_interface.post_adjoint(scenario, self.model.bodies)
-
-            # transfer loads adjoint since fa -> fs has shape dependency
-            if self.change_shape:
-                for body in self.model.bodies:
-                    body.transfer_loads_adjoint(scenario)
-
-            # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
-            self.fun3d_interface.get_function_gradients(scenario, self.model.bodies)
+        if self.unsteady:
+            for scenario in self.model.scenarios:
+                self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
         # TODO : set this up for shape change
+        return
+
+    def _solve_steady_adjoint(self, scenario, bodies):
+        # set functions and variables
+        self.fun3d_interface.set_variables(scenario, bodies)
+        self.fun3d_interface.set_functions(scenario, bodies)
+
+        # zero all coupled adjoint variables in the body
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
+
+        # initialize, run, and do post adjoint
+        self.fun3d_interface.initialize_adjoint(scenario, bodies)
+        self.fun3d_interface.iterate_adjoint(scenario, bodies, step=0)
+        self.fun3d_interface.post_adjoint(scenario, bodies)
+
+        # transfer loads adjoint since fa -> fs has shape dependency
+        if self.change_shape:
+            for body in bodies:
+                body.transfer_loads_adjoint(scenario)
+
+        # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
+        self.fun3d_interface.get_function_gradients(scenario, bodies)
+        return
+
+    def _solve_unsteady_adjoint(self, scenario, bodies):
+        # set functions and variables
+        self.fun3d_interface.set_variables(scenario, bodies)
+        self.fun3d_interface.set_functions(scenario, bodies)
+
+        # zero all coupled adjoint variables in the body
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
+
+        # initialize, run, and do post adjoint
+        self.fun3d_interface.initialize_adjoint(scenario, bodies)
+        for rstep in range(scenario.steps + 1):
+            step = scenario.steps + 1 - rstep
+            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+            self.fun3d_interface._extract_coordinate_derivatives(
+                scenario, bodies, step=step
+            )
+        self.fun3d_interface.post_adjoint(scenario, bodies)
+
+        # transfer loads adjoint since fa -> fs has shape dependency
+        if self.change_shape:
+            for body in bodies:
+                body.transfer_loads_adjoint(scenario)
+
+        # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
+        self.fun3d_interface.get_function_gradients(scenario, bodies)
         return
 
     def _get_shape_derivatives(self, scenario):
