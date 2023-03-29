@@ -47,7 +47,9 @@ class CompositeFunction:
 
     @property
     def funcs(self) -> dict:
-        """dictionary of function values we compute from"""
+        """
+        Dictionary of function values we compute from.
+        """
         funcs = {}
         for function in self.functions:
             if isinstance(function, CompositeFunction):
@@ -61,7 +63,9 @@ class CompositeFunction:
         return [func.full_name for func in self.functions]
 
     def evaluate(self, funcs=None):
-        """compute the value of the composite function from the other functions"""
+        """
+        Compute the value of the composite function from the other functions.
+        """
         save_value = False  # only save value when calling with default funcs
         if funcs is None:
             funcs = self.funcs
@@ -75,7 +79,9 @@ class CompositeFunction:
         return value
 
     def evaluate_gradient(self):
-        """compute derivatives of the composite function for each variable"""
+        """
+        Compute derivatives of the composite function for each variable.
+        """
         if self._eval_deriv:  # exit early if already evaluated
             return
 

@@ -121,7 +121,7 @@ class Function(object):
 
     def optimize(self):
         """
-        set optim to True indicating this function will be an objective or constraint
+        Set optim=True indicating this function will be an objective or constraint.
         """
         self.optim = True
         return self  # return function for method cascading
@@ -179,7 +179,9 @@ class Function(object):
         return 0.0
 
     def register_to(self, scenario):
-        """register the function to the scenario"""
+        """
+        Register the function to the scenario.
+        """
         scenario.include(self)
         return self
 

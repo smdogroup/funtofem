@@ -150,7 +150,7 @@ class FUNtoFEMmodel(object):
 
     def add_composite_function(self, composite_function):
         """
-        add a composite function
+        Add a composite function to the existing list of composite functions in the model.
         """
 
         self.composite_functions.append(composite_function)
