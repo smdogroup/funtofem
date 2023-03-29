@@ -1,0 +1,53 @@
+# Simple naca wing example
+# 
+# Sean Engelstad March 2023
+# SMDO Lab Georgia Tech, Prof. Graeme Kennedy
+
+### Design parameters ###
+
+# make three sections to the plate
+set onethird 1.0/3
+box 0 0 0 onethird 1 0
+box onethird 0 0 onethird 1 0
+box 2*onethird 0 0 onethird 1 0
+union
+union
+
+# attribute the solid wing
+select face 3
+attribute capsGroup $face1
+attribute _color $green
+
+select face 2
+attribute capsGroup $face2
+attribute capsLoad $middle
+attribute _color $green
+
+select face 1
+attribute capsGroup $face3
+attribute _color $green
+
+select edge
+attribute perimeter $true
+
+select edge 1
+attribute perimeter $false
+select edge 5
+attribute perimeter $false
+
+# add the constraint attribute to adjacent edges, nodes
+# otherwise they can pop out of the mesh in the structural analysis
+udprim editAttr filename <<
+ EDGE HAS perimeter=true
+ SET capsConstraint=perimeter
+
+ NODE ADJ2EDGE capsConstraint=perimeter
+ SET capsConstraint=perimeter
+>>
+
+# add AIM attribute to specify the analyses to use
+select body
+attribute capsAIM $egadsTessAIM;tacsAIM
+
+end
+|||||||||||
