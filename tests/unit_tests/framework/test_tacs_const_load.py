@@ -43,7 +43,7 @@ class TacsConstLoadTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=1)
+        steady = Scenario.steady("test", steps=10)
         ksfailure = Function.ksfailure()
         steady.include(ksfailure)
         steady.register_to(model)
@@ -60,21 +60,12 @@ class TacsConstLoadTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=10, beta=1.0), model=model
         )
 
-        # instantiate the driver
-        driver = TacsOnewayDriver.prime_loads(funtofem_driver)
-
-        # # random struct loads
-        # struct_loads = plate.struct_loads[steady.id]
-        # ns = struct_loads.shape[0] // 3
-        # struct_loads[:] = np.random.rand(3 * ns)
-        # struct_loads[2::3] += 100.0
-
         epsilon = 1e-30 if complex_mode else 1e-5
         rtol = 1e-9 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aeroelastic",
             model,
-            driver,
+            funtofem_driver,
             TacsConstLoadTest.FILEPATH,
             complex_mode,
             epsilon,
