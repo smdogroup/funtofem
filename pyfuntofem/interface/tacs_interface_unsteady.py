@@ -819,9 +819,9 @@ class TacsUnsteadyInterface(SolverInterface):
             MPI communicator (typically MPI_COMM_WORLD)
         bdf_file: str
             The BDF file name
-        output_dir: path
+        integration_settings: :class:`TacsIntegrationSettings`
+        prefix: path
             Path to write f5 output
-
         callback: function
             The element callback function for pyTACS
         struct_options: dictionary

@@ -773,7 +773,7 @@ class TestResult:
             return (pred - truth) / truth
 
     @classmethod
-    def complex_step(cls, test_name, model, driver, status_file):
+    def complex_step(cls, test_name, model, driver, status_file, epsilon=1e-30):
         """
         perform complex step test on a model and driver for multiple functions & variables
         used for fun3d+tacs coupled derivative tests only...
@@ -803,7 +803,6 @@ class TestResult:
         # perform complex step method
         if driver.solvers.uses_fun3d:
             driver.solvers.make_flow_complex()
-        epsilon = 1e-30
         variables = model.get_variables()
 
         # perturb the design vars by x_pert = x + 1j * h * dx/ds
@@ -911,21 +910,29 @@ class TestResult:
         return max_rel_error
 
     @classmethod
-    def derivative_test(cls, test_name, model, driver, status_file, complex_mode=True):
+    def derivative_test(
+        cls, test_name, model, driver, status_file, complex_mode=True, epsilon=None
+    ):
         """
         call either finite diff or complex step test depending on real mode of funtofem + TACS
         """
         if complex_mode:
+            if epsilon is None:
+                epsilon = 1e-30
             return cls.complex_step(
                 test_name,
                 model,
                 driver,
                 status_file,
+                epsilon=epsilon,
             )
         else:
+            if epsilon is None:
+                epsilon = 1e-5
             return cls.finite_difference(
                 test_name,
                 model,
                 driver,
                 status_file,
+                epsilon=epsilon,
             )
