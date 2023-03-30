@@ -20,3 +20,7 @@ from .transfer_settings import *
 # import the two tacs drivers if tacs is available
 if tacs_loader is not None:
     from .tacs_oneway_driver import *
+
+fun3d_loader = importlib.util.find_spec("fun3d")
+if fun3d_loader is not None:
+    from .fun3d_oneway_driver import *
