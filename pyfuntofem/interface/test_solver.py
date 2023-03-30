@@ -727,7 +727,7 @@ class TestResult:
                 rel_error.append(
                     TestResult.relative_error(complex_TD[i], adjoint_TD[i])
                 )
-            self.rel_error = rel_error
+        self.rel_error = rel_error
         self.comm = comm
 
         self.nfuncs = len(func_names)

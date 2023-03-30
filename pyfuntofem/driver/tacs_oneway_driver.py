@@ -178,7 +178,7 @@ class TacsOnewayDriver:
             comm=comm,
             nprocs=nprocs,
             bdf_file=bdf_file,
-            prefix=tacs_aim.analysis_dir,
+            output_dir=tacs_aim.analysis_dir,
         )
 
         # build the funtofem driver and run a forward analysis to prime loads
@@ -386,13 +386,12 @@ class TacsOnewayDriver:
                 self.tacs_aim.pre_analysis()
 
             # make the new tacs interface of the structural geometry
-            # TODO : need to make sure the InterfaceFromBDF method tells the struct_id properly
             self.tacs_interface = TacsInterface.create_from_bdf(
                 model=self.model,
                 comm=self.comm,
                 nprocs=self.nprocs,
                 bdf_file=self.dat_file_path,
-                prefix=self.analysis_dir,
+                output_dir=self.analysis_dir,
             )
 
             # make a solvers object to hold structural solver since flow is no longer used
@@ -402,10 +401,6 @@ class TacsOnewayDriver:
             # transfer the fixed aero loads
             self._transfer_fixed_aero_loads()
         # end of change shape section
-
-        # run the tacs forward analysis for no shape
-        # zero all data to start fresh problem, u = 0, res = 0
-        self._zero_tacs_data()
 
         if self.steady:
             for scenario in self.model.scenarios:
@@ -429,9 +424,6 @@ class TacsOnewayDriver:
         for func in functions:
             func.zero_derivatives()
 
-        # zero adjoint data
-        self._zero_adjoint_data()
-
         if self.steady:
             for scenario in self.model.scenarios:
                 self._solve_steady_adjoint(scenario, self.model.bodies)
@@ -442,6 +434,7 @@ class TacsOnewayDriver:
 
         # transfer loads adjoint since fa -> fs has shape dependency
         if self.change_shape:
+            # TODO : for unsteady this part might have to be included before extract coordinate derivatives?
             for body in self.model.bodies:
                 body.transfer_loads_adjoint(scenario)
 
@@ -515,6 +508,10 @@ class TacsOnewayDriver:
 
         fail = 0
 
+        # run the tacs forward analysis for no shape
+        # zero all data to start fresh problem, u = 0, res = 0
+        self._zero_tacs_data()
+
         # set functions and variables
         self.tacs_interface.set_variables(scenario, bodies)
         self.tacs_interface.set_functions(scenario, bodies)
@@ -550,6 +547,8 @@ class TacsOnewayDriver:
         # get functions to store the function values into the model
         self.tacs_interface.get_functions(scenario, bodies)
 
+        print("end solving unsteady forward", flush=True)
+
         return 0
 
     def _solve_steady_adjoint(self, scenario, bodies):
@@ -558,6 +557,9 @@ class TacsOnewayDriver:
         and heat fluxes from previous analysis still retained
         Similar to funtofem_driver
         """
+
+        # zero adjoint data
+        self._zero_adjoint_data()
 
         # set functions and variables
         self.tacs_interface.set_variables(scenario, bodies)
@@ -592,9 +594,10 @@ class TacsOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.tacs_interface.initialize_adjoint(scenario, bodies)
-        for rstep in range(scenario.steps + 1):
+        for rstep in range(1, scenario.steps + 1):
             step = scenario.steps + 1 - rstep
             self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
+        self.tacs_interface.iterate_adjoint(scenario, bodies, step=0)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
         self.tacs_interface.post_adjoint(scenario, bodies)

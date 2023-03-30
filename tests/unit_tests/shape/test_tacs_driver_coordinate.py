@@ -9,7 +9,7 @@ from pyfuntofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    TestResult,
+    TacsIntegrationSettings,
 )
 from _coordinate_derivatives_base_test import CoordinateDerivativeTester
 from pyfuntofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
@@ -160,7 +160,10 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.unsteady("test", steps=10).include(Function.ksfailure())
-        scenario.register_to(model)
+        integration_settings = TacsIntegrationSettings(
+            dt=0.001, num_steps=scenario.steps
+        )
+        scenario.include(integration_settings).register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
@@ -169,6 +172,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, 1, bdf_filename, callback=elasticity_callback
         )
+        solvers.structural.can_skip_coordinates = False
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
@@ -196,7 +200,10 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
-        scenario.register_to(model)
+        integration_settings = TacsIntegrationSettings(
+            dt=0.001, num_steps=scenario.steps
+        )
+        scenario.include(integration_settings).register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
@@ -205,6 +212,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, 1, bdf_filename, callback=thermoelasticity_callback
         )
+        solvers.structural.can_skip_coordinates = False
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
@@ -233,7 +241,10 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         # build the scenario
         scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
         scenario.include(Function.temperature()).include(Function.lift())
-        scenario.register_to(model)
+        integration_settings = TacsIntegrationSettings(
+            dt=0.001, num_steps=scenario.steps
+        )
+        scenario.include(integration_settings).register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
@@ -242,6 +253,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, 1, bdf_filename, callback=thermoelasticity_callback
         )
+        solvers.structural.can_skip_coordinates = False
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
