@@ -182,41 +182,41 @@ class TacsUnsteadyInterface(SolverInterface):
         self.auxElems = {}
         for scenario in model.scenarios:
             # Create the time integrator and allocate the load data structures
-            if self.integration_settings.is_bdf:
+            if scenario.integration_settings.is_bdf:
                 self.integrator[scenario.id] = TACS.BDFIntegrator(
                     self.assembler,
-                    self.integration_settings.start_time,
-                    self.integration_settings.end_time,
+                    scenario.integration_settings.start_time,
+                    scenario.integration_settings.end_time,
                     float(
-                        self.integration_settings.num_steps
+                        scenario.integration_settings.num_steps
                     ),  # should this be -1 here?
-                    self.integration_settings.integration_order,
+                    scenario.integration_settings.integration_order,
                 )
 
                 self.integrator[scenario.id].setAbsTol(
-                    self.integration_settings.L2_convergence
+                    scenario.integration_settings.L2_convergence
                 )
                 self.integrator[scenario.id].setRelTol(
-                    self.integration_settings.L2_convergence_rel
+                    scenario.integration_settings.L2_convergence_rel
                 )
 
                 self.integrator[scenario.id].setPrintLevel(
-                    self.integration_settings.print_level
+                    scenario.integration_settings.print_level
                 )
 
                 # Create a force vector for each time step
                 self.F[scenario.id] = [
                     self.assembler.createVec()
-                    for i in range(self.integration_settings.num_steps + 1)
+                    for i in range(scenario.integration_settings.num_steps + 1)
                 ]
                 # Auxillary element object for applying tractions/pressure
                 self.auxElems[scenario.id] = [
                     TACS.AuxElements()
-                    for i in range(self.integration_settings.num_steps + 1)
+                    for i in range(scenario.integration_settings.num_steps + 1)
                 ]
 
-            elif self.integration_settings.is_dirk:
-                self.numStages = self.integration_settings.num_stages
+            elif scenario.integration_settings.is_dirk:
+                self.numStages = scenario.integration_settings.num_stages
                 self.integrator[scenario.id] = TACS.DIRKIntegrator(
                     self.assembler,
                     self.tInit,
@@ -802,7 +802,6 @@ class TacsUnsteadyInterface(SolverInterface):
         comm,
         nprocs,
         bdf_file,
-        integration_settings: TacsIntegrationSettings,
         output_dir=None,
         callback=None,
         struct_options={},
@@ -819,7 +818,6 @@ class TacsUnsteadyInterface(SolverInterface):
             MPI communicator (typically MPI_COMM_WORLD)
         bdf_file: str
             The BDF file name
-        integration_settings: :class:`TacsIntegrationSettings`
         prefix: path
             Path to write f5 output
         callback: function

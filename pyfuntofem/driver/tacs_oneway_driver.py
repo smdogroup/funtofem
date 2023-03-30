@@ -24,7 +24,11 @@ limitations under the License.
 # TACS one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["TacsOnewayDriver"]
 
-from pyfuntofem.interface.tacs_interface import TacsSteadyInterface
+from pyfuntofem.interface.tacs_interface import (
+    TacsInterface,
+    TacsSteadyInterface,
+    TacsUnsteadyInterface,
+)
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
@@ -84,10 +88,6 @@ class TacsOnewayDriver:
                 self._unsteady = True
                 break
 
-        # assertion check for unsteady
-        # TODO : unsteady not available yet, can add this feature
-        assert not self.unsteady
-
         # assertion checks for no shape change vs shape change
         if self.change_shape:
             assert tacs_aim is not None or external_shape
@@ -105,7 +105,9 @@ class TacsOnewayDriver:
                     )
         else:
             assert self.tacs_interface is not None
-            assert isinstance(self.tacs_interface, TacsSteadyInterface)
+            assert isinstance(self.tacs_interface, TacsSteadyInterface) or isinstance(
+                self.tacs_interface, TacsUnsteadyInterface
+            )
 
         # reset struct mesh positions for no shape, just tacs analysis
         if not self.change_shape:
@@ -115,6 +117,10 @@ class TacsOnewayDriver:
     @property
     def change_shape(self) -> bool:
         return len(self.shape_variables) > 0
+
+    @property
+    def steady(self) -> bool:
+        return not (self._unsteady)
 
     @property
     def unsteady(self) -> bool:
@@ -167,7 +173,7 @@ class TacsOnewayDriver:
         # create the solver manager
         solvers = SolverManager(comm)
         solvers.flow = flow_solver
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model=model,  # copy model from flow solver
             comm=comm,
             nprocs=nprocs,
@@ -381,7 +387,7 @@ class TacsOnewayDriver:
 
             # make the new tacs interface of the structural geometry
             # TODO : need to make sure the InterfaceFromBDF method tells the struct_id properly
-            self.tacs_interface = TacsSteadyInterface.create_from_bdf(
+            self.tacs_interface = TacsInterface.create_from_bdf(
                 model=self.model,
                 comm=self.comm,
                 nprocs=self.nprocs,
@@ -398,7 +404,16 @@ class TacsOnewayDriver:
         # end of change shape section
 
         # run the tacs forward analysis for no shape
-        self._solve_forward_no_shape()
+        # zero all data to start fresh problem, u = 0, res = 0
+        self._zero_tacs_data()
+
+        if self.steady:
+            for scenario in self.model.scenarios:
+                self._solve_steady_forward(scenario, self.model.bodies)
+
+        if self.unsteady:
+            for scenario in self.model.scenarios:
+                self._solve_unsteady_forward(scenario, self.model.bodies)
 
     def solve_adjoint(self):
         """
@@ -407,34 +422,61 @@ class TacsOnewayDriver:
         """
 
         # run the adjoint structural analysis
-        self._solve_adjoint_no_shape()
 
-        if self.change_shape:
-            # compute tacs coordinate derivatives
+        functions = self.model.get_functions()
+
+        # Zero the derivative values stored in the function
+        for func in functions:
+            func.zero_derivatives()
+
+        # zero adjoint data
+        self._zero_adjoint_data()
+
+        if self.steady:
             for scenario in self.model.scenarios:
-                self.tacs_interface.get_coordinate_derivatives(
-                    scenario, self.model.bodies, step=0
-                )
+                self._solve_steady_adjoint(scenario, self.model.bodies)
 
-                # add transfer scheme contributions
-                for body in self.model.bodies:
-                    body.add_coordinate_derivative(scenario, step=0)
+        if self.unsteady:
+            for scenario in self.model.scenarios:
+                self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
-            if not self.external_shape:
-                # write the sensitivity file for the tacs AIM
-                self.model.write_sensitivity_file(
-                    comm=self.comm,
-                    filename=self.tacs_aim.sens_file_path,
-                    discipline="structural",
-                )
+        # transfer loads adjoint since fa -> fs has shape dependency
+        if self.change_shape:
+            for body in self.model.bodies:
+                body.transfer_loads_adjoint(scenario)
 
-                # run the tacs aim postAnalysis to compute the chain rule product
-                self.tacs_aim.post_analysis()
+        # call get function gradients to store  the gradients from tacs
+        self.tacs_interface.get_function_gradients(scenario, self.model.bodies)
 
-                # store the shape variables in the function gradients
-                for scenario in self.model.scenarios:
-                    self._get_shape_derivatives(scenario)
+        if self.change_shape and not self.external_shape:
+            # write the sensitivity file for the tacs AIM
+            self.model.write_sensitivity_file(
+                comm=self.comm,
+                filename=self.tacs_aim.sens_file_path,
+                discipline="structural",
+            )
+
+            # run the tacs aim postAnalysis to compute the chain rule product
+            self.tacs_aim.post_analysis()
+
+            # store the shape variables in the function gradients
+            for scenario in self.model.scenarios:
+                self._get_shape_derivatives(scenario)
         # end of change shape section
+        return
+
+    def _extract_coordinate_derivatives(self, scenario, bodies, step):
+        """extract the coordinate derivatives at a given time step"""
+        self.tacs_interface.get_coordinate_derivatives(
+            scenario, self.model.bodies, step=step
+        )
+
+        # add transfer scheme contributions
+        if step > 0:
+            for body in bodies:
+                body.add_coordinate_derivative(scenario, step=0)
+
+        return
 
     def _get_shape_derivatives(self, scenario):
         """
@@ -465,7 +507,7 @@ class TacsOnewayDriver:
 
         return
 
-    def _solve_forward_no_shape(self):
+    def _solve_steady_forward(self, scenario, bodies):
         """
         solve the forward analysis of TACS analysis with aerodynamic loads
         and heat fluxes from previous analysis still retained
@@ -473,61 +515,91 @@ class TacsOnewayDriver:
 
         fail = 0
 
-        # zero all data to start fresh problem, u = 0, res = 0
-        self._zero_tacs_data()
+        # set functions and variables
+        self.tacs_interface.set_variables(scenario, bodies)
+        self.tacs_interface.set_functions(scenario, bodies)
 
-        for scenario in self.model.scenarios:
-            # set functions and variables
-            self.tacs_interface.set_variables(scenario, self.model.bodies)
-            self.tacs_interface.set_functions(scenario, self.model.bodies)
+        # run the forward analysis via iterate
+        self.tacs_interface.initialize(scenario, bodies)
+        self.tacs_interface.iterate(scenario, bodies, step=0)
+        self.tacs_interface.post(scenario, bodies)
 
-            # run the forward analysis via iterate
-            self.tacs_interface.initialize(scenario, self.model.bodies)
-            self.tacs_interface.iterate(scenario, self.model.bodies, step=0)
-            self.tacs_interface.post(scenario, self.model.bodies)
-
-            # get functions to store the function values into the model
-            self.tacs_interface.get_functions(scenario, self.model.bodies)
+        # get functions to store the function values into the model
+        self.tacs_interface.get_functions(scenario, bodies)
 
         return 0
 
-    def _solve_adjoint_no_shape(self):
+    def _solve_unsteady_forward(self, scenario, bodies):
+        """
+        solve the forward analysis of TACS analysis with aerodynamic loads
+        and heat fluxes from previous analysis still retained
+        """
+
+        fail = 0
+
+        # set functions and variables
+        self.tacs_interface.set_variables(scenario, bodies)
+        self.tacs_interface.set_functions(scenario, bodies)
+
+        # run the forward analysis via iterate
+        self.tacs_interface.initialize(scenario, bodies)
+        for step in range(1, scenario.steps + 1):
+            self.tacs_interface.iterate(scenario, bodies, step=step)
+        self.tacs_interface.post(scenario, bodies)
+
+        # get functions to store the function values into the model
+        self.tacs_interface.get_functions(scenario, bodies)
+
+        return 0
+
+    def _solve_steady_adjoint(self, scenario, bodies):
         """
         solve the adjoint analysis of TACS analysis with aerodynamic loads
         and heat fluxes from previous analysis still retained
         Similar to funtofem_driver
         """
 
-        functions = self.model.get_functions()
+        # set functions and variables
+        self.tacs_interface.set_variables(scenario, bodies)
+        self.tacs_interface.set_functions(scenario, bodies)
 
-        # Zero the derivative values stored in the function
-        for func in functions:
-            func.zero_derivatives()
+        # zero all coupled adjoint variables in the body
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
 
-        # zero adjoint data
-        self._zero_adjoint_data()
+        # initialize, run, and do post adjoint
+        self.tacs_interface.initialize_adjoint(scenario, bodies)
+        self.tacs_interface.iterate_adjoint(scenario, bodies, step=0)
+        self._extract_coordinate_derivatives(scenario, bodies, step=0)
+        self.tacs_interface.post_adjoint(scenario, bodies)
 
-        for scenario in self.model.scenarios:
-            # set functions and variables
-            self.tacs_interface.set_variables(scenario, self.model.bodies)
-            self.tacs_interface.set_functions(scenario, self.model.bodies)
+        return
 
-            # zero all coupled adjoint variables in the body
-            for body in self.model.bodies:
-                body.initialize_adjoint_variables(scenario)
+    def _solve_unsteady_adjoint(self, scenario, bodies):
+        """
+        solve the adjoint analysis of TACS analysis with aerodynamic loads
+        and heat fluxes from previous analysis still retained
+        Similar to funtofem_driver
+        """
 
-            # initialize, run, and do post adjoint
-            self.tacs_interface.initialize_adjoint(scenario, self.model.bodies)
-            self.tacs_interface.iterate_adjoint(scenario, self.model.bodies, step=0)
-            self.tacs_interface.post_adjoint(scenario, self.model.bodies)
+        # set functions and variables
+        self.tacs_interface.set_variables(scenario, bodies)
+        self.tacs_interface.set_functions(scenario, bodies)
 
-            # transfer loads adjoint since fa -> fs has shape dependency
-            if self.change_shape:
-                for body in self.model.bodies:
-                    body.transfer_loads_adjoint(scenario)
+        # zero all coupled adjoint variables in the body
+        for body in bodies:
+            body.initialize_adjoint_variables(scenario)
 
-            # call get function gradients to store  the gradients from tacs
-            self.tacs_interface.get_function_gradients(scenario, self.model.bodies)
+        # initialize, run, and do post adjoint
+        self.tacs_interface.initialize_adjoint(scenario, bodies)
+        for rstep in range(scenario.steps + 1):
+            step = scenario.steps + 1 - rstep
+            self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
+        self._extract_coordinate_derivatives(scenario, bodies, step=0)
+        self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
+        self.tacs_interface.post_adjoint(scenario, bodies)
+
+        return
 
     def _zero_tacs_data(self):
         """

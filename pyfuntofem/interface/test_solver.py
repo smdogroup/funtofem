@@ -711,7 +711,9 @@ class TestStructuralSolver(SolverInterface):
 
 
 class TestResult:
-    def __init__(self, name, func_names, complex_TD, adjoint_TD, rel_error, comm=None):
+    def __init__(
+        self, name, func_names, complex_TD, adjoint_TD, rel_error=None, comm=None
+    ):
         """
         Class to store test results from complex step method
         """
@@ -719,7 +721,13 @@ class TestResult:
         self.func_names = func_names  # list of function names
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
-        self.rel_error = rel_error
+        if rel_error is None:
+            rel_error = []
+            for i, _ in enumerate(self.complex_TD):
+                rel_error.append(
+                    TestResult.relative_error(complex_TD[i], adjoint_TD[i])
+                )
+            self.rel_error = rel_error
         self.comm = comm
 
         self.nfuncs = len(func_names)
