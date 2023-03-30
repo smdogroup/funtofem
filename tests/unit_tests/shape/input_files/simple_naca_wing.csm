@@ -77,6 +77,31 @@ attribute _color $green
 
 store solidWing
 
+# make the centerplane
+mark
+udprim naca thickness 0.0 camber camb0 maxloc 0.3
+scale chord0
+rotatex 90 0 0
+   
+# tip airfoil
+udprim naca thickness 0.0 camber cambf maxloc 0.3
+scale chordf
+rotatex 90 0 0
+translate xf -sspan zf
+
+# loft the midplane
+loft 0
+store midPlane
+
+# make the upper chopbox
+restore midPlane
+extrude 0 0 0.2
+store upperBox
+
+restore midPlane
+extrude 0 0 -0.2
+store lowerBox
+
 ### 2. Internal Structure ###
 
 # make the spars
@@ -133,6 +158,23 @@ patbeg index ninnerRibs
 
 patend
 
+store internalStruct
+
+# intersect with upper and lower box in order to create center lanes for thermal analysis
+restore internalStruct
+restore lowerBox
+intersect
+select face
+attribute thermalFace $lower
+
+restore internalStruct
+restore upperBox
+intersect
+select face
+attribute thermalFace $upper
+
+union
+
 ### 3. Complete the wing geometry ###
 
 # intersect the internal structure with the solid wing
@@ -161,6 +203,10 @@ udprim editAttr filename <<
 
  NODE ADJ2FACE capsConstraint=root
  SET capsConstraint=root
+
+ EDGE ADJ2FACE thermalFace=upper
+ AND ADJ2FACE thermalFace=lower
+ SET capsConstraint=midplane
 >>
 
 # add load attribute to OML
@@ -172,4 +218,4 @@ select body
 attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||
+||||||||||||||||||||||||||
