@@ -165,7 +165,8 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         mass = Function.mass().register_to(cruise)
         weight = 9.81 * mass
         LoverD = lift / drag
-        cruise.include(weight).include(LoverD)
+        weight.register_to(model)
+        LoverD.register_to(model)
         cruise.register_to(model)
 
         climb = Scenario.steady("climb", steps=200)

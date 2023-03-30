@@ -1749,8 +1749,8 @@ class Body(Base):
         ncomp = len(composite_functions)
         ns = 3 * self.struct_nnodes
         na = 3 * self.aero_nnodes
-        self.composite_aero_shape_term = np.zeros(shape=(na, ncomp))
-        self.composite_struct_shape_term = np.zeros(shape=(ns, ncomp))
+        self.composite_aero_shape_term = np.zeros(shape=(na, ncomp), dtype=self.dtype)
+        self.composite_struct_shape_term = np.zeros(shape=(ns, ncomp), dtype=self.dtype)
 
         # for each composite function
         for icomp, composite_function in enumerate(composite_functions):
@@ -1760,24 +1760,20 @@ class Body(Base):
                 for ifunc1, function1 in enumerate(
                     scenario.functions
                 ):  # analysis functions in scenario
-                    for ifunc2, function2 in enumerate(
-                        composite_function.functions
-                    ):  # dependent functions in comp_func
-                        if function1 == function2:  # find the matching function
-                            break
-                    # add aerodynamic coordinate derivatives
-                    self.composite_aero_shape_term[:, icomp] += (
-                        composite_function.df_dgi[ifunc2]
-                        * self.struct_shape_term[scenario.id].aero_shape_term[:, ifunc1]
-                    )
+                    if function1 in composite_function.functions:
+                        # add aerodynamic coordinate derivatives
+                        if na > 0:
+                            self.composite_aero_shape_term[:, icomp] += (
+                                composite_function.df_dgi[function1.full_name]
+                                * self.aero_shape_term[scenario.id][:, ifunc1]
+                            )
 
-                    # add aerodynamic coordinate derivatives
-                    self.composite_struct_shape_term[:, icomp] += (
-                        composite_function.df_dgi[ifunc2]
-                        * self.struct_shape_term[scenario.id].struct_shape_term[
-                            :, ifunc1
-                        ]
-                    )
+                        # add structural coordinate derivatives
+                        if ns > 0:
+                            self.composite_struct_shape_term[:, icomp] += (
+                                composite_function.df_dgi[function1.full_name]
+                                * self.struct_shape_term[scenario.id][:, ifunc1]
+                            )
 
         # done with composite derivatives
         return
