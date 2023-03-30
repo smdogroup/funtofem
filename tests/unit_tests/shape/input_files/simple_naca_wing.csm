@@ -73,6 +73,7 @@ attribute _color $green
 
 select face 4
 attribute capsGroup !$rib+nribs
+attribute capsLoad $endRib
 attribute _color $green
 
 store solidWing

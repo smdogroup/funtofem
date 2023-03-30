@@ -1,6 +1,8 @@
-__all__ = ["f2f_callback"]
+__all__ = ["f2f_callback", "addLoadsFromBDF"]
 
+import numpy as np
 from tacs import constitutive, elements
+from mpi4py import MPI
 
 
 # define custom funtofem element callback for appropriate assignment of DVs and for elastic/thermoelastic shells
@@ -141,5 +143,151 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
         # Add scale for thickness dv
         scale = [1.0]
         return elemList, scale
+        # end of element callback method
 
     return element_callback
+
+
+def addLoadsFromBDF(fea_assembler):
+    """
+    get fixed structural loads for the assembler
+    """
+    # force vector on the assembler
+    assembler = fea_assembler.assembler
+
+    vpn = assembler.getVarsPerNode()
+    meshLoader = fea_assembler.meshLoader
+
+    # load vector
+    Fvec = assembler.createVec()
+    F_array = Fvec.getArray()
+    nnodes = assembler.getNumOwnedNodes()
+
+    # get the one loadID, assumes only one loadID
+    has_loads = False
+    for subCase in fea_assembler.bdfInfo.subcases.values():
+        if "LOAD" in subCase:
+            # Add loads to problem
+            loadsID = subCase["LOAD"][0]
+            loadSet, loadScale, _ = fea_assembler.bdfInfo.get_reduced_loads(loadsID)
+            has_loads = True  # record that there were some loads
+
+            # Loop through every load in set and add it to problem
+            for loadInfo, scale in zip(loadSet, loadScale):
+                # Add any point force or moment cards
+                if loadInfo.type == "FORCE" or loadInfo.type == "MOMENT":
+                    nodeIDs = loadInfo.node_ref.nid
+
+                    loadArray = np.zeros(vpn)
+                    if loadInfo.type == "FORCE" and vpn >= 3:
+                        F = scale * loadInfo.scaled_vector
+                        loadArray[:3] += loadInfo.cid_ref.transform_vector_to_global(F)
+                    elif loadInfo.type == "MOMENT" and vpn >= 6:
+                        M = scale * loadInfo.scaled_vector
+                        loadArray[3:6] += loadInfo.cid_ref.transform_vector_to_global(M)
+
+                    # self._addLoadToNodes(FVec, nodeID, loadArray, nastranOrdering=True)
+                    # Make sure the inputs are the correct shape
+                    nodeIDs = np.atleast_1d(nodeIDs)
+                    loadArray = np.atleast_2d(loadArray)
+
+                    numNodes = len(nodeIDs)
+
+                    # If the user only specified one force vector,
+                    # we assume the force should be the same for each node
+                    if loadArray.shape[0] == 1:
+                        loadArray = np.repeat(loadArray, [numNodes], axis=0)
+                    # If the dimensions still don't match, raise an error
+                    elif loadArray.shape[0] != numNodes:
+                        raise AssertionError(
+                            "Number of forces must match number of nodes,"
+                            " {} forces were specified for {} node IDs".format(
+                                loadArray.shape[0], numNodes
+                            )
+                        )
+
+                    if len(loadArray[0]) != vpn:
+                        raise AssertionError(
+                            "Length of force vector must match varsPerNode specified "
+                            "for problem, which is {}, "
+                            "but length of vector provided was {}".format(
+                                vpn, len(loadArray[0])
+                            )
+                        )
+
+                    # First find the cooresponding local node ID on each processor
+                    localNodeIDs = meshLoader.getLocalNodeIDsFromGlobal(nodeIDs, True)
+
+                    # Flag to make sure we find all user-specified nodes
+                    nodeFound = np.zeros(numNodes, dtype=int)
+
+                    F_array2 = F_array.reshape(nnodes, vpn)
+
+                    # Loop through every node and if it's owned by this processor, add the load
+                    for i, nodeID in enumerate(localNodeIDs):
+                        # The node was found on this proc
+                        if nodeID >= 0:
+                            # Add contribution to global force array
+                            F_array2[nodeID, :] += loadArray[i]
+                            nodeFound[i] = 1
+
+                # # Add any gravity loads, TODO : add inertial fixed loads later
+                # elif loadInfo.type == "GRAV":
+                #     inertiaVec = np.zeros(3, dtype=self.dtype)
+                #     inertiaVec[:3] = scale * loadInfo.scale * loadInfo.N
+                #     # Convert acceleration to global coordinate system
+                #     inertiaVec = loadInfo.cid_ref.transform_vector_to_global(inertiaVec)
+                #     self._addInertialLoad(auxElems, inertiaVec)
+
+                # Add any pressure loads
+                # Pressure load card specific to shell elements
+                elif loadInfo.type == "PLOAD2":
+                    elemIDs = loadInfo.eids
+                    pressures = scale * loadInfo.pressure
+                    # self._addPressureToElements(
+                    #     auxElems, elemIDs, pressure, nastranOrdering=True
+                    # )
+
+                    # Make sure the inputs are the correct shape
+                    elemIDs = np.atleast_1d(elemIDs)
+                    pressures = np.atleast_1d(pressures)
+
+                    numElems = len(elemIDs)
+
+                    # If the user only specified one pressure,
+                    # we assume the force should be the same for each element
+                    if pressures.shape[0] == 1:
+                        pressures = np.repeat(pressures, [numElems], axis=0)
+                    # If the dimensions still don't match, raise an error
+                    elif pressures.shape[0] != numElems:
+                        raise AssertionError(
+                            "Number of pressures must match number of elements,"
+                            " {} pressures were specified for {} element IDs".format(
+                                pressures.shape[0], numElems
+                            )
+                        )
+
+                    # First find the coresponding local element ID on each processor
+                    localElemIDs = meshLoader.getLocalElementIDsFromGlobal(
+                        elemIDs, nastranOrdering=True
+                    )
+
+                    # Flag to make sure we find all user-specified elements
+                    elemFound = np.zeros(numElems, dtype=int)
+
+                    # Loop through every element and if it's owned by this processor, add the pressure
+                    for i, elemID in enumerate(localElemIDs):
+                        # The element was found on this proc
+                        if elemID >= 0:
+                            elemFound[i] = 1
+                            # Get the pointer for the tacs element object for this element
+                            elemObj = meshLoader.getElementObjectForElemID(
+                                elemIDs[i], nastranOrdering=True
+                            )
+                            # Create appropriate pressure object for this element type
+                            pressObj = elemObj.createElementPressure(0, pressures[i])
+
+    # if it didn't find any loads just return None
+    if not has_loads:
+        Fvec = None
+    return Fvec  # end of addLoadsFromBDF method
