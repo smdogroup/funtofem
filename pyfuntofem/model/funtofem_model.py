@@ -665,6 +665,8 @@ class FUNtoFEMmodel(object):
         """
 
         funcs = self.get_functions()
+        # also add composite functions at the end
+        funcs += self.composite_functions
 
         count = 0
         ids = []
@@ -693,7 +695,7 @@ class FUNtoFEMmodel(object):
 
             for n, func in enumerate(funcs):
                 # Print the function name
-                data += "{}\n".format(func.name)
+                data += "{}\n".format(func.full_name)
 
                 # Print the function value
                 data += "{}\n".format(func.value.real)

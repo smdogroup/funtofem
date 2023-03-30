@@ -1778,7 +1778,9 @@ class Body(Base):
         # done with composite derivatives
         return
 
-    def collect_coordinate_derivatives(self, comm, discipline, scenarios, root=0):
+    def collect_coordinate_derivatives(
+        self, comm, discipline, scenarios, composite_functions, root=0
+    ):
         """
         Write the sensitivity files for the aerodynamic and structural meshes on
         the root processor.
@@ -1794,6 +1796,10 @@ class Body(Base):
             full_aero_shape_term = []
             for scenario in scenarios:
                 full_aero_shape_term.append(self.aero_shape_term[scenario.id])
+
+            # also include composite functions if available
+            if self.composite_aero_shape_term is not None:
+                full_aero_shape_term.append(self.composite_aero_shape_term)
             full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
 
             all_aero_shape = comm.gather(full_aero_shape_term, root=root)
@@ -1836,6 +1842,8 @@ class Body(Base):
             full_struct_shape_term = []
             for scenario in scenarios:
                 full_struct_shape_term.append(self.struct_shape_term[scenario.id])
+            if self.composite_struct_shape_term is not None:
+                full_struct_shape_term.append(self.composite_struct_shape_term)
             full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
 
             # gather the full struct shape terms across processors
