@@ -27,15 +27,18 @@ class CompositeFunction:
         # Store the value of the function here
         self._eval_forward = False
         self._eval_deriv = False
+        self._done_complex_step = False
         self.value = None
 
         # Store the values of the derivatives w.r.t. this function
         self.derivatives = {}
+        self.df_dgi = None
 
     def reset(self):
         """reset the function for a new analysis"""
         self._eval_forward = False
         self._eval_deriv = False
+        self._done_complex_step = False
         return
 
     def optimize(self):
@@ -124,6 +127,8 @@ class CompositeFunction:
         """compute function dictionary df/dg_i for derivatives w.r.t. analysis functions"""
         # use complex step on the forward evaluation handle to get df/dg_i with
         # f this composite function and g_i the other functions f(g_i)
+        if self._done_complex_step:
+            return
         h = 1e-30
         self.df_dgi = {key: None for key in self.funcs}
         for key in self.funcs:

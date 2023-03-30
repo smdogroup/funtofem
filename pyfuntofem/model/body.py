@@ -232,6 +232,9 @@ class Body(Base):
         self.struct_heat_flux = {}
         self.struct_shape_term = {}
 
+        self.composite_struct_shape_term = None
+        self.composite_aero_shape_term = None
+
         self.rigid_transform = {}
         self.aero_disps = {}
         self.aero_loads = {}
@@ -1739,6 +1742,45 @@ class Body(Base):
                 struct_hflux = np.zeros((1 * len(struct_ids), 1))
 
         return struct_ids, struct_hflux, struct_loads
+
+    def get_composite_coordinate_derivatives(self, scenarios, composite_functions):
+        """compute the coordinate derivatives of composite functions in the given body"""
+        # declare size of aero shape and struct shape term for composite functions
+        ncomp = len(composite_functions)
+        ns = 3 * self.struct_nnodes
+        na = 3 * self.aero_nnodes
+        self.composite_aero_shape_term = np.zeros(shape=(na, ncomp))
+        self.composite_struct_shape_term = np.zeros(shape=(ns, ncomp))
+
+        # for each composite function
+        for icomp, composite_function in enumerate(composite_functions):
+            composite_function.complex_step_dict()  # compute dg/dfi for each related function
+            # loop over related analysis functions
+            for scenario in scenarios:
+                for ifunc1, function1 in enumerate(
+                    scenario.functions
+                ):  # analysis functions in scenario
+                    for ifunc2, function2 in enumerate(
+                        composite_function.functions
+                    ):  # dependent functions in comp_func
+                        if function1 == function2:  # find the matching function
+                            break
+                    # add aerodynamic coordinate derivatives
+                    self.composite_aero_shape_term[:, icomp] += (
+                        composite_function.df_dgi[ifunc2]
+                        * self.struct_shape_term[scenario.id].aero_shape_term[:, ifunc1]
+                    )
+
+                    # add aerodynamic coordinate derivatives
+                    self.composite_struct_shape_term[:, icomp] += (
+                        composite_function.df_dgi[ifunc2]
+                        * self.struct_shape_term[scenario.id].struct_shape_term[
+                            :, ifunc1
+                        ]
+                    )
+
+        # done with composite derivatives
+        return
 
     def collect_coordinate_derivatives(self, comm, discipline, scenarios, root=0):
         """
