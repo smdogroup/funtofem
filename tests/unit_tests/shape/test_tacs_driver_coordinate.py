@@ -192,7 +192,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(oneway_driver)
         rel_error = tester.test_struct_coordinates(
-            "tacs_driver coordinate derivatives steady-aerothermoelastic"
+            "tacs_driver coordinate derivatives multiscenario, steady-aerothermoelastic"
         )
         assert abs(rel_error) < rtol
         return
@@ -314,6 +314,57 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         tester = CoordinateDerivativeTester(oneway_driver)
         rel_error = tester.test_struct_coordinates(
             "tacs_driver coordinate derivatives unsteady-aerothermoelastic"
+        )
+        assert abs(rel_error) < rtol
+        return
+
+    def test_unsteady_multiscenario_aerothermoelastic(self):
+        # build the model and driver
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermoelastic("plate", boundary=1)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
+        plate.register_to(model)
+
+        # build the scenario
+        cruise = Scenario.unsteady("cruise", steps=10)
+        lift = Function.lift().register_to(cruise)
+        drag = Function.drag().register_to(cruise)
+        mass = Function.mass().register_to(cruise)
+        weight = 9.81 * mass
+        LoverD = lift / drag
+        weight.register_to(model)
+        LoverD.register_to(model)
+        integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=cruise.steps)
+        cruise.include(integration_settings).register_to(model)
+
+        climb = Scenario.unsteady("climb", steps=10)
+        Function.ksfailure().register_to(climb)
+        Function.temperature().register_to(climb)
+        integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=climb.steps)
+        climb.include(integration_settings).register_to(model)
+
+        # build the tacs interface, coupled driver, and oneway driver
+        comm = MPI.COMM_WORLD
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.structural = TacsInterface.create_from_bdf(
+            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        )
+        solvers.structural.can_skip_coordinates = False
+        transfer_settings = TransferSettings(npts=5)
+        coupled_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
+        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+
+        rtol = 1e-9
+
+        """complex step test over coordinate derivatives"""
+        tester = CoordinateDerivativeTester(oneway_driver)
+        rel_error = tester.test_struct_coordinates(
+            "tacs_driver coordinate derivatives multiscenario, unsteady-aerothermoelastic"
         )
         assert abs(rel_error) < rtol
         return

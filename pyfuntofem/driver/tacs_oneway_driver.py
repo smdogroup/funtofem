@@ -547,8 +547,6 @@ class TacsOnewayDriver:
         # get functions to store the function values into the model
         self.tacs_interface.get_functions(scenario, bodies)
 
-        print("end solving unsteady forward", flush=True)
-
         return 0
 
     def _solve_steady_adjoint(self, scenario, bodies):
