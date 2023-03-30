@@ -123,8 +123,55 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.steady("test", steps=200).include(Function.temperature())
-        scenario.include(Function.temperature()).include(Function.lift())
+        scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
+
+        # build the tacs interface, coupled driver, and oneway driver
+        comm = MPI.COMM_WORLD
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.structural = TacsInterface.create_from_bdf(
+            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        )
+        transfer_settings = TransferSettings(npts=5)
+        coupled_driver = FUNtoFEMnlbgs(
+            solvers, transfer_settings=transfer_settings, model=model
+        )
+        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+
+        rtol = 1e-9
+
+        """complex step test over coordinate derivatives"""
+        tester = CoordinateDerivativeTester(oneway_driver)
+        rel_error = tester.test_struct_coordinates(
+            "tacs_driver coordinate derivatives steady-aerothermoelastic"
+        )
+        assert abs(rel_error) < rtol
+        return
+
+    def test_steady_multiscenario_aerothermoelastic(self):
+        # build the model and driver
+        model = FUNtoFEMmodel("wedge")
+        plate = Body.aerothermoelastic("plate", boundary=1)
+        Variable.structural("thickness").set_bounds(
+            lower=0.01, value=0.1, upper=1.0
+        ).register_to(plate)
+        plate.register_to(model)
+
+        # build the scenario
+        cruise = Scenario.steady("cruise", steps=200)
+        lift = Function.lift().register_to(cruise)
+        drag = Function.drag().register_to(cruise)
+        mass = Function.mass().register_to(cruise)
+        weight = 9.81 * mass
+        LoverD = lift / drag
+        cruise.include(weight).include(LoverD)
+        cruise.register_to(model)
+
+        climb = Scenario.steady("climb", steps=200)
+        Function.ksfailure().register_to(climb)
+        Function.temperature().register_to(climb)
+        climb.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD

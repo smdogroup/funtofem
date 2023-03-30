@@ -157,6 +157,11 @@ class Function(object):
 
         return 0.0
 
+    def register_to(self, my_scenario):
+        """register this function to a scenario"""
+        my_scenario.include(self)
+        return self
+
     @classmethod
     def ksfailure(
         cls, ks_weight: float = 50.0, start: int = 0, stop: int = -1, body: int = -1
