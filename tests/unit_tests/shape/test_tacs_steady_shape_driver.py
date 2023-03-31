@@ -244,7 +244,9 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         # add remaining information to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
-        caps2tacs.TemperatureConstraint("midplane", temperature=0)
+        caps2tacs.TemperatureConstraint("midplane", temperature=0).register_to(
+            tacs_model
+        )
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=100).include(Function.mass())
@@ -324,7 +326,9 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         # add remaining information to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
-        caps2tacs.TemperatureConstraint("midplane", temperature=0)
+        caps2tacs.TemperatureConstraint("midplane", temperature=0).register_to(
+            tacs_model
+        )
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=100).include(Function.mass())

@@ -34,7 +34,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
     FILENAME = "tacs_unsteady_shape_driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    #@unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
+    # @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
     def test_unsteady_shape_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -163,7 +163,9 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
 
         # add remaining information to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
-        caps2tacs.TemperatureConstraint("midplane", temperature=0)
+        caps2tacs.TemperatureConstraint("midplane", temperature=0).register_to(
+            tacs_model
+        )
 
         # make a funtofem scenario
         test_scenario = Scenario.unsteady("test", steps=10).include(Function.mass())
@@ -246,7 +248,9 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
 
         # add remaining information to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
-        caps2tacs.TemperatureConstraint("midplane", temperature=0)
+        caps2tacs.TemperatureConstraint("midplane", temperature=0).register_to(
+            tacs_model
+        )
 
         # make a funtofem scenario
         test_scenario = Scenario.unsteady("test", steps=10).include(Function.mass())
