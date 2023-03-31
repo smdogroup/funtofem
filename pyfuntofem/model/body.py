@@ -232,9 +232,6 @@ class Body(Base):
         self.struct_heat_flux = {}
         self.struct_shape_term = {}
 
-        self.composite_struct_shape_term = None
-        self.composite_aero_shape_term = None
-
         self.rigid_transform = {}
         self.aero_disps = {}
         self.aero_loads = {}
@@ -1743,42 +1740,6 @@ class Body(Base):
 
         return struct_ids, struct_hflux, struct_loads
 
-    def get_composite_coordinate_derivatives(self, scenarios, composite_functions):
-        """compute the coordinate derivatives of composite functions in the given body"""
-        # declare size of aero shape and struct shape term for composite functions
-        ncomp = len(composite_functions)
-        ns = 3 * self.struct_nnodes
-        na = 3 * self.aero_nnodes
-        self.composite_aero_shape_term = np.zeros(shape=(na, ncomp), dtype=self.dtype)
-        self.composite_struct_shape_term = np.zeros(shape=(ns, ncomp), dtype=self.dtype)
-
-        # for each composite function
-        for icomp, composite_function in enumerate(composite_functions):
-            print(f"xpt evaluate composite function = {composite_function.full_name}")
-            composite_function.complex_step_dict()  # compute dg/dfi for each related function
-            # loop over related analysis functions
-            for scenario in scenarios:
-                for ifunc1, function1 in enumerate(
-                    scenario.functions
-                ):  # analysis functions in scenario
-                    if function1 in composite_function.functions:
-                        # add aerodynamic coordinate derivatives
-                        if na > 0:
-                            self.composite_aero_shape_term[:, icomp] += (
-                                composite_function.df_dgi[function1.full_name]
-                                * self.aero_shape_term[scenario.id][:, ifunc1]
-                            )
-
-                        # add structural coordinate derivatives
-                        if ns > 0:
-                            self.composite_struct_shape_term[:, icomp] += (
-                                composite_function.df_dgi[function1.full_name]
-                                * self.struct_shape_term[scenario.id][:, ifunc1]
-                            )
-
-        # done with composite derivatives
-        return
-
     def collect_coordinate_derivatives(self, comm, discipline, scenarios, root=0):
         """
         Write the sensitivity files for the aerodynamic and structural meshes on
@@ -1786,6 +1747,11 @@ class Body(Base):
 
         This code collects the sensitivities from each processor and collects the
         result to the root node.
+
+        NOTE : we do not need to compute composite function coordinate derivatives
+        If we are able to compute shape derivatives of analysis functions, then
+        the composite function shape derivatives can be automatically computed without
+        writing extra coordinate derivatives to ESP/CAPS
         """
 
         if discipline == "aerodynamic" or discipline == "flow" or discipline == "aero":
@@ -1795,10 +1761,6 @@ class Body(Base):
             full_aero_shape_term = []
             for scenario in scenarios:
                 full_aero_shape_term.append(self.aero_shape_term[scenario.id])
-
-            # also include composite functions if available
-            if self.composite_aero_shape_term is not None:
-                full_aero_shape_term.append(self.composite_aero_shape_term)
             full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
 
             all_aero_shape = comm.gather(full_aero_shape_term, root=root)
@@ -1841,8 +1803,6 @@ class Body(Base):
             full_struct_shape_term = []
             for scenario in scenarios:
                 full_struct_shape_term.append(self.struct_shape_term[scenario.id])
-            if self.composite_struct_shape_term is not None:
-                full_struct_shape_term.append(self.composite_struct_shape_term)
             full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
 
             # gather the full struct shape terms across processors

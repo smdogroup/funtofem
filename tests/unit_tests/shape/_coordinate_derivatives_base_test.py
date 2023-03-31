@@ -42,18 +42,10 @@ class CoordinateDerivativeTester:
         struct_X = body.struct_X
 
         # random covariant tensor to aggregate derivative error among one or more functions
-        first_scenario = self.model.scenarios[0]
-        nfunc = first_scenario.count_adjoint_functions()
-        dL_dfunc_single = np.random.rand(nfunc)
-        dL_dfunc_single_col = np.reshape(dL_dfunc_single, newshape=(nfunc, 1))
-
-        ncomp = len(self.model.composite_functions)
-        dL_dfunc_comp = np.random.rand(ncomp)
-        dL_dfunc_comp_col = np.reshape(dL_dfunc_comp, (ncomp, 1))
-        # for scenario in self.model.scenarios:
-        #     nfunc = scenario.count_adjoint_functions()
-        #     dL_dfunc[scenario.id] = np.random.rand(nfunc)
-        #     dL_dfunc_col[scenario.id] = np.reshape(dL_dfunc[scenario.id], newshape=(nfunc, 1))
+        # compile full struct shape term
+        nf = len(self.model.get_functions())
+        dL_dfunc = np.random.rand(nf)
+        dL_dfunc_col = np.reshape(dL_dfunc, newshape=(nf, 1))
 
         # random contravariant tensor d(struct_X)/ds for testing struct shape
         dstructX_ds = np.random.rand(struct_X.shape[0])
@@ -62,48 +54,28 @@ class CoordinateDerivativeTester:
         """Adjoint method to compute coordinate derivatives and TD"""
         self.driver.solve_forward()
         self.driver.solve_adjoint()
-        self.model.evaluate_composite_functions(compute_xpt=True)
 
         # add coordinate derivatives among scenarios
         adjoint_TD = 0.0
 
-        # for scenario in self.model.scenarios:
-        struct_shape_term = body.get_struct_coordinate_derivatives(first_scenario)
+        full_struct_shape_term = []
+        for scenario in self.model.scenarios:
+            struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
+            full_struct_shape_term.append(struct_shape_term)
+        full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
         # add in struct coordinate derivatives of this scenario
-        adjoint_TD += (dstructX_ds_row @ struct_shape_term @ dL_dfunc_single_col).real
-
-        if ncomp > 0:
-            comp_struct_shape_term = body.composite_struct_shape_term
-            # add in composite functions coordinate derivatives of this scenario
-            adjoint_TD += (
-                dstructX_ds_row @ comp_struct_shape_term @ dL_dfunc_comp_col
-            ).real
-
+        adjoint_TD += (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real
         adjoint_TD = float(adjoint_TD)
 
         """Complex step to compute coordinate total derivatives"""
         # perturb the coordinate derivatives
         struct_X += 1j * self.epsilon * dstructX_ds
         self.driver.solve_forward()
-        self.model.evaluate_composite_functions(compute_grad=False, compute_xpt=False)
 
-        # dfunc_ds = np.array(
-        #     [func.value.imag / self.epsilon for func in self.model.get_functions()]
-        # )
         dfunc_ds = np.array(
-            [func.value.imag / self.epsilon for func in first_scenario.functions]
+            [func.value.imag / self.epsilon for func in self.model.get_functions()]
         )
-        complex_step_TD = np.sum(dL_dfunc_single * dfunc_ds)
-
-        # add in composite function terms
-        if ncomp > 0:
-            dcomp_ds = np.array(
-                [
-                    func.value.imag / self.epsilon
-                    for func in self.model.composite_functions
-                ]
-            )
-            complex_step_TD += np.sum(dL_dfunc_comp * dcomp_ds)
+        complex_step_TD = np.sum(dL_dfunc * dfunc_ds)
 
         rel_error = TestResult.relative_error(adjoint_TD, complex_step_TD)
         print(f"\n{test_name}")

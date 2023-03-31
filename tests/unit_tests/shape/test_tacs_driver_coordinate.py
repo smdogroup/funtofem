@@ -160,13 +160,9 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         # build the scenario
         cruise = Scenario.steady("cruise", steps=200)
-        lift = Function.lift().register_to(cruise)
-        drag = Function.drag().register_to(cruise)
-        mass = Function.mass().register_to(cruise)
-        weight = 9.81 * mass
-        LoverD = lift / drag
-        weight.register_to(model)
-        LoverD.register_to(model)
+        Function.lift().register_to(cruise)
+        Function.drag().register_to(cruise)
+        Function.mass().register_to(cruise)
         cruise.register_to(model)
 
         climb = Scenario.steady("climb", steps=200)
@@ -329,13 +325,9 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         # build the scenario
         cruise = Scenario.unsteady("cruise", steps=10)
-        lift = Function.lift().register_to(cruise)
-        drag = Function.drag().register_to(cruise)
-        mass = Function.mass().register_to(cruise)
-        weight = 9.81 * mass
-        LoverD = lift / drag
-        weight.register_to(model)
-        LoverD.register_to(model)
+        Function.lift().register_to(cruise)
+        Function.drag().register_to(cruise)
+        Function.mass().register_to(cruise)
         integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=cruise.steps)
         cruise.include(integration_settings).register_to(model)
 

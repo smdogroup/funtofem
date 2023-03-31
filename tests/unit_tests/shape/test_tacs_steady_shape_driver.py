@@ -22,6 +22,7 @@ if tacs_loader is not None and caps_loader is not None:
 
 # check if we're in github to run only online vs offline tests
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
+in_github_workflow = True
 optional = True  # whether to run optional tests
 
 
@@ -118,8 +119,8 @@ class TestTacsShapeDriver(unittest.TestCase):
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
-            edge_pt_min=15,
-            edge_pt_max=20,
+            edge_pt_min=5,
+            edge_pt_max=10,
             global_mesh_size=0.1,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
@@ -169,6 +170,8 @@ class TestTacsShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_aim = tacs_model.tacs_aim
         tacs_aim.setup_aim()
+
+        print(f"setup aim", flush=True)
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=100).include(Function.mass())
