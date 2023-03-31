@@ -788,9 +788,9 @@ class TestResult:
         """
 
         # determine the number of functions and variables
-        nfunctions = len(model.get_functions())
+        nfunctions = len(model.get_functions(all=True))
         nvariables = len(model.get_variables())
-        func_names = [func.name for func in model.get_functions()]
+        func_names = [func.full_name for func in model.get_functions(all=True)]
 
         # generate random contravariant tensor, an input space curve tangent dx/ds for design vars
         dxds = np.random.rand(nvariables)
@@ -800,7 +800,8 @@ class TestResult:
             driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
-        gradients = model.get_function_gradients()
+        model.evaluate_composite_functions()
+        gradients = model.get_function_gradients(all=True)
 
         # compute the adjoint total derivative df/ds = df/dx * dx/ds
         adjoint_TD = np.zeros((nfunctions))
@@ -819,7 +820,8 @@ class TestResult:
 
         # run the complex step method
         driver.solve_forward()
-        functions = model.get_functions()
+        model.evaluate_composite_functions()
+        functions = model.get_functions(all=True)
 
         # compute the complex step total derivative df/ds = Im{f(x+ih * dx/ds)}/h for each func
         complex_TD = np.zeros((nfunctions))
@@ -862,9 +864,9 @@ class TestResult:
         """
         perform finite difference test on a model and driver for multiple functions & variables
         """
-        nfunctions = len(model.get_functions())
+        nfunctions = len(model.get_functions(all=True))
         nvariables = len(model.get_variables())
-        func_names = [func.name for func in model.get_functions()]
+        func_names = [func.full_name for func in model.get_functions(all=True)]
 
         # generate random contravariant tensor in input space x(s)
         dxds = np.random.rand(nvariables)
@@ -872,7 +874,7 @@ class TestResult:
         # solve the adjoint
         driver.solve_forward()
         driver.solve_adjoint()
-        gradients = model.get_function_gradients()
+        gradients = model.get_function_gradients(all=True)
 
         # compute adjoint total derivative df/dx
         adjoint_TD = np.zeros((nfunctions))
@@ -882,13 +884,13 @@ class TestResult:
 
         # perform finite difference computation
         driver.solve_forward()
-        i_functions = [func.value.real for func in model.get_functions()]
+        i_functions = [func.value.real for func in model.get_functions(all=True)]
 
         variables = model.get_variables()
         for ivar in range(nvariables):
             variables[ivar].value += epsilon * dxds[ivar]
         driver.solve_forward()
-        f_functions = [func.value.real for func in model.get_functions()]
+        f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
             (f_functions[ifunc] - i_functions[ifunc]) / epsilon

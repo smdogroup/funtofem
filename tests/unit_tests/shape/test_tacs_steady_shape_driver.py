@@ -22,7 +22,6 @@ if tacs_loader is not None and caps_loader is not None:
 
 # check if we're in github to run only online vs offline tests
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
-in_github_workflow = True
 optional = True  # whether to run optional tests
 
 
@@ -30,9 +29,9 @@ optional = True  # whether to run optional tests
     tacs_loader is None or caps_loader is None,
     "skipping test using caps2tacs if caps or tacs are unavailable",
 )
-class TestTacsShapeDriver(unittest.TestCase):
+class TestTacsSteadyShapeDriver(unittest.TestCase):
     N_PROCS = 2
-    FILENAME = "oneway_shape_driver.txt"
+    FILENAME = "tacs_steady_shape_driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     @unittest.skipIf(in_github_workflow, "only run this test offline")
@@ -41,8 +40,8 @@ class TestTacsShapeDriver(unittest.TestCase):
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
-            edge_pt_min=15,
-            edge_pt_max=20,
+            edge_pt_min=5,
+            edge_pt_max=10,
             global_mesh_size=0.1,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
@@ -106,7 +105,7 @@ class TestTacsShapeDriver(unittest.TestCase):
             "testaero=>tacs_shape_steady-aeroelastic",
             f2f_model,
             shape_driver,
-            TestTacsShapeDriver.FILEPATH,
+            TestTacsSteadyShapeDriver.FILEPATH,
             complex_mode=False,
             epsilon=1e-4,
         )
@@ -171,8 +170,6 @@ class TestTacsShapeDriver(unittest.TestCase):
         tacs_aim = tacs_model.tacs_aim
         tacs_aim.setup_aim()
 
-        print(f"setup aim", flush=True)
-
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=100).include(Function.mass())
         test_scenario.register_to(f2f_model)
@@ -192,7 +189,7 @@ class TestTacsShapeDriver(unittest.TestCase):
             "testaero=>tacs_shape_steady+thick-aeroelastic",
             f2f_model,
             shape_driver,
-            TestTacsShapeDriver.FILEPATH,
+            TestTacsSteadyShapeDriver.FILEPATH,
             complex_mode=False,
             epsilon=1e-4,
         )
@@ -206,8 +203,8 @@ class TestTacsShapeDriver(unittest.TestCase):
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
-            edge_pt_min=15,
-            edge_pt_max=20,
+            edge_pt_min=5,
+            edge_pt_max=10,
             global_mesh_size=0.1,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
@@ -272,7 +269,7 @@ class TestTacsShapeDriver(unittest.TestCase):
             "testaero=>tacs_shape_steady-aerothermal",
             f2f_model,
             shape_driver,
-            TestTacsShapeDriver.FILEPATH,
+            TestTacsSteadyShapeDriver.FILEPATH,
             complex_mode=False,
             epsilon=1e-4,
         )
@@ -286,8 +283,8 @@ class TestTacsShapeDriver(unittest.TestCase):
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
-            edge_pt_min=15,
-            edge_pt_max=20,
+            edge_pt_min=5,
+            edge_pt_max=10,
             global_mesh_size=0.1,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
@@ -352,7 +349,7 @@ class TestTacsShapeDriver(unittest.TestCase):
             "testaero=>tacs_shape_steady-aerothermoelastic",
             f2f_model,
             shape_driver,
-            TestTacsShapeDriver.FILEPATH,
+            TestTacsSteadyShapeDriver.FILEPATH,
             complex_mode=False,
             epsilon=1e-4,
         )
@@ -364,6 +361,6 @@ class TestTacsShapeDriver(unittest.TestCase):
 if __name__ == "__main__":
     if tacs_loader is not None and caps_loader is not None:
         if comm.rank == 0:
-            open(TestTacsShapeDriver.FILEPATH, "w").close()
+            open(TestTacsSteadyShapeDriver.FILEPATH, "w").close()
 
     unittest.main()

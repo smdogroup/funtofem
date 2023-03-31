@@ -383,9 +383,7 @@ class TacsOnewayDriver:
                 self.tacs_aim.setup_aim()
 
                 # build the new structure geometry
-                print(f"start pre analysis", flush=True)
                 self.tacs_aim.pre_analysis()
-                print(f"end pre analysis", flush=True)
 
             # make the new tacs interface of the structural geometry
             self.tacs_interface = TacsInterface.create_from_bdf(
@@ -395,7 +393,6 @@ class TacsOnewayDriver:
                 bdf_file=self.dat_file_path,
                 output_dir=self.analysis_dir,
             )
-            print(f"made bdf", flush=True)
 
             # make a solvers object to hold structural solver since flow is no longer used
             solvers = SolverManager(self.comm, use_flow=False)
