@@ -34,7 +34,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
     FILENAME = "tacs_unsteady_shape_driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    # @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
+    @unittest.skipIf(in_github_workflow, "this is an offline test")
     def test_unsteady_shape_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -116,7 +116,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
+    @unittest.skipIf(in_github_workflow, "this is an offline test")
     def test_unsteady_shape_aerothermal(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -201,7 +201,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skipIf(in_github_workflow or not optional, "this is an offline test")
+    @unittest.skipIf(in_github_workflow, "this is an offline test")
     def test_unsteady_shape_aerothermoelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
