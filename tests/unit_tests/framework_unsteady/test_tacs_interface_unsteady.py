@@ -43,11 +43,11 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario = Scenario.unsteady("test", steps=10).include(
             Function.ksfailure()
         )
-        test_scenario.register_to(model)
-
         integration_settings = TacsIntegrationSettings(
-            dt=0.001, num_steps=test_scenario.steps
+            dt=0.01, num_steps=test_scenario.steps
         )
+        test_scenario.include(integration_settings)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -56,7 +56,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
-            integration_settings=integration_settings,
             output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
@@ -88,11 +87,11 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario = Scenario.unsteady("test", steps=10).include(
             Function.temperature()
         )
-        test_scenario.register_to(model)
-
         integration_settings = TacsIntegrationSettings(
-            dt=0.001, num_steps=test_scenario.steps
+            dt=0.01, num_steps=test_scenario.steps
         )
+        test_scenario.include(integration_settings)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -101,7 +100,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            integration_settings=integration_settings,
             output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
@@ -133,11 +131,11 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario = Scenario.unsteady("test", steps=10).include(
             Function.ksfailure()
         )
-        test_scenario.include(Function.temperature()).register_to(model)
-
         integration_settings = TacsIntegrationSettings(
             dt=0.01, num_steps=test_scenario.steps
         )
+        test_scenario.include(integration_settings)
+        test_scenario.include(Function.temperature()).register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -146,7 +144,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            integration_settings=integration_settings,
             output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
@@ -180,17 +177,21 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario1 = Scenario.unsteady("test1", steps=10).include(
             Function.ksfailure()
         )
+        integration_settings = TacsIntegrationSettings(
+            dt=0.01, num_steps=test_scenario1.steps
+        )
+        test_scenario1.include(integration_settings)
         test_scenario1.include(Function.temperature()).register_to(model)
 
         # make the second scenario with ksfailure, temperature
         test_scenario2 = Scenario.unsteady("test2", steps=10).include(
             Function.ksfailure()
         )
-        test_scenario2.include(Function.temperature()).register_to(model)
-
         integration_settings = TacsIntegrationSettings(
-            dt=0.01, num_steps=test_scenario1.steps
+            dt=0.01, num_steps=test_scenario2.steps
         )
+        test_scenario2.include(integration_settings)
+        test_scenario2.include(Function.temperature()).register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -199,7 +200,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            integration_settings=integration_settings,
             output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
@@ -228,15 +228,13 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = (
-            Scenario.unsteady("test", steps=10)
-            .include(Function.ksfailure())
-            .register_to(model)
+        test_scenario = Scenario.unsteady("test", steps=10).include(
+            Function.ksfailure()
         )
-
         integration_settings = TacsIntegrationSettings(
             dt=0.01, num_steps=test_scenario.steps
         )
+        test_scenario.include(integration_settings).register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(
@@ -245,7 +243,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            integration_settings=integration_settings,
             output_dir=tacs_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
