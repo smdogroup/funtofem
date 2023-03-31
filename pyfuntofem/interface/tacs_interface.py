@@ -42,7 +42,6 @@ class TacsInterface:
         comm,
         nprocs,
         bdf_file,
-        integration_settings=None,
         output_dir=None,
         callback=None,
         struct_options={},
@@ -61,8 +60,6 @@ class TacsInterface:
             The BDF file name
         output_dir: filepath
             directory of output for .f5 files generated from TACS
-        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
-            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
 
         Optional Parameters usually not specified
         -----------------------------------------
@@ -100,7 +97,6 @@ class TacsInterface:
                 comm=comm,
                 nprocs=nprocs,
                 bdf_file=bdf_file,
-                integration_settings=integration_settings,
                 output_dir=output_dir,
                 callback=callback,
                 struct_options=struct_options,

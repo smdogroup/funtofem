@@ -1377,6 +1377,8 @@ class Body(Base):
                 self.transfer.applydDdxS0(psi_D, temp_xs)
                 struct_shape_term[:, k] += temp_xs
 
+        # TODO : what about thermal transfer coordinate derivatives?
+
         return
 
     def aitken_relax(self, comm, scenario, tol=1e-13):
@@ -1747,6 +1749,11 @@ class Body(Base):
 
         This code collects the sensitivities from each processor and collects the
         result to the root node.
+
+        NOTE : we do not need to compute composite function coordinate derivatives
+        If we are able to compute shape derivatives of analysis functions, then
+        the composite function shape derivatives can be automatically computed without
+        writing extra coordinate derivatives to ESP/CAPS
         """
 
         if discipline == "aerodynamic" or discipline == "flow" or discipline == "aero":

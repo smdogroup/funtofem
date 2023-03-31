@@ -27,15 +27,18 @@ class CompositeFunction:
         # Store the value of the function here
         self._eval_forward = False
         self._eval_deriv = False
+        self._done_complex_step = False
         self.value = None
 
         # Store the values of the derivatives w.r.t. this function
         self.derivatives = {}
+        self.df_dgi = None
 
     def reset(self):
         """reset the function for a new analysis"""
         self._eval_forward = False
         self._eval_deriv = False
+        self._done_complex_step = False
         return
 
     def optimize(self):
@@ -72,6 +75,7 @@ class CompositeFunction:
             save_value = True
             if self._eval_forward:  # exit early if already evaluated
                 return
+        print(f"saving value? = {save_value}")
         value = self.eval_hdl(funcs)
         if save_value:
             self.value = value
@@ -124,6 +128,8 @@ class CompositeFunction:
         """compute function dictionary df/dg_i for derivatives w.r.t. analysis functions"""
         # use complex step on the forward evaluation handle to get df/dg_i with
         # f this composite function and g_i the other functions f(g_i)
+        if self._done_complex_step:
+            return
         h = 1e-30
         self.df_dgi = {key: None for key in self.funcs}
         for key in self.funcs:
@@ -131,6 +137,7 @@ class CompositeFunction:
             pert_funcs[key] += h * 1j
             # df / dg_i where f is this function and g_i are dependent functions
             self.df_dgi[key] = self.evaluate(pert_funcs).imag / h
+        self._done_complex_step = True
         return
 
     def register_to(self, funtofem_model):
