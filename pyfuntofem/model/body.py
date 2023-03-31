@@ -1377,6 +1377,8 @@ class Body(Base):
                 self.transfer.applydDdxS0(psi_D, temp_xs)
                 struct_shape_term[:, k] += temp_xs
 
+        # TODO : what about thermal transfer coordinate derivatives?
+
         return
 
     def aitken_relax(self, comm, scenario, tol=1e-13):

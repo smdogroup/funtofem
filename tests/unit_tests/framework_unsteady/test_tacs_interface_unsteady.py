@@ -26,7 +26,6 @@ if not os.path.exists(tacs_folder):
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
-# complex_mode = False
 
 
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
@@ -44,7 +43,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             Function.ksfailure()
         )
         integration_settings = TacsIntegrationSettings(
-            dt=0.01, num_steps=test_scenario.steps
+            dt=0.001, num_steps=test_scenario.steps
         )
         test_scenario.include(integration_settings)
         test_scenario.register_to(model)
