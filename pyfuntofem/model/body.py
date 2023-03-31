@@ -1754,6 +1754,7 @@ class Body(Base):
 
         # for each composite function
         for icomp, composite_function in enumerate(composite_functions):
+            print(f"xpt evaluate composite function = {composite_function.full_name}")
             composite_function.complex_step_dict()  # compute dg/dfi for each related function
             # loop over related analysis functions
             for scenario in scenarios:
@@ -1778,9 +1779,7 @@ class Body(Base):
         # done with composite derivatives
         return
 
-    def collect_coordinate_derivatives(
-        self, comm, discipline, scenarios, composite_functions, root=0
-    ):
+    def collect_coordinate_derivatives(self, comm, discipline, scenarios, root=0):
         """
         Write the sensitivity files for the aerodynamic and structural meshes on
         the root processor.

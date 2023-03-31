@@ -75,6 +75,7 @@ class CompositeFunction:
             save_value = True
             if self._eval_forward:  # exit early if already evaluated
                 return
+        print(f"saving value? = {save_value}")
         value = self.eval_hdl(funcs)
         if save_value:
             self.value = value
@@ -136,6 +137,7 @@ class CompositeFunction:
             pert_funcs[key] += h * 1j
             # df / dg_i where f is this function and g_i are dependent functions
             self.df_dgi[key] = self.evaluate(pert_funcs).imag / h
+        self._done_complex_step = True
         return
 
     def register_to(self, funtofem_model):

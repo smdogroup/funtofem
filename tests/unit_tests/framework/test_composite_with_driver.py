@@ -160,7 +160,8 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         # adjoint evaluation of analysis function derivatives
         driver.solve_forward()
         driver.solve_adjoint()
-        model.evaluate_composite_functions()
+        model.evaluate_composite_functions(compute_xpt=True)
+
         adjoint_TD = composite1.get_gradient_component(svar) * dcomposite_ds[0]
         adjoint_TD += composite2.get_gradient_component(svar) * dcomposite_ds[1]
         adjoint_TD += min_drag.get_gradient_component(svar) * dcomposite_ds[2]
@@ -169,7 +170,7 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         h = 1e-30
         svar.value += 1j * h
         driver.solve_forward()
-        model.evaluate_composite_functions()
+        model.evaluate_composite_functions(compute_xpt=True)
         complex_step_TD = composite1.value.imag / h * dcomposite_ds[0]
         complex_step_TD += composite2.value.imag / h * dcomposite_ds[1]
         complex_step_TD += min_drag.value.imag / h * dcomposite_ds[2]

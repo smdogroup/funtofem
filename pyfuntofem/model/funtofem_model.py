@@ -398,12 +398,12 @@ class FUNtoFEMmodel(object):
             if compute_grad:
                 composite_func.evaluate_gradient()
 
-            if compute_xpt:  # compute coordinate derivatives of composite functions
-                for body in self.bodies:
-                    # compute the composite coordinate derivatives
-                    body.get_composite_coordinate_derivatives(
-                        self.scenarios, self.composite_functions
-                    )
+        if compute_xpt:  # compute coordinate derivatives of composite functions
+            for body in self.bodies:
+                # compute the composite coordinate derivatives
+                body.get_composite_coordinate_derivatives(
+                    self.scenarios, self.composite_functions
+                )
         return
 
     def write_aero_loads(self, comm, filename, root=0):
