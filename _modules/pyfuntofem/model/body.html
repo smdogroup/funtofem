@@ -1416,6 +1416,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="o">.</span><span class="n">applydDdxS0</span><span class="p">(</span><span class="n">psi_D</span><span class="p">,</span> <span class="n">temp_xs</span><span class="p">)</span>
                 <span class="n">struct_shape_term</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">temp_xs</span>
 
+        <span class="c1"># TODO : what about thermal transfer coordinate derivatives?</span>
+
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Body.aitken_relax"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.body.Body.aitken_relax">[docs]</a>    <span class="k">def</span> <span class="nf">aitken_relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-13</span><span class="p">):</span>
@@ -1786,6 +1788,11 @@
 
 <span class="sd">        This code collects the sensitivities from each processor and collects the</span>
 <span class="sd">        result to the root node.</span>
+
+<span class="sd">        NOTE : we do not need to compute composite function coordinate derivatives</span>
+<span class="sd">        If we are able to compute shape derivatives of analysis functions, then</span>
+<span class="sd">        the composite function shape derivatives can be automatically computed without</span>
+<span class="sd">        writing extra coordinate derivatives to ESP/CAPS</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aerodynamic&quot;</span> <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;flow&quot;</span> <span class="ow">or</span> <span class="n">discipline</span> <span class="o">==</span> <span class="s2">&quot;aero&quot;</span><span class="p">:</span>

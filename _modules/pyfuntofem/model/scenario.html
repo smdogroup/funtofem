@@ -65,6 +65,12 @@
 <span class="kn">from</span> <span class="nn">.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
 <span class="kn">from</span> <span class="nn">.function</span> <span class="kn">import</span> <span class="n">Function</span>
 
+<span class="kn">import</span> <span class="nn">importlib</span>
+
+<span class="n">tacs_loader</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;tacs&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">tacs_loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyfuntofem.interface</span> <span class="kn">import</span> <span class="n">TacsIntegrationSettings</span>
+
 
 <div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A class to hold scenario information for a design point in optimization&quot;&quot;&quot;</span>
@@ -80,6 +86,7 @@
         <span class="n">preconditioner_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="n">T_ref</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
         <span class="n">T_inf</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+        <span class="n">tacs_integration_settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">suther1</span><span class="o">=</span><span class="mf">1.458205e-6</span><span class="p">,</span>
         <span class="n">suther2</span><span class="o">=</span><span class="mf">110.3333</span><span class="p">,</span>
         <span class="n">gamma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
@@ -108,6 +115,8 @@
 <span class="sd">            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.</span>
 <span class="sd">        T_inf: double</span>
 <span class="sd">            Fluid freestream reference temperature in Kelvin.</span>
+<span class="sd">        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`</span>
+<span class="sd">            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)</span>
 
 <span class="sd">        Optional Parameters/Constants</span>
 <span class="sd">        -----------------------------</span>
@@ -138,6 +147,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">steady</span> <span class="o">=</span> <span class="n">steady</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">preconditioner_steps</span> <span class="o">=</span> <span class="n">preconditioner_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tacs_integration_settings</span> <span class="o">=</span> <span class="n">tacs_integration_settings</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span> <span class="o">=</span> <span class="n">T_ref</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T_inf</span> <span class="o">=</span> <span class="n">T_inf</span>
@@ -176,11 +186,18 @@
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">unsteady</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preconditioner_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">unsteady</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">preconditioner_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">tacs_integration_settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
             <span class="n">steady</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span>
+            <span class="n">tacs_integration_settings</span><span class="o">=</span><span class="n">tacs_integration_settings</span><span class="p">,</span>
             <span class="n">preconditioner_steps</span><span class="o">=</span><span class="n">preconditioner_steps</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -263,6 +280,8 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Variable</span><span class="p">):</span>
             <span class="k">assert</span> <span class="n">obj</span><span class="o">.</span><span class="n">analysis_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="n">vartype</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">analysis_type</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TacsIntegrationSettings</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tacs_integration_settings</span> <span class="o">=</span> <span class="n">obj</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;Scenario include method does not currently support other methods&quot;</span>
