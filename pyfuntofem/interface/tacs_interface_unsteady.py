@@ -112,9 +112,11 @@ class TacsUnsteadyInterface(SolverInterface):
         struct_id: int = None,
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
+        can_skip_coordinates=True,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
+        self.can_skip_coordinates = can_skip_coordinates
 
         # get active design variables
         self.struct_variables = []
@@ -182,41 +184,41 @@ class TacsUnsteadyInterface(SolverInterface):
         self.auxElems = {}
         for scenario in model.scenarios:
             # Create the time integrator and allocate the load data structures
-            if self.integration_settings.is_bdf:
+            if scenario.tacs_integration_settings.is_bdf:
                 self.integrator[scenario.id] = TACS.BDFIntegrator(
                     self.assembler,
-                    self.integration_settings.start_time,
-                    self.integration_settings.end_time,
+                    scenario.tacs_integration_settings.start_time,
+                    scenario.tacs_integration_settings.end_time,
                     float(
-                        self.integration_settings.num_steps
+                        scenario.tacs_integration_settings.num_steps
                     ),  # should this be -1 here?
-                    self.integration_settings.integration_order,
+                    scenario.tacs_integration_settings.integration_order,
                 )
 
                 self.integrator[scenario.id].setAbsTol(
-                    self.integration_settings.L2_convergence
+                    scenario.tacs_integration_settings.L2_convergence
                 )
                 self.integrator[scenario.id].setRelTol(
-                    self.integration_settings.L2_convergence_rel
+                    scenario.tacs_integration_settings.L2_convergence_rel
                 )
 
                 self.integrator[scenario.id].setPrintLevel(
-                    self.integration_settings.print_level
+                    scenario.tacs_integration_settings.print_level
                 )
 
                 # Create a force vector for each time step
                 self.F[scenario.id] = [
                     self.assembler.createVec()
-                    for i in range(self.integration_settings.num_steps + 1)
+                    for i in range(scenario.tacs_integration_settings.num_steps + 1)
                 ]
                 # Auxillary element object for applying tractions/pressure
                 self.auxElems[scenario.id] = [
                     TACS.AuxElements()
-                    for i in range(self.integration_settings.num_steps + 1)
+                    for i in range(scenario.tacs_integration_settings.num_steps + 1)
                 ]
 
-            elif self.integration_settings.is_dirk:
-                self.numStages = self.integration_settings.num_stages
+            elif scenario.tacs_integration_settings.is_dirk:
+                self.numStages = scenario.tacs_integration_settings.num_stages
                 self.integrator[scenario.id] = TACS.DIRKIntegrator(
                     self.assembler,
                     self.tInit,
@@ -765,7 +767,7 @@ class TacsUnsteadyInterface(SolverInterface):
                 shape_variables = (
                     body.variables["shape"] if "shape" in body.variables else []
                 )
-                if len(shape_variables) > 0:
+                if len(shape_variables) > 0 or not (self.can_skip_coordinates):
                     # TACS should accumulate the derivs internally, only evaluate at first timestep
                     if step == 0:
                         for nfunc, func in enumerate(scenario.functions):
@@ -776,6 +778,9 @@ class TacsUnsteadyInterface(SolverInterface):
                             elif func.name == "mass":
                                 tacsfunc = functions.StructuralMass(self.assembler)
                                 self.assembler.evalXptSens(tacsfunc, fXptSens_vec)
+
+                            fXptSens_vec.beginSetValues()
+                            fXptSens_vec.endSetValues()
 
                             fxptSens = fXptSens_vec.getArray()
                             struct_shape_term = body.get_struct_coordinate_derivatives(
@@ -802,7 +807,6 @@ class TacsUnsteadyInterface(SolverInterface):
         comm,
         nprocs,
         bdf_file,
-        integration_settings: TacsIntegrationSettings,
         output_dir=None,
         callback=None,
         struct_options={},
@@ -819,7 +823,6 @@ class TacsUnsteadyInterface(SolverInterface):
             MPI communicator (typically MPI_COMM_WORLD)
         bdf_file: str
             The BDF file name
-        integration_settings: :class:`TacsIntegrationSettings`
         prefix: path
             Path to write f5 output
         callback: function
@@ -939,7 +942,6 @@ class TacsUnsteadyInterface(SolverInterface):
             assembler,
             gen_output,
             thermal_index=thermal_index,
-            integration_settings=integration_settings,
             struct_id=struct_id,
             tacs_comm=tacs_comm,
         )

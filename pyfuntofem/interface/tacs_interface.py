@@ -24,7 +24,7 @@ __all__ = ["TacsInterface", "TacsSteadyInterface"]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions
-from .utils import f2f_callback
+from .utils import f2f_callback, addLoadsFromBDF
 from ._solver_interface import SolverInterface
 import os, numpy as np
 from .tacs_interface_unsteady import TacsUnsteadyInterface
@@ -42,7 +42,6 @@ class TacsInterface:
         comm,
         nprocs,
         bdf_file,
-        integration_settings=None,
         output_dir=None,
         callback=None,
         struct_options={},
@@ -61,8 +60,6 @@ class TacsInterface:
             The BDF file name
         output_dir: filepath
             directory of output for .f5 files generated from TACS
-        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
-            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
 
         Optional Parameters usually not specified
         -----------------------------------------
@@ -100,7 +97,6 @@ class TacsInterface:
                 comm=comm,
                 nprocs=nprocs,
                 bdf_file=bdf_file,
-                integration_settings=integration_settings,
                 output_dir=output_dir,
                 callback=callback,
                 struct_options=struct_options,
@@ -127,6 +123,7 @@ class TacsSteadyInterface(SolverInterface):
         struct_id=None,
         tacs_comm=None,
         override_rotx=False,
+        Fvec=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -158,6 +155,8 @@ class TacsSteadyInterface(SolverInterface):
             List of the unique global ids of all the structural nodes
         tacs_comm: MPI.comm
             MPI communicator with only n_tacs_procs active
+        Fvec: python pointer to TACS load vector
+            constant load vector such as for engine weight, if None then it is not used
         """
 
         self.comm = comm
@@ -165,6 +164,12 @@ class TacsSteadyInterface(SolverInterface):
 
         # Flag to output heat flux instead of rotx
         self.override_rotx = override_rotx
+
+        # const load in TACS, separate and added onto from coupled loading
+        self.has_const_load = Fvec is not None
+        self.const_force = None
+        if self.has_const_load and assembler is not None:
+            self.const_force = Fvec.getArray()
 
         # Get the list of active design variables from the FUNtoFEM model. This
         # returns the variables in the FUNtoFEM order. By scenario/body.
@@ -589,6 +594,10 @@ class TacsSteadyInterface(SolverInterface):
                         :
                     ].astype(TACS.dtype)
 
+            # add in optional constant load
+            if self.has_const_load:
+                ext_force_array[:] += self.const_force[:]
+
             # Zero the contributions at the DOF associated with boundary
             # conditions so that it doesn't interfere with Dirichlet BCs
             self.assembler.applyBCs(self.ext_force)
@@ -969,6 +978,7 @@ class TacsSteadyInterface(SolverInterface):
 
         assembler = None
         f5 = None
+        Fvec = None
         if world_rank < nprocs:
             # Create the assembler class
             fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
@@ -1006,6 +1016,10 @@ class TacsSteadyInterface(SolverInterface):
 
             # Set up constitutive objects and elements in pyTACS
             fea_assembler.initialize(callback)
+
+            # get any constant loads for static case
+            Fvec = addLoadsFromBDF(fea_assembler)
+            # Fvec = None
 
             # Retrieve the assembler from pyTACS fea_assembler object
             assembler = fea_assembler.assembler
@@ -1079,6 +1093,7 @@ class TacsSteadyInterface(SolverInterface):
             struct_id=struct_id,
             tacs_comm=tacs_comm,
             override_rotx=override_rotx,
+            Fvec=Fvec,
         )
 
 

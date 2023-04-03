@@ -37,9 +37,8 @@ class OptimizationManager:
         Constructs the optimization manager class using a funtofem model and driver
         Parameters
         --------------
-        comm : MPI communicator
-        model : FUNtoFEM model
         driver : any driver coupled or oneway coupled, must have solve_forward and solve_adjoint methods
+
         """
         # main attributes of the manager
         self.comm = driver.comm
@@ -127,14 +126,19 @@ class OptimizationManager:
         self.driver.solve_forward()
         self.driver.solve_adjoint()
 
+        # evaluate any composite functions once the main analysis functions are computed
+        self.model.evaluate
+
         # store the functions and sensitivities from the complete analysis
         self._funcs = {}
         self._sens = {}
-        for func in self.model.get_functions():
+        # get only functions with optim=True, set with func.optimize() method (can method cascade it)
+        for func in self.model.get_functions(optim=True):
             self._funcs[func.name] = func.value.real
             self._sens[func.name] = {}
             for var in self.model.get_variables():
                 self._sens[func.name][var.name] = func.get_gradient_component(var).real
+
         return
 
     def add_sparse_variables(self, opt_problem):
