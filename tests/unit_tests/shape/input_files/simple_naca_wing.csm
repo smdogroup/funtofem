@@ -46,36 +46,70 @@ set margin3 10.0
 
 ### 1. Wing Solid Body ###
 
-# root airfoil
-mark
-udprim naca thickness tc0 camber camb0 maxloc 0.3
-scale chord0
-rotatex 90 0 0
+# attribute the solid wing in two pieces, upper and lower
+patbeg foo 2
+   
+   mark
+   # make upper or lower part of root airfoil
+   udprim naca thickness tc0 camber camb0 maxloc 0.3
+   scale chord0
+   rotatex 90 0 0
+   
+   udprim naca thickness 0.0 camber camb0 maxloc 0.3
+   scale chord0
+   rotatex 90 0 0
+   
+   extrude 0 -1 0
+   union
+   ifthen foo EQ 1
+      select face 2
+   else
+      select face 3
+   endif
+   extract @sellist
+   
+   # make upper or lower part of tip airfoil
+   udprim naca thickness tcf camber cambf maxloc 0.3
+   scale chordf
+   rotatex 90 0 0
+   translate xf -sspan zf
+   
+   udprim naca thickness 0.0 camber cambf maxloc 0.3
+   scale chordf
+   rotatex 90 0 0
+   translate xf -sspan zf
+ 
+   extrude 0 -1 0
+   union
+   ifthen foo EQ 1
+      select face 2
+   else
+      select face 3
+   endif
+   extract @sellist
+   
+   loft 0
+   
+   select face
+   attribute capsGroup $OML
+   attribute _color $blue
 
-# tip airfoil
-udprim naca thickness tcf camber cambf maxloc 0.3
-scale chordf
-rotatex 90 0 0
-translate xf -sspan zf
+   # make root and tip caps the ribs
+   select face 5
+   attribute capsGroup $rib1
+   attribute _color $green
 
-# loft the solid wing and store it
-loft 0
-
-# attribute the solid wing
-select face
-attribute capsGroup $OML
-attribute _color $blue
-
-# make root and tip caps the ribs
-select face 5
-attribute capsGroup $rib1
-attribute _color $green
-
-select face 4
-attribute capsGroup !$rib+nribs
-attribute _color $green
-
-store solidWing
+   select face 4
+   attribute capsGroup !$rib+nribs
+   attribute capsLoad $endRib
+   attribute _color $green
+   
+   ifthen foo EQ 1
+      store upperWing
+   else
+      store lowerWing
+   endif
+patend
 
 ### 2. Internal Structure ###
 
@@ -133,18 +167,32 @@ patbeg index ninnerRibs
 
 patend
 
+store internalStructure
+
 ### 3. Complete the wing geometry ###
 
-# intersect the internal structure with the solid wing
-restore solidWing
+restore lowerWing
+restore upperWing
+union
+hollow 0
+store OML
+
+# intersect with upper and lower box in order to create center lanes for thermal analysis
+restore internalStructure
+restore lowerWing
 intersect
+select face
+attribute thermalFace $lower
 
-# extract outer shell of solid wing to make OML
-restore solidWing
-# hollow 0 or extract 0, but in this case hollow 0 changes the normal for colors better
-hollow 0 
+restore internalStructure
+restore upperWing
+intersect
+select face
+attribute thermalFace $upper
 
-# union OML and internal structure together
+union # union half internal structures together
+
+restore OML
 union
 
 ### 4. Final Caps Attributes ###
@@ -161,6 +209,10 @@ udprim editAttr filename <<
 
  NODE ADJ2FACE capsConstraint=root
  SET capsConstraint=root
+
+ EDGE ADJ2FACE thermalFace=upper
+ AND ADJ2FACE thermalFace=lower
+ SET capsConstraint=midplane
 >>
 
 # add load attribute to OML
@@ -172,4 +224,4 @@ select body
 attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||
+|||||||||||||||||||||||||||||||||||||||||||||||

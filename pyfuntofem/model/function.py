@@ -21,6 +21,9 @@
 
 __all__ = ["Function"]
 
+import numpy as np
+from .composite_function import CompositeFunction
+
 
 class Function(object):
     """holds component function information in FUNtoFEM"""
@@ -37,6 +40,7 @@ class Function(object):
         adjoint=True,
         options=None,
         averaging=None,
+        optim=False,
     ):
         """
 
@@ -62,6 +66,9 @@ class Function(object):
             any options associated with the function and pass to the solvers
         averaging: bool
             whether the function is averaged or integrated or the function window. Ignored for steady functions
+        optim: bool
+            whether to include this function in the optimization objective/constraints
+            (can be active but not an objective/constraint if it is used to compute composite functions)
 
         Examples
         --------
@@ -76,6 +83,7 @@ class Function(object):
         self.start = start
         self.stop = stop
         self.averaging = averaging
+        self.optim = optim
 
         self.analysis_type = analysis_type
         self.scenario = None
@@ -93,7 +101,13 @@ class Function(object):
         # Store the values of the derivatives w.r.t. this function
         self.derivatives = {}
 
+        self._scenario_name = None
+
         return
+
+    @property
+    def full_name(self) -> str:
+        return f"{self._scenario_name}.{self.name}"
 
     def zero_derivatives(self):
         """
@@ -104,6 +118,13 @@ class Function(object):
             self.derivatives[var] = 0.0
 
         return
+
+    def optimize(self):
+        """
+        Set optim=True indicating this function will be an objective or constraint.
+        """
+        self.optim = True
+        return self  # return function for method cascading
 
     def set_gradient_component(self, var, value):
         """
@@ -156,6 +177,13 @@ class Function(object):
             return self.derivatives[var]
 
         return 0.0
+
+    def register_to(self, scenario):
+        """
+        Register the function to the scenario.
+        """
+        scenario.include(self)
+        return self
 
     @classmethod
     def ksfailure(
@@ -243,4 +271,310 @@ class Function(object):
             start=start,
             stop=stop,
             body=body,
+        )
+
+    @classmethod
+    def composite_name(cls, func1, func2):
+        if isinstance(func1, Function) or isinstance(func1, CompositeFunction):
+            left = func1.full_name
+        elif (
+            isinstance(func1, int)
+            or isinstance(func1, float)
+            or isinstance(func1, complex)
+        ):
+            left = "float"
+        else:
+            raise AssertionError(f"Func1 has unsupported type {type(func1)}")
+        if isinstance(func2, Function) or isinstance(func2, CompositeFunction):
+            right = func2.full_name
+        elif (
+            isinstance(func2, int)
+            or isinstance(func2, float)
+            or isinstance(func2, complex)
+        ):
+            right = "float"
+        else:
+            raise AssertionError(f"Func2 has unsupported type {type(func2)}")
+        return f"{left}-{right}"
+
+    def __add__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Addition Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}+{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __radd__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] + func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError(
+                "Reflected Addition Overload failed for unsupported type."
+            )
+        return CompositeFunction(
+            name=f"{self.name}+{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __sub__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Subtraction Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}-{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __rsub__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] - func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError(
+                "Reflected Subtraction Overload failed for unsupported type."
+            )
+        return CompositeFunction(
+            name=f"{self.name}-{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __mul__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Multiple Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}*{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __rmul__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] * func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError(
+                "Reflected Multiple Overload failed for unsupported type."
+            )
+        return CompositeFunction(
+            name=f"{self.name}*{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __truediv__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Division Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}/{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __rtruediv__(self, func):
+        if isinstance(func, Function):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / funcs_dict[func.full_name]
+
+            func_name = func.name
+            functions = [self, func]
+        elif isinstance(func, CompositeFunction):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / func.eval_hdl(funcs_dict)
+
+            func_name = func.name
+            functions = [self] + func.functions
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] / func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Division Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}/{func_name}", eval_hdl=eval_hdl, functions=functions
+        )
+
+    def __pow__(self, func):
+        if isinstance(func, Function) or isinstance(func, CompositeFunction):
+            raise AssertionError("Don't raise a function to a function power.")
+        elif (
+            isinstance(func, int)
+            or isinstance(func, float)
+            or isinstance(func, complex)
+        ):
+
+            def eval_hdl(funcs_dict):
+                return funcs_dict[self.full_name] ** func
+
+            func_name = "float"
+            functions = [self]
+        else:
+            raise AssertionError("Division Overload failed for unsupported type.")
+        return CompositeFunction(
+            name=f"{self.name}**{func_name}", eval_hdl=eval_hdl, functions=functions
         )

@@ -62,6 +62,7 @@ class FUNtoFEMmodel(object):
 
         self.scenarios = []
         self.bodies = []
+        self.composite_functions = []
 
         self._tacs_model = None
 
@@ -146,6 +147,14 @@ class FUNtoFEMmodel(object):
         # end of tacs model auto registration of vars section
 
         self.bodies.append(body)
+
+    def add_composite_function(self, composite_function):
+        """
+        Add a composite function to the existing list of composite functions in the model.
+        """
+
+        self.composite_functions.append(composite_function)
+        return
 
     def add_scenario(self, scenario):
         """
@@ -318,9 +327,16 @@ class FUNtoFEMmodel(object):
 
         return len(self.get_functions())
 
-    def get_functions(self):
+    def get_functions(self, optim=False, all=False):
         """
         Get all the functions in the model
+
+        Parameters
+        ----------
+        optim: bool
+            get functions for optimization when True otherwise just analysis functions within drivers
+        all: bool
+            get all functions analysis or composite for unittests
 
         Returns
         -------
@@ -328,15 +344,33 @@ class FUNtoFEMmodel(object):
             list of all the functions in the model ordered by the scenarios
         """
 
+        # add in analysis functions
         functions = []
         for scenario in self.scenarios:
-            functions.extend(scenario.functions)
+            if optim:
+                functions.extend([func for func in scenario.functions if func.optim])
+            else:
+                functions.extend(scenario.functions)
+
+        if optim or all:
+            # for optimization also include composite functions
+            functions += self.composite_functions
+
+            # filter out only functions with optim True flag, can be set with func.optimize()
+            functions = [func for func in functions if func.optim or all]
 
         return functions
 
-    def get_function_gradients(self):
+    def get_function_gradients(self, optim=False, all=False):
         """
         Get the function gradients for all the functions in the model
+
+        Parameters
+        ----------
+        optim: bool
+            get functions for optimization when True otherwise just analysis functions within drivers
+        all: bool
+            get all functions analysis or composite for unittests
 
         Returns
         -------
@@ -346,7 +380,7 @@ class FUNtoFEMmodel(object):
             2st index = variable number in the same order as get_variables
         """
 
-        functions = self.get_functions()
+        functions = self.get_functions(optim=optim, all=all)
         variables = self.get_variables()
 
         gradients = []
@@ -357,6 +391,21 @@ class FUNtoFEMmodel(object):
             gradients.append(grad)
 
         return gradients
+
+    def evaluate_composite_functions(self, compute_grad=True):
+        """
+        compute the values and gradients of composite functions
+        """
+        # reset each composite function first
+        for composite_func in self.composite_functions:
+            composite_func.reset()
+
+        # compute values and gradients of the composite functions
+        for composite_func in self.composite_functions:
+            composite_func.evaluate()
+            if compute_grad:
+                composite_func.evaluate_gradient()
+        return
 
     def write_aero_loads(self, comm, filename, root=0):
         """
@@ -617,6 +666,8 @@ class FUNtoFEMmodel(object):
         """
 
         funcs = self.get_functions()
+        # also add composite functions at the end
+        funcs += self.composite_functions
 
         count = 0
         ids = []
@@ -645,7 +696,7 @@ class FUNtoFEMmodel(object):
 
             for n, func in enumerate(funcs):
                 # Print the function name
-                data += "{}\n".format(func.name)
+                data += "{}\n".format(func.full_name)
 
                 # Print the function value
                 data += "{}\n".format(func.value.real)
