@@ -2,7 +2,6 @@ import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
-from tacs import TACS, elements, constitutive
 from pyfuntofem.model import (
     FUNtoFEMmodel,
     Variable,
@@ -52,11 +51,13 @@ class TestFun3dOnewayDriver(unittest.TestCase):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("miniMesh")
         plate = Body.aeroelastic("plate", boundary=6).relaxation(AitkenRelaxation())
-        Variable.aerodynamic("aoa").set_bounds(value=1.0).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
+        for var in test_scenario.variables["aerodynamic"]:
+            if var.name == "AOA":
+                var.active = True
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
@@ -69,7 +70,9 @@ class TestFun3dOnewayDriver(unittest.TestCase):
         )
 
         # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-        driver = Fun3dOnewayDriver.nominal()
+        driver = Fun3dOnewayDriver.nominal(solvers, model)
+
+        # try perturbing the aerodynamic variable
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(

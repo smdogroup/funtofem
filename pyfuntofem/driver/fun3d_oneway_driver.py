@@ -166,7 +166,8 @@ class Fun3dOnewayDriver:
 
         # run the forward analysis via iterate
         self.fun3d_interface.initialize(scenario, bodies)
-        self.fun3d_interface.iterate(scenario, bodies, step=0)
+        for step in range(1, scenario.steps + 1):
+            self.fun3d_interface.iterate(scenario, bodies, step=0)
         self.fun3d_interface.post(scenario, bodies)
 
         # get functions to store the function values into the model
@@ -223,7 +224,8 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
-        self.fun3d_interface.iterate_adjoint(scenario, bodies, step=0)
+        for step in range(1, scenario.steps + 1):
+            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
         # transfer loads adjoint since fa -> fs has shape dependency
