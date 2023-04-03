@@ -21,7 +21,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
+    from pyfuntofem.interface import Fun3dInterface, Fun3dAim, NamelistBlock
     from pyfuntofem.driver import Fun3dOnewayDriver
 
 np.random.seed(1234567)
@@ -71,8 +71,6 @@ class TestFun3dOnewayDriver(unittest.TestCase):
 
         # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
         driver = Fun3dOnewayDriver.nominal(solvers, model)
-
-        # try perturbing the aerodynamic variable
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
