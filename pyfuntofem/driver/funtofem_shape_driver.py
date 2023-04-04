@@ -75,15 +75,26 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.fun3d_model = self.model.flow
         self.tacs_model = self.model.structural
 
+        # make sure the fun3d model is setup if needed
+        if self.change_shape and self.aero_shape:
+            assert self.fun3d_model.is_setup
+
+        return
+
+    @property
+    def change_shape(self) -> bool:
+        """only do shape optimization if shape variables exist"""
+        return len(self.shape_variables) > 0
+
     @property
     def aero_shape(self) -> bool:
         """whether aerodynamic shape is changing"""
-        return self.fun3d_aim is not None
+        return self.fun3d_aim is not None and self.change_shape
 
     @property
     def struct_shape(self) -> bool:
         """whether structural shape is changing"""
-        return self.tacs_aim is not None
+        return self.tacs_aim is not None and self.change_shape
 
     def solve_forward(self):
         """create new aero/struct geometries and run fully-coupled forward analysis"""
