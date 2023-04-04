@@ -44,7 +44,6 @@ class TacsOnewayDriver:
         self,
         solvers,
         model,
-        tacs_aim=None,
         nprocs=None,
         external_shape=False,
     ):
@@ -56,9 +55,7 @@ class TacsOnewayDriver:
         solvers: :class:`~interface.solver_manager.SolverManager`
             The various disciplinary solvers.
         model: :class:`~funtofem_model.FUNtoFEMmodel`
-            The model containing the design data.
-        tacs_aim: `caps2tacs.TacsAim`
-            Interface object for TACS and ESP/CAPS, wraps the tacsAIM.
+            The model containing the design data and the TacsModel with TacsAim wrapper inside (if using shape otherwise can be None).
         nprocs: int
             Number of processes that TACS is running on.
         external_shape: bool
@@ -69,6 +66,10 @@ class TacsOnewayDriver:
         self.model = model
         self.nprocs = nprocs
         self.tacs_interface = solvers.structural
+        if model.structural is None:
+            tacs_aim = None
+        else:
+            tacs_aim = model.structural.tacs_aim
         self.tacs_aim = tacs_aim
         self.external_shape = external_shape
 
@@ -121,17 +122,19 @@ class TacsOnewayDriver:
         return self._unsteady
 
     @classmethod
-    def prime_loads(cls, funtofem_driver):
+    def prime_loads(cls, driver, optimize_shape=False):
         """
-        Used to prime struct loads for optimization over tacs analysis with no shape variables
+        Used to prime struct/aero loads for optimization over tacs analysis
+        Can use the Fun3dOnewayDriver or FUNtoFEMnlbgs driver to prime the loads
+        If structural solver exists, it will transfer to fixed structural loads
 
         Parameters
         ----------
-        funtofem_driver: :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
-            the coupled funtofem NLBGS driver
+        driver: :class:`Fun3dOnewayDriver` or :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
+            the fun3d oneway driver or coupled funtofem NLBGS driver
         """
-        funtofem_driver.solve_forward()
-        return cls(funtofem_driver.solvers, funtofem_driver.model)
+        driver.solve_forward()
+        return cls(driver.solvers, driver.model)
 
     @classmethod
     def prime_loads_shape(
