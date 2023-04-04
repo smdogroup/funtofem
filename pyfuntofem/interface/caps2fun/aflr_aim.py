@@ -55,10 +55,17 @@ class AflrAim:
             )
         return
 
-    def set_mesh(self, ff_growth=1.4, min_scale=0.05, max_scale=0.5):
+    def set_surface_mesh(self, ff_growth=1.4, min_scale=0.05, max_scale=0.5):
         # set surface mesh properties
         if self.root_proc:
             self.surface_aim.input.ff_cdfr = ff_growth
             self.surface_aim.input.min_scale = min_scale
             self.surface_aim.input.max_scale = max_scale
+        return self
+
+    def set_boundary_layer(self, initial_spacing=0.001, thickness=0.1, max_layers=1000):
+        if self.root_proc:
+            self.volume_aim.input.BL_Initial_Spacing = initial_spacing
+            self.volume_aim.input.BL_Thickness = thickness
+            self.volume_aim.input.BL_Max_Layers = max_layers
         return self

@@ -11,7 +11,6 @@ from pyfuntofem.model import (
     AitkenRelaxation,
 )
 from pyfuntofem.interface import (
-    TacsSteadyInterface,
     SolverManager,
     TestResult,
 )

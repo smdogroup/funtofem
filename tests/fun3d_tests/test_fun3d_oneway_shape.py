@@ -66,7 +66,8 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
         fun3d_model = Fun3dModel.build(csm_file=csm_path, comm=comm, project_name="yes")
         aflr_aim = fun3d_model.aflr_aim
 
-        aflr_aim.set_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
+        aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
+        aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.1)
         Fun3dBC.viscous(caps_group="wall", wall_spacing=0.0001).register_to(fun3d_model)
         Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
@@ -84,7 +85,7 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
             "fun3d+tacs-laminar-aeroelastic",
             model,
             driver,
-            TestFun3dOnewayDriver.FILEPATH,
+            TestFun3dOnewayShapeDriver.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -92,5 +93,5 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestFun3dOnewayDriver.FILEPATH, "w").close()
+    open(TestFun3dOnewayShapeDriver.FILEPATH, "w").close()
     unittest.main()

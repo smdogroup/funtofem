@@ -43,6 +43,7 @@ class Fun3dOnewayDriver:
         solvers,
         model,
         transfer_settings=None,
+        nominal=True,
         external_shape=False,
     ):
         """
@@ -56,12 +57,15 @@ class Fun3dOnewayDriver:
             The model containing the design data.
         transfer_settings: :class:`~driver.TransferSettings`
             funtofem transfer settings from aero to structural meshes
+        nominal: bool
+            if True, then there will be no applied displacements/temperatures at the surface, pure fun3d
         external_shape: bool
             whether ESP/CAPS pre and postAnalysis are performed inside/outside this driver
         """
         self.solvers = solvers
         self.comm = solvers.comm
         self.model = model
+        self._nominal = nominal
         self.external_shape = external_shape
 
         # get the fun3d interface out of solvers
@@ -114,10 +118,13 @@ class Fun3dOnewayDriver:
             # TODO :
             for body in self.model.bodies:
                 body.update_transfer()
-                for scenario in self.model.scenarios:
-                    # perform disps transfer from fixed struct loads
-                    body.transfer_disps(scenario)
-                    body.transfer_temps(scenario)
+                # local_ns = body.struct_nnodes
+                # global_ns = self.comm.Reduce(local_ns,root=0)
+                # if body.struct_nnodes > 0:
+                #     for scenario in self.model.scenarios:
+                #        # perform disps transfer from fixed struct to aero disps
+                #        body.transfer_disps(scenario)
+                #        body.transfer_temps(scenario)
         # end of __init__ method
 
     @property
@@ -137,11 +144,11 @@ class Fun3dOnewayDriver:
         return self._unsteady
 
     @classmethod
-    def nominal(cls, solvers, model):
+    def nominal(cls, solvers, model, external_shape=False):
         """
         startup the fun3d oneway driver with no displacement just pure solvers with Fun3dInterface in it and model
         """
-        return cls(solvers, model)
+        return cls(solvers, model, nominal=True, external_shape=external_shape)
 
     @classmethod
     def prime_disps(cls, funtofem_driver):
@@ -154,7 +161,7 @@ class Fun3dOnewayDriver:
             the coupled funtofem NLBGS driver
         """
         funtofem_driver.solve_forward()
-        return cls(funtofem_driver.solvers, funtofem_driver.model)
+        return cls(funtofem_driver.solvers, funtofem_driver.model, nominal=False)
 
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
@@ -232,8 +239,13 @@ class Fun3dOnewayDriver:
 
         # run the forward analysis via iterate
         self.fun3d_interface.initialize(scenario, bodies)
-        for step in range(1, scenario.steps + 1):
-            self.fun3d_interface.iterate(scenario, bodies, step=0)
+        if self._nominal:
+            for step in range(1, scenario.steps + 1):
+                self.comm.Barrier()
+                bcont = self.fun3d_interface.fun3d_flow.iterate()
+        else:
+            for step in range(1, scenario.steps + 1):
+                self.fun3d_interface.iterate(scenario, bodies, step=0)
         self.fun3d_interface.post(scenario, bodies)
 
         # get functions to store the function values into the model
@@ -247,8 +259,13 @@ class Fun3dOnewayDriver:
 
         # run the forward analysis via iterate
         self.fun3d_interface.initialize(scenario, bodies)
-        for step in range(1, scenario.steps + 1):
-            self.fun3d_interface.iterate(scenario, bodies, step=step)
+        if self._nominal:
+            for step in range(1, scenario.steps + 1):
+                self.comm.Barrier()
+                bcont = self.fun3d_interface.fun3d_flow.iterate(step)
+        else:
+            for step in range(1, scenario.steps + 1):
+                self.fun3d_interface.iterate(scenario, bodies, step=step)
         self.fun3d_interface.post(scenario, bodies)
 
         # get functions to store the function values into the model
@@ -306,8 +323,13 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
-        for step in range(1, scenario.steps + 1):
-            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+        if self._nominal:
+            for step in range(1, scenario.steps + 1):
+                # self.comm.Barrier()
+                self.fun3d_interface.fun3d_adjoint.iterate(step)
+        else:
+            for step in range(1, scenario.steps + 1):
+                self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
@@ -331,10 +353,17 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
-        for rstep in range(scenario.steps + 1):
-            step = scenario.steps + 1 - rstep
-            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
-            self._extract_coordinate_derivatives(scenario, bodies, step=step)
+        if self._nominal:
+            for step in range(1, scenario.steps + 1):
+                # self.comm.Barrier()
+                rstep = scenario.steps + 1 - step
+                self.fun3d_interface.iterate(rstep)
+                self._extract_coordinate_derivatives(scenario, bodies, step=step)
+        else:
+            for rstep in range(scenario.steps + 1):
+                step = scenario.steps + 1 - rstep
+                self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+                self._extract_coordinate_derivatives(scenario, bodies, step=step)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
         # transfer disps adjoint since fa -> fs has shape dependency
