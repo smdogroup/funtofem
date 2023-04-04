@@ -96,7 +96,7 @@ class Fun3dOnewayDriver:
             # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
             body.initialize_transfer(
                 comm=comm,
-                struct_comm=self.tacs_comm,
+                struct_comm=comm_manager.struct_comm,
                 struct_root=comm_manager.struct_root,
                 aero_comm=comm_manager.aero_comm,
                 aero_root=comm_manager.aero_root,
@@ -159,10 +159,11 @@ class Fun3dOnewayDriver:
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
         fun3d_dir = self.fun3d_interface.fun3d_dir
-        grid_file = self.fun3d_aim.grid_file
         grid_filepaths = []
         for scenario in self.model.scenarios:
-            filepath = os.path.join(fun3d_dir, scenario.name, grid_file)
+            filepath = os.path.join(
+                fun3d_dir, scenario.name, "Flow", "funtofem_CAPS.lb8.ugrid"
+            )
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.fun3d_aim.grid_filepaths = grid_filepaths
@@ -183,6 +184,19 @@ class Fun3dOnewayDriver:
         # TODO : set this up for shape change from struct to aero disps
         return
 
+    def _load_new_mesh(self):
+        """load the new aerodynamic mesh into the funtofem body class"""
+        self.fun3d_interface._initialize_body_nodes(
+            self.model.scenarios[0], self.model.bodies
+        )
+
+        # initialize transfer scheme again or no, prob no...
+        for body in self.model.bodies:
+            for scenario in self.model.scenarios:
+                body.initialize_variables(scenario)
+            body.update_transfer()
+        return
+
     def solve_forward(self):
         """
         forward analysis for the given shape and functionals
@@ -197,6 +211,8 @@ class Fun3dOnewayDriver:
 
             # move grid files to each scenario location
             self.fun3d_aim._move_grid_files()
+
+            self._load_new_mesh()
 
         # run the FUN3D forward analysis with no shape change
         if self.steady:

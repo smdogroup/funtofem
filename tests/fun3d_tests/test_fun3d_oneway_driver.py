@@ -21,7 +21,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface, Fun3dAim, NamelistBlock
+    from pyfuntofem.interface import Fun3dInterface
     from pyfuntofem.driver import Fun3dOnewayDriver
 
 np.random.seed(1234567)

@@ -78,6 +78,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # make sure the fun3d model is setup if needed
         if self.change_shape and self.aero_shape:
             assert self.fun3d_model.is_setup
+            self._setup_grid_filepaths()
 
         return
 
@@ -166,6 +167,19 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
 
+        return
+
+    def _setup_grid_filepaths(self):
+        """setup the filepaths for each fun3d grid file in scenarios"""
+        fun3d_dir = self.fun3d_interface.fun3d_dir
+        grid_filepaths = []
+        for scenario in self.model.scenarios:
+            filepath = os.path.join(
+                fun3d_dir, scenario.name, "Flow", "funtofem_CAPS.lb8.ugrid"
+            )
+            grid_filepaths.append(filepath)
+        # set the grid filepaths into the fun3d aim
+        self.fun3d_aim.grid_filepaths = grid_filepaths
         return
 
     def _get_struct_shape_derivatives(self, scenario):

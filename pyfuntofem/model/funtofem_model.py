@@ -155,8 +155,8 @@ class FUNtoFEMmodel(object):
 
             esp_caps_despmtrs = None
             comm = self.flow.comm
-            if self.structural.root_proc:
-                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
+            if self.flow.root_proc:
+                esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
             active_despmtrs = []
