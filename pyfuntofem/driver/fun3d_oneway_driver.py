@@ -147,6 +147,8 @@ class Fun3dOnewayDriver:
     def nominal(cls, solvers, model, external_shape=False):
         """
         startup the fun3d oneway driver with no displacement just pure solvers with Fun3dInterface in it and model
+        NOTE: in moving_body.input file, turn off deform so that your mesh adjoint isn't running for the nominal / no displacement case,
+        it will be much faster
         """
         return cls(solvers, model, nominal=True, external_shape=external_shape)
 
