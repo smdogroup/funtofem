@@ -64,7 +64,7 @@ class FUNtoFEMmodel(object):
         self.bodies = []
         self.composite_functions = []
 
-        self._tacs_model = None
+        self._struct_model = None
 
     def add_body(self, body):
         """
@@ -92,7 +92,7 @@ class FUNtoFEMmodel(object):
 
         # if tacs loader and tacs model exist then create thickness variables and register to tacs model
         # in the case of defining shell properties
-        if tacs_loader is not None and self.tacs_model is not None:
+        if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
             struct_variables = []
             shape_variables = []
             if "structural" in body.variables:
@@ -103,13 +103,13 @@ class FUNtoFEMmodel(object):
             for var in struct_variables:
                 # check if matching shell property exists
                 matching_prop = False
-                for prop in self.tacs_model.tacs_aim._properties:
+                for prop in self.structural.tacs_aim._properties:
                     if prop.caps_group == var.name:
                         matching_prop = True
                         break
 
                 matching_dv = False
-                for dv in self.tacs_model.thickness_variables:
+                for dv in self.structural.thickness_variables:
                     if dv.name == var.name:
                         matching_dv = True
                         break
@@ -117,12 +117,12 @@ class FUNtoFEMmodel(object):
                 if matching_prop and not (matching_dv):
                     caps2tacs.ThicknessVariable(
                         caps_group=var.name, value=var.value, name=var.name
-                    ).register_to(self.tacs_model)
+                    ).register_to(self.structural)
 
             esp_caps_despmtrs = None
-            comm = self.tacs_model.comm
-            if self.tacs_model.root_proc:
-                esp_caps_despmtrs = list(self.tacs_model.geometry.despmtr.keys())
+            comm = self.structural.comm
+            if self.structural.root_proc:
+                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
             for var in shape_variables:
@@ -133,7 +133,7 @@ class FUNtoFEMmodel(object):
                         break
 
                 matching_shape_dv = False
-                for shape_var in self.tacs_model.shape_variables:
+                for shape_var in self.structural.shape_variables:
                     if var.name == shape_var.name:
                         matching_shape_dv = True
                         break
@@ -141,7 +141,7 @@ class FUNtoFEMmodel(object):
                 # create a matching shape variable in caps2tacs
                 if matching_despmtr and not matching_shape_dv:
                     caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
-                        self.tacs_model
+                        self.structural
                     )
 
         # end of tacs model auto registration of vars section
@@ -731,9 +731,10 @@ class FUNtoFEMmodel(object):
         return
 
     @property
-    def tacs_model(self):
-        return self._tacs_model
+    def structural(self):
+        """structural discipline submodel such as TacsModel"""
+        return self._struct_model
 
-    @tacs_model.setter
-    def tacs_model(self, m_tacs_model):
-        self._tacs_model = m_tacs_model
+    @structural.setter
+    def structural(self, structural_model):
+        self._struct_model = structural_model

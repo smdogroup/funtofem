@@ -43,6 +43,7 @@ class Fun3dOnewayDriver:
         self,
         solvers,
         model,
+        transfer_settings=None,
     ):
         """
         build the FUN3D analysis driver for shape/no shape change, assumes you have already primed the disps (see class method to assist with that)
@@ -73,6 +74,24 @@ class Fun3dOnewayDriver:
             if not scenario.steady:
                 self._unsteady = True
                 break
+
+        # initialize transfer schemes
+        comm = solvers.comm
+        comm_manager = solvers.comm_manager
+
+        # initialize variables
+        for body in self.model.bodies:
+            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=self.tacs_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=transfer_settings,
+            )
+            for scenario in model.scenarios:
+                body.initialize_variables(scenario)
 
         # reset struct mesh positions for no shape, just tacs analysis
         if not self.change_shape:
