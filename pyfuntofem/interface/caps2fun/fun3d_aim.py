@@ -60,6 +60,7 @@ class Fun3dAim:
         self.root = root
 
         self._aim = None
+        self._grid_file = None
         self._grid_filepaths = []
 
         self._boundary_conditions = {}
@@ -90,7 +91,7 @@ class Fun3dAim:
         self._geometry = None
         if self.root_proc:
             self._aim = self.caps_problem.analysis.create(aim="fun3dAIM", name="fun3d")
-            self._goemetry = self.caps_problem.geometry
+            self._geometry = self.caps_problem.geometry
         return
 
     @property
@@ -130,15 +131,18 @@ class Fun3dAim:
         return
 
     def _move_grid_files(self):
-        """move each of the grid files in the preAnalysis after a new grid is generated"""
+        """
+        move each of the grid files in the preAnalysis after a new grid is
+        destination files are all called fun3d_CAPS.lb8.ugrid
+        """
         src = self.grid_file
         for dest in self.grid_filepaths:
-            shutil.copy(src, dest)
+            shutil.copy2(src, dest)
         return
 
     def set_variables(self, shape_var_names):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
-        if len(shape_var_names == 0):
+        if len(shape_var_names) == 0:
             return
         DV_dict = {}
         for dv_name in shape_var_names:
@@ -175,7 +179,11 @@ class Fun3dAim:
 
     @property
     def grid_file(self):
-        return os.path.join(self.analysis_dir, f"{self.project_name}.lb8.ugrid")
+        return self._grid_file
+
+    @grid_file.setter
+    def grid_file(self, new_grid_file):
+        self._grid_file = new_grid_file
 
     @property
     def sens_file(self):

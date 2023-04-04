@@ -30,6 +30,14 @@ class AflrAim:
         """surface mesher aim aka aflr4 aim"""
         return self._aflr4_aim
 
+    @property
+    def analysis_dir(self):
+        _analysis_dir = None
+        if self.comm.rank == self.root:
+            _analysis_dir = self.volume_aim.analysisDir
+        _analysis_dir = self.comm.bcast(_analysis_dir, root=self.root)
+        return _analysis_dir
+
     def link_surface_mesh(self):
         """link the surface mesh to volume mesh"""
         if self.root_proc:

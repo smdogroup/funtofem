@@ -1,6 +1,6 @@
 __all__ = ["Fun3dModel"]
 
-import pyCAPS
+import pyCAPS, os
 from .fun3d_aim import Fun3dAim
 from .aflr_aim import AflrAim
 
@@ -46,6 +46,14 @@ class Fun3dModel:
         return cls(fun3d_aim, aflr_aim, comm, project_name)
 
     @property
+    def root_proc(self) -> bool:
+        return self.fun3d_aim.root_proc
+
+    @property
+    def geometry(self):
+        return self.fun3d_aim.geometry
+
+    @property
     def fun3d_aim(self) -> Fun3dAim:
         return self._fun3d_aim
 
@@ -69,7 +77,7 @@ class Fun3dModel:
     def apply_shape_variables(self, shape_variables):
         """apply shape variables to the caps problem"""
         for shape_var in shape_variables:
-            self.fun3d_aim.despmtr[shape_var.name].value = shape_var.value
+            self.geometry.despmtr[shape_var.name].value = shape_var.value
         return
 
     @property
@@ -79,12 +87,19 @@ class Fun3dModel:
 
     def setup(self):
         """setup the fun3d model before analysis"""
-        self.link_aims()
+        self._link_aims()
         self.fun3d_aim.set_boundary_conditions()
+        self._set_grid_filename()
         self._setup = True
         return
 
-    def link_aims(self):
+    def _set_grid_filename(self):
+        self.fun3d_aim.grid_file = os.path.join(
+            self.aflr_aim.analysis_dir, "aflr3_0.lb8.ugrid"
+        )
+        return
+
+    def _link_aims(self):
         """link the fun3d to aflr aim"""
         self.aflr_aim.link_surface_mesh()
         self.fun3d_aim.aim.input["Mesh"].link(
