@@ -1,0 +1,30 @@
+
+despmtr ff 20.0
+despmtr sspan 3.0
+
+box -ff -ff -ff 2*ff 2*ff 2*ff
+    attribute capsGroup $Farfield
+    attribute capsMesh $Farfield
+    ATTRIBUTE AFLR_GBC    $FARFIELD_UG3_GBC
+    ATTRIBUTE AFLR4_Cmp_ID 1
+    ATTRIBUTE AFLR4_Scale_Factor 10.0
+    # ATTRIBUTE capsMeshLength 1.0
+
+mark
+udprim naca series 2412
+udprim naca series 2412
+translate 0 0 -sspan
+loft 0
+    attribute capsGroup $wall
+    attribute capsMesh $wall
+    ATTRIBUTE AFLR4_Cmp_ID 2
+    ATTRIBUTE AFLR4_Edge_Refinement_Weight 1.0
+    # ATTRIBUTE capsMeshLength 1.0
+
+subtract
+
+attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
+attribute capsMeshLength 1.0
+
+end
+|||||||||||

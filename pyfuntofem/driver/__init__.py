@@ -17,6 +17,7 @@ from .funtofem_nlbgs_driver import *
 from .funtofem_nlbgs_fsi_subiters_driver import *
 from .transfer_settings import *
 from .test_drivers import *
+from .funtofem_shape_driver import *
 
 # import the two tacs drivers if tacs is available
 if tacs_loader is not None:

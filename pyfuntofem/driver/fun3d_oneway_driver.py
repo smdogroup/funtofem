@@ -264,7 +264,7 @@ class Fun3dOnewayDriver:
 
         # shape derivative section
         if self.change_shape and not self.external_shape:
-            # write the sensitivity file for the tacs AIM
+            # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
                 filename=self.fun3d_aim.sens_file_path,
