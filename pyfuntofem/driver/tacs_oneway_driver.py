@@ -119,12 +119,14 @@ class TacsOnewayDriver:
             for body in self.model.bodies:
                 # initializing transfer schemes is the responsibility of drivers with aerodynamic analysis since they come first
                 body.update_transfer()
-                # perform disps transfer first to prevent seg fault
-                body.transfer_disps(scenario)
-                body.transfer_temps(scenario)
-                # transfer aero to struct loads
-                body.transfer_loads(scenario)
-                body.transfer_heat_flux(scenario)
+
+                for scenario in self.model.scenarios:
+                    # perform disps transfer first to prevent seg fault
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
+                    # transfer aero to struct loads
+                    body.transfer_loads(scenario)
+                    body.transfer_heat_flux(scenario)
 
     @property
     def change_shape(self) -> bool:
@@ -476,7 +478,7 @@ class TacsOnewayDriver:
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.shape_variables):
                 derivative = gradients[ifunc][ivar]
-                func.set_gradient_component(var, derivative)
+                func.add_gradient_component(var, derivative)
 
         return
 

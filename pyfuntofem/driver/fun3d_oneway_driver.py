@@ -24,6 +24,8 @@ limitations under the License.
 # FUN3D one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["Fun3dOnewayDriver"]
 
+import os
+
 # from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 # from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
@@ -34,9 +36,6 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from pyfuntofem.interface import Fun3dInterface
 
-# from mpi4py import MPI
-# import numpy as np
-
 
 class Fun3dOnewayDriver:
     def __init__(
@@ -44,6 +43,7 @@ class Fun3dOnewayDriver:
         solvers,
         model,
         transfer_settings=None,
+        external_shape=False,
     ):
         """
         build the FUN3D analysis driver for shape/no shape change, assumes you have already primed the disps (see class method to assist with that)
@@ -54,10 +54,15 @@ class Fun3dOnewayDriver:
             The various disciplinary solvers.
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data.
+        transfer_settings: :class:`~driver.TransferSettings`
+            funtofem transfer settings from aero to structural meshes
+        external_shape: bool
+            whether ESP/CAPS pre and postAnalysis are performed inside/outside this driver
         """
         self.solvers = solvers
         self.comm = solvers.comm
         self.model = model
+        self.external_shape = external_shape
 
         # get the fun3d interface out of solvers
         assert isinstance(self.solvers.flow, Fun3dInterface)
@@ -74,6 +79,13 @@ class Fun3dOnewayDriver:
             if not scenario.steady:
                 self._unsteady = True
                 break
+
+        # get the fun3d aim for changing shape
+        if model.flow is None:
+            fun3d_aim = None
+        else:
+            fun3d_aim = model.flow.fun3d_aim
+        self.fun3d_aim = fun3d_aim
 
         # initialize transfer schemes
         comm = solvers.comm
@@ -93,10 +105,24 @@ class Fun3dOnewayDriver:
             for scenario in model.scenarios:
                 body.initialize_variables(scenario)
 
-        # reset struct mesh positions for no shape, just tacs analysis
-        if not self.change_shape:
+        # shape optimization
+        if self.change_shape:
+            assert fun3d_aim is not None or external_shape
+            assert self.fun3d_model.is_setup
+            self._setup_grid_filepaths()
+        else:
+            # TODO :
             for body in self.model.bodies:
                 body.update_transfer()
+                for scenario in self.model.scenarios:
+                    # perform disps transfer from fixed struct loads
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
+        # end of __init__ method
+
+    @property
+    def fun3d_model(self):
+        return self.model.flow
 
     @property
     def change_shape(self) -> bool:
@@ -130,19 +156,17 @@ class Fun3dOnewayDriver:
         funtofem_driver.solve_forward()
         return cls(funtofem_driver.solvers, funtofem_driver.model)
 
-    @classmethod
-    def prime_disps_shape(
-        cls, flow_solver, tacs_aim, transfer_settings, nprocs, bdf_file=None
-    ):
-        """
-        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
-
-        Parameters
-        ----------
-        # TODO : include fun3d_aim and/or aflrAIM/pointwiseAIM here for shape change
-        """
-
-        return None  # not setup yet
+    def _setup_grid_filepaths(self):
+        """setup the filepaths for each fun3d grid file in scenarios"""
+        fun3d_dir = self.fun3d_interface.fun3d_dir
+        grid_file = self.fun3d_aim.grid_file
+        grid_filepaths = []
+        for scenario in self.model.scenarios:
+            filepath = os.path.join(fun3d_dir, scenario.name, grid_file)
+            grid_filepaths.append(filepath)
+        # set the grid filepaths into the fun3d aim
+        self.fun3d_aim.grid_filepaths = grid_filepaths
+        return
 
     @property
     def manager(self, hot_start: bool = False):
@@ -166,6 +190,13 @@ class Fun3dOnewayDriver:
         """
 
         # TODO : add an aero shape change section here
+        if self.change_shape and not self.external_shape:
+            # run the pre analysis to generate a new mesh
+            self.fun3d_model.apply_shape_variables(self.shape_variables)
+            self.fun3d_aim.pre_analysis()
+
+            # move grid files to each scenario location
+            self.fun3d_aim._move_grid_files()
 
         # run the FUN3D forward analysis with no shape change
         if self.steady:
@@ -229,7 +260,23 @@ class Fun3dOnewayDriver:
             for scenario in self.model.scenarios:
                 self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
-        # TODO : set this up for shape change
+        # OPTIONAL : transfer disps adjoint here if we transfer disps in forward
+
+        # shape derivative section
+        if self.change_shape and not self.external_shape:
+            # write the sensitivity file for the tacs AIM
+            self.model.write_sensitivity_file(
+                comm=self.comm,
+                filename=self.fun3d_aim.sens_file_path,
+                discipline="aerodynamic",
+            )
+
+            # run the tacs aim postAnalysis to compute the chain rule product
+            self.fun3d_aim.post_analysis()
+
+            # store the shape variables in the function gradients
+            for scenario in self.model.scenarios:
+                self._get_shape_derivatives(scenario)
         return
 
     def _solve_steady_adjoint(self, scenario, bodies):
@@ -245,12 +292,13 @@ class Fun3dOnewayDriver:
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+        self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
-        # transfer loads adjoint since fa -> fs has shape dependency
-        if self.change_shape:
-            for body in bodies:
-                body.transfer_loads_adjoint(scenario)
+        # transfer disps adjoint since fa -> fs has shape dependency
+        # if self.change_shape:
+        #     for body in bodies:
+        #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.fun3d_interface.get_function_gradients(scenario, bodies)
@@ -270,18 +318,29 @@ class Fun3dOnewayDriver:
         for rstep in range(scenario.steps + 1):
             step = scenario.steps + 1 - rstep
             self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
-            self.fun3d_interface._extract_coordinate_derivatives(
-                scenario, bodies, step=step
-            )
+            self._extract_coordinate_derivatives(scenario, bodies, step=step)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
-        # transfer loads adjoint since fa -> fs has shape dependency
-        if self.change_shape:
-            for body in bodies:
-                body.transfer_loads_adjoint(scenario)
+        # transfer disps adjoint since fa -> fs has shape dependency
+        # if self.change_shape:
+        #     for body in bodies:
+        #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.fun3d_interface.get_function_gradients(scenario, bodies)
+        return
+
+    def _extract_coordinate_derivatives(self, scenario, bodies, step):
+        """extract the coordinate derivatives at a given time step"""
+        self.fun3d_interface.get_coordinate_derivatives(
+            scenario, self.model.bodies, step=step
+        )
+
+        # add transfer scheme contributions
+        if step > 0:
+            for body in bodies:
+                body.add_coordinate_derivative(scenario, step=0)
+
         return
 
     def _get_shape_derivatives(self, scenario):
@@ -289,5 +348,27 @@ class Fun3dOnewayDriver:
         get shape derivatives together from FUN3D aim
         and store the data in the funtofem model
         """
-        # TODO : set this up for shape derivatives through fun3d aim
+        gradients = None
+
+        # read shape gradients from tacs aim on root proc
+        fun3d_aim_root = self.fun3d_aim.root
+        if self.fun3d_aim.root_proc:
+            gradients = []
+            direct_fun3d_aim = self.fun3d_aim.aim
+
+            for ifunc, func in enumerate(scenario.functions):
+                gradients.append([])
+                for ivar, var in enumerate(self.shape_variables):
+                    derivative = direct_fun3d_aim.dynout[func.full_name].deriv(var.name)
+                    gradients[ifunc].append(derivative)
+
+        # broadcast shape gradients to all other processors
+        gradients = self.comm.bcast(gradients, root=fun3d_aim_root)
+
+        # store shape derivatives in funtofem model on all processors
+        for ifunc, func in enumerate(scenario.functions):
+            for ivar, var in enumerate(self.shape_variables):
+                derivative = gradients[ifunc][ivar]
+                func.add_gradient_component(var, derivative)
+
         return

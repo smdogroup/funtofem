@@ -24,6 +24,7 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np
 from .variable import Variable
+from pyfuntofem.interface.caps2fun import Fun3dModel
 
 import importlib
 
@@ -65,6 +66,7 @@ class FUNtoFEMmodel(object):
         self.composite_functions = []
 
         self._struct_model = None
+        self._flow_model = None
 
     def add_body(self, body):
         """
@@ -145,6 +147,29 @@ class FUNtoFEMmodel(object):
                     )
 
         # end of tacs model auto registration of vars section
+
+        if isinstance(self.flow, Fun3dModel):
+            shape_variables = []
+            if "shape" in body.variables:
+                shape_variables = body.variables["shape"]
+
+            esp_caps_despmtrs = None
+            comm = self.flow.comm
+            if self.structural.root_proc:
+                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            active_despmtrs = []
+            for var in shape_variables:
+                matching_despmtr = False
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        matching_despmtr = True
+                        active_despmtrs.append(despmtr)
+                        break
+
+            # input the design parameters into the Fun3dModel and Fun3dAim
+            self.flow.set_variables(active_despmtrs)
 
         self.bodies.append(body)
 
@@ -738,3 +763,12 @@ class FUNtoFEMmodel(object):
     @structural.setter
     def structural(self, structural_model):
         self._struct_model = structural_model
+
+    @property
+    def flow(self):
+        """flow discipline submodel such as Fun3dModel"""
+        return self._flow_model
+
+    @flow.setter
+    def flow(self, flow_model):
+        self._flow_model = flow_model
