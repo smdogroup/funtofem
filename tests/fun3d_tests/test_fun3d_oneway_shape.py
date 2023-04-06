@@ -45,8 +45,8 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
     def test_nominal(self):
         """test no struct disps into FUN3D"""
         # build the funtofem model with one body and scenario
-        model = FUNtoFEMmodel("miniMesh")
-        wing = Body.aeroelastic("plate", boundary=6).relaxation(AitkenRelaxation())
+        model = FUNtoFEMmodel("wing")
+        wing = Body.aeroelastic("wing", boundary=2)
         Variable.shape(name="sspan").set_bounds(
             lower=0.4, value=1.0, upper=1.6
         ).register_to(wing)
@@ -54,12 +54,8 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
         test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        for var in test_scenario.variables["aerodynamic"]:
-            if var.name == "AOA":
-                var.active = True
-        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
-            Function.lift()
-        ).include(Function.drag())
+        aoa = test_scenario.get_variable("AOA")
+        test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # design the shape
@@ -74,15 +70,13 @@ class TestFun3dOnewayShapeDriver(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         driver = Fun3dOnewayDriver.nominal(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+tacs-laminar-aeroelastic",
+            "fun3d+oneway-shape-turbulent-aeroelastic",
             model,
             driver,
             TestFun3dOnewayShapeDriver.FILEPATH,
