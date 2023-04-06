@@ -91,7 +91,7 @@ optional_dependencies["all"] = sorted(
 
 setup(
     name="funtofem",
-    version=0.1,
+    version=0.2,
     description="Aeroelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
