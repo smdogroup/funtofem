@@ -140,21 +140,26 @@ class Fun3dInterface(SolverInterface):
 
     def _initialize_body_nodes(self, scenario, bodies):
         # Change directories to the flow directory
+        print(f"starting initialize body nodes...", flush=True)
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
         # Do the steps to initialize FUN3D
+        print("initializing project...", flush=True)
         self.fun3d_flow.initialize_project(comm=self.comm)
         if self.forward_options is None:
             options = {}
         else:
             options = self.forward_options
         self.fun3d_flow.setOptions(kwargs=options)
+        print("initializing data", flush=True)
         self.fun3d_flow.initialize_data()
         interface.design_initialize()
+        print(f"initializing grid", flush=True)
         self.fun3d_flow.initialize_grid()
 
         # Initialize the flow solution
+        print(f"initializing solution...", flush=True)
         bcont = self.fun3d_flow.initialize_solution()
         if bcont == 0:
             if self.comm.Get_rank() == 0:

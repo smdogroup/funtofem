@@ -218,12 +218,12 @@ class Fun3dOnewayDriver:
             self.fun3d_model.apply_shape_variables(self.shape_variables)
             self.fun3d_aim.pre_analysis()
 
-            # move grid files to each scenario location
-            self.fun3d_aim._move_grid_files()
-
+            print(f"loading new mesh...", flush=True)
             self._load_new_mesh()
+            print("loaded new mesh.", flush=True)
 
         # run the FUN3D forward analysis with no shape change
+        print(f"starting steady forward analysis...", flush=True)
         if self.steady:
             for scenario in self.model.scenarios:
                 self._solve_steady_forward(scenario, self.model.bodies)
