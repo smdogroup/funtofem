@@ -15,6 +15,9 @@ class Fun3dModel:
 
         self.caps_problem = fun3d_aim.caps_problem
 
+        self._set_project_names()
+
+        self._shape_var_names = []
         self._setup = False
         return
 
@@ -23,7 +26,7 @@ class Fun3dModel:
         cls,
         csm_file,
         comm,
-        project_name,
+        project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
     ):
         """
@@ -61,10 +64,11 @@ class Fun3dModel:
     def aflr_aim(self) -> AflrAim:
         return self._aflr_aim
 
-    def set_project_names(self):
+    def _set_project_names(self):
         """set the project names into both aims for grid filenames"""
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
+        self.fun3d_aim.metadata.project_name = self.project_name
         if self.aflr_aim.root_proc:
             self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
@@ -73,17 +77,19 @@ class Fun3dModel:
     def set_variables(self, shape_var_names):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
         self.fun3d_aim.set_variables(shape_var_names)
+        self._shape_var_names = shape_var_names
 
     def apply_shape_variables(self, shape_variables):
         """apply shape variables to the caps problem"""
-        for shape_var in shape_variables:
-            self.geometry.despmtr[shape_var.name].value = shape_var.value
+        if self.root_proc:
+            for shape_var in shape_variables:
+                self.geometry.despmtr[shape_var.name].value = shape_var.value.real
         return
 
     @property
     def is_setup(self) -> bool:
         """whether the fun3d model is setup"""
-        return self._setup
+        return self._setup and len(self._shape_var_names) > 0
 
     def setup(self):
         """setup the fun3d model before analysis"""
@@ -102,7 +108,8 @@ class Fun3dModel:
     def _link_aims(self):
         """link the fun3d to aflr aim"""
         self.aflr_aim.link_surface_mesh()
-        self.fun3d_aim.aim.input["Mesh"].link(
-            self.aflr_aim.volume_aim.output["Volume_Mesh"]
-        )
+        if self.root_proc:
+            self.fun3d_aim.aim.input["Mesh"].link(
+                self.aflr_aim.volume_aim.output["Volume_Mesh"]
+            )
         return

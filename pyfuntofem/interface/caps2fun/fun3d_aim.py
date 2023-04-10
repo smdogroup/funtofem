@@ -137,7 +137,10 @@ class Fun3dAim:
         """
         src = self.grid_file
         for dest in self.grid_filepaths:
-            shutil.copy2(src, dest)
+            print(f"source file = {src}")
+            print(f"dest file = {dest}")
+            shutil.copy(src, dest)
+            print(f"file has been moved!")
         return
 
     def set_variables(self, shape_var_names):
@@ -147,7 +150,9 @@ class Fun3dAim:
         DV_dict = {}
         for dv_name in shape_var_names:
             DV_dict[dv_name] = {}
-        self.aim.input.Design_Variable = DV_dict
+        print(f"fun3d aim DV dict = {DV_dict}")
+        if self.root_proc:
+            self.aim.input.Design_Variable = DV_dict
         return
 
     def include(self, obj):
@@ -170,11 +175,15 @@ class Fun3dAim:
         if self.root_proc:
             self.aim.preAnalysis()
             self._move_grid_files()
+        self.comm.Barrier()
+        if self.root_proc:
+            print(f"done with preAnalysis", flush=True)
         return
 
     def post_analysis(self):
         if self.root_proc:
             self.aim.postAnalysis()
+        self.comm.Barrier()
         return
 
     @property
@@ -186,7 +195,7 @@ class Fun3dAim:
         self._grid_file = new_grid_file
 
     @property
-    def sens_file(self):
+    def sens_file_path(self):
         """path to fun3d sens file"""
         return os.path.join(self.analysis_dir, f"{self.project_name}.sens")
 
