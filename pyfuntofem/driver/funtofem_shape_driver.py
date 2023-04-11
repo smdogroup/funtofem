@@ -2,7 +2,7 @@ __all__ = ["FuntofemShapeDriver"]
 
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 
-import importlib.util
+import importlib.util, os
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")

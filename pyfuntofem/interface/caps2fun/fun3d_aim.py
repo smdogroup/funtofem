@@ -137,10 +137,21 @@ class Fun3dAim:
         """
         src = self.grid_file
         for dest in self.grid_filepaths:
-            print(f"source file = {src}")
-            print(f"dest file = {dest}")
             shutil.copy(src, dest)
-            print(f"file has been moved!")
+        return
+
+    def _move_sens_files(self, src):
+        """move sens files from the fun3d_dir to the fun3d AIM workdir"""
+        dest = self.sens_file_path
+        if self.root_proc:
+            shutil.copy(src, dest)
+        return
+
+    def apply_shape_variables(self, shape_variables):
+        """apply shape variables to the caps problem"""
+        if self.root_proc:
+            for shape_var in shape_variables:
+                self.geometry.despmtr[shape_var.name].value = shape_var.value.real
         return
 
     def set_variables(self, shape_var_names):
@@ -171,17 +182,20 @@ class Fun3dAim:
     def analysis_dir(self) -> str:
         return self.metadata.analysis_dir
 
-    def pre_analysis(self):
+    def pre_analysis(self, shape_variables=[]):
         if self.root_proc:
+            self.apply_shape_variables(shape_variables=shape_variables)
             self.aim.preAnalysis()
             self._move_grid_files()
         self.comm.Barrier()
-        if self.root_proc:
-            print(f"done with preAnalysis", flush=True)
         return
 
-    def post_analysis(self):
+    def post_analysis(self, sens_file_src=None):
         if self.root_proc:
+            # move sens files if need be from fun3d dir to fun3d workdir
+            if sens_file_src is not None:
+                self._move_sens_files(src=sens_file_src)
+
             self.aim.postAnalysis()
         self.comm.Barrier()
         return

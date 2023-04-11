@@ -51,7 +51,6 @@ class Fun3dInterface(SolverInterface):
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
-        init_read_mesh=True,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -72,8 +71,6 @@ class Fun3dInterface(SolverInterface):
             Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
         thermal_scale: float
             TODO
-        init_read_mesh: bool
-            whether to read the body mesh upon construction or not
         """
 
         self.comm = comm
@@ -104,8 +101,6 @@ class Fun3dInterface(SolverInterface):
         self.qinf = qinf
         self.dFdqinf = []
 
-        self.init_read_mesh = init_read_mesh
-
         # heat flux
         self.thermal_scale = thermal_scale  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
@@ -117,8 +112,7 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = None
 
         # Initialize the nodes associated with the bodies
-        if init_read_mesh:
-            self._initialize_body_nodes(model.scenarios[0], model.bodies)
+        self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
 
@@ -140,26 +134,21 @@ class Fun3dInterface(SolverInterface):
 
     def _initialize_body_nodes(self, scenario, bodies):
         # Change directories to the flow directory
-        print(f"starting initialize body nodes...", flush=True)
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
         # Do the steps to initialize FUN3D
-        print("initializing project...", flush=True)
         self.fun3d_flow.initialize_project(comm=self.comm)
         if self.forward_options is None:
             options = {}
         else:
             options = self.forward_options
         self.fun3d_flow.setOptions(kwargs=options)
-        print("initializing data", flush=True)
         self.fun3d_flow.initialize_data()
         interface.design_initialize()
-        print(f"initializing grid", flush=True)
         self.fun3d_flow.initialize_grid()
 
         # Initialize the flow solution
-        print(f"initializing solution...", flush=True)
         bcont = self.fun3d_flow.initialize_solution()
         if bcont == 0:
             if self.comm.Get_rank() == 0:
@@ -1009,7 +998,6 @@ class Fun3dInterface(SolverInterface):
             model=fun3d_interface.model,
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
-            init_read_mesh=fun3d_interface.init_read_mesh,
         )
 
     @classmethod
@@ -1028,5 +1016,4 @@ class Fun3dInterface(SolverInterface):
             model=fun3d_interface.model,
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
-            init_read_mesh=fun3d_interface.init_read_mesh,
         )

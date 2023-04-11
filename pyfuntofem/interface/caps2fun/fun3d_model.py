@@ -53,10 +53,6 @@ class Fun3dModel:
         return self.fun3d_aim.root_proc
 
     @property
-    def geometry(self):
-        return self.fun3d_aim.geometry
-
-    @property
     def fun3d_aim(self) -> Fun3dAim:
         return self._fun3d_aim
 
@@ -78,13 +74,6 @@ class Fun3dModel:
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
         self.fun3d_aim.set_variables(shape_var_names)
         self._shape_var_names = shape_var_names
-
-    def apply_shape_variables(self, shape_variables):
-        """apply shape variables to the caps problem"""
-        if self.root_proc:
-            for shape_var in shape_variables:
-                self.geometry.despmtr[shape_var.name].value = shape_var.value.real
-        return
 
     @property
     def is_setup(self) -> bool:
