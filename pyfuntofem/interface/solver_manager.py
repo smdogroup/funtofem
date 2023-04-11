@@ -153,7 +153,7 @@ class SolverManager:
             ):
                 return self.structural.tacs_comm
         elif self.structural is not None:
-            self.structural.comm
+            return self.structural.comm
         else:
             return self.comm
 
