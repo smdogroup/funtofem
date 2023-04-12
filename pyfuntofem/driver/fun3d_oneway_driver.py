@@ -272,7 +272,7 @@ class Fun3dOnewayDriver:
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
-                filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).aero_sens_file,
+                filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).design_file,
                 root=0,
             )
 
@@ -284,9 +284,7 @@ class Fun3dOnewayDriver:
             # read in the funtofem design input file
             self.model.read_design_variables_file(
                 self.comm,
-                filename=Fun3dRemote.paths(
-                    self.fun3d_interface.fun3d_dir
-                ).aero_sens_file,
+                filename=Fun3dRemote.paths(self.fun3d_interface.fun3d_dir).design_file,
                 root=0,
             )
 
