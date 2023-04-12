@@ -715,8 +715,6 @@ class FUNtoFEMmodel(object):
 
             # Write out the number of sets of discpline variables
             num_dvs = len(discpline_vars)
-            if discipline == "aerodynamic":
-                num_dvs = 0
 
             # Write out the number of functionals and number of design variables
             data = "{} {}\n".format(len(funcs), num_dvs)
@@ -743,15 +741,14 @@ class FUNtoFEMmodel(object):
                             deriv[3 * i + 2, n].real,
                         )
 
-                if discipline == "structural":
-                    for var in discpline_vars:
-                        deriv = func.get_gradient_component(var)
-                        deriv = deriv.real
+                for var in discpline_vars:
+                    deriv = func.get_gradient_component(var)
+                    deriv = deriv.real
 
-                        # Write the variable name and derivative value
-                        data += var.name + "\n"
-                        data += "1\n"
-                        data += str(deriv) + "\n"
+                    # Write the variable name and derivative value
+                    data += var.name + "\n"
+                    data += "1\n"
+                    data += str(deriv) + "\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)

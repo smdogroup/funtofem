@@ -2,12 +2,14 @@ __all__ = ["FuntofemShapeDriver"]
 
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 
-import importlib.util, os
+import importlib.util, os, shutil
+from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from pyfuntofem.interface import Fun3dInterface
+    from .fun3d_oneway_driver import Fun3dRemote
 if tacs_loader is not None:
     from pyfuntofem.interface import (
         TacsSteadyInterface,
@@ -17,12 +19,40 @@ if tacs_loader is not None:
 
 
 class FuntofemShapeDriver(FUNtoFEMnlbgs):
+    @classmethod
+    def remote(cls, solvers, model, fun3d_remote):
+        """
+        build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
+            this object would be responsible for the fun3d, aflr AIMs and
+
+        """
+        return cls(solvers, model, fun3d_remote=fun3d_remote)
+
+    @classmethod
+    def analysis(
+        cls, solvers, model, transfer_settings=None, comm_manager=None, write_sens=True
+    ):
+        """
+        build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
+            this object would be responsible for running the FUN3D
+            analysis and writing an aero.sens file to the fun3d directory
+        """
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            comm_manager=comm_manager,
+            write_sens=write_sens,
+        )
+
     def __init__(
         self,
         solvers,
         comm_manager=None,
         transfer_settings=None,
         model=None,
+        fun3d_remote=None,
+        write_sens=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -46,22 +76,43 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             solvers, comm_manager, transfer_settings, model
         )
 
-        # make sure the solver interfaces are TACS and FUN3D
-        assert isinstance(self.solvers.flow, Fun3dInterface)
-        assert isinstance(self.solvers.structural, TacsSteadyInterface) or isinstance(
-            self.solvers.structural, TacsUnsteadyInterface
-        )
+        self.fun3d_remote = fun3d_remote
+        self.write_sens = write_sens
 
         # get shape variables
         self.shape_variables = [
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
 
+        # make sure the solver interfaces are TACS and FUN3D
+        if not (self.change_shape) and self.is_remote:
+            raise AssertionError(
+                "Need shape variables for using the remote system call features for FUN3D."
+            )
+
+        if not self.is_remote:
+            assert isinstance(self.solvers.flow, Fun3dInterface)
+            assert isinstance(
+                self.solvers.structural, TacsSteadyInterface
+            ) or isinstance(self.solvers.structural, TacsUnsteadyInterface)
+            if self.aero_shape and self.root_proc:
+                print(
+                    f"Warning!! You are trying to remesh the aero shape without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
+                )
+
+        # check for unsteady problems
+        self._unsteady = False
+        for scenario in model.scenarios:
+            if not scenario.steady:
+                self._unsteady = True
+                break
+
         # get the fun3d aim for changing shape
         if model.flow is None:
             fun3d_aim = None
         else:
             fun3d_aim = model.flow.fun3d_aim
+
         if model.structural is None:
             tacs_aim = None
         else:
@@ -77,36 +128,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # make sure the fun3d model is setup if needed
         if self.change_shape and self.aero_shape:
+            assert fun3d_aim is not None
             assert self.fun3d_model.is_setup
             self._setup_grid_filepaths()
 
         return
 
-    @property
-    def change_shape(self) -> bool:
-        """only do shape optimization if shape variables exist"""
-        return len(self.shape_variables) > 0
-
-    @property
-    def aero_shape(self) -> bool:
-        """whether aerodynamic shape is changing"""
-        return self.fun3d_aim is not None and self.change_shape
-
-    @property
-    def struct_shape(self) -> bool:
-        """whether structural shape is changing"""
-        return self.tacs_aim is not None and self.change_shape
-
     def solve_forward(self):
         """create new aero/struct geometries and run fully-coupled forward analysis"""
         if self.aero_shape:
             # run the pre analysis to generate a new mesh
-            self.fun3d_model.apply_shape_variables(self.shape_variables)
-            self.fun3d_aim.pre_analysis()
-
-            # move grid files to each scenario location
-            # no need to remake Fun3dInterface, it will read in new grid next analysis
-            self.fun3d_aim._move_grid_files()
+            self.fun3d_aim.pre_analysis(self.shape_variables)
 
         if self.struct_shape:
             # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
@@ -117,35 +149,79 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # build the new structure geometry
             self.tacs_aim.pre_analysis()
 
-            # make the new tacs interface of the structural geometry
-            self.tacs_interface = TacsInterface.create_from_bdf(
-                model=self.model,
-                comm=self.comm,
-                nprocs=self.nprocs,
-                bdf_file=self.dat_file_path,
-                output_dir=self.analysis_dir,
-            )
+            # move the bdf and dat file to the fun3d_dir
+            if self.is_remote:
+                bdf_src = os.path.join(
+                    self.tacs_aim.analysis_dir, f"{self.tacs_aim.project_name}.bdf"
+                )
+                bdf_dest = self.fun3d_remote.bdf_file
+                shutil.copy(bdf_src, bdf_dest)
+                dat_src = os.path.join(
+                    self.tacs_aim.analysis_dir, f"{self.tacs_aim.project_name}.bdf"
+                )
+                dat_dest = self.fun3d_remote.dat_file
+                shutil.copy(dat_src, dat_dest)
 
-            # update the structural solver in FUNtoFEMnlbgs
-            self.solvers.structural = self.tacs_interface
+            if not (self.is_remote):
+                # this will almost never get used until we can remesh without having
+                # to system call FUN3D, please don't put shape variables in the analysis file
+                # make the new tacs interface of the structural geometry
+                self.solvers.structural = TacsInterface.create_from_bdf(
+                    model=self.model,
+                    comm=self.comm,
+                    nprocs=self.solvers.structural.nprocs,
+                    bdf_file=self.tacs_aim.dat_file_path,
+                    output_dir=self.tacs_aim.analysis_dir,
+                )
 
-        # call solve forward of super class for no shape, fully-coupled analysis
-        super(FuntofemShapeDriver, self).solve_forward()
+        if self.is_remote:
+            # system call funtofem forward + adjoint analysis
+            if self.fun3d_remote.output_file is None:
+                os.system(
+                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file}"
+                )
+            else:
+                os.system(
+                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file} 2>&1 > {self.fun3d_remote.output_file}"
+                )
+        else:
+            # call solve forward of super class for no shape, fully-coupled analysis
+            super(FuntofemShapeDriver, self).solve_forward()
 
         return
 
     def solve_adjoint(self):
         """run the fully-coupled adjoint analysis and extract shape derivatives as well"""
 
-        super(FuntofemShapeDriver, self).solve_adjoint()
+        if not self.is_remote:
+            # call funtofem adjoint analysis for non-remote driver
+            super(FuntofemShapeDriver, self).solve_adjoint()
 
-        if self.struct_shape:
-            # write the sensitivity file for the tacs AIM
-            self.model.write_sensitivity_file(
-                comm=self.comm,
-                filename=self.tacs_aim.sens_file_path,
-                discipline="structural",
-            )
+            if self.struct_shape or self.write_sens:
+                # write the sensitivity file for the tacs AIM
+                self.model.write_sensitivity_file(
+                    comm=self.comm,
+                    filename=Fun3dRemote.paths(
+                        self.solvers.flow.fun3d_dir
+                    ).struct_sens_file,
+                    discipline="structural",
+                )
+
+            if self.aero_shape or self.write_sens:
+                # write sensitivity file for the FUN3D AIM
+                self.model.write_sensitivity_file(
+                    comm=self.comm,
+                    filename=Fun3dRemote.paths(
+                        self.solvers.flow.fun3d_dir
+                    ).aero_sens_file,
+                    discipline="aerodynamic",
+                )
+
+        if self.struct_shape:  # either remote or regular
+            # move struct sens file to tacs aim directory
+            tacs_sens_src = self.fun3d_remote.struct_sens_file
+            tacs_sens_dest = self.tacs_aim.sens_file_path
+            shutil.copy(tacs_sens_src, tacs_sens_dest)
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.tacs_aim.post_analysis()
@@ -153,16 +229,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_struct_shape_derivatives(scenario)
 
-        if self.aero_shape:
-            # write the sensitivity file for the FUN3D AIM
-            self.model.write_sensitivity_file(
-                comm=self.comm,
-                filename=self.fun3d_aim.sens_file_path,
-                discipline="aerodynamic",
-            )
-
+        if self.aero_shape:  # either remote or regular
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis()
+            self.fun3d_aim.post_analysis(self.fun3d_remote.aero_sens_file)
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
@@ -171,11 +240,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
-        fun3d_dir = self.fun3d_interface.fun3d_dir
+        if self.solvers.flow is not None:
+            fun3d_dir = self.solvers.flow.fun3d_dir
+        else:
+            fun3d_dir = self.fun3d_remote.fun3d_dir
         grid_filepaths = []
         for scenario in self.model.scenarios:
             filepath = os.path.join(
-                fun3d_dir, scenario.name, "Flow", "funtofem_CAPS.lb8.ugrid"
+                fun3d_dir,
+                scenario.name,
+                "Flow",
+                f"{scenario.fun3d_project_name}.lb8.ugrid",
             )
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
@@ -240,3 +315,35 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 func.add_gradient_component(var, derivative)
 
         return
+
+    @property
+    def change_shape(self) -> bool:
+        """only do shape optimization if shape variables exist"""
+        return len(self.shape_variables) > 0
+
+    @property
+    def aero_shape(self) -> bool:
+        """whether aerodynamic shape is changing"""
+        return self.fun3d_aim is not None and self.change_shape
+
+    @property
+    def struct_shape(self) -> bool:
+        """whether structural shape is changing"""
+        return self.tacs_aim is not None and self.change_shape
+
+    @property
+    def is_remote(self) -> bool:
+        """whether we are calling FUN3D in a remote manner"""
+        return self.fun3d_remote is not None
+
+    @property
+    def manager(self, hot_start: bool = False):
+        return OptimizationManager(self, hot_start=hot_start)
+
+    @property
+    def root_proc(self) -> bool:
+        return self.comm.rank == 0
+
+    @property
+    def fun3d_model(self):
+        return self.model.flow
