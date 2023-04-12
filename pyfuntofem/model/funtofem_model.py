@@ -851,8 +851,6 @@ class FUNtoFEMmodel(object):
                     # only real numbers written to this file
                     hdl.write(f"\tvar {var.name} {var.value.real}\n")
 
-                hdl.write("\n")
-
             hdl.close()
 
         return

@@ -1,7 +1,44 @@
 __all__ = ["FuntofemShapeDriver"]
 
-from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 
+"""
+Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
+to split our Fun3dOnewayDriver scripts in implementation into two files, a my_funtofem_driver.py and a my_funtofem_analyzer.py.
+The file my_funtofem_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
+also uses system calls to the file my_fun3d_analyzer.py which runs the FUN3D analysis for each mesh. There are two 
+class methods FuntofemShapeDriver.remote and FuntofemShapeDriver.analysis which build the drivers for each of the two files.
+
+NOTE :  If you need aerodynamic shape derivatives through ESP/CAPS, you should build the driver class using the class method 
+FuntofemShapeDriver.remote() and setup a separate script with a driver running the analysis. If you need structural shape derivatives
+through ESP/CAPS or no shape derivatives, you can build the driver with the analysis() class method and optimize it without remote
+calls and a separate script. This is because only remeshing of the aero side requires a remote driver + analysis driver in order
+to reset the FUN3D system environment. More details on these two files are provided below.
+
+my_funtofem_driver.py : main driver script which called from the run.pbs
+    NOTE : similar to tests/fun3d_tests/test_funtofem_shape.py
+    - Construct the FUNtoFEMmodel
+    - Build the Fun3dModel and link with Fun3dAim + AflrAIM and mesh settings, then store in funtofem_model.flow = this
+    - Construct bodies and scenarios
+    - Register aerodynamic and shape DVs to the scenarios/bodies
+    - Construct the SolverManager with comm, but leave flow and structural attributes empty
+    - Construct the funtofem shape driver with class method FuntofemShapeDriver.remote to manage system calls to the other script.
+    - Build the optimization manager / run the driver
+
+my_funtofem_analysis.py : fun3d analysis script, which is called indirectly from my_fun3d_driver.py
+    NOTE : similar to tests/fun3d_tests/run_funtofem_analysis.py
+    - Construct the FUNtoFEMmodel
+    - Construct the bodies and scenarios
+    - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
+    - Construct the Fun3dInterface
+    - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
+    - Construct the a fun3d oneway driver with class method FuntofemShapeDriver.analysis
+    - Run solve_forward() and solve_adjoint() on the FuntofemShapeDriver
+
+For an example implementation see tests/fun3d_tests/ folder with test_fun3d_analysis.py for just aero DVs
+and (test_funtofem_shape.py => run_funtofem_shape.py) pair of files for the shape DVs using the Fun3dRemote and system calls.
+"""
+
+from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 import importlib.util, os, shutil
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
@@ -181,6 +218,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).design_file,
                 root=0,
             )
+
+            # clear the output file
+            if self.root_proc:
+                os.remove(self.fun3d_remote.output_file)
 
             # system call funtofem forward + adjoint analysis
             os.system(

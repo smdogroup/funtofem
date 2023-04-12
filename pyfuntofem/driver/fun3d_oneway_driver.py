@@ -39,6 +39,7 @@ More details on these two files are provided below. Do not construct a driver wi
 it will error in FUN3D upon the 2nd analysis iteration.
 
 my_fun3d_driver.py : main driver script which called from the run.pbs
+    NOTE : similar to tests/fun3d_tests/test_fun3d_oneway_shape.py
     - Construct the FUNtoFEMmodel
     - Build the Fun3dModel and link with Fun3dAim + AflrAIM and mesh settings, then store in funtofem_model.flow = this
     - Construct bodies and scenarios
@@ -48,6 +49,7 @@ my_fun3d_driver.py : main driver script which called from the run.pbs
     - Build the optimization manager / run the driver
 
 my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my_fun3d_driver.py
+    NOTE : similar to tests/fun3d_tests/run_fun3d_analysis.py
     - Construct the FUNtoFEMmodel
     - Construct the bodies and scenarios
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
@@ -56,8 +58,8 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Construct the a fun3d oneway driver with class method Fun3dOnewayDriver.analysis
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
 
-For an example implementation see tests/fun3d_tests/ folder with test_fun3d_analysis.py for just aero DVs
-and (test_fun3d_driver.py => run_fun3d_analysis.py) pair of files for the shape DVs using the Fun3dRemote and system calls.
+For an example implementation see tests/fun3d_tests/ folder with test_fun3d_oneway_aero.py for just aero DVs
+and (test_fun3d_oneway_driver.py => run_fun3d_analysis.py) pair of files for the shape DVs using the Fun3dRemote and system calls.
 """
 
 import os
@@ -76,7 +78,7 @@ class Fun3dRemote:
         self,
         analysis_file,
         fun3d_dir,
-        output_file=None,
+        output_name="f2f_analysis",
         nprocs=1,
         aero_name="fun3d",
         struct_name="tacs",
@@ -99,9 +101,7 @@ class Fun3dRemote:
         self.analysis_file = analysis_file
         self.fun3d_dir = fun3d_dir
         self.nprocs = nprocs
-        if output_file is None:
-            output_file = os.path.join(self.fun3d_dir, "funtofem_analysis.txt")
-        self.output_file = output_file
+        self.output_name = output_name
         self.aero_name = aero_name
         self.struct_name = struct_name
 
@@ -125,6 +125,10 @@ class Fun3dRemote:
     @property
     def aero_sens_file(self):
         return os.path.join(self.fun3d_dir, f"{self.aero_name}.sens")
+
+    @property
+    def output_file(self):
+        return os.path.join(self.fun3d_dir, f"{self.output_name}.txt")
 
     @property
     def bdf_file(self):
@@ -276,6 +280,11 @@ class Fun3dOnewayDriver:
                 root=0,
             )
 
+            # clear the output file
+            if self.root_proc:
+                os.remove(self.fun3d_remote.output_file)
+
+            # system call the analysis driver
             os.system(
                 f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
             )
