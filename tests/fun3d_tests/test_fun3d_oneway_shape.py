@@ -24,7 +24,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "diamond_wedge.csm")
 
-analysis_file = os.path.join(base_dir, "run_fun3d_analyzer.py")
+analysis_file = os.path.join(base_dir, "run_fun3d_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
 
 results_folder = os.path.join(base_dir, "results")
@@ -33,6 +33,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
         os.mkdir(results_folder)
 
 
+@unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dOnewayShape(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
@@ -44,7 +45,6 @@ class TestFun3dOnewayShape(unittest.TestCase):
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_nominal(self):
-        """test no struct disps into FUN3D"""
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
         # design the shape
@@ -63,8 +63,10 @@ class TestFun3dOnewayShape(unittest.TestCase):
             lower=0.4, value=5.0, upper=9.6
         ).register_to(wing)
         wing.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=1000).set_temperature(
-            T_ref=300.0, T_inf=300.0
+        test_scenario = (
+            Scenario.steady("turbulent", steps=1000)
+            .set_temperature(T_ref=300.0, T_inf=300.0)
+            .fun3d_project("funtofem_CAPS")
         )
         test_scenario.get_variable("AOA")
         test_scenario.include(Function.lift()).include(Function.drag())
@@ -72,7 +74,7 @@ class TestFun3dOnewayShape(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=1)
+        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
         driver = Fun3dOnewayDriver.remote(solvers, model, fun3d_remote)
 
         # run the complex step test on the model and driver

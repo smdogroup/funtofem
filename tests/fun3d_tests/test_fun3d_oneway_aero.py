@@ -33,6 +33,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
         os.mkdir(results_folder)
 
 
+@unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dOnewayAero(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver

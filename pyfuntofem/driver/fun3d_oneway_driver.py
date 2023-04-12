@@ -73,7 +73,13 @@ if fun3d_loader is not None:  # check whether we can import FUN3D
 
 class Fun3dRemote:
     def __init__(
-        self, analysis_file, fun3d_dir, output_file, nprocs=1, sens_filename=None
+        self,
+        analysis_file,
+        fun3d_dir,
+        output_file,
+        nprocs=1,
+        aero_name="fun3d",
+        struct_name="tacs",
     ):
         """
 
@@ -89,14 +95,42 @@ class Fun3dRemote:
             location of the fun3d directory for meshes, one level above the scenario folders
         output_file: filepath
             optional location to write an output file for the forward and adjoint analysis
-        sens_file: filename
-            optional name of the sens file in fun3d_dir, if not provided assumes it is called
         """
         self.analysis_file = analysis_file
         self.fun3d_dir = fun3d_dir
         self.nprocs = nprocs
         self.output_file = output_file
-        self.sens_filename = sens_filename
+        self.aero_name = aero_name
+        self.struct_name = struct_name
+
+    @classmethod
+    def paths(cls, fun3d_dir, aero_name="fun3d", struct_name="struct"):
+        return cls(
+            analysis_file=None,
+            fun3d_dir=fun3d_dir,
+            aero_name=aero_name,
+            struct_name=struct_name,
+        )
+
+    @classmethod
+    def fun3d_path(cls, fun3d_dir, filename):
+        return os.path.join(fun3d_dir, filename)
+
+    @property
+    def struct_sens_file(self):
+        return os.path.join(self.fun3d_dir, f"{self.struct_name}.sens")
+
+    @property
+    def aero_sens_file(self):
+        return os.path.join(self.fun3d_dir, f"{self.aero_name}.sens")
+
+    @property
+    def bdf_file(self):
+        return os.path.join(self.fun3d_dir, f"{self.struct_name}.bdf")
+
+    @property
+    def dat_file(self):
+        return os.path.join(self.fun3d_dir, f"{self.struct_name}.dat")
 
 
 class Fun3dOnewayDriver:
@@ -141,6 +175,7 @@ class Fun3dOnewayDriver:
             The model containing the design data.
         """
         self.solvers = solvers
+        self.comm = solvers.comm
         self.model = model
         self.transfer_settings = transfer_settings
         self.write_sens = write_sens
@@ -275,15 +310,16 @@ class Fun3dOnewayDriver:
                 # write the sensitivity file for the FUN3D AIM
                 self.model.write_sensitivity_file(
                     comm=self.comm,
-                    filename=self.fun3d_aim.sens_file_path,
+                    filename=Fun3dRemote.paths(
+                        self.fun3d_interface.fun3d_dir
+                    ).aero_sens_file,
                     discipline="aerodynamic",
                 )
 
         # shape derivative section
         if self.change_shape:  # either remote or regular
             # run the tacs aim postAnalysis to compute the chain rule product
-            sens_file_src = os.path.join(self.fun3d_dir, self.sens_filename)
-            self.fun3d_aim.post_analysis(sens_file_src)
+            self.fun3d_aim.post_analysis(self.fun3d_remote.sens_file_path)
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
@@ -413,11 +449,17 @@ class Fun3dOnewayDriver:
 
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
-        fun3d_dir = self.fun3d_interface.fun3d_dir
+        if self.fun3d_interface is not None:
+            fun3d_dir = self.fun3d_interface.fun3d_dir
+        else:
+            fun3d_dir = self.fun3d_remote.fun3d_dir
         grid_filepaths = []
         for scenario in self.model.scenarios:
             filepath = os.path.join(
-                fun3d_dir, scenario.name, "Flow", "funtofem_CAPS.lb8.ugrid"
+                fun3d_dir,
+                scenario.name,
+                "Flow",
+                f"{scenario.fun3d_project_name}.lb8.ugrid",
             )
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim

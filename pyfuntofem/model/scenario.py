@@ -48,6 +48,7 @@ class Scenario(Base):
         T_ref=300,
         T_inf=300,
         tacs_integration_settings=None,
+        fun3d_project_name="funtofem_CAPS",
         suther1=1.458205e-6,
         suther2=110.3333,
         gamma=1.4,
@@ -78,6 +79,8 @@ class Scenario(Base):
             Fluid freestream reference temperature in Kelvin.
         tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
             Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
+        fun3d_project_name: filename
+            name of project_rootname from fun3d.nml, ex: funtofem_CAPS would have a grid file funtofem_CAPS.lb8.ugrid
 
         Optional Parameters/Constants
         -----------------------------
@@ -109,6 +112,7 @@ class Scenario(Base):
         self.steps = steps
         self.preconditioner_steps = preconditioner_steps
         self.tacs_integration_settings = tacs_integration_settings
+        self.fun3d_project_name = fun3d_project_name
 
         self.T_ref = T_ref
         self.T_inf = T_inf
@@ -298,6 +302,11 @@ class Scenario(Base):
 
         for func in self.functions:
             func.scenario = id
+
+    def fun3d_project(self, new_proj_name):
+        """set the fun3d project rootname from fun3d.nml for use in shape drivers"""
+        self.fun3d_project_name = new_proj_name
+        return self
 
     def get_thermal_conduct(self, aero_temps):
         """

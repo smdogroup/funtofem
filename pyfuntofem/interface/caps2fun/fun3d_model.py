@@ -102,3 +102,7 @@ class Fun3dModel:
                 self.aflr_aim.volume_aim.output["Volume_Mesh"]
             )
         return
+
+    @property
+    def geometry(self):
+        return self.fun3d_aim.geometry
