@@ -138,7 +138,7 @@ jobs:
           if [[ ${{ matrix.NAME }} == 'Real' ]]; then
             source ${F2F_DIR}/extern/ESP122/ESPenv.sh
           fi
-          testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
+          testflo ${GITHUB_WORKSPACE}/tests/;
 
   make-docs:
     # Recommended if you intend to make multiple deployments in quick succession
