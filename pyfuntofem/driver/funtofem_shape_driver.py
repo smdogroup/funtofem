@@ -175,6 +175,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 )
 
         if self.is_remote:
+            # write the funtofem design input file
+            self.model.write_design_variables_file(
+                self.comm,
+                filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).aero_sens_file,
+                root=0,
+            )
+
             # system call funtofem forward + adjoint analysis
             if self.fun3d_remote.output_file is None:
                 os.system(
@@ -185,6 +192,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file} 2>&1 > {self.fun3d_remote.output_file}"
                 )
         else:
+            # read in the funtofem design input file
+            self.model.read_design_variables_file(
+                self.comm,
+                filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file,
+                root=0,
+            )
+
             # call solve forward of super class for no shape, fully-coupled analysis
             super(FuntofemShapeDriver, self).solve_forward()
 

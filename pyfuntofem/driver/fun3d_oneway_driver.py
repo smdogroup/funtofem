@@ -132,6 +132,10 @@ class Fun3dRemote:
     def dat_file(self):
         return os.path.join(self.fun3d_dir, f"{self.struct_name}.dat")
 
+    @property
+    def design_file(self):
+        return os.path.join(self.fun3d_dir, "funtofem.in")
+
 
 class Fun3dOnewayDriver:
     @classmethod
@@ -263,6 +267,13 @@ class Fun3dOnewayDriver:
 
         # system call FUN3D forward analysis
         if self.is_remote:
+            # write the funtofem design input file
+            self.model.write_design_variables_file(
+                self.comm,
+                filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).aero_sens_file,
+                root=0,
+            )
+
             if self.fun3d_remote.output_file is None:
                 os.system(
                     f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file}"
@@ -273,6 +284,15 @@ class Fun3dOnewayDriver:
                 )
 
         else:  # non-remote call of FUN3D forward analysis
+            # read in the funtofem design input file
+            self.model.read_design_variables_file(
+                self.comm,
+                filename=Fun3dRemote.paths(
+                    self.fun3d_interface.fun3d_dir
+                ).aero_sens_file,
+                root=0,
+            )
+
             # run the FUN3D forward analysis with no shape change
             if self.steady:
                 for scenario in self.model.scenarios:
