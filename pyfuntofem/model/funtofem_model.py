@@ -755,6 +755,108 @@ class FUNtoFEMmodel(object):
 
         return
 
+    def read_design_variables_file(self, comm, filename, root=0):
+        """
+        Read the design variables file funtofem.in
+
+        This file contains the following information:
+
+        Discipline
+        Var_name Var_value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        variables_dict = None  # this will be broadcast to other processors
+        if comm.rank == root:  # read the file in on the root processor
+            variables_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 3:
+                    var_name = chunks[1]
+                    var_value = chunks[2]
+
+                    # only real numbers are read in from the file
+                    variables_dict[var_name] = float(var_value)
+
+        # broadcast the dictionary to the root processor
+        variables_dict = comm.bcast(variables_dict, root=root)
+
+        # update the variable values on each processor
+        for var in self.get_variables():
+            if var.name in variables_dict:
+                var.value = variables_dict[var.name]
+
+        return
+
+    def write_design_variables_file(self, comm, filename, root=0):
+        """
+        Write the design variables file funtofem.in
+
+        This file contains the following information:
+
+        Discipline
+        Var_name Var_value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        # get the variable values from the root processor
+        if comm.rank == root:
+            # get the disciplines and variables
+            disciplines = []
+            variables = {}
+            scenarios_and_bodies = self.scenarios + self.bodies
+            for base in scenarios_and_bodies:
+                for discipline in base.variables:
+                    if not (discipline in disciplines):
+                        disciplines.append(discipline)
+                        variables[discipline] = []
+                    for var in base.variables[discipline]:
+                        if var.active:
+                            variables[discipline].append(var)
+
+            # get the file hdl
+            hdl = open(filename, "w")
+
+            # write the variables file
+            for discipline in variables:
+                if (
+                    len(variables[discipline]) == 0
+                ):  # skip this discipline if empty, aka rigid_motion
+                    continue
+                hdl.write(f"Discipline {discipline}\n")
+
+                # write each variable from that discipline
+                for var in variables[discipline]:
+                    # only real numbers written to this file
+                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+
+                hdl.write("\n")
+
+            hdl.close()
+
+        return
+
     @property
     def structural(self):
         """structural discipline submodel such as TacsModel"""
