@@ -76,7 +76,7 @@ class Fun3dRemote:
         self,
         analysis_file,
         fun3d_dir,
-        output_file,
+        output_file=None,
         nprocs=1,
         aero_name="fun3d",
         struct_name="tacs",
@@ -99,6 +99,8 @@ class Fun3dRemote:
         self.analysis_file = analysis_file
         self.fun3d_dir = fun3d_dir
         self.nprocs = nprocs
+        if output_file is None:
+            output_file = os.path.join(self.fun3d_dir, "funtofem_analysis.txt")
         self.output_file = output_file
         self.aero_name = aero_name
         self.struct_name = struct_name
@@ -274,14 +276,9 @@ class Fun3dOnewayDriver:
                 root=0,
             )
 
-            if self.fun3d_remote.output_file is None:
-                os.system(
-                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file}"
-                )
-            else:
-                os.system(
-                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file} 2>&1 > {self.fun3d_remote.output_file}"
-                )
+            os.system(
+                f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
+            )
 
         else:  # non-remote call of FUN3D forward analysis
             # read in the funtofem design input file
@@ -339,7 +336,7 @@ class Fun3dOnewayDriver:
         # shape derivative section
         if self.change_shape:  # either remote or regular
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis(self.fun3d_remote.sens_file_path)
+            self.fun3d_aim.post_analysis(self.fun3d_remote.aero_sens_file)
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:

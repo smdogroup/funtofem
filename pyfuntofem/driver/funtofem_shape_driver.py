@@ -183,14 +183,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             )
 
             # system call funtofem forward + adjoint analysis
-            if self.fun3d_remote.output_file is None:
-                os.system(
-                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file}"
-                )
-            else:
-                os.system(
-                    f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analyzer_file} 2>&1 > {self.fun3d_remote.output_file}"
-                )
+            os.system(
+                f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
+            )
         else:
             # read in the funtofem design input file
             self.model.read_design_variables_file(
