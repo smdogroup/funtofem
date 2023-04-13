@@ -37,13 +37,16 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         # Build the model
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
-        svar = Variable.structural("thickness").set_bounds(value=0.1).register_to(plate)
+        svar = Variable.structural("thickness", value=0.1).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.steady("test", steps=100)
         ksfailure = Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         lift = Function.lift().register_to(test_scenario)
         drag = Function.drag().register_to(test_scenario)
-        random_composite = CompositeFunction.exp(ksfailure + 1.5 * lift / drag)
+        random_composite = (
+            CompositeFunction.exp(ksfailure + 1.5 * lift / drag)
+            + svar.composite_function
+        )
 
         """
         optimize() here would set this to be included in optimization functions for 
@@ -110,11 +113,14 @@ class CompositeFunctionDriverTest(unittest.TestCase):
 
         # climb scenario with random test composite function 1
         cruise = Scenario.steady("cruise", steps=100)
+        yaw = Variable.aerodynamic("yaw", value=10.0).register_to(cruise)
         ksfailure1 = Function.ksfailure(ks_weight=10.0).register_to(cruise)
         lift1 = Function.lift().register_to(cruise)
         drag1 = Function.drag().register_to(cruise)
-        composite1 = drag1 * CompositeFunction.exp(
-            ksfailure1 + 1.5 * lift1**2 / (1 + lift1)
+        composite1 = (
+            drag1
+            * CompositeFunction.exp(ksfailure1 + 1.5 * lift1**2 / (1 + lift1))
+            * yaw.composite_function
         )
         composite1.optimize().set_name("composite1").register_to(model)
         cruise.register_to(model)
@@ -123,12 +129,13 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         climb = Scenario.steady("climb", steps=100)
         ksfailure2 = Function.ksfailure(ks_weight=10.0).register_to(climb)
         lift2 = Function.lift().register_to(climb)
+        mach = Variable.aerodynamic("mach", value=1.45).register_to(climb)
         drag2 = Function.drag().register_to(climb)
         composite2 = (
             drag2**3
             / (1.532 - ksfailure2)
             * CompositeFunction.log(1 + (lift2 / drag2) ** 2)
-        )
+        ) - mach.composite_function**2
         composite2.optimize().set_name("composite2").register_to(model)
         climb.register_to(model)
 
@@ -151,30 +158,40 @@ class CompositeFunctionDriverTest(unittest.TestCase):
             solvers, transfer_settings=TransferSettings(npts=5), model=model
         )
 
+        """complex step test over composite function"""
+
+        functions = [composite1, composite2, min_drag]
+        nfunc = len(functions)
+        variables = model.get_variables()
+
+        # random test vector for composite function derivatives
+        dvar_ds = {var: np.random.rand() for var in model.get_variables()}
         # generate random contravariant tensor d(composite_i)/ds
         # for converting error among three composites to one scalar
-        dcomposite_ds = np.random.rand(3)
+        dcomposite_ds = np.random.rand(nfunc)
 
-        """complex step test over composite function"""
         # adjoint for analysis funcs => composite function derivatives
         # adjoint evaluation of analysis function derivatives
         driver.solve_forward()
         driver.solve_adjoint()
         model.evaluate_composite_functions()
 
-        adjoint_TD = composite1.get_gradient_component(svar) * dcomposite_ds[0]
-        adjoint_TD += composite2.get_gradient_component(svar) * dcomposite_ds[1]
-        adjoint_TD += min_drag.get_gradient_component(svar) * dcomposite_ds[2]
+        adjoint_TD = 0.0
+        for ifunc, func in enumerate(functions):
+            adjoint_TD += func.directional_derivative(dvar_ds) * dcomposite_ds[ifunc]
 
         # complex step directly to compute composite function values
         h = 1e-30
-        svar.value += 1j * h
+        for var in variables:
+            var.value += 1j * h * dvar_ds[var]
         driver.solve_forward()
         model.evaluate_composite_functions()
-        complex_step_TD = composite1.value.imag / h * dcomposite_ds[0]
-        complex_step_TD += composite2.value.imag / h * dcomposite_ds[1]
-        complex_step_TD += min_drag.value.imag / h * dcomposite_ds[2]
 
+        complex_step_TD = 0.0
+        for ifunc, func in enumerate(functions):
+            complex_step_TD += func.value.imag / h * dcomposite_ds[ifunc]
+
+        # compute the relative error between complex step + adjoint
         rel_error = (adjoint_TD - complex_step_TD) / complex_step_TD
 
         # report result

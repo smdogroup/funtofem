@@ -23,6 +23,7 @@ __all__ = ["Variable"]
 
 from ._base import Base
 import importlib
+from .composite_function import CompositeFunction
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -200,3 +201,18 @@ class Variable(object):
             return Variable.shape(name=obj.name, value=obj.value)
         else:
             raise AssertionError("Input caps2tacs object not appropriate type.")
+
+    @property
+    def composite_function(self):
+        """turn this variable into a composite function"""
+
+        def eval_hdl(funcs_dict):
+            return funcs_dict[self.name]
+
+        return CompositeFunction(
+            name=self.name,
+            eval_hdl=eval_hdl,
+            functions=[],
+            variables=[self],
+            optim=False,
+        )
