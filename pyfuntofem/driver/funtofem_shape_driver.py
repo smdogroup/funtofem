@@ -227,6 +227,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             os.system(
                 f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
             )
+
+            # update function values
+            self._get_remote_functions()
+
         else:
             # read in the funtofem design input file
             self.model.read_design_variables_file(
@@ -305,6 +309,28 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.fun3d_aim.grid_filepaths = grid_filepaths
+        return
+
+    def _get_remote_functions(self):
+        """
+        read function values from fun3dAIM when operating in the remote version of the driver
+        doesn't matter which aim we read the function values from since it's the same
+        """
+        functions = self.model.get_functions()
+        remote_functions = None
+        if self.fun3d_aim.root_proc:
+            remote_functions = []
+            direct_fun3d_aim = self.fun3d_aim.aim
+            for ifunc, func in enumerate(functions):
+                remote_functions[ifunc] = direct_fun3d_aim.dynout[func.full_name].value
+
+        # broadcast the function values to other processors
+        fun3d_aim_root = self.fun3d_aim.root
+        remote_functions = self.comm.bcast(remote_functions, root=fun3d_aim_root)
+
+        # update model function values in the remote version of the driver
+        for ifunc, func in enumerate(functions):
+            func.value = remote_functions[ifunc]
         return
 
     def _get_struct_shape_derivatives(self, scenario):

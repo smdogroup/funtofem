@@ -154,15 +154,17 @@ class Fun3dAim:
                 self.geometry.despmtr[shape_var.name].value = shape_var.value.real
         return
 
-    def set_variables(self, shape_var_names):
+    def set_variables(self, shape_variables, aero_variables):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
-        if len(shape_var_names) == 0:
+        if len(shape_variables) == 0:
             return
         DV_dict = {}
-        for dv_name in shape_var_names:
+        for dv_name in shape_variables:
             DV_dict[dv_name] = {}
-        print(f"fun3d aim DV dict = {DV_dict}")
+        for dv in aero_variables:
+            DV_dict[dv_name] = {}
         if self.root_proc:
+            print(f"f2f set variables = {DV_dict}", flush=True)
             self.aim.input.Design_Variable = DV_dict
         return
 

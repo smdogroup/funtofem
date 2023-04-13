@@ -17,7 +17,8 @@ class Fun3dModel:
 
         self._set_project_names()
 
-        self._shape_var_names = []
+        self._shape_varnames = []
+        self._aero_varnames = []
         self._setup = False
         return
 
@@ -70,15 +71,18 @@ class Fun3dModel:
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
         return
 
-    def set_variables(self, shape_var_names):
+    def set_variables(self, shape_varnames, aero_varnames):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
-        self.fun3d_aim.set_variables(shape_var_names)
-        self._shape_var_names = shape_var_names
+        # add to the list of variable names
+        self._shape_varnames += shape_varnames
+        self._aero_varnames += aero_varnames
+        # update the variables in the AIM
+        self.fun3d_aim.set_variables(self._shape_varnames, self._aero_varnames)
 
     @property
     def is_setup(self) -> bool:
         """whether the fun3d model is setup"""
-        return self._setup and len(self._shape_var_names) > 0
+        return self._setup and len(self._shape_varnames) > 0
 
     def setup(self):
         """setup the fun3d model before analysis"""

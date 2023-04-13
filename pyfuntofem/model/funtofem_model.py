@@ -92,15 +92,55 @@ class FUNtoFEMmodel(object):
                 body.group_root = False
                 break
 
+        # auto registration of variables to discipline models
+        self._send_struct_variables(body)
+        self._send_flow_variables(body)
+
+        self.bodies.append(body)
+
+    def add_composite_function(self, composite_function):
+        """
+        Add a composite function to the existing list of composite functions in the model.
+        """
+
+        self.composite_functions.append(composite_function)
+        return
+
+    def add_scenario(self, scenario):
+        """
+        Add a scenario to model. The scenario must be completely defined before adding to the model
+
+        Parameters
+        ----------
+        scenario: scenario object
+            the scenario to be added
+        """
+
+        scenario.set_id(len(self.scenarios) + 1)
+
+        scenario.group_root = True
+        for scen in self.scenarios:
+            if scen.group == scenario.group:
+                scenario.group_root = False
+                break
+
+        # auto registration of variables to discipline models
+        self._send_struct_variables(scenario)
+        self._send_flow_variables(scenario)
+
+        self.scenarios.append(scenario)
+
+    def _send_struct_variables(self, base):
+        """send variables to self.structural usually the TacsModel"""
         # if tacs loader and tacs model exist then create thickness variables and register to tacs model
         # in the case of defining shell properties
         if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
             struct_variables = []
             shape_variables = []
-            if "structural" in body.variables:
-                struct_variables = body.variables["structural"]
-            if "shape" in body.variables:
-                shape_variables = body.variables["shape"]
+            if "structural" in base.variables:
+                struct_variables = base.variables["structural"]
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
 
             for var in struct_variables:
                 # check if matching shell property exists
@@ -145,13 +185,18 @@ class FUNtoFEMmodel(object):
                     caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
                         self.structural
                     )
+        return
 
-        # end of tacs model auto registration of vars section
+    def _send_flow_variables(self, base):
+        """send variables to self.flow usually the Fun3dModel"""
 
         if isinstance(self.flow, Fun3dModel):
             shape_variables = []
-            if "shape" in body.variables:
-                shape_variables = body.variables["shape"]
+            aero_variables = []
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+            if "aerodynamic" in base.variables:
+                aero_variables = base.variables["aerodynamic"]
 
             esp_caps_despmtrs = None
             comm = self.flow.comm
@@ -159,47 +204,24 @@ class FUNtoFEMmodel(object):
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
-            active_despmtrs = []
+            aero_varnames = []
+            shape_varnames = []
+
+            # add shape variable names to varnames
             for var in shape_variables:
-                matching_despmtr = False
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
-                        matching_despmtr = True
-                        active_despmtrs.append(despmtr)
+                        shape_varnames.append(despmtr)
                         break
 
+            # add aerodynamic variable names to varnames
+            for var in aero_variables:
+                if var.active:
+                    aero_varnames.append(var.name)
+
             # input the design parameters into the Fun3dModel and Fun3dAim
-            self.flow.set_variables(active_despmtrs)
-
-        self.bodies.append(body)
-
-    def add_composite_function(self, composite_function):
-        """
-        Add a composite function to the existing list of composite functions in the model.
-        """
-
-        self.composite_functions.append(composite_function)
+            self.flow.set_variables(shape_varnames, aero_varnames)
         return
-
-    def add_scenario(self, scenario):
-        """
-        Add a scenario to model. The scenario must be completely defined before adding to the model
-
-        Parameters
-        ----------
-        scenario: scenario object
-            the scenario to be added
-        """
-
-        scenario.set_id(len(self.scenarios) + 1)
-
-        scenario.group_root = True
-        for scen in self.scenarios:
-            if scen.group == scenario.group:
-                scenario.group_root = False
-                break
-
-        self.scenarios.append(scenario)
 
     def print_summary(self, print_level=0):
         """

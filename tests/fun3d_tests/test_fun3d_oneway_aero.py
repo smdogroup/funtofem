@@ -50,7 +50,7 @@ class TestFun3dOnewayAero(unittest.TestCase):
         model = FUNtoFEMmodel("wing")
         wing = Body.aeroelastic("wing", boundary=2)
         wing.register_to(model)
-        test_scenario = Scenario.steady("turbulent", steps=1000).set_temperature(
+        test_scenario = Scenario.steady("turbulent", steps=2000).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.get_variable("AOA")
