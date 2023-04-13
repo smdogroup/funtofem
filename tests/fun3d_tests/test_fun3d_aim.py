@@ -11,7 +11,9 @@ csm_path = os.path.join(base_dir, "input_files", "flow_wing.csm")
 class TestFun3dAim(unittest.TestCase):
     def test_pre_analysis(self):
         """just check that it runs without error"""
-        fun3d_model = Fun3dModel.build(csm_file=csm_path, comm=comm, project_name="yes")
+        fun3d_model = Fun3dModel.build(
+            csm_file=csm_path, comm=comm, project_name="wing_test"
+        )
         aflr_aim = fun3d_model.aflr_aim
         fun3d_aim = fun3d_model.fun3d_aim
 
