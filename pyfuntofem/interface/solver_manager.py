@@ -2,8 +2,11 @@ __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
 import importlib
-from .tacs_interface import TacsSteadyInterface
-from .tacs_interface_unsteady import TacsUnsteadyInterface
+
+tacs_loader = importlib.util.find_spec("tacs")
+if tacs_loader is not None:
+    from .tacs_interface import TacsSteadyInterface
+    from .tacs_interface_unsteady import TacsUnsteadyInterface
 
 
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -144,13 +147,11 @@ class SolverManager:
 
     @property
     def struct_comm(self):
-        is_tacs = isinstance(self.structural, TacsSteadyInterface) or isinstance(
-            self.structural, TacsUnsteadyInterface
-        )
-        if (
-            is_tacs
-        ):  # TODO : change tacs_comm -> comm and comm -> master_comm so simpler
-            return self.structural.tacs_comm
+        if tacs_loader is not None:
+            if isinstance(self.structural, TacsSteadyInterface) or isinstance(
+                self.structural, TacsUnsteadyInterface
+            ):
+                return self.structural.tacs_comm
         elif self.structural is not None:
             return self.structural.comm
         else:

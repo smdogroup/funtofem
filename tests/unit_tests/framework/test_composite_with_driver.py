@@ -161,6 +161,7 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         driver.solve_forward()
         driver.solve_adjoint()
         model.evaluate_composite_functions()
+
         adjoint_TD = composite1.get_gradient_component(svar) * dcomposite_ds[0]
         adjoint_TD += composite2.get_gradient_component(svar) * dcomposite_ds[1]
         adjoint_TD += min_drag.get_gradient_component(svar) * dcomposite_ds[2]

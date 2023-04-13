@@ -26,6 +26,12 @@ from ._base import Base
 from .variable import Variable
 from .function import Function
 
+import importlib
+
+tacs_loader = importlib.util.find_spec("tacs")
+if tacs_loader is not None:
+    from pyfuntofem.interface import TacsIntegrationSettings
+
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
@@ -41,6 +47,7 @@ class Scenario(Base):
         preconditioner_steps=0,
         T_ref=300,
         T_inf=300,
+        tacs_integration_settings=None,
         suther1=1.458205e-6,
         suther2=110.3333,
         gamma=1.4,
@@ -69,6 +76,8 @@ class Scenario(Base):
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
             Fluid freestream reference temperature in Kelvin.
+        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
+            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
 
         Optional Parameters/Constants
         -----------------------------
@@ -99,6 +108,7 @@ class Scenario(Base):
         self.steady = steady
         self.steps = steps
         self.preconditioner_steps = preconditioner_steps
+        self.tacs_integration_settings = tacs_integration_settings
 
         self.T_ref = T_ref
         self.T_inf = T_inf
@@ -137,11 +147,18 @@ class Scenario(Base):
         )
 
     @classmethod
-    def unsteady(cls, name: str, steps: int, preconditioner_steps: int = 0):
+    def unsteady(
+        cls,
+        name: str,
+        steps: int,
+        preconditioner_steps: int = 0,
+        tacs_integration_settings=None,
+    ):
         return cls(
             name=name,
             steady=False,
             steps=steps,
+            tacs_integration_settings=tacs_integration_settings,
             preconditioner_steps=preconditioner_steps,
         )
 
@@ -224,6 +241,8 @@ class Scenario(Base):
         elif isinstance(obj, Variable):
             assert obj.analysis_type is not None
             self.add_variable(vartype=obj.analysis_type, var=obj)
+        elif isinstance(obj, TacsIntegrationSettings):
+            self.tacs_integration_settings = obj
         else:
             raise ValueError(
                 "Scenario include method does not currently support other methods"
