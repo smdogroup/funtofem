@@ -160,15 +160,15 @@ class CompositeFunctionDriverTest(unittest.TestCase):
 
         """complex step test over composite function"""
 
-        functions = [composite1, composite2, min_drag]
-        nfunc = len(functions)
+        composite_functions = [composite1, composite2, min_drag]
+        ncfunc = len(composite_functions)
         variables = model.get_variables()
 
         # random test vector for composite function derivatives
         dvar_ds = {var: np.random.rand() for var in model.get_variables()}
         # generate random contravariant tensor d(composite_i)/ds
         # for converting error among three composites to one scalar
-        dcomposite_ds = np.random.rand(nfunc)
+        dcomposite_ds = np.random.rand(ncfunc)
 
         # adjoint for analysis funcs => composite function derivatives
         # adjoint evaluation of analysis function derivatives
@@ -177,8 +177,8 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         model.evaluate_composite_functions()
 
         adjoint_TD = 0.0
-        for ifunc, func in enumerate(functions):
-            adjoint_TD += func.directional_derivative(dvar_ds) * dcomposite_ds[ifunc]
+        for ifunc, cfunc in enumerate(composite_functions):
+            adjoint_TD += cfunc.directional_derivative(dvar_ds) * dcomposite_ds[ifunc]
 
         # complex step directly to compute composite function values
         h = 1e-30
@@ -188,8 +188,8 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         model.evaluate_composite_functions()
 
         complex_step_TD = 0.0
-        for ifunc, func in enumerate(functions):
-            complex_step_TD += func.value.imag / h * dcomposite_ds[ifunc]
+        for ifunc, cfunc in enumerate(composite_functions):
+            complex_step_TD += cfunc.value.imag / h * dcomposite_ds[ifunc]
 
         # compute the relative error between complex step + adjoint
         rel_error = (adjoint_TD - complex_step_TD) / complex_step_TD
