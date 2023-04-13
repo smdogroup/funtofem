@@ -289,9 +289,6 @@ class Fun3dOnewayDriver:
                 f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
             )
 
-            # update function values
-            self._get_remote_functions()
-
         else:  # non-remote call of FUN3D forward analysis
             # read in the funtofem design input file
             self.model.read_design_variables_file(
@@ -347,6 +344,10 @@ class Fun3dOnewayDriver:
         if self.change_shape:  # either remote or regular
             # run the tacs aim postAnalysis to compute the chain rule product
             self.fun3d_aim.post_analysis(self.fun3d_remote.aero_sens_file)
+
+            # update function values, NOTE : function values are not available in the remote version of the driver
+            # after solve_forward (if you just need one grid and solve_forward, you don't need a remote driver, build the analysis one)
+            self._get_remote_functions()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:

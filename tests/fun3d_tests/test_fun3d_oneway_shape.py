@@ -37,8 +37,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 class TestFun3dOnewayShape(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
-    which uses fixed struct disps or no struct disps
-    TODO : in the case of an unsteady one, add methods for those too?
+    with aero shape derivatives from the FUN3D AIM.
     """
 
     FILENAME = "fun3d-oneway-shape.txt"

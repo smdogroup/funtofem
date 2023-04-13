@@ -290,6 +290,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
 
+        # update function values, NOTE : function values are not available in the remote version of the driver
+        # after solve_forward (if you just need one grid and solve_forward, you don't need a remote driver, build the analysis one)
+        if self.aero_shape:
+            self._get_remote_functions(discipline="aerodynamic")
+        elif self.struct_shape:
+            self._get_remote_functions(discipline="structural")
+
         return
 
     def _setup_grid_filepaths(self):
@@ -311,18 +318,23 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.fun3d_aim.grid_filepaths = grid_filepaths
         return
 
-    def _get_remote_functions(self):
+    def _get_remote_functions(self, discipline="aerodynamic"):
         """
         read function values from fun3dAIM when operating in the remote version of the driver
         doesn't matter which aim we read the function values from since it's the same
         """
         functions = self.model.get_functions()
         remote_functions = None
-        if self.fun3d_aim.root_proc:
+        if self.root_proc:
             remote_functions = []
-            direct_fun3d_aim = self.fun3d_aim.aim
+            direct_aim = None
+            # depending on which AIM is available, read function values from that
+            if discipline == "aerodynamic":
+                direct_aim = self.fun3d_aim.aim
+            elif discipline == "structural":
+                direct_aim = self.tacs_aim.aim
             for ifunc, func in enumerate(functions):
-                remote_functions[ifunc] = direct_fun3d_aim.dynout[func.full_name].value
+                remote_functions[ifunc] = direct_aim.dynout[func.full_name].value
 
         # broadcast the function values to other processors
         fun3d_aim_root = self.fun3d_aim.root
