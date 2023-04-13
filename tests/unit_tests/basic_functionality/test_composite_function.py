@@ -1,5 +1,5 @@
 import unittest
-from pyfuntofem.model import Function, CompositeFunction
+from pyfuntofem.model import Function, CompositeFunction, Variable
 
 
 class TestCompositeFunction(unittest.TestCase):
@@ -39,6 +39,24 @@ class TestCompositeFunction(unittest.TestCase):
         print(f"full func name = {full_func.name}")
         print(f"pred func name = {pred_full_func_name}")
         assert full_func.full_name == pred_full_func_name
+        return
+
+    def test_with_variables(self):
+        lift = Function.lift()
+        drag = Function.drag()
+        mass = Function.mass()
+
+        my_comp = lift / drag * mass
+
+        # add rib variables into our composite function
+        nribs = 10
+        for irib in range(1, nribs + 1):
+            rib_var = Variable.structural(f"rib{irib}", value=0.1 * irib)
+            my_comp = my_comp + rib_var.composite_function
+
+        # multiply aoa var by our composite function
+        aoa = Variable.aerodynamic("AOA", value=2.0)
+        my_comp = my_comp * aoa.composite_function
         return
 
 

@@ -23,6 +23,7 @@ __all__ = ["Variable"]
 
 from ._base import Base
 import importlib
+from .composite_function import CompositeFunction
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -200,3 +201,36 @@ class Variable(object):
             return Variable.shape(name=obj.name, value=obj.value)
         else:
             raise AssertionError("Input caps2tacs object not appropriate type.")
+
+    @property
+    def composite_function(self):
+        """turn this variable into a composite function"""
+        return CompositeFunction.cast(self)
+
+    # arithmetic with composite functions
+    def __add__(self, func):
+        return self.composite_function.__add__(func)
+
+    def __radd__(self, func):
+        return self.composite_function.__radd__(func)
+
+    def __sub__(self, func):
+        return self.composite_function.__sub__(func)
+
+    def __rsub__(self, func):
+        return self.composite_function.__rsub__(func)
+
+    def __mul__(self, func):
+        return self.composite_function.__mul__(func)
+
+    def __rmul__(self, func):
+        return self.composite_function.__rmul__(func)
+
+    def __truediv__(self, func):
+        return self.composite_function.__truediv__(func)
+
+    def __rtruediv__(self, func):
+        return self.composite_function.__rtruediv__(func)
+
+    def __pow__(self, func):
+        return self.composite_function.__pow__(func)
