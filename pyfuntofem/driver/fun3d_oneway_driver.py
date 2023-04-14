@@ -24,6 +24,7 @@ limitations under the License.
 # FUN3D one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["Fun3dOnewayDriver", "Fun3dRemote"]
 
+import numpy as np
 
 """
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
@@ -281,7 +282,7 @@ class Fun3dOnewayDriver:
             )
 
             # clear the output file
-            if self.root_proc:
+            if self.root_proc and os.path.exists(self.fun3d_remote.output_file):
                 os.remove(self.fun3d_remote.output_file)
 
             # system call the analysis driver
@@ -519,10 +520,12 @@ class Fun3dOnewayDriver:
         """
         read function values from fun3dAIM when operating in the remote version of the driver
         """
+        print(f"Entering get remote functions...", flush=True)
         functions = self.model.get_functions()
+        nfunc = len(functions)
         remote_functions = None
         if self.fun3d_aim.root_proc:
-            remote_functions = []
+            remote_functions = np.zeros((nfunc))
             direct_fun3d_aim = self.fun3d_aim.aim
             for ifunc, func in enumerate(functions):
                 remote_functions[ifunc] = direct_fun3d_aim.dynout[func.full_name].value
@@ -534,6 +537,10 @@ class Fun3dOnewayDriver:
         # update model function values in the remote version of the driver
         for ifunc, func in enumerate(functions):
             func.value = remote_functions[ifunc]
+            if (
+                self.comm.rank == 0
+            ):  # debug print out for func values to check if read in properly
+                print(f"function {func.name} = {func.value}")
         return
 
     def _get_shape_derivatives(self, scenario):

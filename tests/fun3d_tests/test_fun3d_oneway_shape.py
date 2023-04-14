@@ -84,6 +84,7 @@ class TestFun3dOnewayShape(unittest.TestCase):
             model,
             driver,
             TestFun3dOnewayShape.FILEPATH,
+            both_adjoint=True,
         )
         self.assertTrue(max_rel_error < 1e-4)
 

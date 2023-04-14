@@ -860,6 +860,7 @@ class TestResult:
         driver,
         status_file,
         epsilon=1e-5,
+        both_adjoint=False, # have to call adjoint in both times for certain drivers
     ):
         """
         perform finite difference test on a model and driver for multiple functions & variables
@@ -875,6 +876,8 @@ class TestResult:
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients(all=True)
+        i_functions = [func.value.real for func in model.get_functions(all=True)]
+        
 
         # compute adjoint total derivative df/dx
         adjoint_TD = np.zeros((nfunctions))
@@ -883,13 +886,13 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform finite difference computation
-        driver.solve_forward()
-        i_functions = [func.value.real for func in model.get_functions(all=True)]
-
         variables = model.get_variables()
         for ivar in range(nvariables):
             variables[ivar].value += epsilon * dxds[ivar]
+
         driver.solve_forward()
+        if both_adjoint:
+            driver.solve_adjoint()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [

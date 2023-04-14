@@ -1,5 +1,6 @@
 __all__ = ["FuntofemShapeDriver"]
 
+import numpy as np
 
 """
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
@@ -324,9 +325,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         doesn't matter which aim we read the function values from since it's the same
         """
         functions = self.model.get_functions()
+        nfunc = len(functions)
         remote_functions = None
         if self.root_proc:
-            remote_functions = []
+            remote_functions = np.zeros((nfunc))
             direct_aim = None
             # depending on which AIM is available, read function values from that
             if discipline == "aerodynamic":
