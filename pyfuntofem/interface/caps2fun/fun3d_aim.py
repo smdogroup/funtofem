@@ -10,6 +10,7 @@ class Fun3dAimMetaData:
 
 
 class Fun3dBC:
+    # Available boundary condition types in AFLR AIM
     BC_TYPES = ["inviscid", "viscous", "Farfield"]
 
     def __init__(self, caps_group, bc_type, wall_spacing=None):
@@ -75,12 +76,12 @@ class Fun3dAim:
             self.aim.input.Design_SensFile = True
             self.aim.input.Design_Sensitivity = True
 
-        self.metadata = None
+        self._metadata = None
         if self.root_proc:
-            self.metadata = Fun3dAimMetaData(
+            self._metadata = Fun3dAimMetaData(
                 project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
             )
-        self.metadata = self.comm.bcast(self.metadata, root=root)
+        self._metadata = self.comm.bcast(self.metadata, root=root)
 
     @property
     def root_proc(self):
@@ -118,7 +119,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self.metadata.project_name
+        return self._metadata.project_name
 
     @property
     def grid_filepaths(self):
@@ -180,7 +181,7 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self.metadata.analysis_dir
+        return self._metadata.analysis_dir
 
     def pre_analysis(self, shape_variables=[]):
         if self.root_proc:
