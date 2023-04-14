@@ -81,7 +81,7 @@ class Fun3dAim:
             self._metadata = Fun3dAimMetaData(
                 project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
             )
-        self._metadata = self.comm.bcast(self.metadata, root=root)
+        self._metadata = self.comm.bcast(self._metadata, root=root)
 
     @property
     def root_proc(self):
