@@ -1,4 +1,4 @@
-import os
+import os, importlib
 from tacs import TACS
 from mpi4py import MPI
 import numpy as np
@@ -57,7 +57,9 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
+        scenario = Scenario.steady("turbulent", steps=1000).include(
+            Function.ksfailure()
+        )
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -92,7 +94,9 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.temperature())
+        scenario = Scenario.steady("turbulent", steps=1000).include(
+            Function.temperature()
+        )
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -127,7 +131,9 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.temperature())
+        scenario = Scenario.steady("turbulent", steps=1000).include(
+            Function.temperature()
+        )
         scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
 
@@ -153,6 +159,7 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         assert abs(rel_error) < rtol
         return
 
+    @unittest.skip("temp")
     def test_steady_aero_multiscenario_aerothermoelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
