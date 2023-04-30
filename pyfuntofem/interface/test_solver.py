@@ -987,7 +987,7 @@ class CoordinateDerivativeTester:
     def model(self):
         return self.driver.model
 
-    def test_struct_coordinates(self, test_name, body=None):
+    def test_struct_coordinates(self, test_name,  body=None):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
@@ -1009,7 +1009,6 @@ class CoordinateDerivativeTester:
         self.driver.solve_adjoint()
 
         # add coordinate derivatives among scenarios
-        adjoint_TD = 0.0
 
         full_struct_shape_term = []
         for scenario in self.model.scenarios:
@@ -1017,27 +1016,39 @@ class CoordinateDerivativeTester:
             full_struct_shape_term.append(struct_shape_term)
         full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
         # add in struct coordinate derivatives of this scenario
-        adjoint_TD += (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real
-        adjoint_TD = float(adjoint_TD)
+        local_adjoint_TD = np.zeros((1))
+        local_adjoint_TD[0] = float( (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real )
+
+        # add up adjoint total derivatives across processors
+        adjoint_TD = np.zeros((1))
+        self.comm.Reduce(local_adjoint_TD, adjoint_TD, root=0)
+        adjoint_TD = self.comm.bcast(adjoint_TD, root=0)
 
         """Complex step to compute coordinate total derivatives"""
         # perturb the coordinate derivatives
         struct_X += 1j * self.epsilon * dstructX_ds
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_complex()
         self.driver.solve_forward()
 
         dfunc_ds = np.array(
             [func.value.imag / self.epsilon for func in self.model.get_functions()]
         )
-        complex_step_TD = np.sum(dL_dfunc * dfunc_ds)
+        local_complex_step_TD = np.zeros((1))
+        local_complex_step_TD[0] = np.sum(dL_dfunc * dfunc_ds)
 
-        rel_error = TestResult.relative_error(adjoint_TD, complex_step_TD)
+        complex_step_TD = np.zeros((1))
+        self.comm.Reduce(local_complex_step_TD, complex_step_TD, root=0)
+        complex_step_TD = self.comm.bcast(complex_step_TD, root=0)
+
+        rel_error = TestResult.relative_error(adjoint_TD[0], complex_step_TD[0])
         print(f"\n{test_name}")
         print(f"\tadjoint TD = {adjoint_TD}")
         print(f"\tcomplex step TD = {complex_step_TD}")
         print(f"\trel error = {rel_error}\n")
         return rel_error
 
-    def test_aero_coordinates(self, test_name, body=None):
+    def test_aero_coordinates(self, test_name, status_file, inode=None, body=None):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
@@ -1047,8 +1058,7 @@ class CoordinateDerivativeTester:
         # random covariant tensor to aggregate derivative error among one or more functions
         # compile full struct shape term
         nf = len(self.model.get_functions())
-        dL_dfunc = np.random.rand(nf)
-        dL_dfunc_col = np.reshape(dL_dfunc, newshape=(nf, 1))
+        func_names = [func.full_name for func in self.model.get_functions()]
 
         # random contravariant tensor d(struct_X)/ds for testing struct shape
         daeroXds = np.random.rand(aero_X.shape[0])
@@ -1059,30 +1069,44 @@ class CoordinateDerivativeTester:
         self.driver.solve_adjoint()
 
         # add coordinate derivatives among scenarios
-        adjoint_TD = 0.0
-
         full_aero_shape_term = []
         for scenario in self.model.scenarios:
             aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
             full_aero_shape_term.append(aero_shape_term)
         full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
         # add in struct coordinate derivatives of this scenario
-        adjoint_TD += (daeroX_ds_row @ full_aero_shape_term @ dL_dfunc_col).real
-        adjoint_TD = float(adjoint_TD)
+        local_dfds = np.zeros((1))
+        local_dfds[0] = float( (daeroX_ds_row @ full_aero_shape_term).real )
+        adjoint_derivs = np.zeros((1))
+        self.comm.Reduce(local_dfds, adjoint_derivs, root=0)
+        adjoint_derivs = self.comm.bcast(adjoint_derivs, root=0)
+        adjoint_derivs = [adjoint_derivs[i] for i in range(nf)]
 
         """Complex step to compute coordinate total derivatives"""
         # perturb the coordinate derivatives
-        aero_X += 1j * self.epsilon * daeroXds
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_complex()
+        body.aero_X += 1j * self.epsilon * daeroXds
         self.driver.solve_forward()
 
-        dfunc_ds = np.array(
+        complex_step_derivs = np.array(
             [func.value.imag / self.epsilon for func in self.model.get_functions()]
         )
-        complex_step_TD = np.sum(dL_dfunc * dfunc_ds)
 
-        rel_error = TestResult.relative_error(adjoint_TD, complex_step_TD)
-        print(f"\n{test_name}")
-        print(f"\tadjoint TD = {adjoint_TD}")
-        print(f"\tcomplex step TD = {complex_step_TD}")
-        print(f"\trel error = {rel_error}\n")
-        return rel_error
+        rel_error = [TestResult.relative_error(complex_step_derivs[i],adjoint_derivs[i]) for i in range(nf)]
+
+        # make test results object and write it to file
+        file_hdl = open(status_file, "a") if self.comm.rank == 0 else None
+        TestResult(
+            test_name,
+            func_names,
+            complex_step_derivs,
+            adjoint_derivs,
+            rel_error,
+            comm=self.comm,
+        ).write(file_hdl).report()
+
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+
+        return max_rel_error

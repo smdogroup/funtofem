@@ -421,7 +421,7 @@ class Fun3dOnewayDriver:
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
-        self._extract_coordinate_derivatives(scenario, bodies, step=scenario.steps)
+        self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.fun3d_interface.post_adjoint(scenario, bodies)
 
         # transfer disps adjoint since fa -> fs has shape dependency

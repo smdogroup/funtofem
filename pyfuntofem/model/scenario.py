@@ -45,6 +45,7 @@ class Scenario(Base):
         fun3d=True,
         steps=1000,
         preconditioner_steps=0,
+        adjoint_steps=None,
         T_ref=300,
         T_inf=300,
         tacs_integration_settings=None,
@@ -105,6 +106,7 @@ class Scenario(Base):
         self.id = id
         self.group = group
         self.group_master = False
+        self.adjoint_steps = adjoint_steps
         self.variables = {}
 
         self.functions = []
