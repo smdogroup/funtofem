@@ -310,7 +310,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
             solvers.flow.set_functions(scenario, bodies)
 
             # run the forward analysis via iterate
-            solvers.flow.initialize(scenario, bodies, cmplx=True)
+            solvers.flow.initialize(scenario, bodies)
             # print(f"aeroX = {plate.aero_X}",flush=True)
             for step in range(1, scenario.steps + 1):
                 solvers.flow.iterate(scenario, bodies, step=0)
