@@ -294,7 +294,6 @@ class TestFun3dAeroCoords(unittest.TestCase):
         # finite diff analysis with perturbed aero coordinates
         # h = 1e-5
         h = 1e-30
-        cmplx = True
         # plate.aero_X += 1j * h * daeroX_ds
         # convert to a complex flow solver now
         solvers.make_flow_complex()
@@ -323,12 +322,9 @@ class TestFun3dAeroCoords(unittest.TestCase):
         f_lift = model.get_functions()[0].value
         print(f"complex lift = {f_lift}", flush=True)
 
-        if cmplx:
-            complex_step_derivs = np.array(
-                [func.value.imag / h for func in model.get_functions()]
-            )
-        else:
-            complex_step_derivs = [(f_lift - i_lift) / h]
+        complex_step_derivs = np.array(
+            [func.value.imag / h for func in model.get_functions()]
+        )
 
         rel_error = [
             TestResult.relative_error(complex_step_derivs[i], adjoint_derivs[i])
