@@ -987,7 +987,7 @@ class CoordinateDerivativeTester:
     def model(self):
         return self.driver.model
 
-    def test_struct_coordinates(self, test_name,  body=None):
+    def test_struct_coordinates(self, test_name, body=None):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
@@ -1017,7 +1017,9 @@ class CoordinateDerivativeTester:
         full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
         # add in struct coordinate derivatives of this scenario
         local_adjoint_TD = np.zeros((1))
-        local_adjoint_TD[0] = float( (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real )
+        local_adjoint_TD[0] = float(
+            (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real
+        )
 
         # add up adjoint total derivatives across processors
         adjoint_TD = np.zeros((1))
@@ -1076,7 +1078,7 @@ class CoordinateDerivativeTester:
         full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
         # add in struct coordinate derivatives of this scenario
         local_dfds = np.zeros((1))
-        local_dfds[0] = float( (daeroX_ds_row @ full_aero_shape_term).real )
+        local_dfds[0] = float((daeroX_ds_row @ full_aero_shape_term).real)
         adjoint_derivs = np.zeros((1))
         self.comm.Reduce(local_dfds, adjoint_derivs, root=0)
         adjoint_derivs = self.comm.bcast(adjoint_derivs, root=0)
@@ -1093,7 +1095,10 @@ class CoordinateDerivativeTester:
             [func.value.imag / self.epsilon for func in self.model.get_functions()]
         )
 
-        rel_error = [TestResult.relative_error(complex_step_derivs[i],adjoint_derivs[i]) for i in range(nf)]
+        rel_error = [
+            TestResult.relative_error(complex_step_derivs[i], adjoint_derivs[i])
+            for i in range(nf)
+        ]
 
         # make test results object and write it to file
         file_hdl = open(status_file, "a") if self.comm.rank == 0 else None
