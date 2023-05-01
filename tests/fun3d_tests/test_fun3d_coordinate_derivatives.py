@@ -60,7 +60,7 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         scenario = Scenario.steady("turbulent", steps=7000).include(
             Function.ksfailure()
         )
-        scenario.adjoint_steps=2000
+        scenario.adjoint_steps = 2000
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -78,7 +78,8 @@ class TestFun3dCoordinateDerivatives(unittest.TestCase):
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(coupled_driver)
         rel_error = tester.test_aero_coordinates(
-            "funtofem driver, steady-aeroelastic", TestFun3dCoordinateDerivatives.FILEPATH
+            "funtofem driver, steady-aeroelastic",
+            TestFun3dCoordinateDerivatives.FILEPATH,
         )
         assert abs(rel_error) < rtol
         return
