@@ -361,7 +361,7 @@ class MeldBuilder(Builder):
         n=200,
         beta=0.5,
         check_partials=False,
-        linearized=False
+        linearized=False,
     ):
         self.aero_builder = aero_builder
         self.struct_builder = struct_builder
