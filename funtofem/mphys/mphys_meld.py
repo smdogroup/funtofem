@@ -361,6 +361,7 @@ class MeldBuilder(Builder):
         n=200,
         beta=0.5,
         check_partials=False,
+        linearized=False
     ):
         self.aero_builder = aero_builder
         self.struct_builder = struct_builder
@@ -368,15 +369,21 @@ class MeldBuilder(Builder):
         self.n = n
         self.beta = beta
         self.check_partials = check_partials
+        self.linearized = linearized
 
     def initialize(self, comm):
         self.nnodes_aero = self.aero_builder.get_number_of_nodes()
         self.nnodes_struct = self.struct_builder.get_number_of_nodes()
         self.ndof_struct = self.struct_builder.get_ndof()
 
-        self.meld = TransferScheme.pyMELD(
-            comm, comm, 0, comm, 0, self.isym, self.n, self.beta
-        )
+        if self.linearized:
+            self.meld = TransferScheme.pyLinearizedMELD(
+                comm, comm, 0, comm, 0, self.isym, self.n, self.beta
+            )
+        else:
+            self.meld = TransferScheme.pyMELD(
+                comm, comm, 0, comm, 0, self.isym, self.n, self.beta
+            )
 
     def get_coupling_group_subsystem(self, scenario_name=None):
         disp_xfer = MeldDispXfer(
