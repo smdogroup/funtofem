@@ -29,6 +29,7 @@ class Fun3dModel:
         comm,
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
+        mesh_morph=False,
     ):
         """
         make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
@@ -44,10 +45,26 @@ class Fun3dModel:
             caps_problem = pyCAPS.Problem(
                 problemName=problem_name, capsFile=csm_file, outLevel=1
             )
-        fun3d_aim = Fun3dAim(caps_problem, comm)
+        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph)
         aflr_aim = AflrAim(caps_problem, comm)
 
         return cls(fun3d_aim, aflr_aim, comm, project_name)
+
+    @classmethod
+    def build_morph(
+        cls,
+        csm_file,
+        comm,
+        project_name="fun3d_CAPS",
+        problem_name: str = "capsFluid",
+    ):
+        return cls.build(
+            csm_file=csm_file,
+            comm=comm,
+            project_name=project_name,
+            problem_name=problem_name,
+            mesh_morph=True,
+        )
 
     @property
     def root_proc(self) -> bool:
@@ -60,6 +77,14 @@ class Fun3dModel:
     @property
     def aflr_aim(self) -> AflrAim:
         return self._aflr_aim
+
+    @property
+    def mesh_morph(self) -> bool:
+        return self.fun3d_aim.mesh_morph
+
+    @property
+    def mesh_morph_file(self):
+        return self.fun3d_aim.mesh_morph_file
 
     def _set_project_names(self):
         """set the project names into both aims for grid filenames"""

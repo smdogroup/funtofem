@@ -403,13 +403,18 @@ class Fun3dInterface(SolverInterface):
             if aero_nnodes > 0:
                 # Aero solver contribution = dGdxa0^T psi_G
                 # dx, dy, dz are the x, y, and z components of dG/dxA0
-                dx, dy, dz = self.fun3d_adjoint.extract_grid_adjoint_product(
+                (
+                    dGdxa0_x,
+                    dGdxa0_y,
+                    dGdxa0_z,
+                ) = self.fun3d_adjoint.extract_grid_coord_adjoint_product(
                     aero_nnodes, nfunctions, body=ibody
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
-                aero_shape_term[0::3, :nfunctions] += dx[:, :] * self.flow_dt
-                aero_shape_term[1::3, :nfunctions] += dy[:, :] * self.flow_dt
-                aero_shape_term[2::3, :nfunctions] += dz[:, :] * self.flow_dt
+                for ifunc in range(nfunctions):
+                    aero_shape_term[0::3, ifunc] += dGdxa0_x[:, ifunc] * self.flow_dt
+                    aero_shape_term[1::3, ifunc] += dGdxa0_y[:, ifunc] * self.flow_dt
+                    aero_shape_term[2::3, ifunc] += dGdxa0_z[:, ifunc] * self.flow_dt
 
         return
 
@@ -460,7 +465,9 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(scenario, time_index=step)
+            aero_disps = body.get_aero_disps(
+                scenario, time_index=step, with_morphing=True
+            )
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
             if deform and aero_disps is not None and aero_nnodes > 0:
@@ -602,7 +609,7 @@ class Fun3dInterface(SolverInterface):
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
+                aero_disps = body.get_aero_disps(scenario, with_morphing=True)
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps is not None and aero_nnodes > 0:
                     dx = np.asfortranarray(aero_disps[0::3])

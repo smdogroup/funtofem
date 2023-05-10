@@ -203,6 +203,12 @@ class Fun3dOnewayDriver:
                 "Need shape variables to use the Fun3dOnewayDriver otherwise use the Fun3dOnewayAnalyzer which duals as the driver for no shape DVs."
             )
 
+        if self.is_remote and self.model.flow is not None:
+            if self.model.flow.mesh_morph:
+                raise AssertionError(
+                    "The mesh morphing does not require a remote driver! Make this driver regularly!"
+                )
+
         if not self.is_remote:
             assert isinstance(self.solvers.flow, Fun3dInterface)
             if self.change_shape and self.root_proc:
@@ -270,7 +276,10 @@ class Fun3dOnewayDriver:
 
         if self.change_shape:
             # run the pre analysis to generate a new mesh
-            self.fun3d_aim.pre_analysis(self.shape_variables)
+            self.fun3d_aim.pre_analysis()
+
+            if self.model.flow.mesh_morph:
+                self.model.read_fun3d_surface_file(self.comm, root=0)
 
         # system call FUN3D forward analysis
         if self.is_remote:
@@ -306,6 +315,9 @@ class Fun3dOnewayDriver:
             if self.unsteady:
                 for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
+
+        if self.change_shape and self.fun3d_aim.mesh_morph:
+            self.fun3d_aim.unlink()
         return
 
     def solve_adjoint(self):
@@ -409,6 +421,11 @@ class Fun3dOnewayDriver:
         return
 
     def _solve_steady_adjoint(self, scenario, bodies):
+        if scenario.adjoint_steps is None:
+            steps = scenario.steps
+        else:
+            steps = scenario.adjoint_steps
+
         # set functions and variables
         self.fun3d_interface.set_variables(scenario, bodies)
         self.fun3d_interface.set_functions(scenario, bodies)
@@ -419,7 +436,7 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.fun3d_interface.initialize_adjoint(scenario, bodies)
-        for step in range(1, scenario.steps + 1):
+        for step in range(1, steps + 1):
             self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.fun3d_interface.post_adjoint(scenario, bodies)

@@ -83,6 +83,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
 
         # first we do the adjoint analysis in real mode
         # forward analysis first
+        solvers.make_flow_real()
         for scenario in model.scenarios:
             # set functions and variables
             solvers.flow.set_variables(scenario, bodies)
@@ -236,6 +237,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
 
         # first we do the adjoint analysis in real mode
         # forward analysis first
+        solvers.make_flow_real()
         for scenario in model.scenarios:
             # set functions and variables
             solvers.flow.set_variables(scenario, bodies)

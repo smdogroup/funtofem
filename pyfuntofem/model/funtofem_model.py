@@ -22,11 +22,9 @@ limitations under the License.
 
 __all__ = ["FUNtoFEMmodel"]
 
-import numpy as np
+import numpy as np, os, importlib
 from .variable import Variable
 from pyfuntofem.interface.caps2fun import Fun3dModel
-
-import importlib
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -204,23 +202,23 @@ class FUNtoFEMmodel(object):
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
-            aero_varnames = []
-            shape_varnames = []
+            active_shape_vars = []
+            active_aero_vars = []
 
             # add shape variable names to varnames
             for var in shape_variables:
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
-                        shape_varnames.append(despmtr)
+                        active_shape_vars.append(var)
                         break
 
             # add aerodynamic variable names to varnames
             for var in aero_variables:
                 if var.active:
-                    aero_varnames.append(var.name)
+                    active_aero_vars.append(var)
 
             # input the design parameters into the Fun3dModel and Fun3dAim
-            self.flow.set_variables(shape_varnames, aero_varnames)
+            self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
     def print_summary(self, print_level=0):
@@ -874,6 +872,64 @@ class FUNtoFEMmodel(object):
                     hdl.write(f"\tvar {var.name} {var.value.real}\n")
 
             hdl.close()
+
+        return
+
+    def read_fun3d_surface_file(self, comm, filename=None, root=0):
+        """read a body1.dat file for deformed aero surface from Fun3dModel for mesh morphing"""
+
+        # default file through fun3d aim
+        if filename is None:
+            filename = self.flow.mesh_morph_file
+
+        deformed_surface_coords = None
+        surface_aero_ids = None
+        if comm.rank == root:  # read the file in on the root processor
+            deformed_surface_coords = []
+            surface_aero_ids = []
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.strip().split(" ")
+                # assume scientific notation in x,y,z
+                if len(chunks) == 4:
+                    scientific_doubles = (
+                        ("e" in chunks[0]) or ("e" in chunks[1]) or ("e" in chunks[2])
+                    )
+                    if scientific_doubles:
+                        x = float(chunks[0])
+                        y = float(chunks[1])
+                        z = float(chunks[2])
+                        id = int(chunks[3])
+
+                        deformed_surface_coords += [x, y, z]
+                        surface_aero_ids += [id]
+
+            deformed_surface_coords = np.array(deformed_surface_coords)
+
+        # broadcast the deformed surface coordinates and ids to the root processor
+        deformed_surface_coords = comm.bcast(deformed_surface_coords, root=root)
+        surface_aero_ids = comm.bcast(surface_aero_ids, root=root)
+
+        print(f"surface aero ids = {surface_aero_ids}", flush=True)
+
+        # compute aero shape disps for each body (all the same)
+        for body in self.bodies:
+            aero_X = body.aero_X
+            body.aero_shape_disps = np.zeros((3 * body.aero_nnodes), dtype=body.dtype)
+
+            # build matching deformed_aero_X using bodies local aero ids
+            for i, body_id in enumerate(body.aero_id):
+                for j, dat_id in enumerate(surface_aero_ids):
+                    if body_id == dat_id:
+                        break
+                body.aero_shape_disps[3 * i : 3 * i + 3] = (
+                    deformed_surface_coords[3 * j : 3 * j + 3]
+                    - aero_X[3 * i : 3 * i + 3]
+                )
 
         return
 
