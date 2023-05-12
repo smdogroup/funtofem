@@ -101,7 +101,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
             model,
             driver,
             TestFun3dOnewayMorph.FILEPATH,
-            both_adjoint=False,
+            epsilon=1.0e-4,
         )
         self.assertTrue(max_rel_error < 1e-4)
 

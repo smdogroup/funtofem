@@ -201,8 +201,12 @@ class Fun3dAim:
         return self.metadata.analysis_dir
 
     @property
-    def mesh_morph_file(self):
-        return os.path.join(self.analysis_dir, "Flow", f"{self.project_name}_body1.dat")
+    def mesh_morph_filename(self):
+        return f"{self.project_name}_body1.dat"
+
+    @property
+    def mesh_morph_filepath(self):
+        return os.path.join(self.analysis_dir, "Flow", self.mesh_morph_filename)
 
     def pre_analysis(self):
         if self.root_proc:

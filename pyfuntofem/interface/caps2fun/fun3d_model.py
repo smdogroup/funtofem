@@ -83,8 +83,12 @@ class Fun3dModel:
         return self.fun3d_aim.mesh_morph
 
     @property
-    def mesh_morph_file(self):
-        return self.fun3d_aim.mesh_morph_file
+    def mesh_morph_filename(self):
+        return self.fun3d_aim.mesh_morph_filename
+
+    @property
+    def mesh_morph_filepath(self):
+        return self.fun3d_aim.mesh_morph_filepath
 
     def _set_project_names(self):
         """set the project names into both aims for grid filenames"""

@@ -728,6 +728,7 @@ class TestResult:
         i_funcs=None,
         f_funcs=None,
         var_names=None,
+        epsilon=None,
     ):
         """
         Class to store test results from complex step method
@@ -740,6 +741,7 @@ class TestResult:
         self.method = method
         self.i_funcs = i_funcs
         self.f_funcs = f_funcs
+        self.epsilon = epsilon
         if rel_error is None:
             rel_error = []
             for i, _ in enumerate(self.complex_TD):
@@ -765,6 +767,8 @@ class TestResult:
         """
         if self.root_proc:
             file_hdl.write(f"Test: {self.name}\n")
+            if self.epsilon is not None:
+                file_hdl.write(f"\tStep size: {self.epsilon}\n")
             if self.var_names is not None:
                 file_hdl.write(f"\tVariables = {self.var_names}\n")
             if isinstance(self.func_names, list):
@@ -772,10 +776,12 @@ class TestResult:
                     file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
                     if self.i_funcs is not None:
                         if self.f_funcs is not None:  # if both defined write this
-                            file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}")
-                            file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}")
+                            file_hdl.write(
+                                f"\t\tinitial value = {self.i_funcs[ifunc]}\n"
+                            )
+                            file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
                         else:
-                            file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}")
+                            file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
                     file_hdl.write(f"\t\t{self.method} TD = {self.complex_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
@@ -784,10 +790,10 @@ class TestResult:
                 file_hdl.write(f"\tFunction {self.func_names}")
                 if self.i_funcs is not None:
                     if self.f_funcs is not None:  # if both defined write this
-                        file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}")
-                        file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}")
+                        file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}\n")
+                        file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
                     else:
-                        file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}")
+                        file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
                 file_hdl.write(f"\t{self.method} TD = {self.complex_TD}\n")
                 file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
                 file_hdl.write(f"\tRelative error = {self.rel_error}\n")
@@ -882,6 +888,7 @@ class TestResult:
             var_names=[var.name for var in model.get_variables()],
             i_funcs=[func.value.real for func in functions],
             f_funcs=None,
+            epsilon=epsilon,
         ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
@@ -907,7 +914,10 @@ class TestResult:
         func_names = [func.full_name for func in model.get_functions(all=True)]
 
         # generate random contravariant tensor in input space x(s)
-        dxds = np.random.rand(nvariables)
+        if nvariables > 1:
+            dxds = np.random.rand(nvariables)
+        else:
+            dxds = np.array([1.0])
 
         # solve the adjoint
         driver.solve_forward()
@@ -956,6 +966,7 @@ class TestResult:
             var_names=[var.name for var in model.get_variables()],
             i_funcs=i_functions,
             f_funcs=f_functions,
+            epsilon=epsilon,
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
