@@ -58,17 +58,41 @@ if tacs_loader is not None:
 
 class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @classmethod
+    def nominal(
+        cls,
+        solvers,
+        model,
+        transfer_settings=None,
+        comm_manager=None,
+    ):
+        """
+        build an FuntofemShapeDriver object with FUN3D mesh morphing or with no Fun3dAim
+        shape variables, this driver doesn't require a pair in another file
+        """
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            comm_manager=comm_manager,
+            is_paired=False,
+        )
+
+    @classmethod
     def remote(cls, solvers, model, fun3d_remote):
         """
         build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, fun3d_remote=fun3d_remote)
+        return cls(solvers, model, fun3d_remote=fun3d_remote, is_paired=True)
 
     @classmethod
     def analysis(
-        cls, solvers, model, transfer_settings=None, comm_manager=None, write_sens=True
+        cls,
+        solvers,
+        model,
+        transfer_settings=None,
+        comm_manager=None,
     ):
         """
         build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
@@ -80,7 +104,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             model,
             transfer_settings=transfer_settings,
             comm_manager=comm_manager,
-            write_sens=write_sens,
+            is_paired=True,
         )
 
     def __init__(
@@ -90,7 +114,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         transfer_settings=None,
         model=None,
         fun3d_remote=None,
-        write_sens=False,
+        is_paired=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -115,7 +139,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         )
 
         self.fun3d_remote = fun3d_remote
-        self.write_sens = write_sens
+        self.is_paired = is_paired
 
         # get shape variables
         self.shape_variables = [
@@ -184,8 +208,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
-            if self.model.flow.mesh_morph:
-                self.model.read_fun3d_surface_file(self.comm, root=0)
+            # doing this inside the Fun3dInterface now and FUN3D Fortran, move the _body1.dat file to the Scenario folders
+            # if self.model.flow.mesh_morph:
+            #    self.model.read_fun3d_surface_file(self.comm, root=0)
 
         if self.struct_shape:
             # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
@@ -266,31 +291,50 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # call funtofem adjoint analysis for non-remote driver
             super(FuntofemShapeDriver, self).solve_adjoint()
 
-            if self.struct_shape or self.write_sens:
+            if self.is_paired:
+                write_struct = True
+                write_aero = True
+                struct_sensfile = Fun3dRemote.paths(
+                    self.solvers.flow.fun3d_dir
+                ).struct_sens_file
+                aero_sensfile = Fun3dRemote.paths(
+                    self.solveres.flow.fun3d_dir
+                ).aero_sens_file
+            else:
+                if self.struct_shape:
+                    write_struct = True
+                    struct_sensfile = self.tacs_aim.sens_file_path
+                else:
+                    write_struct = False
+
+                if self.aero_shape:
+                    write_aero = True
+                    aero_sensfile = self.fun3d_aim.sens_file_path
+                else:
+                    write_aero = False
+
+            if write_struct:
                 # write the sensitivity file for the tacs AIM
                 self.model.write_sensitivity_file(
                     comm=self.comm,
-                    filename=Fun3dRemote.paths(
-                        self.solvers.flow.fun3d_dir
-                    ).struct_sens_file,
+                    filename=struct_sensfile,
                     discipline="structural",
                 )
 
-            if self.aero_shape or self.write_sens:
+            if write_aero:
                 # write sensitivity file for the FUN3D AIM
                 self.model.write_sensitivity_file(
                     comm=self.comm,
-                    filename=Fun3dRemote.paths(
-                        self.solvers.flow.fun3d_dir
-                    ).aero_sens_file,
+                    filename=aero_sensfile,
                     discipline="aerodynamic",
                 )
 
         if self.struct_shape:  # either remote or regular
-            # move struct sens file to tacs aim directory
-            tacs_sens_src = self.fun3d_remote.struct_sens_file
-            tacs_sens_dest = self.tacs_aim.sens_file_path
-            shutil.copy(tacs_sens_src, tacs_sens_dest)
+            if self.is_paired:
+                # move struct sens file to tacs aim directory
+                tacs_sens_src = self.fun3d_remote.struct_sens_file
+                tacs_sens_dest = self.tacs_aim.sens_file_path
+                shutil.copy(tacs_sens_src, tacs_sens_dest)
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.tacs_aim.post_analysis()
@@ -299,8 +343,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._get_struct_shape_derivatives(scenario)
 
         if self.aero_shape:  # either remote or regular
+            # src for movement of sens file if it was the paired driver case
+            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis(self.fun3d_remote.aero_sens_file)
+            self.fun3d_aim.post_analysis(sens_file_src)
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)

@@ -23,7 +23,7 @@ limitations under the License.
 __all__ = ["Fun3dInterface"]
 
 import numpy as np
-import os, sys, importlib
+import os, sys, importlib, shutil
 from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
@@ -201,6 +201,17 @@ class Fun3dInterface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
+        # if mesh morphing is online
+        if self.model.flow is not None:
+            morph_flag = self.model.flow.mesh_morph
+            if morph_flag and self.comm.rank == 0:
+                src = self.model.flow.mesh_morph_filepath
+                dest = os.path.join(
+                    self.root_dir, flow_dir, self.model.flow.mesh_morph_filename
+                )
+                shutil.copy2(src, dest)
+
         # Do the steps to initialize FUN3D
         self.fun3d_flow.initialize_project(comm=self.comm)
         if self.forward_options is None:
@@ -225,6 +236,10 @@ class Fun3dInterface(SolverInterface):
             else:
                 interface.design_push_body_mesh(ibody, [], [])
                 interface.design_push_body_name(ibody, body.name)
+
+        # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
+        if self.model.flow is not None:
+            self.fun3d_flow.set_mesh_morph(self.model.flow.mesh_morph)
 
         bcont = self.fun3d_flow.initialize_solution()
         if bcont == 0:
@@ -607,6 +622,10 @@ class Fun3dInterface(SolverInterface):
             self.fun3d_adjoint.set_up_moving_body()
             self.fun3d_adjoint.initialize_funtofem_adjoint()
 
+            # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
+            if self.model.flow is not None:
+                self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
+
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(scenario, with_morphing=True)
@@ -646,6 +665,11 @@ class Fun3dInterface(SolverInterface):
                     interface.design_push_body_mesh(ibody, [], [])
                     interface.design_push_body_name(ibody, body.name)
             self.fun3d_adjoint.initialize_grid()
+
+            # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
+            if self.model.flow is not None:
+                self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
+
             self.fun3d_adjoint.initialize_solution()
 
         self.dFdqinf = np.zeros(len(scenario.functions), dtype=TransferScheme.dtype)

@@ -1,0 +1,37 @@
+
+despmtr ff 20.0
+despmtr sspan 5.0
+despmtr camber 0.1
+despmtr thickness 0.12
+despmtr aoa 0.0
+
+box -ff -ff -ff 2*ff 2*ff 2*ff
+   attribute capsGroup $Farfield
+   attribute capsMesh $Farfield
+   ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
+   ATTRIBUTE AFLR4_CMP_ID 2
+   ATTRIBUTE AFLR4_Scale_Factor 10.0
+
+mark
+udprim naca camber camber thickness thickness
+udprim naca camber camber thickness thickness
+translate 0 0 -sspan
+loft 0
+translate 0 0 0.5*sspan
+rotatez -aoa 0 0
+select face
+    attribute capsGroup $wall
+    attribute capsMesh $wall
+    attribute AFLR4_Cmp_Id 1
+    attribute AFLR4_Edge_Refinement_Weight 0.1
+
+subtract
+
+rotatex 90 0 0
+
+select body
+attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
+attribute capsMeshLength 1.0
+
+end
+|||||||||||

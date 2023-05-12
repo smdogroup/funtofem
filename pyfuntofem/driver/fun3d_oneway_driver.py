@@ -146,32 +146,39 @@ class Fun3dRemote:
 
 class Fun3dOnewayDriver:
     @classmethod
+    def nominal(cls, solvers, model, transfer_settings=None):
+        """
+        build an Fun3dOnewayDriver with Fun3dAim shape variables and Fun3d analysis
+        all in one, using the Fun3d mesh morphing
+        """
+        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
+
+    @classmethod
     def remote(cls, solvers, model, fun3d_remote):
         """
         build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, fun3d_remote=fun3d_remote)
+        return cls(solvers, model, fun3d_remote=fun3d_remote, is_paired=True)
 
     @classmethod
-    def analysis(cls, solvers, model, transfer_settings=None, write_sens=True):
+    def analysis(cls, solvers, model, transfer_settings=None):
         """
         build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
             analysis and writing an aero.sens file to the fun3d directory
+        If you are using the analysis driver by itself like for FUN3D mesh morphing turn is_paired off
         """
-        return cls(
-            solvers, model, transfer_settings=transfer_settings, write_sens=write_sens
-        )
+        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=True)
 
     def __init__(
         self,
         solvers,
         model,
         transfer_settings=None,
-        write_sens=False,
         fun3d_remote=None,
+        is_paired=False,
     ):
         """
         build the FUN3D analysis driver for shape/no shape change, can run another FUN3D analysis remotely or
@@ -184,13 +191,15 @@ class Fun3dOnewayDriver:
             no need to add solvers.flow here just give it the comm so we can setup empty body class
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data.
+        is_paired: bool
+            Whether you need a pair of drivers to one remote and one analysis or just one analysis driver
         """
         self.solvers = solvers
         self.comm = solvers.comm
         self.model = model
         self.transfer_settings = transfer_settings
-        self.write_sens = write_sens
         self.fun3d_remote = fun3d_remote
+        self.is_paired = is_paired
 
         # store the shape variables list
         self.shape_variables = [
@@ -210,6 +219,12 @@ class Fun3dOnewayDriver:
                 )
 
         if not self.is_remote:
+            if self.model.flow is not None:
+                if not self.is_paired and not self.model.flow.mesh_morph:
+                    raise AssertionError(
+                        "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
+                    )
+
             assert isinstance(self.solvers.flow, Fun3dInterface)
             if self.change_shape and self.root_proc:
                 print(
@@ -278,8 +293,11 @@ class Fun3dOnewayDriver:
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
-            if self.model.flow.mesh_morph:
-                self.model.read_fun3d_surface_file(self.comm, root=0)
+            # doing the mesh morph inside of Fortran now but have to move the surf.dat file into the Flow directory for each scenario
+            # other way of mesh morph
+            # if self.model.flow.mesh_morph:
+            #    self.model.write_fun3d_surface_file(self.comm, os.path.join(self.fun3d_interface.fun3d_dir, "nominal_surf.dat"), root=0)
+            #    self.model.read_fun3d_surface_file(self.comm, root=0)
 
         # system call FUN3D forward analysis
         if self.is_remote:
@@ -343,24 +361,31 @@ class Fun3dOnewayDriver:
                     self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
             # write sens file for remote to read or if shape change all in one
-            if self.change_shape or self.write_sens:
-                # write the sensitivity file for the FUN3D AIM
-                self.model.write_sensitivity_file(
-                    comm=self.comm,
-                    filename=Fun3dRemote.paths(
-                        self.fun3d_interface.fun3d_dir
-                    ).aero_sens_file,
-                    discipline="aerodynamic",
-                )
+            if not self.is_paired:
+                filepath = self.model.flow.fun3d_aim.sens_file_path
+            else:
+                filepath = Fun3dRemote.paths(
+                    self.fun3d_interface.fun3d_dir
+                ).aero_sens_file
+
+            # write the sensitivity file for the FUN3D AIM
+            self.model.write_sensitivity_file(
+                comm=self.comm,
+                filename=filepath,
+                discipline="aerodynamic",
+            )
 
         # shape derivative section
         if self.change_shape:  # either remote or regular
+            # src for movement of sens file or None if not moving it
+            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis(self.fun3d_remote.aero_sens_file)
+            self.fun3d_aim.post_analysis(sens_file_src)
 
             # update function values, NOTE : function values are not available in the remote version of the driver
             # after solve_forward (if you just need one grid and solve_forward, you don't need a remote driver, build the analysis one)
-            self._get_remote_functions()
+            self._get_functions()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
@@ -534,7 +559,7 @@ class Fun3dOnewayDriver:
 
         return
 
-    def _get_remote_functions(self):
+    def _get_functions(self):
         """
         read function values from fun3dAIM when operating in the remote version of the driver
         """

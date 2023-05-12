@@ -717,15 +717,29 @@ class TestStructuralSolver(SolverInterface):
 
 class TestResult:
     def __init__(
-        self, name, func_names, complex_TD, adjoint_TD, rel_error=None, comm=None
+        self,
+        name,
+        func_names,
+        complex_TD,
+        adjoint_TD,
+        rel_error=None,
+        comm=None,
+        method="complex_step",
+        i_funcs=None,
+        f_funcs=None,
+        var_names=None,
     ):
         """
         Class to store test results from complex step method
         """
         self.name = name
         self.func_names = func_names  # list of function names
+        self.var_names = var_names
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
+        self.method = method
+        self.i_funcs = i_funcs
+        self.f_funcs = f_funcs
         if rel_error is None:
             rel_error = []
             for i, _ in enumerate(self.complex_TD):
@@ -751,15 +765,30 @@ class TestResult:
         """
         if self.root_proc:
             file_hdl.write(f"Test: {self.name}\n")
+            if self.var_names is not None:
+                file_hdl.write(f"\tVariables = {self.var_names}\n")
             if isinstance(self.func_names, list):
                 for ifunc in range(self.nfuncs):
                     file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
-                    file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                    if self.i_funcs is not None:
+                        if self.f_funcs is not None:  # if both defined write this
+                            file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}")
+                            file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}")
+                        else:
+                            file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}")
+                    file_hdl.write(f"\t\t{self.method} TD = {self.complex_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
                 file_hdl.flush()
             else:
-                file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+                file_hdl.write(f"\tFunction {self.func_names}")
+                if self.i_funcs is not None:
+                    if self.f_funcs is not None:  # if both defined write this
+                        file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}")
+                        file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}")
+                    else:
+                        file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}")
+                file_hdl.write(f"\t{self.method} TD = {self.complex_TD}\n")
                 file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
                 file_hdl.write(f"\tRelative error = {self.rel_error}\n")
                 file_hdl.flush()
@@ -850,6 +879,9 @@ class TestResult:
             adjoint_TD,
             rel_error,
             comm=driver.comm,
+            var_names=[var.name for var in model.get_variables()],
+            i_funcs=[func.value.real for func in functions],
+            f_funcs=None,
         ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
@@ -921,6 +953,9 @@ class TestResult:
             adjoint_TD,
             rel_error,
             comm=driver.comm,
+            var_names=[var.name for var in model.get_variables()],
+            i_funcs=i_functions,
+            f_funcs=f_functions,
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))

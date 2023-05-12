@@ -33,6 +33,8 @@ if comm.rank == 0:  # make the results folder if doesn't exist
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
+mesh_style = "coarse"
+
 
 class TestFun3dOnewayMorph(unittest.TestCase):
     """
@@ -53,16 +55,26 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         aflr_aim = fun3d_model.aflr_aim
         fun3d_aim = fun3d_model.fun3d_aim
 
-        aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.006, max_scale=5.0)
-        aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
-        Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
+        if mesh_style == "coarse":
+            aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
+            aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
+            Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
+                fun3d_model
+            )
+        elif mesh_style == "fine":
+            aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.006, max_scale=5.0)
+            aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
+            Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
+                fun3d_model
+            )
+
         Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
         model.flow = fun3d_model
 
         wing = Body.aeroelastic("wing", boundary=2)
         Variable.shape(name="aoa").set_bounds(
-            lower=0.001, value=0.0, upper=1.0
+            lower=-1.0, value=0.0, upper=1.0
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
@@ -81,15 +93,15 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         # analysis driver for mesh morphing
-        driver = Fun3dOnewayDriver.analysis(solvers, model)
+        driver = Fun3dOnewayDriver.nominal(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
             "fun3d+oneway-morph-turbulent-aeroelastic",
             model,
             driver,
-            TestFun3dOnewayShape.FILEPATH,
-            both_adjoint=True,  # since the Fun3dOnewayDriver doesn't know function values until after solve_adjoint()
+            TestFun3dOnewayMorph.FILEPATH,
+            both_adjoint=False,
         )
         self.assertTrue(max_rel_error < 1e-4)
 
@@ -98,5 +110,5 @@ class TestFun3dOnewayMorph(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TestFun3dOnewayShape.FILEPATH, "w").close()
+        open(TestFun3dOnewayMorph.FILEPATH, "w").close()
     unittest.main()

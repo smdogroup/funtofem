@@ -909,12 +909,11 @@ class FUNtoFEMmodel(object):
                         surface_aero_ids += [id]
 
             deformed_surface_coords = np.array(deformed_surface_coords)
+            surface_aero_ids = np.array(surface_aero_ids)
 
         # broadcast the deformed surface coordinates and ids to the root processor
         deformed_surface_coords = comm.bcast(deformed_surface_coords, root=root)
         surface_aero_ids = comm.bcast(surface_aero_ids, root=root)
-
-        print(f"surface aero ids = {surface_aero_ids}", flush=True)
 
         # compute aero shape disps for each body (all the same)
         for body in self.bodies:
@@ -931,7 +930,29 @@ class FUNtoFEMmodel(object):
                     - aero_X[3 * i : 3 * i + 3]
                 )
 
+            print(f"body aero shape disps = {body.aero_shape_disps}")
+
         return
+
+    def write_fun3d_surface_file(self, comm, filename, root=0):
+        """write a fun3d surface file from aero_X coords for testing purposes"""
+
+        # write only the root proc aero coords, best if you just do this on root proc
+        if comm.rank == root:
+            hdl = open(filename, "w")
+            hdl.write("Test surface file from Fun3dInterface coords\n")
+            hdl.write("x,y,z,id\n")
+            for body in self.bodies:
+                aero_X = body.aero_X
+                aero_id = body.aero_id
+
+                for i, id in enumerate(aero_id):
+                    x = aero_X[3 * i].real
+                    y = aero_X[3 * i + 1].real
+                    z = aero_X[3 * i + 2].real
+                    hdl.write(f"{x} {y} {z} {id}\n")
+
+            hdl.close()
 
     @property
     def structural(self):
