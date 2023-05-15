@@ -29,7 +29,6 @@ from pyfuntofem.interface.tacs_interface import (
     TacsSteadyInterface,
     TacsUnsteadyInterface,
 )
-from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 from pyfuntofem.interface.solver_manager import SolverManager
 from pyfuntofem.optimization.optimization_manager import OptimizationManager
 
@@ -48,7 +47,7 @@ class TacsOnewayDriver:
         self,
         solvers,
         model,
-        tacs_aim=None,
+        transfer_settings=None,
         nprocs=None,
         external_shape=False,
     ):
@@ -60,9 +59,8 @@ class TacsOnewayDriver:
         solvers: :class:`~interface.solver_manager.SolverManager`
             The various disciplinary solvers.
         model: :class:`~funtofem_model.FUNtoFEMmodel`
-            The model containing the design data.
-        tacs_aim: `caps2tacs.TacsAim`
-            Interface object for TACS and ESP/CAPS, wraps the tacsAIM.
+            The model containing the design data and the TacsModel with TacsAim wrapper inside (if using shape otherwise can be None).
+        transfer_settings: :class:`driver.TransferSettings`
         nprocs: int
             Number of processes that TACS is running on.
         external_shape: bool
@@ -72,9 +70,16 @@ class TacsOnewayDriver:
         self.comm = solvers.comm
         self.model = model
         self.nprocs = nprocs
+        self.transfer_settings = transfer_settings
         self.tacs_interface = solvers.structural
+        if model.structural is None:
+            tacs_aim = None
+        else:
+            tacs_aim = model.structural.tacs_aim
         self.tacs_aim = tacs_aim
         self.external_shape = external_shape
+
+        self._shape_init_transfer = False
 
         # store the shape variables list
         self.shape_variables = [
@@ -91,7 +96,8 @@ class TacsOnewayDriver:
         # assertion checks for no shape change vs shape change
         if self.change_shape:
             assert tacs_aim is not None or external_shape
-            assert nprocs is not None
+            if nprocs is None:  # will error if nprocs not defined anywhere
+                nprocs = solvers.structural.nprocs
             if external_shape:
                 # define properties needed for external shape paths
                 self._dat_file_path = None
@@ -103,16 +109,24 @@ class TacsOnewayDriver:
                     raise AssertionError(
                         "Need to have ESP/CAPS pyCAPS package to use shape change"
                     )
-        else:
+        else:  # not change shape
             assert self.tacs_interface is not None
             assert isinstance(self.tacs_interface, TacsSteadyInterface) or isinstance(
                 self.tacs_interface, TacsUnsteadyInterface
             )
 
-        # reset struct mesh positions for no shape, just tacs analysis
-        if not self.change_shape:
+            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
             for body in self.model.bodies:
+                # initializing transfer schemes is the responsibility of drivers with aerodynamic analysis since they come first
                 body.update_transfer()
+
+                for scenario in self.model.scenarios:
+                    # perform disps transfer first to prevent seg fault
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
+                    # transfer aero to struct loads
+                    body.transfer_loads(scenario)
+                    body.transfer_heat_flux(scenario)
 
     @property
     def change_shape(self) -> bool:
@@ -127,82 +141,41 @@ class TacsOnewayDriver:
         return self._unsteady
 
     @classmethod
-    def prime_loads(cls, funtofem_driver):
-        """
-        Used to prime struct loads for optimization over tacs analysis with no shape variables
-
-        Parameters
-        ----------
-        funtofem_driver: :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
-            the coupled funtofem NLBGS driver
-        """
-        funtofem_driver.solve_forward()
-        return cls(funtofem_driver.solvers, funtofem_driver.model)
-
-    @classmethod
-    def prime_loads_shape(
-        cls, flow_solver, tacs_aim, transfer_settings, nprocs, bdf_file=None
+    def prime_loads(
+        cls, driver, transfer_settings=None, nprocs=None, external_shape=False
     ):
         """
-        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+        Used to prime struct/aero loads for optimization over tacs analysis
+        Can use the Fun3dOnewayDriver or FUNtoFEMnlbgs driver to prime the loads
+        If structural solver exists, it will transfer to fixed structural loads in __init__ construction
+        of the TacsOnewayDriver class.
+        If shape variables exist in the FUNtoFEMmodel, you need to have model.structural be a TacsModel
+        and the TacsModel contains a TacsAim wrapper class. If shape variables exist, shape derivatives
+        and shape analysis will be performed.
 
         Parameters
         ----------
-        flow_solver: [:class:`~interface.Fun3dInterface or :class`~interface.TestAerodynamicSolver`]
-            Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver
-        tacs_aim: `caps2tacs.TacsAim`
-            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
-        transfer_settings: :class:`~transfer_settings.TransferSettings`
-            Settings for transfer of state variables across aero and struct meshes
+        driver: :class:`Fun3dOnewayDriver` or :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
+            the fun3d oneway driver or coupled funtofem NLBGS driver
+
+        Optional Parameters
+        -------------------
         nprocs: int
-            Number of processes that TACS is running on.
-        bdf_file: str or `os.path`
-            File or path to the bdf or dat file of structural mesh
+            number of procs for tacs analysis, only need to give this if doing shape optimization
+        transfer_settings: :class:`driver.TransferSettings`
+            used for transferring fixed aero loads to struct loads, need to give this or it uses default
+        external_shape: bool
+            whether to do shape analysis with ESP/CAPS inside this driver or outside of it
         """
-
-        # generate the geometry if necessary
-        make_bdf = bdf_file is None
-        if make_bdf:
-            tacs_aim.pre_analysis()
-            bdf_file = tacs_aim.dat_file_path
-
-        # copy comm and model from other objects
-        comm = tacs_aim.comm
-        model = flow_solver.model
-
-        # create the solver manager
-        solvers = SolverManager(comm)
-        solvers.flow = flow_solver
-        solvers.structural = TacsInterface.create_from_bdf(
-            model=model,  # copy model from flow solver
-            comm=comm,
-            nprocs=nprocs,
-            bdf_file=bdf_file,
-            output_dir=tacs_aim.analysis_dir,
+        driver.solve_forward()
+        if transfer_settings is None:
+            try:
+                transfer_settings = driver.transfer_settings
+            except:
+                transfer_settings = transfer_settings
+        return cls(
+            driver.solvers, driver.model, transfer_settings, nprocs, external_shape
         )
-
-        # build the funtofem driver and run a forward analysis to prime loads
-        FUNtoFEMnlbgs(
-            solvers, transfer_settings=transfer_settings, model=model
-        ).solve_forward()
-
-        if make_bdf:
-            # initialize adjoint variables for each body to initialize struct_shape_term
-            for scenario in model.scenarios:
-                for body in model.bodies:
-                    body.initialize_adjoint_variables(scenario)
-
-            # write the model sensitivity file with zero derivatives
-            model.write_sensitivity_file(
-                comm=comm,
-                filename=tacs_aim.sens_file_path,
-                discipline="structural",
-            )
-
-            # run postAnalysis to prevent CAPS_DIRTY error
-            tacs_aim.post_analysis()
-
-        return cls(solvers, model, nprocs=nprocs, tacs_aim=tacs_aim)
 
     @classmethod
     def prime_loads_from_file(
@@ -212,7 +185,6 @@ class TacsOnewayDriver:
         model,
         nprocs,
         transfer_settings,
-        tacs_aim=None,
         external_shape=False,
     ):
         """
@@ -264,20 +236,10 @@ class TacsOnewayDriver:
                 body.initialize_variables(scenario)
             body._distribute_aero_loads(loads_data)
 
-        if tacs_aim is None:
-            for body in model.bodies:
-                for scenario in model.scenarios:
-                    # perform disps transfer first to prevent seg fault
-                    body.transfer_disps(scenario)
-                    body.transfer_temps(scenario)
-                    body.transfer_loads(scenario)
-                    body.transfer_heat_flux(scenario)
-
         return cls(
             solvers,
             model,
             nprocs=nprocs,
-            tacs_aim=tacs_aim,
             external_shape=external_shape,
         )
 
@@ -287,14 +249,17 @@ class TacsOnewayDriver:
 
     @property
     def tacs_comm(self):
-        world_rank = self.comm.rank
-        if world_rank < self.n_tacs_procs:
-            color = 1
-            key = world_rank
+        if self.change_shape:
+            world_rank = self.comm.rank
+            if world_rank < self.nprocs:
+                color = 1
+                key = world_rank
+            else:
+                color = MPI.UNDEFINED
+                key = world_rank
+            return self.comm.Split(color, key)
         else:
-            color = MPI.UNDEFINED
-            key = world_rank
-        return self.comm.Split(color, key)
+            return self.tacs_interface.tacs_comm
 
     @property
     def root_proc(self) -> bool:
@@ -335,12 +300,26 @@ class TacsOnewayDriver:
         transfer fixed aero loads over to the new
         """
         # loop over each body to copy and transfer loads for the new structure
+        shape_init_transfer = self._shape_init_transfer
         for body in self.model.bodies:
             # update the transfer schemes for the new mesh size
             body.update_transfer()
 
             ns = body.struct_nnodes
             dtype = body.dtype
+
+            if not shape_init_transfer:
+                # need to initialize transfer schemes again with tacs_comm
+                comm = self.comm
+                comm_manager = self.solvers.comm_manager
+                body.initialize_transfer(
+                    comm=comm,
+                    struct_comm=comm_manager.struct_comm,
+                    struct_root=comm_manager.struct_root,
+                    aero_comm=comm_manager.aero_comm,
+                    aero_root=comm_manager.aero_root,
+                    transfer_settings=self.transfer_settings,
+                )
 
             # zero the initial struct loads and struct flux for each scenario
             for scenario in self.model.scenarios:
@@ -362,11 +341,14 @@ class TacsOnewayDriver:
                         np.ones(ns, dtype=dtype) * scenario.T_ref
                     )
 
+                # transfer disps to prevent seg fault if coming from Fun3dOnewayDriver
+                body.transfer_disps(scenario)
+                body.transfer_temps(scenario)
+
                 # transfer the loads and heat flux from fixed aero loads to
                 # the mesh for the new structural shape
                 body.transfer_loads(scenario)
                 body.transfer_heat_flux(scenario)
-
         return
 
     def solve_forward(self):
@@ -379,7 +361,7 @@ class TacsOnewayDriver:
             if not self.external_shape:
                 # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
                 input_dict = {var.name: var.value for var in self.model.get_variables()}
-                self.model.tacs_model.update_design(input_dict)
+                self.model.structural.update_design(input_dict)
                 self.tacs_aim.setup_aim()
 
                 # build the new structure geometry
@@ -496,7 +478,7 @@ class TacsOnewayDriver:
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.shape_variables):
                 derivative = gradients[ifunc][ivar]
-                func.set_gradient_component(var, derivative)
+                func.add_gradient_component(var, derivative)
 
         return
 
