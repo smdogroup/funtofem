@@ -10,7 +10,6 @@ class Fun3dAimMetaData:
 
 
 class Fun3dBC:
-    # Available boundary condition types in AFLR AIM
     BC_TYPES = ["inviscid", "viscous", "Farfield"]
 
     def __init__(self, caps_group, bc_type, wall_spacing=None):
@@ -54,15 +53,22 @@ class Fun3dBC:
 
 
 class Fun3dAim:
-    def __init__(self, caps_problem, comm, root=0):
+    def __init__(self, caps_problem, comm, mesh_morph=False, root=0):
         """Fun3dAim wrapper class for use in FUNtoFEM"""
         self.caps_problem = caps_problem
         self.comm = comm
         self.root = root
+        self.mesh_morph = mesh_morph
+
+        self.analysis_ctr = 0
+
+        self._shape_variables = []
 
         self._aim = None
         self._grid_file = None
         self._grid_filepaths = []
+
+        self._fun3d_dir = None
 
         self._boundary_conditions = {}
 
@@ -75,13 +81,14 @@ class Fun3dAim:
             # fun3d design sensitivities settings
             self.aim.input.Design_SensFile = True
             self.aim.input.Design_Sensitivity = True
+            self.aim.input.Mesh_Morph = mesh_morph
 
-        self._metadata = None
+        self.metadata = None
         if self.root_proc:
-            self._metadata = Fun3dAimMetaData(
+            self.metadata = Fun3dAimMetaData(
                 project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
             )
-        self._metadata = self.comm.bcast(self._metadata, root=root)
+        self.metadata = self.comm.bcast(self.metadata, root=root)
 
     @property
     def root_proc(self):
@@ -93,6 +100,12 @@ class Fun3dAim:
         if self.root_proc:
             self._aim = self.caps_problem.analysis.create(aim="fun3dAIM", name="fun3d")
             self._geometry = self.caps_problem.geometry
+        return
+
+    def unlink(self):
+        """unlink the mesh for mesh morphing"""
+        if self.root_proc:
+            self.aim.input["Mesh"].unlink()
         return
 
     @property
@@ -119,7 +132,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self._metadata.project_name
+        return self.metadata.project_name
 
     @property
     def grid_filepaths(self):
@@ -148,23 +161,27 @@ class Fun3dAim:
             shutil.copy(src, dest)
         return
 
-    def apply_shape_variables(self, shape_variables):
+    def apply_shape_variables(self):
         """apply shape variables to the caps problem"""
         if self.root_proc:
-            for shape_var in shape_variables:
+            for shape_var in self._shape_variables:
                 self.geometry.despmtr[shape_var.name].value = shape_var.value.real
         return
 
-    def set_variables(self, shape_var_names):
+    def set_variables(self, shape_variables, aero_variables):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
-        if len(shape_var_names) == 0:
+        if len(shape_variables) == 0:
             return
-        DV_dict = {}
-        for dv_name in shape_var_names:
-            DV_dict[dv_name] = {}
-        print(f"fun3d aim DV dict = {DV_dict}")
         if self.root_proc:
+            DV_dict = self.aim.input.Design_Variable
+            if DV_dict is None:
+                DV_dict = {}
+            for dv in shape_variables:
+                DV_dict[dv.name] = {}
+            for dv in aero_variables:
+                DV_dict[dv.name] = {}
             self.aim.input.Design_Variable = DV_dict
+        self._shape_variables += shape_variables
         return
 
     def include(self, obj):
@@ -181,11 +198,19 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self._metadata.analysis_dir
+        return self.metadata.analysis_dir
 
-    def pre_analysis(self, shape_variables=[]):
+    @property
+    def mesh_morph_filename(self):
+        return f"{self.project_name}_body1.dat"
+
+    @property
+    def mesh_morph_filepath(self):
+        return os.path.join(self.analysis_dir, "Flow", self.mesh_morph_filename)
+
+    def pre_analysis(self):
         if self.root_proc:
-            self.apply_shape_variables(shape_variables=shape_variables)
+            self.apply_shape_variables()
             self.aim.preAnalysis()
             self._move_grid_files()
         self.comm.Barrier()

@@ -17,7 +17,8 @@ class Fun3dModel:
 
         self._set_project_names()
 
-        self._shape_var_names = []
+        self._shape_varnames = []
+        self._aero_varnames = []
         self._setup = False
         return
 
@@ -28,6 +29,7 @@ class Fun3dModel:
         comm,
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
+        mesh_morph=False,
     ):
         """
         make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
@@ -43,10 +45,26 @@ class Fun3dModel:
             caps_problem = pyCAPS.Problem(
                 problemName=problem_name, capsFile=csm_file, outLevel=1
             )
-        fun3d_aim = Fun3dAim(caps_problem, comm)
+        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph)
         aflr_aim = AflrAim(caps_problem, comm)
 
         return cls(fun3d_aim, aflr_aim, comm, project_name)
+
+    @classmethod
+    def build_morph(
+        cls,
+        csm_file,
+        comm,
+        project_name="fun3d_CAPS",
+        problem_name: str = "capsFluid",
+    ):
+        return cls.build(
+            csm_file=csm_file,
+            comm=comm,
+            project_name=project_name,
+            problem_name=problem_name,
+            mesh_morph=True,
+        )
 
     @property
     def root_proc(self) -> bool:
@@ -60,25 +78,40 @@ class Fun3dModel:
     def aflr_aim(self) -> AflrAim:
         return self._aflr_aim
 
+    @property
+    def mesh_morph(self) -> bool:
+        return self.fun3d_aim.mesh_morph
+
+    @property
+    def mesh_morph_filename(self):
+        return self.fun3d_aim.mesh_morph_filename
+
+    @property
+    def mesh_morph_filepath(self):
+        return self.fun3d_aim.mesh_morph_filepath
+
     def _set_project_names(self):
         """set the project names into both aims for grid filenames"""
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
-        self.fun3d_aim._metadata.project_name = self.project_name
+        self.fun3d_aim.metadata.project_name = self.project_name
         if self.aflr_aim.root_proc:
             self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
         return
 
-    def set_variables(self, shape_var_names):
+    def set_variables(self, shape_varnames, aero_varnames):
         """input list of ESP/CAPS shape variable names into fun3d aim design dict"""
-        self.fun3d_aim.set_variables(shape_var_names)
-        self._shape_var_names = shape_var_names
+        # add to the list of variable names
+        self._shape_varnames += shape_varnames
+        self._aero_varnames += aero_varnames
+        # update the variables in the AIM
+        self.fun3d_aim.set_variables(self._shape_varnames, self._aero_varnames)
 
     @property
     def is_setup(self) -> bool:
         """whether the fun3d model is setup"""
-        return self._setup and len(self._shape_var_names) > 0
+        return self._setup and len(self._shape_varnames) > 0
 
     def setup(self):
         """setup the fun3d model before analysis"""
