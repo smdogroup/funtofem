@@ -83,12 +83,12 @@ class Fun3dAim:
             self.aim.input.Design_Sensitivity = True
             self.aim.input.Mesh_Morph = mesh_morph
 
-        self.metadata = None
+        self._metadata = None
         if self.root_proc:
-            self.metadata = Fun3dAimMetaData(
+            self._metadata = Fun3dAimMetaData(
                 project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
             )
-        self.metadata = self.comm.bcast(self.metadata, root=root)
+        self._metadata = self.comm.bcast(self._metadata, root=root)
 
     @property
     def root_proc(self):
