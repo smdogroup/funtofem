@@ -299,23 +299,26 @@ class FUNtoFEMmodel(object):
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
-            aero_varnames = []
-            shape_varnames = []
+            active_shape_vars = []
+            active_aero_vars = []
 
             # add shape variable names to varnames
             for var in shape_variables:
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
-                        shape_varnames.append(despmtr)
+                        active_shape_vars.append(var)
                         break
 
+            # NOTE : we've decided to only use aero variables in FUN3D Fortran
+            # not in Fun3dAim for now...
+
             # add aerodynamic variable names to varnames
-            for var in aero_variables:
-                if var.active:
-                    aero_varnames.append(var.name)
+            # for var in aero_variables:
+            #     if var.active:
+            #         active_aero_vars.append(var)
 
             # input the design parameters into the Fun3dModel and Fun3dAim
-            self.flow.set_variables(shape_varnames, aero_varnames)
+            self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
     def get_variables(self):
@@ -776,6 +779,100 @@ class FUNtoFEMmodel(object):
 
             with open(filename, "w") as fp:
                 fp.write(data)
+
+        return
+
+    def read_design_variables_file(self, comm, filename, root=0):
+        """
+        Read the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        variables_dict = None  # this will be broadcast to other processors
+        if comm.rank == root:  # read the file in on the root processor
+            variables_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 3:
+                    var_name = chunks[1]
+                    var_value = chunks[2]
+
+                    # only real numbers are read in from the file
+                    variables_dict[var_name] = float(var_value)
+
+        # broadcast the dictionary to the root processor
+        variables_dict = comm.bcast(variables_dict, root=root)
+
+        # update the variable values on each processor
+        for var in self.get_variables():
+            if var.name in variables_dict:
+                var.value = variables_dict[var.name]
+
+        return
+
+    def write_design_variables_file(self, comm, filename, root=0):
+        """
+        Write the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        # get the variable values from the root processor
+        if comm.rank == root:
+            # get the disciplines and variables
+            disciplines = []
+            variables = {}
+            scenarios_and_bodies = self.scenarios + self.bodies
+            for base in scenarios_and_bodies:
+                for discipline in base.variables:
+                    if not (discipline in disciplines):
+                        disciplines.append(discipline)
+                        variables[discipline] = []
+                    for var in base.variables[discipline]:
+                        if var.active:
+                            variables[discipline].append(var)
+
+            # get the file hdl
+            hdl = open(filename, "w")
+
+            # write the variables file
+            for discipline in variables:
+                if (
+                    len(variables[discipline]) == 0
+                ):  # skip this discipline if empty, aka rigid_motion
+                    continue
+                hdl.write(f"Discipline {discipline}\n")
+
+                # write each variable from that discipline
+                for var in variables[discipline]:
+                    # only real numbers written to this file
+                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+
+            hdl.close()
 
         return
 
