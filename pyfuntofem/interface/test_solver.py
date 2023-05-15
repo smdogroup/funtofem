@@ -20,7 +20,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TestAerodynamicSolver", "TestStructuralSolver", "TestResult"]
+__all__ = [
+    "TestAerodynamicSolver",
+    "TestStructuralSolver",
+    "TestResult",
+    "CoordinateDerivativeTester",
+]
 
 import numpy as np
 from funtofem import TransferScheme
@@ -712,15 +717,31 @@ class TestStructuralSolver(SolverInterface):
 
 class TestResult:
     def __init__(
-        self, name, func_names, complex_TD, adjoint_TD, rel_error=None, comm=None
+        self,
+        name,
+        func_names,
+        complex_TD,
+        adjoint_TD,
+        rel_error=None,
+        comm=None,
+        method="complex_step",
+        i_funcs=None,
+        f_funcs=None,
+        var_names=None,
+        epsilon=None,
     ):
         """
         Class to store test results from complex step method
         """
         self.name = name
         self.func_names = func_names  # list of function names
+        self.var_names = var_names
         self.complex_TD = complex_TD
         self.adjoint_TD = adjoint_TD
+        self.method = method
+        self.i_funcs = i_funcs
+        self.f_funcs = f_funcs
+        self.epsilon = epsilon
         if rel_error is None:
             rel_error = []
             for i, _ in enumerate(self.complex_TD):
@@ -746,15 +767,34 @@ class TestResult:
         """
         if self.root_proc:
             file_hdl.write(f"Test: {self.name}\n")
+            if self.epsilon is not None:
+                file_hdl.write(f"\tStep size: {self.epsilon}\n")
+            if self.var_names is not None:
+                file_hdl.write(f"\tVariables = {self.var_names}\n")
             if isinstance(self.func_names, list):
                 for ifunc in range(self.nfuncs):
                     file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
-                    file_hdl.write(f"\t\tComplex step TD = {self.complex_TD[ifunc]}\n")
+                    if self.i_funcs is not None:
+                        if self.f_funcs is not None:  # if both defined write this
+                            file_hdl.write(
+                                f"\t\tinitial value = {self.i_funcs[ifunc]}\n"
+                            )
+                            file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
+                        else:
+                            file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
+                    file_hdl.write(f"\t\t{self.method} TD = {self.complex_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
                 file_hdl.flush()
             else:
-                file_hdl.write(f"\tComplex step TD = {self.complex_TD}\n")
+                file_hdl.write(f"\tFunction {self.func_names}")
+                if self.i_funcs is not None:
+                    if self.f_funcs is not None:  # if both defined write this
+                        file_hdl.write(f"\t\tinitial value = {self.i_funcs[ifunc]}\n")
+                        file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
+                    else:
+                        file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
+                file_hdl.write(f"\t{self.method} TD = {self.complex_TD}\n")
                 file_hdl.write(f"\tAdjoint TD = {self.adjoint_TD}\n")
                 file_hdl.write(f"\tRelative error = {self.rel_error}\n")
                 file_hdl.flush()
@@ -845,6 +885,10 @@ class TestResult:
             adjoint_TD,
             rel_error,
             comm=driver.comm,
+            var_names=[var.name for var in model.get_variables()],
+            i_funcs=[func.value.real for func in functions],
+            f_funcs=None,
+            epsilon=epsilon,
         ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
@@ -860,6 +904,7 @@ class TestResult:
         driver,
         status_file,
         epsilon=1e-5,
+        both_adjoint=False,  # have to call adjoint in both times for certain drivers
     ):
         """
         perform finite difference test on a model and driver for multiple functions & variables
@@ -869,12 +914,16 @@ class TestResult:
         func_names = [func.full_name for func in model.get_functions(all=True)]
 
         # generate random contravariant tensor in input space x(s)
-        dxds = np.random.rand(nvariables)
+        if nvariables > 1:
+            dxds = np.random.rand(nvariables)
+        else:
+            dxds = np.array([1.0])
 
         # solve the adjoint
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients(all=True)
+        i_functions = [func.value.real for func in model.get_functions(all=True)]
 
         # compute adjoint total derivative df/dx
         adjoint_TD = np.zeros((nfunctions))
@@ -883,13 +932,13 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform finite difference computation
-        driver.solve_forward()
-        i_functions = [func.value.real for func in model.get_functions(all=True)]
-
         variables = model.get_variables()
         for ivar in range(nvariables):
             variables[ivar].value += epsilon * dxds[ivar]
+
         driver.solve_forward()
+        if both_adjoint:
+            driver.solve_adjoint()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
@@ -914,6 +963,10 @@ class TestResult:
             adjoint_TD,
             rel_error,
             comm=driver.comm,
+            var_names=[var.name for var in model.get_variables()],
+            i_funcs=i_functions,
+            f_funcs=f_functions,
+            epsilon=epsilon,
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
@@ -946,3 +999,165 @@ class TestResult:
                 status_file,
                 epsilon=epsilon,
             )
+
+
+class CoordinateDerivativeTester:
+    """
+    Perform a complex step test over the coordinate derivatives of a driver
+    """
+
+    def __init__(self, driver, epsilon=1e-30):
+        self.driver = driver
+        self.epsilon = epsilon
+        self.comm = self.driver.comm
+
+    @property
+    def flow_solver(self):
+        return self.driver.solvers.flow
+
+    @property
+    def aero_X(self):
+        """aero coordinate derivatives in FUN3D"""
+        return self.flow_solver.aero_X
+
+    @property
+    def struct_solver(self):
+        return self.driver.solvers.structural
+
+    @property
+    def struct_X(self):
+        """structure coordinates in TACS"""
+        return self.struct_solver.struct_X.getArray()
+
+    @property
+    def model(self):
+        return self.driver.model
+
+    def test_struct_coordinates(self, test_name, body=None):
+        """test the structure coordinate derivatives struct_X with complex step"""
+        # assumes only one body
+        if body is None:
+            body = self.model.bodies[0]
+        struct_X = body.struct_X
+
+        # random covariant tensor to aggregate derivative error among one or more functions
+        # compile full struct shape term
+        nf = len(self.model.get_functions())
+        dL_dfunc = np.random.rand(nf)
+        dL_dfunc_col = np.reshape(dL_dfunc, newshape=(nf, 1))
+
+        # random contravariant tensor d(struct_X)/ds for testing struct shape
+        dstructX_ds = np.random.rand(struct_X.shape[0])
+        dstructX_ds_row = np.reshape(dstructX_ds, newshape=(1, dstructX_ds.shape[0]))
+
+        """Adjoint method to compute coordinate derivatives and TD"""
+        self.driver.solve_forward()
+        self.driver.solve_adjoint()
+
+        # add coordinate derivatives among scenarios
+
+        full_struct_shape_term = []
+        for scenario in self.model.scenarios:
+            struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
+            full_struct_shape_term.append(struct_shape_term)
+        full_struct_shape_term = np.concatenate(full_struct_shape_term, axis=1)
+        # add in struct coordinate derivatives of this scenario
+        local_adjoint_TD = np.zeros((1))
+        local_adjoint_TD[0] = float(
+            (dstructX_ds_row @ full_struct_shape_term @ dL_dfunc_col).real
+        )
+
+        # add up adjoint total derivatives across processors
+        adjoint_TD = np.zeros((1))
+        self.comm.Reduce(local_adjoint_TD, adjoint_TD, root=0)
+        adjoint_TD = self.comm.bcast(adjoint_TD, root=0)
+
+        """Complex step to compute coordinate total derivatives"""
+        # perturb the coordinate derivatives
+        struct_X += 1j * self.epsilon * dstructX_ds
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_complex()
+        self.driver.solve_forward()
+
+        dfunc_ds = np.array(
+            [func.value.imag / self.epsilon for func in self.model.get_functions()]
+        )
+        local_complex_step_TD = np.zeros((1))
+        local_complex_step_TD[0] = np.sum(dL_dfunc * dfunc_ds)
+
+        complex_step_TD = np.zeros((1))
+        self.comm.Reduce(local_complex_step_TD, complex_step_TD, root=0)
+        complex_step_TD = self.comm.bcast(complex_step_TD, root=0)
+
+        rel_error = TestResult.relative_error(adjoint_TD[0], complex_step_TD[0])
+        print(f"\n{test_name}")
+        print(f"\tadjoint TD = {adjoint_TD}")
+        print(f"\tcomplex step TD = {complex_step_TD}")
+        print(f"\trel error = {rel_error}\n")
+        return rel_error
+
+    def test_aero_coordinates(self, test_name, status_file, inode=None, body=None):
+        """test the structure coordinate derivatives struct_X with complex step"""
+        # assumes only one body
+        if body is None:
+            body = self.model.bodies[0]
+        aero_X = body.aero_X
+
+        # random covariant tensor to aggregate derivative error among one or more functions
+        # compile full struct shape term
+        nf = len(self.model.get_functions())
+        func_names = [func.full_name for func in self.model.get_functions()]
+
+        # random contravariant tensor d(struct_X)/ds for testing struct shape
+        daeroXds = np.random.rand(aero_X.shape[0])
+        daeroX_ds_row = np.reshape(daeroXds, newshape=(1, daeroXds.shape[0]))
+
+        """Adjoint method to compute coordinate derivatives and TD"""
+        self.driver.solve_forward()
+        self.driver.solve_adjoint()
+
+        # add coordinate derivatives among scenarios
+        full_aero_shape_term = []
+        for scenario in self.model.scenarios:
+            aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
+            full_aero_shape_term.append(aero_shape_term)
+        full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
+        # add in struct coordinate derivatives of this scenario
+        local_dfds = np.zeros((1))
+        local_dfds[0] = float((daeroX_ds_row @ full_aero_shape_term).real)
+        adjoint_derivs = np.zeros((1))
+        self.comm.Reduce(local_dfds, adjoint_derivs, root=0)
+        adjoint_derivs = self.comm.bcast(adjoint_derivs, root=0)
+        adjoint_derivs = [adjoint_derivs[i] for i in range(nf)]
+
+        """Complex step to compute coordinate total derivatives"""
+        # perturb the coordinate derivatives
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_complex()
+        body.aero_X += 1j * self.epsilon * daeroXds
+        self.driver.solve_forward()
+
+        complex_step_derivs = np.array(
+            [func.value.imag / self.epsilon for func in self.model.get_functions()]
+        )
+
+        rel_error = [
+            TestResult.relative_error(complex_step_derivs[i], adjoint_derivs[i])
+            for i in range(nf)
+        ]
+
+        # make test results object and write it to file
+        file_hdl = open(status_file, "a") if self.comm.rank == 0 else None
+        TestResult(
+            test_name,
+            func_names,
+            complex_step_derivs,
+            adjoint_derivs,
+            rel_error,
+            comm=self.comm,
+        ).write(file_hdl).report()
+
+        abs_rel_error = [abs(_) for _ in rel_error]
+        max_rel_error = max(np.array(abs_rel_error))
+
+        return max_rel_error
