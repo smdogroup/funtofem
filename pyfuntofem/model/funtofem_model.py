@@ -24,13 +24,15 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np
 from .variable import Variable
-from pyfuntofem.interface.caps2fun import Fun3dModel
 
 import importlib
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
 caps_loader = importlib.util.find_spec("pyCAPS")
+if caps_loader is not None:
+    from pyfuntofem.interface.caps2fun import Fun3dModel
+
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
@@ -229,7 +231,10 @@ class FUNtoFEMmodel(object):
         """send variables to self.structural usually the TacsModel"""
         # if tacs loader and tacs model exist then create thickness variables and register to tacs model
         # in the case of defining shell properties
-        if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
+        if tacs_loader is None or caps_loader is None:
+            return
+
+        if isinstance(self.structural, caps2tacs.TacsModel):
             struct_variables = []
             shape_variables = []
             if "structural" in base.variables:
@@ -284,6 +289,8 @@ class FUNtoFEMmodel(object):
 
     def _send_flow_variables(self, base):
         """send variables to self.flow usually the Fun3dModel"""
+        if caps_loader is None:
+            return
 
         if isinstance(self.flow, Fun3dModel):
             shape_variables = []
