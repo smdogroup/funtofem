@@ -24,6 +24,7 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np
 from .variable import Variable
+from pyfuntofem.interface.caps2fun import Fun3dModel
 
 import importlib
 
@@ -64,7 +65,8 @@ class FUNtoFEMmodel(object):
         self.bodies = []
         self.composite_functions = []
 
-        self._tacs_model = None
+        self._struct_model = None
+        self._flow_model = None
 
     def add_body(self, body):
         """
@@ -90,59 +92,9 @@ class FUNtoFEMmodel(object):
                 body.group_root = False
                 break
 
-        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
-        # in the case of defining shell properties
-        if tacs_loader is not None and self.tacs_model is not None:
-            struct_variables = []
-            shape_variables = []
-            if "structural" in body.variables:
-                struct_variables = body.variables["structural"]
-            if "shape" in body.variables:
-                shape_variables = body.variables["shape"]
-
-            for var in struct_variables:
-                # check if matching shell property exists
-                matching_prop = False
-                for prop in self.tacs_model.tacs_aim._properties:
-                    if prop.caps_group == var.name:
-                        matching_prop = True
-                        break
-
-                matching_dv = False
-                for dv in self.tacs_model.thickness_variables:
-                    if dv.name == var.name:
-                        matching_dv = True
-                        break
-
-                if matching_prop and not (matching_dv):
-                    caps2tacs.ThicknessVariable(
-                        caps_group=var.name, value=var.value, name=var.name
-                    ).register_to(self.tacs_model)
-
-            esp_caps_despmtrs = None
-            comm = self.tacs_model.comm
-            if self.tacs_model.root_proc:
-                esp_caps_despmtrs = list(self.tacs_model.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
-
-            for var in shape_variables:
-                matching_despmtr = False
-                for despmtr in esp_caps_despmtrs:
-                    if var.name == despmtr:
-                        matching_despmtr = True
-                        break
-
-                matching_shape_dv = False
-                for shape_var in self.tacs_model.shape_variables:
-                    if var.name == shape_var.name:
-                        matching_shape_dv = True
-                        break
-
-                # create a matching shape variable in caps2tacs
-                if matching_despmtr and not matching_shape_dv:
-                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
-                        self.tacs_model
-                    )
+        # auto registration of variables to discipline models
+        self._send_struct_variables(body)
+        self._send_flow_variables(body)
 
         # end of tacs model auto registration of vars section
 
@@ -173,6 +125,10 @@ class FUNtoFEMmodel(object):
             if scen.group == scenario.group:
                 scenario.group_root = False
                 break
+
+        # auto registration of variables to discipline models
+        self._send_struct_variables(scenario)
+        self._send_flow_variables(scenario)
 
         self.scenarios.append(scenario)
 
@@ -267,6 +223,99 @@ class FUNtoFEMmodel(object):
                             "        value and bounds:", var.value, var.lower, var.upper
                         )
 
+        return
+
+    def _send_struct_variables(self, base):
+        """send variables to self.structural usually the TacsModel"""
+        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
+        # in the case of defining shell properties
+        if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
+            struct_variables = []
+            shape_variables = []
+            if "structural" in base.variables:
+                struct_variables = base.variables["structural"]
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+
+            for var in struct_variables:
+                # check if matching shell property exists
+                matching_prop = False
+                for prop in self.structural.tacs_aim._properties:
+                    if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+
+                matching_dv = False
+                for dv in self.structural.thickness_variables:
+                    if dv.name == var.name:
+                        matching_dv = True
+                        break
+
+                if matching_prop and not (matching_dv):
+                    caps2tacs.ThicknessVariable(
+                        caps_group=var.name, value=var.value, name=var.name
+                    ).register_to(self.structural)
+
+            esp_caps_despmtrs = None
+            comm = self.structural.comm
+            if self.structural.root_proc:
+                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            for var in shape_variables:
+                matching_despmtr = False
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        matching_despmtr = True
+                        break
+
+                matching_shape_dv = False
+                for shape_var in self.structural.shape_variables:
+                    if var.name == shape_var.name:
+                        matching_shape_dv = True
+                        break
+
+                # create a matching shape variable in caps2tacs
+                if matching_despmtr and not matching_shape_dv:
+                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
+                        self.structural
+                    )
+        return
+
+    def _send_flow_variables(self, base):
+        """send variables to self.flow usually the Fun3dModel"""
+
+        if isinstance(self.flow, Fun3dModel):
+            shape_variables = []
+            aero_variables = []
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+            if "aerodynamic" in base.variables:
+                aero_variables = base.variables["aerodynamic"]
+
+            esp_caps_despmtrs = None
+            comm = self.flow.comm
+            if self.flow.root_proc:
+                esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            aero_varnames = []
+            shape_varnames = []
+
+            # add shape variable names to varnames
+            for var in shape_variables:
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        shape_varnames.append(despmtr)
+                        break
+
+            # add aerodynamic variable names to varnames
+            for var in aero_variables:
+                if var.active:
+                    aero_varnames.append(var.name)
+
+            # input the design parameters into the Fun3dModel and Fun3dAim
+            self.flow.set_variables(shape_varnames, aero_varnames)
         return
 
     def get_variables(self):
@@ -731,9 +780,19 @@ class FUNtoFEMmodel(object):
         return
 
     @property
-    def tacs_model(self):
-        return self._tacs_model
+    def structural(self):
+        """structural discipline submodel such as TacsModel"""
+        return self._struct_model
 
-    @tacs_model.setter
-    def tacs_model(self, m_tacs_model):
-        self._tacs_model = m_tacs_model
+    @structural.setter
+    def structural(self, structural_model):
+        self._struct_model = structural_model
+
+    @property
+    def flow(self):
+        """flow discipline submodel such as Fun3dModel"""
+        return self._flow_model
+
+    @flow.setter
+    def flow(self, flow_model):
+        self._flow_model = flow_model
