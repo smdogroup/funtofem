@@ -85,7 +85,6 @@ class Fun3dRemote:
         struct_name="tacs",
     ):
         """
-
         Manages remote analysis calls for a FUN3D / FUNtoFEM driver call
 
         Parameters
@@ -148,15 +147,15 @@ class Fun3dOnewayDriver:
     @classmethod
     def nominal(cls, solvers, model, transfer_settings=None):
         """
-        build an Fun3dOnewayDriver with Fun3dAim shape variables and Fun3d analysis
-        all in one, using the Fun3d mesh morphing
+        Build a Fun3dOnewayDriver with fun3dAim shape variables and FUN3D analysis
+        all in one, using the FUN3D mesh morphing.
         """
         return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
 
     @classmethod
     def remote(cls, solvers, model, fun3d_remote):
         """
-        build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
+        Build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
@@ -165,10 +164,10 @@ class Fun3dOnewayDriver:
     @classmethod
     def analysis(cls, solvers, model, transfer_settings=None):
         """
-        build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
+        Build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
-            analysis and writing an aero.sens file to the fun3d directory
-        If you are using the analysis driver by itself like for FUN3D mesh morphing turn is_paired off
+            analysis and writing an aero.sens file to the FUN3D directory.
+        If you are using the analysis driver by itself (e.g. for FUN3D mesh morphing) then turn "is_paired" off.
         """
         return cls(solvers, model, transfer_settings=transfer_settings, is_paired=True)
 
@@ -181,7 +180,7 @@ class Fun3dOnewayDriver:
         is_paired=False,
     ):
         """
-        build the FUN3D analysis driver for shape/no shape change, can run another FUN3D analysis remotely or
+        Build the FUN3D analysis driver for shape/no shape change. Able to run another FUN3D analysis remotely or
         do it internally depending on how the object is constructed. The user is recommended to use the class methods
         to build the driver most of the time not the main constructor.
 
@@ -285,8 +284,8 @@ class Fun3dOnewayDriver:
 
     def solve_forward(self):
         """
-        forward analysis for the given shape and functionals
-        assumes shape variables have already been changed
+        Forward analysis for the given shape and functionals.
+        Assumes shape variables have already been changed.
         """
 
         if self.change_shape:
@@ -340,8 +339,8 @@ class Fun3dOnewayDriver:
 
     def solve_adjoint(self):
         """
-        solve the adjoint analysis for the given shape
-        assumes the forward analysis for this shape has already been performed
+        Solve the adjoint analysis for the given shape and functionals.
+        Assumes the forward analysis for this shape has already been performed.
         """
 
         # run the adjoint aerodynamic analysis
@@ -410,7 +409,7 @@ class Fun3dOnewayDriver:
 
     def _transfer_fixed_struct_disps(self):
         """
-        transfer fixed struct disps over to the new aero mesh for shape change
+        Transfer fixed structural displacements over to the new aero mesh for shape change.
         """
         # TODO : set this up for shape change from struct to aero disps
         return
@@ -588,8 +587,7 @@ class Fun3dOnewayDriver:
 
     def _get_shape_derivatives(self, scenario):
         """
-        get shape derivatives together from FUN3D aim
-        and store the data in the funtofem model
+        Gather shape derivatives together from the FUN3D AIM and store the data in the FUNtoFEM model.
         """
         gradients = None
 

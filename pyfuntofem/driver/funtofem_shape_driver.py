@@ -66,7 +66,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         comm_manager=None,
     ):
         """
-        build an FuntofemShapeDriver object with FUN3D mesh morphing or with no Fun3dAim
+        Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
         shape variables, this driver doesn't require a pair in another file
         """
         return cls(
@@ -80,7 +80,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @classmethod
     def remote(cls, solvers, model, fun3d_remote):
         """
-        build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
+        Build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
@@ -95,7 +95,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         comm_manager=None,
     ):
         """
-        build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
+        Build a Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
             analysis and writing an aero.sens file to the fun3d directory
         """
@@ -117,7 +117,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         is_paired=False,
     ):
         """
-        The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
+        The FUNtoFEM driver for the nonlinear block Gauss-Seidel
         solvers for steady and unsteady coupled adjoint, augmented for ESP/CAPS shape
         optimization with FUN3D + TACS.
 
@@ -203,7 +203,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         return
 
     def solve_forward(self):
-        """create new aero/struct geometries and run fully-coupled forward analysis"""
+        """
+        Create new aero/struct geometries and run fully-coupled forward analysis.
+        """
         if self.aero_shape:
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
@@ -285,7 +287,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         return
 
     def solve_adjoint(self):
-        """run the fully-coupled adjoint analysis and extract shape derivatives as well"""
+        """
+        Run the fully-coupled adjoint analysis and extract shape derivatives.
+        """
 
         if not self.is_remote:
             # call funtofem adjoint analysis for non-remote driver
@@ -382,8 +386,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     def _get_remote_functions(self, discipline="aerodynamic"):
         """
-        read function values from fun3dAIM when operating in the remote version of the driver
-        doesn't matter which aim we read the function values from since it's the same
+        Read function values from fun3dAIM when operating in the remote version of the driver.
+        Note: it does not matter which AIM we read the function values from since it's the same.
         """
         functions = self.model.get_functions()
         nfunc = len(functions)
@@ -410,8 +414,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     def _get_struct_shape_derivatives(self, scenario):
         """
-        get shape derivatives together from tacs aim
-        and store the data in the funtofem model
+        Gather shape derivatives together from TACS AIM and store the data in the FUNtoFEM model.
         """
         gradients = None
 
@@ -439,8 +442,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     def _get_aero_shape_derivatives(self, scenario):
         """
-        get shape derivatives together from FUN3D aim
-        and store the data in the funtofem model
+        Gather shape derivatives together from FUN3D AIM and store the data in the FUNtoFEM model.
         """
         gradients = None
 
