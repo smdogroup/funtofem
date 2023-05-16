@@ -24,7 +24,6 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np
 from .variable import Variable
-from pyfuntofem.interface.caps2fun import Fun3dModel
 
 import importlib
 
