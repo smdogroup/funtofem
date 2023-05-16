@@ -290,11 +290,8 @@ class FUNtoFEMmodel(object):
 
     def _send_flow_variables(self, base):
         """send variables to self.flow usually the Fun3dModel"""
-<<<<<<< HEAD
-=======
         if caps_loader is None:
             return
->>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
 
         if isinstance(self.flow, Fun3dModel):
             shape_variables = []
@@ -310,30 +307,13 @@ class FUNtoFEMmodel(object):
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
-<<<<<<< HEAD
-            aero_varnames = []
-            shape_varnames = []
-=======
             active_shape_vars = []
             active_aero_vars = []
->>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
 
             # add shape variable names to varnames
             for var in shape_variables:
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
-<<<<<<< HEAD
-                        shape_varnames.append(despmtr)
-                        break
-
-            # add aerodynamic variable names to varnames
-            for var in aero_variables:
-                if var.active:
-                    aero_varnames.append(var.name)
-
-            # input the design parameters into the Fun3dModel and Fun3dAim
-            self.flow.set_variables(shape_varnames, aero_varnames)
-=======
                         active_shape_vars.append(var)
                         break
 
@@ -347,7 +327,6 @@ class FUNtoFEMmodel(object):
 
             # input the design parameters into the Fun3dModel and Fun3dAim
             self.flow.set_variables(active_shape_vars, active_aero_vars)
->>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
         return
 
     def get_variables(self):
@@ -915,18 +894,6 @@ class FUNtoFEMmodel(object):
         self._struct_model = structural_model
 
     @property
-<<<<<<< HEAD
-    def structural(self):
-        """structural discipline submodel such as TacsModel"""
-        return self._struct_model
-
-    @structural.setter
-    def structural(self, structural_model):
-        self._struct_model = structural_model
-
-    @property
-=======
->>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
     def flow(self):
         """flow discipline submodel such as Fun3dModel"""
         return self._flow_model
