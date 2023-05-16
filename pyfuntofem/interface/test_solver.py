@@ -889,6 +889,7 @@ class TestResult:
             i_funcs=[func.value.real for func in functions],
             f_funcs=None,
             epsilon=epsilon,
+            method="complex_step",
         ).write(file_hdl).report()
 
         abs_rel_error = [abs(_) for _ in rel_error]
@@ -967,6 +968,7 @@ class TestResult:
             i_funcs=i_functions,
             f_funcs=f_functions,
             epsilon=epsilon,
+            method="finite_diff",
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
