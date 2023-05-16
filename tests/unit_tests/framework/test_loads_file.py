@@ -67,7 +67,7 @@ class TestLoadsFile(unittest.TestCase):
         # -----------------------------------------------
         solvers.flow = None
         oneway_driver = TacsOnewayDriver.prime_loads_from_file(
-            "aero_loads.txt", solvers, f2f_model, 1, transfer_settings, tacs_aim=None
+            "aero_loads.txt", solvers, f2f_model, 1, transfer_settings
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -114,7 +114,7 @@ class TestLoadsFile(unittest.TestCase):
         # -----------------------------------------------
         solvers.flow = None
         oneway_driver = TacsOnewayDriver.prime_loads_from_file(
-            "aero_loads.txt", solvers, f2f_model, 1, transfer_settings, tacs_aim=None
+            "aero_loads.txt", solvers, f2f_model, 1, transfer_settings
         )
 
         max_rel_error = TestResult.derivative_test(
