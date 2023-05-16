@@ -45,9 +45,11 @@ class Scenario(Base):
         fun3d=True,
         steps=1000,
         preconditioner_steps=0,
+        adjoint_steps=None,
         T_ref=300,
         T_inf=300,
         tacs_integration_settings=None,
+        fun3d_project_name="funtofem_CAPS",
         suther1=1.458205e-6,
         suther2=110.3333,
         gamma=1.4,
@@ -72,12 +74,17 @@ class Scenario(Base):
             the total number of fun3d time steps to run for the scenario
         preconditioner_steps: int
             the number of fun3d iterations ran before coupled iterations for preconditioning
+        adjoint_steps: int
+            optional number of adjoint steps when using FUN3D analysis, can have different
+            number of forward and adjoint steps in steady-state
         T_ref: double
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
             Fluid freestream reference temperature in Kelvin.
         tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
             Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
+        fun3d_project_name: filename
+            name of project_rootname from fun3d.nml, ex: funtofem_CAPS would have a grid file funtofem_CAPS.lb8.ugrid
 
         Optional Parameters/Constants
         -----------------------------
@@ -102,6 +109,7 @@ class Scenario(Base):
         self.id = id
         self.group = group
         self.group_master = False
+        self.adjoint_steps = adjoint_steps
         self.variables = {}
 
         self.functions = []
@@ -109,6 +117,7 @@ class Scenario(Base):
         self.steps = steps
         self.preconditioner_steps = preconditioner_steps
         self.tacs_integration_settings = tacs_integration_settings
+        self.fun3d_project_name = fun3d_project_name
 
         self.T_ref = T_ref
         self.T_inf = T_inf
@@ -214,6 +223,19 @@ class Scenario(Base):
         is_adjoint = lambda func: func.adjoint
         return len(list(filter(is_adjoint, self.functions)))
 
+    def get_variable(self, varname, set_active=True):
+        """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
+        var = None
+        for discipline in self.variables:
+            discipline_vars = self.variables[discipline]
+            for var in discipline_vars:
+                if var.name == varname:
+                    if set_active:
+                        var.active = True
+                    return var
+        if var is None:
+            raise AssertionError(f"Can't find variable from scenario {self.name}")
+
     def add_variable(self, vartype, var):
         """
         Add a new variable to the scenario's variable dictionary
@@ -249,6 +271,11 @@ class Scenario(Base):
             )
 
         # return the object for method cascading
+        return self
+
+    def fun3d_project(self, new_proj_name):
+        """set the fun3d project rootname from fun3d.nml for use in shape drivers"""
+        self.fun3d_project_name = new_proj_name
         return self
 
     def register_to(self, funtofem_model):

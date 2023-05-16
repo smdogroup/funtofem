@@ -187,7 +187,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         fail = 0
 
         # how many steps to take for the block Gauss Seidel
-        steps = scenario.steps
+        if scenario.adjoint_steps is None:
+            steps = scenario.steps
+        else:
+            steps = scenario.adjoint_steps
 
         # Load the current state
         for body in self.model.bodies:

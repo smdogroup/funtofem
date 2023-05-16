@@ -31,6 +31,9 @@ import importlib
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
 caps_loader = importlib.util.find_spec("pyCAPS")
+if caps_loader is not None:
+    from pyfuntofem.interface.caps2fun import Fun3dModel
+
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
@@ -229,7 +232,10 @@ class FUNtoFEMmodel(object):
         """send variables to self.structural usually the TacsModel"""
         # if tacs loader and tacs model exist then create thickness variables and register to tacs model
         # in the case of defining shell properties
-        if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
+        if tacs_loader is None or caps_loader is None:
+            return
+
+        if isinstance(self.structural, caps2tacs.TacsModel):
             struct_variables = []
             shape_variables = []
             if "structural" in base.variables:
@@ -284,6 +290,11 @@ class FUNtoFEMmodel(object):
 
     def _send_flow_variables(self, base):
         """send variables to self.flow usually the Fun3dModel"""
+<<<<<<< HEAD
+=======
+        if caps_loader is None:
+            return
+>>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
 
         if isinstance(self.flow, Fun3dModel):
             shape_variables = []
@@ -299,13 +310,19 @@ class FUNtoFEMmodel(object):
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
             esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
 
+<<<<<<< HEAD
             aero_varnames = []
             shape_varnames = []
+=======
+            active_shape_vars = []
+            active_aero_vars = []
+>>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
 
             # add shape variable names to varnames
             for var in shape_variables:
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
+<<<<<<< HEAD
                         shape_varnames.append(despmtr)
                         break
 
@@ -316,6 +333,21 @@ class FUNtoFEMmodel(object):
 
             # input the design parameters into the Fun3dModel and Fun3dAim
             self.flow.set_variables(shape_varnames, aero_varnames)
+=======
+                        active_shape_vars.append(var)
+                        break
+
+            # NOTE : we've decided to only use aero variables in FUN3D Fortran
+            # not in Fun3dAim for now...
+
+            # add aerodynamic variable names to varnames
+            # for var in aero_variables:
+            #     if var.active:
+            #         active_aero_vars.append(var)
+
+            # input the design parameters into the Fun3dModel and Fun3dAim
+            self.flow.set_variables(active_shape_vars, active_aero_vars)
+>>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
         return
 
     def get_variables(self):
@@ -779,6 +811,100 @@ class FUNtoFEMmodel(object):
 
         return
 
+    def read_design_variables_file(self, comm, filename, root=0):
+        """
+        Read the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        variables_dict = None  # this will be broadcast to other processors
+        if comm.rank == root:  # read the file in on the root processor
+            variables_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 3:
+                    var_name = chunks[1]
+                    var_value = chunks[2]
+
+                    # only real numbers are read in from the file
+                    variables_dict[var_name] = float(var_value)
+
+        # broadcast the dictionary to the root processor
+        variables_dict = comm.bcast(variables_dict, root=root)
+
+        # update the variable values on each processor
+        for var in self.get_variables():
+            if var.name in variables_dict:
+                var.value = variables_dict[var.name]
+
+        return
+
+    def write_design_variables_file(self, comm, filename, root=0):
+        """
+        Write the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        # get the variable values from the root processor
+        if comm.rank == root:
+            # get the disciplines and variables
+            disciplines = []
+            variables = {}
+            scenarios_and_bodies = self.scenarios + self.bodies
+            for base in scenarios_and_bodies:
+                for discipline in base.variables:
+                    if not (discipline in disciplines):
+                        disciplines.append(discipline)
+                        variables[discipline] = []
+                    for var in base.variables[discipline]:
+                        if var.active:
+                            variables[discipline].append(var)
+
+            # get the file hdl
+            hdl = open(filename, "w")
+
+            # write the variables file
+            for discipline in variables:
+                if (
+                    len(variables[discipline]) == 0
+                ):  # skip this discipline if empty, aka rigid_motion
+                    continue
+                hdl.write(f"Discipline {discipline}\n")
+
+                # write each variable from that discipline
+                for var in variables[discipline]:
+                    # only real numbers written to this file
+                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+
+            hdl.close()
+
+        return
+
     @property
     def structural(self):
         """structural discipline submodel such as TacsModel"""
@@ -789,6 +915,18 @@ class FUNtoFEMmodel(object):
         self._struct_model = structural_model
 
     @property
+<<<<<<< HEAD
+    def structural(self):
+        """structural discipline submodel such as TacsModel"""
+        return self._struct_model
+
+    @structural.setter
+    def structural(self, structural_model):
+        self._struct_model = structural_model
+
+    @property
+=======
+>>>>>>> b2936a8633e4575a63133f554fe6ec8f6ed7505b
     def flow(self):
         """flow discipline submodel such as Fun3dModel"""
         return self._flow_model

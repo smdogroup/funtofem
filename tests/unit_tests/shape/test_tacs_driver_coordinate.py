@@ -10,8 +10,8 @@ from pyfuntofem.interface import (
     TacsInterface,
     SolverManager,
     TacsIntegrationSettings,
+    CoordinateDerivativeTester,
 )
-from _coordinate_derivatives_base_test import CoordinateDerivativeTester
 from pyfuntofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
