@@ -74,7 +74,7 @@
 
 
 <div class="viewcode-block" id="FUNtoFEMDriver"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.FUNtoFEMDriver">[docs]</a><span class="k">class</span> <span class="nc">FUNtoFEMDriver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The FUNtoFEM driver base class has all of the driver except for the coupling algorithms</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -85,7 +85,7 @@
         <span class="n">transfer_settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        solvers: SolverManager</span>
@@ -156,7 +156,7 @@
         <span class="k">return</span>
 
 <div class="viewcode-block" id="FUNtoFEMDriver.update_model"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.FUNtoFEMDriver.update_model">[docs]</a>    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the model object that the driver sees</span>
 
 <span class="sd">        Parameters</span>
@@ -166,7 +166,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMDriver.solve_forward"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.FUNtoFEMDriver.solve_forward">[docs]</a>    <span class="k">def</span> <span class="nf">solve_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the coupled forward problem</span>
 
 <span class="sd">        Parameters</span>
@@ -220,7 +220,7 @@
         <span class="k">return</span> <span class="n">fail</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMDriver.solve_adjoint"><a class="viewcode-back" href="../../../driver.html#pyfuntofem.driver.FUNtoFEMDriver.solve_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">solve_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the coupled adjoint problem and computes gradients</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -270,7 +270,7 @@
         <span class="k">return</span> <span class="n">fail</span></div>
 
     <span class="k">def</span> <span class="nf">_initialize_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the variables and solver data for a forward analysis</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
@@ -283,7 +283,7 @@
         <span class="k">return</span> <span class="mi">0</span>
 
     <span class="k">def</span> <span class="nf">_initialize_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the variables and solver data for an adjoint solve</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">:</span>
@@ -326,7 +326,7 @@
             <span class="n">body</span><span class="o">.</span><span class="n">shape_derivative</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_scenario_function_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The offset tells each scenario what is first function&#39;s index is</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>

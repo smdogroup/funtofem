@@ -73,7 +73,7 @@
 
 
 <div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A class to hold scenario information for a design point in optimization&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class to hold scenario information for a design point in optimization&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -84,16 +84,18 @@
         <span class="n">fun3d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
         <span class="n">preconditioner_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">adjoint_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">T_ref</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
         <span class="n">T_inf</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
         <span class="n">tacs_integration_settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fun3d_project_name</span><span class="o">=</span><span class="s2">&quot;funtofem_CAPS&quot;</span><span class="p">,</span>
         <span class="n">suther1</span><span class="o">=</span><span class="mf">1.458205e-6</span><span class="p">,</span>
         <span class="n">suther2</span><span class="o">=</span><span class="mf">110.3333</span><span class="p">,</span>
         <span class="n">gamma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
         <span class="n">R_specific</span><span class="o">=</span><span class="mf">287.058</span><span class="p">,</span>
         <span class="n">Pr</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        name: str</span>
@@ -111,12 +113,17 @@
 <span class="sd">            the total number of fun3d time steps to run for the scenario</span>
 <span class="sd">        preconditioner_steps: int</span>
 <span class="sd">            the number of fun3d iterations ran before coupled iterations for preconditioning</span>
+<span class="sd">        adjoint_steps: int</span>
+<span class="sd">            optional number of adjoint steps when using FUN3D analysis, can have different</span>
+<span class="sd">            number of forward and adjoint steps in steady-state</span>
 <span class="sd">        T_ref: double</span>
 <span class="sd">            Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.</span>
 <span class="sd">        T_inf: double</span>
 <span class="sd">            Fluid freestream reference temperature in Kelvin.</span>
 <span class="sd">        tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`</span>
 <span class="sd">            Optional TacsIntegrator settings for the unsteady interface (required for unsteady)</span>
+<span class="sd">        fun3d_project_name: filename</span>
+<span class="sd">            name of project_rootname from fun3d.nml, ex: funtofem_CAPS would have a grid file funtofem_CAPS.lb8.ugrid</span>
 
 <span class="sd">        Optional Parameters/Constants</span>
 <span class="sd">        -----------------------------</span>
@@ -141,6 +148,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">group</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group_master</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjoint_steps</span> <span class="o">=</span> <span class="n">adjoint_steps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">functions</span> <span class="o">=</span> <span class="p">[]</span>
@@ -148,6 +156,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">preconditioner_steps</span> <span class="o">=</span> <span class="n">preconditioner_steps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tacs_integration_settings</span> <span class="o">=</span> <span class="n">tacs_integration_settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fun3d_project_name</span> <span class="o">=</span> <span class="n">fun3d_project_name</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span> <span class="o">=</span> <span class="n">T_ref</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T_inf</span> <span class="o">=</span> <span class="n">T_inf</span>
@@ -202,7 +211,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="Scenario.add_function"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.add_function">[docs]</a>    <span class="k">def</span> <span class="nf">add_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a new function to the scenario&#39;s function list</span>
 
 <span class="sd">        Parameters</span>
@@ -229,7 +238,7 @@
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Scenario.count_functions"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.count_functions">[docs]</a>    <span class="k">def</span> <span class="nf">count_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the number of functions in this scenario</span>
 
 <span class="sd">        Returns</span>
@@ -241,7 +250,7 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Scenario.count_adjoint_functions"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.count_adjoint_functions">[docs]</a>    <span class="k">def</span> <span class="nf">count_adjoint_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the number of functions that require an adjoint in this scenario</span>
 
 <span class="sd">        Returns</span>
@@ -253,8 +262,21 @@
         <span class="n">is_adjoint</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">func</span><span class="p">:</span> <span class="n">func</span><span class="o">.</span><span class="n">adjoint</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">is_adjoint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">)))</span></div>
 
+<div class="viewcode-block" id="Scenario.get_variable"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.get_variable">[docs]</a>    <span class="k">def</span> <span class="nf">get_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">varname</span><span class="p">,</span> <span class="n">set_active</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get the scenario variable with matching name, helpful for FUN3D automatic variables&quot;&quot;&quot;</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">discipline</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="n">discipline_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">discipline</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">discipline_vars</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">varname</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">set_active</span><span class="p">:</span>
+                        <span class="n">var</span><span class="o">.</span><span class="n">active</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">return</span> <span class="n">var</span>
+        <span class="k">if</span> <span class="n">var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t find variable from scenario </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Scenario.add_variable"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.add_variable">[docs]</a>    <span class="k">def</span> <span class="nf">add_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a new variable to the scenario&#39;s variable dictionary</span>
 
 <span class="sd">        Parameters</span>
@@ -272,7 +294,7 @@
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Scenario.include"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.include">[docs]</a>    <span class="k">def</span> <span class="nf">include</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        generic include method adds objects for readability</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
@@ -290,15 +312,20 @@
         <span class="c1"># return the object for method cascading</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
+<div class="viewcode-block" id="Scenario.fun3d_project"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.fun3d_project">[docs]</a>    <span class="k">def</span> <span class="nf">fun3d_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_proj_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;set the fun3d project rootname from fun3d.nml for use in shape drivers&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fun3d_project_name</span> <span class="o">=</span> <span class="n">new_proj_name</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
 <div class="viewcode-block" id="Scenario.register_to"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.register_to">[docs]</a>    <span class="k">def</span> <span class="nf">register_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">funtofem_model</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        add this scenario to the funtofem model at the end of a method cascade</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">funtofem_model</span><span class="o">.</span><span class="n">add_scenario</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Scenario.set_temperature"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.set_temperature">[docs]</a>    <span class="k">def</span> <span class="nf">set_temperature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T_ref</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span> <span class="n">T_inf</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        set structure temperature T_ref and freestream T_inf</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T_ref</span> <span class="o">=</span> <span class="n">T_ref</span>
@@ -306,7 +333,7 @@
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Scenario.set_id"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
 <span class="sd">        Update the id number of the scenario</span>
 
@@ -326,7 +353,7 @@
             <span class="n">func</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="nb">id</span></div>
 
 <div class="viewcode-block" id="Scenario.get_thermal_conduct"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.get_thermal_conduct">[docs]</a>    <span class="k">def</span> <span class="nf">get_thermal_conduct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate dimensional thermal conductivity at each aero surface node.</span>
 <span class="sd">        First, use two-constant Sutherland&#39;s law to calculate viscosity for use in calculating aero heat flux.</span>
 
@@ -350,7 +377,7 @@
         <span class="k">return</span> <span class="n">k</span></div>
 
 <div class="viewcode-block" id="Scenario.get_thermal_conduct_deriv"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.scenario.Scenario.get_thermal_conduct_deriv">[docs]</a>    <span class="k">def</span> <span class="nf">get_thermal_conduct_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aero_temps</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate derivative of thermal conductivity with respect to aero surface temperature.</span>
 
 <span class="sd">        Parameters</span>

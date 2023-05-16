@@ -64,12 +64,12 @@
 
 
 <div class="viewcode-block" id="SolverInterface"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface">[docs]</a><span class="k">class</span> <span class="nc">SolverInterface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A base class to define what functions solver interfaces in FUNtoFEM need</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The solver constructor is required to set discipline node locations (either :math:`x_a` or :math:`x_s`)</span>
 <span class="sd">        in the funtofem body class. These values are passed via a call to either</span>
 <span class="sd">        ``body.initialize_struct_nodes(struct_X)`` or ``body.initialize_aero_nodes(aero_X)``.</span>
@@ -98,12 +98,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A base class to define what functions solver interfaces in FUNtoFEM need</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="SolverInterface.set_variables"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.set_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the design variables into the solver.</span>
 <span class="sd">        The scenario and bodies objects have dictionaries of :class:`~variable.Variable` objects.</span>
 <span class="sd">        The interface class should pick out which type of variables it needs and pass them into the solver</span>
@@ -136,7 +136,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.set_functions"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.set_functions">[docs]</a>    <span class="k">def</span> <span class="nf">set_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the function definitions into the solver.</span>
 <span class="sd">        The scenario has a list of function objects.</span>
 
@@ -171,7 +171,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.get_functions"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.get_functions">[docs]</a>    <span class="k">def</span> <span class="nf">get_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Put the function values from the solver in the value attribute of the scneario&#39;s functions.</span>
 <span class="sd">        The scenario has the list of function objects where the functions owned by this solver will be set.</span>
 <span class="sd">        You can evaluate the functions based on the name or based on the functions set during</span>
@@ -205,7 +205,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.get_function_gradients"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.get_function_gradients">[docs]</a>    <span class="k">def</span> <span class="nf">get_function_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the derivatives of all the functions with respect to design variables associated with this solver.</span>
 
 <span class="sd">        Each solver sets the function gradients for its own variables into the function objects using either</span>
@@ -241,7 +241,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.get_coordinate_derivatives"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.get_coordinate_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">get_coordinate_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add the solver&#39;s contributions to the coordinate derivatives for this time step or the total value</span>
 <span class="sd">        for the steady case. The coordinate derivatives are stored in the body objects in the aero_shape_term</span>
 <span class="sd">        and struct_shape_term attributes.</span>
@@ -288,7 +288,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.initialize"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set up anything that is necessary for a specific scenario prior to calls to ``iterate``.</span>
 <span class="sd">        A requirement is that discipline solvers update their mesh representations to be consistent</span>
 <span class="sd">        with the coordinates in the bodies. These coordinate locations can be obtained by</span>
@@ -336,7 +336,7 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.iterate"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.iterate">[docs]</a>    <span class="k">def</span> <span class="nf">iterate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Iterate on the primal residual equation for the present discipline solver. Called in NLBGS solver.</span>
 
 <span class="sd">        For an aerodynamic solver, this might include:</span>
@@ -418,7 +418,7 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.post"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Perform any tasks the solver needs to do after the forward steps are complete, e.g., evaluate functions,</span>
 <span class="sd">        post-process, deallocate unneeded memory.</span>
 
@@ -432,7 +432,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.initialize_adjoint"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.initialize_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Perform any tasks the solver needs to do before taking adjoint steps</span>
 
 <span class="sd">        Parameters</span>
@@ -445,7 +445,7 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.iterate_adjoint"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.iterate_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">iterate_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adjoint iteration for the solver.</span>
 
 <span class="sd">        For an aerodynamic solver this will include:</span>
@@ -571,13 +571,13 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.post_adjoint"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.post_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">post_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Any actions that need to be performed after completing the adjoint solve, e.g., evaluating gradients, deallocating memory, etc.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.set_states"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.set_states">[docs]</a>    <span class="k">def</span> <span class="nf">set_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load the states (aero_loads, struct_disps) associated with this step either from memory or the disk for</span>
 <span class="sd">        the transfer scheme to linearize about. This function is called at the beginning of each adjoint</span>
 <span class="sd">        step in time dependent problems.</span>
@@ -611,7 +611,7 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="SolverInterface.step_pre"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.step_pre">[docs]</a>    <span class="k">def</span> <span class="nf">step_pre</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Operations before at a step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</span>
 
 <span class="sd">        Parameters</span>
@@ -626,7 +626,7 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.step_solver"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.step_solver">[docs]</a>    <span class="k">def</span> <span class="nf">step_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">fsi_subiter</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</span>
 
 <span class="sd">        Parameters</span>
@@ -643,7 +643,7 @@
         <span class="k">return</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="SolverInterface.step_post"><a class="viewcode-back" href="../../../programmers_guide.html#pyfuntofem.interface.SolverInterface.step_post">[docs]</a>    <span class="k">def</span> <span class="nf">step_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Operations after at a step in an FSI subiteration case. Called in NLBGS with FSI subiterations.</span>
 
 <span class="sd">        Parameters</span>
@@ -667,7 +667,7 @@
         <span class="n">complex_step</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Test the adjoint implementation depending on the solver type.</span>
 
 <span class="sd">        This test evaluates the consistency between the forward and adjoint modes.</span>
@@ -700,7 +700,7 @@
     <span class="k">def</span> <span class="nf">_test_flow_adjoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">complex_step</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Test to see if the adjoint methods are implemented correctly</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
@@ -847,7 +847,7 @@
     <span class="k">def</span> <span class="nf">_test_struct_adjoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">complex_step</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Test to see if the adjoint methods are implemented correctly</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 

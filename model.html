@@ -427,6 +427,48 @@ for node in surface_nodes:</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.read_design_variables_file">
+<span class="sig-name descname"><span class="pre">read_design_variables_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.read_design_variables_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.read_design_variables_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the design variables file funtofem.in
+This file contains the following information:
+Discipline
+Var_name Var_value
+:param comm: Global communicator across all FUNtoFEM processors
+:type comm: MPI communicator
+:param filename: The name of the file to be read in / filepath
+:type filename: str
+:param root: The rank of the processor that will write the file
+:type root: int</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.write_design_variables_file">
+<span class="sig-name descname"><span class="pre">write_design_variables_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/funtofem_model.html#FUNtoFEMmodel.write_design_variables_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.write_design_variables_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the design variables file funtofem.in
+This file contains the following information:
+Discipline
+Var_name Var_value
+:param comm: Global communicator across all FUNtoFEM processors
+:type comm: MPI communicator
+:param filename: The name of the file to be generated / filepath
+:type filename: str
+:param root: The rank of the processor that will write the file
+:type root: int</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.structural">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">structural</span></span><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.structural" title="Permalink to this definition">¶</a></dt>
+<dd><p>structural discipline submodel such as TacsModel</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyfuntofem.model.FUNtoFEMmodel.flow">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flow</span></span><a class="headerlink" href="#pyfuntofem.model.FUNtoFEMmodel.flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>flow discipline submodel such as Fun3dModel</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -448,7 +490,7 @@ Variables and functions are added using <a class="reference internal" href="#pyf
 </figure>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyfuntofem.model.scenario.Scenario">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.model.scenario.</span></span><span class="sig-name descname"><span class="pre">Scenario</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steady</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fun3d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_integration_settings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suther1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.458205e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suther2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110.3333</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R_specific</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">287.058</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.72</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyfuntofem.model.scenario.</span></span><span class="sig-name descname"><span class="pre">Scenario</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steady</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fun3d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjoint_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tacs_integration_settings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fun3d_project_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'funtofem_CAPS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suther1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.458205e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suther2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110.3333</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R_specific</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">287.058</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.72</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class to hold scenario information for a design point in optimization</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -461,9 +503,12 @@ scenarios in the same group</p></li>
 <li><p><strong>fun3d</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a>) – whether or not you are using FUN3D. If true, the scenario class will auto-populate ‘aerodynamic’ required by FUN3D</p></li>
 <li><p><strong>steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – the total number of fun3d time steps to run for the scenario</p></li>
 <li><p><strong>preconditioner_steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – the number of fun3d iterations ran before coupled iterations for preconditioning</p></li>
+<li><p><strong>adjoint_steps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – optional number of adjoint steps when using FUN3D analysis, can have different
+number of forward and adjoint steps in steady-state</p></li>
 <li><p><strong>T_ref</strong> (<em>double</em>) – Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.</p></li>
 <li><p><strong>T_inf</strong> (<em>double</em>) – Fluid freestream reference temperature in Kelvin.</p></li>
 <li><p><strong>tacs_integration_settings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">TacsUnsteadyInterface</span></code>) – Optional TacsIntegrator settings for the unsteady interface (required for unsteady)</p></li>
+<li><p><strong>fun3d_project_name</strong> (<em>filename</em>) – name of project_rootname from fun3d.nml, ex: funtofem_CAPS would have a grid file funtofem_CAPS.lb8.ugrid</p></li>
 <li><p><strong>Parameters/Constants</strong> (<em>Optional</em>) – </p></li>
 <li><p><strong>-----------------------------</strong> – </p></li>
 <li><p><strong>suther1</strong> (<em>double</em>) – First constant in Sutherland’s two-constant viscosity model. Units of kg/m-s-K^0.5</p></li>
@@ -521,6 +566,12 @@ scenarios in the same group</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.scenario.Scenario.get_variable">
+<span class="sig-name descname"><span class="pre">get_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">varname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario.get_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario.get_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the scenario variable with matching name, helpful for FUN3D automatic variables</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyfuntofem.model.scenario.Scenario.add_variable">
 <span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vartype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario.add_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario.add_variable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a new variable to the scenario’s variable dictionary</p>
@@ -538,6 +589,12 @@ scenarios in the same group</p></li>
 <dt class="sig sig-object py" id="pyfuntofem.model.scenario.Scenario.include">
 <span class="sig-name descname"><span class="pre">include</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario.include"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario.include" title="Permalink to this definition">¶</a></dt>
 <dd><p>generic include method adds objects for readability</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyfuntofem.model.scenario.Scenario.fun3d_project">
+<span class="sig-name descname"><span class="pre">fun3d_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_proj_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyfuntofem/model/scenario.html#Scenario.fun3d_project"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyfuntofem.model.scenario.Scenario.fun3d_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the fun3d project rootname from fun3d.nml for use in shape drivers</p>
 </dd></dl>
 
 <dl class="py method">

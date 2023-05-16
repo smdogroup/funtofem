@@ -72,7 +72,7 @@
 
 
 <div class="viewcode-block" id="Variable"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable">[docs]</a><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Design variable type for FUNtoFEM. Valid variable types are &quot;structural&quot;, &quot;aerodynamic&quot;, and &quot;shape&quot;. For example, invoked by &quot;Variable.structural(&#39;thickness&#39;, 0.1)&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -90,7 +90,7 @@
         <span class="n">coupled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Variable object for FUNtoFEM</span>
 
 <span class="sd">        Parameters</span>
@@ -134,7 +134,7 @@
         <span class="n">active</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">coupled</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the one or more of the attributes of the design variable</span>
 
 <span class="sd">        Parameters</span>
@@ -171,7 +171,7 @@
 
 <div class="viewcode-block" id="Variable.structural"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.structural">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">structural</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a structural analysis variable.</span>
 <span class="sd">        (make sure to set optimal settings and then register it)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -179,7 +179,7 @@
 
 <div class="viewcode-block" id="Variable.aerodynamic"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.aerodynamic">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">aerodynamic</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create an aerodynamic analysis variable.</span>
 <span class="sd">        (make sure to set optimal settings and then register it)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -187,14 +187,14 @@
 
 <div class="viewcode-block" id="Variable.shape"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.shape">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a shape analysis variable.</span>
 <span class="sd">        (make sure to set optimal settings and then register it)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;shape&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Variable.rescale"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.rescale">[docs]</a>    <span class="k">def</span> <span class="nf">rescale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        rescale the lb, value, ub of the variable</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">*=</span> <span class="n">factor</span>
@@ -205,7 +205,7 @@
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Variable.register_to"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.register_to">[docs]</a>    <span class="k">def</span> <span class="nf">register_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        register a variable with previously defined analysis type to</span>
 <span class="sd">        a body or scenario</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -218,7 +218,7 @@
 
 <div class="viewcode-block" id="Variable.from_caps"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Variable.from_caps">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_caps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a funtofem variable from a caps2tacs ThicknessVariable, ShellProperty, or ShapeVariable.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">tacs_loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -243,7 +243,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">composite_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;turn this variable into a composite function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;turn this variable into a composite function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">CompositeFunction</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="c1"># arithmetic with composite functions</span>

@@ -65,7 +65,7 @@
 
 
 <div class="viewcode-block" id="Function"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function">[docs]</a><span class="k">class</span> <span class="nc">Function</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;holds component function information in FUNtoFEM&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;holds component function information in FUNtoFEM&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -81,7 +81,7 @@
         <span class="n">averaging</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">optim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -149,7 +149,7 @@
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_scenario_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
 
 <div class="viewcode-block" id="Function.zero_derivatives"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.zero_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">zero_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Zero all the derivative values that are currently set</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -159,14 +159,14 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Function.optimize"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set optim=True indicating this function will be an objective or constraint.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">optim</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="bp">self</span>  <span class="c1"># return function for method cascading</span></div>
 
 <div class="viewcode-block" id="Function.set_gradient_component"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.set_gradient_component">[docs]</a>    <span class="k">def</span> <span class="nf">set_gradient_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the gradient value for the given variable into the dictionary of gradient values</span>
 
 <span class="sd">        This call will overwrite the gradient value stored by the function.</span>
@@ -184,7 +184,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Function.add_gradient_component"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.add_gradient_component">[docs]</a>    <span class="k">def</span> <span class="nf">add_gradient_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add the gradient value for the given variable into the dictionary of gradient values</span>
 
 <span class="sd">        Parameter</span>
@@ -203,7 +203,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Function.get_gradient_component"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.get_gradient_component">[docs]</a>    <span class="k">def</span> <span class="nf">get_gradient_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the gradient value stored - return 0 if not defined</span>
 
 <span class="sd">        Parameter</span>
@@ -218,7 +218,7 @@
         <span class="k">return</span> <span class="mf">0.0</span></div>
 
 <div class="viewcode-block" id="Function.register_to"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.register_to">[docs]</a>    <span class="k">def</span> <span class="nf">register_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register the function to the scenario.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">scenario</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -228,7 +228,7 @@
     <span class="k">def</span> <span class="nf">ksfailure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">ks_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">50.0</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor for the KS Failure function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
@@ -242,7 +242,7 @@
 
 <div class="viewcode-block" id="Function.mass"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.mass">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">mass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor for the Mass function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
@@ -251,7 +251,7 @@
 
 <div class="viewcode-block" id="Function.lift"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.lift">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">lift</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor for the Lift function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
@@ -260,7 +260,7 @@
 
 <div class="viewcode-block" id="Function.drag"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.drag">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">drag</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor for the Drag function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
@@ -269,7 +269,7 @@
 
 <div class="viewcode-block" id="Function.temperature"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.temperature">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">temperature</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor for the Temperature function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
@@ -282,28 +282,28 @@
 
 <div class="viewcode-block" id="Function.xcom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.xcom">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">xcom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class constructor for the x center of mass TACS function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class constructor for the x center of mass TACS function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;xcom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Function.ycom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.ycom">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">ycom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class constructor for the y center of mass TACS function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class constructor for the y center of mass TACS function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ycom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Function.zcom"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.zcom">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">zcom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class constructor for the z center of mass TACS function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class constructor for the z center of mass TACS function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zcom&quot;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Function.compliance"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.compliance">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">compliance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class constructor for the compliance TACS function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class constructor for the compliance TACS function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;compliance&quot;</span><span class="p">,</span>
             <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;structural&quot;</span><span class="p">,</span>
@@ -314,7 +314,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">composite_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;turn this function into a composite function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;turn this function into a composite function&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">CompositeFunction</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="c1"># arithmetic with composite functions</span>

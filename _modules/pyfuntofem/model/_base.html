@@ -64,12 +64,12 @@
 
 
 <div class="viewcode-block" id="Base"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for FUNtoFEM bodies and scenarios</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -98,13 +98,13 @@
         <span class="k">return</span>
 
 <div class="viewcode-block" id="Base.register_to"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.register_to">[docs]</a>    <span class="k">def</span> <span class="nf">register_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">funtofem_model</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        required method for each subclass</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="Base.add_variable"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.add_variable">[docs]</a>    <span class="k">def</span> <span class="nf">add_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a new variable to the body&#39;s or scenario&#39;s variable dictionary</span>
 
 <span class="sd">        Parameters</span>
@@ -147,7 +147,7 @@
         <span class="n">active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">coupled</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set one or more properties of a variable given the vartype and either the variable name or a list of id&#39;s</span>
 
 <span class="sd">        Parameters</span>
@@ -223,7 +223,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Base.verify_vartype"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.verify_vartype">[docs]</a>    <span class="k">def</span> <span class="nf">verify_vartype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vartype</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Input verification for vartype when specifying a variable.</span>
 
 <span class="sd">        Parameters</span>
@@ -247,7 +247,7 @@
         <span class="k">return</span></div>
 
 <div class="viewcode-block" id="Base.count_active_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.count_active_variables">[docs]</a>    <span class="k">def</span> <span class="nf">count_active_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Counts the number of active variables in this body or scenario</span>
 
 <span class="sd">        Returns</span>
@@ -262,7 +262,7 @@
         <span class="k">return</span> <span class="n">count</span></div>
 
 <div class="viewcode-block" id="Base.count_uncoupled_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.count_uncoupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">count_uncoupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Counts the number of variables in this body or scenario that are both uncoupled and active</span>
 <span class="sd">        This is the number of unique variables to this object</span>
 
@@ -278,7 +278,7 @@
         <span class="k">return</span> <span class="n">count</span></div>
 
 <div class="viewcode-block" id="Base.get_active_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.get_active_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the list of active variables in body or scenario</span>
 
 <span class="sd">        Returns</span>
@@ -295,7 +295,7 @@
         <span class="k">return</span> <span class="n">full_list</span></div>
 
 <div class="viewcode-block" id="Base.get_uncoupled_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.get_uncoupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_uncoupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the list of uncoupled, active variables in body or scenario</span>
 
 <span class="sd">        Returns</span>
@@ -312,7 +312,7 @@
         <span class="k">return</span> <span class="n">full_list</span></div>
 
 <div class="viewcode-block" id="Base.set_coupled_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.set_coupled_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_coupled_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
 <span class="sd">        Set the coupled variables in the body or scenario based on the input&#39;s variables</span>
 
@@ -330,7 +330,7 @@
                 <span class="p">]</span></div>
 
 <div class="viewcode-block" id="Base.set_id"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Base.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        **[model call]**</span>
 <span class="sd">        Update the id number of the body or scenario</span>
 

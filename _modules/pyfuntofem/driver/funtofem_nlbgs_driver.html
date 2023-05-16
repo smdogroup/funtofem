@@ -81,7 +81,7 @@
         <span class="n">transfer_settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel</span>
 <span class="sd">        solvers for steady and unsteady coupled adjoint.</span>
 
@@ -108,7 +108,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">manager</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hot_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">write_designs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create an optimization manager object for this driver</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">OptimizationManager</span><span class="p">(</span>
@@ -118,7 +118,7 @@
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_initialize_adjoint_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">bodies</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the adjoint variables</span>
 
 <span class="sd">        Parameters</span>
@@ -135,7 +135,7 @@
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">_solve_steady_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solve the aerothermoelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.</span>
 <span class="sd">        Aitken under-relaxation is used here for stabilty.</span>
 
@@ -212,7 +212,7 @@
         <span class="k">return</span> <span class="n">fail</span>
 
     <span class="k">def</span> <span class="nf">_solve_steady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.</span>
 <span class="sd">        Aitken under-relaxation for stabilty.</span>
 
@@ -226,7 +226,10 @@
         <span class="n">fail</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="c1"># how many steps to take for the block Gauss Seidel</span>
-        <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
+        <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">adjoint_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">steps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">adjoint_steps</span>
 
         <span class="c1"># Load the current state</span>
         <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
@@ -275,7 +278,7 @@
         <span class="k">return</span> <span class="mi">0</span>
 
     <span class="k">def</span> <span class="nf">_solve_unsteady_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function solves the unsteady forward problem using NLBGS without FSI subiterations</span>
 
 <span class="sd">        Parameters</span>
@@ -419,7 +422,7 @@
         <span class="c1"># # end solve loop</span>
 
     <span class="k">def</span> <span class="nf">_solve_unsteady_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the unsteady adjoint problem using LBGS without FSI subiterations</span>
 
 <span class="sd">        Parameters</span>
