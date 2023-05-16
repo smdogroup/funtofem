@@ -29,6 +29,8 @@ if comm.rank == 0:  # make the results folder if doesn't exist
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
+complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+
 
 class TestTacsOnewayDriver(unittest.TestCase):
     """
@@ -66,12 +68,6 @@ class TestTacsOnewayDriver(unittest.TestCase):
         )
         oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
 
-        complex_mode = False
-        rtol = 1e-4
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_mode = True
-            rtol = 1e-7
-
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic",
@@ -80,6 +76,7 @@ class TestTacsOnewayDriver(unittest.TestCase):
             TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
 
         return
@@ -114,12 +111,6 @@ class TestTacsOnewayDriver(unittest.TestCase):
         )
         oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
 
-        complex_mode = False
-        rtol = 1e-3
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_mode = True
-            rtol = 1e-7
-
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermal",
@@ -128,6 +119,7 @@ class TestTacsOnewayDriver(unittest.TestCase):
             TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
 
         return
@@ -162,12 +154,6 @@ class TestTacsOnewayDriver(unittest.TestCase):
         )
         oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
 
-        complex_mode = False
-        rtol = 1e-3
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_mode = True
-            rtol = 1e-7
-
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermoelastic",
@@ -176,6 +162,7 @@ class TestTacsOnewayDriver(unittest.TestCase):
             TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
         return
 
@@ -204,12 +191,6 @@ class TestTacsOnewayDriver(unittest.TestCase):
         aero_driver = TestAeroOnewayDriver(solvers, model, transfer_settings)
         oneway_driver = TacsOnewayDriver.prime_loads(aero_driver, transfer_settings)
 
-        complex_mode = False
-        rtol = 1e-4
-        if TransferScheme.dtype == complex and TACS.dtype == complex:
-            complex_mode = True
-            rtol = 1e-7
-
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic-testaero_driver",
@@ -218,6 +199,7 @@ class TestTacsOnewayDriver(unittest.TestCase):
             TestTacsOnewayDriver.FILEPATH,
             complex_mode=complex_mode,
         )
+        rtol = 1e-7 if complex_mode else 1e-3
         self.assertTrue(max_rel_error < rtol)
 
         return
