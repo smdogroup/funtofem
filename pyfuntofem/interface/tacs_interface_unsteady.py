@@ -113,10 +113,12 @@ class TacsUnsteadyInterface(SolverInterface):
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
         can_skip_coordinates=True,
+        nprocs=None,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
         self.can_skip_coordinates = can_skip_coordinates
+        self.nprocs = nprocs
 
         # get active design variables
         self.struct_variables = []

@@ -30,6 +30,9 @@ import importlib
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
 caps_loader = importlib.util.find_spec("pyCAPS")
+if caps_loader is not None:
+    from pyfuntofem.interface.caps2fun import Fun3dModel
+
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
@@ -64,7 +67,8 @@ class FUNtoFEMmodel(object):
         self.bodies = []
         self.composite_functions = []
 
-        self._tacs_model = None
+        self._struct_model = None
+        self._flow_model = None
 
     def add_body(self, body):
         """
@@ -90,59 +94,9 @@ class FUNtoFEMmodel(object):
                 body.group_root = False
                 break
 
-        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
-        # in the case of defining shell properties
-        if tacs_loader is not None and self.tacs_model is not None:
-            struct_variables = []
-            shape_variables = []
-            if "structural" in body.variables:
-                struct_variables = body.variables["structural"]
-            if "shape" in body.variables:
-                shape_variables = body.variables["shape"]
-
-            for var in struct_variables:
-                # check if matching shell property exists
-                matching_prop = False
-                for prop in self.tacs_model.tacs_aim._properties:
-                    if prop.caps_group == var.name:
-                        matching_prop = True
-                        break
-
-                matching_dv = False
-                for dv in self.tacs_model.thickness_variables:
-                    if dv.name == var.name:
-                        matching_dv = True
-                        break
-
-                if matching_prop and not (matching_dv):
-                    caps2tacs.ThicknessVariable(
-                        caps_group=var.name, value=var.value, name=var.name
-                    ).register_to(self.tacs_model)
-
-            esp_caps_despmtrs = None
-            comm = self.tacs_model.comm
-            if self.tacs_model.root_proc:
-                esp_caps_despmtrs = list(self.tacs_model.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
-
-            for var in shape_variables:
-                matching_despmtr = False
-                for despmtr in esp_caps_despmtrs:
-                    if var.name == despmtr:
-                        matching_despmtr = True
-                        break
-
-                matching_shape_dv = False
-                for shape_var in self.tacs_model.shape_variables:
-                    if var.name == shape_var.name:
-                        matching_shape_dv = True
-                        break
-
-                # create a matching shape variable in caps2tacs
-                if matching_despmtr and not matching_shape_dv:
-                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
-                        self.tacs_model
-                    )
+        # auto registration of variables to discipline models
+        self._send_struct_variables(body)
+        self._send_flow_variables(body)
 
         # end of tacs model auto registration of vars section
 
@@ -173,6 +127,10 @@ class FUNtoFEMmodel(object):
             if scen.group == scenario.group:
                 scenario.group_root = False
                 break
+
+        # auto registration of variables to discipline models
+        self._send_struct_variables(scenario)
+        self._send_flow_variables(scenario)
 
         self.scenarios.append(scenario)
 
@@ -267,6 +225,107 @@ class FUNtoFEMmodel(object):
                             "        value and bounds:", var.value, var.lower, var.upper
                         )
 
+        return
+
+    def _send_struct_variables(self, base):
+        """send variables to self.structural usually the TacsModel"""
+        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
+        # in the case of defining shell properties
+        if tacs_loader is None or caps_loader is None:
+            return
+
+        if isinstance(self.structural, caps2tacs.TacsModel):
+            struct_variables = []
+            shape_variables = []
+            if "structural" in base.variables:
+                struct_variables = base.variables["structural"]
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+
+            for var in struct_variables:
+                # check if matching shell property exists
+                matching_prop = False
+                for prop in self.structural.tacs_aim._properties:
+                    if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+
+                matching_dv = False
+                for dv in self.structural.thickness_variables:
+                    if dv.name == var.name:
+                        matching_dv = True
+                        break
+
+                if matching_prop and not (matching_dv):
+                    caps2tacs.ThicknessVariable(
+                        caps_group=var.name, value=var.value, name=var.name
+                    ).register_to(self.structural)
+
+            esp_caps_despmtrs = None
+            comm = self.structural.comm
+            if self.structural.root_proc:
+                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            for var in shape_variables:
+                matching_despmtr = False
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        matching_despmtr = True
+                        break
+
+                matching_shape_dv = False
+                for shape_var in self.structural.shape_variables:
+                    if var.name == shape_var.name:
+                        matching_shape_dv = True
+                        break
+
+                # create a matching shape variable in caps2tacs
+                if matching_despmtr and not matching_shape_dv:
+                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
+                        self.structural
+                    )
+        return
+
+    def _send_flow_variables(self, base):
+        """send variables to self.flow usually the Fun3dModel"""
+        if caps_loader is None:
+            return
+
+        if isinstance(self.flow, Fun3dModel):
+            shape_variables = []
+            aero_variables = []
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+            if "aerodynamic" in base.variables:
+                aero_variables = base.variables["aerodynamic"]
+
+            esp_caps_despmtrs = None
+            comm = self.flow.comm
+            if self.flow.root_proc:
+                esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            active_shape_vars = []
+            active_aero_vars = []
+
+            # add shape variable names to varnames
+            for var in shape_variables:
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        active_shape_vars.append(var)
+                        break
+
+            # NOTE : we've decided to only use aero variables in FUN3D Fortran
+            # not in Fun3dAim for now...
+
+            # add aerodynamic variable names to varnames
+            # for var in aero_variables:
+            #     if var.active:
+            #         active_aero_vars.append(var)
+
+            # input the design parameters into the Fun3dModel and Fun3dAim
+            self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
     def get_variables(self):
@@ -730,10 +789,114 @@ class FUNtoFEMmodel(object):
 
         return
 
-    @property
-    def tacs_model(self):
-        return self._tacs_model
+    def read_design_variables_file(self, comm, filename, root=0):
+        """
+        Read the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
 
-    @tacs_model.setter
-    def tacs_model(self, m_tacs_model):
-        self._tacs_model = m_tacs_model
+        variables_dict = None  # this will be broadcast to other processors
+        if comm.rank == root:  # read the file in on the root processor
+            variables_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 3:
+                    var_name = chunks[1]
+                    var_value = chunks[2]
+
+                    # only real numbers are read in from the file
+                    variables_dict[var_name] = float(var_value)
+
+        # broadcast the dictionary to the root processor
+        variables_dict = comm.bcast(variables_dict, root=root)
+
+        # update the variable values on each processor
+        for var in self.get_variables():
+            if var.name in variables_dict:
+                var.value = variables_dict[var.name]
+
+        return
+
+    def write_design_variables_file(self, comm, filename, root=0):
+        """
+        Write the design variables file funtofem.in
+        This file contains the following information:
+        Discipline
+        Var_name Var_value
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        # get the variable values from the root processor
+        if comm.rank == root:
+            # get the disciplines and variables
+            disciplines = []
+            variables = {}
+            scenarios_and_bodies = self.scenarios + self.bodies
+            for base in scenarios_and_bodies:
+                for discipline in base.variables:
+                    if not (discipline in disciplines):
+                        disciplines.append(discipline)
+                        variables[discipline] = []
+                    for var in base.variables[discipline]:
+                        if var.active:
+                            variables[discipline].append(var)
+
+            # get the file hdl
+            hdl = open(filename, "w")
+
+            # write the variables file
+            for discipline in variables:
+                if (
+                    len(variables[discipline]) == 0
+                ):  # skip this discipline if empty, aka rigid_motion
+                    continue
+                hdl.write(f"Discipline {discipline}\n")
+
+                # write each variable from that discipline
+                for var in variables[discipline]:
+                    # only real numbers written to this file
+                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+
+            hdl.close()
+
+        return
+
+    @property
+    def structural(self):
+        """structural discipline submodel such as TacsModel"""
+        return self._struct_model
+
+    @structural.setter
+    def structural(self, structural_model):
+        self._struct_model = structural_model
+
+    @property
+    def flow(self):
+        """flow discipline submodel such as Fun3dModel"""
+        return self._flow_model
+
+    @flow.setter
+    def flow(self, flow_model):
+        self._flow_model = flow_model
