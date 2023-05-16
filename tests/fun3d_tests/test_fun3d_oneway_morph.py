@@ -36,6 +36,10 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 mesh_style = "coarse"
 
 
+@unittest.skipIf(
+    fun3d_loader is None,
+    "required to have FUN3D",
+)
 class TestFun3dOnewayMorph(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver

@@ -41,7 +41,8 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 
 @unittest.skipIf(
-    not complex_mode, "only testing coordinate derivatives with complex step"
+    not complex_mode or fun3d_loader is None,
+    "only uses complex step, required to have FUN3D",
 )
 class TestFun3dCoordinateDerivatives(unittest.TestCase):
     FILENAME = "f2fdriver-fun3daero-coordinates.txt"

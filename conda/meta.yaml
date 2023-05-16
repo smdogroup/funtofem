@@ -106,7 +106,7 @@ test:
 
   commands:
     - |
-    - testflo --pre_announce --timeout 120 tests/ # [linux64]
+    - testflo --pre_announce --timeout 120 tests/unit_tests # [linux64]
 
 about:
   home: https://github.com/smdogroup/funtofem
