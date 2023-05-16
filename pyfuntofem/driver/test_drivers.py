@@ -6,7 +6,7 @@ from pyfuntofem.interface import TestAerodynamicSolver
 class TestAeroOnewayDriver:
     def __init__(self, solvers, model, transfer_settings=None):
         """
-        Aerodynamic driver for unittests (similar to Fun3dOnewayDriver)
+        Aerodynamic driver for unit tests (similar to Fun3dOnewayDriver).
         Requires TestAeroSolver in self.flow
 
         Parameters

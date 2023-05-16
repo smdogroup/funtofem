@@ -103,7 +103,9 @@ class Fun3dAim:
         return
 
     def unlink(self):
-        """unlink the mesh for mesh morphing"""
+        """
+        Unlink the volume and surface aerodynamic meshes for mesh morphing.
+        """
         if self.root_proc:
             self.aim.input["Mesh"].unlink()
         return

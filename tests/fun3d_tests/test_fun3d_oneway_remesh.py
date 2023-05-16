@@ -43,7 +43,7 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
     FILENAME = "fun3d-oneway-shape-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_nominal(self):
+    def test_optimizer_file(self):
         """test no struct disps into FUN3D"""
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")

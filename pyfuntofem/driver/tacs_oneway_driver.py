@@ -59,7 +59,7 @@ class TacsOnewayDriver:
         solvers: :class:`~interface.solver_manager.SolverManager`
             The various disciplinary solvers.
         model: :class:`~funtofem_model.FUNtoFEMmodel`
-            The model containing the design data and the TacsModel with TacsAim wrapper inside (if using shape otherwise can be None).
+            The model containing the design data and the TACSmodel with tacsAIM wrapper inside (if using shape; otherwise can be None).
         transfer_settings: :class:`driver.TransferSettings`
         nprocs: int
             Number of processes that TACS is running on.
@@ -145,7 +145,7 @@ class TacsOnewayDriver:
         cls, driver, transfer_settings=None, nprocs=None, external_shape=False
     ):
         """
-        Used to prime struct/aero loads for optimization over tacs analysis
+        Used to prime struct/aero loads for optimization over TACS analysis.
         Can use the Fun3dOnewayDriver or FUNtoFEMnlbgs driver to prime the loads
         If structural solver exists, it will transfer to fixed structural loads in __init__ construction
         of the TacsOnewayDriver class.
