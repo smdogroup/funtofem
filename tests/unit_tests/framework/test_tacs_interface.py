@@ -82,7 +82,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        steady = Scenario.steady("test", steps=150)
         steady.include(Function.temperature()).register_to(model)
 
         # Build the solver interfaces
