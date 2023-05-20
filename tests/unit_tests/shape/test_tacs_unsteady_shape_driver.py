@@ -22,7 +22,7 @@ if tacs_loader is not None and caps_loader is not None:
 
 # check if we're in github to run only online vs offline tests
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
-in_github_workflow = True
+# in_github_workflow = True
 optional = True  # whether to run optional tests
 
 
