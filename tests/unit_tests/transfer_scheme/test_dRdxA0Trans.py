@@ -6,7 +6,7 @@ Test the ability to take derivatives of rigid transform
 """
 
 import numpy as np
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from mpi4py import MPI
 import unittest
 

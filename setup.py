@@ -62,8 +62,8 @@ exts = []
 for mod in ["TransferScheme"]:
     exts.append(
         Ext(
-            "funtofem.%s" % (mod),
-            sources=["funtofem/%s.pyx" % (mod)],
+            "pyfuntofem.%s" % (mod),
+            sources=["pyfuntofem/%s.pyx" % (mod)],
             include_dirs=inc_dirs,
             libraries=libs,
             library_dirs=lib_dirs,
@@ -96,6 +96,6 @@ setup(
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
     extras_require=optional_dependencies,
-    packages=find_packages(include=["funtofem*", "pyfuntofem*"]),
+    packages=find_packages(include=["pyfuntofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )

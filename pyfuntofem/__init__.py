@@ -28,6 +28,6 @@ limitations under the License.
 # pyfuntofem.__dict__
 
 from .driver import *
+from .interface import *
 from .model import *
 from .optimization import *
-from .interface import *

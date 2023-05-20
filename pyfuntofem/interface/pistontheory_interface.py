@@ -25,7 +25,7 @@ __all__ = ["PistonInterface"]
 import numpy as np
 import sys
 
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._solver_interface import SolverInterface
 
 

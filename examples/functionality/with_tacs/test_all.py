@@ -28,7 +28,7 @@ The following script tests funtofems functionality in an example using TACS
 import numpy as np
 from mpi4py import MPI
 from tacs import TACS, elements, functions, constitutive
-from funtofem import FUNtoFEM
+from pyfuntofem import FUNtoFEM
 
 """
 --------------------------------------------------------------------------------

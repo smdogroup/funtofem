@@ -21,7 +21,7 @@
 
 __all__ = ["Base"]
 
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 
 class Base(object):

@@ -23,7 +23,7 @@ limitations under the License.
 import numpy as np
 from mpi4py import MPI
 from tacs import TACS, elements, constitutive, functions
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from paropt import ParOpt
 
 ################################################################################

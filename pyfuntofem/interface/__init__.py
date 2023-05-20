@@ -39,6 +39,9 @@ from .cart3d_interface import *
 # caps2fun utils
 from .caps2fun import *
 
+# mphys integration
+from .mphys import *
+
 # FUN3D interface, with python package "fun3d"
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:

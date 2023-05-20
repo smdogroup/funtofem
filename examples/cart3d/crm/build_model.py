@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from pyfuntofem.model import *
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 
 def build_model():

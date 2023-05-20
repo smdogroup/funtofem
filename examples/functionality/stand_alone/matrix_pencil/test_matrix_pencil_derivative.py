@@ -3,7 +3,7 @@ from __future__ import print_function
 #!/usr/bin/env python
 import numpy as np
 
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Body, Scenario, Function
 from pyfuntofem.driver import FUNtoFEMnlbgs, PyOptOptimization
 

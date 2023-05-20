@@ -26,7 +26,7 @@ import numpy as np
 import os, sys, importlib, shutil
 from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._solver_interface import SolverInterface
 
 

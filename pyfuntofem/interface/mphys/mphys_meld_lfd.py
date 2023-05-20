@@ -4,8 +4,7 @@ import numpy as np
 import openmdao.api as om
 from .mphys_meld import MeldBuilder
 
-from funtofem import TransferScheme
-
+from pyfuntofem import TransferScheme
 
 class ModeTransfer(om.ExplicitComponent):
     def initialize(self):

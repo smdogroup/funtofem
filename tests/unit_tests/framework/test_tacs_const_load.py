@@ -2,7 +2,7 @@ import os
 from tacs import TACS
 from mpi4py import MPI
 import numpy as np
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (

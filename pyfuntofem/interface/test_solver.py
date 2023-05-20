@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 import numpy as np
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._solver_interface import SolverInterface
 
 

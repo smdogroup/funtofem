@@ -24,7 +24,7 @@ __all__ = ["FUNtoFEMnlbgs"]
 
 import numpy as np
 from mpi4py import MPI
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._funtofem_driver import FUNtoFEMDriver
 from ..optimization.optimization_manager import OptimizationManager
 

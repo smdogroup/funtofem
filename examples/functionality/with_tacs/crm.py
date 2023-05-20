@@ -29,7 +29,7 @@ TransferScheme
 import numpy as np
 from mpi4py import MPI
 from tacs import TACS, elements, constitutive
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 tacs_comm = MPI.COMM_WORLD
 """

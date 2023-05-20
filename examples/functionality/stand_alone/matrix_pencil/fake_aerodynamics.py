@@ -1,5 +1,5 @@
 from pyfuntofem.solver_interface import *
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 import numpy as np
 
 

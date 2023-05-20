@@ -24,7 +24,7 @@ __all__ = ["SU2Interface"]
 
 import numpy as np
 import shutil
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._solver_interface import SolverInterface
 from mpi4py import MPI
 

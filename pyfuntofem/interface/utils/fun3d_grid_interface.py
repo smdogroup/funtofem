@@ -24,7 +24,7 @@ __all__ = ["Fun3dGridInterface"]
 
 import numpy as np
 import os, sys, importlib
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ..fun3d_interface import Fun3dInterface
 from pyfuntofem.interface.test_solver import TestResult
 

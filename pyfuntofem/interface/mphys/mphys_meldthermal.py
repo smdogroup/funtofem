@@ -1,6 +1,6 @@
 import numpy as np
 import openmdao.api as om
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from mphys import Builder
 
 """ builder and components to wrap meld thermal to transfert temperature and

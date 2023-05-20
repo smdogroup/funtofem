@@ -5,7 +5,7 @@ from tacs import TACS
 
 np.set_printoptions(threshold=sys.maxsize)
 
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from pyfuntofem.interface import (
     TestAerodynamicSolver,

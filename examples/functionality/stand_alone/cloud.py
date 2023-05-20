@@ -31,7 +31,7 @@ transferring displacements from a point cloud to a node.
 """
 import numpy as np
 from mpi4py import MPI
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 import random
 from tecplot_output import writeOutputForTecplot
 

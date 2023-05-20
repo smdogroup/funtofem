@@ -35,7 +35,7 @@ from fun3d.mda.fsi.fun3d_aero import (
     AeroLoads,
     AdjointProduct,
 )
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ._solver_interface import SolverInterface
 
 

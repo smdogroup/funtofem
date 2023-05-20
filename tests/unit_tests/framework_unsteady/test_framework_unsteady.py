@@ -1,6 +1,6 @@
 import numpy as np
 from mpi4py import MPI
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from tacs import TACS
 
 from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function

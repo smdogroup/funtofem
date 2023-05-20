@@ -2,7 +2,7 @@ import numpy as np
 import openmdao.api as om
 from mphys import Builder
 
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 
 class MeldDispXfer(om.ExplicitComponent):

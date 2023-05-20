@@ -1,7 +1,7 @@
 import os, numpy as np, unittest
 from tacs import TACS
 from mpi4py import MPI
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 
 from pyfuntofem.model import (
     FUNtoFEMmodel,

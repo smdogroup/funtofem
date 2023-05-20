@@ -23,7 +23,7 @@ limitations under the License.
 import numpy as np
 from ._base import Base
 from mpi4py import MPI
-from funtofem import TransferScheme
+from pyfuntofem import TransferScheme
 from ..driver.transfer_settings import TransferSettings
 
 try:
