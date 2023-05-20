@@ -6,6 +6,7 @@ from .mphys_meld import MeldBuilder
 
 from pyfuntofem import TransferScheme
 
+
 class ModeTransfer(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("nmodes")
