@@ -293,6 +293,12 @@ class Fun3dOnewayDriver:
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
+            if not (self.is_paired):
+                assert not (self.fun3d_interface.auto_coords)
+                self.fun3d_interface._initialize_body_nodes(
+                    self.model.scenarios[0], self.model.bodies
+                )
+
             # doing the mesh morph inside of Fortran now but have to move the surf.dat file into the Flow directory for each scenario
             # other way of mesh morph
             # if self.model.flow.mesh_morph:
@@ -319,11 +325,14 @@ class Fun3dOnewayDriver:
 
         else:  # non-remote call of FUN3D forward analysis
             # read in the funtofem design input file
-            self.model.read_design_variables_file(
-                self.comm,
-                filename=Fun3dRemote.paths(self.fun3d_interface.fun3d_dir).design_file,
-                root=0,
-            )
+            if self.is_paired:
+                self.model.read_design_variables_file(
+                    self.comm,
+                    filename=Fun3dRemote.paths(
+                        self.fun3d_interface.fun3d_dir
+                    ).design_file,
+                    root=0,
+                )
 
             # run the FUN3D forward analysis with no shape change
             if self.steady:
@@ -334,8 +343,6 @@ class Fun3dOnewayDriver:
                 for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
 
-        if self.change_shape and self.fun3d_aim.mesh_morph:
-            self.fun3d_aim.unlink()
         return
 
     def solve_adjoint(self):
@@ -390,6 +397,10 @@ class Fun3dOnewayDriver:
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
                 self._get_shape_derivatives(scenario)
+
+        if self.change_shape and self.fun3d_aim.mesh_morph:
+            self.fun3d_aim.unlink()
+
         return
 
     @property

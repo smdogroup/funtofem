@@ -51,6 +51,7 @@ class Fun3dInterface(SolverInterface):
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
+        auto_coords=True,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -112,7 +113,9 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = None
 
         # Initialize the nodes associated with the bodies
-        self._initialize_body_nodes(model.scenarios[0], model.bodies)
+        self.auto_coords = auto_coords
+        if auto_coords:
+            self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
 

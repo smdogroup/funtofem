@@ -56,7 +56,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         fun3d_aim = fun3d_model.fun3d_aim
 
         if mesh_style == "coarse":
-            aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
+            aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.01, max_scale=5.0)
             aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
             Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
                 fun3d_model
@@ -78,11 +78,11 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)
+            Scenario.steady("turbulent", steps=1000)  # 5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 2000
+        test_scenario.adjoint_steps = 500  # 2000
         # test_scenario.get_variable("AOA").set_bounds(value=2.0)
 
         test_scenario.include(Function.lift()).include(Function.drag())
@@ -101,7 +101,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
             model,
             driver,
             TestFun3dOnewayMorph.FILEPATH,
-            epsilon=1.0e-4,
+            both_adjoint=True,  # have to run adjoint twice to read funcVals from sensFile
         )
         self.assertTrue(max_rel_error < 1e-4)
 

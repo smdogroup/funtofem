@@ -108,6 +108,12 @@ class Fun3dAim:
             self.aim.input["Mesh"].unlink()
         return
 
+    def fake_system_call(self):
+        """fake system call to avoid executing FUN3D analysis, but FUNtoFEM instead"""
+        if self.root_proc:
+            self.aim.system("")
+        return
+
     @property
     def geometry(self):
         return self._geometry
@@ -218,6 +224,11 @@ class Fun3dAim:
 
     def post_analysis(self, sens_file_src=None):
         if self.root_proc:
+            # fake system call to prevent fun3dAIM CAPS_DIRTY for the execute analysis
+            # we do this since we are not calling FUN3D analysis, but FUNtoFEM instead without system calls
+            # if self.mesh_morph:
+            #    self.fake_system_call()
+
             # move sens files if need be from fun3d dir to fun3d workdir
             if sens_file_src is not None:
                 self._move_sens_files(src=sens_file_src)

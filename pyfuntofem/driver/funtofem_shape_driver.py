@@ -71,7 +71,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
         return cls(
             solvers,
-            model,
+            model=model,
             transfer_settings=transfer_settings,
             comm_manager=comm_manager,
             is_paired=False,
@@ -84,7 +84,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, fun3d_remote=fun3d_remote, is_paired=True)
+        return cls(solvers, model=model, fun3d_remote=fun3d_remote, is_paired=True)
 
     @classmethod
     def analysis(
@@ -101,7 +101,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
         return cls(
             solvers,
-            model,
+            model=model,
             transfer_settings=transfer_settings,
             comm_manager=comm_manager,
             is_paired=True,
@@ -152,6 +152,21 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 "Need shape variables for using the remote system call features for FUN3D."
             )
 
+        # get the fun3d aim for changing shape
+        if model.flow is None:
+            fun3d_aim = None
+        else:
+            fun3d_aim = model.flow.fun3d_aim
+
+        if model.structural is None:
+            tacs_aim = None
+        else:
+            tacs_aim = model.structural.tacs_aim
+
+        # save both of the discipline aims
+        self.fun3d_aim = fun3d_aim
+        self.tacs_aim = tacs_aim
+
         if not self.is_remote:
             assert isinstance(self.solvers.flow, Fun3dInterface)
             assert isinstance(
@@ -174,25 +189,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if not scenario.steady:
                 self._unsteady = True
                 break
-
-        # get the fun3d aim for changing shape
-        if model.flow is None:
-            fun3d_aim = None
-        else:
-            fun3d_aim = model.flow.fun3d_aim
-
-        if model.structural is None:
-            tacs_aim = None
-        else:
-            tacs_aim = model.structural.tacs_aim
-
-        # save both of the discipline aims
-        self.fun3d_aim = fun3d_aim
-        self.tacs_aim = tacs_aim
-
-        # save both discipline models
-        self.fun3d_model = self.model.flow
-        self.tacs_model = self.model.structural
 
         # make sure the fun3d model is setup if needed
         if self.change_shape and self.aero_shape:
@@ -498,3 +494,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @property
     def fun3d_model(self):
         return self.model.flow
+
+    @property
+    def tacs_model(self):
+        return self.model.structural
