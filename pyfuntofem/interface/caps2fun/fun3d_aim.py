@@ -75,13 +75,13 @@ class Fun3dAim:
         self._build_aim()
 
         """setup to do ESP/CAPS sens file reading"""
+        self.set_design_sensitivity(flag=True)
         if self.root_proc:
             # set to not overwrite fun3d nml analysis
             self.aim.input.Overwrite_NML = False
             # fun3d design sensitivities settings
-            self.aim.input.Design_SensFile = True
-            self.aim.input.Design_Sensitivity = True
             self.aim.input.Mesh_Morph = mesh_morph
+            # self.aim.input.Mesh_Morph_Combine = mesh_morph
 
         self.metadata = None
         if self.root_proc:
@@ -106,6 +106,13 @@ class Fun3dAim:
         """unlink the mesh for mesh morphing"""
         if self.root_proc:
             self.aim.input["Mesh"].unlink()
+        return
+
+    def set_design_sensitivity(self, flag: bool):
+        """toggle design sensitivity for Fun3dAim"""
+        if self.root_proc:
+            self.aim.input.Design_Sensitivity = flag
+            self.aim.input.Design_SensFile = flag
         return
 
     def fake_system_call(self):

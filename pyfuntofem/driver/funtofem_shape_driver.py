@@ -208,6 +208,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # if self.model.flow.mesh_morph:
             #    self.model.read_fun3d_surface_file(self.comm, root=0)
 
+            # for FUN3D mesh morphing now initialize body nodes
+            if not (self.is_paired):
+                assert not (self.fun3d_interface.auto_coords)
+                self.fun3d_interface._initialize_body_nodes(
+                    self.model.scenarios[0], self.model.bodies
+                )
+
         if self.struct_shape:
             # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
             input_dict = {var.name: var.value for var in self.model.get_variables()}
@@ -259,24 +266,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
             )
 
-            # update function values
-            self._get_remote_functions()
-
         else:
-            # read in the funtofem design input file
-            self.model.read_design_variables_file(
-                self.comm,
-                filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).design_file,
-                root=0,
-            )
+            if self.is_paired:
+                # read in the funtofem design input file
+                self.model.read_design_variables_file(
+                    self.comm,
+                    filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).design_file,
+                    root=0,
+                )
 
             # call solve forward of super class for no shape, fully-coupled analysis
             super(FuntofemShapeDriver, self).solve_forward()
-
-        # unlink for FUN3D mesh morphing (if using that)
-        if self.aero_shape:
-            if self.fun3d_aim.mesh_morph:
-                self.fun3d_aim.unlink()
 
         return
 
@@ -294,7 +294,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     self.solvers.flow.fun3d_dir
                 ).struct_sens_file
                 aero_sensfile = Fun3dRemote.paths(
-                    self.solveres.flow.fun3d_dir
+                    self.solvers.flow.fun3d_dir
                 ).aero_sens_file
             else:
                 if self.struct_shape:
@@ -335,6 +335,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the tacs aim postAnalysis to compute the chain rule product
             self.tacs_aim.post_analysis()
 
+            self._get_remote_functions(discipline="structural")
+
             for scenario in self.model.scenarios:
                 self._get_struct_shape_derivatives(scenario)
 
@@ -345,15 +347,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the tacs aim postAnalysis to compute the chain rule product
             self.fun3d_aim.post_analysis(sens_file_src)
 
+            self._get_remote_functions(discipline="aerodynamic")
+
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
 
-        # update function values, NOTE : function values are not available in the remote version of the driver
-        # after solve_forward (if you just need one grid and solve_forward, you don't need a remote driver, build the analysis one)
+        # unlink for FUN3D mesh morphing (if using that)
         if self.aero_shape:
-            self._get_remote_functions(discipline="aerodynamic")
-        elif self.struct_shape:
-            self._get_remote_functions(discipline="structural")
+            if self.fun3d_aim.mesh_morph:
+                self.fun3d_aim.unlink()
 
         return
 

@@ -240,6 +240,18 @@ class Fun3dInterface(SolverInterface):
                 interface.design_push_body_mesh(ibody, [], [])
                 interface.design_push_body_name(ibody, body.name)
 
+            # update surface mesh coordinates in FUNtoFEM if doing FUN3D mesh morphing
+            if self.model.flow is not None:
+                if self.model.flow.mesh_morph:
+                    if aero_nnodes > 0:
+                        x, y, z = self.fun3d_flow.extract_surface(
+                            aero_nnodes, body=ibody
+                        )
+
+                        aero_X[0::3] = x[:]
+                        aero_X[1::3] = y[:]
+                        aero_X[2::3] = z[:]
+
         # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
         if self.model.flow is not None:
             self.fun3d_flow.set_mesh_morph(self.model.flow.mesh_morph)

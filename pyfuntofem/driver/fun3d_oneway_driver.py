@@ -143,6 +143,10 @@ class Fun3dRemote:
     def design_file(self):
         return os.path.join(self.fun3d_dir, "funtofem.in")
 
+    @property
+    def functions_file(self):
+        return os.path.join(self.fun3d_dir, "funtofem.out")
+
 
 class Fun3dOnewayDriver:
     @classmethod
@@ -245,25 +249,13 @@ class Fun3dOnewayDriver:
             fun3d_aim = model.flow.fun3d_aim
         self.fun3d_aim = fun3d_aim
 
-        comm = solvers.comm
-        comm_manager = solvers.comm_manager
-
         if transfer_settings is not None:
             transfer_settings = TransferSettings()  # default
+        self.transfer_settings = transfer_settings
 
-        # initialize variables
-        for body in self.model.bodies:
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
-            body.initialize_transfer(
-                comm=comm,
-                struct_comm=comm_manager.struct_comm,
-                struct_root=comm_manager.struct_root,
-                aero_comm=comm_manager.aero_comm,
-                aero_root=comm_manager.aero_root,
-                transfer_settings=transfer_settings,  # using minimal settings since we don't use the state variables here (almost a dummy obj)
-            )
-            for scenario in model.scenarios:
-                body.initialize_variables(scenario)
+        self._initialize_funtofem()
+
+        self._first_forward = True
 
         # shape optimization
         if self.change_shape:
@@ -283,6 +275,23 @@ class Fun3dOnewayDriver:
                 #        body.transfer_temps(scenario)
         # end of __init__ method
 
+    def _initialize_funtofem(self):
+        # initialize variables with newly defined aero size
+        comm = self.solvers.comm
+        comm_manager = self.solvers.comm_manager
+        for body in self.model.bodies:
+            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=comm_manager.struct_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=self.transfer_settings,  # using minimal settings since we don't use the state variables here (almost a dummy obj)
+            )
+            for scenario in self.model.scenarios:
+                body.initialize_variables(scenario)
+
     def solve_forward(self):
         """
         forward analysis for the given shape and functionals
@@ -291,21 +300,21 @@ class Fun3dOnewayDriver:
 
         if self.change_shape:
             # run the pre analysis to generate a new mesh
+            self.fun3d_aim.set_design_sensitivity(flag=False)
             self.fun3d_aim.pre_analysis()
 
             if not (self.is_paired):
-                assert not (self.fun3d_interface.auto_coords)
-                self.fun3d_interface._initialize_body_nodes(
-                    self.model.scenarios[0], self.model.bodies
-                )
+                if self._first_forward:  # FUN3D mesh morphing initialize body nodes
+                    assert not (self.solvers.flow.auto_coords)
+                    self.solvers.flow._initialize_body_nodes(
+                        self.model.scenarios[0], self.model.bodies
+                    )
+                    # initialize funtofem transfer data with new aero_nnodes size
+                    self._initialize_funtofem()
+                else:
+                    self._first_forward = False
 
-            # doing the mesh morph inside of Fortran now but have to move the surf.dat file into the Flow directory for each scenario
-            # other way of mesh morph
-            # if self.model.flow.mesh_morph:
-            #    self.model.write_fun3d_surface_file(self.comm, os.path.join(self.fun3d_interface.fun3d_dir, "nominal_surf.dat"), root=0)
-            #    self.model.read_fun3d_surface_file(self.comm, root=0)
-
-        # system call FUN3D forward analysis
+        # system call FUN3D forward analysis and design variable inputs file
         if self.is_remote:
             # write the funtofem design input file
             self.model.write_design_variables_file(
@@ -328,9 +337,7 @@ class Fun3dOnewayDriver:
             if self.is_paired:
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Fun3dRemote.paths(
-                        self.fun3d_interface.fun3d_dir
-                    ).design_file,
+                    filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).design_file,
                     root=0,
                 )
 
@@ -342,6 +349,30 @@ class Fun3dOnewayDriver:
             if self.unsteady:
                 for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
+
+        if not self.is_remote:
+            # write the funtofem functions output file
+            self.model.write_functions_file(
+                self.comm,
+                filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).functions_file,
+                root=0,
+            )
+
+        else:
+            # read in the funtofem functions output file
+            if self.is_paired:
+                self.model.read_functions_file(
+                    self.comm,
+                    filename=Fun3dRemote.paths(
+                        self.fun3d_remote.fun3d_dir
+                    ).functions_file,
+                    root=0,
+                )
+
+        # shape derivative section
+        if self.change_shape:  # either remote or regular
+            # run the tacs aim postAnalysis to compute the chain rule product
+            self.fun3d_aim.post_analysis()
 
         return
 
@@ -358,6 +389,17 @@ class Fun3dOnewayDriver:
         for func in functions:
             func.zero_derivatives()
 
+        if self.change_shape:
+            # run the pre analysis to generate a new mesh
+            self.fun3d_aim.set_design_sensitivity(flag=True)
+            self.fun3d_aim.pre_analysis()
+
+            if not (self.is_paired):
+                assert not (self.solvers.flow.auto_coords)
+                self.solvers.flow._initialize_body_nodes(
+                    self.model.scenarios[0], self.model.bodies
+                )
+
         if not (self.is_remote):
             if self.steady:
                 for scenario in self.model.scenarios:
@@ -371,9 +413,7 @@ class Fun3dOnewayDriver:
             if not self.is_paired:
                 filepath = self.model.flow.fun3d_aim.sens_file_path
             else:
-                filepath = Fun3dRemote.paths(
-                    self.fun3d_interface.fun3d_dir
-                ).aero_sens_file
+                filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -389,10 +429,6 @@ class Fun3dOnewayDriver:
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.fun3d_aim.post_analysis(sens_file_src)
-
-            # update function values, NOTE : function values are not available in the remote version of the driver
-            # after solve_forward (if you just need one grid and solve_forward, you don't need a remote driver, build the analysis one)
-            self._get_functions()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
@@ -428,32 +464,32 @@ class Fun3dOnewayDriver:
 
     def _solve_steady_forward(self, scenario, bodies):
         # set functions and variables
-        self.fun3d_interface.set_variables(scenario, bodies)
-        self.fun3d_interface.set_functions(scenario, bodies)
+        self.solvers.flow.set_variables(scenario, bodies)
+        self.solvers.flow.set_functions(scenario, bodies)
 
         # run the forward analysis via iterate
-        self.fun3d_interface.initialize(scenario, bodies)
+        self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
-            self.fun3d_interface.iterate(scenario, bodies, step=0)
-        self.fun3d_interface.post(scenario, bodies)
+            self.solvers.flow.iterate(scenario, bodies, step=0)
+        self.solvers.flow.post(scenario, bodies)
 
         # get functions to store the function values into the model
-        self.fun3d_interface.get_functions(scenario, bodies)
+        self.solvers.flow.get_functions(scenario, bodies)
         return
 
     def _solve_unsteady_forward(self, scenario, bodies):
         # set functions and variables
-        self.fun3d_interface.set_variables(scenario, bodies)
-        self.fun3d_interface.set_functions(scenario, bodies)
+        self.solvers.flow.set_variables(scenario, bodies)
+        self.solvers.flow.set_functions(scenario, bodies)
 
         # run the forward analysis via iterate
-        self.fun3d_interface.initialize(scenario, bodies)
+        self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
-            self.fun3d_interface.iterate(scenario, bodies, step=step)
-        self.fun3d_interface.post(scenario, bodies)
+            self.solvers.flow.iterate(scenario, bodies, step=step)
+        self.solvers.flow.post(scenario, bodies)
 
         # get functions to store the function values into the model
-        self.fun3d_interface.get_functions(scenario, bodies)
+        self.solvers.flow.get_functions(scenario, bodies)
         return
 
     def _solve_steady_adjoint(self, scenario, bodies):
@@ -463,19 +499,19 @@ class Fun3dOnewayDriver:
             steps = scenario.adjoint_steps
 
         # set functions and variables
-        self.fun3d_interface.set_variables(scenario, bodies)
-        self.fun3d_interface.set_functions(scenario, bodies)
+        self.solvers.flow.set_variables(scenario, bodies)
+        self.solvers.flow.set_functions(scenario, bodies)
 
         # zero all coupled adjoint variables in the body
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
         # initialize, run, and do post adjoint
-        self.fun3d_interface.initialize_adjoint(scenario, bodies)
+        self.solvers.flow.initialize_adjoint(scenario, bodies)
         for step in range(1, steps + 1):
-            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+            self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
-        self.fun3d_interface.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies)
 
         # transfer disps adjoint since fa -> fs has shape dependency
         # if self.change_shape:
@@ -483,25 +519,25 @@ class Fun3dOnewayDriver:
         #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
-        self.fun3d_interface.get_function_gradients(scenario, bodies)
+        self.solvers.flow.get_function_gradients(scenario, bodies)
         return
 
     def _solve_unsteady_adjoint(self, scenario, bodies):
         # set functions and variables
-        self.fun3d_interface.set_variables(scenario, bodies)
-        self.fun3d_interface.set_functions(scenario, bodies)
+        self.solvers.flow.set_variables(scenario, bodies)
+        self.solvers.flow.set_functions(scenario, bodies)
 
         # zero all coupled adjoint variables in the body
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
         # initialize, run, and do post adjoint
-        self.fun3d_interface.initialize_adjoint(scenario, bodies)
+        self.solvers.flow.initialize_adjoint(scenario, bodies)
         for rstep in range(scenario.steps + 1):
             step = scenario.steps + 1 - rstep
-            self.fun3d_interface.iterate_adjoint(scenario, bodies, step=step)
+            self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
-        self.fun3d_interface.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
 
         # transfer disps adjoint since fa -> fs has shape dependency
@@ -510,12 +546,8 @@ class Fun3dOnewayDriver:
         #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
-        self.fun3d_interface.get_function_gradients(scenario, bodies)
+        self.solvers.flow.get_function_gradients(scenario, bodies)
         return
-
-    @property
-    def fun3d_interface(self):
-        return self.solvers.flow
 
     @property
     def is_remote(self) -> bool:
@@ -532,8 +564,8 @@ class Fun3dOnewayDriver:
 
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
-        if self.fun3d_interface is not None:
-            fun3d_dir = self.fun3d_interface.fun3d_dir
+        if self.solvers.flow is not None:
+            fun3d_dir = self.solvers.flow.fun3d_dir
         else:
             fun3d_dir = self.fun3d_remote.fun3d_dir
         grid_filepaths = []
@@ -559,7 +591,7 @@ class Fun3dOnewayDriver:
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
         """extract the coordinate derivatives at a given time step"""
-        self.fun3d_interface.get_coordinate_derivatives(
+        self.solvers.flow.get_coordinate_derivatives(
             scenario, self.model.bodies, step=step
         )
 

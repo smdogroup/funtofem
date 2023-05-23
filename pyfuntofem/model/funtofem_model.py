@@ -875,6 +875,90 @@ class FUNtoFEMmodel(object):
 
         return
 
+    def read_functions_file(self, comm, filename, root=0):
+        """
+        Read the functions variables file funtofem.out
+
+        This file contains the following information:
+
+        nFunctions
+        func_name, func_value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        functions_dict = None
+        if comm.rank == root:  # read the file in on the root processor
+            functions_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 2:
+                    func_name = chunks[0]
+                    func_value = chunks[1]
+
+                    # only real numbers are read in from the file
+                    functions_dict[func_name] = float(func_value)
+
+        # broadcast the dictionary to the root processor
+        functions_dict = comm.bcast(functions_dict, root=root)
+
+        # update the variable values on each processor
+        for func in self.get_functions():
+            if func.name in functions_dict:
+                func.value = functions_dict[func.name]
+
+        return
+
+    def write_functions_file(self, comm, filename, root=0):
+        """
+        Write the functions file funtofem.out
+
+        This file contains the following information:
+
+        Number of functionals
+
+        Functional name, value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        funcs = self.get_functions()
+        # also add composite functions at the end
+        funcs += self.composite_functions
+
+        if comm.rank == root:
+            # Write out the number of functionals and number of design variables
+            data = "{}\n".format(len(funcs))
+
+            for n, func in enumerate(funcs):
+                # Print the function name
+                data += "{}\n".format(func.full_name)
+
+                # Print the function value
+                data += "{}\n".format(func.value.real)
+
+            with open(filename, "w") as fp:
+                fp.write(data)
+
     def read_fun3d_surface_file(self, comm, filename=None, root=0):
         """read a body1.dat file for deformed aero surface from Fun3dModel for mesh morphing"""
 
