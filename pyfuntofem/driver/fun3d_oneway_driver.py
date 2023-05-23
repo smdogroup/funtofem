@@ -189,6 +189,8 @@ class Fun3dOnewayDriver:
         do it internally depending on how the object is constructed. The user is recommended to use the class methods
         to build the driver most of the time not the main constructor.
 
+        NOTE : for using Fun3dOneway driver, put the moving_body.input file on "rigid" mesh_movement (makes it faster)
+
         Parameters
         ----------
         solvers: :class:`~pyfuntofem.interface.SolverManager'
@@ -618,10 +620,6 @@ class Fun3dOnewayDriver:
         # update model function values in the remote version of the driver
         for ifunc, func in enumerate(functions):
             func.value = remote_functions[ifunc]
-            if (
-                self.comm.rank == 0
-            ):  # debug print out for func values to check if read in properly
-                print(f"function {func.name} = {func.value}")
         return
 
     def _get_shape_derivatives(self, scenario):

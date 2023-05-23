@@ -121,6 +121,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         solvers for steady and unsteady coupled adjoint, augmented for ESP/CAPS shape
         optimization with FUN3D + TACS.
 
+        NOTE : for using FuntofemShapeDriver driver, put the moving_body.input file on "deform" or "rigid+deform" mesh movement the majority of the time.
+
         Parameters
         ----------
         solvers: SolverManager
@@ -192,6 +194,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         self._first_forward = True
 
+        # initialize adjoint state variables to zero for writing sens files
+        if self.is_paired:
+            for scenario in self.model.scenarios:
+                for body in self.model.bodies:
+                    body.initialize_adjoint_variables(
+                        scenario
+                    )  # for writing sens files even in forward case
+
         # make sure the fun3d model is setup if needed
         if self.change_shape and self.aero_shape:
             assert fun3d_aim is not None
@@ -225,10 +235,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         if self.aero_shape:
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
-
-            # doing this inside the Fun3dInterface now and FUN3D Fortran, move the _body1.dat file to the Scenario folders
-            # if self.model.flow.mesh_morph:
-            #    self.model.read_fun3d_surface_file(self.comm, root=0)
 
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired):
