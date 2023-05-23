@@ -190,6 +190,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._unsteady = True
                 break
 
+        self._first_forward = True
+
         # make sure the fun3d model is setup if needed
         if self.change_shape and self.aero_shape:
             assert fun3d_aim is not None
@@ -197,6 +199,26 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self._setup_grid_filepaths()
 
         return
+
+    def _initialize_funtofem(self):
+        # initialize variables with newly defined aero size
+        comm = self.solvers.comm
+        comm_manager = self.solvers.comm_manager
+        for body in self.model.bodies:
+            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=comm_manager.struct_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=self.transfer_settings,  # using minimal settings since we don't use the state variables here (almost a dummy obj)
+            )
+            for scenario in self.model.scenarios:
+                body.initialize_variables(scenario)
+                body.initialize_adjoint_variables(
+                    scenario
+                )  # for writing sens files even in forward case
 
     def solve_forward(self):
         """create new aero/struct geometries and run fully-coupled forward analysis"""
@@ -214,6 +236,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.fun3d_interface._initialize_body_nodes(
                     self.model.scenarios[0], self.model.bodies
                 )
+
+                # initialize funtofem transfer data with new aero_nnodes size
+                self._initialize_funtofem()
+                self._first_forward = False
 
         if self.struct_shape:
             # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
@@ -278,10 +304,39 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # call solve forward of super class for no shape, fully-coupled analysis
             super(FuntofemShapeDriver, self).solve_forward()
 
+        # write sens file for remote to read or if shape change all in one
+        if not self.is_remote:
+            if not self.is_paired:
+                filepath = self.model.flow.fun3d_aim.sens_file_path
+            else:
+                filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+
+            # write the sensitivity file for the FUN3D AIM
+            self.model.write_sensitivity_file(
+                comm=self.comm,
+                filename=filepath,
+                discipline="aerodynamic",
+            )
+
+        # post analysis for FUN3D mesh morphing
+        if self.aero_shape:  # either remote or regular
+            # src for movement of sens file or None if not moving it
+            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+
+            # run the tacs aim postAnalysis to compute the chain rule product
+            self.fun3d_aim.post_analysis(sens_file_src)
+
+            # get the analysis function values
+            self._get_remote_functions(discipline="aerodynamic")
+
         return
 
     def solve_adjoint(self):
         """run the fully-coupled adjoint analysis and extract shape derivatives as well"""
+
+        if self.aero_shape:
+            # run the pre analysis to generate a new mesh
+            self.fun3d_aim.pre_analysis()
 
         if not self.is_remote:
             # call funtofem adjoint analysis for non-remote driver
@@ -347,7 +402,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the tacs aim postAnalysis to compute the chain rule product
             self.fun3d_aim.post_analysis(sens_file_src)
 
-            self._get_remote_functions(discipline="aerodynamic")
+            # self._get_remote_functions(discipline="aerodynamic")
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)

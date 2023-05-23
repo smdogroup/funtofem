@@ -253,7 +253,8 @@ class Fun3dOnewayDriver:
             transfer_settings = TransferSettings()  # default
         self.transfer_settings = transfer_settings
 
-        self._initialize_funtofem()
+        if self.is_paired:  # if not mesh morphing initialize here
+            self._initialize_funtofem()
 
         self._first_forward = True
 
@@ -291,6 +292,9 @@ class Fun3dOnewayDriver:
             )
             for scenario in self.model.scenarios:
                 body.initialize_variables(scenario)
+                body.initialize_adjoint_variables(
+                    scenario
+                )  # for writing sens files even in forward case
 
     def solve_forward(self):
         """
@@ -300,7 +304,6 @@ class Fun3dOnewayDriver:
 
         if self.change_shape:
             # run the pre analysis to generate a new mesh
-            self.fun3d_aim.set_design_sensitivity(flag=False)
             self.fun3d_aim.pre_analysis()
 
             if not (self.is_paired):
@@ -311,7 +314,6 @@ class Fun3dOnewayDriver:
                     )
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()
-                else:
                     self._first_forward = False
 
         # system call FUN3D forward analysis and design variable inputs file
@@ -350,29 +352,30 @@ class Fun3dOnewayDriver:
                 for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
 
+        # write sens file for remote to read or if shape change all in one
         if not self.is_remote:
-            # write the funtofem functions output file
-            self.model.write_functions_file(
-                self.comm,
-                filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).functions_file,
-                root=0,
+            if not self.is_paired:
+                filepath = self.model.flow.fun3d_aim.sens_file_path
+            else:
+                filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+
+            # write the sensitivity file for the FUN3D AIM
+            self.model.write_sensitivity_file(
+                comm=self.comm,
+                filename=filepath,
+                discipline="aerodynamic",
             )
 
-        else:
-            # read in the funtofem functions output file
-            if self.is_paired:
-                self.model.read_functions_file(
-                    self.comm,
-                    filename=Fun3dRemote.paths(
-                        self.fun3d_remote.fun3d_dir
-                    ).functions_file,
-                    root=0,
-                )
-
-        # shape derivative section
+        # post analysis for FUN3D mesh morphing
         if self.change_shape:  # either remote or regular
+            # src for movement of sens file or None if not moving it
+            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis()
+            self.fun3d_aim.post_analysis(sens_file_src)
+
+            # get the analysis function values
+            self._get_functions()
 
         return
 
@@ -391,14 +394,7 @@ class Fun3dOnewayDriver:
 
         if self.change_shape:
             # run the pre analysis to generate a new mesh
-            self.fun3d_aim.set_design_sensitivity(flag=True)
             self.fun3d_aim.pre_analysis()
-
-            if not (self.is_paired):
-                assert not (self.solvers.flow.auto_coords)
-                self.solvers.flow._initialize_body_nodes(
-                    self.model.scenarios[0], self.model.bodies
-                )
 
         if not (self.is_remote):
             if self.steady:
@@ -606,7 +602,6 @@ class Fun3dOnewayDriver:
         """
         read function values from fun3dAIM when operating in the remote version of the driver
         """
-        print(f"Entering get remote functions...", flush=True)
         functions = self.model.get_functions()
         nfunc = len(functions)
         remote_functions = None

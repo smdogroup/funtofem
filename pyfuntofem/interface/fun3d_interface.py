@@ -240,18 +240,6 @@ class Fun3dInterface(SolverInterface):
                 interface.design_push_body_mesh(ibody, [], [])
                 interface.design_push_body_name(ibody, body.name)
 
-            # update surface mesh coordinates in FUNtoFEM if doing FUN3D mesh morphing
-            if self.model.flow is not None:
-                if self.model.flow.mesh_morph:
-                    if aero_nnodes > 0:
-                        x, y, z = self.fun3d_flow.extract_surface(
-                            aero_nnodes, body=ibody
-                        )
-
-                        aero_X[0::3] = x[:]
-                        aero_X[1::3] = y[:]
-                        aero_X[2::3] = z[:]
-
         # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
         if self.model.flow is not None:
             self.fun3d_flow.set_mesh_morph(self.model.flow.mesh_morph)
@@ -261,6 +249,20 @@ class Fun3dInterface(SolverInterface):
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             return 1
+
+        # update Funtofem xA0 coords from FUN3D if doing mesh morphing
+        if self.model.flow is not None:
+            if self.model.flow.mesh_morph:
+                for ibody, body in enumerate(bodies, 1):
+                    aero_X = body.get_aero_nodes()
+                    aero_nnodes = body.get_num_aero_nodes()
+
+                    if aero_nnodes > 0:
+                        x, y, z = interface.extract_surface(aero_nnodes, body=ibody)
+
+                        aero_X[0::3] = x[:]
+                        aero_X[1::3] = y[:]
+                        aero_X[2::3] = z[:]
 
         return 0
 
@@ -610,6 +612,17 @@ class Fun3dInterface(SolverInterface):
 
         adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
         os.chdir(adjoint_dir)
+
+        # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
+        # if mesh morphing is online
+        if self.model.flow is not None:
+            morph_flag = self.model.flow.mesh_morph
+            if morph_flag and self.comm.rank == 0:
+                src = self.model.flow.mesh_morph_filepath
+                dest = os.path.join(
+                    self.root_dir, adjoint_dir, self.model.flow.mesh_morph_filename
+                )
+                shutil.copy2(src, dest)
 
         if scenario.steady:
             # Initialize FUN3D adjoint - special order for static adjoint
