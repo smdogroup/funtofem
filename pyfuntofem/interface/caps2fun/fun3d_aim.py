@@ -74,6 +74,9 @@ class Fun3dAim:
 
         self._build_aim()
 
+        # design variable dict
+        self._design_variable = None
+
         """setup to do ESP/CAPS sens file reading"""
         self.set_design_sensitivity(flag=True)
         if self.root_proc:
@@ -81,7 +84,7 @@ class Fun3dAim:
             self.aim.input.Overwrite_NML = False
             # fun3d design sensitivities settings
             self.aim.input.Mesh_Morph = mesh_morph
-            # self.aim.input.Mesh_Morph_Combine = mesh_morph
+            self.aim.input.Mesh_Morph_Combine = mesh_morph
 
         self.metadata = None
         if self.root_proc:
@@ -113,12 +116,6 @@ class Fun3dAim:
         if self.root_proc:
             self.aim.input.Design_Sensitivity = flag
             self.aim.input.Design_SensFile = flag
-        return
-
-    def fake_system_call(self):
-        """fake system call to avoid executing FUN3D analysis, but FUNtoFEM instead"""
-        if self.root_proc:
-            self.aim.system("")
         return
 
     @property
