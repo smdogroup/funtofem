@@ -3,6 +3,15 @@ __all__ = ["CompositeFunction"]
 import numpy as np
 
 
+def unique(vec):
+    """make a unique version of list"""
+    output = []
+    for elem in vec:
+        if not (elem in output):
+            output += [elem]
+    return output
+
+
 class CompositeFunction:
     def __init__(self, name: str, eval_hdl, functions, variables=[], optim=False):
         """
@@ -23,9 +32,16 @@ class CompositeFunction:
 
         self._name = name
         self.eval_hdl = eval_hdl
-        self.functions = functions
-        self.variables = variables
+        self.functions = unique(functions)
+        self.variables = unique(variables)
         self.optim = optim
+
+        # optimization settings
+        self.lower = None
+        self.upper = None
+        self.scale = None
+        self._objective = False
+        self._plot = False
 
         # Store the value of the function here
         self._eval_forward = False
@@ -44,12 +60,31 @@ class CompositeFunction:
         self._done_complex_step = False
         return
 
-    def optimize(self):
+    def optimize(self, lower=None, upper=None, scale=None, objective=False, plot=False):
         """
-        set optim to True indicating this function will be an objective or constraint
+        automatically sets optim=True for optimization and sets optimization bounds for
+        OpenMDAO or pyoptsparse
         """
         self.optim = True
-        return self  # return function for method cascading
+        self.lower = lower
+        self.upper = upper
+        self.scale = scale
+        self._objective = objective
+        self._plot = plot
+        return self
+
+    def setup_derivative_dict(self, variables):
+        for var in variables:
+            self.derivatives[var] = 0.0
+        return
+
+    def check_derivative_dict(self, variables):
+        for var in variables:
+            if not (var in self.derivatives):
+                raise AssertionError(
+                    f"Composite function {self.name} does not have variable {var.name} before it in the run script. All f2f variables need to be before composite functions are defined."
+                )
+        return
 
     @property
     def funcs(self) -> dict:
@@ -96,11 +131,8 @@ class CompositeFunction:
 
         self.complex_step_dict()
 
-        # get list of variables from one of the previously evaluated functions
-        varlist = [var for var in self.functions[0].derivatives]
-
         # iteratively compute total derivatives df/dg_i * dg_i/dx_j
-        for var in varlist:
+        for var in self.derivatives:
             df_dx = 0.0
             for gi in self.functions:
                 df_dgi = self.df_dgi[gi.full_name]
@@ -252,6 +284,26 @@ class CompositeFunction:
     Also common mathematical functions are included as class methods such as
     exp(), log(), etc.
     """
+
+    @classmethod
+    def abs(cls, func):
+        """compute composite function for abs(func)"""
+
+        func = CompositeFunction.cast(func)
+
+        def eval_hdl(funcs_dict):
+            value = func.eval_hdl(funcs_dict)
+            if value.real >= 0:
+                return value
+            else:
+                return -value
+
+        return cls(
+            name=func.name,
+            eval_hdl=eval_hdl,
+            functions=func.functions,
+            variables=func.variables,
+        )
 
     @classmethod
     def exp(cls, func):
