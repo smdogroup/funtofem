@@ -39,33 +39,31 @@ nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = int(tacs_aim.get_output_parameter("nOML"))
 
+init_thickness = 0.08
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
-    value = 0.05
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=value
+        caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
-    Variable.structural(name, value=value).set_bounds(
+    Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.001, upper=0.5, scale=100.0
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
-    value = 0.05
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=value
+        caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
-    Variable.structural(name, value=value).set_bounds(
+    Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.001, upper=0.5, scale=100.0
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
     name = f"OML{iOML}"
-    value = 0.05
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=value
+        caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
-    Variable.structural(name, value=value).set_bounds(
+    Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.001, upper=0.5, scale=100.0
     ).register_to(wing)
 
@@ -111,7 +109,7 @@ for irib in range(
     # make a composite function for relative diff in rib thicknesses
     adj_rib_constr = CompositeFunction.abs((left_rib - right_rib) / left_rib)
     adj_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=0.1, upper=10.0, scale=1.0, objective=False
+        lower=0.3, upper=3.0, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for ispar in range(1, nspars):
@@ -120,7 +118,7 @@ for ispar in range(1, nspars):
     # make a composite function for relative diff in spar thicknesses
     adj_spar_constr = CompositeFunction.abs((left_spar - right_spar) / left_spar)
     adj_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=0.1, upper=10.0, scale=1.0, objective=False
+        lower=0.3, upper=3.0, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for iOML in range(1, nOML):
@@ -129,7 +127,7 @@ for iOML in range(1, nOML):
     # make a composite function for relative diff in spar thicknesses
     adj_OML_constr = CompositeFunction.abs((left_OML - right_OML) / left_OML)
     adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=0.1, upper=10.0, scale=1.0, objective=False
+        lower=0.3, upper=3.0, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 # make the BDF and DAT file for TACS structural analysis
