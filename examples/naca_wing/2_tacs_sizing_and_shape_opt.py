@@ -164,7 +164,11 @@ prob.model.add_subsystem("f2fSystem", f2f_subsystem)
 f2f_subsystem.register_to_model(prob.model, "f2fSystem")
 
 # setup the optimizer settings # COBYLA for auto-FDing
-prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
+optimizer = "pyoptsparse"
+if optimizer == "scipy":
+    prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
+elif optimizer == "pyoptsparse":
+    prob.driver = om.pyOptSparseDriver(optimizer="SNOPT", tol=1.0e-9, disp=True)
 
 # Start the optimization
 print("\n==> Starting optimization...")
