@@ -40,7 +40,7 @@ test_scenario.register_to(model)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1e4)
 solvers.structural = TacsSteadyInterface.create_from_bdf(model, comm, nprocs, bdf_file)
 
 # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)

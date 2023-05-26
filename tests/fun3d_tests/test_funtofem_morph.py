@@ -13,11 +13,15 @@ from pyfuntofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
+tacs_loader = importlib.util.find_spec("tacs")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
     from pyfuntofem.driver import FuntofemShapeDriver
     from pyfuntofem.interface import Fun3dInterface
+
+if tacs_loader is not None:
+    from pyfuntofem.interface import TacsSteadyInterface
 
 np.random.seed(1234567)
 
@@ -25,6 +29,8 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "naca_wing.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
+nprocs = comm.Get_size()
+bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
@@ -79,6 +85,9 @@ class TestFuntofemMorph(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
+        ).set_units(qinf=1e4)
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            model, comm, nprocs=nprocs, bdf_file=bdf_file
         )
 
         # analysis driver for mesh morphing

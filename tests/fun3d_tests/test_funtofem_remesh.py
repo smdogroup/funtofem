@@ -81,12 +81,12 @@ class TestFuntofemShape(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
-            "funtofem-remesh-shape-euler-aeroelastic",
+            "funtofem-remesh-aero-shape-euler-aeroelastic",
             model,
             driver,
             TestFuntofemShape.FILEPATH,
             both_adjoint=True,  # since the Fun3dOnewayDriver doesn't know function values until after solve_adjoint()
-            epsilon=1.0,
+            epsilon=1e-0,
         )
         self.assertTrue(max_rel_error < 1e-4)
 

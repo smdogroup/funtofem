@@ -140,6 +140,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             solvers, comm_manager, transfer_settings, model
         )
 
+        self.transfer_settings = transfer_settings
+
         self.fun3d_remote = fun3d_remote
         self.is_paired = is_paired
 
@@ -238,8 +240,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired):
-                assert not (self.fun3d_interface.auto_coords)
-                self.fun3d_interface._initialize_body_nodes(
+                assert not (self.solvers.flow.auto_coords)
+                self.solvers.flow._initialize_body_nodes(
                     self.model.scenarios[0], self.model.bodies
                 )
 
