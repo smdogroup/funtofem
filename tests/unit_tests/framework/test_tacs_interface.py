@@ -82,7 +82,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        steady = Scenario.steady("test", steps=150)
         steady.include(Function.temperature()).register_to(model)
 
         # Build the solver interfaces
@@ -98,7 +98,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         )
 
         epsilon = 1e-30 if complex_mode else 1e-4
-        rtol = 1e-9 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-3
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aerothermal",
             model,

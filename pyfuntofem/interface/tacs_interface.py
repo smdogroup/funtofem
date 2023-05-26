@@ -124,6 +124,7 @@ class TacsSteadyInterface(SolverInterface):
         tacs_comm=None,
         override_rotx=False,
         Fvec=None,
+        nprocs=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -157,10 +158,13 @@ class TacsSteadyInterface(SolverInterface):
             MPI communicator with only n_tacs_procs active
         Fvec: python pointer to TACS load vector
             constant load vector such as for engine weight, if None then it is not used
+        nprocs: int
+            argument mainly for hidden use by drivers (matches tacs_comm)
         """
 
         self.comm = comm
         self.tacs_comm = tacs_comm
+        self.nprocs = nprocs
 
         # Flag to output heat flux instead of rotx
         self.override_rotx = override_rotx

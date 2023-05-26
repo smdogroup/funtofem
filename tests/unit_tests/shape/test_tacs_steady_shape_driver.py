@@ -39,7 +39,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-        tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+        tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
             global_mesh_size=0.1,
@@ -48,7 +48,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(
             tacs_model
         )
-        f2f_model.tacs_model = tacs_model
+        f2f_model.structural = tacs_model
 
         # build a body which we will register variables to
         wing = Body.aeroelastic("wing")
@@ -86,25 +86,22 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
         test_scenario.register_to(f2f_model)
 
-        flow_solver = TestAerodynamicSolver(comm, f2f_model)
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        aero_driver = TestAeroOnewayDriver(solvers, f2f_model)
         transfer_settings = TransferSettings(npts=200, beta=0.5)
 
         # setup the tacs model
-        tacs_aim = tacs_model.tacs_aim
-        tacs_aim.setup_aim()
+        tacs_model.setup()
 
-        shape_driver = TacsOnewayDriver.prime_loads_shape(
-            flow_solver,
-            tacs_aim,
-            transfer_settings,
-            nprocs=2,
-            bdf_file=dat_filepath,
+        tacs_driver = TacsOnewayDriver.prime_loads(
+            aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
         max_rel_error = TestResult.derivative_test(
             "testaero=>tacs_shape_steady-aeroelastic",
             f2f_model,
-            shape_driver,
+            tacs_driver,
             TestTacsSteadyShapeDriver.FILEPATH,
             complex_mode=False,
             epsilon=1e-4,
@@ -117,7 +114,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-        tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+        tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
             global_mesh_size=0.1,
@@ -126,8 +123,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(
             tacs_model
         )
-        tacs_aim = tacs_model.tacs_aim
-        f2f_model.tacs_model = tacs_model
+        f2f_model.structural = tacs_model
 
         # build a body which we will register variables to
         wing = Body.aeroelastic("wing")
@@ -167,22 +163,19 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
         # setup the tacs model
-        tacs_aim = tacs_model.tacs_aim
-        tacs_aim.setup_aim()
+        tacs_model.setup()
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
         test_scenario.register_to(f2f_model)
 
-        flow_solver = TestAerodynamicSolver(comm, f2f_model)
-        transfer_settings = TransferSettings(npts=5)
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        transfer_settings = TransferSettings(npts=200, beta=0.5)
+        aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads_shape(
-            flow_solver,
-            tacs_aim,
-            transfer_settings,
-            nprocs=1,
-            bdf_file=dat_filepath,
+        shape_driver = TacsOnewayDriver.prime_loads(
+            aero_driver, transfer_settings, nprocs=2
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -202,7 +195,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-        tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+        tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
             global_mesh_size=0.1,
@@ -211,7 +204,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(
             tacs_model
         )
-        f2f_model.tacs_model = tacs_model
+        f2f_model.structural = tacs_model
 
         # build a body which we will register variables to
         wing = Body.aerothermal("wing")
@@ -252,19 +245,16 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
         test_scenario.register_to(f2f_model)
 
-        flow_solver = TestAerodynamicSolver(comm, f2f_model)
-        transfer_settings = TransferSettings(npts=200, beta=0.5)
-
         # setup the tacs model
-        tacs_aim = tacs_model.tacs_aim
-        tacs_aim.setup_aim()
+        tacs_model.setup()
 
-        shape_driver = TacsOnewayDriver.prime_loads_shape(
-            flow_solver,
-            tacs_aim,
-            transfer_settings,
-            nprocs=2,
-            bdf_file=dat_filepath,
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        transfer_settings = TransferSettings(npts=200, beta=0.5)
+        aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
+
+        shape_driver = TacsOnewayDriver.prime_loads(
+            aero_driver, transfer_settings, nprocs=2
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -284,7 +274,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-        tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+        tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
             global_mesh_size=0.1,
@@ -293,7 +283,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(
             tacs_model
         )
-        f2f_model.tacs_model = tacs_model
+        f2f_model.structural = tacs_model
 
         # build a body which we will register variables to
         wing = Body.aerothermoelastic("wing")
@@ -334,19 +324,16 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
         test_scenario.register_to(f2f_model)
 
-        flow_solver = TestAerodynamicSolver(comm, f2f_model)
-        transfer_settings = TransferSettings(npts=200, beta=0.5)
-
         # setup the tacs model
-        tacs_aim = tacs_model.tacs_aim
-        tacs_aim.setup_aim()
+        tacs_model.setup()
 
-        shape_driver = TacsOnewayDriver.prime_loads_shape(
-            flow_solver,
-            tacs_aim,
-            transfer_settings,
-            nprocs=2,
-            bdf_file=dat_filepath,
+        solvers = SolverManager(comm)
+        solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        transfer_settings = TransferSettings(npts=200, beta=0.5)
+        aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
+
+        shape_driver = TacsOnewayDriver.prime_loads(
+            aero_driver, transfer_settings, nprocs=2
         )
 
         max_rel_error = TestResult.derivative_test(

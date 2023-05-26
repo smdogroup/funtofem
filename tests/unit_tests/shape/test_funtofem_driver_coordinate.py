@@ -10,8 +10,8 @@ from pyfuntofem.interface import (
     TacsInterface,
     SolverManager,
     TacsIntegrationSettings,
+    CoordinateDerivativeTester,
 )
-from _coordinate_derivatives_base_test import CoordinateDerivativeTester
 from pyfuntofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
@@ -36,7 +36,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 @unittest.skipIf(
     not complex_mode, "only testing coordinate derivatives with complex step"
 )
-class TestTacsDriverCoordinate(unittest.TestCase):
+class TestFuntofemDriverCoordinate(unittest.TestCase):
     FILENAME = "testaero-f2fdriver-steady.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
