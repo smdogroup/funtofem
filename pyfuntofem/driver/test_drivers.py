@@ -1,6 +1,38 @@
-__all__ = ["TestAeroOnewayDriver"]
+__all__ = ["NullDriver", "TestAeroOnewayDriver"]
 
 from pyfuntofem.interface import TestAerodynamicSolver
+
+
+class NullDriver:
+    def __init__(self, solvers, model, transfer_settings):
+        """
+        driver that doesn't do anything, for Tacs constant load optimization problems
+        """
+        self.solvers = solvers
+        self.model = model
+
+        comm = solvers.comm
+        comm_manager = solvers.comm_manager
+
+        # initialize variables
+        for body in self.model.bodies:
+            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=comm_manager.struct_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=transfer_settings,
+            )
+            for scenario in model.scenarios:
+                body.initialize_variables(scenario)
+
+    def solve_forward(self):
+        return
+
+    def solve_adjoint(self):
+        return
 
 
 class TestAeroOnewayDriver:
