@@ -91,33 +91,47 @@ tacs_scenario.register_to(f2f_model)
 
 # make the composite functions for adjacency constraints
 variables = f2f_model.get_variables()
+adj_lb = 0.1
+adj_ub = 10.0
 for irib in range(
     1, nribs
 ):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
     left_rib = f2f_model.get_variables(names=f"rib{irib}")
     right_rib = f2f_model.get_variables(names=f"rib{irib+1}")
     # make a composite function for relative diff in rib thicknesses
-    adj_rib_constr = CompositeFunction.abs((left_rib - right_rib) / left_rib)
+    adj_rib_constr = (left_rib - right_rib) / left_rib
     adj_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=0.3, upper=3.0, scale=1.0, objective=False
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+    ).register_to(f2f_model)
+    adj_rib_constr_neg = -1 * adj_rib_constr
+    adj_rib_constr_neg.set_name(f"neg_rib{irib}-{irib+1}").optimize(
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for ispar in range(1, nspars):
     left_spar = f2f_model.get_variables(names=f"spar{ispar}")
     right_spar = f2f_model.get_variables(names=f"spar{ispar+1}")
     # make a composite function for relative diff in spar thicknesses
-    adj_spar_constr = CompositeFunction.abs((left_spar - right_spar) / left_spar)
+    adj_spar_constr = (left_spar - right_spar) / left_spar
     adj_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=0.3, upper=3.0, scale=1.0, objective=False
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+    ).register_to(f2f_model)
+    adj_spar_constr_neg = -1 * adj_spar_constr
+    adj_spar_constr_neg.set_name(f"neg_spar{ispar}-{ispar+1}").optimize(
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for iOML in range(1, nOML):
     left_OML = f2f_model.get_variables(names=f"OML{iOML}")
     right_OML = f2f_model.get_variables(names=f"OML{iOML+1}")
     # make a composite function for relative diff in spar thicknesses
-    adj_OML_constr = CompositeFunction.abs((left_OML - right_OML) / left_OML)
+    adj_OML_constr = (left_OML - right_OML) / left_OML
     adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=0.3, upper=3.0, scale=1.0, objective=False
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+    ).register_to(f2f_model)
+    adj_OML_constr_neg = -1 * adj_OML_constr
+    adj_OML_constr_neg.set_name(f"neg_OML{iOML}-{iOML+1}").optimize(
+        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 # make the BDF and DAT file for TACS structural analysis
@@ -158,7 +172,7 @@ optimizer = "pyoptsparse"
 if optimizer == "scipy":
     prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
 elif optimizer == "pyoptsparse":
-    prob.driver = om.pyOptSparseDriver(optimizer="SNOPT", tol=1.0e-9, disp=True)
+    prob.driver = om.pyOptSparseDriver(optimizer="SNOPT")
 
 # Start the optimization
 print("\n==> Starting optimization...")
