@@ -46,7 +46,7 @@ for irib in range(1, nribs + 1):
         caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
-        lower=0.001, upper=0.5, scale=100.0
+        lower=0.01, upper=0.2, scale=100.0
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -55,7 +55,7 @@ for ispar in range(1, nspars + 1):
         caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
-        lower=0.001, upper=0.5, scale=100.0
+        lower=0.01, upper=0.2, scale=100.0
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -64,7 +64,7 @@ for iOML in range(1, nOML + 1):
         caps_group=name, material=aluminum, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
-        lower=0.001, upper=0.5, scale=100.0
+        lower=0.01, upper=0.2, scale=100.0
     ).register_to(wing)
 
 # add constraints and loads
@@ -85,14 +85,16 @@ tacs_scenario.include(
     Function.mass().optimize(scale=1.0e-2, objective=True, plot=True)
 )  # optim is automatically set to true for optimization tracking using set_bounds()
 tacs_scenario.include(
-    Function.ksfailure(ks_weight=50.0).optimize(upper=0.267, objective=False, plot=True)
+    Function.ksfailure(ks_weight=10.0).optimize(
+        scale=30.0, upper=0.267, objective=False, plot=True
+    )
 )
 tacs_scenario.register_to(f2f_model)
 
 # make the composite functions for adjacency constraints
 variables = f2f_model.get_variables()
-adj_lb = 0.1
-adj_ub = 10.0
+adj_ratio = 4.0
+adj_scale = 10.0
 for irib in range(
     1, nribs
 ):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
@@ -101,11 +103,7 @@ for irib in range(
     # make a composite function for relative diff in rib thicknesses
     adj_rib_constr = (left_rib - right_rib) / left_rib
     adj_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
-    ).register_to(f2f_model)
-    adj_rib_constr_neg = -1 * adj_rib_constr
-    adj_rib_constr_neg.set_name(f"neg_rib{irib}-{irib+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for ispar in range(1, nspars):
@@ -114,24 +112,16 @@ for ispar in range(1, nspars):
     # make a composite function for relative diff in spar thicknesses
     adj_spar_constr = (left_spar - right_spar) / left_spar
     adj_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
-    ).register_to(f2f_model)
-    adj_spar_constr_neg = -1 * adj_spar_constr
-    adj_spar_constr_neg.set_name(f"neg_spar{ispar}-{ispar+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for iOML in range(1, nOML):
     left_OML = f2f_model.get_variables(names=f"OML{iOML}")
     right_OML = f2f_model.get_variables(names=f"OML{iOML+1}")
-    # make a composite function for relative diff in spar thicknesses
+    # make a composite function for relative diff in OML thicknesses
     adj_OML_constr = (left_OML - right_OML) / left_OML
     adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
-    ).register_to(f2f_model)
-    adj_OML_constr_neg = -1 * adj_OML_constr
-    adj_OML_constr_neg.set_name(f"neg_OML{iOML}-{iOML+1}").optimize(
-        lower=adj_lb, upper=adj_ub, scale=1.0, objective=False
+        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 # make the BDF and DAT file for TACS structural analysis
@@ -173,6 +163,7 @@ if optimizer == "scipy":
     prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
 elif optimizer == "pyoptsparse":
     prob.driver = om.pyOptSparseDriver(optimizer="SNOPT")
+    # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-5 # lower tolerance to prevent tight oscillations
 
 # Start the optimization
 print("\n==> Starting optimization...")

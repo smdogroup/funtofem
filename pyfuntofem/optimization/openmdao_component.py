@@ -86,6 +86,8 @@ class FuntofemComponent(ExplicitComponent):
 
         self._first_analysis = True
         self._first_opt = True
+        self._iteration = 0
+        self._prev_forward_changed_design = None
 
         # store function optimization history
         if track_history:
@@ -110,20 +112,23 @@ class FuntofemComponent(ExplicitComponent):
         model = driver.model
         changed_design = False
 
-        for var in model.get_variables():
-            if var.value != float(inputs[var.name]):
+        if analysis:  # forward analysis check new design
+            for var in model.get_variables():
+                if var.value != float(inputs[var.name]):
+                    changed_design = True
+                    var.value = float(inputs[var.name])
+
+            if self._first_analysis:
+                self._first_analysis = False
                 changed_design = True
-                var.value = float(inputs[var.name])
 
-        if analysis and self._first_analysis:
-            self._first_analysis = False
-            changed_design = True
-        elif not (analysis) and self._first_opt:
-            self._first_opt = False
-            changed_design = True
+            if changed_design:
+                self._iteration += 1
+                self._design_report()
+            self._prev_forward_changed_design = changed_design
 
-        if changed_design:
-            self._design_report()
+        else:  # adjoint runs if forward previously ran
+            changed_design = self._prev_forward_changed_design
         return changed_design
 
     def compute(self, inputs, outputs):
@@ -179,7 +184,7 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
 
         if driver.comm.rank == 0:
-            self._design_hdl.write("Analysis result:\n")
+            self._design_hdl.write(f"Analysis #{self._iteration}:\n")
             for func_name in self._func_history:
                 self._design_hdl.write(
                     f"\tfunc {func_name} = {self._func_history[func_name][-1]}\n"
@@ -189,16 +194,36 @@ class FuntofemComponent(ExplicitComponent):
 
     def _plot_history(self):
         driver = self.options["driver"]
+        model = driver.model
 
         if driver.comm.rank == 0:
             func_keys = list(self._func_history.keys())
             num_iterations = len(self._func_history[func_keys[0]])
             iterations = [_ for _ in range(num_iterations)]
             plt.figure()
-            for func_name in func_keys:
-                yvec = self._func_history[func_name]
-                yvec /= max(np.array(yvec))
-                plt.plot(iterations, yvec, linewidth=2, label=func_name)
+            for func in model.get_functions(optim=True):
+                if func.name in func_keys:
+                    yvec = np.array(self._func_history[func.name])
+                    if func._objective:
+                        yvec *= func.scale
+                    else:  # constraint
+                        constr_bndry = 1.0
+                        # take relative errors against constraint boundaries, lower upper
+                        yfinal = yvec[-1]
+                        rel_err_lower = 1e5
+                        rel_err_upper = 1e5
+                        if func.lower is not None:
+                            rel_err_lower = abs((yfinal - func.lower) / func.lower)
+                        if func.upper is not None:
+                            rel_err_upper = abs((yfinal - func.upper) / func.upper)
+                        if rel_err_lower < rel_err_upper:
+                            constr_bndry = func.lower
+                        else:
+                            constr_bndry = func.upper
+                        # compute abs error to constraint boundary for the plot
+                        yvec = np.abs((yvec - constr_bndry) / constr_bndry)
+                    # plot the function
+                    plt.plot(iterations, yvec, linewidth=2, label=func.name)
             plt.legend()
             plt.xlabel("iterations")
             plt.ylabel("func values")
@@ -213,7 +238,7 @@ class FuntofemComponent(ExplicitComponent):
 
         if driver.comm.rank == 0:
             variables = model.get_variables()
-            self._design_hdl.write("New Design...\n")
+            self._design_hdl.write(f"Design #{self._iteration}...\n")
             self._design_hdl.write(f"\tf2f vars = {[_.name for _ in variables]}\n")
             real_xarray = [var.value for var in variables]
             self._design_hdl.write(f"\tvalues = {real_xarray}\n")
