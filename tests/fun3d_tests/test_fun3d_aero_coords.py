@@ -38,7 +38,8 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 
 @unittest.skipIf(
-    not complex_mode, "only testing coordinate derivatives with complex step"
+    not complex_mode or fun3d_loader is None,
+    "only uses complex step, required to have FUN3D",
 )
 class TestFun3dAeroCoords(unittest.TestCase):
     FILENAME = "fun3daero-coords.txt"

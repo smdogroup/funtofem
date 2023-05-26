@@ -1,4 +1,4 @@
-import os, unittest
+import os, unittest, importlib
 from pyfuntofem.interface import Fun3dModel, Fun3dBC
 from mpi4py import MPI
 
@@ -6,8 +6,15 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
 csm_path = os.path.join(base_dir, "input_files", "flow_wing.csm")
 
+fun3d_loader = importlib.util.find_spec("fun3d")
+caps_loader = importlib.util.find_spec("pyCAPS")
+
 
 # first just test the fun3d and aflr aim features
+@unittest.skipIf(
+    fun3d_loader is None and caps_loader is None,
+    "need CAPS to run this job, FUN3D not technically required but skipping anyways.",
+)
 class TestFun3dAim(unittest.TestCase):
     def test_pre_analysis(self):
         """just check that it runs without error"""
