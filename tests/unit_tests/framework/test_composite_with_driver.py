@@ -114,12 +114,6 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         ksfailure1 = Function.ksfailure(ks_weight=10.0).register_to(cruise)
         lift1 = Function.lift().register_to(cruise)
         drag1 = Function.drag().register_to(cruise)
-        composite1 = (
-            drag1
-            * CompositeFunction.exp(ksfailure1 + 1.5 * lift1**2 / (1 + lift1))
-            * yaw
-        )
-        composite1.optimize().set_name("composite1").register_to(model)
         cruise.register_to(model)
 
         # cruise scenario with random test composite function 2
@@ -128,13 +122,22 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         lift2 = Function.lift().register_to(climb)
         mach = Variable.aerodynamic("mach", value=1.45).register_to(climb)
         drag2 = Function.drag().register_to(climb)
+        climb.register_to(model)
+
+        # all composite functions must come after bodies and scenarios
+        # otherwise they won't be linked to all potential design variables (which they may depend on)
+        composite1 = (
+            drag1
+            * CompositeFunction.exp(ksfailure1 + 1.5 * lift1**2 / (1 + lift1))
+            * yaw
+        )
+        composite1.optimize().set_name("composite1").register_to(model)
         composite2 = (
             drag2**3
             / (1.532 - ksfailure2)
             * CompositeFunction.log(1 + (lift2 / drag2) ** 2)
         ) - mach**2
         composite2.optimize().set_name("composite2").register_to(model)
-        climb.register_to(model)
 
         # composite function for minimum drag among two scenarios
         min_drag = CompositeFunction.boltz_min([drag1, drag2])
