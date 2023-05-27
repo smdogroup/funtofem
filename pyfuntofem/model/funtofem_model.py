@@ -754,8 +754,6 @@ class FUNtoFEMmodel(object):
         """
 
         funcs = self.get_functions()
-        # also add composite functions at the end
-        funcs += self.composite_functions
 
         count = 0
         ids = []

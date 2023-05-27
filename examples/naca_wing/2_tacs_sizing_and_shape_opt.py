@@ -142,7 +142,8 @@ tacs_aim.pre_analysis()
 # in the tacs driver
 solvers = SolverManager(comm)
 solvers.flow = NullAerodynamicSolver(comm=comm, model=f2f_model)
-solvers.structural = TacsSteadyInterface.create_from_bdf(
+# just using this temporary structural solver to initialize flow coords here
+tmp_structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
     nprocs=1,
@@ -152,8 +153,18 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
 solvers.flow.copy_struct_mesh()
 null_driver = NullDriver(solvers, model=f2f_model, transfer_settings=None)
 
+# write out blank tacs sens file to be able to run preanalysis before
+# tacs oneway driver runs a preAnalysis for shape optimization
+for func in f2f_model.get_functions(optim=True):
+    func.value = 0.0
+wing.initialize_adjoint_variables(tacs_scenario)
+f2f_model.write_sensitivity_file(
+    comm, tacs_aim.sens_file_path, discipline="structural", root=0
+)
+tacs_aim.post_analysis()
+
 # build the tacs oneway driver
-tacs_driver = TacsOnewayDriver.prime_loads(driver=null_driver)
+tacs_driver = TacsOnewayDriver.prime_loads(driver=null_driver, nprocs=1)
 
 # --------------------------------------------------------------------------#
 # Setup OpenMDAO Problem and Perform Sizing Optimization on the Wing
