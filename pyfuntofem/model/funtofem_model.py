@@ -24,7 +24,6 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np, os, importlib
 from .variable import Variable
-from pyfuntofem.interface.caps2fun import Fun3dModel
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -133,15 +132,6 @@ class FUNtoFEMmodel(object):
         self._send_flow_variables(scenario)
 
         self.scenarios.append(scenario)
-
-    def add_composite_function(self, composite_function):
-        """
-        Add a composite function to the existing list of composite functions in the model.
-        Need all variables to be setup before making any composite functions...
-        """
-        composite_function.setup_derivative_dict(self.get_variables())
-        self.composite_functions.append(composite_function)
-        return
 
     def print_summary(self, print_level=0):
         """
