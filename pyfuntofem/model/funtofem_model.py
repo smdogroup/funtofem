@@ -22,10 +22,9 @@ limitations under the License.
 
 __all__ = ["FUNtoFEMmodel"]
 
-import numpy as np
+import numpy as np, os, importlib
 from .variable import Variable
-
-import importlib
+from pyfuntofem.interface.caps2fun import Fun3dModel
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -134,6 +133,110 @@ class FUNtoFEMmodel(object):
         self._send_flow_variables(scenario)
 
         self.scenarios.append(scenario)
+
+    def _send_struct_variables(self, base):
+        """send variables to self.structural usually the TacsModel"""
+        # if tacs loader and tacs model exist then create thickness variables and register to tacs model
+        # in the case of defining shell properties
+        if tacs_loader is not None and isinstance(self.structural, caps2tacs.TacsModel):
+            struct_variables = []
+            shape_variables = []
+            if "structural" in base.variables:
+                struct_variables = base.variables["structural"]
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+
+            for var in struct_variables:
+                # check if matching shell property exists
+                matching_prop = False
+                for prop in self.structural.tacs_aim._properties:
+                    if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+
+                matching_dv = False
+                for dv in self.structural.thickness_variables:
+                    if dv.name == var.name:
+                        matching_dv = True
+                        break
+
+                if matching_prop and not (matching_dv):
+                    caps2tacs.ThicknessVariable(
+                        caps_group=var.name, value=var.value, name=var.name
+                    ).register_to(self.structural)
+
+            esp_caps_despmtrs = None
+            comm = self.structural.comm
+            if self.structural.root_proc:
+                esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            for var in shape_variables:
+                matching_despmtr = False
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        matching_despmtr = True
+                        break
+
+                matching_shape_dv = False
+                for shape_var in self.structural.shape_variables:
+                    if var.name == shape_var.name:
+                        matching_shape_dv = True
+                        break
+
+                # create a matching shape variable in caps2tacs
+                if matching_despmtr and not matching_shape_dv:
+                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
+                        self.structural
+                    )
+        # end of tacs model auto registration of vars section
+
+        self.bodies.append(base)
+
+    def add_composite_function(self, composite_function):
+        """
+        Add a composite function to the existing list of composite functions in the model.
+        Need all variables to be setup before making any composite functions...
+        """
+        composite_function.setup_derivative_dict(self.get_variables())
+        self.composite_functions.append(composite_function)
+        return
+
+    def _send_flow_variables(self, base):
+        """send variables to self.flow usually the Fun3dModel"""
+
+        if isinstance(self.flow, Fun3dModel):
+            shape_variables = []
+            aero_variables = []
+            if "shape" in base.variables:
+                shape_variables = base.variables["shape"]
+            if "aerodynamic" in base.variables:
+                aero_variables = base.variables["aerodynamic"]
+
+            esp_caps_despmtrs = None
+            comm = self.flow.comm
+            if self.flow.root_proc:
+                esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+
+            active_shape_vars = []
+            active_aero_vars = []
+
+            # add shape variable names to varnames
+            for var in shape_variables:
+                for despmtr in esp_caps_despmtrs:
+                    if var.name == despmtr:
+                        active_shape_vars.append(var)
+                        break
+
+            # add aerodynamic variable names to varnames
+            for var in aero_variables:
+                if var.active:
+                    active_aero_vars.append(var)
+
+            # input the design parameters into the Fun3dModel and Fun3dAim
+            self.flow.set_variables(active_shape_vars, active_aero_vars)
+        return
 
     def print_summary(self, print_level=0):
         """
@@ -819,9 +922,12 @@ class FUNtoFEMmodel(object):
     def read_design_variables_file(self, comm, filename, root=0):
         """
         Read the design variables file funtofem.in
+
         This file contains the following information:
+
         Discipline
         Var_name Var_value
+
         Parameters
         ----------
         comm: MPI communicator
@@ -910,11 +1016,112 @@ class FUNtoFEMmodel(object):
 
         return
 
+    def read_functions_file(self, comm, filename, root=0):
+        """
+        Read the functions variables file funtofem.out
+
+        This file contains the following information:
+
+        nFunctions
+        func_name, func_value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        functions_dict = None
+        if comm.rank == root:  # read the file in on the root processor
+            functions_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 2:
+                    func_name = chunks[0]
+                    func_value = chunks[1]
+
+                    # only real numbers are read in from the file
+                    functions_dict[func_name] = float(func_value)
+
+        # broadcast the dictionary to the root processor
+        functions_dict = comm.bcast(functions_dict, root=root)
+
+        # update the variable values on each processor
+        for func in self.get_functions():
+            if func.name in functions_dict:
+                func.value = functions_dict[func.name]
+
+        return
+
+    def write_functions_file(self, comm, filename, root=0):
+        """
+        Write the functions file funtofem.out
+
+        This file contains the following information:
+
+        Number of functionals
+
+        Functional name, value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        funcs = self.get_functions()
+        # also add composite functions at the end
+        funcs += self.composite_functions
+
+        if comm.rank == root:
+            # Write out the number of functionals and number of design variables
+            data = "{}\n".format(len(funcs))
+
+            for n, func in enumerate(funcs):
+                # Print the function name
+                data += "{}\n".format(func.full_name)
+
+                # Print the function value
+                data += "{}\n".format(func.value.real)
+
+            with open(filename, "w") as fp:
+                fp.write(data)
+
+
+
     @property
     def structural(self):
         """structural discipline submodel such as TacsModel"""
         return self._struct_model
+    def structural(self):
+        """structural discipline submodel such as TacsModel"""
+        return self._struct_model
 
+    @structural.setter
+    def structural(self, structural_model):
+        self._struct_model = structural_model
+
+    @property
+    def flow(self):
+        """flow discipline submodel such as Fun3dModel"""
+        return self._flow_model
+
+    @flow.setter
+    def flow(self, flow_model):
+        self._flow_model = flow_model
     @structural.setter
     def structural(self, structural_model):
         self._struct_model = structural_model

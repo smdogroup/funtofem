@@ -51,6 +51,7 @@ class Fun3dInterface(SolverInterface):
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
+        auto_coords=True,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -112,7 +113,9 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = None
 
         # Initialize the nodes associated with the bodies
-        self._initialize_body_nodes(model.scenarios[0], model.bodies)
+        self.auto_coords = auto_coords
+        if auto_coords:
+            self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
 
@@ -246,6 +249,20 @@ class Fun3dInterface(SolverInterface):
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
             return 1
+
+        # update Funtofem xA0 coords from FUN3D if doing mesh morphing
+        if self.model.flow is not None:
+            if self.model.flow.mesh_morph:
+                for ibody, body in enumerate(bodies, 1):
+                    aero_X = body.get_aero_nodes()
+                    aero_nnodes = body.get_num_aero_nodes()
+
+                    if aero_nnodes > 0:
+                        x, y, z = interface.extract_surface(aero_nnodes, body=ibody)
+
+                        aero_X[0::3] = x[:]
+                        aero_X[1::3] = y[:]
+                        aero_X[2::3] = z[:]
 
         return 0
 
@@ -480,7 +497,9 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(scenario, time_index=step)
+            aero_disps = body.get_aero_disps(
+                scenario, time_index=step, with_morphing=True
+            )
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
             if deform and aero_disps is not None and aero_nnodes > 0:
@@ -594,6 +613,17 @@ class Fun3dInterface(SolverInterface):
         adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
         os.chdir(adjoint_dir)
 
+        # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
+        # if mesh morphing is online
+        if self.model.flow is not None:
+            morph_flag = self.model.flow.mesh_morph
+            if morph_flag and self.comm.rank == 0:
+                src = self.model.flow.mesh_morph_filepath
+                dest = os.path.join(
+                    self.root_dir, adjoint_dir, self.model.flow.mesh_morph_filename
+                )
+                shutil.copy2(src, dest)
+
         if scenario.steady:
             # Initialize FUN3D adjoint - special order for static adjoint
             if self.adjoint_options is None:
@@ -626,7 +656,7 @@ class Fun3dInterface(SolverInterface):
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
+                aero_disps = body.get_aero_disps(scenario, with_morphing=True)
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps is not None and aero_nnodes > 0:
                     dx = np.asfortranarray(aero_disps[0::3])

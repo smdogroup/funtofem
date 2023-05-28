@@ -11,25 +11,18 @@ from pyfuntofem.model import (
 from pyfuntofem.interface import SolverManager
 
 # check whether fun3d is available
-tacs_loader = importlib.util.find_spec("tacs")
 fun3d_loader = importlib.util.find_spec("fun3d")
-has_tacs = tacs_loader is not None
 has_fun3d = fun3d_loader is not None
-
-if has_tacs:
-    from pyfuntofem.interface import TacsSteadyInterface
 
 if has_fun3d:
     from pyfuntofem.interface import Fun3dInterface
-    from pyfuntofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from pyfuntofem.driver import Fun3dOnewayDriver
 
 np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
-
-nprocs = comm.Get_size()
 
 # build the funtofem model with one body and scenario
 model = FUNtoFEMmodel("wing")
@@ -45,11 +38,10 @@ test_scenario.register_to(model)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1e4)
-solvers.structural = TacsSteadyInterface.create_from_bdf(model, comm, nprocs, bdf_file)
+solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
 # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-driver = FuntofemShapeDriver.analysis(solvers, model)
+driver = Fun3dOnewayDriver.analysis(solvers, model)
 
 # run the forward and adjoint analysis in one shot
 driver.solve_forward()
