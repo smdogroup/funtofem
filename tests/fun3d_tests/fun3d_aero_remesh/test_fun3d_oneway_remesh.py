@@ -44,7 +44,7 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "fun3d-oneway-shape-driver.txt"
+    FILENAME = "fun3d-oneway-shape.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_optimizer_file(self):

@@ -60,7 +60,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         fun3d_aim = fun3d_model.fun3d_aim
 
         if mesh_style == "coarse":
-            aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
+            aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.01, max_scale=5.0)
             aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
             Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
                 fun3d_model
