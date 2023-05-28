@@ -23,6 +23,7 @@ limitations under the License.
 __all__ = [
     "TestAerodynamicSolver",
     "TestStructuralSolver",
+    "NullAerodynamicSolver",
     "TestResult",
     "CoordinateDerivativeTester",
 ]
@@ -713,6 +714,41 @@ class TestStructuralSolver(SolverInterface):
 
     def post_adjoint(self, scenario, bodies):
         return
+
+
+class NullAerodynamicSolver(SolverInterface):
+    def __init__(self, comm, model, auto_copy=False):
+        """
+        This class provides the functionality that FUNtoFEM expects from
+        an aerodynamic solver, except no aerodynamics is performed here.
+
+        All solver interface routines we just do nothing and those methods
+        come from the super class SolverInterface
+
+        Parameters
+        ----------
+        comm: MPI.comm
+            MPI communicator
+        model: :class:`~funtofem_model.FUNtoFEMmodel`
+            The model containing the design data
+        auto_copy: bool
+            whether to copy the aero mesh from the structures mesh
+        """
+
+        self.comm = comm
+        self.model = model
+        self.auto_copy = auto_copy
+
+        if auto_copy:
+            self.copy_aero_mesh()
+        return
+
+    def copy_struct_mesh(self):
+        """copy aero mesh from the structures side"""
+        for body in self.model.bodies:
+            aero_id = np.arange(1, body.get_num_struct_nodes() + 1)
+            body.initialize_aero_nodes(body.struct_X, aero_id)
+        return self
 
 
 class TestResult:

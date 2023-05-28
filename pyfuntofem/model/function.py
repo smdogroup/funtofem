@@ -41,6 +41,11 @@ class Function(object):
         options=None,
         averaging=None,
         optim=False,
+        lower=None,
+        upper=None,
+        scale=None,
+        objective=False,
+        plot=False,
     ):
         """
 
@@ -69,6 +74,16 @@ class Function(object):
         optim: bool
             whether to include this function in the optimization objective/constraints
             (can be active but not an objective/constraint if it is used to compute composite functions)
+        lower: float
+            lower bound for optimization
+        upper: float
+            upper bound for optimization
+        scale: float
+            scale for optimization
+        objective: bool
+            boolean for whether this is an objective/constraint function
+        objective: bool
+            whether to plot the function
 
         Examples
         --------
@@ -84,6 +99,13 @@ class Function(object):
         self.stop = stop
         self.averaging = averaging
         self.optim = optim
+
+        # optimization settings
+        self.lower = lower
+        self.upper = upper
+        self.scale = scale
+        self._objective = objective
+        self._plot = plot
 
         self.analysis_type = analysis_type
         self.scenario = None
@@ -119,12 +141,18 @@ class Function(object):
 
         return
 
-    def optimize(self):
+    def optimize(self, lower=None, upper=None, scale=None, objective=False, plot=False):
         """
-        Set optim=True indicating this function will be an objective or constraint.
+        automatically sets optim=True for optimization and sets optimization bounds for
+        OpenMDAO or pyoptsparse
         """
         self.optim = True
-        return self  # return function for method cascading
+        self.lower = lower
+        self.upper = upper
+        self.scale = scale
+        self._objective = objective
+        self._plot = plot
+        return self
 
     def set_gradient_component(self, var, value):
         """
