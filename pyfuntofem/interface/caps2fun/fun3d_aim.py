@@ -75,13 +75,13 @@ class Fun3dAim:
         self._build_aim()
 
         """setup to do ESP/CAPS sens file reading"""
+        self.set_design_sensitivity(flag=True)
         if self.root_proc:
             # set to not overwrite fun3d nml analysis
             self.aim.input.Overwrite_NML = False
             # fun3d design sensitivities settings
-            self.aim.input.Design_SensFile = True
-            self.aim.input.Design_Sensitivity = True
             self.aim.input.Mesh_Morph = mesh_morph
+            self.aim.input.Mesh_Morph_Combine = mesh_morph
 
         self._metadata = None
         if self.root_proc:
@@ -110,6 +110,13 @@ class Fun3dAim:
             self.aim.input["Mesh"].unlink()
         return
 
+    def set_design_sensitivity(self, flag: bool):
+        """toggle design sensitivity for Fun3dAim"""
+        if self.root_proc:
+            self.aim.input.Design_Sensitivity = flag
+            self.aim.input.Design_SensFile = flag
+        return
+
     @property
     def geometry(self):
         return self._geometry
@@ -134,7 +141,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self.metadata.project_name
+        return self._metadata.project_name
 
     @property
     def grid_filepaths(self):
@@ -200,7 +207,7 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self.metadata.analysis_dir
+        return self._metadata.analysis_dir
 
     @property
     def mesh_morph_filename(self):
@@ -220,6 +227,11 @@ class Fun3dAim:
 
     def post_analysis(self, sens_file_src=None):
         if self.root_proc:
+            # fake system call to prevent fun3dAIM CAPS_DIRTY for the execute analysis
+            # we do this since we are not calling FUN3D analysis, but FUNtoFEM instead without system calls
+            # if self.mesh_morph:
+            #    self.fake_system_call()
+
             # move sens files if need be from fun3d dir to fun3d workdir
             if sens_file_src is not None:
                 self._move_sens_files(src=sens_file_src)
