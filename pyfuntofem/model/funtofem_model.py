@@ -1100,12 +1100,11 @@ class FUNtoFEMmodel(object):
             with open(filename, "w") as fp:
                 fp.write(data)
 
-
-
     @property
     def structural(self):
         """structural discipline submodel such as TacsModel"""
         return self._struct_model
+
     def structural(self):
         """structural discipline submodel such as TacsModel"""
         return self._struct_model
@@ -1122,6 +1121,7 @@ class FUNtoFEMmodel(object):
     @flow.setter
     def flow(self, flow_model):
         self._flow_model = flow_model
+
     @structural.setter
     def structural(self, structural_model):
         self._struct_model = structural_model
