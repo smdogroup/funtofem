@@ -13,6 +13,7 @@ lib/libtransfer_schemes.a
 *.job
 *.dat
 fake_interface*
+capsFluid
 *~
 .vscode/settings.json
 docs/.DS_Store
@@ -21,6 +22,6 @@ docs/.DS_Store
 **/*.txt
 **/*.f5
 **/*.vtk
-**/capsStruct
+capsStruct
 **/*.sens
 work
