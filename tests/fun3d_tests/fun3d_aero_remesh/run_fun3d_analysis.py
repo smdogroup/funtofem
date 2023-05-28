@@ -28,7 +28,7 @@ bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 model = FUNtoFEMmodel("wing")
 wing = Body.aeroelastic("wing", boundary=2)
 wing.register_to(model)
-test_scenario = Scenario.steady("turbulent", steps=5000).set_temperature(
+test_scenario = Scenario.steady("euler", steps=5000).set_temperature(
     T_ref=300.0, T_inf=300.0
 )
 test_scenario.adjoint_steps = 2000
