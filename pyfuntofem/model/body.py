@@ -237,8 +237,6 @@ class Body(Base):
         self.aero_loads = {}
         self.aero_shape_term = {}
 
-        self.aero_shape_disps = None
-
         self.aero_temps = {}
         self.aero_heat_flux = {}
 
@@ -746,7 +744,7 @@ class Body(Base):
 
         return
 
-    def get_aero_disps(self, scenario, time_index=0, with_morphing=False):
+    def get_aero_disps(self, scenario, time_index=0):
         """
         Get the displacements on the aerodynamic surface for the given scenario.
 
@@ -756,19 +754,12 @@ class Body(Base):
             The current scenario
         time_index: int
             The time-index for time-dependent problems
-        with_morphing: bool
-            whether to include FUN3D aero shape morphing displacements
         """
         if self.transfer is not None:
             if scenario.steady:
-                aero_disps = self.aero_disps[scenario.id]
+                return self.aero_disps[scenario.id]
             else:
-                aero_disps = self.aero_disps[scenario.id][time_index]
-            # add fixed aero shape disps if
-            if with_morphing and self.aero_shape_disps is not None:
-                return aero_disps + self.aero_shape_disps
-            else:
-                return aero_disps
+                return self.aero_disps[scenario.id][time_index]
         else:
             return None
 
