@@ -80,6 +80,11 @@
         <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">averaging</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">optim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">lower</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">upper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">objective</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 
@@ -108,6 +113,16 @@
 <span class="sd">        optim: bool</span>
 <span class="sd">            whether to include this function in the optimization objective/constraints</span>
 <span class="sd">            (can be active but not an objective/constraint if it is used to compute composite functions)</span>
+<span class="sd">        lower: float</span>
+<span class="sd">            lower bound for optimization</span>
+<span class="sd">        upper: float</span>
+<span class="sd">            upper bound for optimization</span>
+<span class="sd">        scale: float</span>
+<span class="sd">            scale for optimization</span>
+<span class="sd">        objective: bool</span>
+<span class="sd">            boolean for whether this is an objective/constraint function</span>
+<span class="sd">        objective: bool</span>
+<span class="sd">            whether to plot the function</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -123,6 +138,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">averaging</span> <span class="o">=</span> <span class="n">averaging</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">optim</span> <span class="o">=</span> <span class="n">optim</span>
+
+        <span class="c1"># optimization settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="n">upper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective</span> <span class="o">=</span> <span class="n">objective</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plot</span> <span class="o">=</span> <span class="n">plot</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">analysis_type</span> <span class="o">=</span> <span class="n">analysis_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="kc">None</span>
@@ -158,12 +180,18 @@
 
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Function.optimize"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Function.optimize"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set optim=True indicating this function will be an objective or constraint.</span>
+<span class="sd">        automatically sets optim=True for optimization and sets optimization bounds for</span>
+<span class="sd">        OpenMDAO or pyoptsparse</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">optim</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="bp">self</span>  <span class="c1"># return function for method cascading</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="n">upper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective</span> <span class="o">=</span> <span class="n">objective</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plot</span> <span class="o">=</span> <span class="n">plot</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="Function.set_gradient_component"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.Function.set_gradient_component">[docs]</a>    <span class="k">def</span> <span class="nf">set_gradient_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

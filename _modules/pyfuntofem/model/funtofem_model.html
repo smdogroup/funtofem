@@ -144,8 +144,9 @@
 <div class="viewcode-block" id="FUNtoFEMmodel.add_composite_function"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.add_composite_function">[docs]</a>    <span class="k">def</span> <span class="nf">add_composite_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">composite_function</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a composite function to the existing list of composite functions in the model.</span>
+<span class="sd">        Need all variables to be setup before making any composite functions...</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+        <span class="n">composite_function</span><span class="o">.</span><span class="n">setup_derivative_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">composite_function</span><span class="p">)</span>
         <span class="k">return</span></div>
 
@@ -367,30 +368,54 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">flow</span><span class="o">.</span><span class="n">set_variables</span><span class="p">(</span><span class="n">active_shape_vars</span><span class="p">,</span> <span class="n">active_aero_vars</span><span class="p">)</span>
         <span class="k">return</span>
 
-<div class="viewcode-block" id="FUNtoFEMmodel.get_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="FUNtoFEMmodel.get_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.get_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get all the coupled and uncoupled variable objects for the entire model.</span>
 <span class="sd">        Coupled variables only appear once.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        names: str or List[str]</span>
+<span class="sd">            one variable name or a list of variable names</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        var_list: list of variable objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">dv</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dv</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">scenario</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
+                    <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
 
-        <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">group_root</span><span class="p">:</span>
+                    <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_active_variables</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dv</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get_uncoupled_variables</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">dv</span>
 
-        <span class="k">return</span> <span class="n">dv</span></div>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="c1"># get the one variable associated with that name</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">names</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">var</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">varlist</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                    <span class="n">varlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">varlist</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;names input object to get_variables is wrong type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># didn&#39;t find anything so return None, should error stuff out</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="FUNtoFEMmodel.set_variables"><a class="viewcode-back" href="../../../model.html#pyfuntofem.model.FUNtoFEMmodel.set_variables">[docs]</a>    <span class="k">def</span> <span class="nf">set_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dv</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -494,6 +519,10 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        compute the values and gradients of composite functions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check that all have appropriate derivative dictionaries</span>
+        <span class="k">for</span> <span class="n">composite_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="p">:</span>
+            <span class="n">composite_func</span><span class="o">.</span><span class="n">check_derivative_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_variables</span><span class="p">())</span>
+
         <span class="c1"># reset each composite function first</span>
         <span class="k">for</span> <span class="n">composite_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span><span class="p">:</span>
             <span class="n">composite_func</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
@@ -764,8 +793,6 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">funcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
-        <span class="c1"># also add composite functions at the end</span>
-        <span class="n">funcs</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">composite_functions</span>
 
         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
