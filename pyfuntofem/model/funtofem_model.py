@@ -105,8 +105,9 @@ class FUNtoFEMmodel(object):
     def add_composite_function(self, composite_function):
         """
         Add a composite function to the existing list of composite functions in the model.
+        Need all variables to be setup before making any composite functions...
         """
-
+        composite_function.setup_derivative_dict(self.get_variables())
         self.composite_functions.append(composite_function)
         return
 
@@ -328,30 +329,54 @@ class FUNtoFEMmodel(object):
             self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
-    def get_variables(self):
+    def get_variables(self, names=None):
         """
         Get all the coupled and uncoupled variable objects for the entire model.
         Coupled variables only appear once.
+
+        Parameters
+        ----------
+        names: str or List[str]
+            one variable name or a list of variable names
 
         Returns
         -------
         var_list: list of variable objects
         """
 
-        dv = []
-        for scenario in self.scenarios:
-            if scenario.group_root:
-                dv.extend(scenario.get_active_variables())
-            else:
-                dv.extend(scenario.get_uncoupled_variables())
+        if names is None:
+            dv = []
+            for scenario in self.scenarios:
+                if scenario.group_root:
+                    dv.extend(scenario.get_active_variables())
+                else:
+                    dv.extend(scenario.get_uncoupled_variables())
 
-        for body in self.bodies:
-            if body.group_root:
-                dv.extend(body.get_active_variables())
-            else:
-                dv.extend(body.get_uncoupled_variables())
+            for body in self.bodies:
+                if body.group_root:
+                    dv.extend(body.get_active_variables())
+                else:
+                    dv.extend(body.get_uncoupled_variables())
+            return dv
 
-        return dv
+        elif isinstance(names, str):
+            # get the one variable associated with that name
+            for var in self.get_variables():
+                if var.name == names:
+                    return var
+
+        elif isinstance(names, list) and isinstance(names[0], str):
+            varlist = []
+            for var in self.get_variables():
+                if var.name in names:
+                    varlist.append(var)
+            return varlist
+        else:
+            raise AssertionError(
+                f"names input object to get_variables is wrong type {type(names)}"
+            )
+        # didn't find anything so return None, should error stuff out
+        return None
 
     def set_variables(self, dv):
         """
@@ -455,6 +480,10 @@ class FUNtoFEMmodel(object):
         """
         compute the values and gradients of composite functions
         """
+        # check that all have appropriate derivative dictionaries
+        for composite_func in self.composite_functions:
+            composite_func.check_derivative_dict(self.get_variables())
+
         # reset each composite function first
         for composite_func in self.composite_functions:
             composite_func.reset()
@@ -725,8 +754,6 @@ class FUNtoFEMmodel(object):
         """
 
         funcs = self.get_functions()
-        # also add composite functions at the end
-        funcs += self.composite_functions
 
         count = 0
         ids = []
