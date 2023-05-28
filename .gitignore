@@ -20,4 +20,7 @@ docs/.DS_Store
 *.egg-info
 **/*.txt
 **/*.f5
+**/*.vtk
+**/capsStruct
 **/*.sens
+work
