@@ -254,19 +254,6 @@ class Scenario(Base):
         # return object for method cascading
         return self
 
-    def get_variable(self, varname, set_active=True):
-        """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
-        var = None
-        for discipline in self.variables:
-            discipline_vars = self.variables[discipline]
-            for var in discipline_vars:
-                if var.name == varname:
-                    if set_active:
-                        var.active = True
-                    return var
-        if var is None:
-            raise AssertionError(f"Can't find variable from scenario {self.name}")
-
     def include(self, obj):
         """
         generic include method adds objects for readability
@@ -325,11 +312,6 @@ class Scenario(Base):
 
         for func in self.functions:
             func.scenario = id
-
-    def fun3d_project(self, new_proj_name):
-        """set the fun3d project rootname from fun3d.nml for use in shape drivers"""
-        self.fun3d_project_name = new_proj_name
-        return self
 
     def get_thermal_conduct(self, aero_temps):
         """
