@@ -191,8 +191,6 @@ class FUNtoFEMmodel(object):
                     )
         # end of tacs model auto registration of vars section
 
-        self.bodies.append(base)
-
     def add_composite_function(self, composite_function):
         """
         Add a composite function to the existing list of composite functions in the model.
