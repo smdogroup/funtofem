@@ -497,9 +497,7 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(
-                scenario, time_index=step, with_morphing=True
-            )
+            aero_disps = body.get_aero_disps(scenario, time_index=step)
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
             if deform and aero_disps is not None and aero_nnodes > 0:
@@ -656,7 +654,7 @@ class Fun3dInterface(SolverInterface):
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario, with_morphing=True)
+                aero_disps = body.get_aero_disps(scenario)
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps is not None and aero_nnodes > 0:
                     dx = np.asfortranarray(aero_disps[0::3])
