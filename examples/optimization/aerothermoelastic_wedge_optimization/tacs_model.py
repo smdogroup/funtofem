@@ -22,9 +22,9 @@ limitations under the License.
 
 from mpi4py import MPI
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_interface import TacsSteadyInterface
+from funtofem.tacs_interface import TacsSteadyInterface
 
-# from pyfuntofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
+# from funtofem.tacs_aerothermal_interface import TacsSteadyAerothermalInterface
 import numpy as np
 
 

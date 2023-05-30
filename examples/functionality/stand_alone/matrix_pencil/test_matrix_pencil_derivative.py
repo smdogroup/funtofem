@@ -3,9 +3,9 @@ from __future__ import print_function
 #!/usr/bin/env python
 import numpy as np
 
-from pyfuntofem import TransferScheme
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Body, Scenario, Function
-from pyfuntofem.driver import FUNtoFEMnlbgs, PyOptOptimization
+from funtofem import TransferScheme
+from funtofem.model import FUNtoFEMmodel, Variable, Body, Scenario, Function
+from funtofem.driver import FUNtoFEMnlbgs, PyOptOptimization
 
 # Import the model functions
 from structural_model_nbg import SpringStructure

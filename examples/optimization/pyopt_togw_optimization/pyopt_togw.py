@@ -22,9 +22,9 @@ limitations under the License.
 
 from __future__ import print_function
 
-from pyfuntofem.model import Function, FUNtoFEMmodel
-from pyfuntofem.fun3d_interface import Fun3dInterface
-from pyfuntofem.massoud_body import MassoudBody
+from funtofem.model import Function, FUNtoFEMmodel
+from funtofem.fun3d_interface import Fun3dInterface
+from funtofem.massoud_body import MassoudBody
 from tacs_model import CRMtacs
 from pyoptsparse import Optimization, SLSQP
 from mpi4py import MPI

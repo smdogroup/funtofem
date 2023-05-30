@@ -2,21 +2,21 @@ import numpy as np, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Scenario,
     Body,
     Function,
 )
-from pyfuntofem.interface import SolverManager
+from funtofem.interface import SolverManager
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
-    from pyfuntofem.driver import Fun3dOnewayDriver
+    from funtofem.interface import Fun3dInterface
+    from funtofem.driver import Fun3dOnewayDriver
 
 np.random.seed(1234567)
 

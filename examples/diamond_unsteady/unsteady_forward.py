@@ -3,10 +3,10 @@ import numpy as np
 from mpi4py import MPI
 from tacs import constitutive, elements
 
-# import other pyfuntofem
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.interface import (
+# import other funtofem
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.interface import (
     Fun3dInterface,
     TacsUnsteadyInterface,
     IntegrationSettings,

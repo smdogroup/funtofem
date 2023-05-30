@@ -32,7 +32,7 @@ mesh to a relatively simple aerodynamic surface mesh
 
 import numpy as np
 from mpi4py import MPI
-from pyfuntofem import TransferScheme
+from funtofem import TransferScheme
 from tecplot_output import writeOutputForTecplot
 
 """

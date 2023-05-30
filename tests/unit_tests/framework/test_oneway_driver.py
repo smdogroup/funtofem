@@ -1,15 +1,15 @@
 import os, unittest, numpy as np
 from mpi4py import MPI
 from tacs import TACS
-from pyfuntofem import TransferScheme
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import (
+from funtofem import TransferScheme
+from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from funtofem.interface import (
     TestAerodynamicSolver,
     TacsSteadyInterface,
     SolverManager,
     TestResult,
 )
-from pyfuntofem.driver import (
+from funtofem.driver import (
     FUNtoFEMnlbgs,
     TransferSettings,
     TacsOnewayDriver,

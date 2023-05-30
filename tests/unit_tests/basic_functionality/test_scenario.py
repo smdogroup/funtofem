@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from pyfuntofem.model import Scenario, Function, Variable
+from funtofem.model import Scenario, Function, Variable
 import unittest
 
 

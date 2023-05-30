@@ -3,8 +3,8 @@ import numpy as np
 from mpi4py import MPI
 from tacs import constitutive, elements
 
-# import other pyfuntofem
-from pyfuntofem import *
+# import other funtofem
+from funtofem import *
 
 # number of tacs processors and setup MPI
 comm = MPI.COMM_WORLD

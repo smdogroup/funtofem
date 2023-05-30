@@ -26,7 +26,7 @@ Demonstration of model set up for TOGW minimization
 """
 
 import numpy as np
-from pyfuntofem.model import *
+from funtofem.model import *
 
 crm_model = FUNtoFEMmodel("crm wing")
 

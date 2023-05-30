@@ -62,8 +62,8 @@ exts = []
 for mod in ["TransferScheme"]:
     exts.append(
         Ext(
-            "pyfuntofem.%s" % (mod),
-            sources=["pyfuntofem/%s.pyx" % (mod)],
+            "funtofem.%s" % (mod),
+            sources=["funtofem/%s.pyx" % (mod)],
             include_dirs=inc_dirs,
             libraries=libs,
             library_dirs=lib_dirs,
@@ -97,6 +97,6 @@ setup(
     author_email="graeme.kennedy@ae.gatech.edu",
     extras_require=optional_dependencies,
     install_requires=["numpy", "mpi4py>=3.1.1"],
-    packages=find_packages(include=["pyfuntofem*"]),
+    packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )

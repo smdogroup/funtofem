@@ -25,8 +25,8 @@ from __future__ import print_function
 import numpy as np
 from mpi4py import MPI
 
-from pyfuntofem.driver import *
-from pyfuntofem.fun3d_interface import Fun3dInterface
+from funtofem.driver import *
+from funtofem.fun3d_interface import Fun3dInterface
 
 from build_model import *
 

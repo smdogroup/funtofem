@@ -1,4 +1,4 @@
-from pyfuntofem.interface import TestResult
+from funtofem.interface import TestResult
 import numpy as np
 
 

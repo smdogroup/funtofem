@@ -4,7 +4,7 @@ GT SMDO Lab, Dr. Graeme Kennedy
 TacsOnewayDriver example
 """
 
-from pyfuntofem import *
+from funtofem import *
 from tacs import caps2tacs
 import openmdao.api as om
 from mpi4py import MPI

@@ -1,0 +1,12 @@
+# __init__ file for funtofem/model subfolder
+# classes used to build a FuntoFem model object
+
+# classes and methods in import * are defined in __all__ at the top of each file
+
+from ._base import *
+from .body import *
+from .function import *
+from .composite_function import *
+from .funtofem_model import *
+from .scenario import *
+from .variable import *

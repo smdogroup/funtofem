@@ -4,7 +4,7 @@ Test the transfer schemes using non-overlapping sub-communicators
 """
 
 import numpy as np
-from pyfuntofem import TransferScheme
+from funtofem import TransferScheme
 from mpi4py import MPI
 import unittest
 

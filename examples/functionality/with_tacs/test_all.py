@@ -28,7 +28,7 @@ The following script tests funtofems functionality in an example using TACS
 import numpy as np
 from mpi4py import MPI
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem import FUNtoFEM
+from funtofem import FUNtoFEM
 
 """
 --------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ Set up FUNtoFEM
 comm = MPI.COMM_SELF
 scheme = FUNtoFEM.PY_NONLINEAR
 isymm = 1
-funtofem = FUNtoFEM.pyFUNtoFEM(comm, comm, 0, comm, 0, scheme, isymm)
+funtofem = FUNtoFEM.funtofem(comm, comm, 0, comm, 0, scheme, isymm)
 
 # Set nodes into funtofem
 funtofem.setStructNodes(struct_X)
