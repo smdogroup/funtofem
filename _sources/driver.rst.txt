@@ -190,21 +190,21 @@ Driver Classes
 
 FUNtoFEM Driver Class
 =====================
-.. currentmodule:: pyfuntofem.driver
+.. currentmodule:: funtofem.driver
 
 .. autoclass:: FUNtoFEMDriver
     :members:
 
 FUNtoFEM NLBGS Driver Class
 ===========================
-.. currentmodule:: pyfuntofem.driver
+.. currentmodule:: funtofem.driver
 
 .. autoclass:: FUNtoFEMnlbgs
     :members:
 
 TACS Oneway-Coupled Driver Class
 ================================
-.. currentmodule:: pyfuntofem.driver
+.. currentmodule:: funtofem.driver
 
 .. autoclass:: TacsOnewayDriver
     :members:

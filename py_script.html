@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>pyFUNtoFEM &#8212; FUNtoFEM .0 documentation</title>
+    <title>funtofem &#8212; FUNtoFEM .0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -35,7 +35,7 @@
           <a href="programmers_guide.html" title="Programmer’s Guide"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">pyFUNtoFEM</a></li> 
+        <li class="nav-item nav-item-this"><a href="">funtofem</a></li> 
       </ul>
     </div>  
 
@@ -44,8 +44,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="pyfuntofem">
-<h1>pyFUNtoFEM<a class="headerlink" href="#pyfuntofem" title="Permalink to this heading">¶</a></h1>
+  <section id="funtofem">
+<h1>funtofem<a class="headerlink" href="#funtofem" title="Permalink to this heading">¶</a></h1>
 <p>FUNtoFEM can be executed by writing a Python script.
 Tha main components are the import section, MPI set-up, model creation, instantiation of discipline solvers, and calling the relevant routines.</p>
 <section id="import-modules">
@@ -53,7 +53,7 @@ Tha main components are the import section, MPI set-up, model creation, instanti
 <p>At the beginning of your Python script, it is important to import the appropriate modules.
 In the following code excerpt, modelTACS refers to a Python class which defines the structural model.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">pyfuntofem</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">funtofem</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">pyoptsparse</span> <span class="kn">import</span> <span class="n">SNOPT</span><span class="p">,</span> <span class="n">Optimization</span>
 <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
 </pre></div>
@@ -210,7 +210,7 @@ Then <code class="xref py py-func docutils literal notranslate"><span class="pre
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
-<li><a class="reference internal" href="#">pyFUNtoFEM</a><ul>
+<li><a class="reference internal" href="#">funtofem</a><ul>
 <li><a class="reference internal" href="#import-modules">Import Modules</a></li>
 <li><a class="reference internal" href="#mpi">MPI</a></li>
 <li><a class="reference internal" href="#model-architecture">Model Architecture</a></li>
@@ -263,7 +263,7 @@ Then <code class="xref py py-func docutils literal notranslate"><span class="pre
           <a href="programmers_guide.html" title="Programmer’s Guide"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">FUNtoFEM .0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">pyFUNtoFEM</a></li> 
+        <li class="nav-item nav-item-this"><a href="">funtofem</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

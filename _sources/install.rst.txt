@@ -22,7 +22,7 @@ Steps to compile
 .. code-block:: 
 
     export PYTHONPATH=$PYTHONPATH:~/git/funtofem
-    export PYTHONPATH=$PYTHONPATH:~/git/funtofem/pyfuntofem
+    export PYTHONPATH=$PYTHONPATH:~/git/funtofem/funtofem
 
 FUN3D
 -----
