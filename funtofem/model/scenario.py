@@ -30,7 +30,7 @@ import importlib
 
 tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:
-    from pyfuntofem.interface import TacsIntegrationSettings
+    from funtofem.interface import TacsIntegrationSettings
 
 
 class Scenario(Base):

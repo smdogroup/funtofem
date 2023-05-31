@@ -64,14 +64,14 @@ and (test_fun3d_oneway_driver.py => run_fun3d_analysis.py) pair of files for the
 """
 
 import os
-from pyfuntofem.driver import TransferSettings
-from pyfuntofem.optimization.optimization_manager import OptimizationManager
+from funtofem.driver import TransferSettings
+from funtofem.optimization.optimization_manager import OptimizationManager
 
 import importlib.util
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface
 
 
 class Fun3dRemote:
@@ -186,7 +186,7 @@ class Fun3dOnewayDriver:
 
         Parameters
         ----------
-        solvers: :class:`~pyfuntofem.interface.SolverManager'
+        solvers: :class:`~funtofem.interface.SolverManager'
             no need to add solvers.flow here just give it the comm so we can setup empty body class
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data.

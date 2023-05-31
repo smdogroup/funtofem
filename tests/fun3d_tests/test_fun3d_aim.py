@@ -1,5 +1,5 @@
 import os, unittest, importlib
-from pyfuntofem.interface import Fun3dModel, Fun3dBC
+from funtofem.interface import Fun3dModel, Fun3dBC
 from mpi4py import MPI
 
 base_dir = os.path.dirname(os.path.abspath(__file__))

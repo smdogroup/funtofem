@@ -84,7 +84,7 @@ class FUNtoFEMDriver(object):
             self.fakemodel = False
         else:
             print("FUNtoFEM driver: generating a default model")
-            from pyfuntofem.model import FUNtoFEMmodel, Body, Scenario, Function
+            from funtofem.model import FUNtoFEMmodel, Body, Scenario, Function
 
             model = FUNtoFEMmodel("model")
             fakebody = Body("body")

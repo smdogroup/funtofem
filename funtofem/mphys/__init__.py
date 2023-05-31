@@ -1,3 +1,3 @@
-from .mphys_meld import MeldBuilder
-from .mphys_meld_lfd import MeldLfdBuilder
-from .mphys_meldthermal import MeldThermalBuilder
+from .mphys_meld import *
+from .mphys_meld_lfd import *
+from .mphys_meldthermal import *

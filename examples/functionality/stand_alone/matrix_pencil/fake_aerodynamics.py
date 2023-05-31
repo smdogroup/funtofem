@@ -1,4 +1,4 @@
-from pyfuntofem.solver_interface import *
+from funtofem.solver_interface import *
 from funtofem import TransferScheme
 import numpy as np
 

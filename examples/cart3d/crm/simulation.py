@@ -19,9 +19,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.cart3d_interface import *
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.cart3d_interface import *
 from structural_model import TacsCRM
 from mpi4py import MPI
 

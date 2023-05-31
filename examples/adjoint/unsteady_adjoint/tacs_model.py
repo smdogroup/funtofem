@@ -21,7 +21,7 @@ limitations under the License.
 """
 from tacs import TACS, elements, functions, constitutive
 from tacs_builder import TACSBuilder, ShellStiffness
-from pyfuntofem.tacs_interface_unsteady import TacsUnsteadyInterface
+from funtofem.tacs_interface_unsteady import TacsUnsteadyInterface
 import numpy as np
 
 

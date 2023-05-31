@@ -1,6 +1,6 @@
 __all__ = ["NullDriver", "TestAeroOnewayDriver"]
 
-from pyfuntofem.interface import TestAerodynamicSolver
+from funtofem.interface import TestAerodynamicSolver
 
 
 class NullDriver:

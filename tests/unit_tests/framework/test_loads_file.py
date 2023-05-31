@@ -6,14 +6,14 @@ from tacs import TACS
 np.set_printoptions(threshold=sys.maxsize)
 
 from funtofem import TransferScheme
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import (
+from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from funtofem.interface import (
     TestAerodynamicSolver,
     TacsSteadyInterface,
     SolverManager,
     TestResult,
 )
-from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsOnewayDriver
+from funtofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsOnewayDriver
 
 np.random.seed(1234567)
 

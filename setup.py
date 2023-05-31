@@ -96,6 +96,7 @@ setup(
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
     extras_require=optional_dependencies,
-    packages=find_packages(include=["funtofem*", "pyfuntofem*"]),
+    install_requires=["numpy", "mpi4py>=3.1.1"],
+    packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )

@@ -94,15 +94,14 @@ test:
     - tests
 
   imports:
-    - funtofem
-    - funtofem.TransferScheme
     - tacs
     - tacs.pytacs
-    - pyfuntofem
-    - pyfuntofem.driver
-    - pyfuntofem.model
-    - pyfuntofem.interface
-    - pyfuntofem.optimization
+    - funtofem
+    - funtofem.driver
+    - funtofem.model
+    - funtofem.interface
+    - funtofem.optimization
+    - funtofem.TransferScheme
 
   commands:
     - |

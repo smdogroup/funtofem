@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from tacs import TACS, elements, functions, constitutive
-from pyfuntofem.tacs_interface import TacsSteadyInterface
+from funtofem.tacs_interface import TacsSteadyInterface
 import numpy as np
 
 

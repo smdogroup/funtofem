@@ -41,15 +41,15 @@ and (test_funtofem_shape.py => run_funtofem_shape.py) pair of files for the shap
 
 from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 import importlib.util, os, shutil
-from pyfuntofem.optimization.optimization_manager import OptimizationManager
+from funtofem.optimization.optimization_manager import OptimizationManager
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface
     from .fun3d_oneway_driver import Fun3dRemote
 if tacs_loader is not None:
-    from pyfuntofem.interface import (
+    from funtofem.interface import (
         TacsSteadyInterface,
         TacsUnsteadyInterface,
         TacsInterface,

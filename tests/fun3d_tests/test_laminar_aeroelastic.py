@@ -4,7 +4,7 @@ import numpy as np, unittest, importlib
 import os, sys
 from mpi4py import MPI
 
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Body,
     Scenario,
@@ -12,18 +12,18 @@ from pyfuntofem.model import (
     AitkenRelaxation,
     Variable,
 )
-from pyfuntofem.interface import (
+from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
 )
-from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface
 
 comm = MPI.COMM_WORLD
 results_folder = os.path.join(os.getcwd(), "results")

@@ -2,7 +2,7 @@ import numpy as np, unittest, importlib
 import os
 from mpi4py import MPI
 
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Body,
     Scenario,
@@ -17,7 +17,7 @@ np.random.seed(1234567)
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dGridInterface
+    from funtofem.interface import Fun3dGridInterface
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))

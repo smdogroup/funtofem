@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from pyfuntofem.solver_interface import *
+from funtofem.solver_interface import *
 from tacs import TACS, functions
 from mpi4py import MPI
 import numpy as np
@@ -719,7 +719,7 @@ def test_transfer_transpose():
 def test_adjoint_eom():
     # Test the
     from mpi4py import MPI
-    from pyfuntofem.model import FUNtoFEMmodel
+    from funtofem.model import FUNtoFEMmodel
 
     model = FUNtoFEMmodel("spring-mounted airfoil")
 

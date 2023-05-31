@@ -1,6 +1,6 @@
 import numpy as np
 from funtofem import TransferScheme
-from pyfuntofem.model import Scenario
+from funtofem.model import Scenario
 import unittest
 
 np.random.seed(343)

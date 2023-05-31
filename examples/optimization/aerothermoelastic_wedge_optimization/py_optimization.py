@@ -22,11 +22,11 @@ limitations under the License.
 
 from __future__ import print_function
 
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.fun3d_interface import *
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.fun3d_interface import *
 
-# from pyfuntofem.massoud_body import *
+# from funtofem.massoud_body import *
 
 from tacs_model import wedgeTACS
 from pyoptsparse import Optimization, SLSQP
