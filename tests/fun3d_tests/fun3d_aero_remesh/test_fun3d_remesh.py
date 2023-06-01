@@ -44,11 +44,10 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "fun3d-oneway-shape-driver.txt"
+    FILENAME = "fun3d-oneway-shape.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_optimizer_file(self):
-        """test no struct disps into FUN3D"""
+    def test_remote_driver(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
         # design the shape
@@ -68,7 +67,7 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("turbulent", steps=10)
+            Scenario.steady("euler", steps=10)
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project("funtofem_CAPS")
         )
