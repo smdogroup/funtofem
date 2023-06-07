@@ -320,6 +320,8 @@ class Body(Base):
         set the relaxation scheme in a method cascade
         """
         self.relaxation_scheme = new_relaxation_scheme
+        self.use_aitken_accel = isinstance(new_relaxation_scheme, AitkenRelaxation)
+        self.use_simple_accel = isinstance(new_relaxation_scheme, SimpleRelaxation)
         return self
 
     def register_to(self, funtofem_model):
