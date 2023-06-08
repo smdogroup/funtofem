@@ -113,10 +113,10 @@ jobs:
           cd $F2F_DIR;
           mkdir extern
           cd $F2F_DIR/extern/
-          wget https://acdl.mit.edu/ESP/PreBuilts/ESP122Lin.tgz
-          tar -xvf ESP122Lin.tgz
-          export ESP_ROOT=${F2F_DIR}/extern/ESP122/EngSketchPad
-          export CASROOT=${F2F_DIR}/extern/ESP122/OpenCASCADE-7.6.0
+          wget https://acdl.mit.edu/ESP/PreBuilts/ESP123-linux-x86_64.tgz
+          tar -xvf ESP123-linux-x86_64.tgz
+          export ESP_ROOT=${F2F_DIR}/extern/ESP123/EngSketchPad
+          export CASROOT=${F2F_DIR}/extern/ESP123/OpenCASCADE-7.7.0
           export CASARCH=
           export PATH=$PATH:$CASROOT/bin
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASROOT/lib
@@ -125,7 +125,7 @@ jobs:
           source $ESP_ROOT/../ESPenv.sh
           cd ./src/CAPS/aim
           make
-          cd $F2F_DIR/extern/ESP122/
+          cd $F2F_DIR/extern/ESP123/
           # remove all ESP/CAPS unit test files with recursive delete
           find . -name "test*" -type f -delete
           cd $F2F_DIR
@@ -136,7 +136,7 @@ jobs:
           echo "Running Tests";
           echo "=============================================================";
           if [[ ${{ matrix.NAME }} == 'Real' ]]; then
-            source ${F2F_DIR}/extern/ESP122/ESPenv.sh
+            source ${F2F_DIR}/extern/ESP123/ESPenv.sh
           fi
           testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
 
