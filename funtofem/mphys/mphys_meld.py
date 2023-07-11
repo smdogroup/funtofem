@@ -358,15 +358,19 @@ class MeldLoadXfer(om.ExplicitComponent):
                         d_inputs["x_struct0"][body.struct_coord_indices] -= np.array(prod, dtype=float)
 
 class MeldBodyInstance:
+    """
+    Class that helps split OpenMDAO input/output indices for multiple bodies,
+    with a separate MELD instance for each.
+    """
     def __init__(
         self,
         comm,
         isym=-1,
         n=200,
         beta=0.5,
-        aero_gid=None, # list of aero grid IDs to be couple
+        aero_gid=None, # list of aero grid IDs to couple
         aero_nnodes=None,
-        struct_gid=None, # list of struct grid IDs to be coupled
+        struct_gid=None, # list of struct grid IDs to couple
         struct_nnodes=None,
         struct_ndof=None,
         linearized=False
@@ -469,7 +473,6 @@ class MeldBuilder(Builder):
                               struct_ndof=self.ndof_struct,
                               linearized=self.linearized
                            )]
-
 
     def get_coupling_group_subsystem(self, scenario_name=None):
         disp_xfer = MeldDispXfer(
