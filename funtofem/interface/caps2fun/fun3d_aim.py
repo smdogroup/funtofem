@@ -70,6 +70,9 @@ class Fun3dBC:
             if self.symmetryPlane is None:
                 return {"bcType": self.bc_type}
             else:
+                # As of ESP/CAPS 1.23, there is an option to return BC types as either
+                # a json string (dictionary) or a single string. To use SymmetryX(/Y/Z),
+                # the BC type must be passed as a single string.
                 return self.bc_type
         else:
             return {"bcType": self.bc_type, "boundaryLayerSpacing": self.wall_spacing}
