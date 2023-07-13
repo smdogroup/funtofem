@@ -10,12 +10,13 @@ class Fun3dAimMetaData:
 
 
 class Fun3dBC:
-    BC_TYPES = ["inviscid", "viscous", "Farfield"]
+    BC_TYPES = ["inviscid", "viscous", "Farfield", "SymmetryX", "SymmetryY", "SymmetryZ"]
 
-    def __init__(self, caps_group, bc_type, wall_spacing=None):
+    def __init__(self, caps_group, bc_type, wall_spacing=None, symmetryPlane=None):
         self.caps_group = caps_group
         self.bc_type = bc_type
         self.wall_spacing = wall_spacing
+        self.symmetryPlane = symmetryPlane
 
     @property
     def name(self):
@@ -43,11 +44,25 @@ class Fun3dBC:
     @classmethod
     def Farfield(cls, caps_group):
         return cls(caps_group, bc_type="Farfield")
+    
+    @classmethod
+    def SymmetryX(cls, caps_group):
+        return cls(caps_group, bc_type="SymmetryX", symmetryPlane=1)
+    
+    @classmethod
+    def SymmetryY(cls, caps_group):
+        return cls(caps_group, bc_type="SymmetryY", symmetryPlane=2)
+    @classmethod
+    def SymmetryZ(cls, caps_group):
+        return cls(caps_group, bc_type="SymmetryZ", symmetryPlane=3)
 
     @property
     def BC_dict(self) -> dict:
         if self.wall_spacing is None:
-            return {"bcType": self.bc_type}
+            if self.symmetryPlane is None:
+                return {"bcType": self.bc_type}
+            else:
+                return self.bc_type
         else:
             return {"bcType": self.bc_type, "boundaryLayerSpacing": self.wall_spacing}
 
