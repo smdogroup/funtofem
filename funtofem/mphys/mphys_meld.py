@@ -453,6 +453,29 @@ class MeldBodyInstance:
     """
     Class that helps split OpenMDAO input/output indices for multiple bodies,
     with a separate MELD instance for each
+
+    Parameters
+    ----------
+    comm : :class:`~mpi4py.MPI.Comm`
+        The communicator object created for this xfer object instance.
+    isym : int
+        Whether to search for symmetries in the geometry for transfer
+    n : int
+        The number of nearest neighbors included in the transfers
+    beta : float
+        The exponential decay factor used to average loads, displacements, etc.
+    aero_gid : list
+        List of aerodynamic node IDs on the current body and rank
+    aero_nnodes : int
+        Number of aerodynamic nodes on the current body and rank
+    struct_gid : list
+        List of structural node IDs on the current body and rank
+    struct_nnodes : int
+        Number of structural nodes on the current body and rank
+    struct_ndof : int
+        Number of degrees of freedom at each structural node
+    linearized : bool
+        Whether to use linearized MELD
     """
 
     def __init__(
@@ -461,9 +484,9 @@ class MeldBodyInstance:
         isym=-1,
         n=200,
         beta=0.5,
-        aero_gid=None,  # list of aero grid IDs to couple
+        aero_gid=None,
         aero_nnodes=None,
-        struct_gid=None,  # list of struct grid IDs to couple
+        struct_gid=None,
         struct_nnodes=None,
         struct_ndof=None,
         linearized=False,
@@ -474,13 +497,15 @@ class MeldBodyInstance:
         ):  # use grid ids from struct_builder's get_tagged_indices
             self.struct_coord_indices = []  # for coordinates
             self.struct_dof_indices = []  # for dof
-            for i in range(3):  # accounts for xyz of each grid coordinate
+            for i in range(
+                3
+            ):  # account for xyz of each node (i.e., [x_0, y_0, z_0, ..., x_N, y_N, z_N])
                 self.struct_coord_indices = np.hstack(
                     [self.struct_coord_indices, struct_gid * 3 + i]
                 )
             for i in range(
                 struct_ndof
-            ):  # accounts for each structural dof of each grid coordinate
+            ):  # account for each structural DOF of each node (i.e., [u_0, v_0, w_0, ..., u_N, v_N, w_N])
                 self.struct_dof_indices = np.hstack(
                     [self.struct_dof_indices, struct_gid * struct_ndof + i]
                 )
@@ -557,20 +582,22 @@ class MeldBuilder(Builder):
         if len(self.body_tags) > 0:  # body tags given
             for i in range(len(self.body_tags)):
                 try:
-                    aero_gid = self.aero_builder.get_tagged_indices(
-                        self.body_tags[i]["aero"]
+                    aero_gid = np.atleast_1d(
+                        self.aero_builder.get_tagged_indices(self.body_tags[i]["aero"])
                     )
-                except:
+                except NotImplementedError:
                     if comm.rank == 0:
                         print(
                             "get_tagged_indices has not been implemented in the aero builder; all nodes will be used"
                         )
                     aero_gid = None
                 try:
-                    struct_gid = self.struct_builder.get_tagged_indices(
-                        self.body_tags[i]["struct"]
+                    struct_gid = np.atleast_1d(
+                        self.struct_builder.get_tagged_indices(
+                            self.body_tags[i]["struct"]
+                        )
                     )
-                except:
+                except NotImplementedError:
                     if comm.rank == 0:
                         print(
                             "get_tagged_indices has not been implemented in the struct builder; all nodes will be used"
