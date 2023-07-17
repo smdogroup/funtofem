@@ -457,21 +457,21 @@ class MeldBodyInstance:
     Parameters
     ----------
     comm : :class:`~mpi4py.MPI.Comm`
-        The communicator object created for this xfer object instance.
+        The communicator object created for this xfer object instance
     isym : int
         Whether to search for symmetries in the geometry for transfer
     n : int
         The number of nearest neighbors included in the transfers
     beta : float
         The exponential decay factor used to average loads, displacements, etc.
-    aero_gid : list
+    aero_node_ids : list
         List of aerodynamic node IDs on the current body and rank
     aero_nnodes : int
-        Number of aerodynamic nodes on the current body and rank
-    struct_gid : list
+        Total number of aerodynamic nodes on the current rank
+    struct_node_ids : list
         List of structural node IDs on the current body and rank
     struct_nnodes : int
-        Number of structural nodes on the current body and rank
+        Total number of structural nodes on the current rank
     struct_ndof : int
         Number of degrees of freedom at each structural node
     linearized : bool
@@ -484,51 +484,45 @@ class MeldBodyInstance:
         isym=-1,
         n=200,
         beta=0.5,
-        aero_gid=None,
+        aero_node_ids=None,
         aero_nnodes=None,
-        struct_gid=None,
+        struct_node_ids=None,
         struct_nnodes=None,
         struct_ndof=None,
         linearized=False,
     ):
         # determine input/output indices for the current body
         if (
-            struct_gid is not None
+            struct_node_ids is not None
         ):  # use grid ids from struct_builder's get_tagged_indices
-            self.struct_coord_indices = []  # for coordinates
-            self.struct_dof_indices = []  # for dof
-            for i in range(
-                3
-            ):  # account for xyz of each node (i.e., [x_0, y_0, z_0, ..., x_N, y_N, z_N])
-                self.struct_coord_indices = np.hstack(
-                    [self.struct_coord_indices, struct_gid * 3 + i]
-                )
-            for i in range(
-                struct_ndof
-            ):  # account for each structural DOF of each node (i.e., [u_0, v_0, w_0, ..., u_N, v_N, w_N])
-                self.struct_dof_indices = np.hstack(
-                    [self.struct_dof_indices, struct_gid * struct_ndof + i]
-                )
-            self.struct_coord_indices = list(
-                np.sort(self.struct_coord_indices).astype("int")
+            # account for xyz of each node
+            self.struct_coord_indices = np.zeros(len(struct_node_ids) * 3, dtype=int)
+            for ii in range(3):
+                self.struct_coord_indices[ii::3] = 3 * struct_node_ids + ii
+            self.struct_coord_indices = list(self.struct_coord_indices)
+
+            # account for structural DOFs of each node
+            self.struct_dof_indices = np.zeros(
+                len(struct_node_ids) * struct_ndof, dtype=int
             )
-            self.struct_dof_indices = list(
-                np.sort(self.struct_dof_indices).astype("int")
-            )
+            for ii in range(struct_ndof):
+                self.struct_dof_indices[ii::struct_ndof] = (
+                    struct_node_ids * struct_ndof + ii
+                )
+            self.struct_dof_indices = list(self.struct_dof_indices)
 
         else:  # use all indices
             self.struct_coord_indices = list(np.arange(struct_nnodes * 3))
             self.struct_dof_indices = list(np.arange(struct_nnodes * struct_ndof))
 
-        if aero_gid is not None:  # use grid ids from aero_builder's get_tagged_indices
-            self.aero_coord_indices = []
-            for i in range(3):
-                self.aero_coord_indices = np.hstack(
-                    [self.aero_coord_indices, aero_gid * 3 + i]
-                )
-            self.aero_coord_indices = list(
-                np.sort(self.aero_coord_indices).astype("int")
-            )
+        if (
+            aero_node_ids is not None
+        ):  # use grid ids from aero_builder's get_tagged_indices
+            # account for xyz of each node
+            self.aero_coord_indices = np.zeros(len(aero_node_ids) * 3, dtype=int)
+            for ii in range(3):
+                self.aero_coord_indices[ii::3] = 3 * aero_node_ids + ii
+            self.aero_coord_indices = list(self.aero_coord_indices)
 
         else:  # use all indices
             self.aero_coord_indices = list(np.arange(aero_nnodes * 3))
@@ -582,7 +576,7 @@ class MeldBuilder(Builder):
         if len(self.body_tags) > 0:  # body tags given
             for i in range(len(self.body_tags)):
                 try:
-                    aero_gid = np.atleast_1d(
+                    aero_node_ids = np.atleast_1d(
                         self.aero_builder.get_tagged_indices(self.body_tags[i]["aero"])
                     )
                 except NotImplementedError:
@@ -590,9 +584,9 @@ class MeldBuilder(Builder):
                         print(
                             "get_tagged_indices has not been implemented in the aero builder; all nodes will be used"
                         )
-                    aero_gid = None
+                    aero_node_ids = None
                 try:
-                    struct_gid = np.atleast_1d(
+                    struct_node_ids = np.atleast_1d(
                         self.struct_builder.get_tagged_indices(
                             self.body_tags[i]["struct"]
                         )
@@ -602,16 +596,16 @@ class MeldBuilder(Builder):
                         print(
                             "get_tagged_indices has not been implemented in the struct builder; all nodes will be used"
                         )
-                    struct_gid = None
+                    struct_node_ids = None
                 self.bodies += [
                     MeldBodyInstance(
                         comm,
                         isym=self.isym,
                         n=self.n[i],
                         beta=self.beta[i],
-                        aero_gid=aero_gid,
+                        aero_node_ids=aero_node_ids,
                         aero_nnodes=self.nnodes_aero,
-                        struct_gid=struct_gid,
+                        struct_node_ids=struct_node_ids,
                         struct_nnodes=self.nnodes_struct,
                         struct_ndof=self.ndof_struct,
                         linearized=self.linearized[i],
