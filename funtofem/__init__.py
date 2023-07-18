@@ -27,8 +27,13 @@ limitations under the License.
 # import funtofem
 # funtofem.__dict__
 
+import importlib
+
 from .driver import *
 from .interface import *
 from .model import *
-from .mphys import *
 from .optimization import *
+
+mphys_loader = importlib.util.find_spec("mphys")
+if mphys_loader is not None:
+    from .mphys import *
