@@ -71,7 +71,9 @@ class AflrAim:
 
         return self
 
-    def set_boundary_layer(self, initial_spacing=0.001, thickness=0.1, max_layers=1000, use_quads=False):
+    def set_boundary_layer(
+            self, initial_spacing=0.001, thickness=0.1, max_layers=1000, use_quads=False
+    ):
         if self.root_proc:
             self.volume_aim.input.BL_Initial_Spacing = initial_spacing
             self.volume_aim.input.BL_Thickness = thickness
