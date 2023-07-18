@@ -13,6 +13,8 @@ class AflrAim:
         self._aflr4_aim = None
         self._aflr3_aim = None
 
+        self._dictOptions = None
+
         self._build_aim()
         return
 
@@ -55,12 +57,18 @@ class AflrAim:
             )
         return
 
-    def set_surface_mesh(self, ff_growth=1.4, min_scale=0.05, max_scale=0.5):
+    def set_surface_mesh(
+        self, ff_growth=1.3, min_scale=0.005, max_scale=0.1, mer_all=1, use_quads=False
+    ):
         # set surface mesh properties
         if self.root_proc:
             self.surface_aim.input.ff_cdfr = ff_growth
             self.surface_aim.input.min_scale = min_scale
             self.surface_aim.input.max_scale = max_scale
+            self.surface_aim.input.mer_all = mer_all
+            if use_quads:
+                self.surface_aim.input.Mesh_Gen_Input_String = "mquad=1 mpp=3"
+
         return self
 
     def set_boundary_layer(self, initial_spacing=0.001, thickness=0.1, max_layers=1000):
@@ -68,4 +76,23 @@ class AflrAim:
             self.volume_aim.input.BL_Initial_Spacing = initial_spacing
             self.volume_aim.input.BL_Thickness = thickness
             self.volume_aim.input.BL_Max_Layers = max_layers
+        return self
+
+    def saveDictOptions(self, dictOptions):
+        self._dictOptions = dictOptions
+
+        return self
+
+    def _setDictOptions(self):
+        """
+        Set AFLR3 and AFLR4 options via dictionaries.
+        """
+        dictOptions = self._dictOptions
+
+        for ind, option in enumerate(dictOptions["aflr4AIM"]):
+            self.surface_aim.input[option].value = dictOptions["aflr4AIM"][option]
+
+        for ind, option in enumerate(dictOptions["aflr3AIM"]):
+            self.volume_aim.input[option].value = dictOptions["aflr3AIM"][option]
+
         return self

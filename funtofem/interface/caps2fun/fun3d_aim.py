@@ -160,7 +160,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self.metadata.project_name
+        return self._metadata.project_name
 
     @property
     def grid_filepaths(self):
@@ -226,7 +226,7 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self.metadata.analysis_dir
+        return self._metadata.analysis_dir
 
     @property
     def mesh_morph_filename(self):
