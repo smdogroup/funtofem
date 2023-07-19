@@ -94,7 +94,7 @@ class Fun3dModel:
         """set the project names into both aims for grid filenames"""
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
-        self.fun3d_aim.metadata.project_name = self.project_name
+        self.fun3d_aim._metadata.project_name = self.project_name
         if self.aflr_aim.root_proc:
             self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
@@ -117,6 +117,8 @@ class Fun3dModel:
         """setup the fun3d model before analysis"""
         self._link_aims()
         self.fun3d_aim.set_boundary_conditions()
+        if self.aflr_aim._dictOptions is not None:
+            self.aflr_aim._setDictOptions()
         self._set_grid_filename()
         self._setup = True
         return
