@@ -30,7 +30,7 @@ class Fun3dModel:
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
         mesh_morph=False,
-        verbosity=0
+        verbosity=0,
     ):
         """
         make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
