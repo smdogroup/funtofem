@@ -252,8 +252,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aeroelastic coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
@@ -274,8 +274,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aerothermal coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
@@ -296,8 +296,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aerothermoelastic coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
