@@ -818,7 +818,9 @@ class TestResult:
                                 f"\t\tinitial value = {self.i_funcs[ifunc]}\n"
                             )
                             if self.m_funcs is not None:
-                                file_hdl.write(f"\t\tmid value = {self.m_funcs[ifunc]}\n")
+                                file_hdl.write(
+                                    f"\t\tmid value = {self.m_funcs[ifunc]}\n"
+                                )
                             file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
                         else:
                             file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
@@ -961,7 +963,7 @@ class TestResult:
             dxds = np.array([1.0])
 
         # central difference approximation
-        variables = model.get_variables()     
+        variables = model.get_variables()
         # compute forward analysise f(x) and df/dx with adjoint
         for ivar in range(nvariables):
             variables[ivar].value += epsilon * dxds[ivar]
@@ -983,7 +985,7 @@ class TestResult:
         if both_adjoint:
             driver.solve_adjoint()
         i_functions = [func.value.real for func in model.get_functions(all=True)]
-        
+
         # compute f(x+h)
         for ivar in range(nvariables):
             variables[ivar].value += 2 * epsilon * dxds[ivar]
