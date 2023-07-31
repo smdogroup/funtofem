@@ -33,11 +33,11 @@ class Fun3dBC:
         return self
 
     @classmethod
-    def inviscid(cls, caps_group, wall_spacing):
+    def inviscid(cls, caps_group, wall_spacing=None):
         return cls(caps_group, bc_type="inviscid", wall_spacing=wall_spacing)
 
     @classmethod
-    def viscous(cls, caps_group, wall_spacing):
+    def viscous(cls, caps_group, wall_spacing=None):
         return cls(caps_group, bc_type="viscous", wall_spacing=wall_spacing)
 
     @classmethod
@@ -69,6 +69,8 @@ class Fun3dAim:
         self._grid_filepaths = []
 
         self._fun3d_dir = None
+
+        self._first_grid_move = True
 
         self._boundary_conditions = {}
 
@@ -110,11 +112,11 @@ class Fun3dAim:
             self.aim.input["Mesh"].unlink()
         return
 
-    def set_design_sensitivity(self, flag: bool):
+    def set_design_sensitivity(self, flag: bool, include_file=True):
         """toggle design sensitivity for Fun3dAim"""
         if self.root_proc:
             self.aim.input.Design_Sensitivity = flag
-            self.aim.input.Design_SensFile = flag
+            if include_file: self.aim.input.Design_SensFile = flag
         return
 
     @property
@@ -158,6 +160,12 @@ class Fun3dAim:
         move each of the grid files in the preAnalysis after a new grid is
         destination files are all called fun3d_CAPS.lb8.ugrid
         """
+        if self.mesh_morph: # only move the grid once during mesh morphing case
+            if not self._first_grid_move:
+                return
+            else:
+                self._first_grid_move = False
+        print(f"copying grid files = {self._first_grid_move}")
         src = self.grid_file
         for dest in self.grid_filepaths:
             shutil.copy(src, dest)
@@ -227,11 +235,6 @@ class Fun3dAim:
 
     def post_analysis(self, sens_file_src=None):
         if self.root_proc:
-            # fake system call to prevent fun3dAIM CAPS_DIRTY for the execute analysis
-            # we do this since we are not calling FUN3D analysis, but FUNtoFEM instead without system calls
-            # if self.mesh_morph:
-            #    self.fake_system_call()
-
             # move sens files if need be from fun3d dir to fun3d workdir
             if sens_file_src is not None:
                 self._move_sens_files(src=sens_file_src)

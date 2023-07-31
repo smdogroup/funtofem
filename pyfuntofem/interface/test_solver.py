@@ -762,6 +762,7 @@ class TestResult:
         comm=None,
         method="complex_step",
         i_funcs=None,
+        m_funcs=None,
         f_funcs=None,
         var_names=None,
         epsilon=None,
@@ -776,6 +777,7 @@ class TestResult:
         self.adjoint_TD = adjoint_TD
         self.method = method
         self.i_funcs = i_funcs
+        self.m_funcs = m_funcs
         self.f_funcs = f_funcs
         self.epsilon = epsilon
         if rel_error is None:
@@ -815,6 +817,8 @@ class TestResult:
                             file_hdl.write(
                                 f"\t\tinitial value = {self.i_funcs[ifunc]}\n"
                             )
+                            if self.m_funcs is not None:
+                                file_hdl.write(f"\t\tmid value = {self.m_funcs[ifunc]}\n")
                             file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
                         else:
                             file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
@@ -956,11 +960,15 @@ class TestResult:
         else:
             dxds = np.array([1.0])
 
-        # solve the adjoint
+        # central difference approximation
+        variables = model.get_variables()     
+        # compute forward analysise f(x) and df/dx with adjoint
+        for ivar in range(nvariables):
+            variables[ivar].value += epsilon * dxds[ivar]
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients(all=True)
-        i_functions = [func.value.real for func in model.get_functions(all=True)]
+        m_functions = [func.value.real for func in model.get_functions(all=True)]
 
         # compute adjoint total derivative df/dx
         adjoint_TD = np.zeros((nfunctions))
@@ -968,18 +976,24 @@ class TestResult:
             for ivar in range(nvariables):
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
-        # perform finite difference computation
-        variables = model.get_variables()
+        # compute f(x-h)
         for ivar in range(nvariables):
-            variables[ivar].value += epsilon * dxds[ivar]
-
+            variables[ivar].value -= epsilon * dxds[ivar]
+        driver.solve_forward()
+        if both_adjoint:
+            driver.solve_adjoint()
+        i_functions = [func.value.real for func in model.get_functions(all=True)]
+        
+        # compute f(x+h)
+        for ivar in range(nvariables):
+            variables[ivar].value += 2 * epsilon * dxds[ivar]
         driver.solve_forward()
         if both_adjoint:
             driver.solve_adjoint()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
-            (f_functions[ifunc] - i_functions[ifunc]) / epsilon
+            (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
             for ifunc in range(nfunctions)
         ]
 
@@ -1002,6 +1016,7 @@ class TestResult:
             comm=driver.comm,
             var_names=[var.name for var in model.get_variables()],
             i_funcs=i_functions,
+            m_funcs=m_functions,
             f_funcs=f_functions,
             epsilon=epsilon,
             method="finite_diff",

@@ -305,6 +305,9 @@ class Fun3dOnewayDriver:
         """
 
         if self.change_shape:
+            if self.fun3d_aim.mesh_morph and self.comm.rank == 0:
+                self.fun3d_aim.set_design_sensitivity(False, include_file=False)
+
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
@@ -377,7 +380,10 @@ class Fun3dOnewayDriver:
             self.fun3d_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
-            self._get_functions()
+            if self.fun3d_aim.mesh_morph: 
+                self.fun3d_aim.unlink()
+            else:
+                self._get_remote_functions()
 
         return
 
@@ -395,6 +401,9 @@ class Fun3dOnewayDriver:
             func.zero_derivatives()
 
         if self.change_shape:
+            if self.fun3d_aim.mesh_morph:
+                self.fun3d_aim.set_design_sensitivity(True,include_file=False)
+
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
@@ -431,10 +440,6 @@ class Fun3dOnewayDriver:
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
                 self._get_shape_derivatives(scenario)
-
-        if self.change_shape and self.fun3d_aim.mesh_morph:
-            self.fun3d_aim.unlink()
-
         return
 
     @property
@@ -600,7 +605,7 @@ class Fun3dOnewayDriver:
 
         return
 
-    def _get_functions(self):
+    def _get_remote_functions(self):
         """
         read function values from fun3dAIM when operating in the remote version of the driver
         """

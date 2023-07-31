@@ -175,16 +175,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             assert isinstance(
                 self.solvers.structural, TacsSteadyInterface
             ) or isinstance(self.solvers.structural, TacsUnsteadyInterface)
+            
             if self.aero_shape and self.root_proc:
                 print(
                     f"Warning!! You are trying to remesh the aero shape without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
                 )
 
-        if self.is_remote and self.aero_shape:
-            if self.model.flow.mesh_morph:
-                raise AssertionError(
-                    "The mesh morphing does not require a remote FUN3D driver! Make this driver regularly!"
-                )
+        # mesh-morphing with remote driver should work now, deprecated
+        #if self.is_remote and self.aero_shape:
+        #    if self.model.flow.mesh_morph:
+        #        raise AssertionError(
+        #            "The mesh morphing does not require a remote FUN3D driver! Make this driver regularly!"
+        #        )
 
         # check for unsteady problems
         self._unsteady = False
@@ -236,6 +238,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         Create new aero/struct geometries and run fully-coupled forward analysis.
         """
         if self.aero_shape:
+            if self.fun3d_aim.mesh_morph:
+                self.fun3d_aim.set_design_sensitivity(False, include_file=False)
+
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
@@ -336,13 +341,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.fun3d_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
-            self._get_remote_functions(discipline="aerodynamic")
-
-        # unlink for FUN3D mesh morphing (if using that)
-        # NOTE : should we add this back in here (and remove from adjoint)?
-        # if self.aero_shape:
-        #     if self.fun3d_aim.mesh_morph:
-        #         self.fun3d_aim.unlink()
+            if self.fun3d_aim.mesh_morph:
+                self.fun3d_aim.unlink()
+            else:
+                self._get_remote_functions(discipline="aerodynamic")
 
         return
 
@@ -352,6 +354,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
 
         if self.aero_shape:
+            if self.fun3d_aim.mesh_morph:
+                self.fun3d_aim.set_design_sensitivity(True, include_file=False)
+
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()
 
@@ -423,12 +428,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
-
-        # unlink for FUN3D mesh morphing (if using that)
-        if self.aero_shape:
-            if self.fun3d_aim.mesh_morph:
-                self.fun3d_aim.unlink()
-
         return
 
     def _setup_grid_filepaths(self):
