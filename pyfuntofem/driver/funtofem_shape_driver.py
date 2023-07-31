@@ -175,14 +175,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             assert isinstance(
                 self.solvers.structural, TacsSteadyInterface
             ) or isinstance(self.solvers.structural, TacsUnsteadyInterface)
-            
+
             if self.aero_shape and self.root_proc:
                 print(
                     f"Warning!! You are trying to remesh the aero shape without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
                 )
 
         # mesh-morphing with remote driver should work now, deprecated
-        #if self.is_remote and self.aero_shape:
+        # if self.is_remote and self.aero_shape:
         #    if self.model.flow.mesh_morph:
         #        raise AssertionError(
         #            "The mesh morphing does not require a remote FUN3D driver! Make this driver regularly!"

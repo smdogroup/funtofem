@@ -380,7 +380,7 @@ class Fun3dOnewayDriver:
             self.fun3d_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
-            if self.fun3d_aim.mesh_morph: 
+            if self.fun3d_aim.mesh_morph:
                 self.fun3d_aim.unlink()
             else:
                 self._get_remote_functions()
@@ -402,7 +402,7 @@ class Fun3dOnewayDriver:
 
         if self.change_shape:
             if self.fun3d_aim.mesh_morph:
-                self.fun3d_aim.set_design_sensitivity(True,include_file=False)
+                self.fun3d_aim.set_design_sensitivity(True, include_file=False)
 
             # run the pre analysis to generate a new mesh
             self.fun3d_aim.pre_analysis()

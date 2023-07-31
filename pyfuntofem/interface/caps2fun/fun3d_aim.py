@@ -116,7 +116,8 @@ class Fun3dAim:
         """toggle design sensitivity for Fun3dAim"""
         if self.root_proc:
             self.aim.input.Design_Sensitivity = flag
-            if include_file: self.aim.input.Design_SensFile = flag
+            if include_file:
+                self.aim.input.Design_SensFile = flag
         return
 
     @property
@@ -160,7 +161,7 @@ class Fun3dAim:
         move each of the grid files in the preAnalysis after a new grid is
         destination files are all called fun3d_CAPS.lb8.ugrid
         """
-        if self.mesh_morph: # only move the grid once during mesh morphing case
+        if self.mesh_morph:  # only move the grid once during mesh morphing case
             if not self._first_grid_move:
                 return
             else:
