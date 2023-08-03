@@ -35,7 +35,6 @@ build:
 requirements:
   build:
     - python {{ python }}
-    - numpy   1.18   # [py==37]
     - numpy   1.18   # [py==38]
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
@@ -55,7 +54,6 @@ requirements:
   host:
     - python {{ python }}
     - pip
-    - numpy   1.18   # [py==37]
     - numpy   1.18   # [py==38]
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
@@ -72,7 +70,6 @@ requirements:
 
   run:
     - python
-    - numpy >=1.18.5,<2.0.a0   # [py==37]
     - numpy >=1.18.5,<2.0.a0   # [py==38]
     - numpy >=1.19.5,<2.0.a0   # [py==39]
     - numpy >=1.22.0,<2.0.a0   # [py==310]
