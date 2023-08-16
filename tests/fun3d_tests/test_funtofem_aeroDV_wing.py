@@ -73,10 +73,8 @@ class TestFuntofemMorph(unittest.TestCase):
             Scenario.steady("turbulent", steps=5000) #5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
         )
-        aoa = test_scenario.get_variable("AOA")
-        aoa.value = 2.0
+        test_scenario.get_variable("AOA").set_bounds(value=2.0)
         test_scenario.adjoint_steps = 4000 #2000
-        # test_scenario.get_variable("AOA").set_bounds(value=2.0)
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
