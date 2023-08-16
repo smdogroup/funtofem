@@ -1151,7 +1151,7 @@ class CoordinateDerivativeTester:
         print(f"\trel error = {rel_error}\n")
         return rel_error
 
-    def test_aero_coordinates(self, test_name, status_file, inode=None, body=None):
+    def test_aero_coordinates(self, test_name, status_file, inode=None, body=None, complex_mode=True):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
@@ -1185,19 +1185,36 @@ class CoordinateDerivativeTester:
         adjoint_derivs = self.comm.bcast(adjoint_derivs, root=0)
         adjoint_derivs = [adjoint_derivs[i] for i in range(nf)]
 
-        """Complex step to compute coordinate total derivatives"""
-        # perturb the coordinate derivatives
-        if self.driver.solvers.uses_fun3d:
-            self.driver.solvers.make_flow_complex()
-        body.aero_X += 1j * self.epsilon * daeroXds
-        self.driver.solve_forward()
+        if complex_mode:
+            """Complex step to compute coordinate total derivatives"""
+            # perturb the coordinate derivatives
+            if self.driver.solvers.uses_fun3d:
+                self.driver.solvers.make_flow_complex()
+            body.aero_X += 1j * self.epsilon * daeroXds
+            self.driver.solve_forward()
+    
+            truth_derivs = np.array(
+                [func.value.imag / self.epsilon for func in self.model.get_functions()]
+            )
 
-        complex_step_derivs = np.array(
-            [func.value.imag / self.epsilon for func in self.model.get_functions()]
-        )
+        else: # central finite difference
+            # f(x;xA-h)
+            body.aero_X -= self.epsilon * daeroXds
+            self.driver.solve_forward()
+            i_functions = [func.value.real for func in self.model.get_functions()]
+            print(f"i functions = {i_functions}")
+ 
+            # f(x;xA+h)
+            body.aero_X += 2 * self.epsilon * daeroXds
+            self.driver.solve_forward()
+            f_functions = [func.value.real for func in self.model.get_functions()]
+            print(f"f functions = {f_functions}") 
 
+            truth_derivs = np.array([(f_functions[i] - i_functions[i])/2/self.epsilon for i in range(len(self.model.get_functions()))])
+                 
+    
         rel_error = [
-            TestResult.relative_error(complex_step_derivs[i], adjoint_derivs[i])
+            TestResult.relative_error(truth_derivs[i], adjoint_derivs[i])
             for i in range(nf)
         ]
 
@@ -1206,7 +1223,7 @@ class CoordinateDerivativeTester:
         TestResult(
             test_name,
             func_names,
-            complex_step_derivs,
+            truth_derivs,
             adjoint_derivs,
             rel_error,
             comm=self.comm,
