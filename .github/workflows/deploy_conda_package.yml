@@ -62,6 +62,7 @@ jobs:
           export F2F_DIR=${GITHUB_WORKSPACE};
           echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV;
           export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }};
+          conda install libarchive -n base -c conda-forge;
           conda install -c conda-forge anaconda-client conda-build conda-verify boa -q -y;
           conda config --set anaconda_upload no;
           cd ${F2F_DIR}/conda;
