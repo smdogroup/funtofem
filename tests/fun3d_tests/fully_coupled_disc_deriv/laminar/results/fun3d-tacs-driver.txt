@@ -1,0 +1,108 @@
+Test: fun3d+tacs-laminar-aeroelastic-flow
+	Step size: 1e-30
+	Variables = ['AOA']
+	Function laminar.ksfailure
+		value = 0.09356312151708095
+		complex_step TD = 0.00012962149058434047
+		Adjoint TD = 0.00012962149058270669
+		Relative error = -1.2604269911981583e-11
+	Function laminar.cl
+		value = 1.1810381554246403
+		complex_step TD = 0.011970273216463559
+		Adjoint TD = 0.011970273216464274
+		Relative error = 5.97067468033611e-14
+	Function laminar.cd
+		value = 0.20694617478858762
+		complex_step TD = 0.007107224841965434
+		Adjoint TD = 0.007107224841965744
+		Relative error = 4.369011943541925e-14
+Test: fun3d+tacs-laminar-aerothermal-flow
+	Step size: 1e-30
+	Variables = ['AOA']
+	Function laminar.ksfailure
+		value = 0.07429210606612695
+		complex_step TD = 2.54397290408442e-09
+		Adjoint TD = 2.5439729040844383e-09
+		Relative error = 7.153367650633876e-15
+	Function laminar.cl
+		value = 0.9785190188733547
+		complex_step TD = 0.000385561405260037
+		Adjoint TD = 0.0003855614052600357
+		Relative error = -3.3744108959897934e-15
+	Function laminar.cd
+		value = 0.1731596591026776
+		complex_step TD = 0.00020264888525524998
+		Adjoint TD = 0.0002026488852552496
+		Relative error = -1.872552912847053e-15
+Test: fun3d+tacs-laminar-aerothermoelastic-flow
+	Step size: 1e-30
+	Variables = ['AOA']
+	Function laminar.ksfailure
+		value = 0.09100746398119983
+		complex_step TD = 1.0059316023269338e-05
+		Adjoint TD = 1.0059316023133304e-05
+		Relative error = -1.3523135272255712e-11
+	Function laminar.cl
+		value = 0.9701307389281923
+		complex_step TD = 0.0009976195899177379
+		Adjoint TD = 0.0009976195899177973
+		Relative error = 5.955604686662664e-14
+	Function laminar.cd
+		value = 0.17033663209427913
+		complex_step TD = 0.0005191972573368564
+		Adjoint TD = 0.0005191972573368788
+		Relative error = 4.3226316497833277e-14
+Test: fun3d+tacs-laminar-aeroelastic-structural
+	Step size: 1e-30
+	Variables = ['thick']
+	Function laminar.ksfailure
+		value = 0.09083242616448739
+		complex_step TD = -0.13013822478491946
+		Adjoint TD = -0.1301382247822189
+		Relative error = -2.075148943143111e-11
+	Function laminar.cl
+		value = 0.9152136179730059
+		complex_step TD = 0.08525811876288535
+		Adjoint TD = 0.08525811876155617
+		Relative error = -1.5589986058285656e-11
+	Function laminar.cd
+		value = 0.07956690710532265
+		complex_step TD = 0.017839830436875023
+		Adjoint TD = 0.01783983043652942
+		Relative error = -1.93724946236369e-11
+Test: fun3d+tacs-laminar-aerothermal-structural
+	Step size: 1e-30
+	Variables = ['thick']
+	Function laminar.ksfailure
+		value = 0.07429018677301964
+		complex_step TD = -1.23963977656151e-05
+		Adjoint TD = -1.2396397765616068e-05
+		Relative error = 7.803167049443364e-14
+	Function laminar.cl
+		value = 0.713659344499848
+		complex_step TD = 0.00016225503318906116
+		Adjoint TD = 0.0001622550331890606
+		Relative error = -3.508095430800259e-15
+	Function laminar.cd
+		value = 0.06307001805994383
+		complex_step TD = 1.4204687502651544e-05
+		Adjoint TD = 1.4204687502651488e-05
+		Relative error = -3.9356145292424325e-15
+Test: fun3d+tacs-laminar-aerothermoelastic-structural
+	Step size: 1e-30
+	Variables = ['thick']
+	Function laminar.ksfailure
+		value = 0.08847014824179672
+		complex_step TD = -0.06733389046768973
+		Adjoint TD = -0.06733389046619326
+		Relative error = -2.2224612368274365e-11
+	Function laminar.cl
+		value = 0.705966845918106
+		complex_step TD = 0.0434518823446169
+		Adjoint TD = 0.043451882343929715
+		Relative error = -1.581488261957152e-11
+	Function laminar.cd
+		value = 0.061707335237369695
+		complex_step TD = 0.00766814498837028
+		Adjoint TD = 0.007668144988212104
+		Relative error = -2.0627616747780674e-11
