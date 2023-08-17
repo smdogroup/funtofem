@@ -1,4 +1,4 @@
-import os, re
+import os, re, sys
 from tacs import TACS
 from mpi4py import MPI
 import numpy as np, matplotlib.pyplot as plt
@@ -13,6 +13,7 @@ from pyfuntofem.interface import (
     CoordinateDerivativeTester,
 )
 from pyfuntofem.driver import TransferSettings, FUNtoFEMnlbgs
+sys.path.append("../")
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
@@ -20,7 +21,7 @@ import unittest
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
+bdf_filename = os.path.join(base_dir, "..", "input_files", "test_bdf_file.bdf")
 
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
@@ -82,6 +83,11 @@ adjoints_vec = adjoints()
 rel_errors2 = (first_derivs2 - adjoints_vec) / adjoints_vec
 rel_errors4 = (first_derivs4 - adjoints_vec) / adjoints_vec
 
+# check floating point error
+function_vec = aero_shape_func(0.0)
+df_vec = h * first_derivs2
+df_ratio_vec = df_vec / function_vec
+
 print(f"functions = {func_names}")
 print(f"\tthird derivatives = {third_derivs}")
 print(f"\tfirst derivs - 2nd order = {first_derivs2}")
@@ -89,6 +95,8 @@ print(f"\tfirst derivs - 4th order = {first_derivs4}")
 print(f"\tadjoints = {adjoints_vec}")
 print(f"\trel errors - 2nd order = {rel_errors2}")
 print(f"\trel errors - 4th order = {rel_errors4}")
+print(f"\tfunction vals = {function_vec}")
+print(f"\tdf/f for fp error = {df_ratio_vec}")
 
 
 # plot struct functions, aero functions normalized on the plot to view their third order + nonlinear shapes
