@@ -49,7 +49,7 @@ requirements:
     - mpi4py
     - cython >=0.29,<3.0
     - setuptools
-    - tacs
+    - tacs >=3.4.0
 
   host:
     - python {{ python }}
@@ -66,7 +66,7 @@ requirements:
     - mpi4py
     - cython >=0.29,<3.0
     - setuptools
-    - tacs
+    - tacs >=3.4.0
 
   run:
     - python
@@ -81,7 +81,7 @@ requirements:
     - libopenblas
     - lapack
     - mpi4py
-    - tacs
+    - tacs >=3.4.0
 
 test:
   requires:
