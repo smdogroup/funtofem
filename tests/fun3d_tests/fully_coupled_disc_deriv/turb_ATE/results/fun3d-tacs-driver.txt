@@ -20,17 +20,17 @@ Test: fun3d+tacs-turbulent-aerothermoelastic-structural
 	Step size: 1e-30
 	Variables = ['thick']
 	Function turbulent.ksfailure
-		value = 0.0884680915136096
-		complex_step TD = -0.0026381439213674
-		Adjoint TD = -0.002638143921308602
-		Relative error = -2.228764627325137e-11
+		value = 0.09100388909988305
+		complex_step TD = -0.0032297298475533766
+		Adjoint TD = -0.003229729847486664
+		Relative error = -2.0655812574245508e-11
 	Function turbulent.cl
-		value = 0.7059868778690297
-		complex_step TD = 0.0017024355047969336
-		Adjoint TD = 0.0017024355047702844
-		Relative error = -1.5653606638099002e-11
+		value = 0.9701260698940417
+		complex_step TD = 0.0018588574264945168
+		Adjoint TD = 0.0018588574264652605
+		Relative error = -1.5738876928262173e-11
 	Function turbulent.cd
-		value = 0.06107485223266953
-		complex_step TD = 0.0003009723756437573
-		Adjoint TD = 0.000300972375637554
-		Relative error = -2.0610917951243894e-11
+		value = 0.1697140095057715
+		complex_step TD = 0.0006225875458887285
+		Adjoint TD = 0.0006225875458776168
+		Relative error = -1.7847550723634476e-11
