@@ -96,6 +96,7 @@ print(f"\tadjoints = {adjoints_vec}")
 print(f"\trel errors - 2nd order = {rel_errors2}")
 print(f"\trel errors - 4th order = {rel_errors4}")
 print(f"\tfunction vals = {function_vec}")
+print(f"\tdf for fp error = {df_vec}")
 print(f"\tdf/f for fp error = {df_ratio_vec}")
 
 
