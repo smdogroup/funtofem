@@ -533,7 +533,7 @@ class Body(Base):
                 )
 
             elif transfer_settings.elastic_scheme == "beam":
-                self.xfer_ndof = ndof
+                self.xfer_ndof = transfer_settings.options["ndof"]
                 self.transfer = TransferScheme.pyBeamTransfer(
                     comm,
                     struct_comm,

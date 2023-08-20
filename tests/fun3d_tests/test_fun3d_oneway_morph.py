@@ -33,13 +33,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
-mesh_style = "coarse"
 
-
-@unittest.skipIf(
-    fun3d_loader is None,
-    "required to have FUN3D",
-)
 class TestFun3dOnewayMorph(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
@@ -47,7 +41,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "fun3d-oneway-shape.txt"
+    FILENAME = "fun3d-oneway-shape-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_nominal(self):
@@ -55,24 +49,16 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
         # design the shape
-        fun3d_model = Fun3dModel.build_morph(csm_file=csm_path, comm=comm)
+        fun3d_model = Fun3dModel.build_morph(
+            csm_file=csm_path, comm=comm, project_name="funtofem_CAPS"
+        )
         aflr_aim = fun3d_model.aflr_aim
         fun3d_aim = fun3d_model.fun3d_aim
 
-        if mesh_style == "coarse":
-            aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
-            aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
-            Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
-                fun3d_model
-            )
-        elif mesh_style == "fine":
-            aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.006, max_scale=5.0)
-            aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
-            Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(
-                fun3d_model
-            )
-
-        Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+        aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
+        Fun3dBC.inviscid(caps_group="wall").register_to(fun3d_model)
+        farfield = Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+        aflr_aim.mesh_sizing(farfield)
         fun3d_model.setup()
         model.flow = fun3d_model
 
@@ -82,11 +68,11 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)
+            Scenario.steady("turbulent", steps=5000)  # 5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 2000
+        test_scenario.adjoint_steps = 4000  # 4000
         # test_scenario.get_variable("AOA").set_bounds(value=2.0)
 
         test_scenario.include(Function.lift()).include(Function.drag())
@@ -94,18 +80,21 @@ class TestFun3dOnewayMorph(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(
+            comm, model, fun3d_dir="meshes", auto_coords=False
+        )
 
         # analysis driver for mesh morphing
         driver = Fun3dOnewayDriver.nominal(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
-            "fun3d+oneway-morph-euler",
+            "fun3d+oneway-morph-turbulent-aeroelastic",
             model,
             driver,
             TestFun3dOnewayMorph.FILEPATH,
-            epsilon=1.0e-4,
+            epsilon=1e-4,
+            both_adjoint=False,  # have to run adjoint twice to read funcVals from sensFile
         )
         self.assertTrue(max_rel_error < 1e-4)
 

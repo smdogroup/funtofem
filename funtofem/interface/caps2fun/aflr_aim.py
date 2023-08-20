@@ -58,7 +58,13 @@ class AflrAim:
         return
 
     def set_surface_mesh(
-        self, ff_growth=1.3, min_scale=0.005, max_scale=0.1, mer_all=1, use_quads=False
+        self,
+        ff_growth=1.3,
+        min_scale=0.005,
+        max_scale=0.1,
+        mer_all=1,
+        use_quads=False,
+        mesh_length=None,
     ):
         # set surface mesh properties
         if self.root_proc:
@@ -66,6 +72,8 @@ class AflrAim:
             self.surface_aim.input.min_scale = min_scale
             self.surface_aim.input.max_scale = max_scale
             self.surface_aim.input.mer_all = mer_all
+            if mesh_length is not None:
+                self.surface_aim.input.Mesh_Length_Factor = mesh_length
             if use_quads:
                 self.surface_aim.input.Mesh_Gen_Input_String = "mquad=1 mpp=3"
 

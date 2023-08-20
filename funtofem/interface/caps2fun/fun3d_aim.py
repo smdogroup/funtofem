@@ -41,11 +41,11 @@ class Fun3dBC:
         return self
 
     @classmethod
-    def inviscid(cls, caps_group, wall_spacing):
+    def inviscid(cls, caps_group, wall_spacing=None):
         return cls(caps_group, bc_type="inviscid", wall_spacing=wall_spacing)
 
     @classmethod
-    def viscous(cls, caps_group, wall_spacing):
+    def viscous(cls, caps_group, wall_spacing=None):
         return cls(caps_group, bc_type="viscous", wall_spacing=wall_spacing)
 
     @classmethod
@@ -96,18 +96,20 @@ class Fun3dAim:
 
         self._fun3d_dir = None
 
+        self._first_grid_move = True
+
         self._boundary_conditions = {}
 
         self._build_aim()
 
         """setup to do ESP/CAPS sens file reading"""
+        self.set_design_sensitivity(flag=True)
         if self.root_proc:
             # set to not overwrite fun3d nml analysis
             self.aim.input.Overwrite_NML = False
             # fun3d design sensitivities settings
-            self.aim.input.Design_SensFile = True
-            self.aim.input.Design_Sensitivity = True
             self.aim.input.Mesh_Morph = mesh_morph
+            self.aim.input.Mesh_Morph_Combine = mesh_morph
 
         self._metadata = None
         if self.root_proc:
@@ -134,6 +136,14 @@ class Fun3dAim:
         """
         if self.root_proc:
             self.aim.input["Mesh"].unlink()
+        return
+
+    def set_design_sensitivity(self, flag: bool, include_file=True):
+        """toggle design sensitivity for Fun3dAim"""
+        if self.root_proc:
+            self.aim.input.Design_Sensitivity = flag
+            if include_file:
+                self.aim.input.Design_SensFile = flag
         return
 
     @property
@@ -177,6 +187,12 @@ class Fun3dAim:
         move each of the grid files in the preAnalysis after a new grid is
         destination files are all called fun3d_CAPS.lb8.ugrid
         """
+        if self.mesh_morph:  # only move the grid once during mesh morphing case
+            if not self._first_grid_move:
+                return
+            else:
+                self._first_grid_move = False
+        print(f"copying grid files = {self._first_grid_move}")
         src = self.grid_file
         for dest in self.grid_filepaths:
             shutil.copy(src, dest)

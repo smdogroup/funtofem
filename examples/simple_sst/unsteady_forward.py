@@ -57,7 +57,7 @@ if not os.path.exists(tacs_folder) and comm.rank == 0:
 solvers.structural = TacsUnsteadyInterface.create_from_bdf(
     comm=comm,
     model=model,
-    nprocs=8,
+    nprocs=48,
     bdf_file="nastran_CAPS.dat",
     integration_settings=integration_settings,
     output_dir=tacs_folder,

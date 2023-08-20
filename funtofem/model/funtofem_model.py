@@ -22,10 +22,8 @@ limitations under the License.
 
 __all__ = ["FUNtoFEMmodel"]
 
-import numpy as np
+import numpy as np, os, importlib
 from .variable import Variable
-
-import importlib
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -819,9 +817,12 @@ class FUNtoFEMmodel(object):
     def read_design_variables_file(self, comm, filename, root=0):
         """
         Read the design variables file funtofem.in
+
         This file contains the following information:
+
         Discipline
         Var_name Var_value
+
         Parameters
         ----------
         comm: MPI communicator
@@ -909,6 +910,90 @@ class FUNtoFEMmodel(object):
             hdl.close()
 
         return
+
+    def read_functions_file(self, comm, filename, root=0):
+        """
+        Read the functions variables file funtofem.out
+
+        This file contains the following information:
+
+        nFunctions
+        func_name, func_value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be read in / filepath
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        functions_dict = None
+        if comm.rank == root:  # read the file in on the root processor
+            functions_dict = {}
+
+            hdl = open(filename, "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            for line in lines:
+                chunks = line.split(" ")
+                if len(chunks) == 2:
+                    func_name = chunks[0]
+                    func_value = chunks[1]
+
+                    # only real numbers are read in from the file
+                    functions_dict[func_name] = float(func_value)
+
+        # broadcast the dictionary to the root processor
+        functions_dict = comm.bcast(functions_dict, root=root)
+
+        # update the variable values on each processor
+        for func in self.get_functions():
+            if func.name in functions_dict:
+                func.value = functions_dict[func.name]
+
+        return
+
+    def write_functions_file(self, comm, filename, root=0):
+        """
+        Write the functions file funtofem.out
+
+        This file contains the following information:
+
+        Number of functionals
+
+        Functional name, value
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+
+        funcs = self.get_functions()
+        # also add composite functions at the end
+        funcs += self.composite_functions
+
+        if comm.rank == root:
+            # Write out the number of functionals and number of design variables
+            data = "{}\n".format(len(funcs))
+
+            for n, func in enumerate(funcs):
+                # Print the function name
+                data += "{}\n".format(func.full_name)
+
+                # Print the function value
+                data += "{}\n".format(func.value.real)
+
+            with open(filename, "w") as fp:
+                fp.write(data)
 
     @property
     def structural(self):
