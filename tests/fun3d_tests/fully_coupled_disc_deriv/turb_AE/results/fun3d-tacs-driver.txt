@@ -1,0 +1,36 @@
+Test: fun3d+tacs-turbulent-aeroelastic-flow
+	Step size: 1e-30
+	Variables = ['AOA']
+	Function turbulent.ksfailure
+		value = 0.09354523374000617
+		complex_step TD = 0.00012943480095484606
+		Adjoint TD = 0.00012943480095320954
+		Relative error = -1.2643600114739165e-11
+	Function turbulent.cl
+		value = 1.180464029368364
+		complex_step TD = 0.011965920835918598
+		Adjoint TD = 0.011965920835919368
+		Relative error = 6.436756802048277e-14
+	Function turbulent.cd
+		value = 0.20620204060576944
+		complex_step TD = 0.007104645494166802
+		Adjoint TD = 0.0071046454941671045
+		Relative error = 4.260722745511922e-14
+Test: fun3d+tacs-turbulent-aeroelastic-structural
+	Step size: 1e-30
+	Variables = ['thick']
+	Function turbulent.ksfailure
+		value = 0.09354523374000617
+		complex_step TD = -0.0038397413911591
+		Adjoint TD = -0.0038397413910848024
+		Relative error = -1.9349681456747647e-11
+	Function turbulent.cl
+		value = 1.180464029368364
+		complex_step TD = 0.002327299283360819
+		Adjoint TD = 0.0023272992833257592
+		Relative error = -1.5064512356399715e-11
+	Function turbulent.cd
+		value = 0.20620204060576944
+		complex_step TD = 0.0008354279046009284
+		Adjoint TD = 0.0008354279045865717
+		Relative error = -1.718482208738201e-11
