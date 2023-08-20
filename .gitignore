@@ -25,3 +25,6 @@ docs/.DS_Store
 capsStruct
 **/*.sens
 work
+*.pbs
+*.o*
+*.in
