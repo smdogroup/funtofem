@@ -136,6 +136,12 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                 else:
                     elem = elements.Quad4Shell(transform, con)
                 elemList.append(elem)
+            elif elemDescript in ["CTRIA3"]:
+                if include_thermal:
+                    elem = elements.Tri3ThermalShell(transform, con)
+                else:
+                    elem = elements.Tri3Shell(transform, con)
+                elemList.append(elem)
             else:
                 print("Uh oh, '%s' not recognized" % (elemDescript))
                 elemList.append(elem)

@@ -1,4 +1,4 @@
-pyFUNtoFEM
+funtofem
 **********
 FUNtoFEM can be executed by writing a Python script. 
 Tha main components are the import section, MPI set-up, model creation, instantiation of discipline solvers, and calling the relevant routines.
@@ -11,7 +11,7 @@ In the following code excerpt, modelTACS refers to a Python class which defines 
 .. code-block:: python
 
    import os, sys
-   from pyfuntofem import *
+   from funtofem import *
    from pyoptsparse import SNOPT, Optimization
    from mpi4py import MPI
 

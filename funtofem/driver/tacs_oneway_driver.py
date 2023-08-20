@@ -24,13 +24,13 @@ limitations under the License.
 # TACS one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["TacsOnewayDriver"]
 
-from pyfuntofem.interface.tacs_interface import (
+from funtofem.interface.tacs_interface import (
     TacsInterface,
     TacsSteadyInterface,
     TacsUnsteadyInterface,
 )
-from pyfuntofem.interface.solver_manager import SolverManager
-from pyfuntofem.optimization.optimization_manager import OptimizationManager
+from funtofem.interface.solver_manager import SolverManager
+from funtofem.optimization.optimization_manager import OptimizationManager
 
 import importlib.util
 

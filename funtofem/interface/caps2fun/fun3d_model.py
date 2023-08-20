@@ -30,6 +30,7 @@ class Fun3dModel:
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
         mesh_morph=False,
+        verbosity=0,
     ):
         """
         make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
@@ -43,7 +44,7 @@ class Fun3dModel:
         caps_problem = None
         if comm.rank == 0:
             caps_problem = pyCAPS.Problem(
-                problemName=problem_name, capsFile=csm_file, outLevel=1
+                problemName=problem_name, capsFile=csm_file, outLevel=verbosity
             )
         fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph)
         aflr_aim = AflrAim(caps_problem, comm)
@@ -117,6 +118,8 @@ class Fun3dModel:
         """setup the fun3d model before analysis"""
         self._link_aims()
         self.fun3d_aim.set_boundary_conditions()
+        if self.aflr_aim._dictOptions is not None:
+            self.aflr_aim._setDictOptions()
         self._set_grid_filename()
         self._setup = True
         return

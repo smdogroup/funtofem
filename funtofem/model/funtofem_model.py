@@ -29,7 +29,7 @@ from .variable import Variable
 tacs_loader = importlib.util.find_spec("tacs")
 caps_loader = importlib.util.find_spec("pyCAPS")
 if caps_loader is not None:
-    from pyfuntofem.interface.caps2fun import Fun3dModel
+    from funtofem.interface.caps2fun import Fun3dModel
 
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs

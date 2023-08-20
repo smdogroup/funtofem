@@ -1,5 +1,5 @@
 import unittest, importlib, numpy as np, os, sys
-from pyfuntofem import *
+from funtofem import *
 from mpi4py import MPI
 
 np.random.seed(1234567)

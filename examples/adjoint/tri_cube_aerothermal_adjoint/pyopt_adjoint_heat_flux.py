@@ -20,9 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.fun3d_interface import *
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.fun3d_interface import *
 
 from tacs_model import wedgeTACS
 

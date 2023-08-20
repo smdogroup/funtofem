@@ -1,6 +1,6 @@
 import os, unittest, traceback
 from mpi4py import MPI
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body
+from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))

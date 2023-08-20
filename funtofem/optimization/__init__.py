@@ -1,4 +1,4 @@
-# __init__ file in pyfuntofem/optimization subfolder
+# __init__ file in funtofem/optimization subfolder
 # import * classes and methods specified in __all__
 
 import importlib

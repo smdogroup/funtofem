@@ -4,15 +4,15 @@ from mpi4py import MPI
 import numpy as np
 from funtofem import TransferScheme
 
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import SolverManager, TestResult
+from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from funtofem.interface import SolverManager, TestResult
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface
 
 # from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest

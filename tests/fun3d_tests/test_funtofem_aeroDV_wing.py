@@ -2,7 +2,7 @@ import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Variable,
     Scenario,
@@ -10,7 +10,7 @@ from pyfuntofem.model import (
     Function,
     AitkenRelaxation,
 )
-from pyfuntofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -18,11 +18,11 @@ tacs_loader = importlib.util.find_spec("tacs")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.driver import FUNtoFEMnlbgs
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.driver import FUNtoFEMnlbgs
+    from funtofem.interface import Fun3dInterface
 
 if tacs_loader is not None:
-    from pyfuntofem.interface import TacsSteadyInterface
+    from funtofem.interface import TacsSteadyInterface
 
 np.random.seed(1234567)
 

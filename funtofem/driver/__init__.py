@@ -1,4 +1,4 @@
-# __init__.py file for pyfuntofem driver folder
+# __init__.py file for funtofem driver folder
 # represents funtofem fully-coupled drivers
 
 # the classes/methods in import * are detailed in __all__ at the

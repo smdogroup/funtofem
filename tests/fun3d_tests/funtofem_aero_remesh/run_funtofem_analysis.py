@@ -3,14 +3,14 @@ from mpi4py import MPI
 from tacs import caps2tacs
 
 # from funtofem import TransferScheme
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Scenario,
     Body,
     Function,
     Variable,
 )
-from pyfuntofem.interface import SolverManager
+from funtofem.interface import SolverManager
 
 # check whether fun3d is available
 tacs_loader = importlib.util.find_spec("tacs")
@@ -19,11 +19,11 @@ has_tacs = tacs_loader is not None
 has_fun3d = fun3d_loader is not None
 
 if has_tacs:
-    from pyfuntofem.interface import TacsSteadyInterface
+    from funtofem.interface import TacsSteadyInterface
 
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
-    from pyfuntofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from funtofem.interface import Fun3dInterface
+    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
 
 np.random.seed(1234567)
 

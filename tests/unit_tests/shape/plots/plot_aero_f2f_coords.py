@@ -4,15 +4,15 @@ from mpi4py import MPI
 import numpy as np
 from funtofem import TransferScheme
 
-from pyfuntofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from pyfuntofem.interface import (
+from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
+from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
     TacsIntegrationSettings,
     CoordinateDerivativeTester,
 )
-from pyfuntofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
+from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest

@@ -252,8 +252,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aeroelastic coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
@@ -274,8 +274,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aerothermal coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
@@ -296,8 +296,8 @@ class Body(Base):
         relaxation_scheme=None,
     ):
         """
-        class method to create a body object
-        recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
+        Class method to create a body object for aerothermoelastic coupling.
+        Recommendation: set name, boundary here and use method cascades for motion_type, relaxation_scheme
         """
         return cls(
             name=name,
@@ -320,6 +320,8 @@ class Body(Base):
         set the relaxation scheme in a method cascade
         """
         self.relaxation_scheme = new_relaxation_scheme
+        self.use_aitken_accel = isinstance(new_relaxation_scheme, AitkenRelaxation)
+        self.use_simple_accel = isinstance(new_relaxation_scheme, SimpleRelaxation)
         return self
 
     def register_to(self, funtofem_model):

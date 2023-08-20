@@ -1,4 +1,4 @@
-# __init__ file for pyfuntofem/interface/utils
+# __init__ file for funtofem/interface/utils
 # Provides utilities to each of the analysis interfaces in funtofem
 
 # use importlib package to check available packages

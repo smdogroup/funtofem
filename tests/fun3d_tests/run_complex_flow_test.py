@@ -3,7 +3,7 @@ from mpi4py import MPI
 
 # from funtofem import TransferScheme
 from tacs import TACS, elements, constitutive
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Variable,
     Scenario,
@@ -11,17 +11,17 @@ from pyfuntofem.model import (
     Function,
     AitkenRelaxation,
 )
-from pyfuntofem.interface import (
+from funtofem.interface import (
     TacsSteadyInterface,
     SolverManager,
 )
-from pyfuntofem.driver import FUNtoFEMnlbgs, TransferSettings
+from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from pyfuntofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface
 
     """
     Goal here is to start run a complex flow for funtofem_coupling.f90 internal complex step test

@@ -25,10 +25,10 @@ with piston theory and a simple wing structure
 
 import sys
 import numpy as np
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.pistontheory_interface import PistonInterface
-from pyfuntofem.tacs_interface import TacsSteadyInterface
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.pistontheory_interface import PistonInterface
+from funtofem.tacs_interface import TacsSteadyInterface
 from structural_model import OneraPlate
 from mpi4py import MPI
 from tacs import TACS

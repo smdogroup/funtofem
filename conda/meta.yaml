@@ -35,7 +35,6 @@ build:
 requirements:
   build:
     - python {{ python }}
-    - numpy   1.18   # [py==37]
     - numpy   1.18   # [py==38]
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
@@ -48,14 +47,13 @@ requirements:
     - lapack
     - make
     - mpi4py
-    - cython
+    - cython >=0.29,<3.0
     - setuptools
-    - tacs
+    - tacs >=3.4.0
 
   host:
     - python {{ python }}
     - pip
-    - numpy   1.18   # [py==37]
     - numpy   1.18   # [py==38]
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
@@ -66,13 +64,12 @@ requirements:
     - libopenblas
     - lapack
     - mpi4py
-    - cython
+    - cython >=0.29,<3.0
     - setuptools
-    - tacs
+    - tacs >=3.4.0
 
   run:
     - python
-    - numpy >=1.18.5,<2.0.a0   # [py==37]
     - numpy >=1.18.5,<2.0.a0   # [py==38]
     - numpy >=1.19.5,<2.0.a0   # [py==39]
     - numpy >=1.22.0,<2.0.a0   # [py==310]
@@ -84,7 +81,7 @@ requirements:
     - libopenblas
     - lapack
     - mpi4py
-    - tacs
+    - tacs >=3.4.0
 
 test:
   requires:
@@ -94,15 +91,14 @@ test:
     - tests
 
   imports:
-    - funtofem
-    - funtofem.TransferScheme
     - tacs
     - tacs.pytacs
-    - pyfuntofem
-    - pyfuntofem.driver
-    - pyfuntofem.model
-    - pyfuntofem.interface
-    - pyfuntofem.optimization
+    - funtofem
+    - funtofem.driver
+    - funtofem.model
+    - funtofem.interface
+    - funtofem.optimization
+    - funtofem.TransferScheme
 
   commands:
     - |

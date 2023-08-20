@@ -21,9 +21,9 @@ limitations under the License.
 """
 
 import sys
-from pyfuntofem.model import *
-from pyfuntofem.driver import *
-from pyfuntofem.su2_interface import SU2Interface
+from funtofem.model import *
+from funtofem.driver import *
+from funtofem.su2_interface import SU2Interface
 from structural_model import OneraPlate
 from mpi4py import MPI
 

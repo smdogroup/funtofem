@@ -112,7 +112,7 @@ Set up FUNtoFEM
 comm = MPI.COMM_SELF
 scheme = FUNtoFEM.PY_NONLINEAR
 isymm = 1
-funtofem = FUNtoFEM.pyFUNtoFEM(comm, comm, 0, comm, 0, scheme, isymm)
+funtofem = FUNtoFEM.funtofem(comm, comm, 0, comm, 0, scheme, isymm)
 
 # Set nodes into funtofem
 funtofem.setStructNodes(struct_X)

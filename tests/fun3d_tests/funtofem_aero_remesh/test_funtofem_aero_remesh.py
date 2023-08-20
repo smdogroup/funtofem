@@ -2,14 +2,14 @@ import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
-from pyfuntofem.model import (
+from funtofem.model import (
     FUNtoFEMmodel,
     Variable,
     Scenario,
     Body,
     Function,
 )
-from pyfuntofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -18,7 +18,8 @@ caps_loader = importlib.util.find_spec("caps")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from pyfuntofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
+
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
@@ -94,7 +95,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             model,
             driver,
             TestFuntofemRemesh.FILEPATH,
-            both_adjoint=True,  # since the Fun3dOnewayDriver doesn't know function values until after solve_adjoint()
+            both_adjoint=False, 
             epsilon=1.0,
         )
         self.assertTrue(max_rel_error < 1e-4)

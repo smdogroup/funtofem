@@ -1,5 +1,5 @@
 import unittest
-from pyfuntofem.model import Function, CompositeFunction, Variable
+from funtofem.model import Function, CompositeFunction, Variable
 
 
 class TestCompositeFunction(unittest.TestCase):
