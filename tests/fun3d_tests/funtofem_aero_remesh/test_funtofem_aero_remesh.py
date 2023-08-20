@@ -95,7 +95,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             model,
             driver,
             TestFuntofemRemesh.FILEPATH,
-            both_adjoint=False, 
+            both_adjoint=False,
             epsilon=1.0,
         )
         self.assertTrue(max_rel_error < 1e-4)

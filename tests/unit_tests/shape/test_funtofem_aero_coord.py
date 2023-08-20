@@ -73,7 +73,7 @@ class TestFuntofemDriverAeroCoordinate(unittest.TestCase):
         )
         assert abs(rel_error) < rtol
         return
-    
+
     def test_steady_aero_aerothermal(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
@@ -110,7 +110,7 @@ class TestFuntofemDriverAeroCoordinate(unittest.TestCase):
         )
         assert abs(rel_error) < rtol
         return
-    
+
     def test_steady_aero_aerothermoelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")

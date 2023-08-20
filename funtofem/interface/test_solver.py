@@ -1087,12 +1087,20 @@ class CoordinateDerivativeTester:
     def model(self):
         return self.driver.model
 
-    def test_struct_coordinates(self, test_name, status_file, body=None, scenario=None, epsilon=1e-30, complex_mode=True):
+    def test_struct_coordinates(
+        self,
+        test_name,
+        status_file,
+        body=None,
+        scenario=None,
+        epsilon=1e-30,
+        complex_mode=True,
+    ):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
             body = self.model.bodies[0]
-        if scenario is None: # test doesn't work for multiscenario yet
+        if scenario is None:  # test doesn't work for multiscenario yet
             scenario = self.model.scenarios[0]
 
         # random covariant tensor to aggregate derivative error among one or more functions
@@ -1113,7 +1121,7 @@ class CoordinateDerivativeTester:
         dfdx_adjoint = dstructX_ds_row @ dfdxS0
         dfdx_adjoint = list(np.reshape(dfdx_adjoint, newshape=(nf)))
         adjoint_derivs = [dfdx_adjoint[i].real for i in range(nf)]
-        
+
         if complex_mode:
             """Complex step to compute coordinate total derivatives"""
             # perturb the coordinate derivatives
@@ -1121,27 +1129,31 @@ class CoordinateDerivativeTester:
                 self.driver.solvers.make_flow_complex()
             body.struct_X += 1j * epsilon * dstructX_ds
             self.driver.solve_forward()
-    
+
             truth_derivs = np.array(
                 [func.value.imag / epsilon for func in self.model.get_functions()]
             )
 
-        else: # central finite difference
+        else:  # central finite difference
             # f(x;xA-h)
             body.struct_X -= epsilon * dstructX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
             print(f"i functions = {i_functions}")
- 
+
             # f(x;xA+h)
             body.struct_X += 2 * epsilon * dstructX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}") 
+            print(f"f functions = {f_functions}")
 
-            truth_derivs = np.array([(f_functions[i] - i_functions[i])/2/epsilon for i in range(len(self.model.get_functions()))])
-                 
-    
+            truth_derivs = np.array(
+                [
+                    (f_functions[i] - i_functions[i]) / 2 / epsilon
+                    for i in range(len(self.model.get_functions()))
+                ]
+            )
+
         rel_error = [
             TestResult.relative_error(truth_derivs[i], adjoint_derivs[i])
             for i in range(nf)
@@ -1164,12 +1176,20 @@ class CoordinateDerivativeTester:
 
         return max_rel_error
 
-    def test_aero_coordinates(self, test_name, status_file, scenario=None, body=None, epsilon=1e-30, complex_mode=True):
+    def test_aero_coordinates(
+        self,
+        test_name,
+        status_file,
+        scenario=None,
+        body=None,
+        epsilon=1e-30,
+        complex_mode=True,
+    ):
         """test the structure coordinate derivatives struct_X with complex step"""
         # assumes only one body
         if body is None:
             body = self.model.bodies[0]
-        if scenario is None: # test doesn't work for multiscenario yet
+        if scenario is None:  # test doesn't work for multiscenario yet
             scenario = self.model.scenarios[0]
 
         # random covariant tensor to aggregate derivative error among one or more functions
@@ -1198,27 +1218,31 @@ class CoordinateDerivativeTester:
                 self.driver.solvers.make_flow_complex()
             body.aero_X += 1j * epsilon * daeroX_ds
             self.driver.solve_forward()
-    
+
             truth_derivs = np.array(
                 [func.value.imag / epsilon for func in self.model.get_functions()]
             )
 
-        else: # central finite difference
+        else:  # central finite difference
             # f(x;xA-h)
             body.aero_X -= epsilon * daeroX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
             print(f"i functions = {i_functions}")
- 
+
             # f(x;xA+h)
             body.aero_X += 2 * epsilon * daeroX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}") 
+            print(f"f functions = {f_functions}")
 
-            truth_derivs = np.array([(f_functions[i] - i_functions[i])/2/epsilon for i in range(len(self.model.get_functions()))])
-                 
-    
+            truth_derivs = np.array(
+                [
+                    (f_functions[i] - i_functions[i]) / 2 / epsilon
+                    for i in range(len(self.model.get_functions()))
+                ]
+            )
+
         rel_error = [
             TestResult.relative_error(truth_derivs[i], adjoint_derivs[i])
             for i in range(nf)

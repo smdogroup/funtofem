@@ -13,6 +13,7 @@ from funtofem.interface import (
     CoordinateDerivativeTester,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
+
 sys.path.append("../")
 
 from bdf_test_utils import elasticity_callback, thermoelasticity_callback
@@ -53,12 +54,14 @@ x_A0 = 1.0 * plate.aero_X
 func_names = [func.full_name for func in model.get_functions()]
 nf = len(func_names)
 
+
 def aero_shape_func(x):
     """f_S(x_A0 + p*x)"""
     plate.aero_X = x_A0 + p * x
     coupled_driver.solve_forward()
 
     return np.array([func.value for func in model.get_functions()])
+
 
 def adjoints():
     plate.aero_X = x_A0
@@ -70,14 +73,25 @@ def adjoints():
     dfdx_adjoint = list(np.reshape(dfdx_adjoint, newshape=(nf)))
     return [dfdx_adjoint[i].real for i in range(nf)]
 
+
 # get third derivatives
 h1 = 1e-4
-third_derivs = (0.5 * aero_shape_func(2*h1) - aero_shape_func(h1) + aero_shape_func(-h1) - 0.5 * aero_shape_func(-2*h1)) / h1**3
+third_derivs = (
+    0.5 * aero_shape_func(2 * h1)
+    - aero_shape_func(h1)
+    + aero_shape_func(-h1)
+    - 0.5 * aero_shape_func(-2 * h1)
+) / h1**3
 
 h = 1e-2
 # https://en.wikipedia.org/wiki/Finite_difference_coefficient
-first_derivs2 = (aero_shape_func(h) - aero_shape_func(-h))/2/h
-first_derivs4 = (-aero_shape_func(2*h)/12 + 2.0/3 * aero_shape_func(h) - 2.0/3 * aero_shape_func(-h) + 1.0/12 * aero_shape_func(-2*h))/h
+first_derivs2 = (aero_shape_func(h) - aero_shape_func(-h)) / 2 / h
+first_derivs4 = (
+    -aero_shape_func(2 * h) / 12
+    + 2.0 / 3 * aero_shape_func(h)
+    - 2.0 / 3 * aero_shape_func(-h)
+    + 1.0 / 12 * aero_shape_func(-2 * h)
+) / h
 
 adjoints_vec = adjoints()
 rel_errors2 = (first_derivs2 - adjoints_vec) / adjoints_vec
@@ -120,21 +134,25 @@ print(f"\tdf/f for fp error = {df_ratio_vec}")
 # plot finite difference relative error convergence
 exponents = np.linspace(0, -8, 50)
 step_sizes = np.power(10, exponents)
-first_derivs_step = [(aero_shape_func(h) - aero_shape_func(-h))/2/h for h in step_sizes]
-rel_errors_FD = [np.abs((FDs - adjoints_vec) / adjoints_vec) for FDs in first_derivs_step]
-complex_step = [np.imag(aero_shape_func(h*1j))/h for h in step_sizes]
+first_derivs_step = [
+    (aero_shape_func(h) - aero_shape_func(-h)) / 2 / h for h in step_sizes
+]
+rel_errors_FD = [
+    np.abs((FDs - adjoints_vec) / adjoints_vec) for FDs in first_derivs_step
+]
+complex_step = [np.imag(aero_shape_func(h * 1j)) / h for h in step_sizes]
 rel_errors_CS = [np.abs((CSs - adjoints_vec) / adjoints_vec) for CSs in complex_step]
 step_sizes = list(step_sizes)
 
 local_func_names = ["ksfailure", "lift", "drag"]
 jet = plt.cm.jet
-colors = jet(np.linspace(0, 1, 2*len(local_func_names)))
+colors = jet(np.linspace(0, 1, 2 * len(local_func_names)))
 
 fig = plt.figure()
 ax = plt.subplot(111)
 linewidth = 2
 
-for ifunc,func_name in enumerate(local_func_names):
+for ifunc, func_name in enumerate(local_func_names):
     rel_error_FD = [_[ifunc] for _ in rel_errors_FD]
     rel_error_CS = [_[ifunc] for _ in rel_errors_CS]
 
@@ -143,15 +161,29 @@ for ifunc,func_name in enumerate(local_func_names):
     else:
         linestyle = "-"
 
-    ax.plot(step_sizes, rel_error_FD, color=colors[2*ifunc], label=f"{func_name}-FD", linestyle=linestyle, linewidth=2)
-    ax.plot(step_sizes, rel_error_CS, color=colors[2*ifunc+1], label=f"{func_name}-CS", linestyle=linestyle, linewidth=2)
+    ax.plot(
+        step_sizes,
+        rel_error_FD,
+        color=colors[2 * ifunc],
+        label=f"{func_name}-FD",
+        linestyle=linestyle,
+        linewidth=2,
+    )
+    ax.plot(
+        step_sizes,
+        rel_error_CS,
+        color=colors[2 * ifunc + 1],
+        label=f"{func_name}-CS",
+        linestyle=linestyle,
+        linewidth=2,
+    )
 
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
 # Put a legend to the right of the current axis
-ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 plt.xlabel("Step size")
 plt.ylabel("Rel error")
 plt.xscale("log")

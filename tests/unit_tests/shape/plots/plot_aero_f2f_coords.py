@@ -68,7 +68,7 @@ for step_size in step_sizes:
         status_file=status_file,
         complex_mode=False,
     )
-    
+
     rel_errors.append(abs(rel_error))
 
     print(f"eps={step_size}, rel error = {abs(rel_error)}")
