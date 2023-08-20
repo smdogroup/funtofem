@@ -33,7 +33,8 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
-@unittest.skipIf(in_github_workflow,"still under dev of tolerances")
+
+@unittest.skipIf(in_github_workflow, "still under dev of tolerances")
 class TestFuntofemDriverStructCoordinate(unittest.TestCase):
     FILENAME = "f2f-steady-struct-coord.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
