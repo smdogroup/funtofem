@@ -27,7 +27,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "naca_wing2.csm")
+csm_path = os.path.join(base_dir, "meshes",  "naca_wing_MD.csm")
 
 analysis_file = os.path.join(base_dir, "run_funtofem_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
@@ -37,7 +37,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
-active_cases = ["aero"]  # ["aero", "struct", "aero-struct"]
+active_cases = ["aero-struct"]  # ["aero", "struct", "aero-struct"]
 
 
 class TestFuntofemRemesh(unittest.TestCase):
@@ -118,9 +118,8 @@ class TestFuntofemRemesh(unittest.TestCase):
         fun3d_aim.set_config_parameter("view:flow", 1)
         fun3d_aim.set_config_parameter("view:struct", 0)
 
-        aflr_aim.set_surface_mesh(ff_growth=1.3, min_scale=0.01, max_scale=5.0)
-        aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
-        Fun3dBC.viscous(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
+        aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
+        #Fun3dBC.viscous(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
         Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
         model.flow = fun3d_model
@@ -162,15 +161,11 @@ class TestFuntofemRemesh(unittest.TestCase):
             caps_group="OML", material=aluminum, membrane_thickness=0.03
         ).register_to(tacs_model)
 
-        # register the internal structure shape variable
-        Variable.shape(name="rib_a1").set_bounds(
-            lower=0.4, value=1.0, upper=1.6
-        ).register_to(wing)
-        wing.register_to(model)
         # register the aero-struct shape variable
         Variable.shape(name="aoa").set_bounds(
             lower=-5.0, value=0.0, upper=5.0
         ).register_to(wing)
+        wing.register_to(model)
 
         # define the funtofem scenarios
         test_scenario = (
@@ -178,10 +173,10 @@ class TestFuntofemRemesh(unittest.TestCase):
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project("funtofem_CAPS")
         )
-        test_scenario.adjoint_steps = 2000
+        test_scenario.adjoint_steps = 4000
         # test_scenario.get_variable("AOA")
         test_scenario.include(Function.lift()).include(Function.drag())
-        test_scenario.include(Function.ksfailure()).include(Function.mass())
+        test_scenario.include(Function.ksfailure(ks_weight=10.0))
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver

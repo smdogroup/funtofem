@@ -40,7 +40,7 @@ wing.register_to(model)
 test_scenario = Scenario.steady("euler", steps=5000).set_temperature(
     T_ref=300.0, T_inf=300.0
 )
-test_scenario.adjoint_steps = 2000
+test_scenario.adjoint_steps = 4000
 # aoa = test_scenario.get_variable("AOA")
 test_scenario.include(Function.lift()).include(Function.drag())
 test_scenario.include(Function.ksfailure()).include(Function.mass())
