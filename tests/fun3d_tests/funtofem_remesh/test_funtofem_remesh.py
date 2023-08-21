@@ -14,7 +14,7 @@ from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
-caps_loader = importlib.util.find_spec("caps")
+caps_loader = importlib.util.find_spec("pyCAPS")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
@@ -95,7 +95,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             model,
             driver,
             TestFuntofemRemesh.FILEPATH,
-            both_adjoint=False,
+            both_adjoint=True,
             epsilon=1.0,
         )
         self.assertTrue(max_rel_error < 1e-4)
@@ -190,6 +190,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             model,
             driver,
             TestFuntofemRemesh.FILEPATH,
+            both_adjoint=True,
             epsilon=0.1,
         )
         self.assertTrue(max_rel_error < 1e-4)
