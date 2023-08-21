@@ -27,7 +27,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "meshes",  "naca_wing_MD.csm")
+csm_path = os.path.join(base_dir, "meshes", "naca_wing_MD.csm")
 
 analysis_file = os.path.join(base_dir, "run_funtofem_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
@@ -119,7 +119,7 @@ class TestFuntofemRemesh(unittest.TestCase):
         fun3d_aim.set_config_parameter("view:struct", 0)
 
         aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
-        #Fun3dBC.viscous(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
+        # Fun3dBC.viscous(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
         Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
         model.flow = fun3d_model
