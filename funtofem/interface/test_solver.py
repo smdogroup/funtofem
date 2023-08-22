@@ -169,7 +169,7 @@ class TestAerodynamicSolver(SolverInterface):
                 )
 
                 # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
-                self.Jac2 = 0.05 * (np.random.rand(self.npts, self.npts) - 0.5)
+                self.Jac2 = 0.1 * (np.random.rand(self.npts, self.npts) - 0.5)
                 self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
                 self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
 
@@ -223,6 +223,7 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         time_index = 0 if scenario.steady else scenario.steps
+
         for func in scenario.functions:
             if func.analysis_type == "aerodynamic":
                 value = 0.0
@@ -271,6 +272,9 @@ class TestAerodynamicSolver(SolverInterface):
         """
         Add the contributions to the gradient w.r.t. the aerodynamic coordinates
         """
+
+        if step == 0:
+            return
 
         for findex, func in enumerate(scenario.functions):
             for body in bodies:
@@ -363,6 +367,11 @@ class TestAerodynamicSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        # If the scenario is unsteady only add the rhs for the final state
+        include_rhs = True
+        if not scenario.steady and step != scenario.steps:
+            include_rhs = False
+
         for body in bodies:
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
@@ -371,7 +380,7 @@ class TestAerodynamicSolver(SolverInterface):
                     aero_disps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, aero_loads_ajp[:, k]
                     )
-                    if func.analysis_type == "aerodynamic":
+                    if include_rhs and func.analysis_type == "aerodynamic":
                         aero_disps_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs1
@@ -383,7 +392,7 @@ class TestAerodynamicSolver(SolverInterface):
                     aero_temps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, aero_flux_ajp[:, k]
                     )
-                    if func.analysis_type == "aerodynamic":
+                    if include_rhs and func.analysis_type == "aerodynamic":
                         aero_temps_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs2
@@ -533,6 +542,7 @@ class TestStructuralSolver(SolverInterface):
         """
 
         time_index = 0 if scenario.steady else scenario.steps
+
         for func in scenario.functions:
             if func.analysis_type == "structural":
                 value = 0.0
@@ -585,6 +595,9 @@ class TestStructuralSolver(SolverInterface):
         """
         Add the contributions to the gradient w.r.t. the structural coordinates
         """
+
+        if step == 0:
+            return
 
         for findex, func in enumerate(scenario.functions):
             for body in bodies:
@@ -684,6 +697,11 @@ class TestStructuralSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        # If the scenario is unsteady only add the rhs for the final state
+        include_rhs = True
+        if not scenario.steady and step != scenario.steps:
+            include_rhs = False
+
         for body in bodies:
             struct_disps_ajp = body.get_struct_disps_ajp(scenario)
             struct_loads_ajp = body.get_struct_loads_ajp(scenario)
@@ -692,7 +710,7 @@ class TestStructuralSolver(SolverInterface):
                     struct_loads_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
                     )
-                    if func.analysis_type == "structural":
+                    if include_rhs and func.analysis_type == "structural":
                         struct_loads_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs1
@@ -704,7 +722,7 @@ class TestStructuralSolver(SolverInterface):
                     struct_flux_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, struct_temps_ajp[:, k]
                     )
-                    if func.analysis_type == "structural":
+                    if include_rhs and func.analysis_type == "structural":
                         struct_flux_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs2
