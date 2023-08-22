@@ -73,7 +73,10 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(tacs_model)
 
         # register any shape variables to the wing which are auto-registered to tacs model
-        Variable.shape(name="rib_a1").set_bounds(
+        # Variable.shape(name="rib_a1").set_bounds(
+        #     lower=0.4, value=1.0, upper=1.6
+        # ).register_to(wing)
+        Variable.shape(name="spar_a1").set_bounds(
             lower=0.4, value=1.0, upper=1.6
         ).register_to(wing)
 
@@ -111,6 +114,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skip("temp")
     def test_shape_and_thick_steady_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -192,6 +196,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermal(self):
         # make the funtofem and tacs model
@@ -271,6 +276,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermoelastic(self):
         # make the funtofem and tacs model

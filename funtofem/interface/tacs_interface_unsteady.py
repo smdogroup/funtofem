@@ -112,12 +112,10 @@ class TacsUnsteadyInterface(SolverInterface):
         struct_id: int = None,
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
-        can_skip_coordinates=True,
         nprocs=None,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
-        self.can_skip_coordinates = can_skip_coordinates
         self.nprocs = nprocs
 
         # get active design variables
@@ -768,8 +766,10 @@ class TacsUnsteadyInterface(SolverInterface):
             for ibody, body in enumerate(bodies):
                 shape_variables = (
                     body.variables["shape"] if "shape" in body.variables else []
+                ) + (
+                    scenario.variables["shape"] if "shape" in scenario.variables else []
                 )
-                if len(shape_variables) > 0 or not (self.can_skip_coordinates):
+                if len(shape_variables) > 0:
                     # TACS should accumulate the derivs internally, only evaluate at first timestep
                     if step == 0:
                         for nfunc, func in enumerate(scenario.functions):

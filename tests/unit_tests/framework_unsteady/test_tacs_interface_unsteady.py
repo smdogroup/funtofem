@@ -269,4 +269,5 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 if __name__ == "__main__":
     if comm.rank == 0:
         open(TacsUnsteadyFrameworkTest.FILENAME, "w").close()  # clear file
+    complex_mode = False
     unittest.main()
