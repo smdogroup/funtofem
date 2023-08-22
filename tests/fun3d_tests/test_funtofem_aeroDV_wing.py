@@ -72,13 +72,11 @@ class TestFuntofemMorph(unittest.TestCase):
         )
         # instead of shape do aerodynamic here
         wing.register_to(model)
-        test_scenario = Scenario.steady(
-            "turbulent", steps=5000
-        ).set_temperature(  # 5000
+        test_scenario = Scenario.steady("turbulent", steps=5000).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.get_variable("AOA").set_bounds(value=2.0)
-        test_scenario.adjoint_steps = 4000  # 2000
+        test_scenario.adjoint_steps = 4000
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
