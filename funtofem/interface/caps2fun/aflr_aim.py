@@ -90,6 +90,11 @@ class AflrAim:
             self.volume_aim.input.Mesh_Gen_Input_String = "-blc3"
         return self
 
+    def mesh_sizing(self, fun3d_bc):
+        if self.root_proc:
+            self.surface_aim.input.Mesh_Sizing = {fun3d_bc.name: fun3d_bc.BC_dict}
+        return
+
     def saveDictOptions(self, dictOptions):
         self._dictOptions = dictOptions
 
