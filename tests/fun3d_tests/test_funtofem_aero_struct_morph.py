@@ -75,7 +75,7 @@ class TestFuntofemMorph(unittest.TestCase):
 
         # design the struct shape or tacs model
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-        tacs_model.egads_aim.set_mesh(
+        tacs_model.mesh_aim.set_mesh(
             edge_pt_min=5,
             edge_pt_max=10,
             global_mesh_size=0.1,
