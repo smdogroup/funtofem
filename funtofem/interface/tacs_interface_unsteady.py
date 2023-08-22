@@ -127,6 +127,10 @@ class TacsUnsteadyInterface(SolverInterface):
         self.integration_settings = integration_settings
         self.gen_output = gen_output
 
+        # override boolean to compute coordinate derivatives
+        # when no shape variables present (needed for some unittests)
+        self._coord_deriv_override = False
+
         # initialize variables
         self._initialize_variables(
             model, assembler, thermal_index=thermal_index, struct_id=struct_id
@@ -769,7 +773,7 @@ class TacsUnsteadyInterface(SolverInterface):
                 ) + (
                     scenario.variables["shape"] if "shape" in scenario.variables else []
                 )
-                if len(shape_variables) > 0:
+                if len(shape_variables) > 0 or self._coord_deriv_override:
                     # TACS should accumulate the derivs internally, only evaluate at first timestep
                     if step == 0:
                         for nfunc, func in enumerate(scenario.functions):
