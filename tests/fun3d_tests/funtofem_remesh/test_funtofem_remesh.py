@@ -167,6 +167,9 @@ class TestFuntofemRemesh(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
 
+        # add remaining constraints to tacs model
+        caps2tacs.PinConstraint("root").register_to(tacs_model)
+
         # define the funtofem scenarios
         test_scenario = (
             Scenario.steady("euler", steps=5000)

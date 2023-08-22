@@ -62,7 +62,10 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, 1, bdf_filename, callback=elasticity_callback
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(elastic_scheme="meld", npts=5)
+        # transfer_settings = TransferSettings(elastic_scheme="rbf", npts=5, options={
+        #     "basis function" : "multiquadric"
+        # })
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )

@@ -80,7 +80,7 @@ class TestFuntofemMorph(unittest.TestCase):
             edge_pt_max=10,
             global_mesh_size=0.1,
             max_surf_offset=0.01,
-            max_dihedral=5,
+            max_dihedral_angle=5,
         ).register_to(tacs_model)
         tacs_aim = tacs_model.tacs_aim
         tacs_aim.set_config_parameter("view:flow", 0)
@@ -88,10 +88,33 @@ class TestFuntofemMorph(unittest.TestCase):
         model.structural = tacs_model
 
         wing = Body.aeroelastic("wing", boundary=2)
+
+        # setup the material and shell properties
+        aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
+
+        nribs = int(tacs_model.get_config_parameter("nribs"))
+        nspars = int(tacs_model.get_config_parameter("nspars"))
+
+        for irib in range(1, nribs + 1):
+            caps2tacs.ShellProperty(
+                caps_group=f"rib{irib}", material=aluminum, membrane_thickness=0.05
+            ).register_to(tacs_model)
+        for ispar in range(1, nspars + 1):
+            caps2tacs.ShellProperty(
+                caps_group=f"spar{ispar}", material=aluminum, membrane_thickness=0.05
+            ).register_to(tacs_model)
+        caps2tacs.ShellProperty(
+            caps_group="OML", material=aluminum, membrane_thickness=0.03
+        ).register_to(tacs_model)
+
         Variable.shape(name="aoa").set_bounds(
             lower=-1.0, value=0.0, upper=1.0
         ).register_to(wing)
         wing.register_to(model)
+
+        # add remaining constraints to tacs model
+        caps2tacs.PinConstraint("root").register_to(tacs_model)
+
         test_scenario = (
             Scenario.steady("turbulent", steps=5000)  # 5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
