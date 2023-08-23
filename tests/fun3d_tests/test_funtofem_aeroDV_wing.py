@@ -31,7 +31,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "naca_wing.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
 nprocs = comm.Get_size()
-bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
+bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist

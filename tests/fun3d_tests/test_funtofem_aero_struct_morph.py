@@ -28,7 +28,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "meshes", "naca_wing_MD.csm")
+csm_path = os.path.join(base_dir, "meshes", "naca_wing_multi-disc.csm")
 nprocs = comm.Get_size()
 
 results_folder = os.path.join(base_dir, "results")

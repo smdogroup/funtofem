@@ -28,7 +28,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "meshes", "naca_wing_MD.csm")
+csm_path = os.path.join(base_dir, "meshes", "naca_wing.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
 nprocs = comm.Get_size()
 bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
