@@ -58,7 +58,7 @@ if tacs_loader is not None:
 
 class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @classmethod
-    def morph(
+    def aero_morph(
         cls,
         solvers,
         model,
@@ -79,7 +79,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         )
 
     @classmethod
-    def remesh(cls, solvers, model, fun3d_remote):
+    def aero_remesh(cls, solvers, model, fun3d_remote):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and

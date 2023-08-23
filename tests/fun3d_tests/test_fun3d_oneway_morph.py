@@ -85,7 +85,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         )
 
         # analysis driver for mesh morphing
-        driver = Fun3dOnewayDriver.morph(solvers, model)
+        driver = Fun3dOnewayDriver.aero_morph(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(

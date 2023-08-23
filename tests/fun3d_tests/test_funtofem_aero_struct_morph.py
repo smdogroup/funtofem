@@ -136,7 +136,7 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         # solvers.structural = None  # will be built by the tacs model at runtime
 
         # analysis driver for mesh morphing
-        driver = FuntofemShapeDriver.morph(
+        driver = FuntofemShapeDriver.aero_morph(
             solvers,
             model,
             transfer_settings=TransferSettings(npts=200, elastic_scheme="meld"),
@@ -246,7 +246,7 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         # solvers.structural = None  # will be built by the tacs model at runtime
 
         # analysis driver for mesh morphing
-        driver = FuntofemShapeDriver.morph(
+        driver = FuntofemShapeDriver.aero_morph(
             solvers,
             model,
             transfer_settings=TransferSettings(npts=200, elastic_scheme="meld"),

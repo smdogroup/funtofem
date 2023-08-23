@@ -78,7 +78,7 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = Fun3dOnewayDriver.remesh(solvers, model, fun3d_remote)
+        driver = Fun3dOnewayDriver.aero_remesh(solvers, model, fun3d_remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(

@@ -150,7 +150,7 @@ class Fun3dRemote:
 
 class Fun3dOnewayDriver:
     @classmethod
-    def morph(cls, solvers, model, transfer_settings=None):
+    def aero_morph(cls, solvers, model, transfer_settings=None):
         """
         Build a Fun3dOnewayDriver with fun3dAim shape variables and FUN3D analysis
         all in one, using the FUN3D mesh morphing.
@@ -158,7 +158,7 @@ class Fun3dOnewayDriver:
         return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
 
     @classmethod
-    def remesh(cls, solvers, model, fun3d_remote):
+    def aero_remesh(cls, solvers, model, fun3d_remote):
         """
         Build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
