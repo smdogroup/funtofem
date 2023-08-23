@@ -28,10 +28,10 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "naca_wing.csm")
+csm_path = os.path.join(base_dir, "meshes", "naca_wing_MD.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
 nprocs = comm.Get_size()
-bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
+bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
@@ -75,7 +75,7 @@ class TestFuntofemMorph(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)  # 5000
+            Scenario.steady("euler", steps=5000)  # 5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )

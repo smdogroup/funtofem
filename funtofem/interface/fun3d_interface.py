@@ -112,6 +112,9 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_done = False
         self._adjoint_resid = None
 
+        # coordinate derivative testing option
+        self._grid_overset_override = False
+
         # Initialize the nodes associated with the bodies
         self.auto_coords = auto_coords
         if auto_coords:
@@ -239,6 +242,10 @@ class Fun3dInterface(SolverInterface):
             else:
                 interface.design_push_body_mesh(ibody, [], [])
                 interface.design_push_body_name(ibody, body.name)
+
+            # for derivative testing
+            if self._grid_overset_override:
+                interface.funtofem_update_surface()
 
         # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
         if self.model.flow is not None:
@@ -644,9 +651,15 @@ class Fun3dInterface(SolverInterface):
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
                     interface.design_push_body_name(ibody, body.name)
+
             self.fun3d_adjoint.initialize_grid()
             self.fun3d_adjoint.set_up_moving_body()
             self.fun3d_adjoint.initialize_funtofem_adjoint()
+
+            # for derivative testing
+            for ibody in enumerate(bodies, 1):
+                if self._grid_overset_override:
+                    interface.funtofem_update_surface()
 
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:
@@ -690,7 +703,13 @@ class Fun3dInterface(SolverInterface):
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
                     interface.design_push_body_name(ibody, body.name)
+
             self.fun3d_adjoint.initialize_grid()
+
+            # for derivative testing
+            for ibody in enumerate(bodies, 1):
+                if self._grid_overset_override:
+                    interface.funtofem_update_surface()
 
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:

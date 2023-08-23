@@ -8,7 +8,6 @@ from funtofem.model import (
     Scenario,
     Body,
     Function,
-    AitkenRelaxation,
 )
 from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
 
@@ -19,7 +18,7 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import FuntofemShapeDriver
+    from funtofem.driver import FuntofemShapeDriver, TransferSettings
     from funtofem.interface import Fun3dInterface
 
 if tacs_loader is not None and caps_loader is not None:
@@ -29,10 +28,8 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "naca_wing_MD.csm")
-fun3d_dir = os.path.join(base_dir, "meshes")
+csm_path = os.path.join(base_dir, "meshes", "naca_wing_MD.csm")
 nprocs = comm.Get_size()
-bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
@@ -40,11 +37,12 @@ if comm.rank == 0:  # make the results folder if doesn't exist
         os.mkdir(results_folder)
 
 
-class TestFuntofemMorph(unittest.TestCase):
+class TestFuntofemAeroStructMorph(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
     which uses fixed struct disps or no struct disps
-    TODO : in the case of an unsteady one, add methods for those too?
+    Note that FUN3D mesh morphing as of 8/22/23 can only be done if
+    the moving FSI changes shape but not if static aero surfaces change shape too
     """
 
     FILENAME = "funtofem-morph-shape-driver.txt"
@@ -116,7 +114,7 @@ class TestFuntofemMorph(unittest.TestCase):
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)  # 5000
+            Scenario.steady("euler", steps=5000)  # 5000
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
@@ -131,17 +129,22 @@ class TestFuntofemMorph(unittest.TestCase):
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
         ).set_units(qinf=1e4)
-        solvers.structural = None  # will be built by the tacs model at runtime
+        # solvers.structural = None  # will be built by the tacs model at runtime
 
         # analysis driver for mesh morphing
-        driver = FuntofemShapeDriver.nominal(solvers, model)
+        driver = FuntofemShapeDriver.nominal(
+            solvers,
+            model,
+            transfer_settings=TransferSettings(npts=200, elastic_scheme="meld"),
+            struct_nprocs=nprocs,
+        )
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
             "funtofem-aero+struct-shape-euler-aeroelastic",
             model,
             driver,
-            TestFuntofemMorph.FILEPATH,
+            TestFuntofemAeroStructMorph.FILEPATH,
             epsilon=1e-4,
             both_adjoint=False,
         )
@@ -152,5 +155,5 @@ class TestFuntofemMorph(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TestFuntofemMorph.FILEPATH, "w").close()
+        open(TestFuntofemAeroStructMorph.FILEPATH, "w").close()
     unittest.main()

@@ -64,6 +64,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         model,
         transfer_settings=None,
         comm_manager=None,
+        struct_nprocs=48,
     ):
         """
         Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
@@ -74,6 +75,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             transfer_settings=transfer_settings,
             comm_manager=comm_manager,
             is_paired=False,
+            struct_nprocs=struct_nprocs,
         )
 
     @classmethod
@@ -114,6 +116,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         model=None,
         fun3d_remote=None,
         is_paired=False,
+        struct_nprocs=48,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -143,6 +146,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         self.fun3d_remote = fun3d_remote
         self.is_paired = is_paired
+        self.struct_nprocs = struct_nprocs
 
         # get shape variables
         self.shape_variables = [
@@ -172,14 +176,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         if not self.is_remote:
             assert isinstance(self.solvers.flow, Fun3dInterface)
-            assert isinstance(
-                self.solvers.structural, TacsSteadyInterface
-            ) or isinstance(self.solvers.structural, TacsUnsteadyInterface)
-
-            if self.aero_shape and self.root_proc:
-                print(
-                    f"Warning!! You are trying to remesh the aero shape without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
-                )
+            if self.model.structural is None:
+                assert isinstance(
+                    self.solvers.structural, TacsSteadyInterface
+                ) or isinstance(self.solvers.structural, TacsUnsteadyInterface)
 
         # mesh-morphing with remote driver should work now, deprecated
         # if self.is_remote and self.aero_shape:
@@ -233,6 +233,48 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     scenario
                 )  # for writing sens files even in forward case
 
+    def _update_struct_transfer(self):
+        """update struct nnodes and transfer scheme if struct remeshing in the loop"""
+        # update transfer with the newly created mesh (and new #struct_nodes)
+        for body in self.model.bodies:
+            # update the transfer schemes for the new mesh size
+            body.update_transfer()
+
+            ns = body.struct_nnodes
+            dtype = body.dtype
+
+            # need to initialize transfer schemes again with tacs_comm
+            comm = self.comm
+            comm_manager = self.solvers.comm_manager
+            body.initialize_transfer(
+                comm=comm,
+                struct_comm=comm_manager.struct_comm,
+                struct_root=comm_manager.struct_root,
+                aero_comm=comm_manager.aero_comm,
+                aero_root=comm_manager.aero_root,
+                transfer_settings=self.transfer_settings,
+            )
+
+            # zero the initial struct loads and struct flux for each scenario
+            for scenario in self.model.scenarios:
+                # initialize new struct shape term for new ns
+                nf = scenario.count_adjoint_functions()
+                body.struct_shape_term[scenario.id] = np.zeros(
+                    (3 * ns, nf), dtype=dtype
+                )
+
+                # initialize new elastic struct vectors
+                if body.transfer is not None:
+                    body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+                    body.struct_disps[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+
+                # initialize new struct heat flux
+                if body.thermal_transfer is not None:
+                    body.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=dtype)
+                    body.struct_temps[scenario.id] = (
+                        np.ones(ns, dtype=dtype) * scenario.T_ref
+                    )
+
     def solve_forward(self):
         """
         Create new aero/struct geometries and run fully-coupled forward analysis.
@@ -265,7 +307,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.tacs_aim.pre_analysis()
 
             # move the bdf and dat file to the fun3d_dir
-            if self.is_remote:
+            if self.is_remote and self.comm.rank == 0:
                 bdf_src = os.path.join(
                     self.tacs_aim.analysis_dir, f"{self.tacs_aim.project_name}.bdf"
                 )
@@ -284,10 +326,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.solvers.structural = TacsInterface.create_from_bdf(
                     model=self.model,
                     comm=self.comm,
-                    nprocs=self.solvers.structural.nprocs,
+                    nprocs=self.struct_nprocs,
                     bdf_file=self.tacs_aim.dat_file_path,
                     output_dir=self.tacs_aim.analysis_dir,
                 )
+
+                # update the structural part of transfer scheme due to remeshing
+                self._update_struct_transfer()
 
         if self.is_remote:
             # write the funtofem design input file
