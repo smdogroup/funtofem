@@ -127,9 +127,9 @@ class TestFuntofemRemesh(unittest.TestCase):
         # design the TACS struct shape model
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
-            edge_pt_min=5,
-            edge_pt_max=10,
-            global_mesh_size=0.1,
+            edge_pt_min=15,
+            edge_pt_max=20,
+            global_mesh_size=0.01,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
         ).register_to(

@@ -37,7 +37,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
         os.mkdir(results_folder)
 
 # cases = ["euler", "turbulent"]
-case = "turbulent"
+case = "euler"
 
 
 class TestFuntofemAeroStructMorph(unittest.TestCase):
@@ -78,9 +78,9 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         # design the struct shape or tacs model
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.mesh_aim.set_mesh(
-            edge_pt_min=5,
-            edge_pt_max=10,
-            global_mesh_size=0.1,
+            edge_pt_min=15,
+            edge_pt_max=20,
+            global_mesh_size=0.01,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
         ).register_to(tacs_model)
@@ -184,9 +184,9 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         # design the struct shape or tacs model
         tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
         tacs_model.mesh_aim.set_mesh(
-            edge_pt_min=5,
-            edge_pt_max=10,
-            global_mesh_size=0.1,
+            edge_pt_min=15,
+            edge_pt_max=20,
+            global_mesh_size=0.01,
             max_surf_offset=0.01,
             max_dihedral_angle=5,
         ).register_to(tacs_model)

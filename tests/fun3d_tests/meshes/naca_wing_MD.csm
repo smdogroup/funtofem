@@ -67,10 +67,12 @@ ifthen view:struct EQ 1
     select face 2
        attribute capsGroup !$rib+nribs
        attribute _color $green
-    select face 1
+    select face 1 # main OML
        attribute capsGroup $OML
        attribute _color $blue
-   
+    select face 5 # TE OML
+       attribute capsGroup $OML
+       attribute _color $blue   
     store upperWing
    
     restore wingSolidBody
@@ -82,7 +84,10 @@ ifthen view:struct EQ 1
     select face 2
        attribute capsGroup !$rib+nribs
        attribute _color $green
-    select face 1
+    select face 1 # main OML
+       attribute capsGroup $OML
+       attribute _color $blue
+    select face 3 # TE OML
        attribute capsGroup $OML
        attribute _color $blue
     store lowerWing
@@ -231,4 +236,4 @@ endif
 end
 |||||||||||
 ||||||||||||||||||||||||||||||
-||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||
