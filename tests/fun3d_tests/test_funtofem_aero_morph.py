@@ -99,7 +99,7 @@ class TestFuntofemMorph(unittest.TestCase):
         )
 
         # analysis driver for mesh morphing
-        driver = FuntofemShapeDriver.nominal(solvers, model)
+        driver = FuntofemShapeDriver.morph(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
@@ -163,7 +163,7 @@ class TestFuntofemMorph(unittest.TestCase):
         )
 
         # analysis driver for mesh morphing
-        driver = FuntofemShapeDriver.nominal(solvers, model)
+        driver = FuntofemShapeDriver.morph(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(

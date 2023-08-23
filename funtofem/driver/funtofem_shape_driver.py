@@ -7,10 +7,10 @@ Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic mes
 to split our Fun3dOnewayDriver scripts in implementation into two files, a my_funtofem_driver.py and a my_funtofem_analyzer.py.
 The file my_funtofem_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
 also uses system calls to the file my_fun3d_analyzer.py which runs the FUN3D analysis for each mesh. There are two 
-class methods FuntofemShapeDriver.remote and FuntofemShapeDriver.analysis which build the drivers for each of the two files.
+class methods FuntofemShapeDriver.remesh and FuntofemShapeDriver.analysis which build the drivers for each of the two files.
 
 NOTE :  If you need aerodynamic shape derivatives through ESP/CAPS, you should build the driver class using the class method 
-FuntofemShapeDriver.remote() and setup a separate script with a driver running the analysis. If you need structural shape derivatives
+FuntofemShapeDriver.remesh() and setup a separate script with a driver running the analysis. If you need structural shape derivatives
 through ESP/CAPS or no shape derivatives, you can build the driver with the analysis() class method and optimize it without remote
 calls and a separate script. This is because only remeshing of the aero side requires a remote driver + analysis driver in order
 to reset the FUN3D system environment. More details on these two files are provided below.
@@ -58,7 +58,7 @@ if tacs_loader is not None:
 
 class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @classmethod
-    def nominal(
+    def morph(
         cls,
         solvers,
         model,
@@ -79,7 +79,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         )
 
     @classmethod
-    def remote(cls, solvers, model, fun3d_remote):
+    def remesh(cls, solvers, model, fun3d_remote):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and

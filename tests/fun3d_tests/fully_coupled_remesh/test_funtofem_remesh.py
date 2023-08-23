@@ -87,7 +87,7 @@ class TestFuntofemRemesh(unittest.TestCase):
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = FuntofemShapeDriver.remote(solvers, model, fun3d_remote)
+        driver = FuntofemShapeDriver.remesh(solvers, model, fun3d_remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
@@ -185,7 +185,7 @@ class TestFuntofemRemesh(unittest.TestCase):
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = FuntofemShapeDriver.remote(solvers, model, fun3d_remote)
+        driver = FuntofemShapeDriver.remesh(solvers, model, fun3d_remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
