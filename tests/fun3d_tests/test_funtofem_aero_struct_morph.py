@@ -122,7 +122,7 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 4000 
+        test_scenario.adjoint_steps = 4000
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.include(Function.ksfailure(ks_weight=10.0))

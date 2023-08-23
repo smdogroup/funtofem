@@ -54,8 +54,6 @@ class TestFuntofemMorph(unittest.TestCase):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
 
-
-
         wing = Body.aeroelastic(
             "wing", boundary=2, relaxation_scheme=AitkenRelaxation()
         )
