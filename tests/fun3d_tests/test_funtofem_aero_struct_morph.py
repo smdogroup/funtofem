@@ -118,11 +118,11 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
         test_scenario = (
-            Scenario.steady("euler", steps=5000)  # 5000
+            Scenario.steady("euler", steps=5000)
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 4000  # 2000
+        test_scenario.adjoint_steps = 4000 
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.include(Function.ksfailure(ks_weight=10.0))
@@ -133,7 +133,7 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
         ).set_units(qinf=1e4)
-        # solvers.structural = None  # will be built by the tacs model at runtime
+        # solvers.structural will be built by the TACS model at runtime
 
         # analysis driver for mesh morphing
         driver = FuntofemShapeDriver.aero_morph(
@@ -228,11 +228,11 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         )
 
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)  # 5000
+            Scenario.steady("turbulent", steps=5000)
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 4000  # 2000
+        test_scenario.adjoint_steps = 4000
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.include(Function.ksfailure(ks_weight=10.0))
@@ -243,7 +243,7 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
         ).set_units(qinf=1e4)
-        # solvers.structural = None  # will be built by the tacs model at runtime
+        # solvers.structural will be built by the TACS model at runtime
 
         # analysis driver for mesh morphing
         driver = FuntofemShapeDriver.aero_morph(

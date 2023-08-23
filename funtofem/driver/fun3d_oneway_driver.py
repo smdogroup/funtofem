@@ -357,7 +357,8 @@ class Fun3dOnewayDriver:
                 for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
 
-        # write sens file for remote to read or if shape change all in one
+        # Write sens file for remote to read. Analysis functions/derivatives are being written to a file
+        # to be read by the relevant AIM(s) which is in the remote driver.
         if not self.is_remote:
             if not self.is_paired:
                 filepath = self.model.flow.fun3d_aim.sens_file_path

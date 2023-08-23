@@ -46,26 +46,15 @@ class TestFuntofemMorph(unittest.TestCase):
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "funtofem-shape-driver.txt"
+    FILENAME = "funtofem-nlbgs-aero-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_nominal(self):
         """test no struct disps into FUN3D"""
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
-        # design the shape
-        # fun3d_model = Fun3dModel.build_morph(csm_file=csm_path, comm=comm, project_name="funtofem_CAPS")
-        # aflr_aim = fun3d_model.aflr_aim
-        # fun3d_aim = fun3d_model.fun3d_aim
 
-        # smaller mesh length is more refined, original value = 5.0
-        # aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=3.0)
-        # Fun3dBC.inviscid(caps_group="wall").register_to(fun3d_model)
 
-        # farfield = Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
-        # aflr_aim.mesh_sizing(farfield)
-        # fun3d_model.setup()
-        # model.flow = fun3d_model
 
         wing = Body.aeroelastic(
             "wing", boundary=2, relaxation_scheme=AitkenRelaxation()

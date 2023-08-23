@@ -68,11 +68,11 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("turbulent", steps=5000)  # 5000
+            Scenario.steady("euler", steps=5000)
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
-        test_scenario.adjoint_steps = 4000  # 4000
+        test_scenario.adjoint_steps = 4000
         # test_scenario.get_variable("AOA").set_bounds(value=2.0)
 
         test_scenario.include(Function.lift()).include(Function.drag())
@@ -89,7 +89,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
-            "fun3d+oneway-morph-turbulent-aeroelastic",
+            "fun3d+oneway-morph-euler-aeroelastic",
             model,
             driver,
             TestFun3dOnewayMorph.FILEPATH,

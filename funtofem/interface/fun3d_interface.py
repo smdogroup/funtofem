@@ -257,7 +257,7 @@ class Fun3dInterface(SolverInterface):
                 print("Negative volume returning fail")
             return 1
 
-        # update Funtofem xA0 coords from FUN3D if doing mesh morphing
+        # update FUNtoFEM xA0 coords from FUN3D if doing mesh morphing
         if self.model.flow is not None:
             if self.model.flow.mesh_morph:
                 for ibody, body in enumerate(bodies, 1):

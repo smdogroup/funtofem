@@ -496,7 +496,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     def _get_remote_functions(self, discipline="aerodynamic"):
         """
-                Read function values from fun3dAIM when operating in the remote version of the driver.
+        Read function values from fun3dAIM when operating in the remote version of the driver.
         Note: it does not matter which AIM we read the function values from since it's the same.
         """
         functions = self.model.get_functions()
