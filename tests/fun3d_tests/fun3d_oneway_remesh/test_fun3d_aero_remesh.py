@@ -16,14 +16,13 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import Fun3dOnewayDriver
-    from funtofem.interface import Fun3dInterface
+    from funtofem.driver import Fun3dOnewayDriver, Fun3dRemote
 
 np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "meshes", "naca_wing.csm")
+csm_path = os.path.join(base_dir, "naca_wing.csm")
 
 analysis_file = os.path.join(base_dir, "run_fun3d_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
@@ -34,31 +33,31 @@ if comm.rank == 0:  # make the results folder if doesn't exist
         os.mkdir(results_folder)
 
 
-class TestFun3dOnewayMorph(unittest.TestCase):
+@unittest.skipIf(
+    fun3d_loader is None,
+    "required to have FUN3D",
+)
+class TestFun3dOnewayRemesh(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
     which uses fixed struct disps or no struct disps
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "fun3d-oneway-shape-driver.txt"
+    FILENAME = "fun3d-oneway-shape.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_nominal(self):
-        """test no struct disps into FUN3D"""
+    def test_remote_driver(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
         # design the shape
-        fun3d_model = Fun3dModel.build_morph(
-            csm_file=csm_path, comm=comm, project_name="funtofem_CAPS"
-        )
+        fun3d_model = Fun3dModel.build(csm_file=csm_path, comm=comm)
         aflr_aim = fun3d_model.aflr_aim
-        fun3d_aim = fun3d_model.fun3d_aim
 
-        aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
-        Fun3dBC.inviscid(caps_group="wall").register_to(fun3d_model)
-        farfield = Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
-        aflr_aim.mesh_sizing(farfield)
+        aflr_aim.set_surface_mesh(ff_growth=1.2, min_scale=0.01, max_scale=5.0)
+        aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.01)
+        Fun3dBC.inviscid(caps_group="wall", wall_spacing=0.001).register_to(fun3d_model)
+        Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
         model.flow = fun3d_model
 
@@ -68,33 +67,27 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         ).register_to(wing)
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("euler", steps=5000)
+            Scenario.steady("euler", steps=10)
             .set_temperature(T_ref=300.0, T_inf=300.0)
-            .fun3d_project(fun3d_aim.project_name)
+            .fun3d_project("funtofem_CAPS")
         )
-        test_scenario.adjoint_steps = 4000
         # test_scenario.get_variable("AOA").set_bounds(value=2.0)
-
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_dir="meshes", auto_coords=False
-        )
-
-        # analysis driver for mesh morphing
-        driver = Fun3dOnewayDriver.aero_morph(solvers, model)
+        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
+        driver = Fun3dOnewayDriver.aero_remesh(solvers, model, fun3d_remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
-            "fun3d+oneway-morph-euler-aeroelastic",
+            "fun3d+oneway-remesh-euler",
             model,
             driver,
-            TestFun3dOnewayMorph.FILEPATH,
-            epsilon=1e-4,
-            both_adjoint=False,  # have to run adjoint twice to read funcVals from sensFile
+            TestFun3dOnewayRemesh.FILEPATH,
+            both_adjoint=False,
+            epsilon=1e-1,
         )
         self.assertTrue(max_rel_error < 1e-4)
 
@@ -103,5 +96,5 @@ class TestFun3dOnewayMorph(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TestFun3dOnewayMorph.FILEPATH, "w").close()
+        open(TestFun3dOnewayRemesh.FILEPATH, "w").close()
     unittest.main()

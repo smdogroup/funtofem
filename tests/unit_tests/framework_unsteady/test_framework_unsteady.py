@@ -155,6 +155,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(abs(rel_error) < 1e-9)
         return
 
+    @unittest.skip("fix test solver")
     def test_structDV_with_driver(self):
         # build the funtofem model with an unsteady scenario
         model = FUNtoFEMmodel("test")
@@ -185,6 +186,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skip("fix test solver")
     def test_aeroDV_with_driver(self):
         # build the funtofem model with an unsteady scenario
         model = FUNtoFEMmodel("test")

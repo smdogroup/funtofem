@@ -25,7 +25,6 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-bdf_file = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 results_folder = os.path.join(base_dir, "results")
 if comm.rank == 0:  # make the results folder if doesn't exist
@@ -53,7 +52,7 @@ class TestFun3dOnewayAero(unittest.TestCase):
         test_scenario = Scenario.steady("turbulent", steps=2000).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.get_variable("AOA")
+        aoa = test_scenario.get_variable("AOA").set_bounds(value=2.0)
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 

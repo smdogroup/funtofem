@@ -1,0 +1,9 @@
+&body_definitions
+  n_moving_bodies = 1,
+  body_name(1) = 'bc-6',
+  parent_name(1) = '',         ! '' means motion relative to inertial ref frame
+  n_defining_bndry(1) =  1,    ! number of boundaries that define this body
+  defining_bndry(1,1) = 2,     ! index 1: boundary number index 2: body number
+  motion_driver(1) = 'funtofem', ! tells fun3d to use motion inputs from python
+  mesh_movement(1) = 'deform',  ! can use 'rigid', 'deform', 'rigid+deform' with funtofem interface
+/
