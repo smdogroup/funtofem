@@ -19,7 +19,7 @@ Differentiable CAD Geometry,” AIAA Scitech 2023 Forum, National Harbor, MD, 20
 </figure>
 <br>
 <figure class="image">
-  <img src="sst_optimization/results/sst_fun3d_flow.png" width=\linewidth />
+  <img src="sst_optimization/results/sst_fun3d_flow.png" width=600 />
   <figcaption><em>Pressure contours in the Mach 2.0 flow solved in FUN3D.</em></figcaption>
 </figure>
 
@@ -31,5 +31,8 @@ ysis and Optimization,” 2018 AIAA/ASCE/AHS/ASC Structures, Structural Dynamics
 doi:10.2514/6.2018-0100.
 ```
 <figure class="image">
-  <img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=\linewidth />
+  <img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=400 />
+</figure> 
+<figure class="image">
+  <img src="pyopt_togw_optimization/images/crm_aero_struct_geom.png" width=400 />
 </figure>
