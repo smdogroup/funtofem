@@ -52,6 +52,7 @@ class Fun3dInterface(SolverInterface):
         forward_options=None,
         adjoint_options=None,
         auto_coords=True,
+        grid_overset_override=False,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -113,7 +114,8 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = None
 
         # coordinate derivative testing option
-        self._grid_overset_override = False
+        self._grid_overset_override = grid_overset_override
+        self._aero_X_orig = None
 
         # Initialize the nodes associated with the bodies
         self.auto_coords = auto_coords
@@ -179,6 +181,9 @@ class Fun3dInterface(SolverInterface):
             # Initialize the aerodynamic node locations
             body.initialize_aero_nodes(aero_X, aero_id=aero_id)
 
+        # store the initial aero coordinates
+        self._aeroX_orig = body.get_aero_nodes().copy()
+
         # Change directory back to the root directory
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
@@ -242,10 +247,6 @@ class Fun3dInterface(SolverInterface):
             else:
                 interface.design_push_body_mesh(ibody, [], [])
                 interface.design_push_body_name(ibody, body.name)
-
-            # for derivative testing
-            if self._grid_overset_override:
-                interface.funtofem_update_surface()
 
         # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
         if self.model.flow is not None:
@@ -504,7 +505,9 @@ class Fun3dInterface(SolverInterface):
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
-            aero_disps = body.get_aero_disps(scenario, time_index=step)
+            aero_disps = body.get_aero_disps(
+                scenario, time_index=step, add_dxa0=self._grid_overset_override
+            )
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
             if deform and aero_disps is not None and aero_nnodes > 0:
@@ -656,18 +659,15 @@ class Fun3dInterface(SolverInterface):
             self.fun3d_adjoint.set_up_moving_body()
             self.fun3d_adjoint.initialize_funtofem_adjoint()
 
-            # for derivative testing
-            for ibody in enumerate(bodies, 1):
-                if self._grid_overset_override:
-                    interface.funtofem_update_surface()
-
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
-                aero_disps = body.get_aero_disps(scenario)
+                aero_disps = body.get_aero_disps(
+                    scenario, add_dxa0=self._grid_overset_override
+                )
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps is not None and aero_nnodes > 0:
                     dx = np.asfortranarray(aero_disps[0::3])
@@ -705,11 +705,6 @@ class Fun3dInterface(SolverInterface):
                     interface.design_push_body_name(ibody, body.name)
 
             self.fun3d_adjoint.initialize_grid()
-
-            # for derivative testing
-            for ibody in enumerate(bodies, 1):
-                if self._grid_overset_override:
-                    interface.funtofem_update_surface()
 
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:
@@ -1074,6 +1069,8 @@ class Fun3dInterface(SolverInterface):
             model=fun3d_interface.model,
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
+            auto_coords=fun3d_interface.auto_coords,
+            grid_overset_override=fun3d_interface._grid_overset_override,
         )
 
     @classmethod
@@ -1092,4 +1089,6 @@ class Fun3dInterface(SolverInterface):
             model=fun3d_interface.model,
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
+            auto_coords=fun3d_interface.auto_coords,
+            grid_overset_override=fun3d_interface._grid_overset_override,
         )

@@ -224,6 +224,7 @@ class Body(Base):
         self.theta_max = 1.0
 
         self.aitken_init = False
+        self._aero_X_orig = None
 
         # forward variables
         self.struct_disps = {}
@@ -395,6 +396,8 @@ class Body(Base):
         self.aero_X = np.array(aero_X).astype(self.dtype)
         self.aero_nnodes = len(aero_X) // 3
         self.aero_id = aero_id
+
+        self._aero_X_orig = self.aero_X.copy()
 
         return
 
@@ -746,7 +749,7 @@ class Body(Base):
 
         return
 
-    def get_aero_disps(self, scenario, time_index=0):
+    def get_aero_disps(self, scenario, time_index=0, add_dxa0=False):
         """
         Get the displacements on the aerodynamic surface for the given scenario.
 
@@ -759,9 +762,13 @@ class Body(Base):
         """
         if self.transfer is not None:
             if scenario.steady:
-                return self.aero_disps[scenario.id]
+                aero_disps = self.aero_disps[scenario.id]
             else:
-                return self.aero_disps[scenario.id][time_index]
+                aero_disps = self.aero_disps[scenario.id][time_index]
+            if add_dxa0:
+                aero_disps += self.aero_X - self._aero_X_orig
+                ddisps = self.aero_X - self._aero_X_orig
+            return aero_disps
         else:
             return None
 

@@ -1130,6 +1130,9 @@ class CoordinateDerivativeTester:
         dstructX_ds = np.random.rand(body.struct_X.shape[0])
         dstructX_ds_row = np.expand_dims(dstructX_ds, axis=0)
 
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_real()
+
         """Adjoint method to compute coordinate derivatives and TD"""
         self.driver.solve_forward()
         self.driver.solve_adjoint()
@@ -1218,6 +1221,9 @@ class CoordinateDerivativeTester:
         # random contravariant tensor d(aero_X)/ds for testing aero shape
         daeroX_ds = np.random.rand(body.aero_X.shape[0])
         daeroX_ds_row = np.expand_dims(daeroX_ds, axis=0)
+
+        if self.driver.solvers.uses_fun3d:
+            self.driver.solvers.make_flow_real()
 
         """Adjoint method to compute coordinate derivatives and TD"""
         self.driver.solve_forward()
