@@ -14,12 +14,12 @@ Engelstad, S. P., Burke, B. J., Patel, R. N., Sahu, S., and Kennedy, G. J., “H
 Differentiable CAD Geometry,” AIAA Scitech 2023 Forum, National Harbor, MD, 2023. doi:10.2514/6.2023-0329.
 ```
 <figure class="image">
-  <img src="sst_optimization/results/sst_opt_design.png" width=600 />
+  <img src="sst_optimization/results/sst_opt_design.png" width=\linewidth/>
   <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
 </figure>
 <br>
 <figure class="image">
-  <img src="sst_optimization/results/sst_fun3d_flow.png" width=500 />
+  <img src="sst_optimization/results/sst_fun3d_flow.png" width=0.6*\linewidth />
   <figcaption><em>Pressure contours in the Mach 2.0 flow solved in FUN3D.</em></figcaption>
 </figure>
 
@@ -30,4 +30,4 @@ Jacobson, K., Kiviaho, J., Smith, M., and Kennedy, G., “An Aeroelastic Couplin
 ysis and Optimization,” 2018 AIAA/ASCE/AHS/ASC Structures, Structural Dynamics, and Materials Conference, 2018.
 doi:10.2514/6.2018-0100.
 ```
-<img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=500 />
+<img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=\linewidth />
