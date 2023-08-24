@@ -39,6 +39,9 @@
   <img src="archive/images/f2f_derivative_tests.drawio.png" width=\linewidth/>
 </figure>
 
+### Fully Coupled Coordinate Derivatives ###
+All aero and structural coordinate derivatives pass to machine precision, complex step, TBD on the diagram.
+
 ### Aerodynamic Mesh Morphing Derivatives ###
 <figure class="image">
   <img src="archive/images/aero_shape_derivs.drawio.png" width=\linewidth/>
