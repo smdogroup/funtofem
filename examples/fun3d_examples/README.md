@@ -19,7 +19,7 @@ Differentiable CAD Geometry,” AIAA Scitech 2023 Forum, National Harbor, MD, 20
 </figure>
 <br>
 <figure class="image">
-  <img src="sst_optimization/results/sst_fun3d_flow.png" width=0.6*\linewidth />
+  <img src="sst_optimization/results/sst_fun3d_flow.png" width=\linewidth />
   <figcaption><em>Pressure contours in the Mach 2.0 flow solved in FUN3D.</em></figcaption>
 </figure>
 
@@ -30,4 +30,6 @@ Jacobson, K., Kiviaho, J., Smith, M., and Kennedy, G., “An Aeroelastic Couplin
 ysis and Optimization,” 2018 AIAA/ASCE/AHS/ASC Structures, Structural Dynamics, and Materials Conference, 2018.
 doi:10.2514/6.2018-0100.
 ```
-<img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=\linewidth />
+<figure class="image">
+  <img src="pyopt_togw_optimization/images/crm_thick_opt.png" width=\linewidth />
+</figure>
