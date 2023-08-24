@@ -7,6 +7,6 @@
 ### TACS Oneway NACA Wing Example ###
 <i>Directory</i> - `tacs_oneway_naca_wing`
 <figure class="image">
-  <img src="tacs_oneway_naca_wing/images/tacs_oneway_opt.png" width=600 />
+  <img src="tacs_oneway_naca_wing/images/tacs_oneway_opt.png" width=\linewidth/>
   <figcaption><em>Optimization results from the tacs oneway-coupled driver of the NACA wing.</em></figcaption>
 </figure>
