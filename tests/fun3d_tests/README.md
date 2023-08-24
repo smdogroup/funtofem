@@ -25,17 +25,14 @@
 ### FUN3D Discipline Tests ###
 <figure class="image">
   <img src="archive/images/fun3d_tests.drawio.png" width=\linewidth/>
-  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
 </figure>
 
 ### Fully-Coupled Steady-State Derivatives ###
 <figure class="image">
   <img src="archive/images/f2f_derivative_tests.drawio.png" width=\linewidth/>
-  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
 </figure>
 
 ### Aerodynamic Mesh Morphing Derivatives ###
 <figure class="image">
   <img src="archive/images/aero_shape_derivs.drawio.png" width=\linewidth/>
-  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
 </figure>
