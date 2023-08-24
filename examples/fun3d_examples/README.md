@@ -17,6 +17,7 @@ Differentiable CAD Geometry,” AIAA Scitech 2023 Forum, National Harbor, MD, 20
   <img src="sst_optimization/results/sst_opt_design.png" width=600 />
   <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
 </figure>
+<br>
 <figure class="image">
   <img src="sst_optimization/results/sst_fun3d_flow.png" width=500 />
   <figcaption><em>Pressure contours in the Mach 2.0 flow solved in FUN3D.</em></figcaption>
