@@ -21,3 +21,21 @@
 * `test_funtofem_aero_struct_morph.py` - Compare adjoint derivatives to finite difference for aerodynamic mesh morphing with a fully-coupled funtofem driver with the `FuntofemShapeDriver`. Similar to the previous script `test_funtofem_aero_morph.py` except in this case the structure rotates with the aerodynamic mesh through structural remeshing.
 * `test_funtofem_aeroDV_wing.py` - Perform the same finite difference test in the script `test_funtofem_aero_morph.py` for AOA derivatives except use an `aerodynamic` design variable instead of a `shape` variable for AOA.
 * `test_run_complex_fun3d.py` - Run complex flow analysis in FUN3D to activate internal FUN3D-F2F complex-step tests.
+
+### FUN3D Discipline Tests ###
+<figure class="image">
+  <img src="archive/images/fun3d_tests.drawio.png" width=\linewidth/>
+  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
+</figure>
+
+### Fully-Coupled Steady-State Derivatives ###
+<figure class="image">
+  <img src="archive/images/f2f_derivative_tests.drawio.png" width=\linewidth/>
+  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
+</figure>
+
+### Aerodynamic Mesh Morphing Derivatives ###
+<figure class="image">
+  <img src="archive/images/aero_shape_derivs.drawio.png" width=\linewidth/>
+  <figcaption><em>Optimal thicknesses for the supersonic transport wing.</em></figcaption>
+</figure>
