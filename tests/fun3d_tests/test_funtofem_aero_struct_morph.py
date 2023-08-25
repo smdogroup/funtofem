@@ -148,8 +148,8 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
             "funtofem-aero+struct-shape-euler-aeroelastic",
             model,
             driver,
-            TestFuntofemAeroStructMorph.FILEPATH,
-            epsilon=1e-4,
+            self.FILEPATH,
+            epsilon=1e-1,  # larger step bc remeshing
             both_adjoint=False,
         )
         self.assertTrue(max_rel_error < 1e-4)
@@ -258,8 +258,8 @@ class TestFuntofemAeroStructMorph(unittest.TestCase):
             "funtofem-aero+struct-shape-turbulent-aerothermoelastic",
             model,
             driver,
-            TestFuntofemAeroStructMorph.FILEPATH,
-            epsilon=1e-4,
+            self.FILEPATH,
+            epsilon=1e-1,  # larger step bc remeshing
             both_adjoint=False,
         )
         self.assertTrue(max_rel_error < 1e-4)
