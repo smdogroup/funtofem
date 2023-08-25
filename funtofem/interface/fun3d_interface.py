@@ -52,7 +52,7 @@ class Fun3dInterface(SolverInterface):
         forward_options=None,
         adjoint_options=None,
         auto_coords=True,
-        grid_overset_override=False,
+        coord_test_override=False,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -114,7 +114,7 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = None
 
         # coordinate derivative testing option
-        self._grid_overset_override = grid_overset_override
+        self._coord_test_override = coord_test_override
         self._aero_X_orig = None
 
         # Initialize the nodes associated with the bodies
@@ -506,7 +506,7 @@ class Fun3dInterface(SolverInterface):
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(
-                scenario, time_index=step, add_dxa0=self._grid_overset_override
+                scenario, time_index=step, add_dxa0=self._coord_test_override
             )
             aero_nnodes = body.get_num_aero_nodes()
             deform = "deform" in body.motion_type
@@ -666,7 +666,7 @@ class Fun3dInterface(SolverInterface):
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(
-                    scenario, add_dxa0=self._grid_overset_override
+                    scenario, add_dxa0=self._coord_test_override
                 )
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps is not None and aero_nnodes > 0:
@@ -1070,7 +1070,7 @@ class Fun3dInterface(SolverInterface):
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
-            grid_overset_override=fun3d_interface._grid_overset_override,
+            coord_test_override=fun3d_interface._coord_test_override,
         )
 
     @classmethod
@@ -1090,5 +1090,5 @@ class Fun3dInterface(SolverInterface):
             qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
-            grid_overset_override=fun3d_interface._grid_overset_override,
+            coord_test_override=fun3d_interface._coord_test_override,
         )

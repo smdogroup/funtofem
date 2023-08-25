@@ -73,7 +73,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(
-            comm, model, fun3d_dir="meshes", grid_overset_override=True
+            comm, model, fun3d_dir="meshes", coord_test_override=True
         )
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, nprocs=nprocs, bdf_file=bdf_file
@@ -121,7 +121,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(
-            comm, model, fun3d_dir="meshes", grid_overset_override=True
+            comm, model, fun3d_dir="meshes", coord_test_override=True
         )
         solvers.structural = TacsInterface.create_from_bdf(
             model, comm, nprocs=nprocs, bdf_file=bdf_file
