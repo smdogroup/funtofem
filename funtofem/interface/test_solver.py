@@ -161,14 +161,17 @@ class TestAerodynamicSolver(SolverInterface):
                 self.npts = npts
                 self.aero_dvs = dvs
 
-                # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
+                # choose random aero time step
+                self.dt = 0.01
+
+                # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * (dt * step)
                 self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
                 self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
                 self.c1 = 0.01 * (
                     np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5
                 )
 
-                # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
+                # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * dt
                 self.Jac2 = 0.1 * (np.random.rand(self.npts, self.npts) - 0.5)
                 self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
                 self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
@@ -315,6 +318,8 @@ class TestAerodynamicSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        aero_time = step * self.scenario_data[scenario.id].dt
+
         for body in bodies:
             # Perform the "analysis"
             # Note that the body class expects that you will write the new
@@ -328,9 +333,9 @@ class TestAerodynamicSolver(SolverInterface):
                     self.scenario_data[scenario.id].c1, self.aero_dvs
                 )
                 if not scenario.steady:
-                    aero_loads[:] += self.scenario_data[scenario.id].omega1
+                    aero_loads[:] += self.scenario_data[scenario.id].omega1 * aero_time
 
-            #print(f"fA-{step} = {aero_loads[:3]}")
+            # print(f"fA-{step} = {aero_loads[:3]}")
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario, step)
@@ -341,8 +346,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux[:] += np.dot(
                     self.scenario_data[scenario.id].c2, self.aero_dvs
                 )
-                if not scenario.steady:
-                    aero_flux[:] += self.scenario_data[scenario.id].omega2
+                if not scenario.steady:  # omega * dt term here
+                    aero_flux[:] += self.scenario_data[scenario.id].omega2 * aero_time
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -401,7 +406,7 @@ class TestAerodynamicSolver(SolverInterface):
 
         if step > 0:
             self.get_function_gradients(scenario, bodies)
-        else: # step == 0
+        else:  # step == 0
             # want to zero out adjoints used for derivatives, since no analysis done on step 0
             for body in bodies:
                 aero_loads_ajp = body.get_aero_loads_ajp(scenario)
@@ -471,7 +476,10 @@ class TestStructuralSolver(SolverInterface):
                 self.npts = npts
                 self.struct_dvs = struct_dvs
 
-                # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
+                # choose time step
+                self.dt = 0.01
+
+                # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * time
                 self.Jac1 = (
                     0.01
                     * elastic_scale
@@ -488,7 +496,7 @@ class TestStructuralSolver(SolverInterface):
                     * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
                 )
 
-                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
+                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * time
                 self.Jac2 = (
                     0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
                 )
@@ -653,6 +661,8 @@ class TestStructuralSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        struct_time = step * self.scenario_data[scenario.id].dt
+
         for body in bodies:
             # Perform the "analysis"
             struct_loads = body.get_struct_loads(scenario, step)
@@ -668,7 +678,9 @@ class TestStructuralSolver(SolverInterface):
                     self.scenario_data[scenario.id].c1, self.struct_dvs
                 )
                 if not scenario.steady:
-                    struct_disps[:] += self.scenario_data[scenario.id].omega1
+                    struct_disps[:] += (
+                        self.scenario_data[scenario.id].omega1 * struct_time
+                    )
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario, step)
@@ -684,7 +696,9 @@ class TestStructuralSolver(SolverInterface):
                     self.scenario_data[scenario.id].c2, self.struct_dvs
                 )
                 if not scenario.steady:
-                    struct_temps[:] += self.scenario_data[scenario.id].omega2
+                    struct_temps[:] += (
+                        self.scenario_data[scenario.id].omega2 * struct_time
+                    )
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -725,7 +739,9 @@ class TestStructuralSolver(SolverInterface):
                         self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
                     )
                     if include_rhs and func.analysis_type == "structural":
-                        struct_loads_ajp[:, k] += self.scenario_data[scenario.id].func_coefs1
+                        struct_loads_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs1
 
                 # print(f"struct disps ajp iter_adj = {struct_disps_ajp[:3]}", flush=True)
                 # print(f"struct loads ajp iter_adj = {struct_loads_ajp[:3]}", flush=True)
@@ -744,10 +760,10 @@ class TestStructuralSolver(SolverInterface):
                 # print(f"struct flux ajp = {struct_disps_ajp}")
 
         # add derivative values
-        #print(f"step = {step}", flush=True)
+        # print(f"step = {step}", flush=True)
         if step > 0:
             self.get_function_gradients(scenario, bodies)
-        else: # step == 0
+        else:  # step == 0
             # want to zero out adjoints used for derivatives, since no analysis done on step 0
             for body in bodies:
                 struct_disps_ajp = body.get_struct_disps_ajp(scenario)

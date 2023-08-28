@@ -328,8 +328,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # Load current state
         for body in self.model.bodies:
-            body.transfer_disps(scenario, time_index=steps-1, jump=True)
-            body.transfer_temps(scenario, time_index=steps-1, jump=True)
+            body.transfer_disps(scenario, time_index=steps - 1, jump=True)
+            body.transfer_temps(scenario, time_index=steps - 1, jump=True)
 
         # Initialize the adjoint variables
         nfunctions = scenario.count_adjoint_functions()
@@ -356,7 +356,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if fail != 0:
                 if self.comm.Get_rank() == 0:
                     print("Structural solver returned fail flag")
-                return fail            
+                return fail
 
             for body in self.model.bodies:
                 body.transfer_loads_adjoint(scenario)
@@ -369,7 +369,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 if self.comm.Get_rank() == 0:
                     print("Flow solver returned fail flag")
                 return fail
-            
+
             for body in self.model.bodies:
                 body.transfer_disps_adjoint(scenario)
                 # body.transfer_loads_adjoint(scenario)
