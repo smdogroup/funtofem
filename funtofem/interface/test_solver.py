@@ -330,6 +330,8 @@ class TestAerodynamicSolver(SolverInterface):
                 if not scenario.steady:
                     aero_loads[:] += self.scenario_data[scenario.id].omega1
 
+            #print(f"fA-{step} = {aero_loads[:3]}")
+
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario, step)
             aero_flux = body.get_aero_heat_flux(scenario, step)
@@ -377,29 +379,38 @@ class TestAerodynamicSolver(SolverInterface):
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             if aero_loads_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    if include_rhs and func.analysis_type == "aerodynamic":
-                        aero_loads_ajp[:, k] = self.scenario_data[
-                            scenario.id
-                        ].func_coefs1
                     aero_disps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, aero_loads_ajp[:, k]
                     )
+                    if include_rhs and func.analysis_type == "aerodynamic":
+                        aero_disps_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs1
 
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             if aero_flux_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    if include_rhs and func.analysis_type == "aerodynamic":
-                        aero_flux_ajp[:, k] = self.scenario_data[
-                            scenario.id
-                        ].func_coefs2
                     aero_temps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, aero_flux_ajp[:, k]
                     )
+                    if include_rhs and func.analysis_type == "aerodynamic":
+                        aero_temps_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs2
 
-        if step != 0:
+        if step > 0:
             self.get_function_gradients(scenario, bodies)
+        else: # step == 0
+            # want to zero out adjoints used for derivatives, since no analysis done on step 0
+            for body in bodies:
+                aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                if aero_loads_ajp is not None:
+                    aero_loads_ajp *= 0.0
 
+                aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
+                if aero_flux_ajp is not None:
+                    aero_flux_ajp *= 0.0
         fail = 0
         return fail
 
@@ -592,20 +603,6 @@ class TestStructuralSolver(SolverInterface):
                         )
                         func.add_gradient_component(var, value)
 
-                # debug
-                debug = False
-                if debug:
-                    deriv = func.get_gradient_component(var)
-                    struct_loads_ajp = body.get_struct_loads_ajp(scenario)
-                    print(f"struct loads ajp deriv = {struct_loads_ajp[:3]}")
-                    print(
-                        f"struct loads ajp norm = {np.linalg.norm(struct_loads_ajp):.4f}"
-                    )
-                    print(
-                        f"struct disps ajp norm = {np.linalg.norm(struct_disps_ajp):.4f}"
-                    )
-                    print(f"df{findex}/dv{vindex} = {deriv}", flush=True)
-
         return
 
     def get_coordinate_derivatives(self, scenario, bodies, step):
@@ -724,13 +721,11 @@ class TestStructuralSolver(SolverInterface):
             struct_loads_ajp = body.get_struct_loads_ajp(scenario)
             if struct_disps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    if include_rhs and func.analysis_type == "structural":
-                        struct_disps_ajp[:, k] = self.scenario_data[
-                            scenario.id
-                        ].func_coefs1
                     struct_loads_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
                     )
+                    if include_rhs and func.analysis_type == "structural":
+                        struct_loads_ajp[:, k] += self.scenario_data[scenario.id].func_coefs1
 
                 # print(f"struct disps ajp iter_adj = {struct_disps_ajp[:3]}", flush=True)
                 # print(f"struct loads ajp iter_adj = {struct_loads_ajp[:3]}", flush=True)
@@ -739,19 +734,29 @@ class TestStructuralSolver(SolverInterface):
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
             if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
-                    if include_rhs and func.analysis_type == "structural":
-                        struct_temps_ajp[:, k] = self.scenario_data[
-                            scenario.id
-                        ].func_coefs2
                     struct_flux_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, struct_temps_ajp[:, k]
                     )
+                    if include_rhs and func.analysis_type == "structural":
+                        struct_flux_ajp[:, k] += self.scenario_data[
+                            scenario.id
+                        ].func_coefs2
                 # print(f"struct flux ajp = {struct_disps_ajp}")
 
         # add derivative values
-        if step != 0:
+        #print(f"step = {step}", flush=True)
+        if step > 0:
             self.get_function_gradients(scenario, bodies)
+        else: # step == 0
+            # want to zero out adjoints used for derivatives, since no analysis done on step 0
+            for body in bodies:
+                struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                if struct_disps_ajp is not None:
+                    struct_disps_ajp *= 0.0
 
+                struct_temps_ajp = body.get_aero_heat_flux_ajp(scenario)
+                if struct_temps_ajp is not None:
+                    struct_temps_ajp *= 0.0
         fail = 0
         return fail
 
@@ -1185,13 +1190,11 @@ class CoordinateDerivativeTester:
             body.struct_X -= epsilon * dstructX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"i functions = {i_functions}")
 
             # f(x;xA+h)
             body.struct_X += 2 * epsilon * dstructX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}")
 
             truth_derivs = np.array(
                 [

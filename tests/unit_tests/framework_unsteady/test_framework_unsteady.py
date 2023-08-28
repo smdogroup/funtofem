@@ -18,15 +18,20 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 
 steps = 10
+# couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
+coupling = "aeroelastic"
+DV_cases = ["structural", "aerodynamic"]
+# DV_cases = ["structural"]
 
 
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
 
+    @unittest.skipIf(not ("structural" in DV_cases), "structural DV test skipped")
     def test_structDV_with_driver(self):
         # build the funtofem model with an unsteady scenario
         model = FUNtoFEMmodel("test")
-        plate = Body.aerothermoelastic("plate")
+        plate = Body("plate", analysis_type=coupling)
         for iS in range(5):
             Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
@@ -44,7 +49,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
 
         rtol = 1e-7 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
-            "fake_solvers-structDV",
+            f"fake_solvers-structDV-{coupling}",
             model,
             driver,
             CoupledUnsteadyFrameworkTest.FILENAME,
@@ -53,10 +58,11 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
+    @unittest.skipIf(not ("aerodynamic" in DV_cases), "aerodynamic DV test skipped")
     def test_aeroDV_with_driver(self):
         # build the funtofem model with an unsteady scenario
         model = FUNtoFEMmodel("test")
-        plate = Body.aerothermoelastic("plate")
+        plate = Body("plate", analysis_type=coupling)
         for iA in range(5):
             Variable.aerodynamic(f"aero{iA}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
@@ -74,7 +80,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
 
         rtol = 1e-7 if complex_mode else 1e-4
         max_rel_error = TestResult.derivative_test(
-            "fake_solvers-aeroDV",
+            f"fake_solvers-aeroDV-{coupling}",
             model,
             driver,
             CoupledUnsteadyFrameworkTest.FILENAME,

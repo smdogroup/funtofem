@@ -302,86 +302,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return fail
 
-        #     # Transfer structural displacements and temperatures to aerodynamic surface
-        #     for body in self.model.bodies:
-
-        #         if body.transfer is not None:
-        #             body.aero_disps = np.zeros(
-        #                 body.aero_nnodes * 3, dtype=TransferScheme.dtype
-        #             )
-        #             body.transfer.transferDisps(body.struct_disps, body.aero_disps)
-
-        #         if body.thermal_transfer is not None:
-        #             body.aero_temps = np.zeros(
-        #                 body.aero_nnodes, dtype=TransferScheme.dtype
-        #             )
-        #             body.thermal_transfer.transferTemp(
-        #                 body.struct_temps, body.aero_temps
-        #             )
-
-        #         if "rigid" in body.motion_type and "deform" in body.motion_type:
-        #             rotation = np.zeros(9, dtype=TransferScheme.dtype)
-        #             translation = np.zeros(3, dtype=TransferScheme.dtype)
-        #             u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
-        #             body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
-
-        #             body.transfer.transformEquivRigidMotion(
-        #                 body.aero_disps, rotation, translation, u
-        #             )
-
-        #             body.rigid_transform[:3, :3] = rotation.reshape(
-        #                 (
-        #                     3,
-        #                     3,
-        #                 ),
-        #                 order="F",
-        #             )
-        #             body.rigid_transform[:3, 3] = translation
-        #             body.rigid_transform[-1, -1] = 1.0
-
-        #             body.aero_disps = u.copy()
-
-        #         elif "rigid" in body.motion_type:
-        #             transform = self.solvers["structural"].get_rigid_transform(body)
-
-        #     # Take a time step for the flow solver
-        #     fail = self.solvers["flow"].iterate(scenario, self.model.bodies, step)
-
-        #     fail = self.comm.allreduce(fail)
-        #     if fail != 0:
-        #         if self.comm.Get_rank() == 0:
-        #             print("Flow solver returned fail flag")
-        #         return fail
-
-        #     # Transfer loads and heat flux from fluid and get loads and temps on structure
-        #     for body in self.model.bodies:
-
-        #         if body.transfer is not None:
-        #             body.struct_loads = np.zeros(
-        #                 body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
-        #             )
-        #             body.transfer.transferLoads(body.aero_loads, body.struct_loads)
-
-        #         if body.thermal_transfer is not None:
-        #             body.struct_heat_flux = np.zeros(
-        #                 body.struct_nnodes, dtype=TransferScheme.dtype
-        #             )
-        #             heat_flux_magnitude = body.aero_heat_flux[3::4].copy(order="C")
-        #             body.thermal_transfer.transferFlux(
-        #                 heat_flux_magnitude, body.struct_heat_flux
-        #             )
-
-        #     # Take a step in the FEM model
-        #     fail = self.solvers["structural"].iterate(scenario, self.model.bodies, step)
-
-        #     fail = self.comm.allreduce(fail)
-        #     if fail != 0:
-        #         if self.comm.Get_rank() == 0:
-        #             print("Structural solver returned fail flag")
-        #         return fail
-
-        # # end solve loop
-
     def _solve_unsteady_adjoint(self, scenario):
         """
         Solves the unsteady adjoint problem using LBGS without FSI subiterations
@@ -408,9 +328,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         # Load current state
         for body in self.model.bodies:
-            body.transfer_disps(scenario, time_index=steps)
-            body.transfer_temps(scenario, time_index=steps)
-            # body.transfer_loads(scenario, time_index=steps)
+            body.transfer_disps(scenario, time_index=steps-1, jump=True)
+            body.transfer_temps(scenario, time_index=steps-1, jump=True)
 
         # Initialize the adjoint variables
         nfunctions = scenario.count_adjoint_functions()
@@ -420,43 +339,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for rstep in range(1, steps + 1):
             step = steps - rstep + 1
 
+            # for body in self.model.bodies:
+            #     body.transfer_disps(scenario, time_index=step-1, jump=True)
+            #     body.transfer_temps(scenario, time_index=step-1, jump=True)
+
             self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)
             self.solvers.structural.set_states(scenario, self.model.bodies, step - 1)
-
-            for body in self.model.bodies:
-                body.transfer_disps_adjoint(scenario)
-                # body.transfer_loads_adjoint(scenario)
-                body.transfer_temps_adjoint(scenario)
-
-            #                if body.transfer is not None:
-            #                    body.aero_disps = np.zeros(
-            #                        body.aero_nnodes * 3, dtype=TransferScheme.dtype
-            #                    )
-            #                    body.transfer.transferDisps(body.struct_disps, body.aero_disps)
-            #
-            #                    struct_loads = np.zeros(
-            #                        body.struct_nnodes * body.xfer_ndof, dtype=TransferScheme.dtype
-            #                    )
-            #                    body.transfer.transferLoads(body.aero_loads, struct_loads)
-            #
-            #                if "rigid" in body.motion_type and "deform" in body.motion_type:
-            #                    rotation = np.zeros(9, dtype=TransferScheme.dtype)
-            #                    translation = np.zeros(3, dtype=TransferScheme.dtype)
-            #                    u = np.zeros(body.aero_nnodes * 3, dtype=TransferScheme.dtype)
-            #
-            #                    body.rigid_transform = np.zeros((4, 4), dtype=TransferScheme.dtype)
-            #
-            #                    body.transfer.transformEquivRigidMotion(
-            #                        body.aero_disps, rotation, translation, u
-            #                    )
-            #
-            #                    body.rigid_transform[:3, :3] = rotation.reshape((3, 3), order="F")
-            #                    body.rigid_transform[:3, 3] = translation
-            #                    body.rigid_transform[-1, -1] = 1.0
-            #
-            #                    body.global_aero_disps = body.aero_disps[:]
-            #                    body.aero_disps = u.copy()
 
             # take a step in the structural adjoint
             fail = self.solvers.structural.iterate_adjoint(
@@ -467,33 +356,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if fail != 0:
                 if self.comm.Get_rank() == 0:
                     print("Structural solver returned fail flag")
-                return fail
-
-            # # Get load and heat flux terms for the flow solver
-            # for body in self.model.bodies:
-            #     body.transfer_disps_adjoint(scenario)
-            #     body.transfer_temps_adjoint(scenario)
-
-            #                for func in range(nfunctions):
-            #                    if body.transfer is not None:
-            #                        # Transform load transfer adjoint variables using transpose Jacobian from
-            #                        # funtofem: dLdfA^T * psi_L
-            #                        psi_L_r = np.zeros(
-            #                            body.aero_nnodes * 3, dtype=TransferScheme.dtype
-            #                        )
-            #                        body.transfer.applydDduS(
-            #                            body.psi_S[:, func].copy(order="C"), psi_L_r
-            #                        )
-            #                        body.dLdfa[:, func] = psi_L_r
-            #
-            #                    if body.thermal_transfer is not None:
-            #                        # Transform heat flux transfer adjoint variables using transpose Jacobian from
-            #                        # funtofem: dQdftA^T * psi_Q = dTdts * psi_Q
-            #                        psi_Q_r = np.zeros(body.aero_nnodes, dtype=TransferScheme.dtype)
-            #                        body.thermal_transfer.applydQdqATrans(
-            #                            body.psi_T_S[:, func].copy(order="C"), psi_Q_r
-            #                        )
-            #                        body.dQdfta[:, func] = psi_Q_r
+                return fail            
 
             for body in self.model.bodies:
                 body.transfer_loads_adjoint(scenario)
@@ -506,100 +369,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 if self.comm.Get_rank() == 0:
                     print("Flow solver returned fail flag")
                 return fail
-
-            # # From the flow grid adjoint, get to the displacement adjoint
-            # for body in self.model.bodies:
-            #     if body.transfer is not None:
-            #         for func in range(nfunctions):
-            #             if body.motion_type == "deform":
-            #                 # displacement adjoint equation
-            #                 body.psi_D[:, func] = -body.dGdua[:, func]
-            #             elif (
-            #                 "rigid" in body.motion_type and "deform" in body.motion_type
-            #             ):
-            #                 # solve the elastic deformation adjoint
-            #                 psi_E = np.zeros(
-            #                     body.aero_nnodes * 3, dtype=TransferScheme.dtype
-            #                 )
-            #                 tmt = np.linalg.inv(np.transpose(body.rigid_transform))
-            #                 for node in range(body.aero_nnodes):
-            #                     for i in range(3):
-            #                         psi_E[3 * node + i] = (
-            #                             tmt[i, 0] * body.dGdua[3 * node + 0, func]
-            #                             + tmt[i, 1] * body.dGdua[3 * node + 1, func]
-            #                             + tmt[i, 2] * body.dGdua[3 * node + 2, func]
-            #                             + tmt[i, 3]
-            #                         )
-
-            #                 # get the product dE/dT^T psi_E
-            #                 dEdTmat = np.zeros((3, 4), dtype=TransferScheme.dtype)
-
-            #                 for n in range(body.aero_nnodes):
-            #                     for i in range(3):
-            #                         for j in range(4):
-            #                             if j < 3:
-            #                                 dEdTmat[i, j] += (
-            #                                     -(
-            #                                         body.aero_X[3 * n + j]
-            #                                         + body.aero_disps[3 * n + j]
-            #                                     )
-            #                                     * psi_E[3 * n + i]
-            #                                 )
-            #                             else:
-            #                                 dEdTmat[i, j] += -psi_E[3 * n + i]
-
-            #                 dEdT = dEdTmat.flatten(order="F")
-            #                 dEdT = self.comm.allreduce(dEdT)
-
-            #                 # solve the rigid transform adjoint
-            #                 psi_R = np.zeros(12, dtype=TransferScheme.dtype)
-            #                 dGdT_func = body.dGdT[:, :, func]
-            #                 dGdT = dGdT_func[:3, :4].flatten(order="F")
-
-            #                 psi_R = -dGdT - dEdT
-
-            #                 # now solve the displacement adjoint
-            #                 dRduA = np.zeros(
-            #                     3 * body.aero_nnodes, dtype=TransferScheme.dtype
-            #                 )
-            #                 body.transfer.applydRduATrans(psi_R, dRduA)
-
-            #                 body.psi_D[:, func] = -psi_E - dRduA
-
-            #     # form the RHS for the structural adjoint equation on the next reverse step
-            #     for func in range(nfunctions):
-
-            #         if body.transfer is not None:
-            #             # calculate dDdu_s^T * psi_D
-            #             psi_D_product = np.zeros(
-            #                 body.struct_nnodes * body.xfer_ndof,
-            #                 dtype=TransferScheme.dtype,
-            #             )
-            #             body.transfer.applydDduSTrans(
-            #                 body.psi_D[:, func].copy(order="C"), psi_D_product
-            #             )
-
-            #             # calculate dLdu_s^T * psi_L
-            #             psi_L_product = np.zeros(
-            #                 body.struct_nnodes * body.xfer_ndof,
-            #                 dtype=TransferScheme.dtype,
-            #             )
-            #             body.transfer.applydLduSTrans(
-            #                 body.psi_L[:, func].copy(order="C"), psi_L_product
-            #             )
-            #             body.struct_rhs[:, func] = -psi_D_product - psi_L_product
-
-            #         if body.thermal_transfer is not None:
-            #             # calculate dTdt_s^T * psi_T
-            #             psi_T_product = np.zeros(
-            #                 body.struct_nnodes * body.therm_xfer_ndof,
-            #                 dtype=TransferScheme.dtype,
-            #             )
-            #             body.psi_T = body.dAdta
-            #             body.thermal_transfer.applydTdtSTrans(
-            #                 body.psi_T[:, func].copy(order="C"), psi_T_product
-            #             )
-            #             body.struct_rhs_T[:, func] = -psi_T_product
+            
+            for body in self.model.bodies:
+                body.transfer_disps_adjoint(scenario)
+                # body.transfer_loads_adjoint(scenario)
+                body.transfer_temps_adjoint(scenario)
 
             # extract and accumulate coordinate derivative every step
             self._extract_coordinate_derivatives(scenario, self.model.bodies, step)
