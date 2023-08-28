@@ -19,9 +19,9 @@ np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
-tacs_folder = os.path.join(base_dir, "tacs")
-if not os.path.exists(tacs_folder):
-    os.mkdir(tacs_folder)
+output_folder = os.path.join(base_dir, "output")
+if not os.path.exists(output_folder):
+    os.mkdir(output_folder)
 
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
@@ -59,7 +59,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
-            output_dir=tacs_folder,
+            output_dir=output_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -103,7 +103,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            output_dir=tacs_folder,
+            output_dir=output_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -147,7 +147,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            output_dir=tacs_folder,
+            output_dir=output_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -203,7 +203,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             ntacs_procs,
             bdf_filename,
             callback=thermoelasticity_callback,
-            output_dir=tacs_folder,
+            output_dir=output_folder,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 

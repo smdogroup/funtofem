@@ -36,7 +36,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
                 Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(
                     plate
                 )
-        if DV_case == "structural":
+        if DV_case == "aerodynamic":
             for iA in range(5):
                 Variable.aerodynamic(f"aero{iA}").set_bounds(value=0.1).register_to(
                     plate
@@ -81,6 +81,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         step = 1
 
+        # plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S1 = -1 * plate.get_struct_disps_ajp(scenario).copy()
         plate.transfer_loads_adjoint(scenario)
