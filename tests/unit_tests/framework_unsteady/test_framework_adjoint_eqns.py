@@ -65,7 +65,8 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         driver.solve_forward()
         plate.initialize_adjoint_variables(test_scenario)
         # solve the adjoint variables and store states at each step
-        # to compare with adjoint equations
+        # to compare with adjoint equations       
+
         step = 2
         plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
 
@@ -101,7 +102,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # df/dfA1 = 0
         aero_out = np.zeros(3 * plate.aero_nnodes, dtype=plate.dtype)
         plate.transfer.applydLdfATrans(psi_L1[:, 0].copy(), aero_out)
-        df_dfA1 = psi_A1 + aero_out
+        df_dfA1 = psi_A1 + np.expand_dims(aero_out, axis=-1)
         resids += [np.linalg.norm(df_dfA1)]
 
         # df/dfS1 = 0
@@ -113,7 +114,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         plate.transfer.applydDduSTrans(psi_D2[:, 0].copy(), D2_ajp)
         L2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
         plate.transfer.applydLduSTrans(psi_L2[:, 0].copy(), L2_ajp)
-        df_duS1 = psi_S1 + D2_ajp + L2_ajp
+        df_duS1 = psi_S1 + np.expand_dims(D2_ajp + L2_ajp, axis=-1)
         resids += [np.linalg.norm(df_duS1)]
 
         # df/duA2 = 0
@@ -137,21 +138,23 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         resids += [np.linalg.norm(df_duS2)]
 
         adjoints = [
-            df_duA1,
-            df_dfA1,
-            df_dfS1,
-            df_duS1,
-            df_duA2,
-            df_dfA2,
-            df_dfS2,
-            df_duS2,
+            psi_D1,
+            psi_A1,
+            psi_L1,
+            psi_S1,
+            psi_D2,
+            psi_A2,
+            psi_L2,
+            psi_S2,
         ]
         adjoint_norms = [np.linalg.norm(_) for _ in adjoints]
+        print(f"adjoint norms = {adjoint_norms}")
 
         resids = [abs(_) for _ in resids]
         print(f"resids = {resids}")
         print(f"max resid = {max(resids)}")
-        print(f"adjoint norms = {adjoint_norms}")
+
+        assert max(resids) < 1e-9
         return
 
 
