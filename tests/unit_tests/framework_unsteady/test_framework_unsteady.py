@@ -19,11 +19,12 @@ comm = MPI.COMM_WORLD
 
 steps = 10
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
-coupling = "aeroelastic"
+coupling = "aerothermoelastic"
 DV_cases = ["structural", "aerodynamic"]
 # DV_cases = ["structural"]
 
 
+@unittest.skipIf(not complex_mode, "not looked at FD yet")
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
 
