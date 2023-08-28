@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, os
 from mpi4py import MPI
 from funtofem import TransferScheme
 from tacs import TACS
@@ -16,11 +16,18 @@ import unittest
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
 
 
 @unittest.skipIf(not complex_mode, "aero solver test only runs in complex")
 class TestUnsteadySolvers(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
+    FILEPATH = os.path.join(FILENAME, results_folder)
 
     def test_aero_solver(self):
         # build the funtofem model with an unsteady scenario

@@ -24,6 +24,12 @@ if not os.path.exists(output_folder):
     os.mkdir(output_folder)
 
 comm = MPI.COMM_WORLD
+
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
+
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
@@ -34,6 +40,7 @@ dt = 1.0
 @unittest.skipIf(not complex_mode, "finite diff test buggy")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
+    FILEPATH = os.path.join(FILENAME, results_folder)
 
     def test_aeroelastic(self):
         # Build the model
