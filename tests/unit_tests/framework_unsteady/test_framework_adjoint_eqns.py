@@ -39,7 +39,7 @@ function_type = "aerodynamic"
 
 class TestFrameworkAdjointEqns(unittest.TestCase):
     FILENAME = "framework-adjoint-eqns.txt"
-    FILEPATH = os.path.join(FILENAME, results_folder)
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_2step_adjoint_eqns(self):
         steps = 2

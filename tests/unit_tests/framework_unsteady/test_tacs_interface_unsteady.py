@@ -40,7 +40,7 @@ dt = 1.0
 @unittest.skipIf(not complex_mode, "finite diff test buggy")
 class TacsUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "testaero-tacs-unsteady.txt"
-    FILEPATH = os.path.join(FILENAME, results_folder)
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aeroelastic(self):
         # Build the model
@@ -79,7 +79,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             "testaero+tacs-aeroelastic-unsteady",
             model,
             driver,
-            TacsUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-6 if complex_mode else 1e-4
@@ -123,7 +123,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermal-unsteady",
             model,
             driver,
-            TacsUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-6 if complex_mode else 1e-3
@@ -167,7 +167,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermoelastic-unsteady",
             model,
             driver,
-            TacsUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-6 if complex_mode else 1e-3
@@ -223,7 +223,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermoelastic-unsteady-multiscenario",
             model,
             driver,
-            TacsUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-6 if complex_mode else 1e-3
@@ -233,6 +233,6 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TacsUnsteadyFrameworkTest.FILENAME, "w").close()  # clear file
+        open(TacsUnsteadyFrameworkTest.FILEPATH, "w").close()  # clear file
     complex_mode = True
     unittest.main()

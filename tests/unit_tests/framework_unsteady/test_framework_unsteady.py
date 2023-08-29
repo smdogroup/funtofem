@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, os
 from mpi4py import MPI
 from funtofem import TransferScheme
 from tacs import TACS
@@ -16,6 +16,12 @@ import unittest
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
 
 steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
@@ -27,6 +33,7 @@ DV_cases = ["structural", "aerodynamic"]
 @unittest.skipIf(not complex_mode, "not looked at FD yet")
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     @unittest.skipIf(not ("structural" in DV_cases), "structural DV test skipped")
     def test_structDV_with_driver(self):
@@ -53,7 +60,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             f"fake_solvers-structDV-{coupling}",
             model,
             driver,
-            CoupledUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -84,7 +91,7 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             f"fake_solvers-aeroDV-{coupling}",
             model,
             driver,
-            CoupledUnsteadyFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
         )
         self.assertTrue(max_rel_error < rtol)
@@ -93,5 +100,5 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(CoupledUnsteadyFrameworkTest.FILENAME, "w").close()  # clear file
+        open(CoupledUnsteadyFrameworkTest.FILEPATH, "w").close()  # clear file
     unittest.main()
