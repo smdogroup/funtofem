@@ -22,9 +22,15 @@ if comm.rank == 0:  # make the results folder if doesn't exist
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
 
+np.random.seed(123456)
+
 steps = 10  # used for Nstep case
 # couplings = ["aeroelastic", "aerothermal", "aerothermoelastic"]
 coupling = "aeroelastic"
+
+# d(struct func)/d(struct var) passes to machine precision (TD and matrix)
+# both structDV cases pass, but aeroDV cases don't do as well
+# worst case is d(aero func)/d(aero var) 1e-2 right now
 # DV_cases = ["structural", "aerodynamic"]
 DV_cases = ["aerodynamic"]
 # functions = ["structural", "aerodynamic"]
