@@ -33,7 +33,7 @@ ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
-steps = 2
+steps = 10
 dt = 1.0
 thickness = 0.01
 
@@ -52,7 +52,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps).include(
-            Function.ksfailure()
+            Function.ksfailure(ks_weight=10.0)
         )
         test_scenario.include(Function.lift())
         integration_settings = TacsIntegrationSettings(
@@ -70,7 +70,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             callback=elasticity_callback,
             output_dir=output_folder,
         )
-        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
@@ -115,7 +115,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
@@ -143,7 +143,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps).include(
-            Function.ksfailure()
+            Function.ksfailure(ks_weight=10.0)
         )
         integration_settings = TacsIntegrationSettings(
             dt=dt, num_steps=test_scenario.steps
@@ -160,7 +160,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
@@ -190,7 +190,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
         # make the first scenario with ksfailure, temperature
         test_scenario1 = Scenario.unsteady("test1", steps=steps).include(
-            Function.ksfailure()
+            Function.ksfailure(ks_weight=10.0)
         )
         integration_settings = TacsIntegrationSettings(
             dt=dt, num_steps=test_scenario1.steps
@@ -217,7 +217,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        solvers.flow = TestAerodynamicSolver(comm, model)
+        solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(

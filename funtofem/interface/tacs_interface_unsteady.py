@@ -416,7 +416,7 @@ class TacsUnsteadyInterface(SolverInterface):
         # Set the function values on all procs
         for ifunc, func in enumerate(scenario.functions):
             if func.analysis_type == "structural":
-                func.value = feval[ifunc]
+                func.value += feval[ifunc]
 
         return
 
@@ -551,10 +551,6 @@ class TacsUnsteadyInterface(SolverInterface):
                         + scenario.T_ref
                     )
 
-            # n = 24
-            # print(f"step{step}, struct loads = {struct_loads[:n]}")
-            # print(f"step{step}, struct disps = {struct_disps[:n]}")
-
         return fail
 
     def post(self, scenario, bodies):
@@ -665,7 +661,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
         fail = 0
         # rev_step = scenario.steps - step + 1
-        # print(f"step = {step}")
 
         if self.tacs_proc:
             # extract the list of functions, dfdu, etc
