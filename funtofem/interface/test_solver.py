@@ -34,7 +34,7 @@ from ._solver_interface import SolverInterface
 
 
 class TestAerodynamicSolver(SolverInterface):
-    def __init__(self, comm, model):
+    def __init__(self, comm, model, copy_struct_mesh=False):
         """
         This class provides the functionality that FUNtoFEM expects from
         an aerodynamic solver.
@@ -153,7 +153,10 @@ class TestAerodynamicSolver(SolverInterface):
         self.aero_dvs = np.array(self.aero_dvs, dtype=TransferScheme.dtype)
 
         # Set random initial node locations
-        self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
+        if copy_struct_mesh:
+            self._copy_struct_mesh()
+        else:
+            self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
         # define data owned by each scenario
         class ScenarioData:
@@ -165,7 +168,7 @@ class TestAerodynamicSolver(SolverInterface):
                 self.dt = 0.01
 
                 # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * (dt * step)
-                self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts))
                 self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
                 self.c1 = 0.01 * (
                     np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5
@@ -196,6 +199,15 @@ class TestAerodynamicSolver(SolverInterface):
             body.initialize_aero_nodes(self.aero_X, aero_id)
 
         return
+
+    def _copy_struct_mesh(self):
+        """copy aero mesh from the structures side"""
+        body = self.model.bodies[0]
+        self.npts = body.get_num_struct_nodes()
+        aero_id = np.arange(1, body.get_num_struct_nodes() + 1)
+        body.initialize_aero_nodes(body.struct_X, aero_id)
+        self.aero_X = body.aero_X
+        return self
 
     def set_variables(self, scenario, bodies):
         """Set the design variables for the solver"""
@@ -242,6 +254,7 @@ class TestAerodynamicSolver(SolverInterface):
                             self.scenario_data[scenario.id].func_coefs2, aero_temps
                         )
                 func.value = self.comm.allreduce(value)
+
         return
 
     def get_function_gradients(self, scenario, bodies):
@@ -1293,13 +1306,11 @@ class CoordinateDerivativeTester:
             body.aero_X -= epsilon * daeroX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"i functions = {i_functions}")
 
             # f(x;xA+h)
             body.aero_X += 2 * epsilon * daeroX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}")
 
             truth_derivs = np.array(
                 [

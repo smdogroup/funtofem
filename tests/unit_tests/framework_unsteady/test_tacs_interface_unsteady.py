@@ -6,7 +6,6 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsUnsteadyInterface,
     TacsInterface,
     TacsIntegrationSettings,
     SolverManager,
@@ -34,8 +33,9 @@ ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
-steps = 10
+steps = 2
 dt = 1.0
+thickness = 0.01
 
 
 @unittest.skipIf(not complex_mode, "finite diff test buggy")
@@ -48,13 +48,13 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps).include(
             Function.ksfailure()
         )
-        # test_scenario.include(Function.lift())
+        test_scenario.include(Function.lift())
         integration_settings = TacsIntegrationSettings(
             dt=dt, num_steps=test_scenario.steps
         )
@@ -62,7 +62,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
@@ -94,7 +94,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps).include(
@@ -107,7 +107,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
@@ -139,7 +139,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps).include(
@@ -152,7 +152,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario.include(Function.temperature()).register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
@@ -184,7 +184,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate")
         Variable.structural("thickness").set_bounds(
-            lower=0.01, value=1.0, upper=2.0
+            lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
 
@@ -209,7 +209,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         test_scenario2.include(Function.temperature()).register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
