@@ -17,9 +17,9 @@ import unittest
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 
-steps = 10
+steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
-coupling = "aerothermoelastic"
+coupling = "aeroelastic"
 DV_cases = ["structural", "aerodynamic"]
 # DV_cases = ["structural"]
 

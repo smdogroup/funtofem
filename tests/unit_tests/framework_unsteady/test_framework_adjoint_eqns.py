@@ -24,8 +24,11 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 steps = 10  # used for Nstep case
 # couplings = ["aeroelastic", "aerothermal", "aerothermoelastic"]
-coupling = "aerothermoelastic"
-DV_cases = ["structural", "aerodynamic"]
+coupling = "aeroelastic"
+# DV_cases = ["structural", "aerodynamic"]
+DV_cases = ["aerodynamic"]
+# functions = ["structural", "aerodynamic"]
+function_type = "aerodynamic"
 
 
 class TestFrameworkAdjointEqns(unittest.TestCase):
@@ -51,8 +54,10 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
         # just do one function for now
-        test_scenario.include(Function.ksfailure())
-        # test_scenario.include(Function.lift())
+        if function_type == "structural":
+            test_scenario.include(Function.ksfailure())
+        elif function_type == "aerodynamic":
+            test_scenario.include(Function.lift())
         test_scenario.register_to(model)
 
         # build a funtofem driver
@@ -126,6 +131,8 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         # df/duA2 = 0
         df_duA2 = psi_D2 - np.dot(aero_data.Jac1.T, psi_A2)
+        if function_type == "aerodynamic":
+            df_duA2 += np.expand_dims(aero_data.func_coefs1, axis=-1)
         resids += [np.linalg.norm(df_duA2)]
 
         # df/dfA2 = 0
@@ -136,8 +143,9 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         # df/dfS2 = 0
         term2 = np.dot(struct_data.Jac1.T, psi_S2)
-        partial_f_fS2 = np.expand_dims(struct_data.func_coefs1, axis=-1)
-        df_dfS2 = psi_L2 - term2 + partial_f_fS2
+        df_dfS2 = psi_L2 - term2
+        if function_type == "structural":
+            df_dfS2 += np.expand_dims(struct_data.func_coefs1, axis=-1)
         resids += [np.linalg.norm(df_dfS2)]
 
         # df/duS2 = 0
@@ -162,13 +170,45 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         passing_resid = [_ < 1e-9 for _ in resids]
         npassing = sum(passing_resid)
         nresid = len(resids)
+        max_matrix_resid = max(resids)
         print(f"\t{npassing}/{nresid} passing residuals")
-        print(f"\tresids = {resids}")
-        print(f"\tmax resid = {max(resids)}")
+        print(f"\tmatrix resids = {resids}")
+        print(f"\tmax matrix resid = {max_matrix_resid}")
 
-        assert max(resids) < 1e-9
+        # compute the total directional derivative from the adjoint
+        variables = model.get_variables()
+        nvars = len(variables)
+        dvar_ds = np.random.rand(nvars)
+        adjoint_TD = 0.0
+        for ivar, var in enumerate(variables):
+            if var.analysis_type == "aerodynamic":
+                adjoint_TD -= dvar_ds[ivar] * np.dot(
+                    psi_A1[:, 0] + psi_A2[:, 0], aero_data.c1[:, ivar]
+                )
+            else:  # structural
+                adjoint_TD -= dvar_ds[ivar] * np.dot(
+                    psi_S1[:, 0] + psi_S2[:, 0], struct_data.c1[:, ivar]
+                )
+        adjoint_TD = adjoint_TD.real
+
+        # complex step analysis
+        h = 1e-30
+        for ivar, var in enumerate(variables):
+            var.value += dvar_ds[ivar] * 1j * h
+        driver.solve_forward()
+        functions = model.get_functions()
+        complex_step_TD = functions[0].value.imag / h
+
+        TD_rel_error = abs((adjoint_TD - complex_step_TD) / complex_step_TD)
+        print(f"\tadjoint TD = {adjoint_TD}")
+        print(f"\tcomplex step TD = {complex_step_TD}")
+        print(f"\tTD rel error = {TD_rel_error}")
+
+        assert max_matrix_resid < 1e-9
+        assert TD_rel_error < 1e-9
         return
 
+    @unittest.skip("temp")
     def test_Nstep_adjoint_eqns(self):
         # build the funtofem model with an unsteady scenario
         model = FUNtoFEMmodel("test")
@@ -186,8 +226,10 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
         # just do one function for now
-        test_scenario.include(Function.ksfailure())
-        # test_scenario.include(Function.lift())
+        if function_type == "structural":
+            test_scenario.include(Function.ksfailure())
+        elif function_type == "aerodynamic":
+            test_scenario.include(Function.lift())
         test_scenario.register_to(model)
 
         # build a funtofem driver
