@@ -438,7 +438,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.struct_variables):
-                func.set_gradient_component(var, func_grad[ifunc][ivar])
+                func.add_gradient_component(var, func_grad[ifunc][ivar])
 
         return
 

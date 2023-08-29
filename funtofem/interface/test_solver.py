@@ -402,18 +402,19 @@ class TestAerodynamicSolver(SolverInterface):
                             scenario.id
                         ].func_coefs2
 
-        if step > 0:
-            self.get_function_gradients(scenario, bodies)
-        else:  # step == 0
-            # want to zero out adjoints used for derivatives, since no analysis done on step 0
-            for body in bodies:
-                aero_loads_ajp = body.get_aero_loads_ajp(scenario)
-                if aero_loads_ajp is not None:
-                    aero_loads_ajp *= 0.0
+        if not scenario.steady:
+            if step > 0:
+                self.get_function_gradients(scenario, bodies)
+            else:  # step == 0
+                # want to zero out adjoints used for derivatives, since no analysis done on step 0
+                for body in bodies:
+                    aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                    if aero_loads_ajp is not None:
+                        aero_loads_ajp *= 0.0
 
-                aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
-                if aero_flux_ajp is not None:
-                    aero_flux_ajp *= 0.0
+                    aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
+                    if aero_flux_ajp is not None:
+                        aero_flux_ajp *= 0.0
 
         fail = 0
         return fail
@@ -756,18 +757,19 @@ class TestStructuralSolver(SolverInterface):
                         ].func_coefs2
 
         # add derivative values
-        if step > 0:
-            self.get_function_gradients(scenario, bodies)
-        else:  # step == 0
-            # want to zero out adjoints used for derivatives, since no analysis done on step 0
-            for body in bodies:
-                struct_disps_ajp = body.get_struct_disps_ajp(scenario)
-                if struct_disps_ajp is not None:
-                    struct_disps_ajp *= 0.0
+        if not scenario.steady:
+            if step > 0:
+                self.get_function_gradients(scenario, bodies)
+            else:  # step == 0
+                # want to zero out adjoints used for derivatives, since no analysis done on step 0
+                for body in bodies:
+                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                    if struct_disps_ajp is not None:
+                        struct_disps_ajp *= 0.0
 
-                struct_temps_ajp = body.get_struct_temps_ajp(scenario)
-                if struct_temps_ajp is not None:
-                    struct_temps_ajp *= 0.0
+                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                    if struct_temps_ajp is not None:
+                        struct_temps_ajp *= 0.0
         fail = 0
         return fail
 
