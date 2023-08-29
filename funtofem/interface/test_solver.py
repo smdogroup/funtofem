@@ -335,8 +335,6 @@ class TestAerodynamicSolver(SolverInterface):
                 if not scenario.steady:
                     aero_loads[:] += self.scenario_data[scenario.id].omega1 * aero_time
 
-            # print(f"fA-{step} = {aero_loads[:3]}")
-
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario, step)
             aero_flux = body.get_aero_heat_flux(scenario, step)
@@ -416,6 +414,7 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
                     aero_flux_ajp *= 0.0
+
         fail = 0
         return fail
 
@@ -743,11 +742,9 @@ class TestStructuralSolver(SolverInterface):
                             scenario.id
                         ].func_coefs1
 
-                # print(f"struct disps ajp iter_adj = {struct_disps_ajp[:3]}", flush=True)
-                # print(f"struct loads ajp iter_adj = {struct_loads_ajp[:3]}", flush=True)
-
             struct_temps_ajp = body.get_struct_temps_ajp(scenario)
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
+
             if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
                     struct_flux_ajp[:, k] = np.dot(
@@ -757,10 +754,8 @@ class TestStructuralSolver(SolverInterface):
                         struct_flux_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs2
-                # print(f"struct flux ajp = {struct_disps_ajp}")
 
         # add derivative values
-        # print(f"step = {step}", flush=True)
         if step > 0:
             self.get_function_gradients(scenario, bodies)
         else:  # step == 0
@@ -770,7 +765,7 @@ class TestStructuralSolver(SolverInterface):
                 if struct_disps_ajp is not None:
                     struct_disps_ajp *= 0.0
 
-                struct_temps_ajp = body.get_aero_heat_flux_ajp(scenario)
+                struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                 if struct_temps_ajp is not None:
                     struct_temps_ajp *= 0.0
         fail = 0

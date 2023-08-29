@@ -333,7 +333,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for rstep in range(1, steps + 1):
             step = steps - rstep + 1
 
-            # load current state, affects MELD jacobians in the adjoint matrix (esp load transfer)
+            # load current state, affects MELD jacobians in the adjoint matrix (esp. load transfer)
             for body in self.model.bodies:
                 body.transfer_disps(scenario, time_index=step - 1, jump=True)
                 body.transfer_temps(scenario, time_index=step - 1, jump=True)
@@ -367,7 +367,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             for body in self.model.bodies:
                 body.transfer_disps_adjoint(scenario)
-                # body.transfer_loads_adjoint(scenario)
                 body.transfer_temps_adjoint(scenario)
 
             # extract and accumulate coordinate derivative every step

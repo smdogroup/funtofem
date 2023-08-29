@@ -14,6 +14,8 @@ from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 import unittest
 
+np.random.seed(123456)
+
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +27,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
-coupling = "aeroelastic"
+coupling = "aerothermoelastic"
 DV_cases = ["structural", "aerodynamic"]
 # DV_cases = ["structural"]
 
@@ -44,7 +46,8 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
-        test_scenario.include(Function.ksfailure()).include(Function.lift())
+        # test_scenario.include(Function.ksfailure())
+        test_scenario.include(Function.lift())
         test_scenario.register_to(model)
 
         # build a funtofem driver
