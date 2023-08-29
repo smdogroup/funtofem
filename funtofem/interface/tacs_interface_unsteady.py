@@ -677,6 +677,7 @@ class TacsUnsteadyInterface(SolverInterface):
             for ifunc in range(len(func_list)):
                 # get the solution data for this function
                 rhs_func = self.struct_rhs_vec[ifunc].getArray()
+                rhs_func *= 0.0  # reset it to zero
 
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:
