@@ -326,22 +326,17 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # how many steps to take
         steps = scenario.steps
 
-        # Load current state
-        for body in self.model.bodies:
-            body.transfer_disps(scenario, time_index=steps - 1, jump=True)
-            body.transfer_temps(scenario, time_index=steps - 1, jump=True)
-
         # Initialize the adjoint variables
-        nfunctions = scenario.count_adjoint_functions()
         self._initialize_adjoint_variables(scenario, self.model.bodies)
 
         # Loop over each time step in the reverse order
         for rstep in range(1, steps + 1):
             step = steps - rstep + 1
 
-            # for body in self.model.bodies:
-            #     body.transfer_disps(scenario, time_index=step-1, jump=True)
-            #     body.transfer_temps(scenario, time_index=step-1, jump=True)
+            # load current state, affects MELD jacobians in the adjoint matrix (esp load transfer)
+            for body in self.model.bodies:
+                body.transfer_disps(scenario, time_index=step - 1, jump=True)
+                body.transfer_temps(scenario, time_index=step - 1, jump=True)
 
             self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)

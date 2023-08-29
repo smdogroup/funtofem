@@ -100,7 +100,9 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         step = 1
 
-        # plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        # sometimes I comment this extra transfer out
+        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S1 = -1 * plate.get_struct_disps_ajp(scenario).copy()
         plate.transfer_loads_adjoint(scenario)
@@ -128,6 +130,10 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         resids += [np.linalg.norm(df_dfS1)]
 
         # df/duS1 = 0
+        # seed MELD with u_S^1 => u_A^2 transfer here so Jacobians are correct
+        step = 2
+        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+
         D2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
         plate.transfer.applydDduSTrans(psi_D2[:, 0].copy(), D2_ajp)
         L2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
