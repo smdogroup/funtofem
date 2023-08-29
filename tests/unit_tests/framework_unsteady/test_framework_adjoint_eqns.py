@@ -38,6 +38,7 @@ DV_cases = ["structural"]
 function_type = "aerodynamic"
 
 
+@unittest.skipIf(not complex_mode, "only designed for complex mode")
 class TestFrameworkAdjointEqns(unittest.TestCase):
     FILENAME = "framework-adjoint-eqns.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
@@ -299,16 +300,6 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         psi_A1 = -1 * plate.get_aero_heat_flux_ajp(scenario).copy()
         psi_T1 = -1 * plate.get_aero_temps_ajp(scenario).copy()
 
-        print(f"psi_P2 = {psi_P2[:6]}")
-        print(f"psi_Q2 = {psi_Q2[:6]}")
-        print(f"psi_A2 = {psi_A2[:6]}")
-        print(f"psi_T2 = {psi_T2[:6]}")
-
-        print(f"psi_P1 = {psi_P1[:6]}")
-        print(f"psi_Q1 = {psi_Q1[:6]}")
-        print(f"psi_A1 = {psi_A1[:6]}")
-        print(f"psi_T1 = {psi_T1[:6]}")
-
         # check each of the equations
         resids = []
         # df/dtA1 = 0
@@ -394,8 +385,6 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
             else:  # structural
                 dfdx_step2 = -1 * np.dot(psi_P2[:, 0], struct_data.c2[:, ivar])
                 dfdx_step1 = -1 * np.dot(psi_P1[:, 0], struct_data.c2[:, ivar])
-                print(f"df/dx{ivar} step 2 = {dfdx_step2}")
-                print(f"df/dx{ivar} step 1 = {dfdx_step1}")
                 adjoint_TD -= dvar_ds[ivar] * np.dot(
                     psi_P1[:, 0] + psi_P2[:, 0], struct_data.c2[:, ivar]
                 )

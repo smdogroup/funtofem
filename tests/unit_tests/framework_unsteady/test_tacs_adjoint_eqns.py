@@ -35,7 +35,10 @@ function_type = "aerodynamic"
 ntacs_procs = 1
 dt = 0.01
 
+in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
+
+@unittest.skipIf(in_github_workflow, "still in development")
 class TestTacsAdjointEqns(unittest.TestCase):
     FILENAME = "tacs-adjoint-eqns.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)

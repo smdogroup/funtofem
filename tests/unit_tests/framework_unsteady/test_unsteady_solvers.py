@@ -27,7 +27,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 @unittest.skipIf(not complex_mode, "aero solver test only runs in complex")
 class TestUnsteadySolvers(unittest.TestCase):
     FILENAME = "fake-solvers-drivers.txt"
-    FILEPATH = os.path.join(FILENAME, results_folder)
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aero_solver(self):
         # build the funtofem model with an unsteady scenario

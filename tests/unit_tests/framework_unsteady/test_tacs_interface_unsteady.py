@@ -32,6 +32,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
 steps = 10
 dt = 1.0
@@ -87,7 +88,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("still working on aerothermal")
+    @unittest.skipIf(in_github_workflow, "still working on aerothermal")
     def test_aerothermal(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -132,7 +133,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("still working on aerothermal")
+    @unittest.skipIf(in_github_workflow, "still working on aerothermal")
     def test_aerothermoelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -177,7 +178,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("still working on aerothermal")
+    @unittest.skipIf(in_github_workflow, "still working on aerothermal")
     def test_multiscenario_aerothermoelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
