@@ -105,7 +105,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         step = 1
 
-        # need this to set the disps so the load transfer jacobian is 
+        # need this to set the disps so the load transfer jacobian is
         # correct in intermediate steps
         plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
 
