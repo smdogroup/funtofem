@@ -36,10 +36,12 @@ The aeroelastic Lagrangian for some objective function $f(x)$ is the following:
 
 The individual adjoint equations are:
 ```math
+\begin{aligned}
 \frac{\partial \mathcal{L}_{AE}}{\partial u_A^i} = \psi_{\color{green}{D}_i} + \frac{\partial \color{blue}{A}_i}{\partial u_A^i}^T \psi_{\color{blue}{A}_i} = 0 \\
 \frac{\partial \mathcal{L}_{AE}}{\partial f_A^i} = \psi_{\color{blue}{A}_i} + \frac{\partial \color{green}{L}_i}{\partial f_A^i}^T \psi_{\color{green}{L}_i} = 0 \\
 \frac{\partial \mathcal{L}_{AE}}{\partial f_S^i} = \psi_{\color{green}{L}_i} + \frac{\partial \color{orange}{S}_i}{\partial f_S^i}^T \psi_{\color{orange}{S}_i} = 0 \\
-\frac{\partial \mathcal{L}_{AE}}{\partial u_S^i} = \psi_{\color{orange}{S}_i} + \frac{\partial \color{green}{D}_{i+1}}{\partial u_S^i}^T \psi_{\color{green}{D}_{i+1}} + \frac{\partial \color{green}{L}_{i+1}}{\partial u_S^i}^T \psi_{\color{green}{L}_{i+1}]} = 0
+\frac{\partial \mathcal{L}_{AE}}{\partial u_S^i} = \psi_{\color{orange}{S}_i} + \frac{\partial \color{green}{D}_{i+1}}{\partial u_S^i}^T \psi_{\color{green}{D}_{i+1}} + \frac{\partial \color{green}{L}_{i+1}}{\partial u_S^i}^T \psi_{\color{green}{L}_{i+1}} = 0
+\end{aligned}
 ```
 
 The adjoint matrix for a 2-step, aeroelastic unsteady analysis is:
@@ -69,7 +71,7 @@ The adjoint matrix for a 2-step, aeroelastic unsteady analysis is:
 
 One important note is that $\psi_{\color{orange}{S}_2} = -\frac{\partial f}{\partial u_S^2}$ which has been fixed in the framework tests.
 
-\subsection{Discipline Total Derivatives}
+### Discipline Total Derivatives
 
 $\color{blue}{Aerodynamic}$ design variables:
 ```math
@@ -81,7 +83,7 @@ $\color{orange}{Structural}$ design variables:
     \frac{df}{d \color{orange}{x}} = \frac{\partial f}{\partial \color{orange}{x}} + \frac{\partial \color{orange}{S}_i}{\partial \color{orange}{x}}^T \psi_{\color{orange}{S}_i}
 ```
 
-\subsection{Coordinate Derivatives}
+### Coordinate Derivatives
 
 $\color{blue}{Aerodynamic}$ coordinate derivatives:
 ```math
@@ -96,23 +98,27 @@ $\color{orange}{Structural}$ coordinate derivatives:
 ### Unsteady Aerothermal Analysis ###
 Considering aerothermal adjoint equations to demonstrate unsteady loop, involves four adjoints $\color{green}{T}_k, \color{blue}{A}_k, \color{green}{Q}_k, \color{red}{P}_k$ for each time step $(k)$.
 
-\subsection{Forward analysis}
+### Forward analysis
 Forward analysis state variables loop with $t_S^0 = 0$ initial condition, where $t$ are temperatures and $h$ are heat loads.
 ```math
+\begin{aligned}
     t_{\color{red}{S}}^0 \\
     t_{\color{blue}{A}}^1 \rightarrow h_{\color{blue}{A}}^1 \rightarrow h_{\color{red}{S}}^1 \rightarrow t_{\color{red}{S}}^1 \\
     t_{\color{blue}{A}}^2 \rightarrow h_{\color{blue}{A}}^2 \rightarrow h_{\color{red}{S}}^2 \rightarrow t_{\color{red}{S}}^2 \\
+\end{aligned}
 ```
 
 The residual equations are the following
 ```math
-\color{green}{T}_i(t_S^{i-1}, t_A^i) = t_A^i - t_A^{i}(t_S^{i-1}) = 0 \\
-\color{blue}{A}_i(t_A^i, h_A^i) = h_A^i - h_A^i(t_A^i) = 0 \\
-\color{green}{Q}_i(h_A^i, h_S^i) = h_S^i - h_S^i(h_A^i) = 0 \\
-\color{red}{P}_i(h_S^i, t_S^i) = t_S^i - t_S^i(h_S^i) = 0
+\begin{aligned}
+{\color{green}T_i}(t_S^{i-1}, t_A^i) = t_A^i - t_A^{i}(t_S^{i-1}) = 0 \\
+{\color{blue}A_i}(t_A^i, h_A^i) = h_A^i - h_A^i(t_A^i) = 0 \\
+{\color{green}Q_i}(h_A^i, h_S^i) = h_S^i - h_S^i(h_A^i) = 0 \\
+{\color{red}P_i}(h_S^i, t_S^i) = t_S^i - t_S^i(h_S^i) = 0
+\end{aligned}
 ```
 
-\subsection{Adjoint Equations}
+### Adjoint Equations
 The Lagrangian for some objective function $f(x)$ is the following:
 ```math
     \mathcal{L}_{AT} = f(x,u_S^i) + \psi_{\color{green}{T}_i}^T \color{green}{T}_i + \psi_{\color{blue}{A}_i}^T \color{blue}{A}_i + \psi_{\color{green}{Q}_i}^T \color{green}{Q}_i + \psi_{\color{red}{P}_i}^T \color{red}{P}_i
@@ -155,7 +161,7 @@ The adjoint matrix for a 2-step, aeroelastic unsteady analysis is:
        \frac{\partial f}{\partial t_A^1}^T \\ \frac{\partial f}{\partial h_A^1}^T \\ 0 \\ \frac{\partial f}{\partial t_S^1} \\ \frac{\partial f}{\partial t_A^2}^T \\ \frac{\partial f}{\partial h_A^2}^T \\ 0 \\ \frac{\partial f}{\partial t_S^2}  \end{bmatrix}
 ```
 
-\subsection{Discipline Total Derivatives}
+### Discipline Total Derivatives
 
 $\color{blue}{Aerodynamic}$ design variables:
 ```math
@@ -167,7 +173,7 @@ $\color{red}{Structural}$ design variables:
     \frac{df}{d \color{red}{x}} = \frac{\partial f}{\partial \color{red}{x}} + \frac{\partial \color{red}{P}_i}{\partial \color{red}{x}}^T \psi_{\color{red}{P}_i}
 ```
 
-\subsection{Coordinate Derivatives}
+### Coordinate Derivatives
 
 $\color{blue}{Aerodynamic}$ coordinate derivatives:
 ```math
