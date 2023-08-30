@@ -121,7 +121,7 @@ The residual equations are the following
 ### Adjoint Equations
 The Lagrangian for some objective function $f(x)$ is the following:
 ```math
-    \mathcal{L}_{AT} = f(x,u_S^i) + \psi_{\color{green}{T}_i}^T {\color{green}{T}_i} + \psi_{\color{blue}{A}_i}^T \color{blue}{A}_i + \psi_{\color{green}{Q}_i}^T {\color{green}{Q}_i} + \psi_{\color{red}{P}_i}^T \color{red}{P}_i
+    \mathcal{L}_{AT} = f(x,u_S^i) + \psi_{\color{green}{T}_i}^T {\color{green}{T}_i} + \psi_{\color{blue}{A}_i}^T {\color{blue}{A}_i} + \psi_{\color{green}{Q}_i}^T {\color{green}{Q}_i} + \psi_{\color{red}{P}_i}^T \color{red}{P}_i
 ```
 
 The individual adjoint equations are:
