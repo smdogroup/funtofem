@@ -941,7 +941,7 @@ class Fun3dInterface(SolverInterface):
 
     def set_states(self, scenario, bodies, step):
         """
-        Loads the saved aerodynamic displacements and temperatures 
+        Loads the saved aerodynamic displacements and temperatures
         for the time dependent adjoint.
 
         Parameters
