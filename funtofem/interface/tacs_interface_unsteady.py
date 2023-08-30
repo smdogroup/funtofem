@@ -534,16 +534,18 @@ class TacsUnsteadyInterface(SolverInterface):
             # Iterate the TACS integrator
             self.integrator[scenario.id].iterate(step, self.ext_force)
 
-            # extract the disps, temps to the body
+            # extract the structural disps and temps from the integrator
             _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
             states = self.ans.getArray()
 
             for body in bodies:
+                # copy struct_disps to the body
                 struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
                         struct_disps[i::3] = states[i::ndof].astype(body.dtype)
 
+                # copy struct temps to the body, converting from gauge to absolute temp with T_ref
                 struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
                     struct_temps[:] = (
@@ -612,6 +614,9 @@ class TacsUnsteadyInterface(SolverInterface):
         """
         Load the states (struct_disps) associated with this step.
 
+        **Note: this code is deprecated, it is included in the end of
+        the iterate function.**
+
         **Note: in the NLBGS algorithm the transfer scheme uses the
         structural displacements from the prior step.
         set_states will request the states from the previous step
@@ -627,6 +632,8 @@ class TacsUnsteadyInterface(SolverInterface):
         step: int
             The time step number that the driver wants the states from
         """
+
+        pass
 
         # if self.tacs_proc:
         #     _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
@@ -645,7 +652,7 @@ class TacsUnsteadyInterface(SolverInterface):
         #                 states[self.thermal_index :: ndof].astype(body.dtype)
         #                 + scenario.T_ref
         #             )
-        return
+        # return
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
