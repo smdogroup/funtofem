@@ -12,22 +12,26 @@
 ## Unsteady Aeroelastic Analysis ##
 The unsteady aeroelastic forward analysis involves displacements $u_{\color{blue}{A}}^i, u_{\color{orange}{S}}^i$ and forces $f_{\color{blue}{A}}^i, f_{\color{orange}{S}}^i$ for each time step $i$.
 ```math
+\begin{aligned}
 u_{\color{orange}{S}}^0 \\
 u_{\color{blue}{A}}^1 \rightarrow f_{\color{blue}{A}}^1 \rightarrow f_{\color{orange}{S}}^1 \rightarrow u_{\color{orange}{S}}^1 \\
 u_{\color{blue}{A}}^2 \rightarrow f_{\color{blue}{A}}^2 \rightarrow f_{\color{orange}{S}}^2 \rightarrow u_{\color{orange}{S}}^2
+\end{aligned}
 ```
 
 The residual equations are the following.
 ```math
-\color{green}{D}_i(u_S^{i-1}, u_A^i) = u_A^i - u_A^{i}(u_S^{i-1}) = 0 \\
-\color{blue}{A}_i(u_A^i, f_A^i) = f_A^i - f_A^i(u_A^i) = 0 \\
-\color{green}{L}_i(u_S^{i-1},f_A^i, f_S^i) = f_S^i - f_S^i(f_A^i, u_S^{i-1}) = 0 \\
-\color{orange}{S}_i(f_S^i, u_S^i) = u_S^i - u_S^i(f_S^i) = 0
+\begin{aligned}
+{\color{green}D}_i(u_S^{i-1}, u_A^i) = u_A^i - u_A^{i}(u_S^{i-1}) = 0 \newline
+{\color{blue}A}_i(u_A^i, f_A^i) = f_A^i - f_A^i(u_A^i) = 0 \\
+{\color{green}L}_i(u_S^{i-1},f_A^i, f_S^i) = f_S^i - f_S^i(f_A^i, u_S^{i-1}) = 0 \\
+{\color{orange}S}_i(f_S^i, u_S^i) = u_S^i - u_S^i(f_S^i) = 0
+\end{aligned}
 ```
 
 The aeroelastic Lagrangian for some objective function $f(x)$ is the following:
 ```math
-    \mathcal{L}_{AE} = f(x,u_S^i) + \psi_{\color{green}{D}_i}^T \color{green}{D}_i + \psi_{\color{blue}{A}_i}^T \color{blue}{A}_i + \psi_{\color{green}{L}_i}^T \color{green}{L}_i + \psi_{\color{orange}{S}_i}^T \color{orange}{S}_i
+    \mathcal{L}_{AE} = f(x,u_S^i) + \psi_{\color{green}D_i}^T {\color{green}{D}_i} + \psi_{\color{blue}{A}_i}^T {\color{blue}{A}_i} + \psi_{\color{green}{L}_i}^T {\color{green}{L}_i} + \psi_{\color{orange}{S}_i}^T {\color{orange}{S}_i}
 ```
 
 The individual adjoint equations are:
