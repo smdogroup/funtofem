@@ -9,7 +9,7 @@
 * `test_tacs_unsteady_shape_driver.py` - Test the structural shape derivatives in ESP/CAPS using the TACS AIM in an unsteady, fully-coupled analysis with TestAero + TACS solvers.
 * `test_unsteady_solvers.py` - directional derivative test for the two test aero + test struct solvers for unsteady.
 
-## Unsteady Aeroelastic Analysis ##
+## Unsteady Aeroelastic Analysis
 The unsteady aeroelastic forward analysis involves displacements $u_{\color{blue}{A}}^i, u_{\color{orange}{S}}^i$ and forces $f_{\color{blue}{A}}^i, f_{\color{orange}{S}}^i$ for each time step $i$.
 ```math
 \begin{aligned}
@@ -95,7 +95,7 @@ $\color{orange}{Structural}$ coordinate derivatives:
     \frac{df}{d \color{orange}{x_{S0}}} = \frac{\partial \color{green}{D}_i}{\partial \color{orange}{x_{S0}}}^T \psi_{\color{green}{D}_i} + \frac{\partial \color{green}{D}_i}{\partial \color{orange}{x_{S0}}}^T \psi_{\color{green}{D}_i} + \frac{\partial \color{orange}{S}_i}{\partial \color{orange}{x_{S0}}}^T \psi_{\color{orange}{S}_i}
 ```
 
-### Unsteady Aerothermal Analysis ###
+## Unsteady Aerothermal Analysis
 Considering aerothermal adjoint equations to demonstrate unsteady loop, involves four adjoints $\color{green}{T}_k, \color{blue}{A}_k, \color{green}{Q}_k, \color{red}{P}_k$ for each time step $(k)$.
 
 ### Forward analysis
@@ -126,6 +126,7 @@ The Lagrangian for some objective function $f(x)$ is the following:
 
 The individual adjoint equations are:
 ```math
+\begin{aligned}
 % dL/dtAi
     \frac{\partial \mathcal{L}_{AT}}{\partial t_A^i} = \psi_{\color{green}{T}_i} + \frac{\partial \color{blue}{A}_i}{\partial t_A^i}^T \psi_{\color{blue}{A}_i} = 0 \\
 % dL/dhAi
@@ -134,6 +135,7 @@ The individual adjoint equations are:
     \frac{\partial \mathcal{L}_{AT}}{\partial h_S^i} = \psi_{\color{green}{L}_i} + \frac{\partial \color{red}{P}_i}{\partial h_S^i}^T \psi_{\color{red}{P}_i} = 0 \\
 % dL/dtsi
     \frac{\partial \mathcal{L}_{AT}}{\partial t_S^i} = \psi_{\color{red}{P}_i} + \frac{\partial \color{green}{T}_{i+1}}{\partial t_S^i}^T \psi_{\color{green}{T}_{i+1}} = 0
+\end{aligned}
 ```
 
 The adjoint matrix for a 2-step, aeroelastic unsteady analysis is:
