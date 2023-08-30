@@ -62,7 +62,11 @@ transfer_settings = TransferSettings(npts=200, beta=0.5)
 
 flow_driver = Fun3dOnewayDriver.analysis(solvers, model)
 struct_driver = TacsOnewayDriver.prime_loads(
-    flow_driver, transfer_settings=transfer_settings, nprocs=48, run_adjoint=True
+    flow_driver,
+    transfer_settings=transfer_settings,
+    nprocs=48,
+    run_adjoint=True,
+    fun3d_dir=fun3d_dir,
 )
 
 # run structural oneway analysis after aero oneway analysis
