@@ -22,10 +22,10 @@ u_{\color{blue}{A}}^2 \rightarrow f_{\color{blue}{A}}^2 \rightarrow f_{\color{or
 The residual equations are the following.
 ```math
 \begin{aligned}
-{\color{green}D}_i(u_S^{i-1}, u_A^i) = u_A^i - u_A^{i}(u_S^{i-1}) = 0 \newline
-{\color{blue}A}_i(u_A^i, f_A^i) = f_A^i - f_A^i(u_A^i) = 0 \\
-{\color{green}L}_i(u_S^{i-1},f_A^i, f_S^i) = f_S^i - f_S^i(f_A^i, u_S^{i-1}) = 0 \\
-{\color{orange}S}_i(f_S^i, u_S^i) = u_S^i - u_S^i(f_S^i) = 0
+{\color{green}D_i}(u_S^{i-1}, u_A^i) = u_A^i - u_A^{i}(u_S^{i-1}) = 0 \newline
+{\color{blue}A_i}(u_A^i, f_A^i) = f_A^i - f_A^i(u_A^i) = 0 \\
+{\color{green}L_i}(u_S^{i-1},f_A^i, f_S^i) = f_S^i - f_S^i(f_A^i, u_S^{i-1}) = 0 \\
+{\color{orange}S_i}(f_S^i, u_S^i) = u_S^i - u_S^i(f_S^i) = 0
 \end{aligned}
 ```
 
