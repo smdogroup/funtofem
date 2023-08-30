@@ -416,7 +416,7 @@ class TacsUnsteadyInterface(SolverInterface):
         # Set the function values on all procs
         for ifunc, func in enumerate(scenario.functions):
             if func.analysis_type == "structural":
-                func.value = feval[ifunc]
+                func.value += feval[ifunc]
 
         return
 
@@ -438,7 +438,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(self.struct_variables):
-                func.set_gradient_component(var, func_grad[ifunc][ivar])
+                func.add_gradient_component(var, func_grad[ifunc][ivar])
 
         return
 
@@ -534,23 +534,22 @@ class TacsUnsteadyInterface(SolverInterface):
             # Iterate the TACS integrator
             self.integrator[scenario.id].iterate(step, self.ext_force)
 
-            # extract the structural disps, temps from the assembler
-            self.assembler.setVariables(self.ans)
-            ans_array = self.ans.getArray()
+            # extract the structural disps and temps from the integrator
+            _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
+            states = self.ans.getArray()
 
-            # extract the disps, temps to the body
             for body in bodies:
                 # copy struct_disps to the body
                 struct_disps = body.get_struct_disps(scenario, time_index=step)
                 if struct_disps is not None:
                     for i in range(3):
-                        struct_disps[i::3] = ans_array[i::ndof].astype(body.dtype)
+                        struct_disps[i::3] = states[i::ndof].astype(body.dtype)
 
-                # copy struct temps to the body, converting from gauge to abs temp with T_ref
+                # copy struct temps to the body, converting from gauge to absolute temp with T_ref
                 struct_temps = body.get_struct_temps(scenario, time_index=step)
                 if struct_temps is not None:
                     struct_temps[:] = (
-                        ans_array[self.thermal_index :: ndof].astype(body.dtype)
+                        states[self.thermal_index :: ndof].astype(body.dtype)
                         + scenario.T_ref
                     )
 
@@ -615,6 +614,9 @@ class TacsUnsteadyInterface(SolverInterface):
         """
         Load the states (struct_disps) associated with this step.
 
+        **Note: this code is deprecated, it is included in the end of
+        the iterate function.**
+
         **Note: in the NLBGS algorithm the transfer scheme uses the
         structural displacements from the prior step.
         set_states will request the states from the previous step
@@ -631,24 +633,26 @@ class TacsUnsteadyInterface(SolverInterface):
             The time step number that the driver wants the states from
         """
 
-        if self.tacs_proc:
-            _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
-            states = self.ans.getArray()
-            ndof = self.assembler.getVarsPerNode()
+        pass
 
-            for body in bodies:
-                struct_disps = body.get_struct_disps(scenario, time_index=step)
-                if struct_disps is not None:
-                    for i in range(3):
-                        struct_disps[i::3] = states[i::ndof].astype(body.dtype)
+        # if self.tacs_proc:
+        #     _, self.ans, _, _ = self.integrator[scenario.id].getStates(step)
+        #     states = self.ans.getArray()
+        #     ndof = self.assembler.getVarsPerNode()
 
-                struct_temps = body.get_struct_temps(scenario, time_index=step)
-                if struct_temps is not None:
-                    struct_temps[:] = (
-                        states[self.thermal_index :: ndof].astype(body.dtype)
-                        + scenario.T_ref
-                    )
-        return
+        #     for body in bodies:
+        #         struct_disps = body.get_struct_disps(scenario, time_index=step)
+        #         if struct_disps is not None:
+        #             for i in range(3):
+        #                 struct_disps[i::3] = states[i::ndof].astype(body.dtype)
+
+        #         struct_temps = body.get_struct_temps(scenario, time_index=step)
+        #         if struct_temps is not None:
+        #             struct_temps[:] = (
+        #                 states[self.thermal_index :: ndof].astype(body.dtype)
+        #                 + scenario.T_ref
+        #             )
+        # return
 
     def iterate_adjoint(self, scenario, bodies, step):
         """
@@ -664,7 +668,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
         fail = 0
         # rev_step = scenario.steps - step + 1
-        # print(f"step = {step}")
 
         if self.tacs_proc:
             # extract the list of functions, dfdu, etc
@@ -677,6 +680,7 @@ class TacsUnsteadyInterface(SolverInterface):
             for ifunc in range(len(func_list)):
                 # get the solution data for this function
                 rhs_func = self.struct_rhs_vec[ifunc].getArray()
+                rhs_func[:] = 0.0  # reset it to zero
 
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:

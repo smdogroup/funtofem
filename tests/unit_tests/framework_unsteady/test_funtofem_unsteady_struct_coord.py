@@ -21,6 +21,9 @@ np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
+output_folder = os.path.join(base_dir, "output")
+if not os.path.exists(output_folder):
+    os.mkdir(output_folder)
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
@@ -34,7 +37,7 @@ if comm.rank == 0:  # make the results folder if doesn't exist
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
 
-@unittest.skipIf(in_github_workflow, "still under dev of tolerances")
+@unittest.skipIf(in_github_workflow, "still in development")
 class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
     FILENAME = "f2f-unsteady-struct-coord.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
@@ -63,7 +66,12 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
@@ -108,7 +116,12 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
@@ -154,7 +167,12 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
@@ -204,7 +222,12 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         solvers.structural.can_skip_coordinates = False
         transfer_settings = TransferSettings(npts=5)

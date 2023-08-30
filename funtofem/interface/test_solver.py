@@ -34,7 +34,7 @@ from ._solver_interface import SolverInterface
 
 
 class TestAerodynamicSolver(SolverInterface):
-    def __init__(self, comm, model):
+    def __init__(self, comm, model, copy_struct_mesh=False):
         """
         This class provides the functionality that FUNtoFEM expects from
         an aerodynamic solver.
@@ -153,7 +153,10 @@ class TestAerodynamicSolver(SolverInterface):
         self.aero_dvs = np.array(self.aero_dvs, dtype=TransferScheme.dtype)
 
         # Set random initial node locations
-        self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
+        if copy_struct_mesh:
+            self._copy_struct_mesh()
+        else:
+            self.aero_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
         # define data owned by each scenario
         class ScenarioData:
@@ -161,14 +164,17 @@ class TestAerodynamicSolver(SolverInterface):
                 self.npts = npts
                 self.aero_dvs = dvs
 
-                # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * step
-                self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
+                # choose random aero time step
+                self.dt = 0.01
+
+                # Aerodynamic forces = Jac1 * aero_disps + b1 * aero_X + c1 * aero_dvs + omega1 * (dt * step)
+                self.Jac1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts))
                 self.b1 = 0.01 * (np.random.rand(3 * self.npts, 3 * self.npts) - 0.5)
                 self.c1 = 0.01 * (
                     np.random.rand(3 * self.npts, len(self.aero_dvs)) - 0.5
                 )
 
-                # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * step
+                # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * dt
                 self.Jac2 = 0.1 * (np.random.rand(self.npts, self.npts) - 0.5)
                 self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
                 self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
@@ -193,6 +199,15 @@ class TestAerodynamicSolver(SolverInterface):
             body.initialize_aero_nodes(self.aero_X, aero_id)
 
         return
+
+    def _copy_struct_mesh(self):
+        """copy aero mesh from the structures side"""
+        body = self.model.bodies[0]
+        self.npts = body.get_num_struct_nodes()
+        aero_id = np.arange(1, body.get_num_struct_nodes() + 1)
+        body.initialize_aero_nodes(body.struct_X, aero_id)
+        self.aero_X = body.aero_X
+        return self
 
     def set_variables(self, scenario, bodies):
         """Set the design variables for the solver"""
@@ -239,6 +254,7 @@ class TestAerodynamicSolver(SolverInterface):
                             self.scenario_data[scenario.id].func_coefs2, aero_temps
                         )
                 func.value = self.comm.allreduce(value)
+
         return
 
     def get_function_gradients(self, scenario, bodies):
@@ -315,6 +331,8 @@ class TestAerodynamicSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        aero_time = step * self.scenario_data[scenario.id].dt
+
         for body in bodies:
             # Perform the "analysis"
             # Note that the body class expects that you will write the new
@@ -328,7 +346,7 @@ class TestAerodynamicSolver(SolverInterface):
                     self.scenario_data[scenario.id].c1, self.aero_dvs
                 )
                 if not scenario.steady:
-                    aero_loads[:] += self.scenario_data[scenario.id].omega1
+                    aero_loads[:] += self.scenario_data[scenario.id].omega1 * aero_time
 
             # Perform the heat transfer "analysis"
             aero_temps = body.get_aero_temps(scenario, step)
@@ -339,8 +357,8 @@ class TestAerodynamicSolver(SolverInterface):
                 aero_flux[:] += np.dot(
                     self.scenario_data[scenario.id].c2, self.aero_dvs
                 )
-                if not scenario.steady:
-                    aero_flux[:] += self.scenario_data[scenario.id].omega2
+                if not scenario.steady:  # omega * dt term here
+                    aero_flux[:] += self.scenario_data[scenario.id].omega2 * aero_time
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -396,6 +414,20 @@ class TestAerodynamicSolver(SolverInterface):
                         aero_temps_ajp[:, k] += self.scenario_data[
                             scenario.id
                         ].func_coefs2
+
+        if not scenario.steady:
+            if step > 0:
+                self.get_function_gradients(scenario, bodies)
+            else:  # step == 0
+                # want to zero out adjoints used for derivatives, since no analysis done on step 0
+                for body in bodies:
+                    aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                    if aero_loads_ajp is not None:
+                        aero_loads_ajp *= 0.0
+
+                    aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
+                    if aero_flux_ajp is not None:
+                        aero_flux_ajp *= 0.0
 
         fail = 0
         return fail
@@ -457,7 +489,10 @@ class TestStructuralSolver(SolverInterface):
                 self.npts = npts
                 self.struct_dvs = struct_dvs
 
-                # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * step
+                # choose time step
+                self.dt = 0.01
+
+                # Struct disps = Jac1 * struct_forces + b1 * struct_X + c1 * struct_dvs + omega1 * time
                 self.Jac1 = (
                     0.01
                     * elastic_scale
@@ -474,7 +509,7 @@ class TestStructuralSolver(SolverInterface):
                     * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
                 )
 
-                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * step
+                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * time
                 self.Jac2 = (
                     0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
                 )
@@ -639,6 +674,8 @@ class TestStructuralSolver(SolverInterface):
             Step number for the steady-state solution method
         """
 
+        struct_time = step * self.scenario_data[scenario.id].dt
+
         for body in bodies:
             # Perform the "analysis"
             struct_loads = body.get_struct_loads(scenario, step)
@@ -654,7 +691,9 @@ class TestStructuralSolver(SolverInterface):
                     self.scenario_data[scenario.id].c1, self.struct_dvs
                 )
                 if not scenario.steady:
-                    struct_disps[:] += self.scenario_data[scenario.id].omega1
+                    struct_disps[:] += (
+                        self.scenario_data[scenario.id].omega1 * struct_time
+                    )
 
             # Perform the heat transfer "analysis"
             struct_flux = body.get_struct_heat_flux(scenario, step)
@@ -670,7 +709,9 @@ class TestStructuralSolver(SolverInterface):
                     self.scenario_data[scenario.id].c2, self.struct_dvs
                 )
                 if not scenario.steady:
-                    struct_temps[:] += self.scenario_data[scenario.id].omega2
+                    struct_temps[:] += (
+                        self.scenario_data[scenario.id].omega2 * struct_time
+                    )
 
         # This analysis is always successful so return fail = 0
         fail = 0
@@ -717,6 +758,7 @@ class TestStructuralSolver(SolverInterface):
 
             struct_temps_ajp = body.get_struct_temps_ajp(scenario)
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
+
             if struct_temps_ajp is not None:
                 for k, func in enumerate(scenario.functions):
                     struct_flux_ajp[:, k] = np.dot(
@@ -727,6 +769,20 @@ class TestStructuralSolver(SolverInterface):
                             scenario.id
                         ].func_coefs2
 
+        # add derivative values
+        if not scenario.steady:
+            if step > 0:
+                self.get_function_gradients(scenario, bodies)
+            else:  # step == 0
+                # want to zero out adjoints used for derivatives, since no analysis done on step 0
+                for body in bodies:
+                    struct_disps_ajp = body.get_struct_disps_ajp(scenario)
+                    if struct_disps_ajp is not None:
+                        struct_disps_ajp *= 0.0
+
+                    struct_temps_ajp = body.get_struct_temps_ajp(scenario)
+                    if struct_temps_ajp is not None:
+                        struct_temps_ajp *= 0.0
         fail = 0
         return fail
 
@@ -1160,13 +1216,11 @@ class CoordinateDerivativeTester:
             body.struct_X -= epsilon * dstructX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"i functions = {i_functions}")
 
             # f(x;xA+h)
             body.struct_X += 2 * epsilon * dstructX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}")
 
             truth_derivs = np.array(
                 [
@@ -1252,13 +1306,11 @@ class CoordinateDerivativeTester:
             body.aero_X -= epsilon * daeroX_ds
             self.driver.solve_forward()
             i_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"i functions = {i_functions}")
 
             # f(x;xA+h)
             body.aero_X += 2 * epsilon * daeroX_ds
             self.driver.solve_forward()
             f_functions = [func.value.real for func in self.model.get_functions()]
-            print(f"f functions = {f_functions}")
 
             truth_derivs = np.array(
                 [
