@@ -763,7 +763,7 @@ class Fun3dInterface(SolverInterface):
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
                 # Get the aero loads
-                aero_loads = body.get_aero_loads(scenario)
+                aero_loads = body.get_aero_loads(scenario, time_index=step)
 
                 # Add the contributions to the derivative of the dynamic pressure
                 for func in range(nfuncs):
@@ -778,8 +778,8 @@ class Fun3dInterface(SolverInterface):
             # Get the adjoint Jacobian products for the aero heat flux
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
-            aero_flux = body.get_aero_heat_flux(scenario)
-            aero_temps = body.get_aero_temps(scenario)
+            aero_flux = body.get_aero_heat_flux(scenario, time_index=step)
+            aero_temps = body.get_aero_temps(scenario, time_index=step)
 
             if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
@@ -836,7 +836,6 @@ class Fun3dInterface(SolverInterface):
 
             if aero_temps_ajp is not None and aero_nnodes > 0:
                 # additional terms
-                heat_flux = body.get_aero_heat_flux(scenario)
                 dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
 
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
@@ -851,7 +850,7 @@ class Fun3dInterface(SolverInterface):
                     aero_temps_ajp[:, func] += (
                         self.flow_dt
                         * aero_flux_ajp[:, func]
-                        * (heat_flux[:] / k_dim[:])
+                        * (aero_flux[:] / k_dim[:])
                         * dkdtA[:]
                     )
 
@@ -939,7 +938,8 @@ class Fun3dInterface(SolverInterface):
 
     def set_states(self, scenario, bodies, step):
         """
-        Loads the saved aerodynamic forces for the time dependent adjoint
+        Loads the saved aerodynamic displacements and temperatures
+        for the time dependent adjoint.
 
         Parameters
         ----------
@@ -950,6 +950,29 @@ class Fun3dInterface(SolverInterface):
         step: int
             the time step number
         """
+
+        # Deform aerodynamic mesh
+        for ibody, body in enumerate(bodies, 1):
+            aero_disps = body.get_aero_disps(
+                scenario, time_index=step, add_dxa0=self._coord_test_override
+            )
+            aero_nnodes = body.get_num_aero_nodes()
+            deform = "deform" in body.motion_type
+            if deform and aero_disps is not None and aero_nnodes > 0:
+                dx = np.asfortranarray(aero_disps[0::3])
+                dy = np.asfortranarray(aero_disps[1::3])
+                dz = np.asfortranarray(aero_disps[2::3])
+                self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
+
+            # if "rigid" in body.motion_type and body.transfer is not None:
+            #     transform = np.asfortranarray(body.rigid_transform)
+            #     self.fun3d_flow.input_rigid_transform(transform, body=ibody)
+
+            aero_temps = body.get_aero_temps(scenario, time_index=step)
+            if aero_temps is not None and aero_nnodes > 0:
+                # Nondimensionalize by freestream temperature
+                temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         return
 
