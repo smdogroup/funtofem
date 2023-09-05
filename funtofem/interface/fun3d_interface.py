@@ -842,9 +842,6 @@ class Fun3dInterface(SolverInterface):
                     aero_nnodes, nfuncs, body=ibody
                 )
 
-                print(f"k_dim: {k_dim}", flush=True)
-                print(f"aero_temps: {aero_temps}", flush=True)
-
                 scale = self.flow_dt / scenario.T_inf
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
