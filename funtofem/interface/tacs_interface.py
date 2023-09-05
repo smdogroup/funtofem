@@ -590,7 +590,7 @@ class TacsSteadyInterface(SolverInterface):
                 print(f"Inside tacs_interface, step: {step}")
                 print(f"struct_loads: {struct_loads}")
                 print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
-                print(f"========================================\n",flush=True)
+                print(f"========================================\n", flush=True)
                 if struct_loads is not None:
                     for i in range(3):
                         ext_force_array[i::ndof] += struct_loads[i::3].astype(
