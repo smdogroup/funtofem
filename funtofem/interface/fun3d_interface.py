@@ -527,8 +527,8 @@ class Fun3dInterface(SolverInterface):
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
             # Temporary stuff for debugging
-            struct_disps = body.get_struct_disps(scenario, time_index=step-1)
-            struct_loads = body.get_struct_loads(scenario, time_index=step-1)
+            struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
+            struct_loads = body.get_struct_loads(scenario, time_index=step - 1)
             print(f"========================================")
             print(f"Inside fun3d_interface:iterate, step: {step}")
             print(f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}")
@@ -536,7 +536,7 @@ class Fun3dInterface(SolverInterface):
             print(f"norm of struct_disps: {np.linalg.norm(struct_disps)}")
             print(f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}")
             print(f"norm of aero_disps: {np.linalg.norm(aero_disps)}")
-            print(f"========================================\n",flush=True)
+            print(f"========================================\n", flush=True)
 
         # Take a step in FUN3D
         self.comm.Barrier()
@@ -564,7 +564,7 @@ class Fun3dInterface(SolverInterface):
             print(f"========================================")
             print(f"Inside fun3d_interface:iterate, after iterate, step: {step}")
             print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
-            print(f"========================================\n",flush=True)
+            print(f"========================================\n", flush=True)
 
             # Compute the heat flux on the body
             # FUN3D is nondimensional, it doesn't output a heat flux (which can't be scaled linearly).
@@ -782,8 +782,10 @@ class Fun3dInterface(SolverInterface):
                     print(f"========================================")
                     print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
                     print(f"func: {func}")
-                    print(f"norm of psi_F: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}")
-                    print(f"========================================\n",flush=True)
+                    print(
+                        f"norm of psi_F: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}"
+                    )
+                    print(f"========================================\n", flush=True)
 
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
@@ -859,8 +861,10 @@ class Fun3dInterface(SolverInterface):
                     print(f"========================================")
                     print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
                     print(f"func: {func}")
-                    print(f"norm of psi_D: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}")
-                    print(f"========================================\n",flush=True)
+                    print(
+                        f"norm of psi_D: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}"
+                    )
+                    print(f"========================================\n", flush=True)
 
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
