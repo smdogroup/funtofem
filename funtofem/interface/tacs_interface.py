@@ -586,6 +586,11 @@ class TacsSteadyInterface(SolverInterface):
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
                 struct_loads = body.get_struct_loads(scenario, time_index=step)
+                print(f"========================================")
+                print(f"Inside tacs_interface, step: {step}")
+                print(f"struct_loads: {struct_loads}")
+                print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                print(f"========================================\n",flush=True)
                 if struct_loads is not None:
                     for i in range(3):
                         ext_force_array[i::ndof] += struct_loads[i::3].astype(
