@@ -1,0 +1,727 @@
+# Sean Engelstad, GT SMDO
+# Supersonic Transport wing for funtofem
+
+# view cfgpmtrs for caps2fun
+cfgpmtr view:fluid 0
+cfgpmtr view:structure 1
+
+ifthen view:fluid EQ 1 and view:structure EQ 1
+   throw 999
+endif
+
+# structure view parameters
+cfgpmtr view:internals 1
+cfgpmtr view:OML 1
+cfgpmtr view:centerPlane 1
+
+# cfgpmtrs for supports
+cfgpmtr allOML 0
+cfgpmtr nribs 25
+cfgpmtr nspars 4
+
+outpmtr nOMLs
+ifthen allOML EQ 1
+   set nOMLs (nribs-1)*(nspars+1)
+else
+   set nOMLs nribs-1
+endif
+
+
+# turn on or off double trapezoid
+cfgpmtr doubleTrap 0
+cfgpmtr lofted 1
+
+### design parameters #####
+
+# choose fraction of t/c used for thermal BCs
+despmtr LEchopRibFrac 0.04
+despmtr TEchopRibFrac 0.92
+
+# overall wing design parameters
+despmtr area 170 # m^2
+despmtr aspect 5 # ND
+
+# leading sweep angles ignore lesweep2 if double
+despmtr lesweep1 55
+despmtr lesweep2 35
+despmtr lesweep3 35
+
+# trailing edge sweep angles, ignore tesweep2 if double
+despmtr tesweep1 10
+despmtr tesweep2 10
+despmtr tesweep3 -20
+
+# dihedral angles
+despmtr dihedral1 3.0
+despmtr dihedral2 3.0
+despmtr dihedral3 5.0
+
+# span ratios, only Rspan1 if double
+despmtr Rspan1 0.7
+despmtr Rspan2 0.5
+
+# airfoil size ratios
+despmtr tc_root 0.035
+despmtr tc_mid1 0.06
+despmtr tc_mid2 0.07
+despmtr tc_tip 0.08
+
+# total wing span
+set span sqrt(aspect*area)
+set sspan span*0.5*0.9
+
+# wing span of section of double trapezoid
+ifthen doubleTrap EQ 1
+   set sspan2 0
+   set sspan3 sspan/(1+Rspan1)
+   set sspan1 sspan3*Rspan1
+else 
+   set sspan3 sspan/(1+Rspan2+Rspan1*Rspan2)
+ set sspan2 Rspan2*sspan3
+ set sspan1 Rspan1*sspan2
+endif
+
+
+# use lesweep despmtrs
+set x1LE sspan1*tand(lesweep1)
+ifthen doubleTrap EQ 1
+   set x2LE x1LE+sspan2*tand(lesweep3)
+ set x3LE x2LE+sspan3*tand(lesweep3)
+else
+   set x2LE x1LE+sspan2*tand(lesweep2)
+ set x3LE x2LE+sspan3*tand(lesweep3)
+endif
+
+
+# use trailing edge sweep design parameters
+set x1TE sspan1*tand(tesweep1)
+ifthen doubleTrap EQ 1
+   set x2TE x1TE+sspan2*tand(tesweep3)
+ set x3TE x2TE+sspan3*tand(tesweep3)
+else
+   set x2TE x1TE+sspan2*tand(tesweep2)
+set x3TE x2TE+sspan3*tand(tesweep3)
+endif
+
+# chord lengths of triple trapezoid
+set A1_loss (x1LE+x1TE)/2.0*sspan1
+set A2_loss (x2LE+x2TE)/2.0*sspan2
+set A3_loss (x3LE+x3TE)/2.0*sspan3
+set Atot_loss 2*A1_loss+2*A2_loss+A3_loss
+
+set croot (area/2.0+Atot_loss)/sspan
+set cmid1 croot-x1LE-x1TE
+set cmid2 croot-x2LE-x2TE
+set ctip  croot-x3LE-x3TE
+
+# check areas
+set A1 (croot+cmid1)/2.0*sspan1
+set A2 (cmid1+cmid2)/2.0*sspan2
+set A3 (cmid2+ctip)/2.0*sspan3
+set span_check 2.0*(sspan1+sspan2+sspan3)
+ifthen doubleTrap EQ 1
+   set cavg_check (croot+2*cmid2+ctip)/4.0
+else
+   set cavg_check (croot+2*cmid1+2*cmid2+ctip)/6.0
+endif
+set area_check 2.0*(A1+A2+A3)
+set aspect_check span_check*span_check/area_check
+
+
+# max x position
+set xmax max(ctip+x3LE,croot)
+
+# use dihedral design parameters
+set dy1 sspan1*tand(dihedral1)
+set dy2 sspan2*tand(dihedral2)
+set dy3 sspan3*tand(dihedral3)
+set dy dy1+dy2+dy3
+
+# AOA twist despmtr
+despmtr twist_tip 2.0
+set twist_mid1 twist_tip*(sspan1/sspan)
+set twist_mid2 twist_tip*(sspan1+sspan2)/sspan
+
+###################################
+# internal structure design parameters
+# 
+# new_frac = a1*old_frac+a2*old_frac^2+a3*old_frac^3
+# function for new_frac(old_frac) for rib/spar fractions
+
+despmtr rib_a1 0.5
+despmtr rib_a2 0.1
+set rib_a3 1-rib_a1-rib_a2
+
+despmtr spar_a1 0.7
+despmtr spar_a2 0.1
+set spar_a3 1-spar_a1-spar_a2
+
+
+###  make the solid wing loft ###
+patbeg foo 2
+   # make root airfoil
+   mark
+   udparg naca456 thkcode $66 toc tc_root camcode $6
+   udprim naca456 a 0.60
+   scale croot
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale croot
+   extrude 0 0 -1
+      union
+   ifthen foo EQ 1
+      select face 3
+   else
+      select face 2
+   endif
+   extract @sellist
+
+   # make mid1 airfoil
+   udparg naca456 thkcode $66 toc tc_mid1 camcode $6
+   udprim naca456 a 0.40
+   scale cmid1
+   translate x1LE dy1 -sspan1 
+   rotatez twist_mid1 0 0
+      
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.40
+   scale cmid1
+   translate x1LE dy1 -sspan1 
+   rotatez twist_mid1 0 0
+      
+   extrude 0 0 -1
+      union
+   ifthen foo EQ 1
+      select face 3
+   else
+      select face 2
+   endif
+   extract @sellist
+
+   # make mid2 airfoil   
+   udparg naca456 thkcode $66 toc tc_mid2 camcode $6
+   udprim naca456 a 0.60
+   scale cmid2
+   translate x2LE dy1+dy2 -sspan1-sspan2
+   rotatez twist_mid2 0 0
+      
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale cmid2
+   translate x2LE dy1+dy2 -sspan1-sspan2
+   rotatez twist_mid2 0 0
+      
+   extrude 0 0 -1
+      union
+   ifthen foo EQ 1
+      select face 3
+   else
+      select face 2
+   endif
+   extract @sellist
+      
+   # tip airfoil
+   udparg naca456 thkcode $66 toc tc_tip camcode $6
+   udprim naca456 a 0.60
+   scale ctip
+   translate x3LE dy -sspan
+   rotatez twist_tip 0 0
+      
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale ctip
+   translate x3LE dy -sspan
+   rotatez twist_tip 0 0
+      
+   extrude 0 0 -1
+      union
+   ifthen foo EQ 1
+      select face 3
+   else
+      select face 2
+   endif
+   extract @sellist
+      
+
+   ifthen lofted EQ 1
+      loft 0
+   else
+      blend
+   endif
+
+   select face
+   attribute _color $blue
+
+   ifthen lofted EQ 1
+      select face 8
+      attribute _color $green
+      attribute capsGroup $rib1
+      attribute capsConstraint $root
+      attribute _comp $rib
+
+      select face 7
+      attribute _color $green
+      attribute capsGroup !$rib+nribs
+      attribute _comp $tip
+      attribute capsConstraint $tip
+   else
+      select face 3
+      attribute _color $green
+      attribute capsGroup $rib1
+      attribute capsConstraint $root
+      attribute _comp $root
+
+      select face 4
+      attribute _color $green
+      attribute capsGroup !$rib+nribs
+      attribute _comp $tip
+   endif
+
+   ifthen foo EQ 1
+      select face $_comp $rib
+      attribute side $lower
+      store lowerWing
+   else
+      select face $_comp $rib
+      attribute side $upper
+      store upperWing
+   endif
+
+patend
+
+# make the fluid mesh
+ifthen view:fluid EQ 1
+ set ff sspan*10
+   box -ff -ff -ff 2*ff 2*ff 2*ff
+   select face
+   attribute capsGroup $Farfield
+   attribute capsMesh $Farfield
+   
+   restore solidWing
+   select face
+   attribute capsGroup $wall
+   attribute capsMesh $wall
+   subtract
+   
+   select body
+   attribute capsAIM $egadsTessAIM;pointwiseAIM;fun3dAIM
+   attribute capsMeshLength 1.0
+endif
+
+# make the structure mesh
+ifthen view:structure EQ 1
+   
+   ifthen view:internals EQ 1
+      
+   # LE chop box
+   # make a spar box to chop off end ribs
+    # ----------------
+    set frac LEchopRibFrac
+   set fracSq frac*frac
+   set fracCb frac*fracSq
+
+   set spar_frac frac*spar_a1+fracSq*spar_a2+fracCb*spar_a3
+
+   # make first part of 
+   set x1 spar_frac*croot
+   set x2 x1LE+spar_frac*cmid1
+   set x3 x2LE+spar_frac*cmid2
+   set x4 x3LE+spar_frac*ctip
+   set xpos spar_frac*xmax
+
+ mark
+       ifthen doubleTrap EQ 1
+          box x1 -10 0 20+x1 20 0
+          box x2 -10 -sspan1 20+x3 20 0
+          box x3 -10 -sspan 20+x4 20 0
+       else
+          box x1 -10 0 40 20 0
+          box x2 -10 -sspan1 40 20 0
+          box x3 -10 -sspan1-sspan2 40 20 0
+          box x4 -10 -sspan 40 20 0
+       endif
+       
+       ifthen lofted EQ 1
+       loft 0
+      else
+      blend
+      endif
+
+    store LEchopBox
+
+    # add LEchopBox spar
+    restore LEchopBox
+   set prev_body @nbody-1
+    select face prev_body 11 1
+          select add prev_body 7 1
+          select add prev_body 3 1
+             attribute _color $red
+             attribute capsGroup !$LEspar
+          extract @sellist
+     store LEchopBoxSpar
+   
+    # make subtractChopBox for the OML root and tip ribs
+   restore lowerWing
+   restore upperWing
+   union
+   restore LEchopBox
+   subtract
+   store subtractLEChopBox
+
+
+       # make a TE spar box to chop off end ribs
+    # ----------------
+    set frac TEchopRibFrac
+   set fracSq frac*frac
+   set fracCb frac*fracSq
+
+   set spar_frac frac*spar_a1+fracSq*spar_a2+fracCb*spar_a3
+
+   # make first part of 
+   set x1 spar_frac*croot
+   set x2 x1LE+spar_frac*cmid1
+   set x3 x2LE+spar_frac*cmid2
+   set x4 x3LE+spar_frac*ctip
+   set xpos spar_frac*xmax
+
+ mark
+       ifthen doubleTrap EQ 1
+          box -20 -10 0 20+x1 20 0
+          box -20 -10 -sspan1 20+x3 20 0
+          box -20 -10 -sspan 20+x4 20 0
+       else
+          box -20 -10 0 20+x1 20 0
+          box -20 -10 -sspan1 20+x2 20 0
+          box -20 -10 -sspan1-sspan2 20+x3 20 0
+          box -20 -10 -sspan 20+x4 20 0
+       endif
+       
+       ifthen lofted EQ 1
+       loft 0
+      else
+      blend
+      endif
+
+    store TEchopBox
+   
+   # add TEchopBox spar
+    restore TEchopBox
+   set prev_body @nbody-1
+    select face prev_body 13 1
+          select add prev_body 9 1
+          select add prev_body 5 1
+             attribute _color $red
+             attribute capsGroup !$TEspar
+          extract @sellist
+     store TEchopBoxSpar
+   
+    # make subtractChopBox for the OML root and tip ribs
+   restore lowerWing
+   restore upperWing
+   union
+   restore TEchopBox
+   subtract
+   store subtractTEChopBox
+
+   # END of chop box section
+    
+       # make the spar box all the way through the structure
+       patbeg ispar nspars
+          set frac ispar/(nspars+1)
+          set fracSq frac*frac
+          set fracCb frac*fracSq
+
+          set spar_frac frac*spar_a1+fracSq*spar_a2+fracCb*spar_a3
+          
+          # make first part of 
+          set x1 spar_frac*croot
+          set x2 x1LE+spar_frac*cmid1
+          set x3 x2LE+spar_frac*cmid2
+          set x4 x3LE+spar_frac*ctip
+          set xpos spar_frac*xmax
+          
+          mark
+          ifthen doubleTrap EQ 1
+             box -20 -10 0 20+x1 20 0
+                box -20 -10 -sspan1 20+x3 20 0
+                box -20 -10 -sspan 20+x4 20 0
+          else
+             box -20 -10 0 20+x1 20 0
+             box -20 -10 -sspan1 20+x2 20 0
+             box -20 -10 -sspan1-sspan2 20+x3 20 0
+             box -20 -10 -sspan 20+x4 20 0
+          endif
+          ifthen lofted EQ 1
+             loft 0
+          else
+             blend
+          endif
+          select face @nbody 13 1
+          select add @nbody 9 1
+          select add @nbody 5 1
+             attribute _color $red
+             attribute capsGroup !$spar+ispar   
+          extract @sellist
+       patend
+    
+    # make the ribs
+    set nsupports nribs-2
+    patbeg isupport nsupports
+       set frac isupport/(nsupports+1)
+       set fracSq frac*frac
+       set fracCb frac*fracSq
+       set supp_frac frac*rib_a1+fracSq*rib_a2+fracCb*rib_a3
+       
+       set zpos -supp_frac*sspan
+       box -10 -10 zpos 20+xmax 20 0
+       
+       select face
+       attribute _color $green
+       attribute capsGroup !$rib+(isupport+1)
+       
+       ifthen isupport EQ 1
+         patbeg ispar nspars
+            union
+         patend
+             else
+         union
+             endif
+    patend
+   
+ store waffle
+   
+    # make waffle structure
+    restore waffle
+    restore lowerWing
+    restore TEchopBox
+    intersect
+    restore LEchopBox
+    intersect
+    intersect
+    select face 
+      attribute side $lower
+   
+    restore waffle
+    restore upperWing
+    restore TEchopBox
+    intersect
+    restore LEchopBox
+    intersect
+    intersect
+
+    select face 
+      attribute side $upper
+   
+    union
+
+    # select edge that is blue
+   udprim editAttr filename <<
+      EDGE ADJ2FACE side=lower
+      AND ADJ2FACE side=upper
+      SET capsConstraint=subStructure
+   >>
+
+ restore lowerWing
+    restore TEchopBoxSpar
+    intersect
+    select face 
+      attribute side $lower
+    restore upperWing
+    restore TEchopBoxSpar
+    intersect
+    select face 
+      attribute side $upper
+    union
+    union
+
+    
+
+    restore lowerWing
+    restore LEchopBoxSpar
+    intersect
+    select face 
+      attribute side $lower
+    restore upperWing
+    restore LEchopBoxSpar
+    intersect
+    select face 
+      attribute side $upper
+    union
+    union
+    
+   
+    
+   # store the final internal structure
+    store internal_struct
+   
+   endif
+
+   # make wing OML
+   restore upperWing
+   restore lowerWing
+   union
+   hollow 0
+
+ # subtract the subtractChopBox to chop off ribs
+    restore subtractTEChopBox
+    subtract
+    restore subtractLEChopBox
+    subtract
+
+   # attribute the OML
+   select edge
+   attribute comp $OML
+   udprim editAttr filename <<
+      EDGE ADJ2FACE side=lower
+      AND ADJ2FACE side=upper
+      SET comp=subStructure
+   >>
+   select face
+   attribute comp $OML
+   store OML
+   
+   # view if statement group to see different versions of structure
+   ifthen view:internals EQ 1 and view:OML EQ 1
+      restore OML
+      restore internal_struct
+      union
+      
+    elseif view:internals EQ 1 and view:OML EQ 0
+      restore internal_struct
+    elseif view:internals EQ 0 and view:OML EQ 1
+      restore OML
+    endif
+
+   ifthen view:internals EQ 1 and allOML EQ 1
+      udprim editAttr filename <<
+         FACE HAS comp=OML
+         SET rib_space=none
+      
+         EDGE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+
+         EDGE ADJ2FACE capsConstraint=root
+         AND HAS comp=subStructure
+         SET capsConstraint=middleRoot
+      
+         NODE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+      
+         # rib space assignments
+         patbeg ispace (nribs-1)
+            FACE ADJ2FACE capsGroup=!$rib+ispace
+            AND ADJ2FACE capsGroup=!$rib+(ispace+1)
+            AND HAS comp=OML
+            SET rib_space=!$rib+ispace
+            SET capsLoad=OML
+         patend
+         
+         # spar space assignments
+         FACE HAS comp=OML
+         SET spar_space=none
+         
+         patbeg ispace (nspars-1)
+            FACE ADJ2FACE capsGroup=!$spar+ispace
+            AND ADJ2FACE capsGroup=!$spar+(ispace+1)
+            AND HAS spar_space=none
+            SET spar_space=!$spar+(ispace+1)
+         patend
+         
+         FACE ADJ2FACE capsGroup=spar1
+         AND HAS spar_space=none
+         SET spar_space=spar1
+         
+         FACE ADJ2FACE capsGroup=!$spar+nspars
+         AND HAS spar_space=none
+         SET spar_space=!$spar+(nspars+1)
+      >>
+      
+      udprim editAttr filename <<
+      # additional OML loop to pickup lost faces at intersections
+         patbeg ispace (nribs-1)
+            FACE ADJ2FACE capsGroup=!$rib+ispace
+            AND ADJ2FACE rib_space=!$rib+(ispace-1)
+            AND HAS rib_space=none
+            SET rib_space=!$rib+ispace    
+            #SET _color=red
+            
+            FACE ADJ2FACE capsGroup=!$rib+(ispace+1)
+            AND ADJ2FACE rib_space=!$rib+(ispace+1)
+            AND HAS rib_space=none
+            SET rib_space=!$rib+ispace
+            SET hasGroup=yes
+            SET capsLoad=OML   
+            #SET _color=red
+         patend
+         
+         # add OML capsGroups based on space attributes
+         patbeg irib_space (nribs-1)
+            patbeg ispar_space (nspars+1)
+               FACE HAS rib_space=!$rib+irib_space
+               AND HAS spar_space=!$spar+ispar_space
+               SET capsGroup=!$OML+((nspars+1)*(irib_space-1)+ispar_space)
+            patend
+         patend
+         
+      >>
+   endif
+
+ 
+
+ ifthen view:internals EQ 1 and allOML EQ 0
+      udprim editAttr filename <<
+         FACE HAS comp=OML
+         SET has_group=no
+      
+         EDGE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+
+         EDGE HAS capsConstraint=root
+         AND HAS comp=subStructure
+         SET capsConstraint=middleRoot
+      
+         NODE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+    
+         patbeg ispace (nribs-1)
+            FACE ADJ2FACE capsGroup=!$rib+ispace
+            AND ADJ2FACE capsGroup=!$rib+(ispace+1)
+            AND HAS has_group=no
+            SET capsGroup=!$OML+ispace
+            SET has_group=yes
+         patend
+    
+         patbeg ispace (nribs-1)
+         
+            FACE ADJ2FACE capsGroup=!$rib+ispace
+            AND ADJ2FACE capsGroup=!$OML+(ispace-1)
+            AND HAS has_group=no
+            SET capsGroup=!$OML+ispace
+            SET has_group=yes
+            
+            FACE ADJ2FACE capsGroup=!$rib+(ispace+1)
+            AND ADJ2FACE capsGroup=!$OML+(ispace+1)
+            AND HAS has_group=no
+            SET capsGroup=!$OML+ispace
+            SET has_group=yes
+         patend
+         
+      >>
+      
+   endif
+   
+   
+   
+   select body
+   attribute capsAIM $egadsTessAIM;tacsAIM
+   
+   
+endif
+
+# rotate to swap yz
+rotatex 90 0 0
+
+end
+|||||||||
+||||
+|||||||||||||||||||||||||
