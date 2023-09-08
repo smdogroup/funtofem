@@ -1,0 +1,184 @@
+# Naca wing example
+# Sean Engelstad August 2023
+# SMDO Lab Georgia Tech, Prof. Graeme Kennedy
+
+cfgpmtr view:flow 0
+cfgpmtr view:struct 1
+
+ifthen view:flow EQ 1
+   ifthen view:struct EQ 1
+    throw 999
+   endif
+endif
+
+# aero design parameters
+
+despmtr ff 20.0
+despmtr sspan 5.0
+despmtr camber 0.0
+despmtr thickness 0.12
+despmtr aoa 0.0
+
+### Design parameters ###
+
+# number of ribs and spars
+cfgpmtr nribs 8
+cfgpmtr nspars 1
+
+# spar fraction despmtrs
+despmtr spar_a1 1.0
+despmtr spar_a2 0.0
+set spar_a3 1.0-spar_a1-spar_a2
+
+# rib fraction despmtrs
+despmtr rib_a1 1.0
+despmtr rib_a2 0.0
+set rib_a3 1.0-rib_a1-rib_a2
+
+
+# Depedendent parameters
+set margin1 5.0
+set margin2 3.0
+set margin3 10.0
+
+# wing solid body
+mark
+udprim naca camber camber thickness thickness
+udprim naca camber camber thickness thickness
+translate 0 0 -sspan
+loft 0
+translate 0 0 0.5*sspan
+store wingSolidBody
+
+ifthen view:struct EQ 1
+
+    ### Wing OML ###
+    restore wingSolidBody
+    extract 0
+   select face
+   attribute capsGroup $OML
+   select face 5
+   attribute capsGroup $rib1
+   select face 4
+   attribute capsGroup !$rib+nribs
+    store OML
+   
+    ### Internal Structure ###
+
+    # make the spars
+    patbeg ispar nspars
+    
+       # compute the positions of the spars at root and tip
+       set fr ispar/(nspars+1)
+       set sparFrac fr*(spar_a1+fr*(spar_a2+fr*spar_a3))
+       set xroot sparFrac
+       set xtip sparFrac
+
+       # make the panel to intersect
+       box xroot -margin1 margin2 0.0 2*margin1 -sspan-2*margin2 
+
+       # add caps attributes
+       select face
+       attribute capsGroup !$spar+ispar
+       attribute _color $green
+       
+    patend
+
+    # make the ribs except for end cap ribs
+    set ninnerRibs nribs-2
+    patbeg index ninnerRibs
+    
+       # compute the spanwise portion of the rib
+       set irib index+1
+       set fr (irib-1)/(nribs-1)
+       set ribFrac fr*(rib_a1+fr*(rib_a2+fr*rib_a3)) 
+       set ypos -ribFrac*sspan
+
+       # make the panel of the rib
+       box -margin3 -margin2 ypos 2*margin3 2*margin2 0
+
+       # add caps attributes
+       select face
+       attribute capsGroup !$rib+irib
+       attribute _color $green
+
+       # union with previous ribs/spars
+       ifthen index eq 1
+           patbeg ispar nspars
+               union
+           patend
+       else
+           union
+       endif
+
+    patend
+    # center to match wing
+    translate 0 0 0.5*sspan
+    store internalStruct
+   
+    restore internalStruct
+    restore wingSolidBody
+    intersect
+   
+   # join OML and internal structure
+    restore OML
+    union
+
+    ### 4. Final Caps Attributes ###
+
+    # add constraint attributes to root airfoil
+    select face $capsGroup $rib1
+    attribute capsConstraint $root
+
+    # add the constraint attribute to adjacent edges, nodes
+    # otherwise they can pop out of the mesh in the structural analysis
+    udprim editAttr filename <<
+    EDGE ADJ2FACE capsConstraint=root
+    SET capsConstraint=root
+
+    NODE ADJ2FACE capsConstraint=root
+    SET capsConstraint=root
+
+    EDGE ADJ2FACE thermalFace=upper
+    AND ADJ2FACE thermalFace=lower
+    SET capsConstraint=midplane
+    >>
+
+    # add load attribute to OML
+    select face $capsGroup $OML
+    attribute capsLoad $OML
+
+    # add AIM attribute to specify the analyses to use
+    select body
+    attribute capsAIM $egadsTessAIM;tacsAIM
+
+endif
+
+ifthen view:flow EQ 1
+   box -ff -ff -ff 2*ff 2*ff 2*ff
+      attribute capsGroup $Farfield
+      attribute capsMesh $Farfield
+      ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
+      ATTRIBUTE AFLR4_CMP_ID 2
+      ATTRIBUTE AFLR4_Scale_Factor 10.0
+
+   restore wingSolidBody
+   select face
+       attribute capsGroup $wall
+       attribute capsMesh $wall
+       attribute AFLR4_Cmp_Id 1
+       attribute AFLR4_Edge_Refinement_Weight 0.1
+
+   subtract
+
+   select body
+   attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
+   attribute capsMeshLength 1.0
+endif
+
+rotatex 90 0 0
+rotatez -aoa 0 0
+
+end
+|||||||||||
+||||||||||||||||||||||||||||||
