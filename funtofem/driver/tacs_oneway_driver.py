@@ -150,7 +150,7 @@ class TacsOnewayDriver:
     @property
     def analysis_sens_file(self):
         """write location of sens file when used in FuntofemShapeDriver for double oneway drivers (analysis version)"""
-        if fun3d_loader is not None:
+        if fun3d_loader is not None and self.fun3d_dir is not None:
             from funtofem.driver.fun3d_oneway_driver import Fun3dRemote
 
             return Fun3dRemote.paths(self.fun3d_dir).struct_sens_file
@@ -200,10 +200,10 @@ class TacsOnewayDriver:
                 transfer_settings = transfer_settings
         return cls(
             driver.solvers,
-            driver.model,
-            transfer_settings,
-            nprocs,
-            external_shape,
+            model=driver.model,
+            transfer_settings=transfer_settings,
+            nprocs=nprocs,
+            external_shape=external_shape,
             fun3d_dir=fun3d_dir,
         )
 

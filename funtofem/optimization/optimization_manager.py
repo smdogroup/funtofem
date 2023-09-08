@@ -32,7 +32,13 @@ class OptimizationManager:
     Performs a gatekeeper feature to prevent double-running the forward analysis
     """
 
-    def __init__(self, driver, write_designs: bool = True, hot_start: bool = False):
+    def __init__(
+        self,
+        driver,
+        write_designs: bool = True,
+        hot_start: bool = False,
+        design_out_file=None,
+    ):
         """
         Constructs the optimization manager class using a funtofem model and driver
         Parameters
@@ -44,6 +50,7 @@ class OptimizationManager:
         self.comm = driver.comm
         self.model = driver.model
         self.driver = driver
+        self.design_out_file = None
 
         # optimization meta data
         self._iteration = 0
@@ -121,6 +128,11 @@ class OptimizationManager:
                 if var.name == var_key:
                     # assumes here that only pyoptsparse single variables (no var groups are made)
                     var.value = float(self._x_dict[var_key])
+
+        if self.design_out_file is not None:
+            self.model.write_design_variables_file(
+                self.comm, self.design_out_file, root=0
+            )
 
         # run forward and adjoint analysis on the driver
         self.driver.solve_forward()

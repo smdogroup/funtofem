@@ -359,7 +359,8 @@ class Fun3dOnewayDriver:
 
         # Write sens file for remote to read. Analysis functions/derivatives are being written to a file
         # to be read by the relevant AIM(s) which is in the remote driver.
-        if not self.is_remote:
+        write_sens_file = self.is_paired or self.change_shape
+        if not self.is_remote and write_sens_file:
             if not self.is_paired:
                 filepath = self.model.flow.fun3d_aim.sens_file_path
             else:

@@ -31,10 +31,10 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 ).register_to(
     tacs_model
 )
-f2f_model.tacs_model = tacs_model
+f2f_model.structural = tacs_model
 
 # build a body which we will register variables to
-wing = Body.aerothermoelastic("wing")
+wing = Body.aerothermoelastic("wing", boundary=4)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -89,6 +89,23 @@ wing.register_to(f2f_model)
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
+# setup the tacs model
+tacs_aim.setup_aim()
+tacs_aim.pre_analysis()
+
+# make a funtofem scenario
+cruise = Scenario.steady("cruise", steps=10)  # 2000
+mass = Function.mass().optimize(scale=1.0e-2, objective=True, plot=True)
+ksfailure = Function.ksfailure().optimize(
+    scale=30.0, upper=0.267, objective=False, plot=True
+)
+cruise.include(mass).include(ksfailure)
+cruise.set_temperature(T_ref=216, T_inf=216)
+
+cruise_aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
+cruise.adjoint_steps = 2000
+cruise.register_to(f2f_model)
+
 # make the composite functions for adjacency constraints
 variables = f2f_model.get_variables()
 adj_ratio = 4.0
@@ -122,24 +139,6 @@ for iOML in range(1, nOML):
         lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
-# setup the tacs model
-tacs_aim.setup_aim()
-tacs_aim.pre_analysis()
-
-# make a funtofem scenario
-test_scenario = (
-    Scenario.steady("turbulent", steps=2000)
-    .include(Function.mass().optimize(scale=1.0e-2, objective=True, plot=True))
-    .include(
-        Function.ksfailure().optimize(
-            scale=30.0, upper=0.267, objective=False, plot=True
-        )
-    )
-    .set_temperature(T_ref=216, T_inf=216)
-)
-aoa = test_scenario.get_variable("AOA").set_bounds(value=2.0)
-test_scenario.adjoint_steps = 2000
-test_scenario.register_to(f2f_model)
 
 solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes").set_units(
@@ -150,15 +149,21 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
 )
 
 my_transfer_settings = TransferSettings(npts=200)
-fun3d_driver = Fun3dOnewayDriver.analysis(
+fun3d_driver = Fun3dOnewayDriver(
     solvers, f2f_model, transfer_settings=my_transfer_settings
 )
 
 # build the shape driver from the file
 tacs_driver = TacsOnewayDriver.prime_loads(fun3d_driver)
 
+hot_start = False
+store_history = True
+
 # create an OptimizationManager object for the pyoptsparse optimization problem
-manager = tacs_driver.manager
+design_out_file = os.path.join(base_dir, "meshes", "sizing_design.txt")
+manager = OptimizationManager(
+    tacs_driver, design_out_file=design_out_file, hot_start=hot_start
+)
 
 # create the pyoptsparse optimization problem
 opt_problem = Optimization("hsctOpt", manager.eval_functions)
@@ -169,17 +174,14 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(options={"IPRINT": 1})
 
-can_hot_start = False
-can_store_history = True
-
 history_file = f"hsct.hst"
-store_history = history_file if can_store_history else None
-hot_start_file = history_file if can_hot_start else None
+store_history_file = history_file if store_history else None
+hot_start_file = history_file if hot_start else None
 
 sol = snoptimizer(
     opt_problem,
     sens=manager.eval_gradients,
-    storeHistory=store_history,
+    storeHistory=store_history_file,
     hotStart=hot_start_file,
 )
 

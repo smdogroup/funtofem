@@ -1,3 +1,4 @@
 meshes/autosave.csm
 meshes/*.jrnl
 *.jrnl
+*.hst
