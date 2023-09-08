@@ -22,7 +22,7 @@ csm_path = os.path.join(base_dir, "meshes", "hsct.csm")
 # make the funtofem and tacs model
 f2f_model = FUNtoFEMmodel("hsct")
 tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
-tacs_model.egads_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=20,
     edge_pt_max=30,
     global_mesh_size=0.04,
