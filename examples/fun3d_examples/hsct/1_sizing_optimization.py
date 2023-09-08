@@ -143,9 +143,9 @@ solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes").set_units(
     qinf=3.16e4
 )
-# solvers.structural = TacsSteadyInterface.create_from_bdf(
-#     model=f2f_model, comm=comm, nprocs=48, bdf_file=tacs_aim.dat_file_path
-# )
+solvers.structural = TacsSteadyInterface.create_from_bdf(
+    model=f2f_model, comm=comm, nprocs=48, bdf_file=tacs_aim.dat_file_path
+)
 
 my_transfer_settings = TransferSettings(npts=200)
 fun3d_driver = Fun3dOnewayDriver.analysis(
