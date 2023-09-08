@@ -141,9 +141,9 @@ class OptimizationManager:
 
         return
 
-    def add_sparse_variables(self, opt_problem):
+    def register_to_problem(self, opt_problem):
         """
-        add funtofem model variables to a pyoptsparse optimization problem
+        add funtofem model variables and functions to a pyoptsparse optimization problem
         """
         for var in self.model.get_variables():
             opt_problem.addVar(
@@ -153,6 +153,12 @@ class OptimizationManager:
                 value=var.value,
                 scale=var.scale,
             )
+
+        for func in self.model.get_functions(optim=True):
+            if func._objective:
+                opt_problem.addObj(func.name, scale=func.scale)
+            else:
+                opt_problem.addCon(func.name, upper=func.scale)
 
         return
 

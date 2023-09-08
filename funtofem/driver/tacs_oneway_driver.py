@@ -32,9 +32,9 @@ from funtofem.interface.tacs_interface import (
 from funtofem.interface.solver_manager import SolverManager
 from funtofem.optimization.optimization_manager import OptimizationManager
 
-fun3d_loader = importlib.util.find_spec("fun3d")
-
 import importlib.util
+
+fun3d_loader = importlib.util.find_spec("fun3d")
 
 caps_loader = importlib.util.find_spec("pyCAPS")
 if caps_loader is not None:  # tacs loader not None check for this file anyways

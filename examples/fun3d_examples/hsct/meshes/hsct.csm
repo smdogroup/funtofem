@@ -1,6 +1,6 @@
 # main config parameters
-cfgpmtr mode:fluid 0
-cfgpmtr mode:structure 1
+cfgpmtr mode:fluid 1
+cfgpmtr mode:structure 0
 
 # fluid view parameters
 cfgpmtr view:farfield 1
@@ -132,6 +132,7 @@ despmtr wing_dz 2.9
 despmtr box_span 14
 despmtr box_tc 0.02
 set box_sspan box_span/2.0
+despmtr wing_offset 2
 set box_rx wing_chord_root/2.0
 set box_thick box_tc*wing_chord_root
 set box_ry box_thick/2.0
@@ -185,7 +186,7 @@ loft 0
 select face
    attribute _color $green
    attribute capsGroup $OML
-translate 0 -wing_dz -box_sspan
+translate 0 -wing_dz -box_sspan+wing_offset
 
 select face
    attribute comp $FSI
@@ -195,6 +196,7 @@ store wingSolidBody
 # FUSELAGE #
 # -------------------------------------------------------
 # make the main fuselage
+set xmargin 3
 mark
    # front cockpit station
    udparg supell rx 2.0 ry_n 0.5 ry_s 1.0
@@ -219,6 +221,7 @@ mark
    udparg supell rx box_sspan ry cabin_rz
    udprim supell n_n 1.7 n_s 3.0
    rotatey 90 0 0
+   translate -xmargin 0 0
 blend
 
 
@@ -228,6 +231,7 @@ mark
    udparg supell rx box_sspan ry cabin_rz
    udprim supell n_n 1.7 n_s 3.0
    rotatey 90 0 0
+   translate -xmargin 0 0
 
    # back of wing station
    udparg supell rx box_sspan ry cabin_rz
@@ -333,7 +337,7 @@ mark
    udparg naca456 thkcode $66 toc wing:tc_root camcode $6
    udprim naca456 a 0.60
    scale wing_chord_root 
-   translate 0 -wing_dz -box_sspan
+   translate 0 -wing_dz -box_sspan+wing_offset
 
    # make base super ellipse
    udprim supell rx box_rx ry box_ry n box_n
@@ -390,7 +394,6 @@ ifthen mode:fluid EQ 1
       select face
       attribute capsGroup $Farfield
          attribute capsMesh $Farfield
-         ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
          ATTRIBUTE AFLR4_CMP_ID 2
          ATTRIBUTE AFLR4_Scale_Factor 10.0
       
@@ -402,6 +405,16 @@ ifthen mode:fluid EQ 1
 
    ifthen view:farfield EQ 1 AND view:airplane EQ 1
       subtract
+      
+      select face 3
+        attribute AFLR_GBC $BL_INT_UG3_GBC
+        attribute capsGroup $SymmetryY
+        attribute capsMesh $SymmetryY
+        attribute AFLR4_CMP_ID 4
+        ATTRIBUTE AFLR4_Scale_Factor 10.0
+      
+      select face $capsGroup $Farfield
+        ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
       
       select body
          attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
@@ -426,7 +439,7 @@ ifthen mode:structure EQ 1
    
    set xLE_root 0.0
    set xTE_root wing_chord_root
-   set z_root -box_sspan
+   set z_root -box_sspan+wing_offset
    
    set xLE_mid1 xLE_root+wing_sspan1*tand(wing:phi1_LE)
    set xTE_mid1 xLE_mid1+wing_chord_mid1
@@ -609,7 +622,7 @@ ifthen mode:structure EQ 1
    set xpos1 wing_sspan1*tand(wing:phi1_LE)
    translate xpos1 0 -wing_sspan1
    loft 0
-   translate 0 -wing_dz -box_sspan
+   translate 0 -wing_dz -box_sspan+wing_offset
    store midplane1
 
    mark 
@@ -627,7 +640,7 @@ ifthen mode:structure EQ 1
    set xpos2 xpos1+wing_sspan2*tand(wing:phi2_LE)
    translate xpos2 0 -wing_sspan1-wing_sspan2
    loft 0
-   translate 0 -wing_dz -box_sspan
+   translate 0 -wing_dz -box_sspan+wing_offset
    store midplane2
 
    mark
@@ -645,7 +658,7 @@ ifthen mode:structure EQ 1
    set xpos3 xpos2+wing_sspan3*tand(wing:phi3_LE)
    translate xpos3 0 -wing_sspan
    loft 0
-   translate 0 -wing_dz -box_sspan
+   translate 0 -wing_dz -box_sspan+wing_offset
    store midplane3
    
    
@@ -879,4 +892,5 @@ rotatex 90 0 0
 end
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||

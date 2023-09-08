@@ -1,4 +1,4 @@
-import numpy as np, importlib, os
+from pathlib import Path
 from mpi4py import MPI
 
 # from funtofem import TransferScheme
@@ -9,35 +9,21 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
-
-# check whether fun3d is available
-fun3d_loader = importlib.util.find_spec("fun3d")
-tacs_loader = importlib.util.find_spec("tacs")
-caps_loader = importlib.util.find_spec("pyCAPS")
-has_fun3d = fun3d_loader is not None
-
-if has_fun3d:
-    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
-
-if tacs_loader is not None and caps_loader is not None:
-    from tacs import caps2tacs
-
-np.random.seed(1234567)
+from funtofem.interface import SolverManager, Fun3dBC, Fun3dModel
+from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
+from tacs import caps2tacs
 
 comm = MPI.COMM_WORLD
-base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "meshes", "hsct.csm")
-
-analysis_file = os.path.join(base_dir, "run_funtofem_analysis.py")
-fun3d_dir = os.path.join(base_dir, "meshes")
-
+here = Path(__file__).parent
+csm_file = here.joinpath("meshes", "hsct.csm")
+analysis_file = here.joinpath("3_run_funtofem_analysis.py")
+fun3d_dir = here.joinpath("meshes")
 
 # build the funtofem model with one body and scenario
 model = FUNtoFEMmodel("wing")
 
 # design the FUN3D aero shape model
-fun3d_model = Fun3dModel.build(csm_file=csm_path, comm=comm)
+fun3d_model = Fun3dModel.build(csm_file=csm_file, comm=comm)
 aflr_aim = fun3d_model.aflr_aim
 
 fun3d_aim = fun3d_model.fun3d_aim
@@ -52,7 +38,7 @@ fun3d_model.setup()
 model.flow = fun3d_model
 
 # design the TACS struct shape model
-tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+tacs_model = caps2tacs.TacsModel.build(csm_file=csm_file, comm=comm)
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=15,
     edge_pt_max=20,
