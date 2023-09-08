@@ -85,7 +85,7 @@ for ispar in range(1, nspars + 1):
     caps2tacs.ShellProperty(
         caps_group=f"spar{ispar}", material=aluminum, membrane_thickness=0.05
     ).register_to(tacs_model)
-for iOML in range(1, nOML+1):
+for iOML in range(1, nOML + 1):
     caps2tacs.ShellProperty(
         caps_group="OML", material=aluminum, membrane_thickness=0.03
     ).register_to(tacs_model)
@@ -95,9 +95,9 @@ for group in ["LEspar", "TEspar"]:
     ).register_to(tacs_model)
 
 # register the aero-struct shape variable
-Variable.shape(name="aoa").set_bounds(
-    lower=-5.0, value=0.0, upper=5.0
-).register_to(wing)
+Variable.shape(name="aoa").set_bounds(lower=-5.0, value=0.0, upper=5.0).register_to(
+    wing
+)
 wing.register_to(model)
 
 # add remaining constraints to tacs model
