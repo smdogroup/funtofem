@@ -17,7 +17,7 @@ import os
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "input_files", "hsct.csm")
+csm_path = os.path.join(base_dir, "meshes", "hsct.csm")
 
 # make the funtofem and tacs model
 f2f_model = FUNtoFEMmodel("hsct")
