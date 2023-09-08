@@ -9,6 +9,8 @@ csm_file = str(here.joinpath("meshes").joinpath("hsct.csm"))
 fun3d_model = Fun3dModel.build(csm_file=csm_file, comm=comm, project_name="hsct")
 aflr_aim = fun3d_model.aflr_aim
 fun3d_aim = fun3d_model.fun3d_aim
+fun3d_aim.set_config_parameter("mode:flow", 1)
+fun3d_aim.set_config_parameter("mode:struct", 0)
 
 aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
 # aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.1)

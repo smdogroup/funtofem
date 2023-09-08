@@ -40,43 +40,45 @@ wing = Body.aerothermoelastic("wing")
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
 tacs_aim = tacs_model.tacs_aim
+tacs_aim.set_config_parameter("mode:flow", 0)
+tacs_aim.set_config_parameter("mode:struct", 1)
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = int(tacs_aim.get_output_parameter("nOML"))
 
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
-    prop = caps2tacs.ShellProperty(caps_group=name, material=aluminum).register_to(
-        tacs_model
-    )
-    Variable.structural(name).set_bounds(
+    prop = caps2tacs.ShellProperty(
+        caps_group=name, material=aluminum, membrane_thickness=0.04
+    ).register_to(tacs_model)
+    Variable.structural(name, value=0.1).set_bounds(
         lower=0.001, upper=0.04, scale=100.0
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
-    prop = caps2tacs.ShellProperty(caps_group=name, material=aluminum).register_to(
-        tacs_model
-    )
-    Variable.structural(name).set_bounds(
+    prop = caps2tacs.ShellProperty(
+        caps_group=name, material=aluminum, membrane_thickness=0.04
+    ).register_to(tacs_model)
+    Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.04, scale=100.0
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
     name = f"OML{iOML}"
-    prop = caps2tacs.ShellProperty(caps_group=name, material=aluminum).register_to(
-        tacs_model
-    )
-    Variable.structural(name).set_bounds(
+    prop = caps2tacs.ShellProperty(
+        caps_group=name, material=aluminum, membrane_thickness=0.04
+    ).register_to(tacs_model)
+    Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.04, scale=100.0
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
     name = f"{prefix}spar"
-    prop = caps2tacs.ShellProperty(caps_group=name, material=aluminum).register_to(
-        tacs_model
-    )
-    Variable.structural(name).set_bounds(
+    prop = caps2tacs.ShellProperty(
+        caps_group=name, material=aluminum, membrane_thickness=0.04
+    ).register_to(tacs_model)
+    Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.04, scale=100.0
     ).register_to(wing)
 

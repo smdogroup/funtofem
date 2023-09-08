@@ -24,25 +24,31 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
 tacs_aim = tacs_model.tacs_aim
+tacs_aim.set_config_parameter("mode:flow", 0)
+tacs_aim.set_config_parameter("mode:struct", 1)
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = int(tacs_aim.get_output_parameter("nOML"))
 
 for irib in range(1, nribs + 1):
-    caps2tacs.ThicknessVariable(caps_group=f"rib{irib}", material=aluminum, value=0.04)
+    caps2tacs.ThicknessVariable(
+        caps_group=f"rib{irib}", material=aluminum, value=0.04
+    ).register_to(tacs_model)
 
 for ispar in range(1, nspars + 1):
     caps2tacs.ThicknessVariable(
         caps_group=f"spar{ispar}", material=aluminum, value=0.04
-    )
+    ).register_to(tacs_model)
 
 for iOML in range(1, nOML + 1):
-    caps2tacs.ThicknessVariable(caps_group=f"OML{iOML}", material=aluminum, value=0.04)
+    caps2tacs.ThicknessVariable(
+        caps_group=f"OML{iOML}", material=aluminum, value=0.04
+    ).register_to(tacs_model)
 
 for prefix in ["LE", "TE"]:
     caps2tacs.ThicknessVariable(
         caps_group=f"{prefix}spar", material=aluminum, value=0.04
-    )
+    ).register_to(tacs_model)
 
 # add remaining information to tacs model
 caps2tacs.PinConstraint("root").register_to(tacs_model)

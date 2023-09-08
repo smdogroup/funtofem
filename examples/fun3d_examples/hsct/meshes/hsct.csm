@@ -1,6 +1,6 @@
 # main config parameters
-cfgpmtr mode:fluid 1
-cfgpmtr mode:structure 0
+cfgpmtr mode:flow 1
+cfgpmtr mode:struct 0
 
 # fluid view parameters
 cfgpmtr view:farfield 1
@@ -357,7 +357,7 @@ store fullWingBody
 
 # FLUID GEOMETRY VIEW
 # ----------------------------
-ifthen mode:fluid EQ 1
+ifthen mode:flow EQ 1
    restore fuselage
    restore fullWingBody
    # add capsgroups to the wing wall
@@ -426,7 +426,7 @@ endif
 
 # STUCTURE GEOMETRY VIEW
 # -------------------------------------------------------------------
-ifthen mode:structure EQ 1
+ifthen mode:struct EQ 1
    # omitting wingBox for now since don't want FSI near the symmetry plane 
    # (causes aero_disps past sym plane and errors analysis in FUN3D)
    
@@ -583,7 +583,11 @@ ifthen mode:structure EQ 1
    subtract
    restore TEchopBox
    subtract
-   
+  
+   select face
+     attribute _color $blue
+     attribute capsGroup $OML
+ 
    select face 4
      attribute _color $red
      attribute capsGroup $LEspar
@@ -810,8 +814,7 @@ ifthen mode:structure EQ 1
    # combine the internal structure and OML
    ifthen view:OML EQ 1
       restore OML
-      select face
-        attribute comp $OML
+      select face $capsGroup $OML
         attribute has_group $no
         attribute _color $blue
       
@@ -850,9 +853,9 @@ ifthen mode:structure EQ 1
 
          # label OML skin panels in between ribs
          patbeg iOML (nribs-1)
-            FACE ADJ2FACE capsGroup=!$rib+iOML
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+iOML
             AND ADJ2FACE capsGroup=!$rib+(iOML+1)
-            AND HAS has_group=no
             SET capsGroup=!$OML+iOML
             SET has_group=yes
          patend
@@ -861,15 +864,15 @@ ifthen mode:structure EQ 1
          # and turn in structure so another OML panel
          patbeg iOML (nribs-1)
 
-            FACE ADJ2FACE capsGroup=!$rib+iOML
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+iOML
             AND ADJ2FACE capsGroup=!$OML+(iOML-1)
-            AND HAS has_group=no
             SET capsGroup=!$OML+iOML
             SET has_group=yes
 
-            FACE ADJ2FACE capsGroup=!$rib+(iOML+1)
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+(iOML+1)
             AND ADJ2FACE capsGroup=!$OML+(iOML+1)
-            AND HAS has_group=no
             SET capsGroup=!$OML+iOML
             SET has_group=yes
          patend
