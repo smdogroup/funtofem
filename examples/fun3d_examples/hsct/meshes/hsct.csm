@@ -15,7 +15,7 @@ cfgpmtr view:internalStruct 1
 cfgpmtr nribs 25
 cfgpmtr nspars 3
 outpmtr nOML 
-set nOMLs nribs-1
+set nOML nribs-1
 
 despmtr spar_a1 1.0
 despmtr spar_a2 0.0
