@@ -23,9 +23,10 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
+tacs_aim = tacs_model.tacs_aim
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
-nOML = int(tacs_model.get_output_parameter("nOML"))
+nOML = int(tacs_aim.get_output_parameter("nOML"))
 
 for irib in range(1, nribs + 1):
     caps2tacs.ThicknessVariable(caps_group=f"rib{irib}", material=aluminum, value=0.04)
@@ -48,6 +49,5 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 # setup the tacs model
-tacs_aim = tacs_model.tacs_aim
 tacs_aim.setup_aim()
 tacs_aim.pre_analysis()

@@ -39,9 +39,10 @@ wing = Body.aerothermoelastic("wing")
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
+tacs_aim = tacs_model.tacs_aim
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
-nOML = int(tacs_model.get_output_parameter("nOML"))
+nOML = int(tacs_aim.get_output_parameter("nOML"))
 
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
@@ -120,7 +121,6 @@ for iOML in range(1, nOML):
     ).register_to(f2f_model)
 
 # setup the tacs model
-tacs_aim = tacs_model.tacs_aim
 tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
