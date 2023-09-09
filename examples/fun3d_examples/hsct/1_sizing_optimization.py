@@ -94,7 +94,7 @@ tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=10)  # 2000
+cruise = Scenario.steady("cruise", steps=5000)  # 2000
 mass = Function.mass().optimize(scale=1.0e-4, objective=True, plot=True)
 ksfailure = Function.ksfailure().optimize(
     scale=30.0, upper=0.267, objective=False, plot=True
