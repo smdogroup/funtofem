@@ -113,6 +113,7 @@ class TacsUnsteadyInterface(SolverInterface):
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
         nprocs=None,
+        coord_deriv_override=True,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
@@ -129,7 +130,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         # override boolean to compute coordinate derivatives
         # when no shape variables present (needed for some unittests)
-        self._coord_deriv_override = False
+        self._coord_deriv_override = coord_deriv_override
 
         # initialize variables
         self._initialize_variables(

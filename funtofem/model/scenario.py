@@ -48,6 +48,8 @@ class Scenario(Base):
         adjoint_steps=None,
         T_ref=300,
         T_inf=300,
+        qinf=1.0,
+        flow_dt=1.0,
         tacs_integration_settings=None,
         fun3d_project_name="funtofem_CAPS",
         suther1=1.458205e-6,
@@ -121,6 +123,9 @@ class Scenario(Base):
 
         self.T_ref = T_ref
         self.T_inf = T_inf
+        self.qinf = qinf
+        self.flow_dt = flow_dt
+
         self.suther1 = suther1
         self.suther2 = suther2
         self.gamma = gamma
@@ -291,6 +296,15 @@ class Scenario(Base):
         """
         self.T_ref = T_ref
         self.T_inf = T_inf
+        return self
+    
+    def set_flow_units(self, qinf:float=1.0, flow_dt:float=1.0):
+        """
+        set flow units for FUN3D non-dimensionalization
+        flow_dt should always be 1.0 for steady scenarios
+        """
+        self.qinf = qinf
+        self.flow_dt = flow_dt
         return self
 
     def set_id(self, id):
