@@ -25,6 +25,7 @@ __all__ = ["OptimizationManager"]
 import os, numpy as np
 import matplotlib.pyplot as plt
 
+
 class OptimizationManager:
     """
     Manages the pyoptsparse opimization problems with funtofem drivers as well as oneway coupled tacs drivers
@@ -72,7 +73,8 @@ class OptimizationManager:
             write_str = "a" if hot_start else "w"
             if self.comm.rank == 0:
                 self._design_hdl = open(
-                    os.path.join(self._design_folder, f"{self.model.name}_design.txt"), write_str
+                    os.path.join(self._design_folder, f"{self.model.name}_design.txt"),
+                    write_str,
                 )
 
             # write an inital header for the design file
@@ -88,8 +90,14 @@ class OptimizationManager:
                 self._design_hdl.flush()
 
             # plot the
-            self._func_history = {func.name : [] for func in self.model.get_functions(optim=True) if func._plot}
-            self._history_file = os.path.join(self._design_folder, f"{self.model.name}_history.png")
+            self._func_history = {
+                func.full_name: []
+                for func in self.model.get_functions(optim=True)
+                if func._plot
+            }
+            self._history_file = os.path.join(
+                self._design_folder, f"{self.model.name}_history.png"
+            )
 
     def _gatekeeper(self, x_dict):
         """
@@ -150,16 +158,19 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
-            self._funcs[func.name] = func.value.real
-            self._sens[func.name] = {}
+            self._funcs[func.full_name] = func.value.real
+            self._sens[func.full_name] = {}
             for var in self.model.get_variables():
-                self._sens[func.name][var.name] = func.get_gradient_component(var).real
+                self._sens[func.full_name][var.name] = func.get_gradient_component(
+                    var
+                ).real
 
         # update and plot the current optimization history
         if self.write_designs:
             for func in self.model.get_functions(optim=True):
-                if not func._plot: continue
-                self._func_history[func.name] += [func.value.real]
+                if not func._plot:
+                    continue
+                self._func_history[func.full_name] += [func.value.real]
             self._plot_history()
         return
 
@@ -178,9 +189,9 @@ class OptimizationManager:
 
         for func in self.model.get_functions(optim=True):
             if func._objective:
-                opt_problem.addObj(func.name, scale=func.scale)
+                opt_problem.addObj(func.full_name, scale=func.scale)
             else:
-                opt_problem.addCon(func.name, upper=func.scale)
+                opt_problem.addCon(func.full_name, upper=func.scale)
 
         return
 
@@ -208,16 +219,17 @@ class OptimizationManager:
 
         keys = list(self._func_history.keys())
         nkeys = len(keys)
-        colors = plt.cm.jet(np.linspace(0,1,nkeys))
+        colors = plt.cm.jet(np.linspace(0, 1, nkeys))
         if driver.comm.rank == 0:
             func_keys = list(self._func_history.keys())
             num_iterations = len(self._func_history[func_keys[0]])
             iterations = [_ for _ in range(num_iterations)]
-            plt.figure(); ax = plt.subplot(111)
+            plt.figure()
+            ax = plt.subplot(111)
             ind = 0
             for func in model.get_functions(optim=True):
-                if func.name in func_keys:
-                    yvec = np.array(self._func_history[func.name])
+                if func.full_name in func_keys:
+                    yvec = np.array(self._func_history[func.full_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -237,15 +249,20 @@ class OptimizationManager:
                         # compute abs error to constraint boundary for the plot
                         yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
-                    ax.plot(iterations, yvec, color=colors[ind], linewidth=2, label=func.name)
+                    ax.plot(
+                        iterations,
+                        yvec,
+                        color=colors[ind],
+                        linewidth=2,
+                        label=func.full_name,
+                    )
                     ind += 1
             # put axis on rhs of plot
             box = ax.get_position()
             ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")
             plt.savefig(self._history_file, dpi=300)
             plt.close("all")
-

@@ -37,11 +37,11 @@ class FuntofemComponent(ExplicitComponent):
         for func in model.get_functions(optim=True):
             if func._objective:
                 openmdao_model.add_objective(
-                    f"{subsystem_name}.{func.name}", scaler=func.scale
+                    f"{subsystem_name}.{func.full_name}", scaler=func.scale
                 )
             else:
                 openmdao_model.add_constraint(
-                    f"{subsystem_name}.{func.name}",
+                    f"{subsystem_name}.{func.full_name}",
                     lower=func.lower,
                     upper=func.upper,
                     scaler=func.scale,
@@ -73,7 +73,7 @@ class FuntofemComponent(ExplicitComponent):
         # add f2f functions to openmdao
         functions = model.get_functions(optim=True)
         for func in functions:
-            self.add_output(func.name)
+            self.add_output(func.full_name)
 
         # store the variable dictionary of values
         # to prevent repeat analyses
@@ -91,7 +91,9 @@ class FuntofemComponent(ExplicitComponent):
 
         # store function optimization history
         if track_history:
-            self._func_history = {func.name: [] for func in functions if func._plot}
+            self._func_history = {
+                func.full_name: [] for func in functions if func._plot
+            }
 
             if comm.rank == 0:
                 self._design_hdl = open(
@@ -105,7 +107,7 @@ class FuntofemComponent(ExplicitComponent):
         # declare any partial derivatives for optimization functions
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                self.declare_partials(func.name, var.name)
+                self.declare_partials(func.full_name, var.name)
 
     def update_design(self, inputs, analysis=True):
         driver = self.options["driver"]
@@ -145,7 +147,7 @@ class FuntofemComponent(ExplicitComponent):
             self._update_history()
 
         for func in model.get_functions(optim=True):
-            outputs[func.name] = func.value.real
+            outputs[func.full_name] = func.value.real
         return
 
     def compute_partials(self, inputs, partials):
@@ -159,7 +161,9 @@ class FuntofemComponent(ExplicitComponent):
 
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                partials[func.name, var.name] = func.get_gradient_component(var).real
+                partials[func.full_name, var.name] = func.get_gradient_component(
+                    var
+                ).real
         return
 
     def cleanup(self):
@@ -173,8 +177,8 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
         model = driver.model
         for func in model.get_functions(optim=True):
-            if func.name in self._func_history:
-                self._func_history[func.name].append(func.value.real)
+            if func.full_name in self._func_history:
+                self._func_history[func.full_name].append(func.value.real)
 
         if driver.comm.rank == 0:
             self._plot_history()
@@ -204,10 +208,10 @@ class FuntofemComponent(ExplicitComponent):
             ax = plt.subplot(111)
             nkeys = len(func_keys)
             ind = 0
-            colors = plt.cm.jet(np.linspace(0,1,nkeys))
+            colors = plt.cm.jet(np.linspace(0, 1, nkeys))
             for func in model.get_functions(optim=True):
-                if func.name in func_keys:
-                    yvec = np.array(self._func_history[func.name])
+                if func.full_name in func_keys:
+                    yvec = np.array(self._func_history[func.full_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -227,12 +231,18 @@ class FuntofemComponent(ExplicitComponent):
                         # compute abs error to constraint boundary for the plot
                         yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
-                    ax.plot(iterations, yvec, color=colors[ind], linewidth=2, label=func.name)
+                    ax.plot(
+                        iterations,
+                        yvec,
+                        color=colors[ind],
+                        linewidth=2,
+                        label=func.full_name,
+                    )
                     ind += 1
-            
+
             box = ax.get_position()
             ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))           
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")
