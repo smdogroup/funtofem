@@ -106,7 +106,7 @@ safety_factor = 1.5
 ks_max = 1 / safety_factor
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=5000)  # 2000
+cruise = Scenario.steady("cruise", steps=500)  # 2000
 mass = Function.mass().optimize(scale=1.0e-4, objective=True, plot=True)
 ksfailure = Function.ksfailure().optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
@@ -143,7 +143,7 @@ solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
-    nprocs=48,
+    nprocs=10,
     bdf_file=tacs_aim.dat_file_path,
     prefix=tacs_aim.analysis_dir,
 )
