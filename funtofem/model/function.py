@@ -257,6 +257,15 @@ class Function(object):
         )
 
     @classmethod
+    def moment(cls, start: int = 0, stop: int = -1, body: int = -1):
+        """
+        Class constructor for the moment function
+        """
+        return cls(
+            name="cm", analysis_type="aerodynamic", start=start, stop=stop, body=body
+        )
+
+    @classmethod
     def temperature(cls, start: int = 0, stop: int = -1, body: int = -1):
         """
         Class constructor for the Temperature function

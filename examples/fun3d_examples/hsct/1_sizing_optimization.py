@@ -93,14 +93,18 @@ caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
+safety_factor = 1.5
+ks_max = 1 / safety_factor
+
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=5000)  # 2000
 mass = Function.mass().optimize(scale=1.0e-4, objective=True, plot=True)
 ksfailure = Function.ksfailure().optimize(
-    scale=30.0, upper=0.267, objective=False, plot=True
+    scale=30.0, upper=ks_max, objective=False, plot=True
 )
 cruise.include(mass).include(ksfailure)
 cruise.set_temperature(T_ref=216, T_inf=216)
+cruise.set_flow_units(qinf=3.16e4)
 
 # cruise_aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
 cruise.adjoint_steps = 2000
@@ -110,40 +114,21 @@ cruise.register_to(f2f_model)
 variables = f2f_model.get_variables()
 adj_ratio = 4.0
 adj_scale = 10.0
-for irib in range(
-    1, nribs
-):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
-    left_rib = f2f_model.get_variables(names=f"rib{irib}")
-    right_rib = f2f_model.get_variables(names=f"rib{irib+1}")
-    # make a composite function for relative diff in rib thicknesses
-    adj_rib_constr = (left_rib - right_rib) / left_rib
-    adj_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-    ).register_to(f2f_model)
-
-for ispar in range(1, nspars):
-    left_spar = f2f_model.get_variables(names=f"spar{ispar}")
-    right_spar = f2f_model.get_variables(names=f"spar{ispar+1}")
-    # make a composite function for relative diff in spar thicknesses
-    adj_spar_constr = (left_spar - right_spar) / left_spar
-    adj_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-    ).register_to(f2f_model)
-
-for iOML in range(1, nOML):
-    left_OML = f2f_model.get_variables(names=f"OML{iOML}")
-    right_OML = f2f_model.get_variables(names=f"OML{iOML+1}")
-    # make a composite function for relative diff in OML thicknesses
-    adj_OML_constr = (left_OML - right_OML) / left_OML
-    adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-    ).register_to(f2f_model)
+section_prefix = ["rib", "spar", "OML"]
+section_nums = [nribs, nspars, nOML]
+for isection, prefix in enumerate(section_prefix):
+    section_num = section_nums[isection]
+    for iconstr in range(1, section_num):
+        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
+        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+        adj_constr = (left_var - right_var) / left_var
+        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+        ).register_to(f2f_model)
 
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes").set_units(
-    qinf=3.16e4
-)
+solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
@@ -178,7 +163,7 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(options={"IPRINT": 1})
 
-history_file = f"hsct.hst"
+history_file = f"hsctSizing.hst"
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 

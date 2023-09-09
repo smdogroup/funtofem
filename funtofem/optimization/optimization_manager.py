@@ -51,7 +51,7 @@ class OptimizationManager:
         self.comm = driver.comm
         self.model = driver.model
         self.driver = driver
-        self.design_out_file = None
+        self.design_out_file = design_out_file
 
         # optimization meta data
         self._iteration = 0

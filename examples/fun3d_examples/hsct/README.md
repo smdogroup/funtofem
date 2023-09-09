@@ -1,7 +1,7 @@
 # HSCT - High-Speed Civil Transport Aircraft
 HSCT example is a High-Speed Civil Transport aircraft.
 
-# Flight Condition
+# Cruise Flight Condition
 Altitude - 60,000 ft
 Mach number - 2.5
 Tinf - 216 K
