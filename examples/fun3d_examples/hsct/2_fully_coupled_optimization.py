@@ -1,3 +1,8 @@
+"""
+This is the fully coupled aerothermoelastic optimization of the HSCT.
+NOTE: You need to run the 1_sizing_optimization.py first and leave the
+optimal panel thickness design variables in the meshes folder before running this.
+"""
 from pyoptsparse import SNOPT, Optimization
 import os
 from mpi4py import MPI
@@ -10,7 +15,8 @@ fun3d_dir = os.path.join(base_dir, "meshes")
 csm_path = os.path.join(fun3d_dir, "hsct.csm")
 analysis_file = os.path.join(base_dir, "3_run_funtofem_analysis.py")
 
-# build the funtofem model with one body and scenario
+# FUNtoFEM and SHAPE MODELS
+# ---------------------------------------------------------
 hsct_model = FUNtoFEMmodel("hsct_MDO")
 
 # design the FUN3D aero shape model
@@ -45,7 +51,13 @@ tacs_aim.set_config_parameter("mode:flow", 0)
 tacs_aim.set_config_parameter("mode:struct", 1)
 hsct_model.structural = tacs_model
 
-# setup the funtofem bodies
+# tacs model constraints
+caps2tacs.PinConstraint("root").register_to(tacs_model)
+caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
+
+
+# BODIES, STRUCT DVs and SHAPE DVs
+# ---------------------------------------------------
 wing = Body.aerothermoelastic("wing", boundary=4)
 
 # setup the material and shell properties
@@ -87,7 +99,7 @@ for name in ["LEspar", "TEspar"]:
         lower=0.001, upper=0.04, scale=100.0
     ).register_to(wing)
 
-# STRUCTURAL / MDO SHAPE VARIABLES
+# structural shape variables
 for prefix in ["rib", "spar"]:
     Variable.shape(f"{prefix}_a1", value=1.0).set_bounds(
         lower=0.6, upper=1.4
@@ -96,8 +108,7 @@ for prefix in ["rib", "spar"]:
         lower=-0.3, upper=0.3
     ).register_to(wing)
 
-# NOTE : FIXED FUSELAGE+TAIL FOR NOW, ADD LATER
-# WING SIZE + SHAPE
+# wing size and shape variables
 phi1_LE = Variable.shape(f"wing:phi1_LE", value=70).set_bounds(lower=60, upper=80)
 phi2_LE = Variable.shape(f"wing:phi2_LE", value=50).set_bounds(lower=40, upper=60)
 phi3_LE = Variable.shape(f"wing:phi3_LE", value=30).set_bounds(lower=20, upper=40)
@@ -119,18 +130,20 @@ other_wing_vars = [wing_area, wing_aspect, wing_span_fr1, wing_span_fr2]
 for var in phi_LE + phi_TE + other_wing_vars:
     var.register_to(wing)
 
+# TODO : add wing airfoil shape variables
+# TODO : add fuselage and tail shape variables
 
 wing.register_to(hsct_model)
-
-# add remaining constraints to tacs model
-caps2tacs.PinConstraint("root").register_to(tacs_model)
-caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 safety_factor = 1.5
 ks_max = 1 / safety_factor
 
-# SCENARIOS and AERO DVS
+# SCENARIOS, AERO DVs, and remaining SHAPE VARS
 # -----------------------------------------------
+
+# NOTE: shape variables can be assigned to the body or scenario
+# when using ESP/CAPS, it doesn't really matter
+
 climb = Scenario.steady("climb", steps=5000)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
 climb_qinf = 1e4  # TBD on this
@@ -233,8 +246,9 @@ for isection, prefix in enumerate(section_prefix):
             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
         ).register_to(hsct_model)
 
-# PYOPTSPARSE Optimization
+# BUILD THE F2F SHAPE DRIVER
 # ------------------------------------------------------
+
 # load in the previous design from the sizing optimization
 # to overwrite the initial values
 sizing_file = os.path.join(fun3d_dir, "sizing_design.txt")
@@ -244,6 +258,9 @@ hsct_model.read_design_variables_file(comm, sizing_file)
 solvers = SolverManager(comm)
 fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=192)
 f2f_driver = FuntofemShapeDriver.aero_remesh(solvers, hsct_model, fun3d_remote)
+
+# PYOPTSPARSE Optimization
+# ------------------------------------------------------
 
 hot_start = False
 store_history = True
