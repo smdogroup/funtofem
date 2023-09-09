@@ -258,6 +258,10 @@ class Fun3dOnewayDriver:
         if self.is_paired:  # if not mesh morphing initialize here
             self._initialize_funtofem()
 
+        # rare use case for no shape, not paired
+        if not self.is_paired and not self.change_shape:
+            self._initialize_funtofem()
+
         self._first_forward = True
 
         # shape optimization
