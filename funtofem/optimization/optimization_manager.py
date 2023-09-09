@@ -22,8 +22,8 @@ limitations under the License.
 
 __all__ = ["OptimizationManager"]
 
-import os
-
+import os, numpy as np
+import matplotlib.pyplot as plt
 
 class OptimizationManager:
     """
@@ -72,7 +72,7 @@ class OptimizationManager:
             write_str = "a" if hot_start else "w"
             if self.comm.rank == 0:
                 self._design_hdl = open(
-                    os.path.join(self._design_folder, "design.txt"), write_str
+                    os.path.join(self._design_folder, f"{self.model.name}_design.txt"), write_str
                 )
 
             # write an inital header for the design file
@@ -86,6 +86,10 @@ class OptimizationManager:
                         f"Starting new pyoptsparse optimization for the {self.model.name} model...\n"
                     )
                 self._design_hdl.flush()
+
+            # plot the
+            self._func_history = {func.name : [] for func in self.model.get_functions(optim=True) if func._plot}
+            self._history_file = os.path.join(self._design_folder, f"{self.model.name}_history.png")
 
     def _gatekeeper(self, x_dict):
         """
@@ -151,6 +155,12 @@ class OptimizationManager:
             for var in self.model.get_variables():
                 self._sens[func.name][var.name] = func.get_gradient_component(var).real
 
+        # update and plot the current optimization history
+        if self.write_designs:
+            for func in self.model.get_functions(optim=True):
+                if not func._plot: continue
+                self._func_history[func.name] += [func.value.real]
+            self._plot_history()
         return
 
     def register_to_problem(self, opt_problem):
@@ -191,3 +201,51 @@ class OptimizationManager:
         self._gatekeeper(x_dict)
 
         return self._sens, fail
+
+    def _plot_history(self):
+        driver = self.driver
+        model = self.model
+
+        keys = list(self._func_history.keys())
+        nkeys = len(keys)
+        colors = plt.cm.jet(np.linspace(0,1,nkeys))
+        if driver.comm.rank == 0:
+            func_keys = list(self._func_history.keys())
+            num_iterations = len(self._func_history[func_keys[0]])
+            iterations = [_ for _ in range(num_iterations)]
+            plt.figure(); ax = plt.subplot(111)
+            ind = 0
+            for func in model.get_functions(optim=True):
+                if func.name in func_keys:
+                    yvec = np.array(self._func_history[func.name])
+                    if func._objective:
+                        yvec *= func.scale
+                    else:  # constraint
+                        constr_bndry = 1.0
+                        # take relative errors against constraint boundaries, lower upper
+                        yfinal = yvec[-1]
+                        rel_err_lower = 1e5
+                        rel_err_upper = 1e5
+                        if func.lower is not None:
+                            rel_err_lower = abs((yfinal - func.lower) / func.lower)
+                        if func.upper is not None:
+                            rel_err_upper = abs((yfinal - func.upper) / func.upper)
+                        if rel_err_lower < rel_err_upper:
+                            constr_bndry = func.lower
+                        else:
+                            constr_bndry = func.upper
+                        # compute abs error to constraint boundary for the plot
+                        yvec = np.abs((yvec - constr_bndry) / constr_bndry)
+                    # plot the function
+                    ax.plot(iterations, yvec, color=colors[ind], linewidth=2, label=func.name)
+                    ind += 1
+            # put axis on rhs of plot
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            plt.xlabel("iterations")
+            plt.ylabel("func values")
+            plt.yscale("log")
+            plt.savefig(self._history_file, dpi=300)
+            plt.close("all")
+

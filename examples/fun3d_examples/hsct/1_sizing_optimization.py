@@ -20,7 +20,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "hsct.csm")
 
 # make the funtofem and tacs model
-f2f_model = FUNtoFEMmodel("hsct")
+f2f_model = FUNtoFEMmodel("hsct_sizing")
 tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=20,
@@ -95,14 +95,14 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=10)  # 2000
-mass = Function.mass().optimize(scale=1.0e-2, objective=True, plot=True)
+mass = Function.mass().optimize(scale=1.0e-4, objective=True, plot=True)
 ksfailure = Function.ksfailure().optimize(
     scale=30.0, upper=0.267, objective=False, plot=True
 )
 cruise.include(mass).include(ksfailure)
 cruise.set_temperature(T_ref=216, T_inf=216)
 
-cruise_aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
+# cruise_aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
 cruise.adjoint_steps = 2000
 cruise.register_to(f2f_model)
 
@@ -145,7 +145,11 @@ solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes").set_units(
     qinf=3.16e4
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
-    model=f2f_model, comm=comm, nprocs=48, bdf_file=tacs_aim.dat_file_path
+    model=f2f_model,
+    comm=comm,
+    nprocs=48,
+    bdf_file=tacs_aim.dat_file_path,
+    prefix=tacs_aim.analysis_dir,
 )
 
 my_transfer_settings = TransferSettings(npts=200)

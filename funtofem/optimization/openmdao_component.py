@@ -200,7 +200,11 @@ class FuntofemComponent(ExplicitComponent):
             func_keys = list(self._func_history.keys())
             num_iterations = len(self._func_history[func_keys[0]])
             iterations = [_ for _ in range(num_iterations)]
-            plt.figure()
+            fig = plt.figure()
+            ax = plt.subplot(111)
+            nkeys = len(func_keys)
+            ind = 0
+            colors = plt.cm.jet(np.linspace(0,1,nkeys))
             for func in model.get_functions(optim=True):
                 if func.name in func_keys:
                     yvec = np.array(self._func_history[func.name])
@@ -223,13 +227,17 @@ class FuntofemComponent(ExplicitComponent):
                         # compute abs error to constraint boundary for the plot
                         yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
-                    plt.plot(iterations, yvec, linewidth=2, label=func.name)
-            plt.legend()
+                    ax.plot(iterations, yvec, color=colors[ind], linewidth=2, label=func.name)
+                    ind += 1
+            
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))           
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")
             plot_filepath = os.path.join(self._write_path, self._plot_filename)
-            plt.savefig(plot_filepath)
+            plt.savefig(plot_filepath, dpi=300)
             plt.close("all")
 
     def _design_report(self):
