@@ -113,10 +113,12 @@ phi1_LE = Variable.shape(f"wing:phi1_LE", value=70).set_bounds(lower=60, upper=8
 phi2_LE = Variable.shape(f"wing:phi2_LE", value=50).set_bounds(lower=40, upper=60)
 phi3_LE = Variable.shape(f"wing:phi3_LE", value=30).set_bounds(lower=20, upper=40)
 phi_LE = [phi1_LE, phi2_LE, phi3_LE]
+
 phi1_TE = Variable.shape(f"wing:phi1_TE", value=15).set_bounds(lower=10, upper=20)
 phi2_TE = Variable.shape(f"wing:phi2_TE", value=10).set_bounds(lower=-15, upper=15)
 phi3_TE = Variable.shape(f"wing:phi3_TE", value=8).set_bounds(lower=-5, upper=15)
 phi_TE = [phi1_TE, phi2_TE, phi3_TE]
+
 wing_area = Variable.shape("wing:area", value=700).set_bounds(lower=500, upper=800)
 wing_aspect = Variable.shape("wing:aspect", value=7.0).set_bounds(lower=4.0, upper=8.0)
 wing_span_fr1 = Variable.shape("wing:span_fr1", value=0.2).set_bounds(
