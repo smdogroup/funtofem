@@ -10,13 +10,14 @@ if not os.path.exists(tacs_dir):
     os.mkdir(tacs_dir)
 fun3d_remote = Fun3dRemote.paths(fun3d_dir)
 
-# build the funtofem model with one body and scenario
+# F2F MODEL. NO SHAPE MODELS IN ANALYSIS SCRIPT
+# ------------------------------------------------------
 hsct_model = FUNtoFEMmodel("hsct_MDO")
+
+# BODIES AND STRUCT DVS. NO SHAPE DVS IN ANALYSIS SCRIPT
+# ------------------------------------------------------
+
 wing = Body.aerothermoelastic("hsct_wing", boundary=4)
-
-
-# ADD AERO + STRUCTURAL DVs into F2F so their derivatives will be computed
-# NOTE : shape derivatives aren't computed here so don't need to be included in analysisf ile
 
 # structural variables in the wing
 # this part needs to be the same as in the CSM file
@@ -33,6 +34,9 @@ for prefix in ["LE", "TE"]:
     Variable.structural(name=f"{prefix}spar").register_to(wing)
 
 wing.register_to(hsct_model)
+
+# SCENARIOS AND AERO DVS. NO SHAPE DVS IN ANALYSIS SCRIPT
+# ------------------------------------------------------------
 
 climb = Scenario.steady("climb", steps=5000)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
@@ -56,11 +60,15 @@ aoa_cruise = cruise.get_variable("AOA")
 mach_cruise = cruise.get_variable("Mach")
 cruise.register_to(hsct_model)
 
-# TBD : add loiter
+# NO COMPOSITE FUNCTIONS IN ANALYSIS SCRIPT
+# ----------------------------------------------------------------
 
 # NOTE : don't need to include composite functions in analysis script
 # as long as main analysis functions evaluated in analysis script
 # the composite function derivatives in the driver script will be computed
+
+# BUILD DISCIPLINE INTERFACES AND DRIVER
+# -----------------------------------------------------
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
@@ -74,6 +82,10 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
 )
 f2f_driver = FuntofemShapeDriver.analysis(solvers, hsct_model)
 
-# run the forward and adjoint analysis in one shot
+# RUN THE FORWARD + ADJOINT ANALYSIS
+# ------------------------------------------------
+
+# NOTE: this writes the design and sens file outputs
+# to the driver script
 f2f_driver.solve_forward()
 f2f_driver.solve_adjoint()

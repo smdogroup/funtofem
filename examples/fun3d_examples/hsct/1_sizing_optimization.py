@@ -19,7 +19,9 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "hsct.csm")
 
-# make the funtofem and tacs model
+# F2F MODEL and SHAPE MODELS
+# ----------------------------------------
+
 f2f_model = FUNtoFEMmodel("hsct_sizing")
 tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
@@ -33,15 +35,22 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 )
 f2f_model.structural = tacs_model
 
-# build a body which we will register variables to
+tacs_aim = tacs_model.tacs_aim
+tacs_aim.set_config_parameter("mode:flow", 0)
+tacs_aim.set_config_parameter("mode:struct", 1)
+
+# add tacs constraints in
+caps2tacs.PinConstraint("root").register_to(tacs_model)
+caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
+
+# BODIES AND STRUCT DVs
+# -------------------------------------------------
+
 wing = Body.aerothermoelastic("wing", boundary=4)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
-tacs_aim = tacs_model.tacs_aim
-tacs_aim.set_config_parameter("mode:flow", 0)
-tacs_aim.set_config_parameter("mode:struct", 1)
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = int(tacs_aim.get_output_parameter("nOML"))
@@ -85,14 +94,14 @@ for prefix in ["LE", "TE"]:
 # register the wing body to the model
 wing.register_to(f2f_model)
 
-# add remaining information to tacs model
-caps2tacs.PinConstraint("root").register_to(tacs_model)
-caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
+# INITIAL STRUCTURE MESH, SINCE NO STRUCT SHAPE VARS
+# --------------------------------------------------
 
-# setup the tacs model
 tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
+# SCENARIOS
+# ----------------------------------------------------
 safety_factor = 1.5
 ks_max = 1 / safety_factor
 
@@ -105,12 +114,12 @@ ksfailure = Function.ksfailure().optimize(
 cruise.include(mass).include(ksfailure)
 cruise.set_temperature(T_ref=216, T_inf=216)
 cruise.set_flow_units(qinf=3.16e4)
-
-# cruise_aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
-cruise.adjoint_steps = 2000
 cruise.register_to(f2f_model)
 
-# make the composite functions for adjacency constraints
+# COMPOSITE FUNCTIONS
+# -------------------------------------------------------
+
+# skin thickness adjacency constraints
 variables = f2f_model.get_variables()
 adj_ratio = 4.0
 adj_scale = 10.0
@@ -126,6 +135,8 @@ for isection, prefix in enumerate(section_prefix):
             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
         ).register_to(f2f_model)
 
+# DISCIPLINE INTERFACES AND DRIVERS
+# -----------------------------------------------------
 
 solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="meshes")
@@ -145,6 +156,8 @@ fun3d_driver = Fun3dOnewayDriver(
 # build the shape driver from the file
 tacs_driver = TacsOnewayDriver.prime_loads(fun3d_driver)
 
+# PYOPTSPARSE OPTMIZATION
+# -------------------------------------------------------------
 hot_start = False
 store_history = True
 

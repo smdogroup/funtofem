@@ -246,7 +246,7 @@ for isection, prefix in enumerate(section_prefix):
             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
         ).register_to(hsct_model)
 
-# BUILD THE F2F SHAPE DRIVER
+# BUILD THE DRIVER. NO DISCIPLINE INTERFACES IN DRIVER SCRIPT
 # ------------------------------------------------------
 
 # load in the previous design from the sizing optimization
