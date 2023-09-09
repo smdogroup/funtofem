@@ -20,7 +20,7 @@
 &code_run_control
   restart_write_freq = 1
   restart_read       = 'off'
-  steps              =  10
+  steps              =  5000
 /
 &massoud_output
   funtofem_include_skin_friction = .true.
@@ -29,6 +29,11 @@
   moving_grid = .true.
   boundary_animation_freq = 1000
   volume_animation_freq = 1000
+/
+&elasticity_gmres
+  elasticity = 2
+  tol = 1e-20
+  tol_abs = 1e-30
 /
 &slice_data
   nslices       = 1

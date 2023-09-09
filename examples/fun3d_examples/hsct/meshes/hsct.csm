@@ -751,7 +751,7 @@ ifthen mode:struct EQ 1
    # intermediate ribs are created in a pattern statement
    patbeg iMiddle nribs-2
       set irib iMiddle+1
-      set nom_rib_fr irib/nribs
+      set nom_rib_fr (irib-1)/(nribs-1)
       set rib_fr nom_rib_fr*(rib_a1+nom_rib_fr*(rib_a2+nom_rib_fr*rib_a3))
       
       set zpos z_root*(1-rib_fr)+z_tip*rib_fr
