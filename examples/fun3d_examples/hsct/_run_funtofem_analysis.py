@@ -76,7 +76,7 @@ solvers.flow = Fun3dInterface(comm, hsct_model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=hsct_model,
     comm=comm,
-    nprocs=48,
+    nprocs=10,
     bdf_file=fun3d_remote.dat_file,
     prefix=fun3d_dir,
 )
