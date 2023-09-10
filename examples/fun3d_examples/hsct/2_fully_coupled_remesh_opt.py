@@ -234,7 +234,6 @@ for i in range(4):
 
 # adjacency skin thickness constraints
 variables = hsct_model.get_variables()
-adj_ratio = 4.0
 adj_scale = 10.0
 section_prefix = ["rib", "spar", "OML"]
 section_nums = [nribs, nspars, nOML]
@@ -244,6 +243,10 @@ for isection, prefix in enumerate(section_prefix):
         left_var = hsct_model.get_variables(names=f"{prefix}{iconstr}")
         right_var = hsct_model.get_variables(names=f"{prefix}{iconstr+1}")
         adj_constr = (left_var - right_var) / left_var
+        if prefix in ["rib", "OML"]:
+            adj_ratio = 0.5
+        else:
+            adj_ratio = 4.0
         adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
         ).register_to(hsct_model)

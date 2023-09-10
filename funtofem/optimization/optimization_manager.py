@@ -66,7 +66,7 @@ class OptimizationManager:
         self.write_designs = write_designs
         if write_designs:
             self._design_folder = os.path.join(os.getcwd(), "design")
-            if not (os.path.exists(self._design_folder)):
+            if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
 
             # make the design file handle
