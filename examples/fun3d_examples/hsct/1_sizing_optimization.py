@@ -8,8 +8,9 @@ NOTE: you need to run _mesh_fun3d.py first and move the .ugrid
 FUN3D mesh into the meshes/turbulent folder first.
 """
 
-# from pyoptsparse import SNOPT, Optimization
-import openmdao.api as om
+from pyoptsparse import SNOPT, Optimization
+
+# import openmdao.api as om
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
@@ -157,82 +158,83 @@ fun3d_driver = Fun3dOnewayDriver(
 # build the shape driver from the file
 tacs_driver = TacsOnewayDriver.prime_loads(fun3d_driver)
 
-# OPENMDAO OPTIMIZATION
-# -------------------------------------------------------------
-
-design_out_file = os.path.join(base_dir, "meshes", "sizing_design.txt")
-
-# setup the OpenMDAO Problem object
-prob = om.Problem()
-
-# Create the OpenMDAO component using the built-in Funtofem component
-f2f_subsystem = FuntofemComponent(
-    driver=tacs_driver, write_dir=tacs_aim.analysis_dir, design_out_file=design_out_file
-)
-prob.model.add_subsystem("f2fSystem", f2f_subsystem)
-f2f_subsystem.register_to_model(prob.model, "f2fSystem")
-
-# setup the optimizer settings # COBYLA for auto-FDing
-optimizer = "pyoptsparse"
-if optimizer == "scipy":
-    prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
-elif optimizer == "pyoptsparse":
-    prob.driver = om.pyOptSparseDriver(optimizer="SNOPT")
-    # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-5 # lower tolerance to prevent tight oscillations
-
-# Start the optimization
-print("\n==> Starting optimization...")
-prob.setup()
-
-debug = False
-if debug:
-    print("Checking partials...", flush=True)
-    prob.check_partials(compact_print=True)
-
-else:
-    prob.run_driver()
-
-    # report the final optimal design
-    design_hdl = f2f_subsystem._design_hdl
-    for var in f2f_model.get_variables():
-        opt_value = prob.get_val(f"f2fSystem.{var.name}")
-        design_hdl.write(f"\t{var.name} = {opt_value}")
-
-    prob.cleanup()
-    # close the design hdl file
-    f2f_subsystem.cleanup()
-
 # PYOPTSPARSE OPTMIZATION
 # -------------------------------------------------------------
-# hot_start = False
-# store_history = True
+hot_start = False
+store_history = True
 
-# # create an OptimizationManager object for the pyoptsparse optimization problem
+# create an OptimizationManager object for the pyoptsparse optimization problem
+design_out_file = os.path.join(base_dir, "meshes", "sizing_design.txt")
+manager = OptimizationManager(
+    tacs_driver, design_out_file=design_out_file, hot_start=hot_start
+)
+
+# create the pyoptsparse optimization problem
+opt_problem = Optimization("hsctOpt", manager.eval_functions)
+
+# add funtofem model variables to pyoptsparse
+manager.register_to_problem(opt_problem)
+
+# run an SNOPT optimization
+snoptimizer = SNOPT(options={"IPRINT": 1})
+
+history_file = f"hsctSizing.hst"
+store_history_file = history_file if store_history else None
+hot_start_file = history_file if hot_start else None
+
+sol = snoptimizer(
+    opt_problem,
+    sens=manager.eval_gradients,
+    storeHistory=store_history_file,
+    hotStart=hot_start_file,
+)
+
+# print final solution
+sol_xdict = sol.xStar
+print(f"Final solution = {sol_xdict}", flush=True)
+
+
+# # OPENMDAO OPTIMIZATION
+# # -------------------------------------------------------------
+
 # design_out_file = os.path.join(base_dir, "meshes", "sizing_design.txt")
-# manager = OptimizationManager(
-#     tacs_driver, design_out_file=design_out_file, hot_start=hot_start
+
+# # setup the OpenMDAO Problem object
+# prob = om.Problem()
+
+# # Create the OpenMDAO component using the built-in Funtofem component
+# f2f_subsystem = FuntofemComponent(
+#     driver=tacs_driver, write_dir=tacs_aim.analysis_dir, design_out_file=design_out_file
 # )
+# prob.model.add_subsystem("f2fSystem", f2f_subsystem)
+# f2f_subsystem.register_to_model(prob.model, "f2fSystem")
 
-# # create the pyoptsparse optimization problem
-# opt_problem = Optimization("hsctOpt", manager.eval_functions)
+# # setup the optimizer settings # COBYLA for auto-FDing
+# optimizer = "pyoptsparse"
+# if optimizer == "scipy":
+#     prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
+# elif optimizer == "pyoptsparse":
+#     prob.driver = om.pyOptSparseDriver(optimizer="SNOPT")
+#     # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-5 # lower tolerance to prevent tight oscillations
 
-# # add funtofem model variables to pyoptsparse
-# manager.register_to_problem(opt_problem)
+# # Start the optimization
+# print("\n==> Starting optimization...")
+# prob.setup()
 
-# # run an SNOPT optimization
-# snoptimizer = SNOPT(options={"IPRINT": 1})
+# debug = False
+# if debug:
+#     print("Checking partials...", flush=True)
+#     prob.check_partials(compact_print=True)
 
-# history_file = f"hsctSizing.hst"
-# store_history_file = history_file if store_history else None
-# hot_start_file = history_file if hot_start else None
+# else:
+#     prob.run_driver()
 
-# sol = snoptimizer(
-#     opt_problem,
-#     sens=manager.eval_gradients,
-#     storeHistory=store_history_file,
-#     hotStart=hot_start_file,
-# )
+#     # report the final optimal design
+#     design_hdl = f2f_subsystem._design_hdl
+#     for var in f2f_model.get_variables():
+#         opt_value = prob.get_val(f"f2fSystem.{var.name}")
+#         design_hdl.write(f"\t{var.name} = {opt_value}")
 
-# # print final solution
-# sol_xdict = sol.xStar
-# print(f"Final solution = {sol_xdict}", flush=True)
+#     prob.cleanup()
+#     # close the design hdl file
+#     f2f_subsystem.cleanup()

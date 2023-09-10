@@ -191,7 +191,9 @@ class OptimizationManager:
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
-                opt_problem.addCon(func.full_name, upper=func.scale)
+                opt_problem.addCon(
+                    func.full_name, lower=func.lower, upper=func.upper, scale=func.scale
+                )
 
         return
 
