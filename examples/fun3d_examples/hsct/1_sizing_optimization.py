@@ -60,8 +60,8 @@ for irib in range(1, nribs + 1):
     prop = caps2tacs.ShellProperty(
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
-    Variable.structural(name, value=0.1).set_bounds(
-        lower=0.001, upper=0.04, scale=100.0
+    Variable.structural(name, value=0.01).set_bounds(
+        lower=0.001, upper=1.0, scale=100.0
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -70,7 +70,7 @@ for ispar in range(1, nspars + 1):
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.04, scale=100.0
+        lower=0.001, upper=1.0, scale=100.0
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -79,7 +79,7 @@ for iOML in range(1, nOML + 1):
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.04, scale=100.0
+        lower=0.001, upper=1.0, scale=100.0
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
@@ -88,7 +88,7 @@ for prefix in ["LE", "TE"]:
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.04, scale=100.0
+        lower=0.001, upper=1.0, scale=100.0
     ).register_to(wing)
 
 # register the wing body to the model
@@ -108,7 +108,7 @@ ks_max = 1 / safety_factor
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=500)  # 2000
 mass = Function.mass().optimize(scale=1.0e-4, objective=True, plot=True)
-ksfailure = Function.ksfailure().optimize(
+ksfailure = Function.ksfailure(ks_weight=10.0).optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
 )
 cruise.include(mass).include(ksfailure)

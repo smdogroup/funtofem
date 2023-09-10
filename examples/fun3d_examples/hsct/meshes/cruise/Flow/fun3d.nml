@@ -20,7 +20,21 @@
 &code_run_control
   restart_write_freq = 1
   restart_read       = 'off'
-  steps              =  5000
+  steps              =  500
+/
+&inviscid_flux_method
+  flux_construction       = 'roe'
+  flux_limiter            = 'hminmod'
+  smooth_limiter_coeff    = 1.0
+  freeze_limiter_iteration = 200
+/
+&nonlinear_solver_parameters
+  time_accuracy = "steady"
+  time_step_nondim =   0.1
+  subiterations =          0
+  schedule_iteration(1:2) = 1,200
+  schedule_cfl(1:2) = 1.0, 100.0
+  schedule_cflturb(1:2) = 5.0,50.0
 /
 &massoud_output
   funtofem_include_skin_friction = .true.
