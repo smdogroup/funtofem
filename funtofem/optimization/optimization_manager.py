@@ -236,18 +236,22 @@ class OptimizationManager:
                         constr_bndry = 1.0
                         # take relative errors against constraint boundaries, lower upper
                         yfinal = yvec[-1]
-                        rel_err_lower = 1e5
-                        rel_err_upper = 1e5
+                        err_lower = 1e5
+                        err_upper = 1e5
                         if func.lower is not None:
-                            rel_err_lower = abs((yfinal - func.lower) / func.lower)
+                            # use abs error since could have div 0
+                            err_lower = abs(yfinal - func.lower)
                         if func.upper is not None:
-                            rel_err_upper = abs((yfinal - func.upper) / func.upper)
-                        if rel_err_lower < rel_err_upper:
+                            # use abs error since could have div 0
+                            err_upper = abs(yfinal - func.upper)
+                        if err_lower < err_upper:
                             constr_bndry = func.lower
                         else:
                             constr_bndry = func.upper
-                        # compute abs error to constraint boundary for the plot
-                        yvec = np.abs((yvec - constr_bndry) / constr_bndry)
+                        if constr_bndry == 0.0:
+                            yvec = np.abs(yvec * func.scale)
+                        else:
+                            yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
                     ax.plot(
                         iterations,
