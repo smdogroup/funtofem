@@ -1,6 +1,6 @@
 # main config parameters
-cfgpmtr mode:flow 1
-cfgpmtr mode:struct 0
+cfgpmtr mode:flow 0
+cfgpmtr mode:struct 1
 
 # fluid view parameters
 cfgpmtr view:farfield 1
@@ -182,7 +182,8 @@ set xpos3 xpos2+wing_sspan3*tand(wing:phi3_LE)
 translate xpos3 0 -wing_sspan
 
 # complete the wing solid body
-loft 0
+#loft 0
+blend
 select face
    attribute _color $green
    attribute capsGroup $OML
@@ -470,108 +471,58 @@ ifthen mode:struct EQ 1
    
    # LE CHOP BOX SOLID
    # ---------------------------------------------------------
-   
+   set chop_marg 10
+   set y1 yoffset-maxThick/2-ymargin
+   set y2 yoffset+maxThick/2+ymargin
+
    # root to mid1, LE
    set x1 xLE_root_chop*1.1-xLE_mid1_chop*0.1
-   set x2 xLE_mid1_chop
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
    set z1 z_root*1.1-z_mid1*0.1
-   set z2 z_mid1
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude -10 0 0
+   #restore wingSolidBody
+   mark
+   box -chop_marg+x1 y1 z1 chop_marg (y2-y1) 0
    
    # mid1 to mid2, LE
-   set x1 xLE_mid1_chop
-   set x2 xLE_mid2_chop
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
-   set z1 z_mid1
-   set z2 z_mid2
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude -10 0 0
+   box -chop_marg+xLE_mid1_chop y1 z_mid1 chop_marg (y2-y1) 0
    
    # mid2 to tip, LE
    set x1 xLE_mid2_chop
    set x2 -xLE_mid2_chop*0.1+xLE_tip_chop*1.1
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
    set z1 z_mid2
    set z2 -z_mid2*0.1+z_tip*1.1
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude -10 0 0
+   box -chop_marg+x1 y1 z1 chop_marg (y2-y1) 0
+   box -chop_marg+x2 y1 z2 chop_marg (y2-y1) 0
    
    # join all the leading chop boxes into one
-   union
-   union
+   blend
    store LEchopBox
    
    # TE CHOP BOX SOLID
    # ---------------------------------------------------------
+   set y1 yoffset-maxThick/2-ymargin
+   set y2 yoffset+maxThick/2+ymargin
    
    # root to mid1, TE
    set x1 xTE_root_chop*1.1-xTE_mid1_chop*0.1
-   set x2 xTE_mid1_chop
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
    set z1 z_root*1.1-z_mid1*0.1
-   set z2 z_mid1
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude 10 0 0
+   box x1 y1 z1 chop_marg (y2-y1) 0
    
    # mid1 to mid2, LE
    set x1 xTE_mid1_chop
    set x2 xTE_mid2_chop
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
    set z1 z_mid1
-   set z2 z_mid2
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude 10 0 0
+   box x1 y1 z1 chop_marg (y2-y1) 0
    
    # mid2 to tip, LE
    set x1 xTE_mid2_chop
    set x2 -xTE_mid2_chop*0.1+xTE_tip_chop*1.1
-   set y1 yoffset-maxThick/2-ymargin
-   set y2 yoffset+maxThick/2+ymargin
    set z1 z_mid2
    set z2 -z_mid2*0.1+z_tip*1.1
-   skbeg x1 y1 z1
-      linseg x1 y2 z1
-      linseg x2 y2 z2
-      linseg x2 y1 z2
-      linseg x1 y1 z1
-   skend
-   extrude 10 0 0
+   box x1 y1 z1 chop_marg (y2-y1) 0
+   box x2 y1 z2 chop_marg (y2-y1) 0
    
    # join all the leading chop boxes into one
-   union
-   union
+   blend
    store TEchopBox
    
    # CHOPPED WING SOLID BODY 
@@ -591,20 +542,8 @@ ifthen mode:struct EQ 1
    select face 4
      attribute _color $red
      attribute capsGroup $LEspar
-   select face 9
-     attribute _color $red
-     attribute capsGroup $LEspar
-   select face 13
-     attribute _color $red
-     attribute capsGroup $LEspar
    
    select face 2
-     attribute _color $red
-     attribute capsGroup $TEspar
-   select face 6
-     attribute _color $red
-     attribute capsGroup $TEspar
-   select face 10
      attribute _color $red
      attribute capsGroup $TEspar
    
@@ -700,6 +639,7 @@ ifthen mode:struct EQ 1
    
    # SPARS
    # ----------------------------------------------------------
+   set spar_marg 5
    patbeg ispar nspars
       set nom_spar_fr ispar/(nspars+1)
       set spar_fr nom_spar_fr*(spar_a1+nom_spar_fr*(spar_a2+nom_spar_fr*spar_a3))
@@ -710,33 +650,14 @@ ifthen mode:struct EQ 1
       set x_mid2 xLE_mid2_chop*(1-spar_fr)+xTE_mid2_chop*spar_fr
       set x_tip xLE_tip_chop*(1-spar_fr)+xTE_tip_chop*spar_fr
       
-      # root to mid1 section
-      skbeg x_root y1 z_root
-         linseg x_root y2 z_root
-         linseg x_mid1 y2 z_mid1
-         linseg x_mid1 y1 z_mid1
-         linseg x_root y1 z_root
-      skend
-      
-      # mid1 to mid2 section
-      skbeg x_mid1 y1 z_mid1
-         linseg x_mid1 y2 z_mid1
-         linseg x_mid2 y2 z_mid2
-         linseg x_mid2 y1 z_mid2
-         linseg x_mid1 y1 z_mid1
-      skend
-      
-      # mid2 to tip section
-      skbeg x_mid2 y1 z_mid2
-         linseg x_mid2 y2 z_mid2
-         linseg x_tip y2 z_tip
-         linseg x_tip y1 z_tip
-         linseg x_mid2 y1 z_mid2
-      skend
-      
-      # join the 3 spar sections together
-      union
-      union
+      mark
+      box -spar_marg+x_root y1 z_root spar_marg (y2-y1) 0
+      box -spar_marg+x_mid1 y1 z_mid1 spar_marg (y2-y1) 0
+      box -spar_marg+x_mid2 y1 z_mid2 spar_marg (y2-y1) 0
+      box -spar_marg+x_tip y1 z_tip spar_marg (y2-y1) 0
+      blend
+      select face 3
+      extract @sellist
       
       select face
         attribute _color $red
@@ -818,11 +739,11 @@ ifthen mode:struct EQ 1
         attribute has_group $no
         attribute _color $blue
       
-      select face 12
+      select face 5
         attribute capsGroup $rib1
         attribute _color $green
         attribute capsConstraint $root
-      select face 5
+      select face 3
         attribute capsGroup !$rib+nribs
         attribute _color $green
    endif
@@ -897,3 +818,4 @@ end
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |||||||||
+||||||||||||||||||||||||||||
