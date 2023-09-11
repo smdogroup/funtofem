@@ -40,7 +40,7 @@ variables file. Then proceed with mesh morphing optimization (on aero side).
 # tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
 #     edge_pt_min=20,
 #     edge_pt_max=30,
-#     global_mesh_size=0.04,
+#     global_mesh_size=0.01,
 #     max_surf_offset=0.01,
 #     max_dihedral_angle=5,
 # ).register_to(
