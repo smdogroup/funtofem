@@ -27,7 +27,7 @@ variables file. Then proceed with mesh morphing optimization (on aero side).
 # flow_aim.set_config_parameter("mode:flow", 1)
 # flow_aim.set_config_parameter("mode:struct", 0)
 
-# m_aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
+# m_aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0, use_quads=True)
 # Fun3dBC.viscous(caps_group="wall", wall_spacing=1e-4).register_to(flow_model)
 # Fun3dBC.viscous(caps_group="staticWall", wall_spacing=1e-4).register_to(flow_model)
 # Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(flow_model)

@@ -14,8 +14,8 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
     edge_pt_min=20,
     edge_pt_max=30,
     global_mesh_size=0.04,
-    max_surf_offset=0.01,
-    max_dihedral_angle=5,
+    max_surf_offset=0.04,
+    max_dihedral_angle=15,
 ).register_to(
     tacs_model
 )
@@ -56,11 +56,19 @@ caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 # mesh settings
 if comm.rank == 0:
-    tacs_aim.aim.Mesh_Sizing = {"spar": {"numEdgePoints": 10}}
+    egads_aim = tacs_model.mesh_aim
+    egads_aim.aim.input.Mesh_Sizing = {"rib1": {"tessParams": [0.02, 0.01, 5]}}
 
 # setup the tacs model
 tacs_model.setup(include_aim=True)
 tacs_model.pre_analysis()
 
-run_analysis = True  # to view in paraview
-tacs_model.run_analysis()
+# print out the mesh empty soln (to view mesh)
+tacs_model.createTACSProbs(addFunctions=True)
+SPs = tacs_model.SPs
+for caseID in SPs:
+    SPs[caseID].writeSolution(
+        baseName="tacs_output",
+        outputDir=tacs_aim.analysis_dir,
+        number=0,
+    )

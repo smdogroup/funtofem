@@ -27,7 +27,7 @@ flow_aim = flow_model.fun3d_aim
 flow_aim.set_config_parameter("mode:flow", 1)
 flow_aim.set_config_parameter("mode:struct", 0)
 
-m_aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
+m_aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0, use_quads=True)
 Fun3dBC.viscous(caps_group="wall", wall_spacing=1e-4).register_to(flow_model)
 Fun3dBC.viscous(caps_group="staticWall", wall_spacing=1e-4).register_to(flow_model)
 Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(flow_model)
@@ -155,16 +155,26 @@ ksfailure_climb = Function.ksfailure().optimize(
 )
 cl_climb = Function.lift()
 cd_climb = Function.drag()
-aoa_climb = climb.get_variable("AOA").set_bounds(lower=3.0, value=4.0, upper=5.0)
-mach_climb = climb.get_variable("Mach").set_bounds(lower=0.5, value=0.7, upper=0.9)
+# aoa_climb = climb.get_variable("AOA").set_bounds(lower=3.0, value=4.0, upper=5.0)
+# mach_climb = climb.get_variable("Mach").set_bounds(lower=0.5, value=0.7, upper=0.9)
 for func in [ksfailure_climb, cl_climb, cd_climb]:
     func.register_to(climb)
 climb.register_to(hsct_model)
 
+# cruise flight condition
+# altitude - 60 kft, ,
+_mach_cruise = 2.5
+_ainf_cruise = 295  # m/s
+_rho_inf_cruise = 0.1165  # kg / m^3
+# _mu_cruise = 1.42e-5 # kg/(m-s)
+_aoa_cruise = 2.0
+_Tinf_cruise = 216  # K
+_vinf_cruise = _mach_cruise * _ainf_cruise
+_qinf_cruise = 0.5 * _rho_inf_cruise * _vinf_cruise**2
+
 cruise = Scenario.steady("cruise", steps=5000)
-cruise.set_temperature(T_ref=216, T_inf=216)
-cruise_qinf = 3.16e4
-cruise.set_flow_units(qinf=cruise_qinf, flow_dt=1.0)
+cruise.set_temperature(T_ref=_Tinf_cruise, T_inf=_Tinf_cruise)
+cruise.set_flow_units(qinf=_qinf_cruise, flow_dt=1.0)
 ksfailure_cruise = Function.ksfailure().optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
 )
@@ -172,8 +182,12 @@ cl_cruise = Function.lift()
 cd_cruise = Function.drag()
 moment = Function.moment().optimize(lower=0.0, upper=0.0, objective=False, plot=True)
 wing_mass = Function.mass()
-aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=1.0, value=2.0, upper=4.0)
-mach_cruise = cruise.get_variable("Mach").set_bounds(lower=2.3, value=2.5, upper=2.7)
+aoa_cruise = cruise.get_variable("AOA").set_bounds(
+    lower=1.0, value=_aoa_cruise, upper=4.0
+)
+mach_cruise = cruise.get_variable("Mach").set_bounds(
+    lower=2.3, value=_mach_cruise, upper=2.7
+)
 for func in [ksfailure_cruise, moment, wing_mass]:
     func.register_to(cruise)
 cruise.register_to(hsct_model)
@@ -184,24 +198,37 @@ cruise.register_to(hsct_model)
 # TOGW
 g = 9.81  # m/s^2
 lb_to_N = 4.448  # N/lb
-tsfc = 0.453227 / (3600.0 * 4.44822)  # fix this for my aircraft
+tsfc = 3.9e-5  # kg/N/s, Rolls Royce Olympus 593 engine
 fuselage_tail_weight = 6e5  # N
 fuel_reserve_fraction = 0.06
 num_passengers = 300
 passenger_weight = 230 * num_passengers * lb_to_N
 crew_weight = (450 + 5 * num_passengers) * lb_to_N
-descent_fuel = 6000 * lb_to_N  # N, fixed based on NASA report
+# descent_fuel = 6000 * lb_to_N  # N, fixed based on NASA report
 
 wing_weight = 2 * wing_mass * g  # m/s^2 => N, doubled for sym
-# NOTE : in the future need fuselage structure to get more accurate measure here
 empty_weight = wing_weight + fuselage_tail_weight
+boarded_weight = empty_weight + passenger_weight + crew_weight
 
-# W2 = self.we
-# TODO : finish calculating TOGW and lift margins for each scenario
-# then setup lift margins as constraints
-cruise_lift = cl_cruise * cruise_qinf * wing_area
-cruise_drag = cd_cruise * cruise_qinf * wing_area
-# lift_margin =
+cruise_lift = cl_cruise * _qinf_cruise * wing_area
+cruise_drag = cd_cruise * _qinf_cruise * wing_area
+
+takeoff_weight_ratio = 0.97
+climb_weight_ratio = 0.985
+land_weight_ratio = 0.995
+rem_weight_ratios = takeoff_weight_ratio * climb_weight_ratio * land_weight_ratio
+
+range = 12800  # km
+range *= 1e3  # to m
+cruise_LoverD = cruise_lift / cruise_drag
+cruise_weight_ratio = np.exp(-range * tsfc / _vinf_cruise / cruise_LoverD)
+
+mission_weight_ratio = rem_weight_ratios * cruise_weight_ratio
+fuel_weight_ratio = 1.06 * (1 - mission_weight_ratio)  # 6% reserve fuel
+togw = boarded_weight / (1 - fuel_weight_ratio)
+togw.set_name("takeoff-gross-weight").optimize(  # kg
+    lower=2e5, upper=3e5, scale=1.0, objective=True
+).register_to(hsct_model)
 
 # feasible wing span constraints => prevent negative sectional chord length
 wing_sspan = 0.5 * (wing_area * wing_aspect) ** 0.5

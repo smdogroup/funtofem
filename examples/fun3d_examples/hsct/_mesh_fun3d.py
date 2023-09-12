@@ -12,7 +12,7 @@ fun3d_aim = fun3d_model.fun3d_aim
 fun3d_aim.set_config_parameter("mode:flow", 1)
 fun3d_aim.set_config_parameter("mode:struct", 0)
 
-aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0)
+aflr_aim.set_surface_mesh(ff_growth=1.4, mesh_length=5.0, use_quads=True)
 # aflr_aim.set_boundary_layer(initial_spacing=0.001, thickness=0.1)
 Fun3dBC.viscous(caps_group="wall", wall_spacing=0.0001).register_to(fun3d_model)
 Fun3dBC.viscous(caps_group="staticWall", wall_spacing=0.0001).register_to(fun3d_model)

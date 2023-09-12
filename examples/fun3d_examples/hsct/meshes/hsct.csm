@@ -767,6 +767,7 @@ ifthen mode:struct EQ 1
       
       select face 5
         attribute capsGroup $rib1
+        attribute capsMesh $rib1
         attribute _color $green
         attribute capsConstraint $root
       select face 3
