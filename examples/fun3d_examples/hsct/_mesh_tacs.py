@@ -54,6 +54,13 @@ for prefix in ["LE", "TE"]:
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
+# mesh settings
+if comm.rank == 0:
+    tacs_aim.aim.Mesh_Sizing = {"spar": {"numEdgePoints": 10}}
+
 # setup the tacs model
-tacs_aim.setup_aim()
-tacs_aim.pre_analysis()
+tacs_model.setup(include_aim=True)
+tacs_model.pre_analysis()
+
+run_analysis = True  # to view in paraview
+tacs_model.run_analysis()
