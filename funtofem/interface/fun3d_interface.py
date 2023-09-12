@@ -45,9 +45,6 @@ class Fun3dInterface(SolverInterface):
         self,
         comm,
         model,
-        flow_dt=1.0,
-        qinf=1.0,
-        thermal_scale=1.0,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
@@ -66,12 +63,6 @@ class Fun3dInterface(SolverInterface):
             MPI communicator
         model: :class:`FUNtoFEMmodel`
             FUNtoFEM model. This instantiatio
-        flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since
-            FUN3D currently uses a different adjoint formulation than FUNtoFEM.
-        qinf: float
-            Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
-        thermal_scale: float
             TODO
         """
 
@@ -93,18 +84,11 @@ class Fun3dInterface(SolverInterface):
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
 
-        # Temporary measure until FUN3D adjoint is reformulated
-        self.flow_dt = flow_dt
-        for scen in model.scenarios:
-            if scen.steady is True and float(self.flow_dt) != 1.0:
-                raise ValueError("For steady cases, flow_dt must be set to 1.")
-
-        # dynamic pressure
-        self.qinf = qinf
+        # dynamic pressure derivative term
         self.dFdqinf = []
 
         # heat flux
-        self.thermal_scale = thermal_scale  # = 1/2 * rho_inf * (V_inf)^3
+        self.thermal_scale = 1.0  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
 
         # fun3d residual data
@@ -123,22 +107,6 @@ class Fun3dInterface(SolverInterface):
             self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
-
-    def set_units(self, qinf: float, flow_dt: float = 1.0):
-        """
-        separate method to change qinf units
-        Parameters
-        ----------------------------------------------
-        qinf: float
-            elastic load dim factor = 0.5 * rho_inf * v_inf^2
-        flow_dt: float
-            dimensionalization constant for time steps out of FUN3D
-        """
-        self.qinf = qinf
-        self.flow_dt = flow_dt
-
-        # return obj for method cascading
-        return self
 
     def _initialize_body_nodes(self, scenario, bodies):
         # Change directories to the flow directory
@@ -352,7 +320,7 @@ class Fun3dInterface(SolverInterface):
                     var.id, var.active, var.value, var.lower, var.upper
                 )
             elif "dynamic pressure" == var.name.lower():
-                self.qinf = var.value
+                scenario.qinf = var.value
             elif "thermal scale" == var.name.lower():
                 self.thermal_scale = var.value
 
@@ -452,9 +420,15 @@ class Fun3dInterface(SolverInterface):
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 for ifunc in range(nfunctions):
-                    aero_shape_term[0::3, ifunc] += dGdxa0_x[:, ifunc] * self.flow_dt
-                    aero_shape_term[1::3, ifunc] += dGdxa0_y[:, ifunc] * self.flow_dt
-                    aero_shape_term[2::3, ifunc] += dGdxa0_z[:, ifunc] * self.flow_dt
+                    aero_shape_term[0::3, ifunc] += (
+                        dGdxa0_x[:, ifunc] * scenario.flow_dt
+                    )
+                    aero_shape_term[1::3, ifunc] += (
+                        dGdxa0_y[:, ifunc] * scenario.flow_dt
+                    )
+                    aero_shape_term[2::3, ifunc] += (
+                        dGdxa0_z[:, ifunc] * scenario.flow_dt
+                    )
 
         return
 
@@ -544,9 +518,9 @@ class Fun3dInterface(SolverInterface):
                 fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
 
                 # Set the dimensional values of the forces
-                aero_loads[0::3] = self.qinf * fx[:]
-                aero_loads[1::3] = self.qinf * fy[:]
-                aero_loads[2::3] = self.qinf * fz[:]
+                aero_loads[0::3] = scenario.qinf * fx[:]
+                aero_loads[1::3] = scenario.qinf * fy[:]
+                aero_loads[2::3] = scenario.qinf * fz[:]
 
             # Compute the heat flux on the body
             # FUN3D is nondimensional, it doesn't output a heat flux (which can't be scaled linearly).
@@ -756,9 +730,15 @@ class Fun3dInterface(SolverInterface):
                 lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
                 for func in range(nfuncs):
-                    lam_x[:, func] = self.qinf * psi_F[0::3, func] / self.flow_dt
-                    lam_y[:, func] = self.qinf * psi_F[1::3, func] / self.flow_dt
-                    lam_z[:, func] = self.qinf * psi_F[2::3, func] / self.flow_dt
+                    lam_x[:, func] = (
+                        scenario.qinf * psi_F[0::3, func] / scenario.flow_dt
+                    )
+                    lam_y[:, func] = (
+                        scenario.qinf * psi_F[1::3, func] / scenario.flow_dt
+                    )
+                    lam_z[:, func] = (
+                        scenario.qinf * psi_F[2::3, func] / scenario.flow_dt
+                    )
 
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
@@ -772,7 +752,7 @@ class Fun3dInterface(SolverInterface):
                         self.dFdqinf[func] = 0.0
                     if step > 0:
                         self.dFdqinf[func] -= (
-                            np.dot(aero_loads, psi_F[:, func]) / self.qinf
+                            np.dot(aero_loads, psi_F[:, func]) / scenario.qinf
                         )
 
             # Get the adjoint Jacobian products for the aero heat flux
@@ -792,7 +772,7 @@ class Fun3dInterface(SolverInterface):
                 dtype = TransferScheme.dtype
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
-                scale = scenario.T_inf / self.flow_dt
+                scale = scenario.T_inf / scenario.flow_dt
 
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
@@ -826,9 +806,9 @@ class Fun3dInterface(SolverInterface):
                 )
 
                 for func in range(nfuncs):
-                    aero_disps_ajp[0::3, func] = lam_x[:, func] * self.flow_dt
-                    aero_disps_ajp[1::3, func] = lam_y[:, func] * self.flow_dt
-                    aero_disps_ajp[2::3, func] = lam_z[:, func] * self.flow_dt
+                    aero_disps_ajp[0::3, func] = lam_x[:, func] * scenario.flow_dt
+                    aero_disps_ajp[1::3, func] = lam_y[:, func] * scenario.flow_dt
+                    aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
 
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
@@ -842,13 +822,13 @@ class Fun3dInterface(SolverInterface):
                     aero_nnodes, nfuncs, body=ibody
                 )
 
-                scale = self.flow_dt / scenario.T_inf
+                scale = scenario.flow_dt / scenario.T_inf
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
 
                     # contribution from viscosity in adjoint path
                     aero_temps_ajp[:, func] += (
-                        self.flow_dt
+                        scenario.flow_dt
                         * aero_flux_ajp[:, func]
                         * (aero_flux[:] / k_dim[:])
                         * dkdtA[:]
@@ -857,7 +837,7 @@ class Fun3dInterface(SolverInterface):
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
             #         self.fun3d_adjoint.extract_rigid_adjoint_product(nfuncs)
-            #         * self.flow_dt
+            #         * scenario.flow_dt
             #     )
 
         return fail
@@ -1090,7 +1070,6 @@ class Fun3dInterface(SolverInterface):
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
-            qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
@@ -1110,7 +1089,6 @@ class Fun3dInterface(SolverInterface):
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
-            qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
