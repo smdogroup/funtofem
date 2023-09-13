@@ -1,6 +1,6 @@
 # main config parameters
-cfgpmtr mode:flow 1
-cfgpmtr mode:struct 0
+cfgpmtr mode:flow 0
+cfgpmtr mode:struct 1
 
 # fluid view parameters
 cfgpmtr view:farfield 1
@@ -753,8 +753,20 @@ ifthen mode:struct EQ 1
    store OML
    
    # combine the internal structure and OML
-   ifthen view:OML EQ 1
+   ifthen view:OML EQ 1      
+      # add the thermal midplane cuts to the root+tip rib
+      # otherwise the auto-mesher can't handle 5 edge faces
+      # with no midline, but no thermal BCs on these lines still
+      restore thermUpperBox
       restore OML
+      intersect
+      
+      restore thermLowerBox
+      restore OML
+      intersect
+      
+      union
+      
       select face $capsGroup $OML
         attribute capsMesh $OML
         attribute has_group $no
@@ -770,7 +782,15 @@ ifthen mode:struct EQ 1
         attribute capsMesh $rib1
         attribute _color $green
         attribute capsConstraint $root
+      select face 9
+        attribute capsGroup $rib1
+        attribute capsMesh $rib1
+        attribute _color $green
+        attribute capsConstraint $root
       select face 3
+        attribute capsGroup !$rib+nribs
+        attribute _color $green
+      select face 7
         attribute capsGroup !$rib+nribs
         attribute _color $green
    endif
@@ -824,7 +844,29 @@ ifthen mode:struct EQ 1
             SET capsGroup=!$OML+iOML
             SET has_group=yes
          patend
+      
+         # edge attributes to fix anisotropy at root + tip ribs
+         EDGE ADJ2FACE capsGroup=rib1
+            SET capsMesh=rib1interior
 
+            EDGE ADJ2FACE capsGroup=rib1
+            AND ADJ2FACE capsGroup=LEspar
+            SET capsMesh=rib1exterior
+
+            EDGE ADJ2FACE capsGroup=rib1
+            AND ADJ2FACE capsGroup=TEspar
+            SET capsMesh=rib1exterior
+      
+         EDGE ADJ2FACE capsGroup=!$rib+nribs
+            SET capsMesh=!$rib+nribs+$interior
+
+            EDGE ADJ2FACE capsGroup=!$rib+nribs
+            AND ADJ2FACE capsGroup=LEspar
+            SET capsMesh=!$rib+nribs+$exterior
+
+            EDGE ADJ2FACE capsGroup=!$rib+nribs
+            AND ADJ2FACE capsGroup=TEspar
+            SET capsMesh=!$rib+nribs+$exterior
       >>
       
    endif
@@ -845,4 +887,4 @@ end
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |||||||||
-||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
