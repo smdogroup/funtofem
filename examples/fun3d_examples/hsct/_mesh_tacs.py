@@ -28,7 +28,7 @@ nribs = int(tacs_model.get_config_parameter("nribs"))
 tacs_aim.set_config_parameter("mode:flow", 0)
 tacs_aim.set_config_parameter("mode:struct", 1)
 
-# mesh settings
+# mesh edge settings
 interior_ct = 8
 exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
 if comm.rank == 0:

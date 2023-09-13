@@ -58,6 +58,18 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 
+# mesh edge settings
+interior_ct = 8
+exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
+if comm.rank == 0:
+    egads_aim = tacs_model.mesh_aim
+    egads_aim.aim.input.Mesh_Sizing = {
+        "rib1interior": {"numEdgePoints": interior_ct},
+        "rib1exterior": {"numEdgePoints": exterior_ct},
+        f"rib{nribs}interior": {"numEdgePoints": interior_ct},
+        f"rib{nribs}exterior": {"numEdgePoints": exterior_ct},
+    }
+
 # BODIES, STRUCT DVs and SHAPE DVs
 # ---------------------------------------------------
 wing = Body.aerothermoelastic("wing", boundary=4)
