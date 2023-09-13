@@ -2,6 +2,8 @@
 This is the fully coupled aerothermoelastic optimization of the HSCT.
 NOTE: You need to run the 1_sizing_optimization.py first and leave the
 optimal panel thickness design variables in the meshes folder before running this.
+
+NOTE : don't call this script with mpiexec_mpt, call it with python (otherwise system calls won't work)
 """
 from pyoptsparse import SNOPT, Optimization
 import os
@@ -13,7 +15,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 fun3d_dir = os.path.join(base_dir, "meshes")
 csm_path = os.path.join(fun3d_dir, "hsct.csm")
-analysis_file = os.path.join(base_dir, "3_run_funtofem_analysis.py")
+analysis_file = os.path.join(base_dir, "_run_funtofem_analysis.py")
 
 # FUNtoFEM and SHAPE MODELS
 # ---------------------------------------------------------
@@ -146,8 +148,8 @@ ks_max = 1 / safety_factor
 # NOTE: shape variables can be assigned to the body or scenario
 # when using ESP/CAPS, it doesn't really matter
 
-climb = Scenario.steady("climb", steps=5000)
-climb.fun3d_project(fun3d_aim.project_name)
+climb = Scenario.steady("climb", steps=500)
+climb.fun3d_project(flow_aim.project_name)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
 climb_qinf = 1e4  # TBD on this
 climb.set_flow_units(qinf=climb_qinf, flow_dt=1.0)
@@ -173,8 +175,8 @@ _Tinf_cruise = 216  # K
 _vinf_cruise = _mach_cruise * _ainf_cruise
 _qinf_cruise = 0.5 * _rho_inf_cruise * _vinf_cruise**2
 
-cruise = Scenario.steady("cruise", steps=5000)
-cruise.fun3d_project(fun3d_aim.project_name)
+cruise = Scenario.steady("cruise", steps=500)
+cruise.fun3d_project(flow_aim.project_name)
 cruise.set_temperature(T_ref=_Tinf_cruise, T_inf=_Tinf_cruise)
 cruise.set_flow_units(qinf=_qinf_cruise, flow_dt=1.0)
 ksfailure_cruise = Function.ksfailure().optimize(
@@ -298,7 +300,7 @@ hsct_model.read_design_variables_file(comm, sizing_file)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=192)
+fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
 f2f_driver = FuntofemShapeDriver.aero_remesh(solvers, hsct_model, fun3d_remote)
 
 # PYOPTSPARSE Optimization

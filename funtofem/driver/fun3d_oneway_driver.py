@@ -107,7 +107,7 @@ class Fun3dRemote:
         self.struct_name = struct_name
 
     @classmethod
-    def paths(cls, fun3d_dir, aero_name="fun3d", struct_name="struct"):
+    def paths(cls, fun3d_dir, aero_name="fun3d", struct_name="tacs"):
         return cls(
             analysis_file=None,
             fun3d_dir=fun3d_dir,

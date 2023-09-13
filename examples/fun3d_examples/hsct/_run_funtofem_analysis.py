@@ -38,23 +38,23 @@ wing.register_to(hsct_model)
 # SCENARIOS AND AERO DVS. NO SHAPE DVS IN ANALYSIS SCRIPT
 # ------------------------------------------------------------
 
-climb = Scenario.steady("climb", steps=5000)
+climb = Scenario.steady("climb", steps=500)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
 climb.set_flow_units(qinf=1e4, flow_dt=1.0)
 ksfailure_climb = Function.ksfailure().register_to(climb)
-cl_climb = Function.lift().register_to(climb)
-cd_climb = Function.drag().register_to(climb)
-aoa_climb = climb.get_variable("AOA")
-mach_climb = climb.get_variable("Mach")
+cl_climb = Function.lift(body=0).register_to(climb)
+cd_climb = Function.drag(body=0).register_to(climb)
+# aoa_climb = climb.get_variable("AOA")
+# mach_climb = climb.get_variable("Mach")
 climb.register_to(hsct_model)
 
-cruise = Scenario.steady("cruise", steps=5000)
+cruise = Scenario.steady("cruise", steps=500)
 cruise.set_temperature(T_ref=216, T_inf=216)
-cruise.set_flow_units(qinf=3.16e4, flow_dt=1.0)
+cruise.set_flow_units(qinf=7.3817e8, flow_dt=1.0)
 ksfailure_cruise = Function.ksfailure().register_to(cruise)
-cl_cruise = Function.lift().register_to(cruise)
-cd_cruise = Function.drag().register_to(cruise)
-moment = Function.moment().register_to(cruise)
+cl_cruise = Function.lift(body=0).register_to(cruise)
+cd_cruise = Function.drag(body=0).register_to(cruise)
+moment = Function.moment(body=0).register_to(cruise)
 mass = Function.mass().register_to(cruise)
 aoa_cruise = cruise.get_variable("AOA")
 mach_cruise = cruise.get_variable("Mach")
@@ -87,5 +87,6 @@ f2f_driver = FuntofemShapeDriver.analysis(solvers, hsct_model)
 
 # NOTE: this writes the design and sens file outputs
 # to the driver script
+print(f"start solve forward", flush=True)
 f2f_driver.solve_forward()
 f2f_driver.solve_adjoint()

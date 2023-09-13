@@ -314,7 +314,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 bdf_dest = self.fun3d_remote.bdf_file
                 shutil.copy(bdf_src, bdf_dest)
                 dat_src = os.path.join(
-                    self.tacs_aim.analysis_dir, f"{self.tacs_aim.project_name}.bdf"
+                    self.tacs_aim.analysis_dir, f"{self.tacs_aim.project_name}.dat"
                 )
                 dat_dest = self.fun3d_remote.dat_file
                 shutil.copy(dat_src, dat_dest)
@@ -347,9 +347,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 os.remove(self.fun3d_remote.output_file)
 
             # system call funtofem forward + adjoint analysis
-            os.system(
-                f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
-            )
+            call_msg = f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
+            os.system(call_msg)
 
         else:
             if self.is_paired:

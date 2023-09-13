@@ -41,8 +41,8 @@
 /
 &global
   moving_grid = .true.
-  boundary_animation_freq = 1000
-  volume_animation_freq = 1000
+  boundary_animation_freq = 500
+  volume_animation_freq = 500
 /
 &elasticity_gmres
   elasticity = 2
