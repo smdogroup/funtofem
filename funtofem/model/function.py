@@ -43,7 +43,7 @@ class Function(object):
         optim=False,
         lower=None,
         upper=None,
-        scale=None,
+        scale=1.0,
         objective=False,
         plot=False,
     ):

@@ -153,8 +153,8 @@ climb.set_flow_units(qinf=climb_qinf, flow_dt=1.0)
 ksfailure_climb = Function.ksfailure().optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
 )
-cl_climb = Function.lift()
-cd_climb = Function.drag()
+cl_climb = Function.lift(body=0)
+cd_climb = Function.drag(body=0)
 # aoa_climb = climb.get_variable("AOA").set_bounds(lower=3.0, value=4.0, upper=5.0)
 # mach_climb = climb.get_variable("Mach").set_bounds(lower=0.5, value=0.7, upper=0.9)
 for func in [ksfailure_climb, cl_climb, cd_climb]:
@@ -178,9 +178,11 @@ cruise.set_flow_units(qinf=_qinf_cruise, flow_dt=1.0)
 ksfailure_cruise = Function.ksfailure().optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
 )
-cl_cruise = Function.lift()
-cd_cruise = Function.drag()
-moment = Function.moment().optimize(lower=0.0, upper=0.0, objective=False, plot=True)
+cl_cruise = Function.lift(body=0)
+cd_cruise = Function.drag(body=0)
+moment = Function.moment(body=0).optimize(
+    lower=0.0, upper=0.0, scale=1.0, objective=False, plot=True
+)
 wing_mass = Function.mass()
 aoa_cruise = cruise.get_variable("AOA").set_bounds(
     lower=1.0, value=_aoa_cruise, upper=4.0
@@ -218,10 +220,12 @@ climb_weight_ratio = 0.985
 land_weight_ratio = 0.995
 rem_weight_ratios = takeoff_weight_ratio * climb_weight_ratio * land_weight_ratio
 
-range = 12800  # km
-range *= 1e3  # to m
+_range = 12800  # km
+_range *= 1e3  # to m
 cruise_LoverD = cruise_lift / cruise_drag
-cruise_weight_ratio = np.exp(-range * tsfc / _vinf_cruise / cruise_LoverD)
+cruise_weight_ratio = CompositeFunction.exp(
+    -_range * tsfc / _vinf_cruise / cruise_LoverD
+)
 
 mission_weight_ratio = rem_weight_ratios * cruise_weight_ratio
 fuel_weight_ratio = 1.06 * (1 - mission_weight_ratio)  # 6% reserve fuel
@@ -240,6 +244,10 @@ wing_sspans = [
 ]
 phi_LE_rad = [_ * np.pi / 180 for _ in phi_LE]
 phi_TE_rad = [_ * np.pi / 180 for _ in phi_TE]
+CompositeFunction.tan(phi_LE_rad[0])
+CompositeFunction.tan(phi_LE_rad[2])
+CompositeFunction.tan(phi_TE_rad[0])
+CompositeFunction.tan(phi_TE_rad[2])
 chord_drops = [
     wing_sspans[i]
     * (CompositeFunction.tan(phi_LE_rad[i]) + CompositeFunction.tan(phi_TE_rad[i]))
@@ -256,7 +264,7 @@ for i in range(3):
 # Composite function for each chord to make sure it is nonnegative
 for i in range(4):
     chords[i].set_name(f"wing_chord{i}").optimize(
-        lower=0.0, objective=False
+        lower=0.0, objective=False, scale=1.0
     ).register_to(hsct_model)
 
 # adjacency skin thickness constraints
