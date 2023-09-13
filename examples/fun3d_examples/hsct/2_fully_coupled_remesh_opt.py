@@ -20,7 +20,7 @@ analysis_file = os.path.join(base_dir, "3_run_funtofem_analysis.py")
 hsct_model = FUNtoFEMmodel("hsct_MDO")
 
 # design the FUN3D aero shape model
-flow_model = Fun3dModel.build(csm_file=csm_path, comm=comm)
+flow_model = Fun3dModel.build(csm_file=csm_path, comm=comm, project_name="hsct")
 m_aflr_aim = flow_model.aflr_aim
 
 flow_aim = flow_model.fun3d_aim
@@ -147,6 +147,7 @@ ks_max = 1 / safety_factor
 # when using ESP/CAPS, it doesn't really matter
 
 climb = Scenario.steady("climb", steps=5000)
+climb.fun3d_project(fun3d_aim.project_name)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
 climb_qinf = 1e4  # TBD on this
 climb.set_flow_units(qinf=climb_qinf, flow_dt=1.0)
@@ -173,6 +174,7 @@ _vinf_cruise = _mach_cruise * _ainf_cruise
 _qinf_cruise = 0.5 * _rho_inf_cruise * _vinf_cruise**2
 
 cruise = Scenario.steady("cruise", steps=5000)
+cruise.fun3d_project(fun3d_aim.project_name)
 cruise.set_temperature(T_ref=_Tinf_cruise, T_inf=_Tinf_cruise)
 cruise.set_flow_units(qinf=_qinf_cruise, flow_dt=1.0)
 ksfailure_cruise = Function.ksfailure().optimize(
