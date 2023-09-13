@@ -44,11 +44,12 @@ test_scenario.adjoint_steps = 4000
 # aoa = test_scenario.get_variable("AOA")
 test_scenario.include(Function.lift()).include(Function.drag())
 test_scenario.include(Function.ksfailure()).include(Function.mass())
+test_scenario.set_flow_ref_vals(qinf=1e4)
 test_scenario.register_to(model)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1e4)
+solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=model, comm=comm, nprocs=nprocs, bdf_file=fun3d_remote.dat_file
 )

@@ -39,12 +39,13 @@ if has_fun3d:
         T_ref=300.0, T_inf=300.0
     )
     test_scenario.include(Function.lift())
+    test_scenario.set_flow_ref_vals(qinf=1.0e4)
     test_scenario.register_to(model)
 
     # build the solvers and coupled driver
     comm = MPI.COMM_WORLD
     solvers = SolverManager(comm)
-    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1.0e4)
+    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
     # build a tacs communicator on one proc
     n_tacs_procs = 1

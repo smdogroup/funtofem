@@ -42,14 +42,13 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e2)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e2
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
         transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
@@ -110,14 +109,13 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario.include(Function.ksfailure()).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e2)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e2
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TestStructuralSolver(
             comm, model, elastic_k=1000.0, thermal_k=1.0
         )

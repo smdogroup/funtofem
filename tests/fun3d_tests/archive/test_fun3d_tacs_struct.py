@@ -99,13 +99,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
@@ -146,13 +145,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
@@ -286,13 +284,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
@@ -335,13 +332,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
@@ -381,13 +377,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
@@ -428,13 +423,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e4
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         assembler, tacs_comm = self._build_assembler()
         solvers.structural = TacsSteadyInterface(
