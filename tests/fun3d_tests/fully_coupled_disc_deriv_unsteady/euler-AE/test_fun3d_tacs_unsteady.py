@@ -72,6 +72,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         ).include(Function.drag()).include(
             Function.compliance()
         )  # .include(Function.mass())
+        test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
 
         test_scenario.register_to(model)
 
@@ -85,7 +86,6 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
             forward_options={"timedep_adj_frozen": True},
             adjoint_options={"timedep_adj_frozen": True},
         )
-        solvers.flow.set_units(qinf=qinf, flow_dt=flow_dt)
 
         # Build the structural solver
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(
@@ -128,6 +128,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         test_scenario.set_variable(
             "aerodynamic", "AOA", lower=5.0, value=10.0, upper=15.0
         )
+        test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
         test_scenario.register_to(model)
 
         ## Build the solvers and coupled driver
@@ -140,7 +141,6 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
             forward_options={"timedep_adj_frozen": True},
             adjoint_options={"timedep_adj_frozen": True},
         )
-        solvers.flow.set_units(qinf=qinf, flow_dt=flow_dt)
 
         # Build the structural solver
         solvers.structural = TacsUnsteadyInterface.create_from_bdf(

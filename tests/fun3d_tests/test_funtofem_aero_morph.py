@@ -87,13 +87,14 @@ class TestFuntofemMorph(unittest.TestCase):
         # test_scenario.get_variable("AOA").set_bounds(value=2.0)
 
         test_scenario.include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
-        ).set_units(qinf=1e4)
+        )
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=nprocs, bdf_file=bdf_file
         )
@@ -150,13 +151,14 @@ class TestFuntofemMorph(unittest.TestCase):
 
         test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.include(Function.ksfailure(ks_weight=10.0))
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         solvers.flow = Fun3dInterface(
             comm, model, fun3d_dir="meshes", auto_coords=False
-        ).set_units(qinf=1e4)
+        )
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=nprocs, bdf_file=bdf_file
         )

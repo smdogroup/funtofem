@@ -53,13 +53,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.05e5)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.05e5
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename
@@ -98,13 +97,12 @@ class TestFun3dTacs(unittest.TestCase):
         test_scenario.set_variable(
             "aerodynamic", "AOA", lower=5.0, value=10.0, upper=15.0
         )
+        test_scenario.set_flow_ref_vals(qinf=1.05e5)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.05e5
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename
