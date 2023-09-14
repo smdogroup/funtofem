@@ -163,9 +163,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 print(f"========================================")
                 print(f"Inside nlbgs driver, step: {step}")
                 print(f"struct_loads: {struct_loads}")
-                print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                if struct_loads is not None:
+                    print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
                 print(f"aero_loads: {aero_loads}")
-                print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                if aero_loads is not None:
+                    print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
                 print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
@@ -305,8 +307,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 aero_loads = body.get_aero_loads(scenario, time_index=time_index)
                 print(f"========================================")
                 print(f"Inside nlbgs driver, step: {time_index}")
-                print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
-                print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                if struct_loads is not None:
+                    print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                if aero_loads is not None:
+                    print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
                 print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
