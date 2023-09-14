@@ -180,6 +180,8 @@ class Fun3dInterface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        print(f"I, comm {self.comm.Get_rank()}, am at the start of fun3d_interface:initialize.")
+
         # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
         # if mesh morphing is online
         if self.model.flow is not None:
@@ -201,6 +203,8 @@ class Fun3dInterface(SolverInterface):
         self.fun3d_flow.initialize_data()
         interface.design_initialize()
         self.fun3d_flow.initialize_grid()
+
+        print(f"I, comm {self.comm.Get_rank()}, am right after initialize_grid in fun3d_interface:initialize.")
 
         # Set the node locations based
         for ibody, body in enumerate(bodies, 1):
