@@ -505,15 +505,20 @@ class Fun3dInterface(SolverInterface):
             struct_loads = body.get_struct_loads(scenario, time_index=step - 1)
             print(f"========================================")
             print(f"Inside fun3d_interface:iterate, step: {step}")
-            print(f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}")
-            print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
-            print(f"norm of struct_disps: {np.linalg.norm(struct_disps)}")
-            print(f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}")
-            print(f"norm of aero_disps: {np.linalg.norm(aero_disps)}")
+            if struct_loads is not None:
+                print(f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}")
+                print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+            if struct_disps is not None:
+                print(f"norm of struct_disps: {np.linalg.norm(struct_disps)}")
+                print(f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}")
+            if aero_disps is not None:
+                print(f"norm of aero_disps: {np.linalg.norm(aero_disps)}")
             print(f"========================================\n", flush=True)
 
+        print(f"I, comm {self.comm.Get_rank()}, am right before the barrier in fun3d_interface:iterate.")
         # Take a step in FUN3D
         self.comm.Barrier()
+        print(f"I, comm {self.comm.Get_rank()}, am right after the barrier in fun3d_interface:iterate.")
         bcont = self.fun3d_flow.iterate()
         if bcont == 0:
             if self.comm.Get_rank() == 0:
@@ -537,7 +542,8 @@ class Fun3dInterface(SolverInterface):
             # Temporary stuff for debugging
             print(f"========================================")
             print(f"Inside fun3d_interface:iterate, after iterate, step: {step}")
-            print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+            if aero_loads is not None:
+                print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
             print(f"========================================\n", flush=True)
 
             # Compute the heat flux on the body
