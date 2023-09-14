@@ -42,8 +42,9 @@ tacs_aim.set_config_parameter("mode:flow", 0)
 tacs_aim.set_config_parameter("mode:struct", 1)
 
 # mesh edge settings
-interior_ct = 8
+interior_ct = 16
 exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
+nribs = int(tacs_aim.get_config_parameter("nribs"))
 if comm.rank == 0:
     egads_aim = tacs_model.mesh_aim
     egads_aim.aim.input.Mesh_Sizing = {

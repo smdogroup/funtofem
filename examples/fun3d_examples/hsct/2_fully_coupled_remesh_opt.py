@@ -59,7 +59,8 @@ caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 
 # mesh edge settings
-interior_ct = 8
+nribs = int(tacs_aim.get_config_parameter("nribs"))
+interior_ct = 16
 exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
 if comm.rank == 0:
     egads_aim = tacs_model.mesh_aim
