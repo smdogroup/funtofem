@@ -484,9 +484,11 @@ class TacsUnsteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        self._update_assembler_vars(scenario, bodies)
-        self.ext_force.zeroEntries()
-        self.integrator[scenario.id].iterate(0, self.ext_force)
+        if self.tacs_proc:
+            self._update_assembler_vars(scenario, bodies)
+            self.ext_force.zeroEntries()
+            self.integrator[scenario.id].iterate(0, self.ext_force)
+
         return 0
 
     def iterate(self, scenario, bodies, step):
