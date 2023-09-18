@@ -920,7 +920,7 @@ class FUNtoFEMmodel(object):
     def flow(self, flow_model):
         self._flow_model = flow_model
 
-    def print_summary(self, print_level=0, print_model_details=True):
+    def print_summary(self, print_level=0, print_model_details=True, ignore_rigid=False):
         """
         Print out a summary of the assembled model for inspection
 
@@ -952,8 +952,11 @@ class FUNtoFEMmodel(object):
                     "variables:",
                     len(body.variables[vartype]),
                 )
-                if print_level >= 0:
-                    body._print_variables(vartype)
+                if vartype is "rigid_motion" and ignore_rigid:
+                    print("      Ignoring rigid_motion vartype list.")
+                else:
+                    if print_level >= 0:
+                        body._print_variables(vartype)
 
         print(" ")
         print("--------------------")
