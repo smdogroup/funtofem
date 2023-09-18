@@ -394,3 +394,95 @@ class Scenario(Base):
         dkdtA = dmu_dtA * cp / Pr
 
         return dkdtA
+
+    def _print_functions(self):
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        print(
+            "     | Function \t| Analysis Type\t| Comp. Adjoint\t| Time Range\t| Averaging\t|"
+        )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        for func in self.functions:
+            if len(func.name) >= 8:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+            else:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+
+        return
+
+    def _print_variables(self, vartype):
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+        print("     | Variable\t| Var. ID\t| Value\t| Bounds\t\t| Active\t| Coupled\t|")
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+        for var in self.variables[vartype]:
+            print(
+                "     | ",
+                var.name,
+                "\t|",
+                var.id,
+                "\t\t|",
+                var.value,
+                "\t| [",
+                var.lower,
+                ",",
+                var.upper,
+                "] \t|",
+                var.active,
+                " \t|",
+                var.coupled,
+                "\t|",
+            )
+
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+
+        return
+
+    def __str__(self):
+        line1 = f"Scenario (<ID> <Name>): {self.id} {self.name}"
+        line2 = f"    Coupling Group: {self.group}"
+        line3 = f"    Steps: {self.steps}"
+        line4 = f"    Steady-state: {self.steady}"
+
+        output = (line1, line2, line3, line4)
+
+        return "\n".join(output)
