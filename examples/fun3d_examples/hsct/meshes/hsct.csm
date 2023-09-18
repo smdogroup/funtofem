@@ -844,29 +844,6 @@ ifthen mode:struct EQ 1
             SET capsGroup=!$OML+iOML
             SET has_group=yes
          patend
-      
-         # edge attributes to fix anisotropy at root + tip ribs
-         EDGE ADJ2FACE capsGroup=rib1
-            SET capsMesh=rib1interior
-
-            EDGE ADJ2FACE capsGroup=rib1
-            AND ADJ2FACE capsGroup=LEspar
-            SET capsMesh=rib1exterior
-
-            EDGE ADJ2FACE capsGroup=rib1
-            AND ADJ2FACE capsGroup=TEspar
-            SET capsMesh=rib1exterior
-      
-         EDGE ADJ2FACE capsGroup=!$rib+nribs
-            SET capsMesh=!$rib+nribs+$interior
-
-            EDGE ADJ2FACE capsGroup=!$rib+nribs
-            AND ADJ2FACE capsGroup=LEspar
-            SET capsMesh=!$rib+nribs+$exterior
-
-            EDGE ADJ2FACE capsGroup=!$rib+nribs
-            AND ADJ2FACE capsGroup=TEspar
-            SET capsMesh=!$rib+nribs+$exterior
       >>
       
    endif

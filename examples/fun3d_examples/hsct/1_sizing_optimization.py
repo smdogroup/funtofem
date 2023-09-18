@@ -41,19 +41,6 @@ tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("mode:flow", 0)
 tacs_aim.set_config_parameter("mode:struct", 1)
 
-# mesh edge settings
-interior_ct = 16
-exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
-nribs = int(tacs_aim.get_config_parameter("nribs"))
-if comm.rank == 0:
-    egads_aim = tacs_model.mesh_aim
-    egads_aim.aim.input.Mesh_Sizing = {
-        "rib1interior": {"numEdgePoints": interior_ct},
-        "rib1exterior": {"numEdgePoints": exterior_ct},
-        f"rib{nribs}interior": {"numEdgePoints": interior_ct},
-        f"rib{nribs}exterior": {"numEdgePoints": exterior_ct},
-    }
-
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
@@ -175,7 +162,7 @@ tacs_driver = TacsOnewayDriver.prime_loads(fun3d_driver)
 
 # PYOPTSPARSE OPTMIZATION
 # -------------------------------------------------------------
-hot_start = False
+hot_start = True
 store_history = True
 
 # create an OptimizationManager object for the pyoptsparse optimization problem

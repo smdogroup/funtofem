@@ -38,7 +38,9 @@ flow_model.setup()
 hsct_model.flow = flow_model
 
 # design the TACS struct shape model
-tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+tacs_model = caps2tacs.TacsModel.build(
+    csm_file=csm_path, comm=comm, problem_name="capsStruct2"
+)
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=20,
     edge_pt_max=30,
@@ -57,23 +59,10 @@ hsct_model.structural = tacs_model
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
-
-# mesh edge settings
-nribs = int(tacs_aim.get_config_parameter("nribs"))
-interior_ct = 16
-exterior_ct = 2 * interior_ct - 1  # +1 for small#, -1 for large #
-if comm.rank == 0:
-    egads_aim = tacs_model.mesh_aim
-    egads_aim.aim.input.Mesh_Sizing = {
-        "rib1interior": {"numEdgePoints": interior_ct},
-        "rib1exterior": {"numEdgePoints": exterior_ct},
-        f"rib{nribs}interior": {"numEdgePoints": interior_ct},
-        f"rib{nribs}exterior": {"numEdgePoints": exterior_ct},
-    }
-
 # BODIES, STRUCT DVs and SHAPE DVs
 # ---------------------------------------------------
 wing = Body.aerothermoelastic("wing", boundary=4)
+wing.relaxation(AitkenRelaxation())
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -164,7 +153,7 @@ ks_max = 1 / safety_factor
 climb = Scenario.steady("climb", steps=500)
 climb.fun3d_project(flow_aim.project_name)
 climb.set_temperature(T_ref=300.0, T_inf=300.0)  # modify this
-climb_qinf = 1e4  # TBD on this
+climb_qinf = 1e3  # TBD on this
 climb.set_flow_units(qinf=climb_qinf, flow_dt=1.0)
 ksfailure_climb = Function.ksfailure().optimize(
     scale=30.0, upper=ks_max, objective=False, plot=True
