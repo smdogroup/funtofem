@@ -394,3 +394,13 @@ class Scenario(Base):
         dkdtA = dmu_dtA * cp / Pr
 
         return dkdtA
+
+    def __str__(self):
+        line1 = f"Scenario (<ID> <Name>): {self.id} {self.name}"
+        line2 = f"    Coupling Group: {self.group}"
+        line3 = f"    Steps: {self.steps}"
+        line4 = f"    Steady-state: {self.steady}"
+
+        output = (line1, line2, line3, line4)
+
+        return "\n".join(output)
