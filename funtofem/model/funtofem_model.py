@@ -920,7 +920,9 @@ class FUNtoFEMmodel(object):
     def flow(self, flow_model):
         self._flow_model = flow_model
 
-    def print_summary(self, print_level=0, print_model_details=True, ignore_rigid=False):
+    def print_summary(
+        self, print_level=0, print_model_details=True, ignore_rigid=False
+    ):
         """
         Print out a summary of the assembled model for inspection
 
