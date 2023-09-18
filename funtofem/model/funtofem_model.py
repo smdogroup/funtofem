@@ -133,146 +133,6 @@ class FUNtoFEMmodel(object):
 
         self.scenarios.append(scenario)
 
-    def print_summary(self, print_level=0, print_model_details=True):
-        """
-        Print out a summary of the assembled model for inspection
-
-        Parameters
-        ----------
-        print_level: int
-            how much detail to print in the summary. Print level < 0 does not print all the variables
-        """
-
-        print("==========================================================")
-        print("||                FUNtoFEM Model Summary                ||")
-        print("==========================================================")
-        print(self)
-
-        if print_model_details:
-            self._print_functions()
-            self._print_variables()
-
-        print("\n------------------")
-        print("| Bodies Summary |")
-        print("------------------")
-        for body in self.bodies:
-            print(body)
-            for vartype in body.variables:
-                print("\n    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(body.variables[vartype]),
-                )
-                if print_level >= 0:
-                    body._print_variables(vartype)
-
-        print(" ")
-        print("--------------------")
-        print("| Scenario Summary |")
-        print("--------------------")
-        for scenario in self.scenarios:
-            print(scenario)
-            scenario._print_functions()
-
-            for vartype in scenario.variables:
-                print("    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(scenario.variables[vartype]),
-                )
-                if print_level >= 0:
-                    scenario._print_variables(vartype)
-
-        return
-
-    def _print_functions(self):
-        model_functions = self.get_functions(all=True)
-        print(
-            "     ------------------------------------------------------------------------------------"
-        )
-        print(
-            "     | Function \t| Analysis Type\t| Comp. Adjoint\t| Time Range\t| Averaging\t|"
-        )
-        print(
-            "     ------------------------------------------------------------------------------------"
-        )
-        for func in model_functions:
-            if len(func.name) >= 8:
-                print(
-                    "     | ",
-                    func.name,
-                    "\t| ",
-                    func.analysis_type,
-                    "\t| ",
-                    func.adjoint,
-                    "\t| [",
-                    func.start,
-                    ",",
-                    func.stop,
-                    "] \t| ",
-                    func.averaging,
-                    "\t|",
-                )
-            else:
-                print(
-                    "     | ",
-                    func.name,
-                    "\t\t| ",
-                    func.analysis_type,
-                    "\t| ",
-                    func.adjoint,
-                    "\t| [",
-                    func.start,
-                    ",",
-                    func.stop,
-                    "] \t| ",
-                    func.averaging,
-                    "\t|",
-                )
-        print(
-            "     ------------------------------------------------------------------------------------"
-        )
-
-        return
-
-    def _print_variables(self):
-        model_variables = self.get_variables()
-        print(
-            "     --------------------------------------------------------------------------------------------"
-        )
-        print("     | Variable\t| Var. ID\t| Value\t| Bounds\t\t| Active\t| Coupled\t|")
-        print(
-            "     --------------------------------------------------------------------------------------------"
-        )
-        for var in model_variables:
-            print(
-                "     | ",
-                var.name,
-                "\t|",
-                var.id,
-                "\t\t|",
-                var.value,
-                "\t| [",
-                var.lower,
-                ",",
-                var.upper,
-                "] \t|",
-                var.active,
-                " \t|",
-                var.coupled,
-                "\t|",
-            )
-
-        print(
-            "     --------------------------------------------------------------------------------------------"
-        )
-
-        return
-
     def _send_struct_variables(self, base):
         """send variables to self.structural usually the TacsModel"""
         # if tacs loader and tacs model exist then create thickness variables and register to tacs model
@@ -1059,6 +919,146 @@ class FUNtoFEMmodel(object):
     @flow.setter
     def flow(self, flow_model):
         self._flow_model = flow_model
+
+    def print_summary(self, print_level=0, print_model_details=True):
+        """
+        Print out a summary of the assembled model for inspection
+
+        Parameters
+        ----------
+        print_level: int
+            how much detail to print in the summary. Print level < 0 does not print all the variables
+        """
+
+        print("==========================================================")
+        print("||                FUNtoFEM Model Summary                ||")
+        print("==========================================================")
+        print(self)
+
+        if print_model_details:
+            self._print_functions()
+            self._print_variables()
+
+        print("\n------------------")
+        print("| Bodies Summary |")
+        print("------------------")
+        for body in self.bodies:
+            print(body)
+            for vartype in body.variables:
+                print("\n    Variable type:", vartype)
+                print(
+                    "      Number of",
+                    vartype,
+                    "variables:",
+                    len(body.variables[vartype]),
+                )
+                if print_level >= 0:
+                    body._print_variables(vartype)
+
+        print(" ")
+        print("--------------------")
+        print("| Scenario Summary |")
+        print("--------------------")
+        for scenario in self.scenarios:
+            print(scenario)
+            scenario._print_functions()
+
+            for vartype in scenario.variables:
+                print("    Variable type:", vartype)
+                print(
+                    "      Number of",
+                    vartype,
+                    "variables:",
+                    len(scenario.variables[vartype]),
+                )
+                if print_level >= 0:
+                    scenario._print_variables(vartype)
+
+        return
+
+    def _print_functions(self):
+        model_functions = self.get_functions(all=True)
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        print(
+            "     | Function \t| Analysis Type\t| Comp. Adjoint\t| Time Range\t| Averaging\t|"
+        )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        for func in model_functions:
+            if len(func.name) >= 8:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+            else:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+
+        return
+
+    def _print_variables(self):
+        model_variables = self.get_variables()
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+        print("     | Variable\t| Var. ID\t| Value\t| Bounds\t\t| Active\t| Coupled\t|")
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+        for var in model_variables:
+            print(
+                "     | ",
+                var.name,
+                "\t|",
+                var.id,
+                "\t\t|",
+                var.value,
+                "\t| [",
+                var.lower,
+                ",",
+                var.upper,
+                "] \t|",
+                var.active,
+                " \t|",
+                var.coupled,
+                "\t|",
+            )
+
+        print(
+            "     --------------------------------------------------------------------------------------------"
+        )
+
+        return
 
     def __str__(self):
         line1 = f"Model (<Name>): {self.name}"
