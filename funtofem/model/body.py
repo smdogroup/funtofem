@@ -1888,41 +1888,6 @@ class Body(Base):
 
         return
 
-    def _print_variables(self, vartype):
-        print(
-            "     ----------------------------------------------------------------------------------------------------"
-        )
-        print(
-            "     | Variable\t\t| Var. ID\t| Value\t| Bounds\t\t| Active\t| Coupled\t|"
-        )
-        print(
-            "     ----------------------------------------------------------------------------------------------------"
-        )
-        for var in self.variables[vartype]:
-            print(
-                "     | ",
-                var.name,
-                " \t|",
-                var.id,
-                "\t\t|",
-                var.value,
-                "\t| [",
-                var.lower,
-                ",",
-                var.upper,
-                "] \t|",
-                var.active,
-                " \t|",
-                var.coupled,
-                "\t|",
-            )
-
-        print(
-            "     ----------------------------------------------------------------------------------------------------"
-        )
-
-        return
-
     def __str__(self):
         line1 = f"Body (<ID> <Name>): {self.id} {self.name}"
         line2 = f"    Boundary: {self.boundary}"

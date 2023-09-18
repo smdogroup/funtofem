@@ -301,3 +301,106 @@ class Base(object):
            id number of the scenario
         """
         self.id = id
+
+    def _print_functions(self):
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        print(
+            "     | Function \t| Analysis Type\t| Comp. Adjoint\t| Time Range\t| Averaging\t|"
+        )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+        for func in self.functions:
+            if len(func.name) >= 8:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+            else:
+                print(
+                    "     | ",
+                    func.name,
+                    "\t\t| ",
+                    func.analysis_type,
+                    "\t| ",
+                    func.adjoint,
+                    "\t| [",
+                    func.start,
+                    ",",
+                    func.stop,
+                    "] \t| ",
+                    func.averaging,
+                    "\t|",
+                )
+        print(
+            "     ------------------------------------------------------------------------------------"
+        )
+
+        return
+
+    def _print_variables(self, vartype):
+        print(
+            "     ------------------------------------------------------------------------------------------------------------"
+        )
+        print(
+            "     | Variable\t\t| Var. ID\t| Value\t\t| Bounds\t\t| Active\t| Coupled\t|"
+        )
+        print(
+            "     ------------------------------------------------------------------------------------------------------------"
+        )
+        for var in self.variables[vartype]:
+            if len(var.name) >= 8:
+                print(
+                    "     | ",
+                    var.name,
+                    "\t|",
+                    var.id,
+                    "\t\t|",
+                    var.value,
+                    "  \t| [",
+                    var.lower,
+                    ",",
+                    var.upper,
+                    "] \t|",
+                    var.active,
+                    " \t|",
+                    var.coupled,
+                    "\t|",
+                )
+            else:
+                print(
+                    "     | ",
+                    var.name,
+                    "\t\t|",
+                    var.id,
+                    "\t\t|",
+                    var.value,
+                    "  \t| [",
+                    var.lower,
+                    ",",
+                    var.upper,
+                    "] \t|",
+                    var.active,
+                    " \t|",
+                    var.coupled,
+                    "\t|",
+                )
+
+        print(
+            "     ------------------------------------------------------------------------------------------------------------"
+        )
+
+        return

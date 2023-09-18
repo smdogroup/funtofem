@@ -954,7 +954,7 @@ class FUNtoFEMmodel(object):
                     "variables:",
                     len(body.variables[vartype]),
                 )
-                if vartype is "rigid_motion" and ignore_rigid:
+                if (vartype == "rigid_motion") and ignore_rigid:
                     print("      Ignoring rigid_motion vartype list.")
                 else:
                     if print_level >= 0:
@@ -1034,21 +1034,23 @@ class FUNtoFEMmodel(object):
     def _print_variables(self):
         model_variables = self.get_variables()
         print(
-            "     --------------------------------------------------------------------------------------------"
+            "     ------------------------------------------------------------------------------------------------------------"
         )
-        print("     | Variable\t| Var. ID\t| Value\t| Bounds\t\t| Active\t| Coupled\t|")
         print(
-            "     --------------------------------------------------------------------------------------------"
+            "     | Variable\t\t| Var. ID\t| Value \t| Bounds\t\t| Active\t| Coupled\t|"
+        )
+        print(
+            "     ------------------------------------------------------------------------------------------------------------"
         )
         for var in model_variables:
             print(
                 "     | ",
                 var.name,
-                "\t|",
+                "\t\t|",
                 var.id,
                 "\t\t|",
                 var.value,
-                "\t| [",
+                " \t| [",
                 var.lower,
                 ",",
                 var.upper,
@@ -1060,7 +1062,7 @@ class FUNtoFEMmodel(object):
             )
 
         print(
-            "     --------------------------------------------------------------------------------------------"
+            "     ------------------------------------------------------------------------------------------------------------"
         )
 
         return
