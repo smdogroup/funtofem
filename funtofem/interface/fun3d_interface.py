@@ -185,7 +185,9 @@ class Fun3dInterface(SolverInterface):
         os.chdir(flow_dir)
 
         if self._debug:
-            print(f"Comm {self.comm.Get_rank()} check at the start of fun3d_interface:initialize.")
+            print(
+                f"Comm {self.comm.Get_rank()} check at the start of fun3d_interface:initialize."
+            )
 
         # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
         # if mesh morphing is online
@@ -210,7 +212,9 @@ class Fun3dInterface(SolverInterface):
         self.fun3d_flow.initialize_grid()
 
         if self._debug:
-            print(f"Comm {self.comm.Get_rank()} check after initialize_grid in fun3d_interface:initialize.")
+            print(
+                f"Comm {self.comm.Get_rank()} check after initialize_grid in fun3d_interface:initialize."
+            )
 
         # Set the node locations based
         for ibody, body in enumerate(bodies, 1):
@@ -517,11 +521,15 @@ class Fun3dInterface(SolverInterface):
                 print(f"========================================")
                 print(f"Inside fun3d_interface:iterate, step: {step}")
                 if struct_loads is not None:
-                    print(f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}")
+                    print(
+                        f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}"
+                    )
                     print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
                 if struct_disps is not None:
                     print(f"norm of struct_disps: {np.linalg.norm(struct_disps)}")
-                    print(f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}")
+                    print(
+                        f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}"
+                    )
                 if aero_disps is not None:
                     print(f"norm of aero_disps: {np.linalg.norm(aero_disps)}")
                 print(f"========================================\n", flush=True)

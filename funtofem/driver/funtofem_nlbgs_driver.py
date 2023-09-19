@@ -306,7 +306,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_heat_flux(scenario, time_index)
 
                 if self._debug:
-                    struct_loads = body.get_struct_loads(scenario, time_index=time_index)
+                    struct_loads = body.get_struct_loads(
+                        scenario, time_index=time_index
+                    )
                     aero_loads = body.get_aero_loads(scenario, time_index=time_index)
                     print(f"========================================")
                     print(f"Inside nlbgs driver, step: {time_index}")
