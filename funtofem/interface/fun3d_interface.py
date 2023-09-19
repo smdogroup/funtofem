@@ -514,10 +514,9 @@ class Fun3dInterface(SolverInterface):
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
-            # Temporary stuff for debugging
-            struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
-            struct_loads = body.get_struct_loads(scenario, time_index=step - 1)
             if self._debug:
+                struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
+                struct_loads = body.get_struct_loads(scenario, time_index=step - 1)
                 print(f"========================================")
                 print(f"Inside fun3d_interface:iterate, step: {step}")
                 if struct_loads is not None:
@@ -804,6 +803,16 @@ class Fun3dInterface(SolverInterface):
                         self.dFdqinf[func] -= (
                             np.dot(aero_loads, psi_F[:, func]) / scenario.qinf
                         )
+                    if self._debug:
+                        print(f"========================================")
+                        print(f"Inside fun3d_interface:iterate_adjoint after dFdqinf contribution, step: {step}")
+                        print(f"func: {func}")
+                        if self.dFdqinf[func] is not None:
+                            print(f"norm of real dFdqinf: {np.linalg.norm(np.real(self.dFdqinf[func]))}")
+                            print(f"norm of imag dFdqinf: {np.linalg.norm(np.imag(self.dFdqinf[func]))}")
+                        else:
+                            print(f"dFdqinf[func] is NoneType")
+                        print(f"========================================\n", flush=True)
 
             # Get the adjoint Jacobian products for the aero heat flux
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
