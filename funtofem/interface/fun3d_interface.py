@@ -805,11 +805,17 @@ class Fun3dInterface(SolverInterface):
                         )
                     if self._debug:
                         print(f"========================================")
-                        print(f"Inside fun3d_interface:iterate_adjoint after dFdqinf contribution, step: {step}")
+                        print(
+                            f"Inside fun3d_interface:iterate_adjoint after dFdqinf contribution, step: {step}"
+                        )
                         print(f"func: {func}")
                         if self.dFdqinf[func] is not None:
-                            print(f"norm of real dFdqinf: {np.linalg.norm(np.real(self.dFdqinf[func]))}")
-                            print(f"norm of imag dFdqinf: {np.linalg.norm(np.imag(self.dFdqinf[func]))}")
+                            print(
+                                f"norm of real dFdqinf: {np.linalg.norm(np.real(self.dFdqinf[func]))}"
+                            )
+                            print(
+                                f"norm of imag dFdqinf: {np.linalg.norm(np.imag(self.dFdqinf[func]))}"
+                            )
                         else:
                             print(f"dFdqinf[func] is NoneType")
                         print(f"========================================\n", flush=True)
