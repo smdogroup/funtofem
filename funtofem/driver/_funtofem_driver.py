@@ -45,6 +45,7 @@ class FUNtoFEMDriver(object):
         comm_manager=None,
         transfer_settings=None,
         model=None,
+        debug=False,
     ):
         """
         Parameters
@@ -73,6 +74,9 @@ class FUNtoFEMDriver(object):
         self.aero_root = comm_manager.aero_root
         self.struct_comm = comm_manager.struct_comm
         self.struct_root = comm_manager.struct_root
+
+        # debug flag
+        self._debug = debug
 
         # use default transfer settings
 

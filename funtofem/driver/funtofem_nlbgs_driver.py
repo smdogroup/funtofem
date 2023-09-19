@@ -41,6 +41,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         comm_manager=None,
         transfer_settings=None,
         model=None,
+        debug=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -63,6 +64,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             comm_manager=comm_manager,
             transfer_settings=transfer_settings,
             model=model,
+            debug=debug,
         )
 
         return
@@ -160,15 +162,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 # Temporary for debugging
                 struct_loads = body.get_struct_loads(scenario)
                 aero_loads = body.get_aero_loads(scenario)
-                print(f"========================================")
-                print(f"Inside nlbgs driver, step: {step}")
-                print(f"struct_loads: {struct_loads}")
-                if struct_loads is not None:
-                    print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
-                print(f"aero_loads: {aero_loads}")
-                if aero_loads is not None:
-                    print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
-                print(f"========================================\n", flush=True)
+                if self._debug:
+                    print(f"========================================")
+                    print(f"Inside nlbgs driver, step: {step}")
+                    print(f"struct_loads: {struct_loads}")
+                    if struct_loads is not None:
+                        print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                    print(f"aero_loads: {aero_loads}")
+                    if aero_loads is not None:
+                        print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                    print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
             fail = self.solvers.structural.iterate(scenario, self.model.bodies, step)
@@ -302,16 +305,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads(scenario, time_index)
                 body.transfer_heat_flux(scenario, time_index)
 
-                # Temporary for debugging
-                struct_loads = body.get_struct_loads(scenario, time_index=time_index)
-                aero_loads = body.get_aero_loads(scenario, time_index=time_index)
-                print(f"========================================")
-                print(f"Inside nlbgs driver, step: {time_index}")
-                if struct_loads is not None:
-                    print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
-                if aero_loads is not None:
-                    print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
-                print(f"========================================\n", flush=True)
+                if self._debug:
+                    struct_loads = body.get_struct_loads(scenario, time_index=time_index)
+                    aero_loads = body.get_aero_loads(scenario, time_index=time_index)
+                    print(f"========================================")
+                    print(f"Inside nlbgs driver, step: {time_index}")
+                    if struct_loads is not None:
+                        print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                    if aero_loads is not None:
+                        print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                    print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
             fail = self.solvers.structural.iterate(
