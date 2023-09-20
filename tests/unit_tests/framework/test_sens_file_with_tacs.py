@@ -11,7 +11,7 @@ from funtofem.interface import (
     SolverManager,
 )
 
-from bdf_test_utils import generateBDF, thermoelasticity_callback
+from _bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
 import traceback
 

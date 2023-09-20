@@ -16,7 +16,7 @@ from funtofem.driver import (
     TestAeroOnewayDriver,
 )
 
-from bdf_test_utils import thermoelasticity_callback, elasticity_callback
+from _bdf_test_utils import thermoelasticity_callback, elasticity_callback
 
 np.random.seed(1234567)
 

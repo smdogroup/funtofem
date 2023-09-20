@@ -14,7 +14,7 @@ from funtofem.interface import (
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)

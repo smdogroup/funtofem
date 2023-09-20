@@ -18,20 +18,18 @@ from funtofem.interface import (
     test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
-from bdf_test_utils import elasticity_callback
+from _bdf_test_utils import elasticity_callback
 
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
-output_dir = os.path.join(base_dir, "output")
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
-
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+
+_, output_dir = test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not complex_mode, "only available in complex step test")

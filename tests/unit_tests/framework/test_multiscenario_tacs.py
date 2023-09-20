@@ -5,13 +5,14 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from bdf_test_utils import thermoelasticity_callback
+from _bdf_test_utils import thermoelasticity_callback
 
 np.random.seed(12345)
 
@@ -48,7 +49,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
         # build the solvers and driver
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
         )
         driver = FUNtoFEMnlbgs(
@@ -90,7 +91,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
         # build the solvers and driver
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
         )
 

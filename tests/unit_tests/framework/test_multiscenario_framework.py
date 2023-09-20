@@ -1,4 +1,4 @@
-import numpy as np, unittest
+import numpy as np, unittest, os
 from mpi4py import MPI
 from funtofem import TransferScheme
 
@@ -8,15 +8,19 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
 complex_mode = TransferScheme.dtype == complex
+results_folder, _ = test_directories(comm, base_dir)
 
 
 class MultiScenarioFrameworkTest(unittest.TestCase):
     FILENAME = "testfake-multiscenario.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_structDV_with_driver(self):
         # build a funtofem model and body
@@ -49,7 +53,7 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
             "testfake-multiscenarios-structDV",
             model,
             driver,
-            MultiScenarioFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -88,7 +92,7 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
             "testfake-multiscenarios-aeroDV",
             model,
             driver,
-            MultiScenarioFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
