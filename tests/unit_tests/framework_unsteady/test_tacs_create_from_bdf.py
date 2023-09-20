@@ -7,28 +7,20 @@ from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
-    TacsUnsteadyInterface,
     TacsIntegrationSettings,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-# bdf_filename = os.path.join(base_dir, "input_files", "nastran_CAPS.dat") #
 bdf_filename = os.path.join(base_dir, "input_files", "stiffened_plate.dat")
-output_folder = os.path.join(base_dir, "output")
-if not os.path.exists(output_folder):
-    os.mkdir(output_folder)
-
 comm = MPI.COMM_WORLD
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_folder = test_directories(comm, base_dir)
 
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
@@ -63,7 +55,7 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsUnsteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
@@ -92,5 +84,4 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
 if __name__ == "__main__":
     if comm.rank == 0:
         open(TacsUnsteadyFrameworkTest.FILEPATH, "w").close()  # clear file
-    complex_mode = True
     unittest.main()

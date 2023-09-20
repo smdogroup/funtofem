@@ -9,6 +9,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -20,10 +21,7 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = test_directories(comm, base_dir)
 
 steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
@@ -34,7 +32,7 @@ DV_cases = ["structural", "aerodynamic"]
 
 @unittest.skipIf(not complex_mode, "not looked at FD yet")
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
-    FILENAME = "fake-solvers-drivers.txt"
+    FILENAME = "unsteady-framework.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     @unittest.skipIf(not ("structural" in DV_cases), "structural DV test skipped")

@@ -9,6 +9,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -18,10 +19,7 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not complex_mode, "aero solver test only runs in complex")
@@ -164,5 +162,5 @@ class TestUnsteadySolvers(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TestUnsteadySolvers.FILENAME, "w").close()  # clear file
+        open(TestUnsteadySolvers.FILEPATH, "w").close()  # clear file
     unittest.main()

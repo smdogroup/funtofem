@@ -14,7 +14,7 @@ from funtofem.interface import (
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
@@ -38,18 +38,15 @@ in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
 
 @unittest.skipIf(in_github_workflow, "still in development")
-class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
-    FILENAME = "f2f-unsteady-struct-coord.txt"
+class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
+    FILENAME = "f2f-unsteady-aero-coord.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     # @unittest.skip("under development")
-    def test_unsteady_struct_aeroelastic(self):
+    def test_unsteady_aero_aeroelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aeroelastic("plate", boundary=1)
-        Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
-        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
@@ -73,7 +70,10 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
             callback=elasticity_callback,
             output_dir=output_folder,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(elastic_scheme="meld", npts=5)
+        # transfer_settings = TransferSettings(elastic_scheme="rbf", npts=5, options={
+        #     "basis function" : "multiquadric"
+        # })
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -83,8 +83,8 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
 
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(coupled_driver)
-        rel_error = tester.test_struct_coordinates(
-            "funtofem_driver struct coordinate derivatives unsteady-aeroelastic",
+        rel_error = tester.test_aero_coordinates(
+            "funtofem_driver aero coordinate derivatives unsteady-aeroelastic",
             status_file=self.FILEPATH,
             epsilon=epsilon,
             complex_mode=complex_mode,
@@ -93,13 +93,10 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         return
 
     # @unittest.skip("under development")
-    def test_unsteady_struct_aerothermal(self):
+    def test_unsteady_aero_aerothermal(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermal("plate", boundary=1)
-        Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
-        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
@@ -133,8 +130,8 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
 
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(coupled_driver)
-        rel_error = tester.test_struct_coordinates(
-            "funtofem_driver struct coordinate derivatives unsteady-aerothermal",
+        rel_error = tester.test_aero_coordinates(
+            "funtofem_driver aero coordinate derivatives unsteady-aerothermal",
             status_file=self.FILEPATH,
             epsilon=epsilon,
             complex_mode=complex_mode,
@@ -143,13 +140,10 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         return
 
     # @unittest.skip("under development")
-    def test_unsteady_struct_aerothermoelastic(self):
+    def test_unsteady_aero_aerothermoelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate", boundary=1)
-        Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
-        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
@@ -184,8 +178,8 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
 
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(coupled_driver)
-        rel_error = tester.test_struct_coordinates(
-            "funtofem_driver struct coordinate derivatives unsteady-aerothermoelastic",
+        rel_error = tester.test_aero_coordinates(
+            "funtofem_driver aero coordinate derivatives unsteady-aerothermoelastic",
             status_file=self.FILEPATH,
             epsilon=epsilon,
             complex_mode=complex_mode,
@@ -194,13 +188,10 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
         return
 
     @unittest.skip("need to fix multi-scenario coord derivatives")
-    def test_unsteady_struct_multiscenario_aerothermoelastic(self):
+    def test_unsteady_aero_multiscenario_aerothermoelastic(self):
         # build the model and driver
         model = FUNtoFEMmodel("wedge")
         plate = Body.aerothermoelastic("plate", boundary=1)
-        Variable.structural("thickness").set_bounds(
-            lower=0.01, value=0.1, upper=1.0
-        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
@@ -239,14 +230,14 @@ class TestFuntofemDriverUnsteadyStructCoordinate(unittest.TestCase):
 
         """complex step test over coordinate derivatives"""
         tester = CoordinateDerivativeTester(coupled_driver)
-        rel_error = tester.test_struct_coordinates(
-            "funtofem_driver struct coordinate derivatives multiscenario, unsteady-aerothermoelastic"
+        rel_error = tester.test_aero_coordinates(
+            "funtofem_driver aero coordinate derivatives multiscenario, unsteady-aerothermoelastic"
         )
         assert abs(rel_error) < rtol
         return
 
 
 if __name__ == "__main__":
-    open(TestFuntofemDriverUnsteadyStructCoordinate.FILEPATH, "w").close()
+    open(TestFuntofemDriverUnsteadyAeroCoordinate.FILEPATH, "w").close()
     complex_mode = True
     unittest.main()
