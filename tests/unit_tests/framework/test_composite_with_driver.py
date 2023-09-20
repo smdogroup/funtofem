@@ -13,8 +13,9 @@ from funtofem.model import (
 )
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 from bdf_test_utils import elasticity_callback
@@ -24,6 +25,10 @@ np.random.seed(123456)
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
+output_dir = os.path.join(base_dir, "output")
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
@@ -31,8 +36,6 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
 @unittest.skipIf(not complex_mode, "only available in complex step test")
 class CompositeFunctionDriverTest(unittest.TestCase):
-    FILENAME = "testaero-tacs-unsteady.txt"
-
     def test_onescenario_aeroelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -57,12 +60,13 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -144,12 +148,13 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         min_drag.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
