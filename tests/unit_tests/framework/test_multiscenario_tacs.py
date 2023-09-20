@@ -21,10 +21,12 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex
+results_folder, output_dir = test_directories(comm, base_dir)
 
 
 class MultiScenarioTacsTest(unittest.TestCase):
     FILENAME = "testfake+tacs-multiscenario.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aerothermoelastic_structDV(self):
         # build a funtofem model and body
@@ -50,7 +52,12 @@ class MultiScenarioTacsTest(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=TransferSettings(npts=10), model=model
@@ -61,7 +68,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
             "testfake+tacs-multiscenarios-structDV",
             model,
             driver,
-            MultiScenarioTacsTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-9 if complex_mode else 1e-3
@@ -92,7 +99,12 @@ class MultiScenarioTacsTest(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
 
         driver = FUNtoFEMnlbgs(
@@ -104,7 +116,7 @@ class MultiScenarioTacsTest(unittest.TestCase):
             "testfake+tacs-multiscenarios-aeroDV",
             model,
             driver,
-            MultiScenarioTacsTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-9 if complex_mode else 1e-3
@@ -113,4 +125,6 @@ class MultiScenarioTacsTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(MultiScenarioTacsTest.FILEPATH, "w").close()
     unittest.main()

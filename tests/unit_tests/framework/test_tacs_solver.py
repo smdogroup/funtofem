@@ -7,10 +7,9 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
     TacsInterface,
     SolverManager,
-    TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -22,13 +21,14 @@ np.random.seed(123456)
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
-
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
+_, output_dir = test_directories(comm, base_dir)
 
-class TacsSteadyInterfaceSolver(unittest.TestCase):
+
+class TacsInterfaceSolver(unittest.TestCase):
     def test_solvers_aeroelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -42,8 +42,13 @@ class TacsSteadyInterfaceSolver(unittest.TestCase):
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -101,12 +106,13 @@ class TacsSteadyInterfaceSolver(unittest.TestCase):
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             nprocs,
             bdf_filename,
             callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -164,8 +170,13 @@ class TacsSteadyInterfaceSolver(unittest.TestCase):
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -224,8 +235,13 @@ class TacsSteadyInterfaceSolver(unittest.TestCase):
         test_scenario.include(Function.compliance()).register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 

@@ -101,4 +101,6 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(MultiScenarioFrameworkTest.FILEPATH, "w").close()
     unittest.main()

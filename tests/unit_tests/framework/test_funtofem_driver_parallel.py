@@ -153,4 +153,6 @@ class TacsParallelFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TacsParallelFrameworkTest.FILEPATH, "w").close()
     unittest.main()

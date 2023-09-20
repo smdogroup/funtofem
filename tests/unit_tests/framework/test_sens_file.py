@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, os
 from mpi4py import MPI
 from funtofem import TransferScheme
 
@@ -8,10 +8,17 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TestStructuralSolver,
     SolverManager,
+    test_directories,
 )
 
 import unittest
 import traceback
+
+comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
+_, output_dir = test_directories(comm, base_dir)
+aero_sens_file = os.path.join(output_dir, "aero.sens")
+struct_sens_file = os.path.join(output_dir, "struct.sens")
 
 
 class SensitivityFileTest(unittest.TestCase):
@@ -47,7 +54,6 @@ class SensitivityFileTest(unittest.TestCase):
         model.add_scenario(steady)
 
         # Instantiate a test solver for the flow and structures
-        comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TestStructuralSolver(comm, model)
@@ -78,16 +84,17 @@ class SensitivityFileTest(unittest.TestCase):
         driver.solve_forward()
         driver.solve_adjoint()
 
-        comm = MPI.COMM_WORLD
         pass_ = True
         try:
-            model.write_sensitivity_file(comm, "struct.sens", discipline="structural")
+            model.write_sensitivity_file(
+                comm, struct_sens_file, discipline="structural"
+            )
         except:
             print(traceback.format_exc())
             pass_ = False
 
         try:
-            model.write_sensitivity_file(comm, "aero.sens", discipline="aerodynamic")
+            model.write_sensitivity_file(comm, aero_sens_file, discipline="aerodynamic")
         except:
             print(traceback.format_exc())
             pass_ = False

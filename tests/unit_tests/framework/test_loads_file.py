@@ -174,4 +174,6 @@ class TestLoadsFile(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TestLoadsFile.FILEPATH, "w").close()
     unittest.main()
