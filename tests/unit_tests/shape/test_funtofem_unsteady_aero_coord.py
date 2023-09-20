@@ -1,7 +1,6 @@
-import os
+import os, unittest, numpy as np
 from tacs import TACS
 from mpi4py import MPI
-import numpy as np
 from funtofem import TransferScheme
 
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
@@ -11,33 +10,30 @@ from funtofem.interface import (
     SolverManager,
     TacsIntegrationSettings,
     CoordinateDerivativeTester,
+    test_directories,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
-
 from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
-import unittest
 
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
-output_folder = os.path.join(base_dir, "output")
-if not os.path.exists(output_folder):
-    os.mkdir(output_folder)
-
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
-
+results_folder, output_folder = test_directories(comm, base_dir)
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
+# user-defined settings
+steps = 10
+elastic_scheme = "rbf"
+dt = 0.001
 
-@unittest.skipIf(in_github_workflow, "still in development")
+
+@unittest.skipIf(
+    not complex_mode, "only testing coordinate derivatives with complex step"
+)
 class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
     FILENAME = "f2f-unsteady-aero-coord.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
@@ -50,11 +46,9 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.ksfailure())
-        scenario.include(Function.lift()).include(Function.drag())
-        integration_settings = TacsIntegrationSettings(
-            dt=0.001, num_steps=scenario.steps
-        )
+        scenario = Scenario.unsteady("test", steps=steps).include(Function.ksfailure())
+        scenario.include(Function.lift())
+        integration_settings = TacsIntegrationSettings(dt=dt, num_steps=scenario.steps)
         Variable.shape("rotation").register_to(scenario)
         scenario.include(integration_settings).register_to(model)
 
@@ -70,10 +64,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
             callback=elasticity_callback,
             output_dir=output_folder,
         )
-        transfer_settings = TransferSettings(elastic_scheme="meld", npts=5)
-        # transfer_settings = TransferSettings(elastic_scheme="rbf", npts=5, options={
-        #     "basis function" : "multiquadric"
-        # })
+        transfer_settings = TransferSettings(elastic_scheme=elastic_scheme, npts=10)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -100,11 +91,11 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
-        scenario.include(Function.lift()).include(Function.drag())
-        integration_settings = TacsIntegrationSettings(
-            dt=0.001, num_steps=scenario.steps
+        scenario = Scenario.unsteady("test", steps=steps).include(
+            Function.temperature()
         )
+        scenario.include(Function.lift())
+        integration_settings = TacsIntegrationSettings(dt=dt, num_steps=scenario.steps)
         Variable.shape("rotation").register_to(scenario)
         scenario.include(integration_settings).register_to(model)
 
@@ -120,7 +111,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(elastic_scheme=elastic_scheme, npts=10)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -147,12 +138,12 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
-        scenario.include(Function.ksfailure(ks_weight=5.0))
-        scenario.include(Function.lift()).include(Function.drag())
-        integration_settings = TacsIntegrationSettings(
-            dt=0.001, num_steps=scenario.steps
+        scenario = Scenario.unsteady("test", steps=steps).include(
+            Function.temperature()
         )
+        scenario.include(Function.ksfailure(ks_weight=5.0))
+        scenario.include(Function.lift())
+        integration_settings = TacsIntegrationSettings(dt=dt, num_steps=scenario.steps)
         Variable.shape("rotation").register_to(scenario)
         scenario.include(integration_settings).register_to(model)
 
@@ -168,7 +159,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(elastic_scheme=elastic_scheme, npts=10)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -197,15 +188,14 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         # build the scenario
         cruise = Scenario.unsteady("cruise", steps=10)
         Function.lift().register_to(cruise)
-        Function.drag().register_to(cruise)
         Function.mass().register_to(cruise)
-        integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=cruise.steps)
+        integration_settings = TacsIntegrationSettings(dt=dt, num_steps=cruise.steps)
         cruise.include(integration_settings).register_to(model)
 
-        climb = Scenario.unsteady("climb", steps=10)
+        climb = Scenario.unsteady("climb", steps=steps)
         Function.ksfailure().register_to(climb)
         Function.temperature().register_to(climb)
-        integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=climb.steps)
+        integration_settings = TacsIntegrationSettings(dt=dt, num_steps=climb.steps)
         climb.include(integration_settings).register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -220,8 +210,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
             callback=thermoelasticity_callback,
             output_dir=output_folder,
         )
-        solvers.structural.can_skip_coordinates = False
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(elastic_scheme=elastic_scheme, npts=10)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -238,6 +227,6 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestFuntofemDriverUnsteadyAeroCoordinate.FILEPATH, "w").close()
-    complex_mode = True
+    if comm.rank == 0:
+        open(TestFuntofemDriverUnsteadyAeroCoordinate.FILEPATH, "w").close()
     unittest.main()

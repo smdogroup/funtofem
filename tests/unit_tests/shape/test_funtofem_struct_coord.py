@@ -9,12 +9,12 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    TacsIntegrationSettings,
+    test_directories,
     CoordinateDerivativeTester,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
@@ -25,16 +25,15 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
-
+results_folder, output_dir = test_directories(comm, base_dir)
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
+elastic_scheme = "rbf"
 
-@unittest.skipIf(not complex_mode, "some finite differences near 1e-2 others great")
+
+@unittest.skipIf(
+    not complex_mode, "only testing coordinate derivatives with complex step"
+)
 class TestFuntofemDriverStructCoordinate(unittest.TestCase):
     FILENAME = "f2f-steady-struct-coord.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
@@ -58,9 +57,14 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -99,9 +103,14 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -140,9 +149,14 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -188,9 +202,14 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
@@ -211,6 +230,6 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestFuntofemDriverStructCoordinate.FILEPATH, "w").close()
-    complex_mode = False
+    if comm.rank == 0:
+        open(TestFuntofemDriverStructCoordinate.FILEPATH, "w").close()
     unittest.main()

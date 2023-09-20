@@ -11,6 +11,7 @@ from funtofem.interface import (
     SolverManager,
     TacsIntegrationSettings,
     CoordinateDerivativeTester,
+    test_directories,
 )
 from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 
@@ -21,18 +22,12 @@ np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
-output_folder = os.path.join(base_dir, "output")
-if not os.path.exists(output_folder):
-    os.mkdir(output_folder)
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_folder = test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
@@ -239,4 +234,6 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TestTacsDriverUnsteadyCoordinate.FILEPATH, "w").close()
     unittest.main()
