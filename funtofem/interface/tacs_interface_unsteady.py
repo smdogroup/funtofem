@@ -80,6 +80,10 @@ class TacsIntegrationSettings:
     def num_stages(self) -> int:
         return self.integration_order - 1
 
+    def register_to(self, scenario):
+        scenario.include(self)
+        return self
+
 
 class TacsOutputGeneratorUnsteady:
     def __init__(self, output_dir, name="tacs_output", f5=None):
