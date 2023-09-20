@@ -206,6 +206,25 @@ class Function(object):
 
         return 0.0
 
+    def set_timing(self, start: int = 0, stop: int = -1, averaging: bool = None):
+        """
+        Set the time window of function evaluation for FUN3D unsteady
+        analysis, only do this for aero functions
+
+        Parameter
+        ---------
+        start: int
+            starting time index
+        stop: int
+            final time index (note you need to specify this for unsteady)
+        averaging: bool
+            whether or not the aero function is evaluated
+        """
+        self.start = start
+        self.stop = stop
+        self.averaging = averaging
+        return self
+
     def register_to(self, scenario):
         """
         Register the function to the scenario.

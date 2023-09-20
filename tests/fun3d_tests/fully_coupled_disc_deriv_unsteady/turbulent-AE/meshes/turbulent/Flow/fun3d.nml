@@ -8,7 +8,7 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'inviscid'
+  viscous_terms = 'turbulent'
 /
 &reference_physical_properties
   mach_number     = 0.3
