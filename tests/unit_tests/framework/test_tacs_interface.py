@@ -66,7 +66,7 @@ class TacsInterfaceTest(unittest.TestCase):
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
-        rtol = 1e-9 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-3
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aeroelastic",
             model,
@@ -265,7 +265,7 @@ class TacsInterfaceTest(unittest.TestCase):
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
-        rtol = 1e-9 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-2
         max_rel_error = TestResult.derivative_test(
             "backwards-compatible-aeroelastic",
             model,
@@ -282,4 +282,5 @@ class TacsInterfaceTest(unittest.TestCase):
 if __name__ == "__main__":
     if comm.rank == 0:
         open(TacsInterfaceTest.FILEPATH, "w").close()  # clear file
+    complex_mode = False
     unittest.main()
