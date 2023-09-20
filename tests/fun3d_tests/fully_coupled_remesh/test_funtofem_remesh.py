@@ -9,7 +9,13 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import (
+    SolverManager,
+    TestResult,
+    Fun3dBC,
+    Fun3dModel,
+    test_directories,
+)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -28,14 +34,9 @@ np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "naca_wing_multi-disc.csm")
-
 analysis_file = os.path.join(base_dir, "run_funtofem_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = test_directories(comm, base_dir)
 
 active_cases = ["aero-struct"]  # ["aero", "struct", "aero-struct"]
 
@@ -93,7 +94,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             "funtofem-remesh-aero-shape-euler-aeroelastic",
             model,
             driver,
-            TestFuntofemRemesh.FILEPATH,
+            self.FILEPATH,
             both_adjoint=True,
             epsilon=1.0,
         )
@@ -191,7 +192,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             "funtofem-remesh-aero+struct-shape-euler-aeroelastic",
             model,
             driver,
-            TestFuntofemRemesh.FILEPATH,
+            self.FILEPATH,
             both_adjoint=True,
             epsilon=0.1,
         )

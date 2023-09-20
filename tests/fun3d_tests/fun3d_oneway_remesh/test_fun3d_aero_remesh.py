@@ -9,7 +9,13 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import (
+    SolverManager,
+    TestResult,
+    Fun3dBC,
+    Fun3dModel,
+    test_directories,
+)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -23,14 +29,9 @@ np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "naca_wing.csm")
-
 analysis_file = os.path.join(base_dir, "run_fun3d_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
@@ -85,7 +86,7 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
             "fun3d+oneway-remesh-euler",
             model,
             driver,
-            TestFun3dOnewayRemesh.FILEPATH,
+            self.FILEPATH,
             both_adjoint=False,
             epsilon=1e-1,
         )

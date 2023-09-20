@@ -8,12 +8,12 @@ from funtofem.model import (
     Scenario,
     Body,
     Function,
-    AitkenRelaxation,
 )
 from funtofem.interface import (
     TacsSteadyInterface,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -25,14 +25,9 @@ if has_fun3d:
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(os.getcwd(), "results")
-if comm.rank == 0:
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
-
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
+results_folder, output_dir = test_directories(comm, base_dir)
 
 
 class TestFun3dTacs(unittest.TestCase):
@@ -61,7 +56,7 @@ class TestFun3dTacs(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename
+            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
         )
 
         transfer_settings = TransferSettings(
@@ -105,7 +100,7 @@ class TestFun3dTacs(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename
+            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
         )
 
         transfer_settings = TransferSettings(

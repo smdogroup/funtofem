@@ -11,11 +11,12 @@ from funtofem.model import (
     Function,
     AitkenRelaxation,
 )
-from funtofem.interface import (
-    TacsSteadyInterface,
-    SolverManager,
-)
+from funtofem.interface import TacsSteadyInterface, SolverManager, test_directories
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
+
+comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
+_, output_dir = test_directories(comm, base_dir)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -43,7 +44,6 @@ if has_fun3d:
     test_scenario.register_to(model)
 
     # build the solvers and coupled driver
-    comm = MPI.COMM_WORLD
     solvers = SolverManager(comm)
     solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
@@ -92,10 +92,15 @@ if has_fun3d:
         assembler = mesh.createTACS(varsPerNode)
 
     solvers.structural = TacsSteadyInterface(
-        comm, model, assembler, gen_output=None, thermal_index=3
+        comm,
+        model,
+        assembler,
+        gen_output=None,
+        thermal_index=3,
+        output_folder=output_dir,
     )
     # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-    transfer_settings = TransferSettings(npts=5)
+    transfer_settings = TransferSettings(npts=10, elastic_scheme="meld")
     driver = FUNtoFEMnlbgs(
         solvers,
         transfer_settings=transfer_settings,

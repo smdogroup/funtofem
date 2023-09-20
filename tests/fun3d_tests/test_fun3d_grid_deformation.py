@@ -10,6 +10,7 @@ from funtofem.model import (
     AitkenRelaxation,
     Variable,
 )
+from funtofem.interface import test_directories
 
 np.random.seed(1234567)
 
@@ -21,9 +22,7 @@ if has_fun3d:
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-results_folder = os.path.join(base_dir, "results")
-if not os.path.exists(results_folder) and comm.rank == 0:
-    os.mkdir(results_folder)
+results_folder, _ = test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
@@ -44,9 +43,7 @@ class TestFun3dGridDeformation(unittest.TestCase):
 
         # build a FUN3D Grid deformation interface and perform the test on it from the class
         grid_interface = Fun3dGridInterface(comm, model, fun3d_dir="meshes")
-        rel_error = Fun3dGridInterface.complex_step_test(
-            grid_interface, TestFun3dGridDeformation.FILEPATH
-        )
+        rel_error = Fun3dGridInterface.complex_step_test(grid_interface, self.FILEPATH)
         rtol = 1e-9
 
         self.assertTrue(abs(rel_error) < rtol)
@@ -54,4 +51,6 @@ class TestFun3dGridDeformation(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TestFun3dGridDeformation, "w").close()
     unittest.main()

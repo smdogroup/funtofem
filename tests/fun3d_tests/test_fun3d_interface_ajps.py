@@ -16,6 +16,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -26,9 +27,8 @@ if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
 comm = MPI.COMM_WORLD
-results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder) and comm.rank == 0:
-    os.mkdir(results_folder)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+results_folder, _ = test_directories(comm, base_dir)
 
 
 # define a function to suppress stdout
