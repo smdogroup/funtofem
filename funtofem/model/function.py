@@ -257,6 +257,16 @@ class Function(object):
         )
 
     @classmethod
+    def test_aero(cls):
+        """aerodynamic function for unittests"""
+        return cls(name="aero-func", analysis_type="aerodynamic")
+
+    @classmethod
+    def test_struct(cls):
+        """structural function for unittests"""
+        return cls(name="struct-func", analysis_type="structural")
+
+    @classmethod
     def temperature(cls, start: int = 0, stop: int = -1, body: int = -1):
         """
         Class constructor for the Temperature function

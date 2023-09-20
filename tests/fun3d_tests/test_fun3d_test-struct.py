@@ -7,6 +7,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -17,10 +18,9 @@ if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
 comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
 np.random.seed(1234567)
-results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder):
-    os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test since you don't have fun3d")

@@ -6,13 +6,13 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
     TestResult,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 
 np.random.seed(123456)
 
@@ -21,6 +21,12 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 comm = MPI.COMM_WORLD
 ntacs_procs = 2
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
+output_dir = os.path.join(base_dir, "output")
+if not os.path.exists(output_dir) and comm.rank == 0:
+    os.mkdir(output_dir)
+results_folder = os.path.join(base_dir, "results")
+if not os.path.exists(results_folder) and comm.rank == 0:
+    os.mkdir(results_folder)
 
 
 @unittest.skipIf(
@@ -29,7 +35,8 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 )
 class TacsParallelFrameworkTest(unittest.TestCase):
     N_PROCS = 2
-    FILENAME = "testAero-tacs.txt"
+    FILENAME = "testAero-tacs-parallel.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aeroelastic(self):
         model = FUNtoFEMmodel("wedge")
@@ -38,12 +45,18 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, ntacs_procs, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -55,7 +68,7 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             "testaero+tacs-aeroelastic",
             model,
             driver,
-            TacsParallelFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -70,14 +83,18 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(
-            Function.temperature()
-        )
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.temperature().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -89,7 +106,7 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermal",
             model,
             driver,
-            TacsParallelFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -104,12 +121,19 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        test_scenario.include(Function.temperature()).register_to(model)
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, ntacs_procs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            ntacs_procs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -121,7 +145,7 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             "testaero+tacs-aerothermoelastic",
             model,
             driver,
-            TacsParallelFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -131,4 +155,6 @@ class TacsParallelFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(TacsParallelFrameworkTest.FILEPATH, "w").close()
     unittest.main()

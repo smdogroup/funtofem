@@ -7,16 +7,22 @@ from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
+    make_test_directories,
 )
 
-from bdf_test_utils import generateBDF, thermoelasticity_callback
+from _bdf_test_utils import generateBDF, thermoelasticity_callback
 import unittest
 import traceback
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
+comm = MPI.COMM_WORLD
+
+_, output_dir = make_test_directories(comm, base_dir)
+aero_sens_file = os.path.join(output_dir, "aero.sens")
+struct_sens_file = os.path.join(output_dir, "struct.sens")
 
 
 class SensitivityFileTest(unittest.TestCase):
@@ -47,11 +53,15 @@ class SensitivityFileTest(unittest.TestCase):
 
         # Build the TACS interface
         nprocs = 1
-        comm = MPI.COMM_WORLD
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -81,16 +91,17 @@ class SensitivityFileTest(unittest.TestCase):
         driver.solve_forward()
         driver.solve_adjoint()
 
-        comm = MPI.COMM_WORLD
         pass_ = True
         try:
-            model.write_sensitivity_file(comm, "struct.sens", discipline="structural")
+            model.write_sensitivity_file(
+                comm, struct_sens_file, discipline="structural"
+            )
         except:
             print(traceback.format_exc())
             pass_ = False
 
         try:
-            model.write_sensitivity_file(comm, "aero.sens", discipline="aerodynamic")
+            model.write_sensitivity_file(comm, aero_sens_file, discipline="aerodynamic")
         except:
             print(traceback.format_exc())
             pass_ = False

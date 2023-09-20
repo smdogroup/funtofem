@@ -7,11 +7,12 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
-from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
+from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 import unittest
 
 np.random.seed(123456)
@@ -23,15 +24,12 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not complex_mode, "Don't want to do real-mode finite difference here.")
 class TacsConstLoadTest(unittest.TestCase):
-    FILENAME = "tacs-const-load.txt"
+    FILENAME = "test-tacs-const-load.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_gridforce_aeroelastic(self):
@@ -44,14 +42,13 @@ class TacsConstLoadTest(unittest.TestCase):
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=10)
-        ksfailure = Function.ksfailure()
-        steady.include(ksfailure)
+        Function.ksfailure().register_to(steady)
         steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, loaded_mesh, callback=None
+        solvers.structural = TacsInterface.create_from_bdf(
+            model, comm, nprocs, loaded_mesh, callback=None, output_dir=output_dir
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -66,7 +63,7 @@ class TacsConstLoadTest(unittest.TestCase):
             "tacs+testaero-aeroelastic",
             model,
             funtofem_driver,
-            TacsConstLoadTest.FILEPATH,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -77,5 +74,5 @@ class TacsConstLoadTest(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TacsConstLoadTest.FILENAME, "w").close()  # clear file
+        open(TacsConstLoadTest.FILEPATH, "w").close()  # clear file
     unittest.main()

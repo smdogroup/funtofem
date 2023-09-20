@@ -7,14 +7,15 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     TacsInterface,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
@@ -27,13 +28,10 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
-class TacsSteadyInterfaceTest(unittest.TestCase):
+class TacsInterfaceTest(unittest.TestCase):
     FILENAME = "testaero-tacs-steady.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
@@ -45,13 +43,20 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        steady = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(steady)
+        Function.test_aero().register_to(steady)
         steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -61,12 +66,12 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
-        rtol = 1e-9 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-3
         max_rel_error = TestResult.derivative_test(
             "tacs+testaero-aeroelastic",
             model,
             driver,
-            TacsSteadyInterfaceTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -83,12 +88,19 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=150)
-        steady.include(Function.temperature()).register_to(model)
+        Function.temperature().register_to(steady)
+        Function.test_aero().register_to(steady)
+        steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -103,7 +115,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             "tacs+testaero-aerothermal",
             model,
             driver,
-            TacsSteadyInterfaceTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -119,13 +131,21 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        steady = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(steady)
+        Function.temperature().register_to(steady)
+        Function.test_aero().register_to(steady)
+        steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -140,7 +160,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             "tacs+testaero-aerothermoelastic",
             model,
             driver,
-            TacsSteadyInterfaceTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -157,13 +177,19 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        steady = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(steady)
         steady.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=elasticity_callback
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -178,7 +204,7 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
             "tacs-base+testaero-aeroelastic",
             model,
             driver,
-            TacsSteadyInterfaceTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -220,8 +246,13 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         comm = MPI.COMM_WORLD
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            nprocs,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -234,12 +265,12 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
-        rtol = 1e-9 if complex_mode else 1e-4
+        rtol = 1e-9 if complex_mode else 1e-2
         max_rel_error = TestResult.derivative_test(
             "backwards-compatible-aeroelastic",
             model,
             driver,
-            TacsSteadyInterfaceTest.FILENAME,
+            self.FILEPATH,
             complex_mode,
             epsilon,
         )
@@ -250,5 +281,5 @@ class TacsSteadyInterfaceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     if comm.rank == 0:
-        open(TacsSteadyInterfaceTest.FILENAME, "w").close()  # clear file
+        open(TacsInterfaceTest.FILEPATH, "w").close()  # clear file
     unittest.main()

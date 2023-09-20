@@ -13,11 +13,12 @@ from funtofem.model import (
 )
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
-from bdf_test_utils import elasticity_callback
+from _bdf_test_utils import elasticity_callback
 
 np.random.seed(123456)
 
@@ -28,11 +29,11 @@ comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
+_, output_dir = make_test_directories(comm, base_dir)
+
 
 @unittest.skipIf(not complex_mode, "only available in complex step test")
 class CompositeFunctionDriverTest(unittest.TestCase):
-    FILENAME = "testaero-tacs-unsteady.txt"
-
     def test_onescenario_aeroelastic(self):
         # Build the model
         model = FUNtoFEMmodel("wedge")
@@ -57,12 +58,13 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 
@@ -144,12 +146,13 @@ class CompositeFunctionDriverTest(unittest.TestCase):
         min_drag.register_to(model)
 
         solvers = SolverManager(comm)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
+        solvers.structural = TacsInterface.create_from_bdf(
             model,
             comm,
             ntacs_procs,
             bdf_filename,
             callback=elasticity_callback,
+            output_dir=output_dir,
         )
         solvers.flow = TestAerodynamicSolver(comm, model)
 

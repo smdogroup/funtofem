@@ -9,7 +9,13 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import (
+    SolverManager,
+    TestResult,
+    Fun3dBC,
+    Fun3dModel,
+    make_test_directories,
+)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -30,11 +36,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "naca_wing_multi-disc.csm")
 nprocs = comm.Get_size()
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 # cases = ["euler", "turbulent"]
 case = "euler"

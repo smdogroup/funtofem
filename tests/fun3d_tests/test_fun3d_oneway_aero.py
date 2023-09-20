@@ -8,10 +8,7 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import (
-    SolverManager,
-    TestResult,
-)
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -25,11 +22,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
@@ -68,7 +61,7 @@ class TestFun3dOnewayAero(unittest.TestCase):
             "fun3d-oneway-turbulent-aeroelastic",
             model,
             driver,
-            TestFun3dOnewayAero.FILEPATH,
+            self.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -76,5 +69,6 @@ class TestFun3dOnewayAero(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestFun3dOnewayAero.FILEPATH, "w").close()
+    if comm.rank == 0:
+        open(TestFun3dOnewayAero.FILEPATH, "w").close()
     unittest.main()

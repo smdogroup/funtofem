@@ -5,7 +5,7 @@ import numpy as np
 from funtofem import TransferScheme
 
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from funtofem.interface import SolverManager, TestResult
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -14,13 +14,11 @@ has_fun3d = fun3d_loader is not None
 if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
-# from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-# bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
 # select the node and direction to use in the test
 # repeat the whole test for different nodes and directions (changed here and in fun3d-folder/Flow/perturb.input file)
@@ -30,11 +28,7 @@ pert_dir = 2  # 0 for x, 1 for y, 2 for z
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
