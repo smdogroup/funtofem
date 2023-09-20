@@ -11,7 +11,7 @@ from funtofem.interface import (
     SolverManager,
     TacsIntegrationSettings,
     CoordinateDerivativeTester,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
 
@@ -27,7 +27,7 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
-results_folder, output_folder = test_directories(comm, base_dir)
+results_folder, output_folder = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(

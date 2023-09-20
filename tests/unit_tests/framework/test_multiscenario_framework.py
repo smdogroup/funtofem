@@ -8,14 +8,14 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
 complex_mode = TransferScheme.dtype == complex
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 class MultiScenarioFrameworkTest(unittest.TestCase):

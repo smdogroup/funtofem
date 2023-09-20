@@ -12,7 +12,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsOnewayDriver
 
@@ -24,7 +24,7 @@ comm = MPI.COMM_WORLD
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 aero_loads_file = os.path.join(output_dir, "aero_loads.txt")
 struct_loads_file = os.path.join(output_dir, "struct_loads.txt")
 

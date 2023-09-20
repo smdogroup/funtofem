@@ -9,7 +9,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     CoordinateDerivativeTester,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
@@ -34,7 +34,7 @@ bdf_file = os.path.join(base_dir, "meshes", "turbulent_miniMesh", "nastran_CAPS.
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(

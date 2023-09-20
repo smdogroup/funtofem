@@ -10,7 +10,7 @@ from funtofem.model import (
     AitkenRelaxation,
     Variable,
 )
-from funtofem.interface import test_directories
+from funtofem.interface import make_test_directories
 
 np.random.seed(1234567)
 
@@ -22,7 +22,7 @@ if has_fun3d:
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")

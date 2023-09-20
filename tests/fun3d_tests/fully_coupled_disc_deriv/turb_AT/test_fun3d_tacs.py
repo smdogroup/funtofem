@@ -13,7 +13,7 @@ from funtofem.interface import (
     TacsSteadyInterface,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -26,7 +26,7 @@ if has_fun3d:
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 bdf_filename = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 

@@ -8,7 +8,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 from _bdf_test_utils import thermoelasticity_callback
@@ -20,7 +20,7 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 class MultiScenarioTacsTest(unittest.TestCase):

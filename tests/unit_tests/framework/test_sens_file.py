@@ -8,7 +8,7 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TestStructuralSolver,
     SolverManager,
-    test_directories,
+    make_test_directories,
 )
 
 import unittest
@@ -16,7 +16,7 @@ import traceback
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-_, output_dir = test_directories(comm, base_dir)
+_, output_dir = make_test_directories(comm, base_dir)
 aero_sens_file = os.path.join(output_dir, "aero.sens")
 struct_sens_file = os.path.join(output_dir, "struct.sens")
 

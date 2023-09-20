@@ -1,8 +1,8 @@
-__all__ = ["test_directories"]
+__all__ = ["make_test_directories"]
 import os
 
 
-def test_directories(comm, base_dir):
+def make_test_directories(comm, base_dir):
     results_folder = os.path.join(base_dir, "results")
     if comm.rank == 0:  # make the results folder if doesn't exist
         if not os.path.exists(results_folder):

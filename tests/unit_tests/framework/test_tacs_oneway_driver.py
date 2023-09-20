@@ -8,7 +8,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import (
     FUNtoFEMnlbgs,
@@ -25,7 +25,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 

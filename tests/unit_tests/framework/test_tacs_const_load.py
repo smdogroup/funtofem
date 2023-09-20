@@ -10,7 +10,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 import unittest
@@ -24,7 +24,7 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
 
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not complex_mode, "Don't want to do real-mode finite difference here.")

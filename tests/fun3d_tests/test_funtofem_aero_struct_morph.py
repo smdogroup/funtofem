@@ -14,7 +14,7 @@ from funtofem.interface import (
     TestResult,
     Fun3dBC,
     Fun3dModel,
-    test_directories,
+    make_test_directories,
 )
 
 # check whether fun3d is available
@@ -36,7 +36,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "naca_wing_multi-disc.csm")
 nprocs = comm.Get_size()
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 # cases = ["euler", "turbulent"]
 case = "euler"

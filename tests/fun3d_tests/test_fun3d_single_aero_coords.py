@@ -5,7 +5,7 @@ import numpy as np
 from funtofem import TransferScheme
 
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
-from funtofem.interface import SolverManager, TestResult, test_directories
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -28,7 +28,7 @@ pert_dir = 2  # 0 for x, 1 for y, 2 for z
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(

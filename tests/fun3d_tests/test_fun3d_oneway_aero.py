@@ -8,7 +8,7 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, test_directories
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -22,7 +22,7 @@ np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")

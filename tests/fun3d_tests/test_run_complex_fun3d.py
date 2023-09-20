@@ -11,12 +11,12 @@ from funtofem.model import (
     Function,
     AitkenRelaxation,
 )
-from funtofem.interface import TacsSteadyInterface, SolverManager, test_directories
+from funtofem.interface import TacsSteadyInterface, SolverManager, make_test_directories
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-_, output_dir = test_directories(comm, base_dir)
+_, output_dir = make_test_directories(comm, base_dir)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")

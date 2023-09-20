@@ -15,7 +15,7 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 from _bdf_test_utils import elasticity_callback
@@ -29,7 +29,7 @@ comm = MPI.COMM_WORLD
 ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
-_, output_dir = test_directories(comm, base_dir)
+_, output_dir = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not complex_mode, "only available in complex step test")

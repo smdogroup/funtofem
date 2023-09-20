@@ -9,7 +9,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -20,7 +20,7 @@ np.random.seed(123456)
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]

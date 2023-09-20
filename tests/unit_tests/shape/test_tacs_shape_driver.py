@@ -11,7 +11,7 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "input_files", "simple_naca_wing.csm")
 dat_filepath = os.path.join(base_dir, "input_files", "simple_naca_wing.dat")
-results_folder, _ = test_directories(comm, base_dir)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs

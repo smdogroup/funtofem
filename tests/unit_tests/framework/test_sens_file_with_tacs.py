@@ -9,7 +9,7 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    test_directories,
+    make_test_directories,
 )
 
 from _bdf_test_utils import generateBDF, thermoelasticity_callback
@@ -20,7 +20,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 comm = MPI.COMM_WORLD
 
-_, output_dir = test_directories(comm, base_dir)
+_, output_dir = make_test_directories(comm, base_dir)
 aero_sens_file = os.path.join(output_dir, "aero.sens")
 struct_sens_file = os.path.join(output_dir, "struct.sens")
 

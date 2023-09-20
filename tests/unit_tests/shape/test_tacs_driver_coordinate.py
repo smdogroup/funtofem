@@ -9,7 +9,7 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    test_directories,
+    make_test_directories,
     CoordinateDerivativeTester,
 )
 from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
@@ -24,7 +24,7 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-results_folder, output_folder = test_directories(comm, base_dir)
+results_folder, output_folder = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(

@@ -9,7 +9,7 @@ from funtofem.model import (
     Function,
     AitkenRelaxation,
 )
-from funtofem.interface import SolverManager, TestResult, test_directories
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -31,7 +31,7 @@ csm_path = os.path.join(base_dir, "naca_wing.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
 nprocs = comm.Get_size()
 bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
-results_folder, output_dir = test_directories(comm, base_dir)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 class TestFuntofemMorph(unittest.TestCase):

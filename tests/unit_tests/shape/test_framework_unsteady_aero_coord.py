@@ -9,7 +9,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     CoordinateDerivativeTester,
-    test_directories,
+    make_test_directories,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
@@ -19,7 +19,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-results_folder, output_folder = test_directories(comm, base_dir)
+results_folder, output_folder = make_test_directories(comm, base_dir)
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
 # user-defined settings
