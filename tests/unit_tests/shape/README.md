@@ -1,4 +1,6 @@
 # Steady-State Shape Derivative Tests #
+* `test_framework_unsteady_aero_coord.py` - Test the aerodynamic coordinate derivatives of a fully-coupled unsteady analysis with the TestAero + TestStruct solvers.
+* `test_framework_unsteady_struct_coord.py` - Test the structural coordinate derivatives of a fully-coupled unsteady analysis with the TestAero + TestStruct solvers.
 * `test_funtofem_aero_coord.py` - Test the aerodynamic coordinate derivatives of steady, fully-coupled analysis using the TestAero + TACS solvers.
 * `test_funtofem_struct_coord.py` - Test the structural coordinate derivatives of steady, fully-coupled analysis using the TestAero + TACS solvers.
 * `test_funtofem_unsteady_aero_coord.py` - Test the aerodynamic coordinate derivatives of a fully-coupled unsteady analysis with the TestAero + TACS solvers.

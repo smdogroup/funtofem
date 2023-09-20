@@ -42,8 +42,7 @@ class TacsConstLoadTest(unittest.TestCase):
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=10)
-        ksfailure = Function.ksfailure()
-        steady.include(ksfailure)
+        Function.ksfailure().register_to(steady)
         steady.register_to(model)
 
         # Build the solver interfaces

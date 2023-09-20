@@ -47,7 +47,8 @@ class TestLoadsFile(unittest.TestCase):
         plate.register_to(f2f_model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
         scenario.register_to(f2f_model)
 
         # make the solvers for a CFD analysis to store and write the loads file
@@ -99,7 +100,8 @@ class TestLoadsFile(unittest.TestCase):
         plate.register_to(f2f_model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
         scenario.register_to(f2f_model)
 
         # make the solvers for a CFD analysis to store and write the loads file
@@ -151,7 +153,8 @@ class TestLoadsFile(unittest.TestCase):
         plate.register_to(f2f_model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
         scenario.register_to(f2f_model)
 
         # make the solvers for a CFD analysis to store and write the loads file

@@ -45,7 +45,8 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
@@ -82,9 +83,8 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(
-            Function.temperature()
-        )
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.temperature().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
@@ -121,8 +121,10 @@ class TacsParallelFrameworkTest(unittest.TestCase):
             lower=0.01, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        test_scenario.include(Function.temperature()).register_to(model)
+        test_scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(

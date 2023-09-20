@@ -33,9 +33,11 @@ ntacs_procs = 1
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 
+# user settings
 steps = 10
 dt = 1.0
 thickness = 0.01
+elastic_scheme = "meld"
 
 
 @unittest.skipIf(not complex_mode, "finite diff test buggy")
@@ -51,14 +53,12 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("test", steps=steps).include(
-            Function.ksfailure(ks_weight=10.0)
+        test_scenario = Scenario.unsteady("test", steps=steps)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.test_aero().register_to(test_scenario)
+        TacsIntegrationSettings(dt=dt, num_steps=test_scenario.steps).register_to(
+            test_scenario
         )
-        test_scenario.include(Function.lift())
-        integration_settings = TacsIntegrationSettings(
-            dt=dt, num_steps=test_scenario.steps
-        )
-        test_scenario.include(integration_settings)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
@@ -73,8 +73,9 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -97,13 +98,12 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("test", steps=steps).include(
-            Function.temperature()
+        test_scenario = Scenario.unsteady("test", steps=steps)
+        Function.temperature().register_to(test_scenario)
+        Function.test_aero().register_to(test_scenario)
+        TacsIntegrationSettings(dt=dt, num_steps=test_scenario.steps).register_to(
+            test_scenario
         )
-        integration_settings = TacsIntegrationSettings(
-            dt=dt, num_steps=test_scenario.steps
-        )
-        test_scenario.include(integration_settings)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
@@ -118,8 +118,9 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
+        transfer_settings = TransferSettings(npts=10)
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=10), model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -142,14 +143,14 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
             lower=0.01, value=thickness, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.unsteady("test", steps=steps).include(
-            Function.ksfailure(ks_weight=10.0)
+        test_scenario = Scenario.unsteady("test", steps=steps)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
+        Function.test_aero().register_to(test_scenario)
+        TacsIntegrationSettings(dt=dt, num_steps=test_scenario.steps).register_to(
+            test_scenario
         )
-        integration_settings = TacsIntegrationSettings(
-            dt=dt, num_steps=test_scenario.steps
-        )
-        test_scenario.include(integration_settings)
-        test_scenario.include(Function.temperature()).register_to(model)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(
@@ -163,8 +164,9 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=10), model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         max_rel_error = TestResult.derivative_test(
@@ -189,24 +191,24 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         plate.register_to(model)
 
         # make the first scenario with ksfailure, temperature
-        test_scenario1 = Scenario.unsteady("test1", steps=steps).include(
-            Function.ksfailure(ks_weight=10.0)
+        test_scenario1 = Scenario.unsteady("test1", steps=steps)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario1)
+        Function.temperature().register_to(test_scenario1)
+        Function.test_aero().register_to(test_scenario1)
+        TacsIntegrationSettings(dt=dt, num_steps=test_scenario1.steps).register_to(
+            test_scenario1
         )
-        integration_settings = TacsIntegrationSettings(
-            dt=dt, num_steps=test_scenario1.steps
-        )
-        test_scenario1.include(integration_settings)
-        test_scenario1.include(Function.temperature()).register_to(model)
+        test_scenario1.register_to(model)
 
         # make the second scenario with ksfailure, temperature
-        test_scenario2 = Scenario.unsteady("test2", steps=steps).include(
-            Function.ksfailure()
+        test_scenario2 = Scenario.unsteady("test2", steps=steps)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario2)
+        Function.temperature().register_to(test_scenario2)
+        Function.test_aero().register_to(test_scenario2)
+        TacsIntegrationSettings(dt=dt, num_steps=test_scenario2.steps).register_to(
+            test_scenario2
         )
-        integration_settings = TacsIntegrationSettings(
-            dt=dt, num_steps=test_scenario2.steps
-        )
-        test_scenario2.include(integration_settings)
-        test_scenario2.include(Function.temperature()).register_to(model)
+        test_scenario2.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(
@@ -220,8 +222,9 @@ class TacsUnsteadyFrameworkTest(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model, copy_struct_mesh=True)
 
         # instantiate the driver
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=10), model=model
+            solvers, transfer_settings=transfer_settings, model=model
         )
 
         max_rel_error = TestResult.derivative_test(

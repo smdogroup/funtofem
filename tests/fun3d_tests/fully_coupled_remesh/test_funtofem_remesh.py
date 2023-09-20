@@ -78,10 +78,11 @@ class TestFuntofemRemesh(unittest.TestCase):
             lower=-1.0, value=0.0, upper=1.0
         ).register_to(wing)
         wing.register_to(model)
-        test_scenario = Scenario.steady("euler", steps=10).fun3d_project(
-            "funtofem_CAPS"
-        )
-        test_scenario.include(Function.lift()).include(Function.drag())
+
+        test_scenario = Scenario.steady("euler", steps=5000)
+        test_scenario.fun3d_project("funtofem_CAPS")
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -170,16 +171,14 @@ class TestFuntofemRemesh(unittest.TestCase):
         # add remaining constraints to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
-        # define the funtofem scenarios
-        test_scenario = (
-            Scenario.steady("euler", steps=5000)
-            .set_temperature(T_ref=300.0, T_inf=300.0)
-            .fun3d_project("funtofem_CAPS")
-        )
+        # define the scenario
+        test_scenario = Scenario.steady("euler", steps=5000)
+        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.adjoint_steps = 4000
-        # test_scenario.get_variable("AOA")
-        test_scenario.include(Function.lift()).include(Function.drag())
-        test_scenario.include(Function.ksfailure(ks_weight=10.0))
+        test_scenario.fun3d_project("funtofem_CAPS")
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver

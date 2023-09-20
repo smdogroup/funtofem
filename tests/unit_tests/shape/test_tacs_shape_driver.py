@@ -83,7 +83,8 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
         # make a funtofem scenario
-        test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
+        test_scenario = Scenario.steady("test", steps=10)
+        Function.mass().register_to(test_scenario)
         test_scenario.register_to(f2f_model)
 
         solvers = SolverManager(comm)

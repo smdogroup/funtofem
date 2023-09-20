@@ -37,8 +37,10 @@ class TacsInterfaceSolver(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
+        Function.test_aero().register_to(scenario)
+        scenario.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
@@ -101,8 +103,10 @@ class TacsInterfaceSolver(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        scenario = Scenario.steady("test", steps=150)
+        Function.temperature().register_to(scenario)
+        Function.test_aero().register_to(scenario)
+        scenario.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
@@ -165,8 +169,11 @@ class TacsInterfaceSolver(unittest.TestCase):
         plate.register_to(model)
 
         # Create a scenario to run
-        steady = Scenario.steady("test", steps=150).include(Function.ksfailure())
-        steady.include(Function.temperature()).register_to(model)
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
+        Function.temperature().register_to(scenario)
+        Function.test_aero().register_to(scenario)
+        scenario.register_to(model)
 
         # Build the solver interfaces
         solvers = SolverManager(comm)
