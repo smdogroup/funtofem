@@ -262,6 +262,6 @@ DVPREL1*            700          PSHELL               1               T *0
 *0                                                   0.                 *1      
 *1                    7              1. 
 
-INCLUDE 'tacs.bdf'
+INCLUDE 'stiffened_plate.bdf'
 
 ENDDATA
