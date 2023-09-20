@@ -1,4 +1,4 @@
-import numpy as np, unittest
+import numpy as np, unittest, os
 from mpi4py import MPI
 from funtofem import TransferScheme
 
@@ -8,15 +8,19 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
 complex_mode = TransferScheme.dtype == complex
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 class MultiScenarioFrameworkTest(unittest.TestCase):
     FILENAME = "testfake-multiscenario.txt"
+    FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_structDV_with_driver(self):
         # build a funtofem model and body
@@ -28,12 +32,14 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
         # make two scenarios, each with same functions (intend to have identical functions in general case)
         # make the first scenario
         test_scenario1 = Scenario.steady("test1", steps=20)
-        test_scenario1.include(Function.ksfailure()).include(Function.mass())
+        Function.ksfailure().register_to(test_scenario1)
+        Function.mass().register_to(test_scenario1)
         test_scenario1.register_to(model)
 
         # make the second scenario
         test_scenario2 = Scenario.steady("test2", steps=20)
-        test_scenario2.include(Function.ksfailure()).include(Function.mass())
+        Function.ksfailure().register_to(test_scenario2)
+        Function.mass().register_to(test_scenario2)
         test_scenario2.register_to(model)
 
         # build the solvers and driver
@@ -49,7 +55,7 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
             "testfake-multiscenarios-structDV",
             model,
             driver,
-            MultiScenarioFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -66,12 +72,14 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
         # make two scenarios, each with same functions (intend to have identical functions in general case)
         # make the first scenario
         test_scenario1 = Scenario.steady("test1", steps=20)
-        test_scenario1.include(Function.ksfailure()).include(Function.mass())
+        Function.ksfailure().register_to(test_scenario1)
+        Function.mass().register_to(test_scenario1)
         test_scenario1.register_to(model)
 
         # make the second scenario
         test_scenario2 = Scenario.steady("test2", steps=20)
-        test_scenario2.include(Function.ksfailure()).include(Function.mass())
+        Function.ksfailure().register_to(test_scenario2)
+        Function.mass().register_to(test_scenario2)
         test_scenario2.register_to(model)
 
         # build the solvers and driver
@@ -88,7 +96,7 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
             "testfake-multiscenarios-aeroDV",
             model,
             driver,
-            MultiScenarioFrameworkTest.FILENAME,
+            self.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-4
@@ -97,4 +105,6 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if comm.rank == 0:
+        open(MultiScenarioFrameworkTest.FILEPATH, "w").close()
     unittest.main()

@@ -8,12 +8,12 @@ from funtofem.model import (
     Scenario,
     Body,
     Function,
-    AitkenRelaxation,
 )
 from funtofem.interface import (
     TacsSteadyInterface,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -25,13 +25,8 @@ if has_fun3d:
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(os.getcwd(), "results")
-if comm.rank == 0:
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
-
 base_dir = os.path.dirname(os.path.abspath(__file__))
+results_folder, output_dir = make_test_directories(comm, base_dir)
 bdf_filename = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 
 
@@ -44,15 +39,16 @@ class TestFun3dTacs(unittest.TestCase):
         model = FUNtoFEMmodel("plate")
         plate = Body.aerothermal("plate", boundary=2)
         plate.register_to(model)
-        test_scenario = Scenario.steady(
-            "turbulent", steps=500, preconditioner_steps=10
-        ).set_temperature(T_ref=300.0, T_inf=300.0)
-        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
-            Function.lift()
-        ).include(Function.drag())
-        test_scenario.set_variable(
-            "aerodynamic", "AOA", lower=5.0, value=10.0, upper=15.0
-        )
+
+        # build the scenario
+        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
+        aoa = test_scenario.get_variable("AOA", set_active=True)
+        aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
         test_scenario.register_to(model)
 
@@ -61,7 +57,7 @@ class TestFun3dTacs(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename
+            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
         )
 
         transfer_settings = TransferSettings(
@@ -91,12 +87,14 @@ class TestFun3dTacs(unittest.TestCase):
             lower=0.001, value=0.1, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady(
-            "turbulent", steps=500, preconditioner_steps=10
-        ).set_temperature(T_ref=300.0, T_inf=300.0)
-        test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
-            Function.lift()
-        ).include(Function.drag())
+
+        # build the scenario
+        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
         test_scenario.register_to(model)
 
@@ -105,7 +103,7 @@ class TestFun3dTacs(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename
+            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
         )
 
         transfer_settings = TransferSettings(
