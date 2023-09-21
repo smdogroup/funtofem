@@ -966,6 +966,7 @@ class TacsSteadyInterface(SolverInterface):
         struct_options={},
         thermal_index=-1,
         override_rotx=False,
+        debug=False,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1114,6 +1115,7 @@ class TacsSteadyInterface(SolverInterface):
             tacs_comm=tacs_comm,
             override_rotx=override_rotx,
             Fvec=Fvec,
+            debug=debug,
         )
 
 
