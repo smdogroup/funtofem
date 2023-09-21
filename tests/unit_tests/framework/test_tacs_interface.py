@@ -291,5 +291,4 @@ class TacsInterfaceTest(unittest.TestCase):
 if __name__ == "__main__":
     if comm.rank == 0:
         open(TacsInterfaceTest.FILEPATH, "w").close()  # clear file
-    complex_mode = False
     unittest.main()
