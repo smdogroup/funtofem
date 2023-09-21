@@ -258,23 +258,18 @@ class Fun3dInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.adjoint:
-                timing_not_defined = function.stop is None or function.start is None
                 unsteady = not (scenario.steady)
-                if function.analysis_type == "structural":
+                if function.analysis_type != "aerodynamic":
                     start = 1
                     stop = 1
-                elif function.analysis_type == "aerodynamic" and timing_not_defined:
+                else:
+                    start = 1 if function.start is None else function.start
                     if unsteady:
                         # default aero function to include all time steps for the unsteady case
-                        start = 1
-                        stop = scenario.steps
+                        stop = scenario.steps if function.stop is None else function.stop
                     else:
-                        start = 1
-                        stop = 1
-                else:  # usually aerodynamic function here
-                    # recommended that start = 1, stop = num_steps
-                    start = function.start
-                    stop = function.stop
+                        stop = 1 if function.stop is None else function.stop
+                        
                 ftype = -1 if function.averaging else 1
 
                 interface.design_push_composite_func(

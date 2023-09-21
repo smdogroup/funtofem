@@ -13,7 +13,7 @@
 &reference_physical_properties
   mach_number     = 0.3
   angle_of_attack = 5.0
-  reynolds_number = 2.91137e4
+  reynolds_number = 6.91137e6
   temperature     = 300.0
   temperature_units = 'Kelvin'
 /
