@@ -77,6 +77,8 @@ class FUNtoFEMDriver(object):
 
         # debug flag
         self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         # use default transfer settings
 

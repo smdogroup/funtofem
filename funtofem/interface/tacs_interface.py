@@ -209,6 +209,8 @@ class TacsSteadyInterface(SolverInterface):
 
         # Debug flag
         self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         return
 

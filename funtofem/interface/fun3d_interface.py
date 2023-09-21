@@ -105,6 +105,8 @@ class Fun3dInterface(SolverInterface):
 
         # set debug flag
         self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         # Initialize the nodes associated with the bodies
         self.auto_coords = auto_coords

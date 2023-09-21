@@ -122,6 +122,8 @@ class TacsUnsteadyInterface(SolverInterface):
 
         # Debug flag
         self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         # get active design variables
         self.struct_variables = []
