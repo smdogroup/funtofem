@@ -321,8 +321,6 @@ class Scenario(Base):
 
         if self.steady is True and float(self.flow_dt) != 1.0:
             raise ValueError("For steady cases, flow_dt must be set to 1.")
-
->>>>>>> b00d95dae85c0b4b6b9b20ebba1f92cd6f0f59ae
         return self
 
     def set_id(self, id):
