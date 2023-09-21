@@ -27,6 +27,7 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 from ._funtofem_driver import FUNtoFEMDriver
 from ..optimization.optimization_manager import OptimizationManager
+from ..interface.utils.general_utils import real_norm, imag_norm
 
 try:
     from .hermes_transfer import HermesTransfer
@@ -159,18 +160,20 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 body.transfer_loads(scenario)
                 body.transfer_heat_flux(scenario)
 
-                # Temporary for debugging
-                struct_loads = body.get_struct_loads(scenario)
-                aero_loads = body.get_aero_loads(scenario)
                 if self._debug:
+                    struct_loads = body.get_struct_loads(scenario)
+                    aero_loads = body.get_aero_loads(scenario)
                     print(f"========================================")
                     print(f"Inside nlbgs driver, step: {step}")
-                    print(f"struct_loads: {struct_loads}")
                     if struct_loads is not None:
-                        print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                        print(
+                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
+                        )
                     print(f"aero_loads: {aero_loads}")
                     if aero_loads is not None:
-                        print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
                     print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
@@ -313,9 +316,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print(f"========================================")
                     print(f"Inside nlbgs driver, step: {time_index}")
                     if struct_loads is not None:
-                        print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                        print(
+                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
+                        )
                     if aero_loads is not None:
-                        print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
                     print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model

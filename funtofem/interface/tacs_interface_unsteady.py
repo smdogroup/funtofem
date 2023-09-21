@@ -33,6 +33,7 @@ from .utils import f2f_callback
 from ._solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 import os, numpy as np
+from .utils.general_utils import real_norm, imag_norm
 
 
 class TacsIntegrationSettings:
@@ -113,10 +114,14 @@ class TacsUnsteadyInterface(SolverInterface):
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
         nprocs=None,
+        debug=False,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
         self.nprocs = nprocs
+
+        # Debug flag
+        self._debug = debug
 
         # get active design variables
         self.struct_variables = []

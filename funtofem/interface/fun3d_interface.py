@@ -28,6 +28,7 @@ from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
+from .utils.general_utils import real_norm, imag_norm
 
 
 class Fun3dInterface(SolverInterface):
@@ -520,17 +521,14 @@ class Fun3dInterface(SolverInterface):
                 print(f"========================================")
                 print(f"Inside fun3d_interface:iterate, step: {step}")
                 if struct_loads is not None:
-                    print(
-                        f"norm of imag struct_loads: {np.linalg.norm(np.imag(struct_loads))}"
-                    )
-                    print(f"norm of struct_loads: {np.linalg.norm(struct_loads)}")
+                    print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                    print(f"norm of imag struct_loads: {imag_norm(struct_loads)}")
                 if struct_disps is not None:
-                    print(f"norm of struct_disps: {np.linalg.norm(struct_disps)}")
-                    print(
-                        f"norm of imag struct_disps: {np.linalg.norm(np.imag(struct_disps))}"
-                    )
+                    print(f"norm of real struct_disps: {real_norm(struct_disps)}")
+                    print(f"norm of imag struct_disps: {imag_norm(struct_disps)}")
                 if aero_disps is not None:
-                    print(f"norm of aero_disps: {np.linalg.norm(aero_disps)}")
+                    print(f"norm of real aero_disps: {real_norm(aero_disps)}")
+                    print(f"norm of imaginary aero_disps: {imag_norm(aero_disps)}")
                 print(f"========================================\n", flush=True)
 
         # Take a step in FUN3D
@@ -559,7 +557,8 @@ class Fun3dInterface(SolverInterface):
                 print(f"========================================")
                 print(f"Inside fun3d_interface:iterate, after iterate, step: {step}")
                 if aero_loads is not None:
-                    print(f"norm of aero_loads: {np.linalg.norm(aero_loads)}")
+                    print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                    print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
                 print(f"========================================\n", flush=True)
 
             # Compute the heat flux on the body
@@ -785,7 +784,10 @@ class Fun3dInterface(SolverInterface):
                         print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
                         print(f"func: {func}")
                         print(
-                            f"norm of psi_F: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}"
+                            f"norm of real psi_F: {real_norm(lam_x[:, func])}, {real_norm(lam_y[:, func])}, {real_norm(lam_z[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_F: {imag_norm(lam_x[:, func])}, {imag_norm(lam_y[:, func])}, {imag_norm(lam_z[:, func])}"
                         )
                         print(f"========================================\n", flush=True)
 
@@ -811,10 +813,10 @@ class Fun3dInterface(SolverInterface):
                         print(f"func: {func}")
                         if self.dFdqinf[func] is not None:
                             print(
-                                f"norm of real dFdqinf: {np.linalg.norm(np.real(self.dFdqinf[func]))}"
+                                f"norm of real dFdqinf: {real_norm(self.dFdqinf[func])}"
                             )
                             print(
-                                f"norm of imag dFdqinf: {np.linalg.norm(np.imag(self.dFdqinf[func]))}"
+                                f"norm of imaginary dFdqinf: {imag_norm(self.dFdqinf[func])}"
                             )
                         else:
                             print(f"dFdqinf[func] is NoneType")
@@ -880,7 +882,10 @@ class Fun3dInterface(SolverInterface):
                         print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
                         print(f"func: {func}")
                         print(
-                            f"norm of psi_D: {np.linalg.norm(lam_x[:, func])}, {np.linalg.norm(lam_y[:, func])}, {np.linalg.norm(lam_z[:, func])}"
+                            f"norm of real psi_D: {real_norm(lam_x[:, func])}, {real_norm(lam_y[:, func])}, {real_norm(lam_z[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_D: {imag_norm(lam_x[:, func])}, {imag_norm(lam_y[:, func])}, {imag_norm(lam_z[:, func])}"
                         )
                         print(f"========================================\n", flush=True)
 
