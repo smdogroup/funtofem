@@ -108,7 +108,9 @@ class Function(object):
         self.scenario = None
         self.body = body
 
-        self.set_timing(start, stop, averaging)
+        self.start = start
+        self.stop = stop
+        self.averaging = averaging
 
         # whether or not an adjoint is required
         self.adjoint = adjoint
