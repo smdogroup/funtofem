@@ -219,7 +219,9 @@ class Function(object):
             whether or not the aero function is evaluated
         """
         if self.analysis_type != "aerodynamic":
-            raise AssertionError(f"Function {self.name} is not aerodynamic, can't set FUN3D timing data.")
+            raise AssertionError(
+                f"Function {self.name} is not aerodynamic, can't set FUN3D timing data."
+            )
         self.start = start
         self.stop = stop
         self.averaging = averaging
@@ -310,8 +312,12 @@ class Function(object):
             if "all" return list of all 3 functions xcom, ycom, zcom
             otherwise returns individual com for a direction
         """
-        if direction=="all":
-            return [cls.center_of_mass("x"), cls.center_of_mass("y"), cls.center_of_mass("z")]
+        if direction == "all":
+            return [
+                cls.center_of_mass("x"),
+                cls.center_of_mass("y"),
+                cls.center_of_mass("z"),
+            ]
         elif direction in ["x", "y", "z"]:
             return cls(name=f"{direction}", analysis_type="structural")
         else:

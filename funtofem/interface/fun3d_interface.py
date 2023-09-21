@@ -266,10 +266,12 @@ class Fun3dInterface(SolverInterface):
                     start = 1 if function.start is None else function.start
                     if unsteady:
                         # default aero function to include all time steps for the unsteady case
-                        stop = scenario.steps if function.stop is None else function.stop
+                        stop = (
+                            scenario.steps if function.stop is None else function.stop
+                        )
                     else:
                         stop = 1 if function.stop is None else function.stop
-                        
+
                 ftype = -1 if function.averaging else 1
 
                 interface.design_push_composite_func(
