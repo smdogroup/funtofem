@@ -95,7 +95,6 @@ class Function(object):
         """
         self.name = name
         self.id = id
-        self.set_timing(start, stop, averaging)
         self.optim = optim
 
         # optimization settings
@@ -108,6 +107,8 @@ class Function(object):
         self.analysis_type = analysis_type
         self.scenario = None
         self.body = body
+
+        self.set_timing(start, stop, averaging)
 
         # whether or not an adjoint is required
         self.adjoint = adjoint
