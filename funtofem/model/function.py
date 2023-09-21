@@ -95,9 +95,6 @@ class Function(object):
         """
         self.name = name
         self.id = id
-        self.start = start
-        self.stop = stop
-        self.averaging = averaging
         self.optim = optim
 
         # optimization settings
@@ -110,6 +107,8 @@ class Function(object):
         self.analysis_type = analysis_type
         self.scenario = None
         self.body = body
+
+        self.set_timing(start, stop, averaging)
 
         # whether or not an adjoint is required
         self.adjoint = adjoint
@@ -220,6 +219,10 @@ class Function(object):
         averaging: bool
             whether or not the aero function is evaluated
         """
+        if self.analysis_type != "aerodynamic":
+            raise AssertionError(
+                f"Function {self.name} is not aerodynamic, can't set FUN3D timing data."
+            )
         self.start = start
         self.stop = stop
         self.averaging = averaging
@@ -299,6 +302,26 @@ class Function(object):
         Class constructor for the Temperature function
         """
         return cls(name="temperature", analysis_type="structural")
+
+    @classmethod
+    def center_of_mass(cls, direction="all"):
+        """
+        Class constructor for the center of mass functional
+        Params:
+        direction: str
+            if "all" return list of all 3 functions xcom, ycom, zcom
+            otherwise returns individual com for a direction
+        """
+        if direction == "all":
+            return [
+                cls.center_of_mass("x"),
+                cls.center_of_mass("y"),
+                cls.center_of_mass("z"),
+            ]
+        elif direction in ["x", "y", "z"]:
+            return cls(name=f"{direction}", analysis_type="structural")
+        else:
+            raise AssertionError(f"Center of mass given direction {direction} input")
 
     @classmethod
     def xcom(cls):
