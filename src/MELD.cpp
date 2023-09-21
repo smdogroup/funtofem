@@ -316,13 +316,6 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
     H[7] += W[j] * p[1] * q[2];
     H[8] += W[j] * p[2] * q[2];
   }
-
-  // H += sigma_n^2 I
-  // orig change 1e-1 had good results 
-  //H[0] += 1e-1;
-  //H[4] += 1e-1;
-  //H[8] += 1e-1;
-
 }
 
 /*
