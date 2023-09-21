@@ -27,6 +27,7 @@ bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
+elastic_scheme = "rbf"
 
 results_folder, output_dir = make_test_directories(comm, base_dir)
 
@@ -62,7 +63,9 @@ class TacsInterfaceTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers,
+            transfer_settings=TransferSettings(npts=10, elastic_scheme=elastic_scheme),
+            model=model,
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
@@ -106,7 +109,9 @@ class TacsInterfaceTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers,
+            transfer_settings=TransferSettings(npts=10, elastic_scheme=elastic_scheme),
+            model=model,
         )
 
         epsilon = 1e-30 if complex_mode else 1e-4
@@ -151,7 +156,9 @@ class TacsInterfaceTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers,
+            transfer_settings=TransferSettings(npts=10, elastic_scheme=elastic_scheme),
+            model=model,
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
@@ -195,7 +202,9 @@ class TacsInterfaceTest(unittest.TestCase):
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
+            solvers,
+            transfer_settings=TransferSettings(npts=10, elastic_scheme=elastic_scheme),
+            model=model,
         )
 
         epsilon = 1e-30 if complex_mode else 1e-5
@@ -257,7 +266,7 @@ class TacsInterfaceTest(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model)
 
         # L&D transfer options
-        transfer_settings = TransferSettings(npts=5)
+        transfer_settings = TransferSettings(npts=10, elastic_scheme=elastic_scheme)
 
         # instantiate the driver
         driver = FUNtoFEMnlbgs(

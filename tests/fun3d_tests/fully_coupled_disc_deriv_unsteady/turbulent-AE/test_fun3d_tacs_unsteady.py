@@ -49,7 +49,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
     FILENAME = "fun3d-tacs-unsteady-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_inviscid_aeroelastic_thick(self):
+    def test_turbulent_aeroelastic_thick(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
@@ -60,7 +60,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         plate.register_to(model)
 
         # define the scenario
-        test_scenario = Scenario.unsteady("inviscid", steps=num_steps)
+        test_scenario = Scenario.unsteady("turbulent", steps=num_steps)
         TacsIntegrationSettings(dt=dim_dt, num_steps=num_steps).register_to(
             test_scenario
         )
@@ -103,21 +103,21 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+tacs-inviscid-aeroelastic-thick",
+            "fun3d+tacs-turbulent-aeroelastic-thick",
             model,
             driver,
             TestFun3dTacsUnsteady.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
-    def test_inviscid_aeroelastic_alpha(self):
+    def test_turbulent_aeroelastic_alpha(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
         plate.register_to(model)
 
         # define the scenario
-        test_scenario = Scenario.unsteady("inviscid", steps=num_steps)
+        test_scenario = Scenario.unsteady("turbulent", steps=num_steps)
         TacsIntegrationSettings(dt=dim_dt, num_steps=num_steps).register_to(
             test_scenario
         )
@@ -162,7 +162,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(
-            "fun3d+tacs-inviscid-aeroelastic-alpha",
+            "fun3d+tacs-turbulent-aeroelastic-alpha",
             model,
             driver,
             TestFun3dTacsUnsteady.FILEPATH,

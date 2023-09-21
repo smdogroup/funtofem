@@ -33,8 +33,8 @@ class Function(object):
         name,
         id=0,
         value=0.0,
-        start=0,
-        stop=-1,
+        start=None,
+        stop=None,
         analysis_type=None,
         body=-1,
         adjoint=True,
@@ -95,9 +95,6 @@ class Function(object):
         """
         self.name = name
         self.id = id
-        self.start = start
-        self.stop = stop
-        self.averaging = averaging
         self.optim = optim
 
         # optimization settings
@@ -110,6 +107,10 @@ class Function(object):
         self.analysis_type = analysis_type
         self.scenario = None
         self.body = body
+
+        self.start = start
+        self.stop = stop
+        self.averaging = averaging
 
         # whether or not an adjoint is required
         self.adjoint = adjoint
@@ -206,6 +207,29 @@ class Function(object):
 
         return 0.0
 
+    def set_timing(self, start: int = None, stop: int = None, averaging: bool = None):
+        """
+        Set the time window of function evaluation for FUN3D unsteady
+        analysis, only do this for aero functions
+
+        Parameter
+        ---------
+        start: int
+            starting time index
+        stop: int
+            final time index (note you need to specify this for unsteady)
+        averaging: bool
+            whether or not the aero function is evaluated
+        """
+        if self.analysis_type != "aerodynamic":
+            raise AssertionError(
+                f"Function {self.name} is not aerodynamic, can't set FUN3D timing data."
+            )
+        self.start = start
+        self.stop = stop
+        self.averaging = averaging
+        return self
+
     def register_to(self, scenario):
         """
         Register the function to the scenario.
@@ -215,7 +239,8 @@ class Function(object):
 
     @classmethod
     def ksfailure(
-        cls, ks_weight: float = 50.0, start: int = 0, stop: int = -1, body: int = -1
+        cls,
+        ks_weight: float = 50.0,
     ):
         """
         Class constructor for the KS Failure function
@@ -224,22 +249,17 @@ class Function(object):
             name="ksfailure",
             analysis_type="structural",
             options={"ksWeight": ks_weight},
-            start=start,
-            stop=stop,
-            body=body,
         )
 
     @classmethod
-    def mass(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def mass(cls):
         """
         Class constructor for the Mass function
         """
-        return cls(
-            name="mass", analysis_type="structural", start=start, stop=stop, body=body
-        )
+        return cls(name="mass", analysis_type="structural")
 
     @classmethod
-    def lift(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def lift(cls, start: int = None, stop: int = None, body: int = -1):
         """
         Class constructor for the Lift function
         """
@@ -248,12 +268,25 @@ class Function(object):
         )
 
     @classmethod
-    def drag(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def drag(cls, start: int = None, stop: int = None, body: int = -1):
         """
         Class constructor for the Drag function
         """
         return cls(
             name="cd", analysis_type="aerodynamic", start=start, stop=stop, body=body
+        )
+
+    @classmethod
+    def moment(cls, direc="y", start: int = None, stop: int = None, body: int = -1):
+        """
+        Class constructor for the Drag function
+        """
+        return cls(
+            name=f"cm{direc}",
+            analysis_type="aerodynamic",
+            start=start,
+            stop=stop,
+            body=body,
         )
 
     @classmethod
@@ -267,48 +300,53 @@ class Function(object):
         return cls(name="struct-func", analysis_type="structural")
 
     @classmethod
-    def temperature(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def temperature(cls):
         """
         Class constructor for the Temperature function
         """
-        return cls(
-            name="temperature",
-            analysis_type="structural",
-            start=start,
-            stop=stop,
-            body=body,
-        )
+        return cls(name="temperature", analysis_type="structural")
 
     @classmethod
-    def xcom(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def center_of_mass(cls, direction="all"):
+        """
+        Class constructor for the center of mass functional
+        Params:
+        direction: str
+            if "all" return list of all 3 functions xcom, ycom, zcom
+            otherwise returns individual com for a direction
+        """
+        if direction == "all":
+            return [
+                cls.center_of_mass("x"),
+                cls.center_of_mass("y"),
+                cls.center_of_mass("z"),
+            ]
+        elif direction in ["x", "y", "z"]:
+            return cls(name=f"{direction}", analysis_type="structural")
+        else:
+            raise AssertionError(f"Center of mass given direction {direction} input")
+
+    @classmethod
+    def xcom(cls):
         """Class constructor for the x center of mass TACS function"""
-        return cls(
-            name="xcom", analysis_type="structural", start=start, stop=stop, body=body
-        )
+        return cls(name="xcom", analysis_type="structural")
 
     @classmethod
-    def ycom(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def ycom(cls):
         """Class constructor for the y center of mass TACS function"""
-        return cls(
-            name="ycom", analysis_type="structural", start=start, stop=stop, body=body
-        )
+        return cls(name="ycom", analysis_type="structural")
 
     @classmethod
-    def zcom(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def zcom(cls):
         """Class constructor for the z center of mass TACS function"""
-        return cls(
-            name="zcom", analysis_type="structural", start=start, stop=stop, body=body
-        )
+        return cls(name="zcom", analysis_type="structural")
 
     @classmethod
-    def compliance(cls, start: int = 0, stop: int = -1, body: int = -1):
+    def compliance(cls):
         """Class constructor for the compliance TACS function"""
         return cls(
             name="compliance",
             analysis_type="structural",
-            start=start,
-            stop=stop,
-            body=body,
         )
 
     @property

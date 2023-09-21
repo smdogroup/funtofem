@@ -258,8 +258,20 @@ class Fun3dInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.adjoint:
-                start = 1 if function.stop == -1 else function.start
-                stop = 1 if function.stop == -1 else function.stop
+                unsteady = not (scenario.steady)
+                if function.analysis_type != "aerodynamic":
+                    start = 1
+                    stop = 1
+                else:
+                    start = 1 if function.start is None else function.start
+                    if unsteady:
+                        # default aero function to include all time steps for the unsteady case
+                        stop = (
+                            scenario.steps if function.stop is None else function.stop
+                        )
+                    else:
+                        stop = 1 if function.stop is None else function.stop
+
                 ftype = -1 if function.averaging else 1
 
                 interface.design_push_composite_func(
