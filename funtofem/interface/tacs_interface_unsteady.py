@@ -80,6 +80,10 @@ class TacsIntegrationSettings:
     def num_stages(self) -> int:
         return self.integration_order - 1
 
+    def register_to(self, scenario):
+        scenario.include(self)
+        return self
+
 
 class TacsOutputGeneratorUnsteady:
     def __init__(self, output_dir, name="tacs_output", f5=None):
@@ -485,9 +489,11 @@ class TacsUnsteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        self._update_assembler_vars(scenario, bodies)
-        self.ext_force.zeroEntries()
-        self.integrator[scenario.id].iterate(0, self.ext_force)
+        if self.tacs_proc:
+            self._update_assembler_vars(scenario, bodies)
+            self.ext_force.zeroEntries()
+            self.integrator[scenario.id].iterate(0, self.ext_force)
+
         return 0
 
     def iterate(self, scenario, bodies, step):

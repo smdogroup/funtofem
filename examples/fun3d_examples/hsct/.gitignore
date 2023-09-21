@@ -3,3 +3,5 @@ meshes/*.jrnl
 *.jrnl
 *.hst
 design/
+*Struct*
+struct*

@@ -9,7 +9,7 @@ from funtofem.interface import (
     TacsInterface,
     SolverManager,
     CoordinateDerivativeTester,
-    TestStructuralSolver,
+    make_test_directories,
 )
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
@@ -24,7 +24,6 @@ if has_fun3d:
 if tacs_loader is not None:
     from funtofem.interface import TacsInterface
 
-# from bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
@@ -35,11 +34,7 @@ bdf_file = os.path.join(base_dir, "meshes", "turbulent_miniMesh", "nastran_CAPS.
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
@@ -76,7 +71,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
             comm, model, fun3d_dir="meshes", coord_test_override=True
         )
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, nprocs=nprocs, bdf_file=bdf_file
+            model, comm, nprocs=nprocs, bdf_file=bdf_file, output_dir=output_dir
         )
         transfer_settings = TransferSettings(npts=50)
         coupled_driver = FUNtoFEMnlbgs(
@@ -124,7 +119,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
             comm, model, fun3d_dir="meshes", coord_test_override=True
         )
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, nprocs=nprocs, bdf_file=bdf_file
+            model, comm, nprocs=nprocs, bdf_file=bdf_file, output_dir=output_dir
         )
         transfer_settings = TransferSettings(npts=50)
         coupled_driver = FUNtoFEMnlbgs(
@@ -144,50 +139,6 @@ class TestFun3dAeroCoords(unittest.TestCase):
         )
         assert abs(rel_error) < rtol
         return
-
-    # @unittest.skip("temp")
-    # def test_steady_aero_multiscenario_aerothermoelastic(self):
-    #     # build the model and driver
-    #     model = FUNtoFEMmodel("wedge")
-    #     plate = Body.aerothermoelastic("plate", boundary=1)
-    #     Variable.structural("thick").set_bounds(
-    #         lower=0.01, value=0.1, upper=1.0
-    #     ).register_to(plate)
-    #     plate.register_to(model)
-
-    #     # build the scenario
-    #     cruise = Scenario.steady("cruise", steps=200)
-    #     Function.lift().register_to(cruise)
-    #     Function.drag().register_to(cruise)
-    #     Function.mass().register_to(cruise)
-    #     cruise.register_to(model)
-
-    #     climb = Scenario.steady("climb", steps=200)
-    #     Function.ksfailure().register_to(climb)
-    #     Function.temperature().register_to(climb)
-    #     climb.register_to(model)
-
-    #     # build the tacs interface, coupled driver, and oneway driver
-    #     comm = MPI.COMM_WORLD
-    #     solvers = SolverManager(comm)
-    #     solvers.flow = TestAerodynamicSolver(comm, model)
-    #     solvers.structural = TacsInterface.create_from_bdf(
-    #         model, comm, 1, bdf_filename, callback=thermoelasticity_callback
-    #     )
-    #     transfer_settings = TransferSettings(npts=5)
-    #     coupled_driver = FUNtoFEMnlbgs(
-    #         solvers, transfer_settings=transfer_settings, model=model
-    #     )
-
-    #     rtol = 1e-9
-
-    #     """complex step test over coordinate derivatives"""
-    #     tester = CoordinateDerivativeTester(coupled_driver)
-    #     rel_error = tester.test_aero_coordinates(
-    #         "funtofem_driver aero coordinate derivatives multiscenario, steady-aerothermoelastic"
-    #     )
-    #     assert abs(rel_error) < rtol
-    #     return
 
 
 if __name__ == "__main__":

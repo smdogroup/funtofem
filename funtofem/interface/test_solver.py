@@ -921,7 +921,7 @@ class TestResult:
         if self.root_proc:
             print(f"Test Result - {self.name}")
             print("\tFunctions = ", self.func_names)
-            print("\tComplex step TD  = ", self.complex_TD)
+            print(f"\t{self.method}  = ", self.complex_TD)
             print("\tAdjoint TD      = ", self.adjoint_TD)
             print("\tRelative error        = ", self.rel_error)
         return self
@@ -933,6 +933,9 @@ class TestResult:
             return 0.0
         elif truth == 0.0 and pred != 0.0:
             return 1.0  # arbitrary 100% error provided to fail test avoiding /0
+        elif abs(truth) <= 1e-8 and abs(pred) < 1e-8:
+            print("Warning the derivative test has very small derivatives!")
+            return pred - truth  # use absolute error if too small a derivative
         else:
             return (pred - truth) / truth
 

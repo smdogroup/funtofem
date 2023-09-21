@@ -7,6 +7,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -17,10 +18,9 @@ if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
 comm = MPI.COMM_WORLD
+base_dir = os.path.dirname(os.path.abspath(__file__))
 np.random.seed(1234567)
-results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder):
-    os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test since you don't have fun3d")
@@ -42,14 +42,13 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario.include(Function.ksfailure(ks_weight=50.0)).include(
             Function.lift()
         ).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e2)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e2
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
         transfer_settings = TransferSettings()
         driver = FUNtoFEMnlbgs(
@@ -110,14 +109,13 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario.include(Function.ksfailure()).include(
             Function.temperature()
         ).include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e2)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1.0e2
-        )
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TestStructuralSolver(
             comm, model, elastic_k=1000.0, thermal_k=1.0
         )

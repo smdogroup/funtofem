@@ -1,0 +1,6 @@
+fort.*
+*.flow
+*.forces
+*.forces_imaginary
+*.grid_info
+*.dat*

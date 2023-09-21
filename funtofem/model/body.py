@@ -1888,6 +1888,19 @@ class Body(Base):
 
         return
 
+    def __str__(self):
+        line1 = f"Body (<ID> <Name>): {self.id} {self.name}"
+        line2 = f"    Boundary: {self.boundary}"
+        line3 = f"    Coupling Group: {self.group}"
+        line4 = f"    Motion type: {self.motion_type}"
+        line5 = f"    Transfer scheme: {type(self.transfer)}"
+        line6 = f"    Relaxation scheme: {type(self.relaxation_scheme)}"
+        line7 = f"    Shape parameterization: {type(self.shape)}"
+
+        output = (line1, line2, line3, line4, line5, line6, line7)
+
+        return "\n".join(output)
+
     # def _aitken_adjoint_relax(self, scenario):
     #     nfunctions = scenario.count_adjoint_functions()
     #     if self.aitken_init:

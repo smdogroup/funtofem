@@ -16,6 +16,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -26,9 +27,8 @@ if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
 comm = MPI.COMM_WORLD
-results_folder = os.path.join(os.getcwd(), "results")
-if not os.path.exists(results_folder) and comm.rank == 0:
-    os.mkdir(results_folder)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 # define a function to suppress stdout
@@ -76,6 +76,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # suppress stdout during each FUN3D analysis
@@ -83,9 +84,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)
-            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-                qinf=1.0e4
-            )
+            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
             solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
             # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
             transfer_settings = TransferSettings()
@@ -182,6 +181,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.lift())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # suppress the standard output from fortran, fun3d
@@ -189,9 +189,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)
-            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-                qinf=1.0e4
-            )
+            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
             solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
             # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
             transfer_settings = TransferSettings()
@@ -254,6 +252,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.lift())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # suppress the standard output from fortran, fun3d
@@ -261,9 +260,7 @@ class TestLaminarAeroelastic(unittest.TestCase):
             # build the solvers and coupled driver
             comm = MPI.COMM_WORLD
             solvers = SolverManager(comm)
-            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-                qinf=1.0e4
-            )
+            solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
             solvers.structural = TestStructuralSolver(comm, model, elastic_k=1000.0)
             # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
             transfer_settings = TransferSettings()

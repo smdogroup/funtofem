@@ -83,7 +83,7 @@ class Fun3dInterface(SolverInterface):
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
 
-        # dynamic pressure
+        # dynamic pressure derivative term
         self.dFdqinf = []
 
         # heat flux
@@ -257,8 +257,23 @@ class Fun3dInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.adjoint:
-                start = 1 if function.stop == -1 else function.start
-                stop = 1 if function.stop == -1 else function.stop
+                timing_not_defined = function.stop is None or function.start is None
+                unsteady = not (scenario.steady)
+                if function.analysis_type == "structural":
+                    start = 1
+                    stop = 1
+                elif function.analysis_type == "aerodynamic" and timing_not_defined:
+                    if unsteady:
+                        # default aero function to include all time steps for the unsteady case
+                        start = 1
+                        stop = scenario.steps
+                    else:
+                        start = 1
+                        stop = 1
+                else:  # usually aerodynamic function here
+                    # recommended that start = 1, stop = num_steps
+                    start = function.start
+                    stop = function.stop
                 ftype = -1 if function.averaging else 1
 
                 interface.design_push_composite_func(

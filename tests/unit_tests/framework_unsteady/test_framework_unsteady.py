@@ -9,6 +9,7 @@ from funtofem.interface import (
     TestStructuralSolver,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -19,11 +20,7 @@ np.random.seed(123456)
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 steps = 2
 # couplings = ["aeroelastic", "aerothermal", "aeorthermoelastic"]
@@ -34,7 +31,7 @@ DV_cases = ["structural", "aerodynamic"]
 
 @unittest.skipIf(not complex_mode, "not looked at FD yet")
 class CoupledUnsteadyFrameworkTest(unittest.TestCase):
-    FILENAME = "fake-solvers-drivers.txt"
+    FILENAME = "unsteady-framework.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     @unittest.skipIf(not ("structural" in DV_cases), "structural DV test skipped")
@@ -46,8 +43,8 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
-        test_scenario.include(Function.ksfailure())
-        test_scenario.include(Function.lift())
+        Function.test_struct().register_to(test_scenario)
+        Function.test_aero().register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build a funtofem driver
@@ -78,7 +75,8 @@ class CoupledUnsteadyFrameworkTest(unittest.TestCase):
             Variable.aerodynamic(f"aero{iA}").set_bounds(value=0.1).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
-        test_scenario.include(Function.ksfailure()).include(Function.lift())
+        Function.test_struct().register_to(test_scenario)
+        Function.test_aero().register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build a funtofem driver
