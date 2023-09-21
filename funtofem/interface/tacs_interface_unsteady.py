@@ -830,6 +830,7 @@ class TacsUnsteadyInterface(SolverInterface):
         callback=None,
         struct_options={},
         thermal_index=-1,
+        debug=False,
     ):
         """
         Create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -963,4 +964,5 @@ class TacsUnsteadyInterface(SolverInterface):
             thermal_index=thermal_index,
             struct_id=struct_id,
             tacs_comm=tacs_comm,
+            debug=debug,
         )
