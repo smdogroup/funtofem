@@ -534,7 +534,7 @@ class Fun3dOnewayDriver:
         # initialize, run, and do post adjoint
         self.solvers.flow.initialize_adjoint(scenario, bodies)
         # one extra step here to include step 0 calls (see fully coupled driver)
-        for rstep in range(1, scenario.steps + 2): 
+        for rstep in range(1, scenario.steps + 2):
             step = scenario.steps + 1 - rstep
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
