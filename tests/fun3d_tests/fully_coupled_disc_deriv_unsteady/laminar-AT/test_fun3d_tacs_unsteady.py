@@ -38,7 +38,7 @@ dim_dt = 0.001
 a_inf = 347.224
 qinf = 105493.815
 # flow_dt = 1 / a_inf
-flow_dt = 1.0
+flow_dt = 0.1
 elastic_scheme = "rbf"  # "rbf" or "meld" (rbf better so far)
 
 
@@ -66,8 +66,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.compliance().register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
         Function.lift().set_timing(start=1, stop=num_steps, averaging=True).register_to(
             test_scenario
         )
@@ -125,8 +124,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.compliance().register_to(test_scenario)
+        Function.temperature().register_to(test_scenario)
         Function.lift().set_timing(start=1, stop=num_steps, averaging=True).register_to(
             test_scenario
         )

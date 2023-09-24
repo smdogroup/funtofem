@@ -38,7 +38,7 @@ dim_dt = 0.001
 a_inf = 347.224
 qinf = 105493.815
 # flow_dt = 1 / a_inf
-flow_dt = 1.0
+flow_dt = 0.1
 elastic_scheme = "rbf"  # "rbf" or "meld" (rbf better so far)
 
 
