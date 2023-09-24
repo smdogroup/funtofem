@@ -109,8 +109,8 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         rel_error = tester.test_struct_coordinates(
             "funtofem driver, unsteady-aeroelastic-laminar",
             status_file=self.FILEPATH,
-            epsilon=1e-30 if complex_mode else 1e-4,
-            complex_mode=complex_mode,
+            epsilon=1e-30,
+            complex_mode=True,
         )
         assert abs(rel_error) < rtol
 
