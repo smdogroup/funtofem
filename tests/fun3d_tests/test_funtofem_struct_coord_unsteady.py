@@ -39,8 +39,8 @@ dim_dt = 0.001
 a_inf = 347.224
 qinf = 105493.815
 # flow_dt = 1 / a_inf
-# flow_dt = 1.0
 flow_dt = 0.1
+# flow_dt = 0.1
 elastic_scheme = "rbf"  # "rbf" or "meld" (rbf better so far)
 
 
@@ -76,6 +76,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         Function.drag().set_timing(start=1, stop=num_steps, averaging=True).register_to(
             test_scenario
         )
+        Variable.shape("rotation").register_to(test_scenario)
         test_scenario.register_to(model)
 
         ## Build the solvers and coupled driver

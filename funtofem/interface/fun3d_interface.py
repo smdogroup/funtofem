@@ -420,7 +420,7 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             aero_nnodes = body.get_num_aero_nodes()
 
-            if aero_nnodes > 0:
+            if aero_nnodes > 0 and step > 0:
                 # Aero solver contribution = dGdxa0^T psi_G
                 # dx, dy, dz are the x, y, and z components of dG/dxA0
                 (
