@@ -512,15 +512,11 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.solvers.flow.initialize_adjoint(scenario, bodies)
-        for step in range(1, steps + 1):
+        # one extra call to match step 0 call (see fully coupled driver)
+        for step in range(1, steps + 2):
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.solvers.flow.post_adjoint(scenario, bodies)
-
-        # transfer disps adjoint since fa -> fs has shape dependency
-        # if self.change_shape:
-        #     for body in bodies:
-        #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)
@@ -537,16 +533,12 @@ class Fun3dOnewayDriver:
 
         # initialize, run, and do post adjoint
         self.solvers.flow.initialize_adjoint(scenario, bodies)
-        for rstep in range(scenario.steps + 1):
+        # one extra step here to include step 0 calls (see fully coupled driver)
+        for rstep in range(1, scenario.steps + 2): 
             step = scenario.steps + 1 - rstep
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
         self.solvers.flow.post_adjoint(scenario, bodies)
-
-        # transfer disps adjoint since fa -> fs has shape dependency
-        # if self.change_shape:
-        #     for body in bodies:
-        #         body.transfer_disps_adjoint(scenario)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)
