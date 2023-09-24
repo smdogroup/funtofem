@@ -542,7 +542,6 @@ class Fun3dOnewayDriver:
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
         self.solvers.flow.post_adjoint(scenario, bodies)
-        self._extract_coordinate_derivatives(scenario, bodies, step=0)
 
         # transfer disps adjoint since fa -> fs has shape dependency
         # if self.change_shape:
