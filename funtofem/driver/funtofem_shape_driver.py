@@ -291,15 +291,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.flow_aim.pre_analysis()
 
             # for FUN3D mesh morphing now initialize body nodes
-            if not (self.is_paired) and self._first_forward and self.uses_fun3d:
-                assert not (self.solvers.flow.auto_coords)
-                self.solvers.flow._initialize_body_nodes(
-                    self.model.scenarios[0], self.model.bodies
-                )
+            if not (self.is_paired) and self._first_forward:
+                if self.uses_fun3d:
+                    assert not (self.solvers.flow.auto_coords)
+                    self.solvers.flow._initialize_body_nodes(
+                        self.model.scenarios[0], self.model.bodies
+                    )
 
-                # initialize funtofem transfer data with new aero_nnodes size
-                self._initialize_funtofem()
-                self._first_forward = False
+                    # initialize funtofem transfer data with new aero_nnodes size
+                    self._initialize_funtofem()
+                    self._first_forward = False
 
         if self.struct_shape:
             self._update_struct_design()
@@ -309,17 +310,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.pre_analysis()
 
             # move the bdf and dat file to the fun3d_dir
-            if self.is_remote and self.comm.rank == 0 and self.uses_tacs:
-                bdf_src = os.path.join(
-                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
-                )
-                bdf_dest = self.remote.bdf_file
-                shutil.copy(bdf_src, bdf_dest)
-                dat_src = os.path.join(
-                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
-                )
-                dat_dest = self.remote.dat_file
-                shutil.copy(dat_src, dat_dest)
+            if self.is_remote and self.comm.rank == 0:
+                if self.uses_tacs:
+                    bdf_src = os.path.join(
+                        self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                    )
+                    bdf_dest = self.remote.bdf_file
+                    shutil.copy(bdf_src, bdf_dest)
+                    dat_src = os.path.join(
+                        self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                    )
+                    dat_dest = self.remote.dat_file
+                    shutil.copy(dat_src, dat_dest)
 
             if not (self.is_remote):
                 # this will almost never get used until we can remesh without having
