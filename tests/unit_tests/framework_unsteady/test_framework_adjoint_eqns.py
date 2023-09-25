@@ -81,7 +81,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # to compare with adjoint equations
 
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S2 = -1 * plate.get_struct_disps_ajp(scenario).copy()
@@ -97,7 +97,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         # need this to set the disps so the load transfer jacobian is
         # correct in intermediate steps
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S1 = -1 * plate.get_struct_disps_ajp(scenario).copy()
@@ -128,7 +128,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # df/duS1 = 0
         # seed MELD with u_S^1 => u_A^2 transfer here so Jacobians are correct
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         D2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
         plate.transfer.applydDduSTrans(psi_D2[:, 0].copy(), D2_ajp)
@@ -264,7 +264,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # to compare with adjoint equations
 
         step = 2
-        plate.transfer_temps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_temps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_P2 = -1 * plate.get_struct_temps_ajp(scenario).copy()
@@ -279,7 +279,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         step = 1
 
         # sometimes I comment this extra transfer out
-        plate.transfer_temps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_temps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_P1 = -1 * plate.get_struct_temps_ajp(scenario).copy()
@@ -310,7 +310,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # df/dtS1 = 0
         # seed MELD with t_S^1 => t_A^2 transfer here so Jacobians are correct
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         T2_ajp = np.zeros(plate.struct_nnodes, dtype=plate.dtype)
         plate.thermal_transfer.applydTdtSTrans(psi_T2[:, 0].copy(), T2_ajp)
