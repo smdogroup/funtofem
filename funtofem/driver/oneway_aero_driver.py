@@ -271,7 +271,7 @@ class OnewayAeroDriver:
             if self.is_paired:
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Remote.paths(self.solvers.flow.fun3d_dir).design_file,
+                    filename=Remote.paths(self.flow_dir).design_file,
                     root=0,
                 )
 
@@ -290,7 +290,7 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+                filepath = Remote.paths(self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -350,7 +350,7 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+                filepath = Remote.paths(self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -387,6 +387,12 @@ class OnewayAeroDriver:
     @property
     def root_proc(self) -> bool:
         return self.comm.rank == 0
+    
+    @property
+    def flow_dir(self):
+        if self.uses_fun3d:
+            return self.solvers.flow.fun3d_dir
+        # TBD on other solvers
 
     def _transfer_fixed_struct_disps(self):
         """

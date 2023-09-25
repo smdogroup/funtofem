@@ -310,18 +310,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.pre_analysis()
 
             # move the bdf and dat file to the fun3d_dir
-            if self.is_remote and self.comm.rank == 0:
-                if self.uses_tacs:
-                    bdf_src = os.path.join(
-                        self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
-                    )
-                    bdf_dest = self.remote.bdf_file
-                    shutil.copy(bdf_src, bdf_dest)
-                    dat_src = os.path.join(
-                        self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
-                    )
-                    dat_dest = self.remote.dat_file
-                    shutil.copy(dat_src, dat_dest)
+            if self.is_remote:
+                self._move_struct_mesh()
 
             if not (self.is_remote):
                 # this will almost never get used until we can remesh without having
@@ -361,7 +351,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # read in the funtofem design input file
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Remote.paths(self.solvers.flow.fun3d_dir).design_file,
+                    filename=Remote.paths(self.flow_dir).design_file,
                     root=0,
                 )
 
@@ -373,7 +363,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+                filepath = Remote.paths(self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -418,10 +408,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 write_struct = True
                 write_aero = True
                 struct_sensfile = Remote.paths(
-                    self.solvers.flow.fun3d_dir
+                    self.flow_dir
                 ).struct_sens_file
                 aero_sensfile = Remote.paths(
-                    self.solvers.flow.fun3d_dir
+                    self.flow_dir
                 ).aero_sens_file
             else:
                 if self.struct_shape:
@@ -483,7 +473,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
         if self.solvers.flow is not None:
-            fun3d_dir = self.solvers.flow.fun3d_dir
+            fun3d_dir = self.flow_dir
         else:
             fun3d_dir = self.remote.main_dir
         grid_filepaths = []
@@ -498,6 +488,26 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # set the grid filepaths into the fun3d aim
         self.flow_aim.grid_filepaths = grid_filepaths
         return
+    
+    def _move_struct_mesh(self):
+        if self.comm.rank == 0:
+            if self.uses_tacs:
+                bdf_src = os.path.join(
+                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                )
+                bdf_dest = self.remote.bdf_file
+                shutil.copy(bdf_src, bdf_dest)
+                dat_src = os.path.join(
+                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                )
+                dat_dest = self.remote.dat_file
+                shutil.copy(dat_src, dat_dest)
+    
+    @property
+    def flow_dir(self):
+        if self.uses_fun3d:
+            return self.solvers.flow.fun3d_dir
+        # TBD on other solvers
     
     def _update_struct_design(self):
         if self.comm.rank == 0:
