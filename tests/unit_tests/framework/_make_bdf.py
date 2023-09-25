@@ -69,7 +69,7 @@ tacs_model.setup()
 tacs_model.pre_analysis()
 tacs_model.run_analysis()
 
-# shape_driver = TacsOnewayDriver.prime_loads_shape(
+# shape_driver = OnewayStructDriver.prime_loads_shape(
 #     flow_solver,
 #     tacs_aim,
 #     transfer_settings,

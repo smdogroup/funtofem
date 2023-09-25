@@ -95,7 +95,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_model.setup()
 
-        tacs_driver = TacsOnewayDriver.prime_loads(
+        tacs_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
@@ -177,7 +177,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 
@@ -257,7 +257,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 
@@ -337,7 +337,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 

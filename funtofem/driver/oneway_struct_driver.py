@@ -22,27 +22,35 @@ limitations under the License.
 
 
 # TACS one-way coupled drivers that use fixed fun3d aero loads
-__all__ = ["TacsOnewayDriver"]
+__all__ = ["OnewayStructDriver"]
 
-from funtofem.interface.tacs_interface import (
-    TacsInterface,
-    TacsSteadyInterface,
-    TacsUnsteadyInterface,
-)
 from funtofem.interface.solver_manager import SolverManager
 from funtofem.optimization.optimization_manager import OptimizationManager
-
-import importlib.util
-
-caps_loader = importlib.util.find_spec("pyCAPS")
-if caps_loader is not None:  # tacs loader not None check for this file anyways
-    from tacs import caps2tacs
-
 from mpi4py import MPI
 import numpy as np
+import importlib.util
 
+# check import availability for different structural solvers
+# ----------------------------------------------------------
 
-class TacsOnewayDriver:
+caps_loader = importlib.util.find_spec("pyCAPS")
+
+# 1) TACS
+tacs_loader = importlib.util.find_spec("tacs")
+
+if caps_loader is not None and tacs_loader is not None:  # tacs loader not None check for this file anyways
+    from tacs import caps2tacs
+
+if tacs_loader is not None:
+    from funtofem.interface import (
+        TacsInterface,
+        TacsSteadyInterface,
+        TacsUnsteadyInterface,
+    )
+# 2) TBD
+# ----------------------------------------------------------
+
+class OnewayStructDriver:
     def __init__(
         self,
         solvers,
@@ -52,7 +60,7 @@ class TacsOnewayDriver:
         external_shape=False,
     ):
         """
-        build the tacs analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
+        build the analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
 
         Parameters
         ----------
@@ -71,49 +79,48 @@ class TacsOnewayDriver:
         self.model = model
         self.nprocs = nprocs
         self.transfer_settings = transfer_settings
-        self.tacs_interface = solvers.structural
-        if model.structural is None:
-            tacs_aim = None
-        else:
-            tacs_aim = model.structural.tacs_aim
-        self.tacs_aim = tacs_aim
         self.external_shape = external_shape
-
         self._shape_init_transfer = False
+
+        self.struct_interface = solvers.structural
+        self.struct_aim = None
+
+
+        # figure out which discipline solver we are using
+        self._struct_solver_type = None
+        if solvers.structural is not None:
+            # TACS solver
+            if tacs_loader is not None:
+                if isinstance(solvers.structural, TacsSteadyInterface) or \
+                    isinstance(solvers.structural, TacsUnsteadyInterface):
+                    self._struct_solver_type = "tacs"
+            # TBD more solvers
+        # check for structural AIMs
+        if caps_loader is not None and model.structural is not None: 
+            # TACS solver
+            if tacs_loader is not None:
+                if isinstance(model.structural, caps2tacs.TacsModel):
+                    self._struct_solver_type = "tacs"
+                    self.struct_aim = model.structural.tacs_aim
+            # TBD more solvers
 
         # store the shape variables list
         self.shape_variables = [
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
-
-        # check for unsteady problems
-        self._unsteady = False
-        for scenario in model.scenarios:
-            if not scenario.steady:
-                self._unsteady = True
-                break
+        self._unsteady = any([not scenario.steady for scenario in model.scenarios])
 
         # assertion checks for no shape change vs shape change
         if self.change_shape:
-            assert tacs_aim is not None or external_shape
+            assert self.struct_aim is not None or external_shape
             if nprocs is None:  # will error if nprocs not defined anywhere
                 nprocs = solvers.structural.nprocs
             if external_shape:
                 # define properties needed for external shape paths
                 self._dat_file_path = None
                 self._analysis_dir = None
-            else:
-                if caps_loader is not None:
-                    assert isinstance(tacs_aim, caps2tacs.TacsAim)
-                else:
-                    raise AssertionError(
-                        "Need to have ESP/CAPS pyCAPS package to use shape change"
-                    )
         else:  # not change shape
-            assert self.tacs_interface is not None
-            assert isinstance(self.tacs_interface, TacsSteadyInterface) or isinstance(
-                self.tacs_interface, TacsUnsteadyInterface
-            )
+            assert self.struct_interface is not None
 
             # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
             for body in self.model.bodies:
@@ -139,6 +146,10 @@ class TacsOnewayDriver:
     @property
     def unsteady(self) -> bool:
         return self._unsteady
+    
+    @property
+    def uses_tacs(self) -> bool:
+        return self._struct_solver_type == "tacs"
 
     @classmethod
     def prime_loads(
@@ -148,7 +159,7 @@ class TacsOnewayDriver:
         Used to prime struct/aero loads for optimization over TACS analysis.
         Can use the Fun3dOnewayDriver or FUNtoFEMnlbgs driver to prime the loads
         If structural solver exists, it will transfer to fixed structural loads in __init__ construction
-        of the TacsOnewayDriver class.
+        of the OnewayStructDriver class.
         If shape variables exist in the FUNtoFEMmodel, you need to have model.structural be a TacsModel
         and the TacsModel contains a TacsAim wrapper class. If shape variables exist, shape derivatives
         and shape analysis will be performed.
@@ -203,7 +214,7 @@ class TacsOnewayDriver:
             Number of processes that TACS is running on.
         transfer_settings: :class:`~transfer_settings.TransferSettings`
             Settings for transfer of state variables across aero and struct meshes
-        tacs_aim: `caps2tacs.TacsAim`
+        struct_aim: `caps2tacs.TacsAim`
             Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
         external_shape: bool
             whether the tacs aim shape analysis is performed outside this class
@@ -259,7 +270,7 @@ class TacsOnewayDriver:
                 key = world_rank
             return self.comm.Split(color, key)
         else:
-            return self.tacs_interface.tacs_comm
+            return self.struct_interface.tacs_comm
 
     @property
     def root_proc(self) -> bool:
@@ -270,14 +281,14 @@ class TacsOnewayDriver:
         if self.external_shape:
             return self._dat_file_path
         else:
-            return self.tacs_aim.dat_file_path
+            return self.struct_aim.dat_file_path
 
     @property
     def analysis_dir(self):
         if self.external_shape:
             return self._analysis_dir
         else:
-            return self.tacs_aim.analysis_dir
+            return self.struct_aim.analysis_dir
 
     def input_paths(self, dat_file_path, analysis_dir):
         """
@@ -359,26 +370,19 @@ class TacsOnewayDriver:
 
         if self.change_shape:
             if not self.external_shape:
-                # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
-                input_dict = {var.name: var.value for var in self.model.get_variables()}
-                self.model.structural.update_design(input_dict)
-                self.tacs_aim.setup_aim()
+                self._update_design()
+                self.struct_aim.pre_analysis()
 
-                # build the new structure geometry
-                self.tacs_aim.pre_analysis()
-
-            # make the new tacs interface of the structural geometry
-            self.tacs_interface = TacsInterface.create_from_bdf(
-                model=self.model,
-                comm=self.comm,
-                nprocs=self.nprocs,
-                bdf_file=self.dat_file_path,
-                output_dir=self.analysis_dir,
-            )
-
-            # make a solvers object to hold structural solver since flow is no longer used
-            solvers = SolverManager(self.comm, use_flow=False)
-            solvers.structural = self.tacs_interface
+            if self.uses_tacs:
+                # make the new tacs interface of the structural geometry
+                self.struct_interface = TacsInterface.create_from_bdf(
+                    model=self.model,
+                    comm=self.comm,
+                    nprocs=self.nprocs,
+                    bdf_file=self.dat_file_path,
+                    output_dir=self.analysis_dir,
+                )
+            # TBD more structural solvers here
 
             # transfer the fixed aero loads
             self._transfer_fixed_aero_loads()
@@ -421,18 +425,18 @@ class TacsOnewayDriver:
                 body.transfer_loads_adjoint(scenario)
 
         # call get function gradients to store  the gradients from tacs
-        self.tacs_interface.get_function_gradients(scenario, self.model.bodies)
+        self.struct_interface.get_function_gradients(scenario, self.model.bodies)
 
         if self.change_shape and not self.external_shape:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.tacs_aim.sens_file_path,
+                filename=self.struct_aim.sens_file_path,
                 discipline="structural",
             )
 
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.tacs_aim.post_analysis()
+            self.struct_aim.post_analysis()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
@@ -442,7 +446,7 @@ class TacsOnewayDriver:
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
         """extract the coordinate derivatives at a given time step"""
-        self.tacs_interface.get_coordinate_derivatives(
+        self.struct_interface.get_coordinate_derivatives(
             scenario, self.model.bodies, step=step
         )
 
@@ -451,6 +455,15 @@ class TacsOnewayDriver:
             for body in bodies:
                 body.add_coordinate_derivative(scenario, step=0)
 
+        return
+    
+    def _update_design(self):
+        if self.comm.rank == 0:
+            aim = self.struct_aim.aim
+            input_dict = {var.name: var.value for var in self.model.get_variables()}
+            for key in input_dict:
+                if aim.geometry.despmtr[key].value != input_dict[key]:
+                    aim.geometry.despmtr[key].value = input_dict[key]
         return
 
     def _get_shape_derivatives(self, scenario):
@@ -463,12 +476,12 @@ class TacsOnewayDriver:
         # read shape gradients from tacs aim on root proc
         if self.root_proc:
             gradients = []
-            direct_tacs_aim = self.tacs_aim.aim
+            direct_struct_aim = self.struct_aim.aim
 
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
                 for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_tacs_aim.dynout[func.full_name].deriv(var.name)
+                    derivative = direct_struct_aim.dynout[func.full_name].deriv(var.name)
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors
@@ -492,19 +505,20 @@ class TacsOnewayDriver:
 
         # run the tacs forward analysis for no shape
         # zero all data to start fresh problem, u = 0, res = 0
-        self._zero_tacs_data()
+        if self.uses_tacs:
+            self._zero_tacs_data()
 
         # set functions and variables
-        self.tacs_interface.set_variables(scenario, bodies)
-        self.tacs_interface.set_functions(scenario, bodies)
+        self.struct_interface.set_variables(scenario, bodies)
+        self.struct_interface.set_functions(scenario, bodies)
 
         # run the forward analysis via iterate
-        self.tacs_interface.initialize(scenario, bodies)
-        self.tacs_interface.iterate(scenario, bodies, step=0)
-        self.tacs_interface.post(scenario, bodies)
+        self.struct_interface.initialize(scenario, bodies)
+        self.struct_interface.iterate(scenario, bodies, step=0)
+        self.struct_interface.post(scenario, bodies)
 
         # get functions to store the function values into the model
-        self.tacs_interface.get_functions(scenario, bodies)
+        self.struct_interface.get_functions(scenario, bodies)
 
         return 0
 
@@ -517,17 +531,17 @@ class TacsOnewayDriver:
         fail = 0
 
         # set functions and variables
-        self.tacs_interface.set_variables(scenario, bodies)
-        self.tacs_interface.set_functions(scenario, bodies)
+        self.struct_interface.set_variables(scenario, bodies)
+        self.struct_interface.set_functions(scenario, bodies)
 
         # run the forward analysis via iterate
-        self.tacs_interface.initialize(scenario, bodies)
+        self.struct_interface.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
-            self.tacs_interface.iterate(scenario, bodies, step=step)
-        self.tacs_interface.post(scenario, bodies)
+            self.struct_interface.iterate(scenario, bodies, step=step)
+        self.struct_interface.post(scenario, bodies)
 
         # get functions to store the function values into the model
-        self.tacs_interface.get_functions(scenario, bodies)
+        self.struct_interface.get_functions(scenario, bodies)
 
         return 0
 
@@ -539,21 +553,22 @@ class TacsOnewayDriver:
         """
 
         # zero adjoint data
-        self._zero_adjoint_data()
+        if self.uses_tacs:
+            self._zero_adjoint_data()
 
         # set functions and variables
-        self.tacs_interface.set_variables(scenario, bodies)
-        self.tacs_interface.set_functions(scenario, bodies)
+        self.struct_interface.set_variables(scenario, bodies)
+        self.struct_interface.set_functions(scenario, bodies)
 
         # zero all coupled adjoint variables in the body
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
         # initialize, run, and do post adjoint
-        self.tacs_interface.initialize_adjoint(scenario, bodies)
-        self.tacs_interface.iterate_adjoint(scenario, bodies, step=0)
+        self.struct_interface.initialize_adjoint(scenario, bodies)
+        self.struct_interface.iterate_adjoint(scenario, bodies, step=0)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
-        self.tacs_interface.post_adjoint(scenario, bodies)
+        self.struct_interface.post_adjoint(scenario, bodies)
 
         return
 
@@ -565,22 +580,22 @@ class TacsOnewayDriver:
         """
 
         # set functions and variables
-        self.tacs_interface.set_variables(scenario, bodies)
-        self.tacs_interface.set_functions(scenario, bodies)
+        self.struct_interface.set_variables(scenario, bodies)
+        self.struct_interface.set_functions(scenario, bodies)
 
         # zero all coupled adjoint variables in the body
         for body in bodies:
             body.initialize_adjoint_variables(scenario)
 
         # initialize, run, and do post adjoint
-        self.tacs_interface.initialize_adjoint(scenario, bodies)
+        self.struct_interface.initialize_adjoint(scenario, bodies)
         for rstep in range(1, scenario.steps + 1):
             step = scenario.steps + 1 - rstep
-            self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
-        self.tacs_interface.iterate_adjoint(scenario, bodies, step=0)
+            self.struct_interface.iterate_adjoint(scenario, bodies, step=step)
+        self.struct_interface.iterate_adjoint(scenario, bodies, step=0)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
-        self.tacs_interface.iterate_adjoint(scenario, bodies, step=step)
-        self.tacs_interface.post_adjoint(scenario, bodies)
+        self.struct_interface.iterate_adjoint(scenario, bodies, step=step)
+        self.struct_interface.post_adjoint(scenario, bodies)
 
         return
 
@@ -589,24 +604,24 @@ class TacsOnewayDriver:
         zero any TACS solution / adjoint data before running pure TACS
         """
 
-        if self.tacs_interface.tacs_proc:
+        if self.struct_interface.tacs_proc:
             # zero temporary solution data
-            # others are zeroed out in the tacs_interface by default
-            self.tacs_interface.res.zeroEntries()
-            self.tacs_interface.ext_force.zeroEntries()
-            self.tacs_interface.update.zeroEntries()
+            # others are zeroed out in the struct_interface by default
+            self.struct_interface.res.zeroEntries()
+            self.struct_interface.ext_force.zeroEntries()
+            self.struct_interface.update.zeroEntries()
 
             # zero any scenario data
             for scenario in self.model.scenarios:
                 # zero state data
-                u = self.tacs_interface.scenario_data[scenario].u
+                u = self.struct_interface.scenario_data[scenario].u
                 u.zeroEntries()
-                self.tacs_interface.assembler.setVariables(u)
+                self.struct_interface.assembler.setVariables(u)
 
     def _zero_adjoint_data(self):
-        if self.tacs_interface.tacs_proc:
+        if self.struct_interface.tacs_proc:
             # zero adjoint variable
             for scenario in self.model.scenarios:
-                psi = self.tacs_interface.scenario_data[scenario].psi
+                psi = self.struct_interface.scenario_data[scenario].psi
                 for vec in psi:
                     vec.zeroEntries()

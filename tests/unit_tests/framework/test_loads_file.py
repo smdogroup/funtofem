@@ -14,7 +14,7 @@ from funtofem.interface import (
     TestResult,
     make_test_directories,
 )
-from funtofem.driver import FUNtoFEMnlbgs, TransferSettings, TacsOnewayDriver
+from funtofem.driver import FUNtoFEMnlbgs, TransferSettings, OnewayStructDriver
 
 np.random.seed(1234567)
 
@@ -72,7 +72,7 @@ class TestLoadsFile(unittest.TestCase):
         # Read the loads file and test the oneway driver
         # -----------------------------------------------
         solvers.flow = None
-        oneway_driver = TacsOnewayDriver.prime_loads_from_file(
+        oneway_driver = OnewayStructDriver.prime_loads_from_file(
             aero_loads_file, solvers, f2f_model, 1, transfer_settings
         )
 
@@ -125,7 +125,7 @@ class TestLoadsFile(unittest.TestCase):
         # Read the loads file and test the oneway driver
         # -----------------------------------------------
         solvers.flow = None
-        oneway_driver = TacsOnewayDriver.prime_loads_from_file(
+        oneway_driver = OnewayStructDriver.prime_loads_from_file(
             aero_loads_file, solvers, f2f_model, 1, transfer_settings
         )
 

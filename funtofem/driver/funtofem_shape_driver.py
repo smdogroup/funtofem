@@ -298,10 +298,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._first_forward = False
 
         if self.struct_shape:
-            # set the new shape variables into the model using update design to prevent CAPS_CLEAN errors
-            input_dict = {var.name: var.value for var in self.model.get_variables()}
-            self.tacs_model.update_design(input_dict)
-            self.tacs_aim.setup_aim()
+            self._update_struct_design()
+            self.struct_aim.pre_analysis()
 
             # build the new structure geometry
             self.tacs_aim.pre_analysis()
@@ -492,6 +490,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.fun3d_aim.grid_filepaths = grid_filepaths
+        return
+    
+    def _update_struct_design(self):
+        if self.comm.rank == 0:
+            aim = self.struct_aim.aim
+            input_dict = {var.name: var.value for var in self.model.get_variables()}
+            for key in input_dict:
+                if aim.geometry.despmtr[key].value != input_dict[key]:
+                    aim.geometry.despmtr[key].value = input_dict[key]
         return
 
     def _get_remote_functions(self, discipline="aerodynamic"):
