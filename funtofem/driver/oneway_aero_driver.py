@@ -58,12 +58,13 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
 
 For an example implementation see tests/fun3d_tests/ folder with test_fun3d_oneway_aero.py for just aero DVs
-and (test_fun3d_oneway_driver.py => run_fun3d_analysis.py) pair of files for the shape DVs using the Fun3dRemote and system calls.
+and (test_fun3d_oneway_driver.py => run_fun3d_analysis.py) pair of files for the shape DVs using the Remote and system calls.
 """
 
 import os, numpy as np
 from funtofem.driver import TransferSettings
 from funtofem.optimization.optimization_manager import OptimizationManager
+from funtofem.interface.utils import Remote
 
 import importlib.util
 
@@ -73,7 +74,6 @@ import importlib.util
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from funtofem.interface import Fun3dInterface, Fun3dModel
-    from funtofem.interface.utils import Fun3dRemote
 
 # 2) TBD
 # -----------------------------------------------------
@@ -89,13 +89,13 @@ class OnewayAeroDriver:
         return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
 
     @classmethod
-    def aero_remesh(cls, solvers, model, fun3d_remote):
+    def aero_remesh(cls, solvers, model, remote):
         """
         Build a OnewayAeroDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, fun3d_remote=fun3d_remote, is_paired=True)
+        return cls(solvers, model, remote=remote, is_paired=True)
 
     @classmethod
     def analysis(cls, solvers, model, transfer_settings=None):
@@ -112,7 +112,7 @@ class OnewayAeroDriver:
         solvers,
         model,
         transfer_settings=None,
-        fun3d_remote=None,
+        remote=None,
         is_paired=False,
     ):
         """
@@ -135,7 +135,7 @@ class OnewayAeroDriver:
         self.comm = solvers.comm
         self.model = model
         self.transfer_settings = transfer_settings
-        self.fun3d_remote = fun3d_remote
+        self.remote = remote
         self.is_paired = is_paired
 
         # store the shape variables list
@@ -253,17 +253,17 @@ class OnewayAeroDriver:
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
-                filename=Fun3dRemote.paths(self.fun3d_remote.fun3d_dir).design_file,
+                filename=Remote.paths(self.remote.main_dir).design_file,
                 root=0,
             )
 
             # clear the output file
-            if self.root_proc and os.path.exists(self.fun3d_remote.output_file):
-                os.remove(self.fun3d_remote.output_file)
+            if self.root_proc and os.path.exists(self.remote.output_file):
+                os.remove(self.remote.output_file)
 
             # system call the analysis driver
             os.system(
-                f"mpiexec_mpt -n {self.fun3d_remote.nprocs} python {self.fun3d_remote.analysis_file} 2>&1 > {self.fun3d_remote.output_file}"
+                f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
 
         else:  # non-remote call of FUN3D forward analysis
@@ -271,7 +271,7 @@ class OnewayAeroDriver:
             if self.is_paired:
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Fun3dRemote.paths(self.solvers.flow.fun3d_dir).design_file,
+                    filename=Remote.paths(self.solvers.flow.fun3d_dir).design_file,
                     root=0,
                 )
 
@@ -290,7 +290,7 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+                filepath = Remote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -304,7 +304,7 @@ class OnewayAeroDriver:
             # src for movement of sens file or None if not moving it
             sens_file_src = None
             if self.uses_fun3d and self.is_paired:
-                sens_file_src = self.fun3d_remote.aero_sens_file
+                sens_file_src = self.remote.aero_sens_file
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
@@ -350,7 +350,7 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
+                filepath = Remote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -362,7 +362,7 @@ class OnewayAeroDriver:
         # shape derivative section
         if self.change_shape:  # either remote or regular
             # src for movement of sens file or None if not moving it
-            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+            sens_file_src = self.remote.aero_sens_file if self.is_paired else None
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
@@ -485,7 +485,7 @@ class OnewayAeroDriver:
     @property
     def is_remote(self) -> bool:
         """whether we are calling FUN3D in a remote manner"""
-        return self.fun3d_remote is not None
+        return self.remote is not None
 
     @property
     def change_shape(self) -> bool:
@@ -496,7 +496,7 @@ class OnewayAeroDriver:
         if self.solvers.flow is not None:
             fun3d_dir = self.solvers.flow.fun3d_dir
         else:
-            fun3d_dir = self.fun3d_remote.fun3d_dir
+            fun3d_dir = self.remote.main_dir
         grid_filepaths = []
         for scenario in self.model.scenarios:
             filepath = os.path.join(
