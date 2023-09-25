@@ -122,7 +122,7 @@ class OnewayStructDriver:
         else:  # not change shape
             assert self.struct_interface is not None
 
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            # transfer to fixed structural loads in case the user got only aero loads from the OnewayAeroDriver
             for body in self.model.bodies:
                 # initializing transfer schemes is the responsibility of drivers with aerodynamic analysis since they come first
                 body.update_transfer()
@@ -157,7 +157,7 @@ class OnewayStructDriver:
     ):
         """
         Used to prime struct/aero loads for optimization over TACS analysis.
-        Can use the Fun3dOnewayDriver or FUNtoFEMnlbgs driver to prime the loads
+        Can use the OnewayAeroDriver or FUNtoFEMnlbgs driver to prime the loads
         If structural solver exists, it will transfer to fixed structural loads in __init__ construction
         of the OnewayStructDriver class.
         If shape variables exist in the FUNtoFEMmodel, you need to have model.structural be a TacsModel
@@ -166,7 +166,7 @@ class OnewayStructDriver:
 
         Parameters
         ----------
-        driver: :class:`Fun3dOnewayDriver` or :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
+        driver: :class:`OnewayAeroDriver` or :class:`~funtofem_nlbgs_driver.FUNtoFEMnlbgs`
             the fun3d oneway driver or coupled funtofem NLBGS driver
 
         Optional Parameters
@@ -352,7 +352,7 @@ class OnewayStructDriver:
                         np.ones(ns, dtype=dtype) * scenario.T_ref
                     )
 
-                # transfer disps to prevent seg fault if coming from Fun3dOnewayDriver
+                # transfer disps to prevent seg fault if coming from OnewayAeroDriver
                 body.transfer_disps(scenario)
                 body.transfer_temps(scenario)
 

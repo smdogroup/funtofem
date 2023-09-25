@@ -4,7 +4,7 @@ import numpy as np
 
 """
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
-to split our Fun3dOnewayDriver scripts in implementation into two files, a my_funtofem_driver.py and a my_funtofem_analyzer.py.
+to split our OnewayAeroDriver scripts in implementation into two files, a my_funtofem_driver.py and a my_funtofem_analyzer.py.
 The file my_funtofem_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
 also uses system calls to the file my_fun3d_analyzer.py which runs the FUN3D analysis for each mesh. There are two 
 class methods FuntofemShapeDriver.remesh and FuntofemShapeDriver.analysis which build the drivers for each of the two files.
@@ -218,7 +218,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         comm = self.solvers.comm
         comm_manager = self.solvers.comm_manager
         for body in self.model.bodies:
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            # transfer to fixed structural loads in case the user got only aero loads from the OnewayAeroDriver
             body.initialize_transfer(
                 comm=comm,
                 struct_comm=comm_manager.struct_comm,

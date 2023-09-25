@@ -16,7 +16,7 @@ has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
     from funtofem.interface import Fun3dInterface
-    from funtofem.driver import Fun3dOnewayDriver
+    from funtofem.driver import OnewayAeroDriver
 
 np.random.seed(1234567)
 
@@ -54,7 +54,7 @@ class TestFun3dOnewayAero(unittest.TestCase):
         solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
-        driver = Fun3dOnewayDriver.analysis(solvers, model)
+        driver = OnewayAeroDriver.analysis(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.complex_step(

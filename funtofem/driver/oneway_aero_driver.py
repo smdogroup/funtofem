@@ -22,20 +22,18 @@ limitations under the License.
 
 
 # FUN3D one-way coupled drivers that use fixed fun3d aero loads
-__all__ = ["Fun3dOnewayDriver", "Fun3dRemote"]
-
-import numpy as np
+__all__ = ["OnewayAeroDriver"]
 
 """
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
-to split our Fun3dOnewayDriver scripts in implementation into two files, a my_fun3d_driver.py and a my_fun3d_analyzer.py.
+to split our OnewayAeroDriver scripts in implementation into two files, a my_fun3d_driver.py and a my_fun3d_analyzer.py.
 The file my_fun3d_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
 also uses system calls to the file my_fun3d_analyzer.py which runs the FUN3D analysis for each mesh. There are two 
-class methods Fun3dOnewayDriver.remote and Fun3dOnewayDriver.analysis which build the drivers for each of the two files.
+class methods OnewayAeroDriver.remote and OnewayAeroDriver.analysis which build the drivers for each of the two files.
 
 NOTE : only aerodynamic functions can be evaluated from this driver. If you only need aerodynamic DVs, you should build
-the driver with class method Fun3dOnewayDriver.analysis(). If you need shape derivatives through ESP/CAPS, you shoud
-build the driver class using the class method Fun3dOnewayDriver.remote() and setup a separate script with a driver running the analysis.
+the driver with class method OnewayAeroDriver.analysis(). If you need shape derivatives through ESP/CAPS, you shoud
+build the driver class using the class method OnewayAeroDriver.remote() and setup a separate script with a driver running the analysis.
 More details on these two files are provided below. Do not construct a driver with analysis() class method and shape DVs,
 it will error in FUN3D upon the 2nd analysis iteration.
 
@@ -46,7 +44,7 @@ my_fun3d_driver.py : main driver script which called from the run.pbs
     - Construct bodies and scenarios
     - Register aerodynamic and shape DVs to the scenarios/bodies
     - Construct the SolverManager with comm, but leave flow and structural attributes empty
-    - Construct the fun3d oneway driver with class method Fun3dOnewayDriver.remote to manage system calls to the other script.
+    - Construct the fun3d oneway driver with class method OnewayAeroDriver.remote to manage system calls to the other script.
     - Build the optimization manager / run the driver
 
 my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my_fun3d_driver.py
@@ -56,103 +54,36 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
     - Construct the Fun3dInterface
     - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
-    - Construct the a fun3d oneway driver with class method Fun3dOnewayDriver.analysis
+    - Construct the a fun3d oneway driver with class method OnewayAeroDriver.analysis
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
 
 For an example implementation see tests/fun3d_tests/ folder with test_fun3d_oneway_aero.py for just aero DVs
 and (test_fun3d_oneway_driver.py => run_fun3d_analysis.py) pair of files for the shape DVs using the Fun3dRemote and system calls.
 """
 
-import os
+import os, numpy as np
 from funtofem.driver import TransferSettings
 from funtofem.optimization.optimization_manager import OptimizationManager
 
 import importlib.util
 
+# Imports for each of the available flow/aero solvers
+# ---------------------------------------------------
+# 1) FUN3D
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3dInterface, Fun3dModel
+    from funtofem.interface.utils import Fun3dRemote
+
+# 2) TBD
+# -----------------------------------------------------
 
 
-class Fun3dRemote:
-    def __init__(
-        self,
-        analysis_file,
-        fun3d_dir,
-        output_name="f2f_analysis",
-        nprocs=1,
-        aero_name="fun3d",
-        struct_name="tacs",
-    ):
-        """
-
-        Manages remote analysis calls for a FUN3D / FUNtoFEM driver call
-
-        Parameters
-        ----------
-        nprocs: int
-            number of procs for the system call to the Fun3dOnewayAnalyzer
-        analyzer_file: os filepath
-            the location of the subprocess file for the Fun3dOnewayAnalyzer (my_fun3d_analyzer.py)
-        fun3d_dir: filepath
-            location of the fun3d directory for meshes, one level above the scenario folders
-        output_file: filepath
-            optional location to write an output file for the forward and adjoint analysis
-        """
-        self.analysis_file = analysis_file
-        self.fun3d_dir = fun3d_dir
-        self.nprocs = nprocs
-        self.output_name = output_name
-        self.aero_name = aero_name
-        self.struct_name = struct_name
-
-    @classmethod
-    def paths(cls, fun3d_dir, aero_name="fun3d", struct_name="struct"):
-        return cls(
-            analysis_file=None,
-            fun3d_dir=fun3d_dir,
-            aero_name=aero_name,
-            struct_name=struct_name,
-        )
-
-    @classmethod
-    def fun3d_path(cls, fun3d_dir, filename):
-        return os.path.join(fun3d_dir, filename)
-
-    @property
-    def struct_sens_file(self):
-        return os.path.join(self.fun3d_dir, f"{self.struct_name}.sens")
-
-    @property
-    def aero_sens_file(self):
-        return os.path.join(self.fun3d_dir, f"{self.aero_name}.sens")
-
-    @property
-    def output_file(self):
-        return os.path.join(self.fun3d_dir, f"{self.output_name}.txt")
-
-    @property
-    def bdf_file(self):
-        return os.path.join(self.fun3d_dir, f"{self.struct_name}.bdf")
-
-    @property
-    def dat_file(self):
-        return os.path.join(self.fun3d_dir, f"{self.struct_name}.dat")
-
-    @property
-    def design_file(self):
-        return os.path.join(self.fun3d_dir, "funtofem.in")
-
-    @property
-    def functions_file(self):
-        return os.path.join(self.fun3d_dir, "funtofem.out")
-
-
-class Fun3dOnewayDriver:
+class OnewayAeroDriver:
     @classmethod
     def aero_morph(cls, solvers, model, transfer_settings=None):
         """
-        Build a Fun3dOnewayDriver with fun3dAim shape variables and FUN3D analysis
+        Build a OnewayAeroDriver with fun3dAim shape variables and FUN3D analysis
         all in one, using the FUN3D mesh morphing.
         """
         return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
@@ -160,7 +91,7 @@ class Fun3dOnewayDriver:
     @classmethod
     def aero_remesh(cls, solvers, model, fun3d_remote):
         """
-        Build a Fun3dOnewayDriver object for the my_fun3d_driver.py script:
+        Build a OnewayAeroDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
@@ -169,7 +100,7 @@ class Fun3dOnewayDriver:
     @classmethod
     def analysis(cls, solvers, model, transfer_settings=None):
         """
-        Build an Fun3dOnewayDriver object for the my_fun3d_analyzer.py script:
+        Build an OnewayAeroDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
             analysis and writing an aero.sens file to the FUN3D directory.
         If you are using the analysis driver by itself (e.g. for FUN3D mesh morphing) then turn "is_paired" off.
@@ -215,7 +146,7 @@ class Fun3dOnewayDriver:
         # make sure there is shape change otherwise they should just use Fun3dOnewayAnalyzer
         if not (self.change_shape) and self.is_remote:
             raise AssertionError(
-                "Need shape variables to use the Fun3dOnewayDriver otherwise use the Fun3dOnewayAnalyzer which duals as the driver for no shape DVs."
+                "Need shape variables to use the OnewayAeroDriver otherwise use the Fun3dOnewayAnalyzer which duals as the driver for no shape DVs."
             )
 
         if self.is_remote and self.model.flow is not None:
@@ -231,59 +162,51 @@ class Fun3dOnewayDriver:
                         "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
                     )
 
-            assert isinstance(self.solvers.flow, Fun3dInterface)
             if self.change_shape and self.root_proc:
                 print(
                     f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
                 )
 
         # check for unsteady problems
-        self._unsteady = False
-        for scenario in model.scenarios:
-            if not scenario.steady:
-                self._unsteady = True
-                break
+        self._unsteady = any([not scenario.steady for scenario in model.scenarios])
 
-        # get the fun3d aim for changing shape
-        if model.flow is None:
-            fun3d_aim = None
-        else:
-            fun3d_aim = model.flow.fun3d_aim
-        self.fun3d_aim = fun3d_aim
+        # check which aero solver we were given
+        self.flow_aim = None
+        self._flow_solver_type = None
+        if solvers.flow is not None:
+            if fun3d_loader is not None:
+                if isinstance(solvers.flow, Fun3dInterface):
+                    self._flow_solver_type = "fun3d"
+            # TBD on new types
+        else: # check with shape change
+            if fun3d_loader is not None:
+                if isinstance(model.flow, Fun3dModel):
+                    self._flow_solver_type = "fun3d"
+                    self.flow_aim = model.flow.flow_aim
+            # TBD on new types
 
-        if transfer_settings is not None:
-            transfer_settings = TransferSettings()  # default
-        self.transfer_settings = transfer_settings
 
+        self.transfer_settings = transfer_settings if transfer_settings is not None else TransferSettings()
         if self.is_paired:  # if not mesh morphing initialize here
             self._initialize_funtofem()
-
         self._first_forward = True
 
         # shape optimization
         if self.change_shape:
-            assert fun3d_aim is not None
-            assert self.fun3d_model.is_setup
-            self._setup_grid_filepaths()
+            assert self.flow_aim is not None
+            assert self.model.flow.is_setup
+            if self.uses_fun3d:
+                self._setup_grid_filepaths()
         else:
-            # TODO :
             for body in self.model.bodies:
                 body.update_transfer()
-                # local_ns = body.struct_nnodes
-                # global_ns = self.comm.Reduce(local_ns,root=0)
-                # if body.struct_nnodes > 0:
-                #     for scenario in self.model.scenarios:
-                #        # perform disps transfer from fixed struct to aero disps
-                #        body.transfer_disps(scenario)
-                #        body.transfer_temps(scenario)
-        # end of __init__ method
 
     def _initialize_funtofem(self):
         # initialize variables with newly defined aero size
         comm = self.solvers.comm
         comm_manager = self.solvers.comm_manager
         for body in self.model.bodies:
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            # transfer to fixed structural loads in case the user got only aero loads from the OnewayAeroDriver
             body.initialize_transfer(
                 comm=comm,
                 struct_comm=comm_manager.struct_comm,
@@ -298,6 +221,10 @@ class Fun3dOnewayDriver:
                     scenario
                 )  # for writing sens files even in forward case
 
+    @property
+    def uses_fun3d(self) -> bool:
+        return self._flow_solver_type == "fun3d"
+
     def solve_forward(self):
         """
         Forward analysis for the given shape and functionals.
@@ -305,14 +232,14 @@ class Fun3dOnewayDriver:
         """
 
         if self.change_shape:
-            if self.fun3d_aim.mesh_morph and self.comm.rank == 0:
-                self.fun3d_aim.set_design_sensitivity(False, include_file=False)
+            if self.flow_aim.mesh_morph and self.comm.rank == 0:
+                self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            self.fun3d_aim.pre_analysis()
+            self.flow_aim.pre_analysis()
 
             if not (self.is_paired):
-                if self._first_forward:  # FUN3D mesh morphing initialize body nodes
+                if self._first_forward and self.uses_fun3d:  # FUN3D mesh morphing initialize body nodes
                     assert not (self.solvers.flow.auto_coords)
                     self.solvers.flow._initialize_body_nodes(
                         self.model.scenarios[0], self.model.bodies
@@ -322,7 +249,7 @@ class Fun3dOnewayDriver:
                     self._first_forward = False
 
         # system call FUN3D forward analysis and design variable inputs file
-        if self.is_remote:
+        if self.is_remote: # currently remote only for FUN3D solver
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
@@ -361,7 +288,7 @@ class Fun3dOnewayDriver:
         # to be read by the relevant AIM(s) which is in the remote driver.
         if not self.is_remote:
             if not self.is_paired:
-                filepath = self.model.flow.fun3d_aim.sens_file_path
+                filepath = self.flow_aim.sens_file_path
             else:
                 filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
 
@@ -375,14 +302,16 @@ class Fun3dOnewayDriver:
         # post analysis for FUN3D mesh morphing
         if self.change_shape:  # either remote or regular
             # src for movement of sens file or None if not moving it
-            sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
+            sens_file_src = None
+            if self.uses_fun3d and self.is_paired:
+                sens_file_src = self.fun3d_remote.aero_sens_file
 
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis(sens_file_src)
+            self.flow_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
-            if self.fun3d_aim.mesh_morph:
-                self.fun3d_aim.unlink()
+            if self.flow_aim.mesh_morph:
+                self.flow_aim.unlink()
             else:
                 self._get_remote_functions()
 
@@ -402,11 +331,11 @@ class Fun3dOnewayDriver:
             func.zero_derivatives()
 
         if self.change_shape:
-            if self.fun3d_aim.mesh_morph:
-                self.fun3d_aim.set_design_sensitivity(True, include_file=False)
+            if self.flow_aim.mesh_morph:
+                self.flow_aim.set_design_sensitivity(True, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            self.fun3d_aim.pre_analysis()
+            self.flow_aim.pre_analysis()
 
         if not (self.is_remote):
             if self.steady:
@@ -419,7 +348,7 @@ class Fun3dOnewayDriver:
 
             # write sens file for remote to read or if shape change all in one
             if not self.is_paired:
-                filepath = self.model.flow.fun3d_aim.sens_file_path
+                filepath = self.flow_aim.sens_file_path
             else:
                 filepath = Fun3dRemote.paths(self.solvers.flow.fun3d_dir).aero_sens_file
 
@@ -436,7 +365,7 @@ class Fun3dOnewayDriver:
             sens_file_src = self.fun3d_remote.aero_sens_file if self.is_paired else None
 
             # run the tacs aim postAnalysis to compute the chain rule product
-            self.fun3d_aim.post_analysis(sens_file_src)
+            self.flow_aim.post_analysis(sens_file_src)
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
@@ -559,10 +488,6 @@ class Fun3dOnewayDriver:
         return self.fun3d_remote is not None
 
     @property
-    def fun3d_model(self):
-        return self.model.flow
-
-    @property
     def change_shape(self) -> bool:
         return len(self.shape_variables) > 0
 
@@ -582,7 +507,7 @@ class Fun3dOnewayDriver:
             )
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
-        self.fun3d_aim.grid_filepaths = grid_filepaths
+        self.flow_aim.grid_filepaths = grid_filepaths
         return
 
     @property
@@ -613,15 +538,15 @@ class Fun3dOnewayDriver:
         functions = self.model.get_functions()
         nfunc = len(functions)
         remote_functions = None
-        if self.fun3d_aim.root_proc:
+        if self.flow_aim.root_proc:
             remote_functions = np.zeros((nfunc))
-            direct_fun3d_aim = self.fun3d_aim.aim
+            direct_flow_aim = self.flow_aim.aim
             for ifunc, func in enumerate(functions):
-                remote_functions[ifunc] = direct_fun3d_aim.dynout[func.full_name].value
+                remote_functions[ifunc] = direct_flow_aim.dynout[func.full_name].value
 
         # broadcast the function values to other processors
-        fun3d_aim_root = self.fun3d_aim.root
-        remote_functions = self.comm.bcast(remote_functions, root=fun3d_aim_root)
+        flow_aim_root = self.flow_aim.root
+        remote_functions = self.comm.bcast(remote_functions, root=flow_aim_root)
 
         # update model function values in the remote version of the driver
         for ifunc, func in enumerate(functions):
@@ -636,19 +561,19 @@ class Fun3dOnewayDriver:
         gradients = None
 
         # read shape gradients from tacs aim on root proc
-        fun3d_aim_root = self.fun3d_aim.root
-        if self.fun3d_aim.root_proc:
+        flow_aim_root = self.flow_aim.root
+        if self.flow_aim.root_proc:
             gradients = []
-            direct_fun3d_aim = self.fun3d_aim.aim
+            direct_flow_aim = self.flow_aim.aim
 
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
                 for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_fun3d_aim.dynout[func.full_name].deriv(var.name)
+                    derivative = direct_flow_aim.dynout[func.full_name].deriv(var.name)
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors
-        gradients = self.comm.bcast(gradients, root=fun3d_aim_root)
+        gradients = self.comm.bcast(gradients, root=flow_aim_root)
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
