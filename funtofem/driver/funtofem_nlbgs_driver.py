@@ -272,8 +272,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for time_index in range(1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index - 1, jump=True)
-                body.transfer_temps(scenario, time_index - 1, jump=True)
+                body.transfer_disps(scenario, time_index)
+                body.transfer_temps(scenario, time_index)
 
             # Take a step in the flow solver
             fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
@@ -335,8 +335,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # load current state, affects MELD jacobians in the adjoint matrix (esp. load transfer)
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index=step - 1, jump=True)
-                body.transfer_temps(scenario, time_index=step - 1, jump=True)
+                body.transfer_disps(scenario, time_index=step)
+                body.transfer_temps(scenario, time_index=step)
 
             self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)
