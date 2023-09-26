@@ -309,7 +309,9 @@ class Scenario(Base):
         Parameters
         ----------
         flow_dt: float
-            non-dimensional time step in fun3d.nml (equals time_step_nondim)
+            Flow solver time step size. Used to scale the adjoint term coming into and out of
+            FUN3D since FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            Should be equal to non-dimensional time step in fun3d.nml (equals time_step_nondim)
         qinf: float
             Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
         """
