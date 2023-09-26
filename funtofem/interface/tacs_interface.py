@@ -28,6 +28,7 @@ from .utils import f2f_callback, addLoadsFromBDF
 from ._solver_interface import SolverInterface
 import os, numpy as np
 from .tacs_interface_unsteady import TacsUnsteadyInterface
+from .utils.general_utils import real_norm, imag_norm
 
 
 class TacsInterface:
@@ -46,6 +47,7 @@ class TacsInterface:
         callback=None,
         struct_options={},
         thermal_index=-1,
+        debug=False,
     ):
         """
         Class method to create either a TacsSteadyInterface or TacsUnsteadyInterface instance using the pytacs BDF loader
@@ -89,6 +91,7 @@ class TacsInterface:
                 callback=callback,
                 struct_options=struct_options,
                 thermal_index=thermal_index,
+                debug=debug,
             )
         elif all(unsteady_list):
             # create a TACS steady interface
@@ -101,6 +104,7 @@ class TacsInterface:
                 callback=callback,
                 struct_options=struct_options,
                 thermal_index=thermal_index,
+                debug=debug,
             )
         else:
             raise AssertionError(
@@ -125,6 +129,7 @@ class TacsSteadyInterface(SolverInterface):
         override_rotx=False,
         Fvec=None,
         nprocs=None,
+        debug=False,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -201,6 +206,11 @@ class TacsSteadyInterface(SolverInterface):
 
         # Generate output
         self.gen_output = gen_output
+
+        # Debug flag
+        self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         return
 
@@ -586,6 +596,12 @@ class TacsSteadyInterface(SolverInterface):
             ndof = self.assembler.getVarsPerNode()
             for body in bodies:
                 struct_loads = body.get_struct_loads(scenario, time_index=step)
+                if self._debug:
+                    print(f"========================================")
+                    print(f"Inside tacs_interface, step: {step}")
+                    print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                    print(f"norm of imaginary struct_loads: {imag_norm(struct_loads)}")
+                    print(f"========================================\n", flush=True)
                 if struct_loads is not None:
                     for i in range(3):
                         ext_force_array[i::ndof] += struct_loads[i::3].astype(
@@ -950,6 +966,7 @@ class TacsSteadyInterface(SolverInterface):
         struct_options={},
         thermal_index=-1,
         override_rotx=False,
+        debug=False,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1098,6 +1115,7 @@ class TacsSteadyInterface(SolverInterface):
             tacs_comm=tacs_comm,
             override_rotx=override_rotx,
             Fvec=Fvec,
+            debug=debug,
         )
 
 
