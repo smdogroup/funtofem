@@ -164,7 +164,6 @@ class TacsOnewayDriver:
         transfer_settings=None,
         nprocs=None,
         external_shape=False,
-        run_adjoint=False,
         fun3d_dir=None,
     ):
         """
@@ -191,8 +190,6 @@ class TacsOnewayDriver:
             whether to do shape analysis with ESP/CAPS inside this driver or outside of it
         """
         driver.solve_forward()
-        if run_adjoint:
-            driver.solve_adjoint()
         if transfer_settings is None:
             try:
                 transfer_settings = driver.transfer_settings
