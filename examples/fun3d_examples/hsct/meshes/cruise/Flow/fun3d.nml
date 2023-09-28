@@ -1,0 +1,71 @@
+&project
+  project_rootname = 'hsct'
+/
+&raw_grid
+  grid_format = 'aflr3'
+  data_format = 'default'
+  swap_yz_axes = .false.
+/
+&governing_equations
+  eqn_type = 'compressible'
+  viscous_terms = 'turbulent'
+/
+&reference_physical_properties
+  mach_number     = 2.5
+  angle_of_attack = 2.0
+  reynolds_number = 7.3817e8
+  temperature     = 216.0
+  temperature_units = 'Kelvin'
+/
+&code_run_control
+  restart_write_freq = 1
+  restart_read       = 'off'
+  steps              =  500
+/
+&inviscid_flux_method
+  flux_construction       = 'roe'
+  flux_limiter            = 'hminmod'
+  smooth_limiter_coeff    = 1.0
+  freeze_limiter_iteration = 200
+/
+&nonlinear_solver_parameters
+  time_accuracy = "steady"
+  time_step_nondim =   0.1
+  subiterations =          0
+  schedule_iteration(1:2) = 1,200
+  schedule_cfl(1:2) = 1.0, 100.0
+  schedule_cflturb(1:2) = 5.0,50.0
+/
+&massoud_output
+  funtofem_include_skin_friction = .true.
+/
+&global
+  moving_grid = .true.
+  boundary_animation_freq = 500
+  volume_animation_freq = 500
+/
+&elasticity_gmres
+  elasticity = 2
+  tol = 1e-20
+  tol_abs = 1e-30
+/
+&slice_data
+  nslices       = 1
+  slice_z(:)    = .true.
+  slice_location(:) = 2.5
+/
+&volume_output_variables
+  export_to = 'tecplot'
+  temperature = .true.
+  x = .true.
+  y = .true.
+  z = .true.
+/
+&boundary_output_variables
+  number_of_boundaries = 1
+  boundary_list = '2'
+  temperature = .true.
+  x = .true.
+  y = .true.
+  z = .true.
+/

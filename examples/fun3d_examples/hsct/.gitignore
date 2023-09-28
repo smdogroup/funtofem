@@ -1,0 +1,7 @@
+meshes/autosave.csm
+meshes/*.jrnl
+*.jrnl
+*.hst
+design/
+*Struct*
+struct*

@@ -1,0 +1,867 @@
+# main config parameters
+cfgpmtr mode:flow 0
+cfgpmtr mode:struct 1
+
+# fluid view parameters
+cfgpmtr view:farfield 1
+cfgpmtr view:airplane 1
+
+# structure view parameters
+cfgpmtr view:OML 1
+cfgpmtr view:internalStruct 1
+
+# structural design parameters
+# --------------------------------
+cfgpmtr nribs 25
+cfgpmtr nspars 3
+outpmtr nOML 
+set nOML nribs-1
+
+despmtr spar_a1 1.0
+despmtr spar_a2 0.0
+set spar_a3 1-spar_a1-spar_a2
+
+despmtr rib_a1 1.0
+despmtr rib_a2 0.0
+set rib_a3 1-rib_a1-rib_a2
+
+# fractions which we chop up the nominal airfoil
+despmtr LEchopFrac 0.05 # from LE
+despmtr TEchopFrac 0.08 # from LE
+
+# wing size design parameters
+despmtr wing:area 700
+despmtr wing:aspect 7.0
+despmtr wing:span_fr1 0.2
+despmtr wing:span_fr2 0.3
+
+# wing angle design parameters
+despmtr wing:phi1_LE 70
+despmtr wing:phi2_LE 50
+despmtr wing:phi3_LE 30
+despmtr wing:phi1_TE 15
+despmtr wing:phi2_TE 10
+despmtr wing:phi3_TE 8
+# TBD dihedral
+
+# wing size dependent parameters
+set wing_span sqrt(wing:area*wing:aspect)
+set wing_span_fr3 1.0-wing:span_fr1-wing:span_fr2
+set wing_span1 wing_span*wing:span_fr1
+set wing_span2 wing_span*wing:span_fr2
+set wing_span3 wing_span*wing_span_fr3
+set wing_sspan 0.5*wing_span
+set wing_sspan1 0.5*wing_span1
+set wing_sspan2 0.5*wing_span2
+set wing_sspan3 0.5*wing_span3
+set wing_chord_drop1 wing_sspan1*(tand(wing:phi1_LE)+tand(wing:phi1_TE))
+set wing_chord_drop2 wing_sspan2*(tand(wing:phi2_LE)+tand(wing:phi2_TE))
+set wing_chord_drop3 wing_sspan3*(tand(wing:phi3_LE)+tand(wing:phi3_TE))
+set wing_area_drop1 0.5*wing_sspan1*wing_chord_drop1
+set wing_area_drop2 0.5*wing_sspan2*(2*wing_chord_drop1+wing_chord_drop2)
+set wing_area_drop3 0.5*wing_sspan3*(2*wing_chord_drop1+2*wing_chord_drop2+wing_chord_drop3)
+set wing_chord_root (wing:area+wing_area_drop1+wing_area_drop2+wing_area_drop3)/wing_sspan
+set wing_chord_mid1 wing_chord_root-wing_chord_drop1
+set wing_chord_mid2 wing_chord_mid1-wing_chord_drop2
+set wing_chord_tip wing_chord_mid2-wing_chord_drop3
+
+# wing:airfoil design parameters
+despmtr wing:tc_root 0.015
+despmtr wing:tc_mid1 0.04
+despmtr wing:tc_mid2 0.05
+despmtr wing:tc_tip 0.08
+
+# HTAIL DESIGN PARAMETERS -------------------------------------
+# htail size design parameters
+despmtr htail:area 300
+despmtr htail:aspect 3.5
+
+# htail location parameters
+despmtr htail:dx 10.0
+despmtr htail:outboard_pos -2.0
+despmtr htail:dz 3.0
+
+# htail airfoil parameters
+despmtr htail:tc_root 0.04
+despmtr htail:tc_tip 0.06
+
+# htail angle design parameters
+despmtr htail:phi_LE 30
+despmtr htail:phi_TE -10
+
+# htail dependent parameters
+set htail_span sqrt(htail:area*htail:aspect)
+set htail_sspan htail_span/2.0
+set htail_chord_drop htail_sspan*(tand(htail:phi_LE)+tand(htail:phi_TE))
+set htail_chord_avg htail:area/htail_span
+set htail_chord_tip 0.5*(2*htail_chord_avg-htail_chord_drop)
+set htail_chord_root htail_chord_tip+htail_chord_drop
+set htail_thick_root htail_chord_root*htail:tc_root
+set htail_thick_tip htail_chord_tip*htail:tc_tip
+
+# VTAIL ----------------------------------
+# vtail size design parameters
+despmtr vtail:area 200
+despmtr vtail:aspect 3.0
+
+# htail location parameters
+despmtr vtail:dx 12.0
+despmtr vtail:outboard_pos 2.0
+despmtr vtail:dz 5.0
+
+# htail airfoil parameters
+despmtr vtail:tc_root 0.04
+despmtr vtail:tc_tip 0.06
+
+# htail angle design parameters
+despmtr vtail:phi_LE 30
+despmtr vtail:phi_TE 0
+
+# htail dependent parameters
+set vtail_span sqrt(vtail:area*vtail:aspect)
+set vtail_sspan vtail_span/2.0
+set vtail_chord_drop vtail_sspan*(tand(vtail:phi_LE)+tand(vtail:phi_TE))
+set vtail_chord_avg vtail:area/vtail_span
+set vtail_chord_tip 0.5*(2*vtail_chord_avg-vtail_chord_drop)
+set vtail_chord_root vtail_chord_tip+vtail_chord_drop
+set vtail_thick_root vtail_chord_root*vtail:tc_root
+set vtail_thick_tip vtail_chord_tip*vtail:tc_tip
+
+# wing box design parameters
+despmtr wing_dz 2.9
+despmtr box_span 14
+despmtr box_tc 0.02
+set box_sspan box_span/2.0
+despmtr wing_offset 2
+set box_rx wing_chord_root/2.0
+set box_thick box_tc*wing_chord_root
+set box_ry box_thick/2.0
+despmtr box_n 4.0
+
+# fuselage design parameters
+despmtr cabin_height 12.0
+despmtr front_cabin_dx 20.0 # orig 50.0 m
+despmtr cockpit_dx 18.0 # 12.0 m
+despmtr cockpit_dz -3.0 
+despmtr rear_dx 26.0
+despmtr f_root_margin 3.0
+despmtr dx_nose 4.0
+set dx_tail 6.0
+
+dimension noselist 2 4
+set    noselist "1.5; 0; 1; 0;\
+                 1.0; 0; 0; 1;"
+
+dimension taillist 2 4
+set     taillist "2.0; 0; 1; 0;\
+                  2.0; 0; 0; 1;"
+
+# fuselage dependent parameters
+set cabin_rz cabin_height/2.0
+
+# END of DESPMTR section
+# -------------------------------------------------
+
+# WING BODY
+# -------------------------------------------------
+mark
+# make root airfoil
+udparg naca456 thkcode $66 toc wing:tc_root camcode $6
+udprim naca456 a 0.60
+scale wing_chord_root 
+   
+# make midspan 1 airfoil
+udparg naca456 thkcode $66 toc wing:tc_mid1 camcode $6
+udprim naca456 a 0.60
+scale wing_chord_mid1
+set xpos1 wing_sspan1*tand(wing:phi1_LE)
+translate xpos1 0 -wing_sspan1
+   
+# make midspan 2 airfoil
+udparg naca456 thkcode $66 toc wing:tc_mid2 camcode $6
+udprim naca456 a 0.60
+scale wing_chord_mid2
+set xpos2 xpos1+wing_sspan2*tand(wing:phi2_LE)
+translate xpos2 0 -wing_sspan1-wing_sspan2
+   
+# make tip airfoil
+udparg naca456 thkcode $66 toc wing:tc_tip camcode $6
+udprim naca456 a 0.60
+scale wing_chord_tip
+set xpos3 xpos2+wing_sspan3*tand(wing:phi3_LE)
+translate xpos3 0 -wing_sspan
+
+# complete the wing solid body
+#loft 0
+blend
+select face
+   attribute _color $green
+   attribute capsGroup $OML
+translate 0 -wing_dz -box_sspan+wing_offset
+
+select face
+   attribute comp $FSI
+
+store wingSolidBody
+   
+# FUSELAGE #
+# -------------------------------------------------------
+# make the main fuselage
+set xmargin 3
+mark
+   # front cockpit nose
+   set x_front_cockpit -front_cabin_dx-cockpit_dx
+   set x_nose x_front_cockpit-dx_nose
+   skbeg x_nose cockpit_dz 0
+   skend
+   
+   # front cockpit station
+#---    udparg supell rx 2.0 ry_n 0.5 ry_s 1.0
+#---    udprim supell n_n 1.7 n_s 3.0
+#---    rotatey 90 0 0
+#---    translate x_front_cockpit cockpit_dz 0
+
+   # mid cockpit station
+   udparg supell rx 5.0 ry_n 3.2 ry_s 3.0
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate x_front_cockpit+cockpit_dx*0.3 0.6*cockpit_dz 0 0
+
+   # back cockpit station
+   udparg supell rx box_sspan ry_n cabin_rz-1.0 ry_s cabin_rz-0.5
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate -front_cabin_dx 0 0
+
+   # front wing station
+   udparg supell rx box_sspan ry cabin_rz
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate -xmargin 0 0
+blend noselist 0
+
+# repeat front wing station
+mark
+   # front wing station
+   udparg supell rx box_sspan ry cabin_rz
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate -xmargin 0 0
+
+   # back of wing station
+   udparg supell rx box_sspan ry cabin_rz
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate wing_chord_root+3 0.0 0
+
+   # finish lofting the fuselage together + attributes
+   #loft 0
+blend
+union
+
+# back part of fuselage
+mark
+   set x_past_wing wing_chord_root+f_root_margin
+   # repeat back of wing station
+   udparg supell rx box_sspan ry cabin_rz
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate x_past_wing 0.0 0
+
+   # mid rear station
+   udparg supell rx 5.0 ry 4.0
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate x_past_wing+rear_dx*0.7 cabin_rz-4.5 0
+
+   # rear station
+   udparg supell rx 4.0 ry 3.0
+   udprim supell n_n 1.7 n_s 3.0
+   rotatey 90 0 0
+   translate x_past_wing+rear_dx cabin_rz-4 0
+   
+   # tail tip
+   skbeg x_past_wing+rear_dx+dx_tail cabin_rz-4 0
+   skend
+blend 0 taillist
+
+union
+
+select face
+attribute _color $blue
+
+store fuselage
+
+# Horizontal Tail
+# ---------------------------------------------------------------------------
+mark
+# make htail root airfoil
+udparg naca456 thkcode $66 toc htail:tc_root camcode $0
+udprim naca456 a 0.60
+scale htail_chord_root
+set htail_root_x x_past_wing+htail:dx 
+translate htail_root_x htail:dz htail:outboard_pos
+
+# make htail tip airfoil
+udparg naca456 thkcode $66 toc htail:tc_tip camcode $0
+udprim naca456 a 0.60
+scale htail_chord_tip
+translate htail_root_x+htail_sspan*tand(htail:phi_LE) htail:dz htail:outboard_pos-htail_sspan
+
+# finish the htail solid
+loft 0
+
+select face
+attribute _color $green
+store htail
+
+# Vertical Tail
+# ---------------------------------------------------------------------------
+mark
+# make vtail root airfoil
+udparg naca456 thkcode $66 toc vtail:tc_root camcode $0
+udprim naca456 a 0.60
+scale vtail_chord_root
+rotatex 90 0 0 # rotate to vertical
+set vtail_root_x x_past_wing+vtail:dx 
+translate vtail_root_x vtail:dz 0
+
+# make htail tip airfoil
+udparg naca456 thkcode $66 toc vtail:tc_tip camcode $0
+udprim naca456 a 0.60
+scale vtail_chord_tip
+rotatex 90 0 0 # rotate to vertical
+translate vtail_root_x+vtail_sspan*tand(vtail:phi_LE) vtail:dz+vtail_sspan 0
+
+# finish the htail solid
+loft 0
+#throw 999
+
+select face
+attribute _color $green
+store vtail
+
+# SYMMETRY CUT BOX
+# ---------------------------------------------------------------------------
+# cut the fuselage in half -Z side
+set margin 2.0
+set total_dx cockpit_dx+front_cabin_dx+wing_chord_root+f_root_margin+rear_dx+dx_nose+dx_tail
+box x_nose-margin 7.0+vtail_span+margin 0.0 total_dx+2*margin -14.0-2*vtail_span-2*margin -wing_sspan-margin
+store sym_cut_box
+
+# WING BOX
+# ----------------------------------------------------------------------------
+mark
+   # make root airfoil
+   udparg naca456 thkcode $66 toc wing:tc_root camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_root 
+   translate 0 -wing_dz -box_sspan+wing_offset
+
+   # make base super ellipse
+   udprim supell rx box_rx ry box_ry n box_n
+   translate box_rx -wing_dz 0
+loft 0
+select face
+   attribute capsGroup $wingBox
+   attribute _color $blue
+store wingBox
+
+# WING + BOX = FULL WING
+# -------------------------------------------------------------------------------
+restore wingSolidBody
+restore wingBox
+union
+store fullWingBody
+
+# FLUID GEOMETRY VIEW
+# ----------------------------
+ifthen mode:flow EQ 1
+   restore fuselage
+   restore fullWingBody
+   # add capsgroups to the wing wall
+   union
+   restore htail
+   union
+   restore vtail
+   union
+   
+   # cut the airplane in half
+   restore sym_cut_box
+   intersect
+   
+   select face
+   attribute capsGroup $staticWall
+      attribute capsMesh $staticWall
+      #ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
+      ATTRIBUTE AFLR4_CMP_ID 3
+      ATTRIBUTE AFLR4_Edge_Refinement_Weight 0.1
+   
+   select face $comp $FSI
+       attribute capsGroup $wall
+       attribute capsMesh $wall
+       attribute AFLR4_CMP_ID 1
+       attribute AFLR4_Edge_Refinement_Weight 0.1
+   
+   store halfAirplane
+   
+   ifthen view:farfield EQ 1 AND view:airplane EQ 1
+      
+      # make box here
+      set ff 20*wing_span
+      box -ff -ff 0 2*ff 2*ff -ff
+      select face
+      attribute capsGroup $Farfield
+         attribute capsMesh $Farfield
+         ATTRIBUTE AFLR4_CMP_ID 2
+         ATTRIBUTE AFLR4_Scale_Factor 10.0
+      
+   endif
+   
+   ifthen view:airplane EQ 1
+      restore halfAirplane
+   endif
+
+   ifthen view:farfield EQ 1 AND view:airplane EQ 1
+      subtract
+      
+      select face 3
+        attribute AFLR_GBC $BL_INT_UG3_GBC
+        attribute capsGroup $SymmetryY
+        attribute capsMesh $SymmetryY
+        attribute AFLR4_CMP_ID 4
+        ATTRIBUTE AFLR4_Scale_Factor 10.0
+      
+      select face $capsGroup $Farfield
+        ATTRIBUTE AFLR_GBC $FARFIELD_UG3_GBC
+      
+      select body
+         attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
+         attribute capsMeshLength 1.0
+      
+   endif
+
+endif
+
+# STUCTURE GEOMETRY VIEW
+# -------------------------------------------------------------------
+ifthen mode:struct EQ 1
+   # omitting wingBox for now since don't want FSI near the symmetry plane 
+   # (causes aero_disps past sym plane and errors analysis in FUN3D)
+   
+   # store the locations of the min and max x positions at each spanwise station
+   set maxThick wing_chord_root*wing:tc_root
+   set xmargin 3
+   set ymargin 4
+   set zmargin 6
+   set yoffset -wing_dz
+   
+   set xLE_root 0.0
+   set xTE_root wing_chord_root
+   set z_root -box_sspan+wing_offset
+   
+   set xLE_mid1 xLE_root+wing_sspan1*tand(wing:phi1_LE)
+   set xTE_mid1 xLE_mid1+wing_chord_mid1
+   set z_mid1 z_root-wing_sspan1
+   
+   set xLE_mid2 xLE_mid1+wing_sspan2*tand(wing:phi2_LE)
+   set xTE_mid2 xLE_mid2+wing_chord_mid2
+   set z_mid2 z_mid1-wing_sspan2
+   
+   set xLE_tip xLE_mid2+wing_sspan3*tand(wing:phi3_LE)
+   set xTE_tip xLE_tip+wing_chord_tip
+   set z_tip z_mid2-wing_sspan3
+   
+   # chop off front and back of the airfoil at each wing station
+   # store "chopped" off coordinates with number 2 at end
+   # -------------------------------------------------------
+   set xLE_root_chop xLE_root*(1-LEchopFrac)+xTE_root*LEchopFrac
+   set xTE_root_chop xLE_root*TEchopFrac+xTE_root*(1-TEchopFrac)
+   
+   set xLE_mid1_chop xLE_mid1*(1-LEchopFrac)+xTE_mid1*LEchopFrac
+   set xTE_mid1_chop xLE_mid1*TEchopFrac+xTE_mid1*(1-TEchopFrac)
+   
+   set xLE_mid2_chop xLE_mid2*(1-LEchopFrac)+xTE_mid2*LEchopFrac
+   set xTE_mid2_chop xLE_mid2*TEchopFrac+xTE_mid2*(1-TEchopFrac)
+   
+   set xLE_tip_chop xLE_tip*(1-LEchopFrac)+xTE_tip*LEchopFrac
+   set xTE_tip_chop xLE_tip*TEchopFrac+xTE_tip*(1-TEchopFrac)
+   
+   # LE CHOP BOX SOLID
+   # ---------------------------------------------------------
+   set chop_marg 10
+   set y1 yoffset-maxThick/2-ymargin
+   set y2 yoffset+maxThick/2+ymargin
+
+   # root to mid1, LE
+   set x1 xLE_root_chop*1.1-xLE_mid1_chop*0.1
+   set z1 z_root*1.1-z_mid1*0.1
+   #restore wingSolidBody
+   mark
+   box -chop_marg+x1 y1 z1 chop_marg (y2-y1) 0
+   
+   # mid1 to mid2, LE
+   box -chop_marg+xLE_mid1_chop y1 z_mid1 chop_marg (y2-y1) 0
+   
+   # mid2 to tip, LE
+   set x1 xLE_mid2_chop
+   set x2 -xLE_mid2_chop*0.1+xLE_tip_chop*1.1
+   set z1 z_mid2
+   set z2 -z_mid2*0.1+z_tip*1.1
+   box -chop_marg+x1 y1 z1 chop_marg (y2-y1) 0
+   box -chop_marg+x2 y1 z2 chop_marg (y2-y1) 0
+   
+   # join all the leading chop boxes into one
+   blend
+   store LEchopBox
+   
+   # TE CHOP BOX SOLID
+   # ---------------------------------------------------------
+   set y1 yoffset-maxThick/2-ymargin
+   set y2 yoffset+maxThick/2+ymargin
+   
+   # root to mid1, TE
+   set x1 xTE_root_chop*1.1-xTE_mid1_chop*0.1
+   set z1 z_root*1.1-z_mid1*0.1
+   box x1 y1 z1 chop_marg (y2-y1) 0
+   
+   # mid1 to mid2, LE
+   set x1 xTE_mid1_chop
+   set x2 xTE_mid2_chop
+   set z1 z_mid1
+   box x1 y1 z1 chop_marg (y2-y1) 0
+   
+   # mid2 to tip, LE
+   set x1 xTE_mid2_chop
+   set x2 -xTE_mid2_chop*0.1+xTE_tip_chop*1.1
+   set z1 z_mid2
+   set z2 -z_mid2*0.1+z_tip*1.1
+   box x1 y1 z1 chop_marg (y2-y1) 0
+   box x2 y1 z2 chop_marg (y2-y1) 0
+   
+   # join all the leading chop boxes into one
+   blend
+   store TEchopBox
+   
+   # CHOPPED WING SOLID BODY 
+   # -------------------------------------------------------------
+   
+   # Create the chopped off wing solid body
+   restore wingSolidBody
+   restore LEchopBox
+   subtract
+   restore TEchopBox
+   subtract
+  
+   select face
+     attribute _color $blue
+     attribute capsGroup $OML
+ 
+   select face 4
+     attribute _color $red
+     attribute capsGroup $LEspar
+   
+   select face 2
+     attribute _color $red
+     attribute capsGroup $TEspar
+   
+   store choppedWingSolid
+   
+   
+   # THERMAL BC MIDPLANE
+   # ------------------------------------------------------------
+   mark
+   # make root airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_root 
+
+   # make midspan 1 airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_mid1
+   set xpos1 wing_sspan1*tand(wing:phi1_LE)
+   translate xpos1 0 -wing_sspan1
+   loft 0
+   translate 0 -wing_dz -box_sspan+wing_offset
+   store midplane1
+
+   mark 
+   # make midspan 1 airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_mid1
+   set xpos1 wing_sspan1*tand(wing:phi1_LE)
+   translate xpos1 0 -wing_sspan1
+      
+   # make midspan 2 airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_mid2
+   set xpos2 xpos1+wing_sspan2*tand(wing:phi2_LE)
+   translate xpos2 0 -wing_sspan1-wing_sspan2
+   loft 0
+   translate 0 -wing_dz -box_sspan+wing_offset
+   store midplane2
+
+   mark
+   # make midspan 2 airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_mid2
+   set xpos2 xpos1+wing_sspan2*tand(wing:phi2_LE)
+   translate xpos2 0 -wing_sspan1-wing_sspan2
+      
+   # make tip airfoil
+   udparg naca456 thkcode $66 toc 0.0 camcode $6
+   udprim naca456 a 0.60
+   scale wing_chord_tip
+   set xpos3 xpos2+wing_sspan3*tand(wing:phi3_LE)
+   translate xpos3 0 -wing_sspan
+   loft 0
+   translate 0 -wing_dz -box_sspan+wing_offset
+   store midplane3
+   
+   
+   # THERMAL UPPER BOX
+   # -------------------------------------------------------------
+   set dy 3
+   restore midplane1
+   extrude 0 dy 0
+   restore midplane2
+   extrude 0 dy 0
+   restore midplane3
+   extrude 0 dy 0
+   union
+   union
+   store thermUpperBox
+   
+   
+   # THERMAL LOWER BOX
+   # -------------------------------------------------------------
+   set dy -3
+   restore midplane1
+   extrude 0 dy 0
+   restore midplane2
+   extrude 0 dy 0
+   restore midplane3
+   extrude 0 dy 0
+   union
+   union
+   store thermLowerBox
+   
+   # INTERNAL STRUCTURE
+   # -------------------------------------------------------------
+   set y1 yoffset-maxThick/2-ymargin
+   set y2 yoffset+maxThick/2+ymargin
+   
+   # SPARS
+   # ----------------------------------------------------------
+   set spar_marg 5
+   patbeg ispar nspars
+      set nom_spar_fr ispar/(nspars+1)
+      set spar_fr nom_spar_fr*(spar_a1+nom_spar_fr*(spar_a2+nom_spar_fr*spar_a3))
+      
+      # set x coordinates at each station of the spar
+      set x_root xLE_root_chop*(1-spar_fr)+xTE_root_chop*spar_fr
+      set x_mid1 xLE_mid1_chop*(1-spar_fr)+xTE_mid1_chop*spar_fr
+      set x_mid2 xLE_mid2_chop*(1-spar_fr)+xTE_mid2_chop*spar_fr
+      set x_tip xLE_tip_chop*(1-spar_fr)+xTE_tip_chop*spar_fr
+      
+      mark
+      box -spar_marg+x_root y1 z_root spar_marg (y2-y1) 0
+      box -spar_marg+x_mid1 y1 z_mid1 spar_marg (y2-y1) 0
+      box -spar_marg+x_mid2 y1 z_mid2 spar_marg (y2-y1) 0
+      box -spar_marg+x_tip y1 z_tip spar_marg (y2-y1) 0
+      blend
+      select face 3
+      extract @sellist
+      
+      select face
+        attribute _color $red
+        attribute capsGroup !$spar+ispar
+        attribute capsMesh $spar
+      
+   patend # end spar pattern
+   
+   
+   # RIBS
+   # -----------------------------------------------------------
+   
+   # intermediate ribs are created in a pattern statement
+   patbeg iMiddle nribs-2
+      set irib iMiddle+1
+      set nom_rib_fr (irib-1)/(nribs-1)
+      set rib_fr nom_rib_fr*(rib_a1+nom_rib_fr*(rib_a2+nom_rib_fr*rib_a3))
+      
+      set zpos z_root*(1-rib_fr)+z_tip*rib_fr
+      set xmin xLE_root_chop-xmargin
+      set xmax xTE_root_chop+xmargin
+      
+      box xmin y1 zpos (xmax-xmin) (y2-y1) 0.0
+      
+      select face
+        attribute _color $green
+        attribute capsGroup !$rib+irib
+        attribute capsMesh $rib
+      
+      ifthen iMiddle EQ 1
+         patbeg foo nspars
+            union
+         patend
+      else
+         union
+      endif
+      
+   patend
+   
+   store waffle
+   
+   # TRIM and add Thermal midplanes to INTERNAL STRUCTURE
+   # ----------------------------------------------------------
+   
+   # intersect the ribs and spars with upper and lower thermal box
+   # then stitch back together so there is a thermal midline
+   # in each rib and spar
+   
+   restore waffle
+   restore thermUpperBox
+   intersect
+   select face
+     attribute thermal $upper
+   
+   restore waffle
+   restore thermLowerBox
+   intersect
+   select face
+     attribute thermal $lower
+   
+   union
+   
+   # trim the ribs and spars to the chopped wing solid
+   restore choppedWingSolid
+   intersect
+   
+   store internalStruct
+   
+   # COMBINE the OML and INTERNAL STRUCTURE TOGETHER
+   # -----------------------------------------------------
+   
+   # make the OML
+   restore choppedWingSolid  
+   extract 0
+   store OML
+   
+   # combine the internal structure and OML
+   ifthen view:OML EQ 1      
+      # add the thermal midplane cuts to the root+tip rib
+      # otherwise the auto-mesher can't handle 5 edge faces
+      # with no midline, but no thermal BCs on these lines still
+      restore thermUpperBox
+      restore OML
+      intersect
+      
+      restore thermLowerBox
+      restore OML
+      intersect
+      
+      union
+      
+      select face $capsGroup $OML
+        attribute capsMesh $OML
+        attribute has_group $no
+        attribute _color $blue
+      
+      select face $capsGroup $LEspar
+        attribute capsMesh $spar
+      select face $capsGroup $TEspar
+        attribute capsMesh $spar
+      
+      select face 5
+        attribute capsGroup $rib1
+        attribute capsMesh $rib1
+        attribute _color $green
+        attribute capsConstraint $root
+      select face 9
+        attribute capsGroup $rib1
+        attribute capsMesh $rib1
+        attribute _color $green
+        attribute capsConstraint $root
+      select face 3
+        attribute capsGroup !$rib+nribs
+        attribute _color $green
+      select face 7
+        attribute capsGroup !$rib+nribs
+        attribute _color $green
+   endif
+   
+   ifthen view:internalStruct EQ 1
+      restore internalStruct
+      
+      udprim editAttr filename <<
+        EDGE ADJ2FACE thermal=lower
+        AND ADJ2FACE thermal=upper
+        SET capsConstraint=midplane 
+      
+        NODE ADJ2EDGE capsConstraint=midplane
+        SET capsConstraint=midplane
+      >>
+   endif
+   
+   ifthen view:internalStruct EQ 1 AND view:OML EQ 1
+      union
+      
+      # add caps attributes for the OML
+      udprim editAttr filename <<
+         EDGE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+
+         NODE ADJ2FACE capsConstraint=root
+         SET capsConstraint=root
+
+         # label OML skin panels in between ribs
+         patbeg iOML (nribs-1)
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+iOML
+            AND ADJ2FACE capsGroup=!$rib+(iOML+1)
+            SET capsGroup=!$OML+iOML
+            SET has_group=yes
+         patend
+
+         # label OML skin panels in between rib
+         # and turn in structure so another OML panel
+         patbeg iOML (nribs-1)
+
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+iOML
+            AND ADJ2FACE capsGroup=!$OML+(iOML-1)
+            SET capsGroup=!$OML+iOML
+            SET has_group=yes
+
+            FACE HAS has_group=no
+            AND ADJ2FACE capsGroup=!$rib+(iOML+1)
+            AND ADJ2FACE capsGroup=!$OML+(iOML+1)
+            SET capsGroup=!$OML+iOML
+            SET has_group=yes
+         patend
+      >>
+      
+   endif
+   
+   # attributes to enable pyCAPS and TACS analysis in FUNtoFEM
+   select body
+   attribute capsAIM $egadsTessAIM;tacsAIM
+   
+endif
+
+
+# don't forget to rotatex for swap-yz fix in FUN3D
+# rotates both structure and fluid view so they are still compatible
+rotatex 90 0 0
+
+end
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
