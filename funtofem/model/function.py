@@ -289,6 +289,19 @@ class Function(object):
         )
 
     @classmethod
+    def moment(cls, direc="y", start: int = None, stop: int = None, body: int = -1):
+        """
+        Class constructor for the Drag function
+        """
+        return cls(
+            name=f"cm{direc}",
+            analysis_type="aerodynamic",
+            start=start,
+            stop=stop,
+            body=body,
+        )
+
+    @classmethod
     def test_aero(cls):
         """aerodynamic function for unittests"""
         return cls(name="aero-func", analysis_type="aerodynamic")

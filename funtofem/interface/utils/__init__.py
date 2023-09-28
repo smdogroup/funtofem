@@ -9,6 +9,9 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 # currently active utilities
 from .cart3d_utils import *
 
+# general utilities
+from .general_utils import *
+
 # tacs utils
 tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:

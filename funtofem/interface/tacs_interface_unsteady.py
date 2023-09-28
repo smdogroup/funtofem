@@ -33,6 +33,7 @@ from .utils import f2f_callback
 from ._solver_interface import SolverInterface
 from typing import TYPE_CHECKING
 import os, numpy as np
+from .utils.general_utils import real_norm, imag_norm
 
 
 class TacsIntegrationSettings:
@@ -117,11 +118,16 @@ class TacsUnsteadyInterface(SolverInterface):
         integration_settings: TacsIntegrationSettings = None,
         tacs_comm=None,
         nprocs=None,
-        coord_deriv_override=True,
+        debug=False,
     ):
         self.comm = comm
         self.tacs_comm = tacs_comm
         self.nprocs = nprocs
+
+        # Debug flag
+        self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
 
         # get active design variables
         self.struct_variables = []
@@ -134,7 +140,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         # override boolean to compute coordinate derivatives
         # when no shape variables present (needed for some unittests)
-        self._coord_deriv_override = coord_deriv_override
+        self._coord_deriv_override = False
 
         # initialize variables
         self._initialize_variables(
@@ -828,6 +834,7 @@ class TacsUnsteadyInterface(SolverInterface):
         callback=None,
         struct_options={},
         thermal_index=-1,
+        debug=False,
     ):
         """
         Create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -961,4 +968,5 @@ class TacsUnsteadyInterface(SolverInterface):
             thermal_index=thermal_index,
             struct_id=struct_id,
             tacs_comm=tacs_comm,
+            debug=debug,
         )

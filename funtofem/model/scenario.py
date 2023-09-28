@@ -86,7 +86,7 @@ class Scenario(Base):
         qinf: float
             elastic load dimensionalization factor = 0.5 * rho_inf * v_inf^2
         flow_dt: float
-            Dimensionalization constant for time steps out of FUN3D.
+            Equals the nondimensional time step in fun3d.nml (time_step_nondim)
         tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
             Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
         fun3d_project_name: filename
@@ -310,8 +310,9 @@ class Scenario(Base):
         Parameters
         ----------
         flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since
-            FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            Flow solver time step size. Used to scale the adjoint term coming into and out of
+            FUN3D since FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            Should be equal to non-dimensional time step in fun3d.nml (equals time_step_nondim)
         qinf: float
             Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
         """
