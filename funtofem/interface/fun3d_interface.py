@@ -64,7 +64,20 @@ class Fun3dInterface(SolverInterface):
         comm: MPI.comm
             MPI communicator
         model: :class:`FUNtoFEMmodel`
-            FUNtoFEM model. This instantiatio
+            FUNtoFEM model. This is used to loop over different scenarios and bodies for the flow analysis.
+        fun3d_dir: path
+            location of the FUN3D directory which holds sub-dirs of scenarios (super-directory of each scenario)
+        forward_options: dict
+            list of forward options passed into FUN3D f2py objects - see unsteady FUN3D-TACS examples
+        adjoint_options
+            list of adjoint options passed into FUN3D f2py objects - see unsteady FUN3D-TACS examples
+        auto_coords: bool
+            whether the aerodynamic coordinates of FUN3D are pulled into the FUNtoFEM body class upon instantiation or not.
+            if not, then the _initialize_body_nodes() is called later (after the new aero mesh is built)
+        coord_test_override: bool
+            override the aero displacements in F2F to add fixed displacements for mesh morphing coordinate derivative tests
+        debug: bool
+            whether to print debug statements or not such as the real/imag norms of state vectors in FUN3D
         """
 
         self.comm = comm

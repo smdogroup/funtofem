@@ -86,7 +86,8 @@ class Fun3dRemote:
     ):
         """
 
-        Manages remote analysis calls for a FUN3D / FUNtoFEM driver call
+        Manages remote analysis calls for a FUN3D / FUNtoFEM driver call.
+
 
         Parameters
         ----------
@@ -98,6 +99,12 @@ class Fun3dRemote:
             location of the fun3d directory for meshes, one level above the scenario folders
         output_file: filepath
             optional location to write an output file for the forward and adjoint analysis
+        output_name: str
+            output files from the system call are of the form f"{output_name}.txt"
+        aero_name: str
+            aerodynamic mesh and sens files are of the form f"{aero_name}.*"
+        struct_name: str
+            structural mesh and sens files are of the form f"{struct_name}.*"
         """
         self.analysis_file = analysis_file
         self.fun3d_dir = fun3d_dir

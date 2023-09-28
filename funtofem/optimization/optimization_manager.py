@@ -44,8 +44,14 @@ class OptimizationManager:
         Constructs the optimization manager class using a funtofem model and driver
         Parameters
         --------------
-        driver : any driver coupled or oneway coupled, must have solve_forward and solve_adjoint methods
-
+        driver : any driver object in funtofem
+            coupled or oneway coupled driver, must have solve_forward and solve_adjoint methods
+        write_designs: bool
+            whether to write the design variable history at each iteration to a file
+        hot_start: bool
+            whether to reset the design history files in hot start (note this does not actually control the hot start itself, just an accompanying parameter)
+        design_out_file: path or str
+            path to the output file for writing design variable histories
         """
         # main attributes of the manager
         self.comm = driver.comm
@@ -89,7 +95,7 @@ class OptimizationManager:
                     )
                 self._design_hdl.flush()
 
-            # plot the
+            # setup function history for optimization plots and the history file path
             self._func_history = {
                 func.full_name: []
                 for func in self.model.get_functions(optim=True)
