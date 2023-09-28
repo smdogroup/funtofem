@@ -76,6 +76,15 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
 
             # Nastran orthotropic material card
             elif matInfo.type == "MAT8":
+                mid = matInfo.mid
+                if (mid + 100) in thermal_materials:  # orthotropic thermal
+                    thermal_mat = thermal_materials[mid + 100]
+                    if thermal_mat.type == "MAT5":
+                        kappa1 = thermal_mat.kxx
+                        kappa2 = thermal_mat.kyy
+                        kappa3 = thermal_mat.kzz
+                        specific_heat = thermal_mat.cp
+
                 G12 = matInfo.g12
                 G13 = matInfo.g1z
                 G23 = matInfo.g2z
@@ -97,6 +106,10 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                     Yt=matInfo.Yt,
                     Yc=matInfo.Yc,
                     S12=matInfo.S,
+                    kappa1=kappa1,
+                    kappa2=kappa2,
+                    kappa3=kappa3,
+                    specific_heat=specific_heat,
                 )
                 # Nastran 2D anisotropic material card
             elif matInfo.type == "MAT2":
