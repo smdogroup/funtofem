@@ -274,6 +274,7 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
                              F2FScalar *H) {
   // Form the covariance matrix of the two point sets
   memset(H, 0, 9 * sizeof(F2FScalar));
+  F2FScalar detH;
 
   for (int j = 0; j < nn; j++) {
     F2FScalar q[3];  // vector from centroid to node
@@ -315,6 +316,15 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
     H[6] += W[j] * p[0] * q[2];
     H[7] += W[j] * p[1] * q[2];
     H[8] += W[j] * p[2] * q[2];
+
+  }
+
+  detH = det(H);
+  if (abs(F2FRealPart(detH)) < 1e-10) {
+    printf("Warning detH = %.4e < 1e-10 for covariance in funtofem MELD disp transfer... adding 1e-1*eye(3)\n", detH);
+    H[0] += 1e-1;
+    H[4] += 1e-1;
+    H[8] += 1e-1;
   }
 }
 
@@ -355,6 +365,12 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
     int *ipiv = &global_ipiv[15 * i];
     int m = 15, info = 0;
     LAPACKgetrf(&m, &m, M1, &m, ipiv, &info);
+    
+    // check the determinant of M1 after the LU factorization
+    F2FScalar detM1 = printDetM1(M1);
+    if (abs(F2FRealPart(detM1)) < 1e-10 ) {
+      printf("Warning det M1 = %.4e < 1e-10\n", detM1);
+    }
 
     const F2FScalar *fa = &Fa[3 * i];
     F2FScalar x[] = {-fa[0] * r[0], -fa[1] * r[0], -fa[2] * r[0],

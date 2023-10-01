@@ -1987,6 +1987,19 @@ void LDTransferScheme::computeRotation(const F2FScalar *H, F2FScalar *R,
 }
 
 /*
+  compute and check the determinant of M1 15x15 matrix used in adjoint computations
+  product of the diagonal elements after LU factorization
+*/
+F2FScalar LDTransferScheme::printDetM1(const F2FScalar *A) {
+    F2FScalar detM1 = 1.0;
+    for (int i = 0; i < 15; i++) {
+      detM1 *= A[i + 15 * i];
+    }
+    return detM1;
+}
+
+
+/*
   Builds the matrix of the linear system to be solved in the process of
   computing the SVD derivative
 

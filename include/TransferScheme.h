@@ -267,6 +267,7 @@ class LDTransferScheme : public TransferScheme {
   // Auxiliary functions for load transfer (needed in complex compute
   // rotation)
   void assembleM1(const F2FScalar *R, const F2FScalar *S, F2FScalar *A);
+  F2FScalar printDetM1(const F2FScalar *A);
 };
 
 class ThermalTransfer : public TransferScheme {
