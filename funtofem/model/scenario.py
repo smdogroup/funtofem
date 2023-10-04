@@ -129,6 +129,7 @@ class Scenario(Base):
         self.T_inf = T_inf
         self.qinf = qinf
         self.flow_dt = flow_dt
+
         self.suther1 = suther1
         self.suther2 = suther2
         self.gamma = gamma
@@ -321,7 +322,6 @@ class Scenario(Base):
 
         if self.steady is True and float(self.flow_dt) != 1.0:
             raise ValueError("For steady cases, flow_dt must be set to 1.")
-
         return self
 
     def set_id(self, id):

@@ -37,11 +37,11 @@ class FuntofemComponent(ExplicitComponent):
         for func in model.get_functions(optim=True):
             if func._objective:
                 openmdao_model.add_objective(
-                    f"{subsystem_name}.{func.name}", scaler=func.scale
+                    f"{subsystem_name}.{func.full_name}", scaler=func.scale
                 )
             else:
                 openmdao_model.add_constraint(
-                    f"{subsystem_name}.{func.name}",
+                    f"{subsystem_name}.{func.full_name}",
                     lower=func.lower,
                     upper=func.upper,
                     scaler=func.scale,
@@ -53,6 +53,7 @@ class FuntofemComponent(ExplicitComponent):
         self.options.declare(
             "write_dir", default=None
         )  # where to write design and opt plot files
+        self.options.declare("design_out_file", types=str)
 
     def setup(self):
         # self.set_check_partial_options(wrt='*',directional=True)
@@ -73,7 +74,7 @@ class FuntofemComponent(ExplicitComponent):
         # add f2f functions to openmdao
         functions = model.get_functions(optim=True)
         for func in functions:
-            self.add_output(func.name)
+            self.add_output(func.full_name)
 
         # store the variable dictionary of values
         # to prevent repeat analyses
@@ -91,7 +92,9 @@ class FuntofemComponent(ExplicitComponent):
 
         # store function optimization history
         if track_history:
-            self._func_history = {func.name: [] for func in functions if func._plot}
+            self._func_history = {
+                func.full_name: [] for func in functions if func._plot
+            }
 
             if comm.rank == 0:
                 self._design_hdl = open(
@@ -105,7 +108,7 @@ class FuntofemComponent(ExplicitComponent):
         # declare any partial derivatives for optimization functions
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                self.declare_partials(func.name, var.name)
+                self.declare_partials(func.full_name, var.name)
 
     def update_design(self, inputs, analysis=True):
         driver = self.options["driver"]
@@ -135,9 +138,11 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
         track_history = self.options["track_history"]
         model = driver.model
+        design_out_file = self.options["design_out_file"]
         new_design = self.update_design(inputs, analysis=True)
 
         if new_design:
+            model.write_design_variables_file(driver.comm, design_out_file)
             driver.solve_forward()
             model.evaluate_composite_functions(compute_grad=False)
 
@@ -145,7 +150,7 @@ class FuntofemComponent(ExplicitComponent):
             self._update_history()
 
         for func in model.get_functions(optim=True):
-            outputs[func.name] = func.value.real
+            outputs[func.full_name] = func.value.real
         return
 
     def compute_partials(self, inputs, partials):
@@ -159,7 +164,9 @@ class FuntofemComponent(ExplicitComponent):
 
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                partials[func.name, var.name] = func.get_gradient_component(var).real
+                partials[func.full_name, var.name] = func.get_gradient_component(
+                    var
+                ).real
         return
 
     def cleanup(self):
@@ -173,8 +180,8 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
         model = driver.model
         for func in model.get_functions(optim=True):
-            if func.name in self._func_history:
-                self._func_history[func.name].append(func.value.real)
+            if func.full_name in self._func_history:
+                self._func_history[func.full_name].append(func.value.real)
 
         if driver.comm.rank == 0:
             self._plot_history()
@@ -200,36 +207,54 @@ class FuntofemComponent(ExplicitComponent):
             func_keys = list(self._func_history.keys())
             num_iterations = len(self._func_history[func_keys[0]])
             iterations = [_ for _ in range(num_iterations)]
-            plt.figure()
+            fig = plt.figure()
+            ax = plt.subplot(111)
+            nkeys = len(func_keys)
+            ind = 0
+            colors = plt.cm.jet(np.linspace(0, 1, nkeys))
             for func in model.get_functions(optim=True):
-                if func.name in func_keys:
-                    yvec = np.array(self._func_history[func.name])
+                if func.full_name in func_keys:
+                    yvec = np.array(self._func_history[func.full_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
                         constr_bndry = 1.0
                         # take relative errors against constraint boundaries, lower upper
                         yfinal = yvec[-1]
-                        rel_err_lower = 1e5
-                        rel_err_upper = 1e5
+                        err_lower = 1e5
+                        err_upper = 1e5
                         if func.lower is not None:
-                            rel_err_lower = abs((yfinal - func.lower) / func.lower)
+                            # use abs error since could have div 0
+                            err_lower = abs(yfinal - func.lower)
                         if func.upper is not None:
-                            rel_err_upper = abs((yfinal - func.upper) / func.upper)
-                        if rel_err_lower < rel_err_upper:
+                            # use abs error since could have div 0
+                            err_upper = abs(yfinal - func.upper)
+                        if err_lower < err_upper:
                             constr_bndry = func.lower
                         else:
                             constr_bndry = func.upper
-                        # compute abs error to constraint boundary for the plot
-                        yvec = np.abs((yvec - constr_bndry) / constr_bndry)
+                        if constr_bndry == 0.0:
+                            yvec = np.abs(yvec * func.scale)
+                        else:
+                            yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
-                    plt.plot(iterations, yvec, linewidth=2, label=func.name)
-            plt.legend()
+                    ax.plot(
+                        iterations,
+                        yvec,
+                        color=colors[ind],
+                        linewidth=2,
+                        label=func.full_name,
+                    )
+                    ind += 1
+
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")
             plot_filepath = os.path.join(self._write_path, self._plot_filename)
-            plt.savefig(plot_filepath)
+            plt.savefig(plot_filepath, dpi=300)
             plt.close("all")
 
     def _design_report(self):

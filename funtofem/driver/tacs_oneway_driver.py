@@ -34,6 +34,8 @@ from funtofem.optimization.optimization_manager import OptimizationManager
 
 import importlib.util
 
+fun3d_loader = importlib.util.find_spec("fun3d")
+
 caps_loader = importlib.util.find_spec("pyCAPS")
 if caps_loader is not None:  # tacs loader not None check for this file anyways
     from tacs import caps2tacs
@@ -49,6 +51,7 @@ class TacsOnewayDriver:
         model,
         transfer_settings=None,
         nprocs=None,
+        fun3d_dir=None,
         external_shape=False,
     ):
         """
@@ -63,6 +66,9 @@ class TacsOnewayDriver:
         transfer_settings: :class:`driver.TransferSettings`
         nprocs: int
             Number of processes that TACS is running on.
+        fun3d_dir: os.path object
+            input with solvers.flow.fun3d_dir usually
+            location of fun3d directory, used in an analysis file for FuntofemShapeDriver
         external_shape: bool
             whether the tacs aim shape analysis is performed outside the class
         """
@@ -70,6 +76,7 @@ class TacsOnewayDriver:
         self.comm = solvers.comm
         self.model = model
         self.nprocs = nprocs
+        self.fun3d_dir = fun3d_dir
         self.transfer_settings = transfer_settings
         self.tacs_interface = solvers.structural
         if model.structural is None:
@@ -140,9 +147,24 @@ class TacsOnewayDriver:
     def unsteady(self) -> bool:
         return self._unsteady
 
+    @property
+    def analysis_sens_file(self):
+        """write location of sens file when used in FuntofemShapeDriver for double oneway drivers (analysis version)"""
+        if fun3d_loader is not None and self.fun3d_dir is not None:
+            from funtofem.driver.fun3d_oneway_driver import Fun3dRemote
+
+            return Fun3dRemote.paths(self.fun3d_dir).struct_sens_file
+        else:
+            return None
+
     @classmethod
     def prime_loads(
-        cls, driver, transfer_settings=None, nprocs=None, external_shape=False
+        cls,
+        driver,
+        transfer_settings=None,
+        nprocs=None,
+        external_shape=False,
+        fun3d_dir=None,
     ):
         """
         Used to prime struct/aero loads for optimization over TACS analysis.
@@ -174,7 +196,12 @@ class TacsOnewayDriver:
             except:
                 transfer_settings = transfer_settings
         return cls(
-            driver.solvers, driver.model, transfer_settings, nprocs, external_shape
+            driver.solvers,
+            model=driver.model,
+            transfer_settings=transfer_settings,
+            nprocs=nprocs,
+            external_shape=external_shape,
+            fun3d_dir=fun3d_dir,
         )
 
     @classmethod
@@ -427,7 +454,9 @@ class TacsOnewayDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.tacs_aim.sens_file_path,
+                filename=self.tacs_aim.sens_file_path
+                if not self.fun3d_dir
+                else self.analysis_sens_file,
                 discipline="structural",
             )
 
