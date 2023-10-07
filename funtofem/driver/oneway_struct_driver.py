@@ -38,7 +38,9 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 # 1) TACS
 tacs_loader = importlib.util.find_spec("tacs")
 
-if caps_loader is not None and tacs_loader is not None:  # tacs loader not None check for this file anyways
+if (
+    caps_loader is not None and tacs_loader is not None
+):  # tacs loader not None check for this file anyways
     from tacs import caps2tacs
 
 if tacs_loader is not None:
@@ -49,6 +51,7 @@ if tacs_loader is not None:
     )
 # 2) TBD
 # ----------------------------------------------------------
+
 
 class OnewayStructDriver:
     def __init__(
@@ -85,18 +88,18 @@ class OnewayStructDriver:
         self.struct_interface = solvers.structural
         self.struct_aim = None
 
-
         # figure out which discipline solver we are using
         self._struct_solver_type = None
-        if solvers.structural is not None:
+        if model.structural is None:
             # TACS solver
             if tacs_loader is not None:
-                if isinstance(solvers.structural, TacsSteadyInterface) or \
-                    isinstance(solvers.structural, TacsUnsteadyInterface):
+                if isinstance(solvers.structural, TacsSteadyInterface) or isinstance(
+                    solvers.structural, TacsUnsteadyInterface
+                ):
                     self._struct_solver_type = "tacs"
             # TBD more solvers
         # check for structural AIMs
-        if caps_loader is not None and model.structural is not None: 
+        if caps_loader is not None and model.structural is not None:
             # TACS solver
             if tacs_loader is not None:
                 if isinstance(model.structural, caps2tacs.TacsModel):
@@ -146,7 +149,7 @@ class OnewayStructDriver:
     @property
     def unsteady(self) -> bool:
         return self._unsteady
-    
+
     @property
     def uses_tacs(self) -> bool:
         return self._struct_solver_type == "tacs"
@@ -456,7 +459,7 @@ class OnewayStructDriver:
                 body.add_coordinate_derivative(scenario, step=0)
 
         return
-    
+
     def _update_design(self):
         if self.comm.rank == 0:
             aim = self.struct_aim.aim
@@ -481,7 +484,9 @@ class OnewayStructDriver:
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
                 for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_struct_aim.dynout[func.full_name].deriv(var.name)
+                    derivative = direct_struct_aim.dynout[func.full_name].deriv(
+                        var.name
+                    )
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors

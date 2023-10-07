@@ -40,7 +40,7 @@ bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
 results_folder, output_dir = make_test_directories(comm, base_dir)
 
 # cases = ["euler", "turbulent"]
-case = "turbulent"
+case = "euler"
 
 
 class TestFuntofemMorph(unittest.TestCase):

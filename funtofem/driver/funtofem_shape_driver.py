@@ -46,13 +46,14 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3dInterface,  Fun3dModel
+    from funtofem.interface import Fun3dInterface, Fun3dModel
 if tacs_loader is not None:
     from funtofem.interface import (
         TacsSteadyInterface,
         TacsUnsteadyInterface,
         TacsInterface,
     )
+
     if caps_loader is not None:
         from tacs import caps2tacs
 
@@ -163,36 +164,37 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # check which aero solver we were given
         self.flow_aim = None
         self._flow_solver_type = None
-        if solvers.flow is not None:
+        if model.flow is None:
             if fun3d_loader is not None:
                 if isinstance(solvers.flow, Fun3dInterface):
                     self._flow_solver_type = "fun3d"
             # TBD on new types
-        else: # check with shape change
+        else:  # check with shape change
             if fun3d_loader is not None:
                 if isinstance(model.flow, Fun3dModel):
                     self._flow_solver_type = "fun3d"
-                    self.flow_aim = model.flow.flow_aim
+                    self.flow_aim = model.flow.fun3d_aim
             # TBD on new types
 
         # figure out which discipline solver we are using
         self.struct_interface = solvers.structural
         self.struct_aim = None
         self._struct_solver_type = None
-        if solvers.structural is not None:
+        if model.structural is None:
             # TACS solver
             if tacs_loader is not None:
-                if isinstance(solvers.structural, TacsSteadyInterface) or \
-                    isinstance(solvers.structural, TacsUnsteadyInterface):
+                if isinstance(solvers.structural, TacsSteadyInterface) or isinstance(
+                    solvers.structural, TacsUnsteadyInterface
+                ):
                     self._struct_solver_type = "tacs"
             # TBD more solvers
         # check for structural AIMs
-        if caps_loader is not None and model.structural is not None: 
+        if caps_loader is not None and model.structural is not None:
             # TACS solver
             if tacs_loader is not None:
                 if isinstance(model.structural, caps2tacs.TacsModel):
                     self._struct_solver_type = "tacs"
-                    self.struct_aim = model.structural.struct_aim
+                    self.struct_aim = model.structural.tacs_aim
             # TBD more solvers
 
         if not self.is_remote:
@@ -407,12 +409,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.is_paired:
                 write_struct = True
                 write_aero = True
-                struct_sensfile = Remote.paths(
-                    self.flow_dir
-                ).struct_sens_file
-                aero_sensfile = Remote.paths(
-                    self.flow_dir
-                ).aero_sens_file
+                struct_sensfile = Remote.paths(self.flow_dir).struct_sens_file
+                aero_sensfile = Remote.paths(self.flow_dir).aero_sens_file
             else:
                 if self.struct_shape:
                     write_struct = True
@@ -488,7 +486,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # set the grid filepaths into the fun3d aim
         self.flow_aim.grid_filepaths = grid_filepaths
         return
-    
+
     def _move_struct_mesh(self):
         if self.comm.rank == 0:
             if self.uses_tacs:
@@ -502,13 +500,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 )
                 dat_dest = self.remote.dat_file
                 shutil.copy(dat_src, dat_dest)
-    
+
     @property
     def flow_dir(self):
         if self.uses_fun3d:
             return self.solvers.flow.fun3d_dir
         # TBD on other solvers
-    
+
     def _update_struct_design(self):
         if self.comm.rank == 0:
             aim = self.struct_aim.aim
@@ -560,7 +558,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
                 for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_struct_aim.dynout[func.full_name].deriv(var.name)
+                    derivative = direct_struct_aim.dynout[func.full_name].deriv(
+                        var.name
+                    )
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors
@@ -630,6 +630,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @property
     def root_proc(self) -> bool:
         return self.comm.rank == 0
+
+    @property
+    def uses_tacs(self) -> bool:
+        return self._struct_solver_type == "tacs"
+
+    @property
+    def uses_fun3d(self) -> bool:
+        return self._flow_solver_type == "fun3d"
 
     @property
     def tacs_model(self):

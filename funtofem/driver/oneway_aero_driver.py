@@ -173,20 +173,21 @@ class OnewayAeroDriver:
         # check which aero solver we were given
         self.flow_aim = None
         self._flow_solver_type = None
-        if solvers.flow is not None:
+        if model.flow is None:
             if fun3d_loader is not None:
                 if isinstance(solvers.flow, Fun3dInterface):
                     self._flow_solver_type = "fun3d"
             # TBD on new types
-        else: # check with shape change
+        else:  # check with shape change
             if fun3d_loader is not None:
                 if isinstance(model.flow, Fun3dModel):
                     self._flow_solver_type = "fun3d"
-                    self.flow_aim = model.flow.flow_aim
+                    self.flow_aim = model.flow.fun3d_aim
             # TBD on new types
 
-
-        self.transfer_settings = transfer_settings if transfer_settings is not None else TransferSettings()
+        self.transfer_settings = (
+            transfer_settings if transfer_settings is not None else TransferSettings()
+        )
         if self.is_paired:  # if not mesh morphing initialize here
             self._initialize_funtofem()
         self._first_forward = True
@@ -239,7 +240,9 @@ class OnewayAeroDriver:
             self.flow_aim.pre_analysis()
 
             if not (self.is_paired):
-                if self._first_forward and self.uses_fun3d:  # FUN3D mesh morphing initialize body nodes
+                if (
+                    self._first_forward and self.uses_fun3d
+                ):  # FUN3D mesh morphing initialize body nodes
                     assert not (self.solvers.flow.auto_coords)
                     self.solvers.flow._initialize_body_nodes(
                         self.model.scenarios[0], self.model.bodies
@@ -249,7 +252,7 @@ class OnewayAeroDriver:
                     self._first_forward = False
 
         # system call FUN3D forward analysis and design variable inputs file
-        if self.is_remote: # currently remote only for FUN3D solver
+        if self.is_remote:  # currently remote only for FUN3D solver
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
@@ -387,7 +390,7 @@ class OnewayAeroDriver:
     @property
     def root_proc(self) -> bool:
         return self.comm.rank == 0
-    
+
     @property
     def flow_dir(self):
         if self.uses_fun3d:
