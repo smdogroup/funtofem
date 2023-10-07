@@ -457,7 +457,7 @@ class OnewayStructDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.tacs_aim.sens_file_path
+                filename=self.struct_aim.sens_file_path
                 if not self.fun3d_dir
                 else self.analysis_sens_file,
                 discipline="structural",
