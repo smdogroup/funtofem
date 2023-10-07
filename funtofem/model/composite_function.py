@@ -322,6 +322,54 @@ class CompositeFunction:
         )
 
     @classmethod
+    def sin(cls, func):
+        """compute composite function for sin(func)"""
+
+        func = CompositeFunction.cast(func)
+
+        def eval_hdl(funcs_dict):
+            return np.sin(func.eval_hdl(funcs_dict))
+
+        return cls(
+            name=func.name,
+            eval_hdl=eval_hdl,
+            functions=func.functions,
+            variables=func.variables,
+        )
+
+    @classmethod
+    def cos(cls, func):
+        """compute composite function for sin(func)"""
+
+        func = CompositeFunction.cast(func)
+
+        def eval_hdl(funcs_dict):
+            return np.cos(func.eval_hdl(funcs_dict))
+
+        return cls(
+            name=func.name,
+            eval_hdl=eval_hdl,
+            functions=func.functions,
+            variables=func.variables,
+        )
+
+    @classmethod
+    def tan(cls, func):
+        """compute composite function for sin(func)"""
+
+        func = CompositeFunction.cast(func)
+
+        def eval_hdl(funcs_dict):
+            return np.tan(func.eval_hdl(funcs_dict))
+
+        return cls(
+            name=func.name,
+            eval_hdl=eval_hdl,
+            functions=func.functions,
+            variables=func.variables,
+        )
+
+    @classmethod
     def log(cls, func):
         """compute composite function for ln(func) the natural log"""
         func = CompositeFunction.cast(func)

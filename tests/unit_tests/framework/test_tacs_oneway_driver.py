@@ -70,7 +70,9 @@ class TestOnewayStructDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
@@ -116,7 +118,9 @@ class TestOnewayStructDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
@@ -162,7 +166,9 @@ class TestOnewayStructDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(

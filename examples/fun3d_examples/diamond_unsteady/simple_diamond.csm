@@ -1,0 +1,145 @@
+#make diamond airfoil wing for supersonic test case
+
+#design parameters for airfoil
+despmtr diamAngle0 5.0
+despmtr chord0 1.0
+despmtr diamAnglef 5.0
+despmtr frchamfer 0.05
+
+#design parameters of wing
+despmtr area 10.0
+despmtr AOA 0.0
+despmtr taper 1.0
+
+#config parameters
+cfgpmtr nrib 3
+#cfgpmtr nspar 2
+cfgpmtr view:fluid 0
+cfgpmtr view:structure 1
+
+set cfdOn view:fluid
+
+#wing quantities
+set chordf taper*chord0
+set cmean 0.5*(chord0+chordf)
+set span area/cmean
+set sspan span/2
+set toverc0 tand(diamAngle0)
+set tovercf tand(diamAnglef)
+
+#root airfoil quantities
+set xmag0 chord0/2
+set thickness0 chord0*toverc0
+set ymag0 thickness0/2
+set tchamf ymag0*frchamfer
+set wchamf tchamf*4
+
+
+#make the solid diamond loft
+mark
+#make root diamond
+skbeg xmag0 tchamf 0
+   linseg wchamf ymag0 0
+   linseg -wchamf ymag0 0
+   linseg -xmag0 tchamf 0
+   linseg -xmag0 -tchamf 0
+   linseg -wchamf -ymag0 0
+   linseg wchamf -ymag0 0
+   linseg xmag0 -tchamf 0
+   linseg xmag0 tchamf 0
+skend
+store rootDiamond 0
+restore rootDiamond 0
+rotatez -AOA 0 0
+
+#tip airfoil quantities
+set xmagf chordf/2
+set thicknessf chordf*tovercf
+set ymagf thicknessf/2
+
+#make tip diamond
+restore rootDiamond 0
+translate 0 0 -sspan
+rotatez -AOA 0 0
+loft 0
+select face 10
+	attribute capsConstraint $root
+    attribute _color $blue
+    
+store diamondLoft 0
+
+
+#make the structure mesh
+patbeg foo ifzero(cfdOn,1,0)
+
+   set margin 0.1*chord0
+   #one spar
+   box 0 -ymag0-margin margin 0 2*(ymag0+margin) -sspan-2*margin
+   
+   set xmmag xmag0+margin
+   set ymmag ymag0+margin
+   patbeg irib nrib
+      set zpos -irib/(nrib+1)*sspan
+      box -xmmag -ymmag zpos 2*xmmag 2*ymmag 0
+      
+      ifthen irib EQ 0
+       select face
+         attribute capsConstraint $root
+      endif
+      
+      union
+   patend
+
+   restore diamondLoft 0
+   intersect
+
+   restore diamondLoft 0
+   extract 0
+   union
+   
+   select face
+      attribute capsGroup $shell
+   
+   udprim editAttr filename <<
+      EDGE ADJ2FACE capsConstraint=root
+      SET _color=blue
+      SET capsConstraint=root
+   
+      NODE ADJ2FACE capsConstraint=root
+      SET _color=blue
+      SET capsConstraint=root
+   >>
+
+	select body
+        attribute capsAIM $egadsTessAIM;tacsAIM
+   
+patend
+
+#make the fluid mesh
+patbeg foo ifzero(cfdOn-1,1,0)
+   set ff 20*chord0
+   set exspan 1.5*span
+   set ff sqrt(ff*ff+exspan*exspan)
+    set df 2*ff
+    #farfield
+    box -ff -ff ff df df -df
+    select face
+       attribute capsGroup $Farfield
+       attribute capsMesh $Farfield
+
+    restore diamondLoft 0
+    select face
+        attribute capsGroup $wall
+        attribute capsMesh $wall
+    subtract
+
+    select body
+        attribute capsAIM $pointwiseAIM;fun3dAIM
+        attribute capsMeshLength 1.0
+    
+patend
+
+#rotate to match fun3d coordinates
+rotatex 90 0 0
+
+   

@@ -192,7 +192,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermal(self):
         # make the funtofem and tacs model
@@ -272,7 +271,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermoelastic(self):
         # make the funtofem and tacs model

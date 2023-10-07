@@ -499,7 +499,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 bdf_dest = self.remote.bdf_file
                 shutil.copy(bdf_src, bdf_dest)
                 dat_src = os.path.join(
-                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.dat"
                 )
                 dat_dest = self.remote.dat_file
                 shutil.copy(dat_src, dat_dest)

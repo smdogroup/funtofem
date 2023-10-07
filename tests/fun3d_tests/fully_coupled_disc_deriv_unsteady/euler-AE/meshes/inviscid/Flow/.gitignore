@@ -1,0 +1,5 @@
+*.grid_info
+fort.*
+*forces*
+*.flow
+*.dat*
