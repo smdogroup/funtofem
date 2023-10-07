@@ -1,6 +1,7 @@
 __all__ = ["Remote"]
 import os
 
+
 class Remote:
     def __init__(
         self,

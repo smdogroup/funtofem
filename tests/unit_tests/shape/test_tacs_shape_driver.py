@@ -111,7 +111,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     def test_shape_and_thick_steady_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
