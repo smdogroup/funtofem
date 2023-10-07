@@ -105,6 +105,7 @@ class OnewayStructDriver:
                 if isinstance(model.structural, caps2tacs.TacsModel):
                     self._struct_solver_type = "tacs"
                     self.struct_aim = model.structural.tacs_aim
+                    assert self.struct_aim.is_setup
             # TBD more solvers
 
         # store the shape variables list
@@ -373,7 +374,9 @@ class OnewayStructDriver:
 
         if self.change_shape:
             if not self.external_shape:
-                self._update_design()
+                input_dict = {var.name: var.value for var in self.model.get_variables()}
+                self.model.structural.update_design(input_dict)
+                self.struct_aim.setup_aim()
                 self.struct_aim.pre_analysis()
 
             if self.uses_tacs:
@@ -462,11 +465,11 @@ class OnewayStructDriver:
 
     def _update_design(self):
         if self.comm.rank == 0:
-            aim = self.struct_aim.aim
             input_dict = {var.name: var.value for var in self.model.get_variables()}
             for key in input_dict:
-                if aim.geometry.despmtr[key].value != input_dict[key]:
-                    aim.geometry.despmtr[key].value = input_dict[key]
+                print(f"updating design for key = {key}", flush=True)
+                if self.struct_aim.geometry.despmtr[key].value != input_dict[key]:
+                    self.struct_aim.geometry.despmtr[key].value = input_dict[key]
         return
 
     def _get_shape_derivatives(self, scenario):

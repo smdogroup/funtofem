@@ -305,7 +305,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     self._first_forward = False
 
         if self.struct_shape:
-            self._update_struct_design()
+            # self._update_struct_design()
+            input_dict = {var.name: var.value for var in self.model.get_variables()}
+            self.model.structural.update_design(input_dict)
+            self.struct_aim.setup_aim()
             self.struct_aim.pre_analysis()
 
             # build the new structure geometry
