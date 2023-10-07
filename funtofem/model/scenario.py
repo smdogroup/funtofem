@@ -245,7 +245,7 @@ class Scenario(Base):
         if var is None:
             raise AssertionError(f"Can't find variable from scenario {self.name}")
 
-    def add_variable(self, vartype, var) -> Variable:
+    def add_variable(self, vartype, var: Variable):
         """
         Add a new variable to the scenario's variable dictionary
 
@@ -256,7 +256,8 @@ class Scenario(Base):
         var: Variable object
             variable to be added
         """
-        var.scenario = self.id
+        # var.scenario = self.id
+        var._scenario_name = self.name
 
         super(Scenario, self).add_variable(vartype, var)
 

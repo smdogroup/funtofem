@@ -143,7 +143,7 @@ class OptimizationManager:
         # update the model design variables
         for var in self.model.get_variables():
             for var_key in self._x_dict:
-                if var.name == var_key:
+                if var.full_name == var_key:
                     # assumes here that only pyoptsparse single variables (no var groups are made)
                     var.value = float(self._x_dict[var_key])
 
@@ -167,7 +167,7 @@ class OptimizationManager:
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
             for var in self.model.get_variables():
-                self._sens[func.full_name][var.name] = func.get_gradient_component(
+                self._sens[func.full_name][var.full_name] = func.get_gradient_component(
                     var
                 ).real
 
@@ -186,7 +186,7 @@ class OptimizationManager:
         """
         for var in self.model.get_variables():
             opt_problem.addVar(
-                var.name,
+                var.full_name,
                 lower=var.lower,
                 upper=var.upper,
                 value=var.value,
