@@ -18,14 +18,19 @@ class Remote:
 
         Parameters
         ----------
-        nprocs: int
-            number of procs for the system call to the Fun3dOnewayAnalyzer
-        analyzer_file: os filepath
-            the location of the subprocess file for the Fun3dOnewayAnalyzer (my_fun3d_analyzer.py)
+        analysis_file: os filepath
+            the location of the subprocess file for the remote (e.g. my_fun3d_analyzer.py)
         main_dir: filepath
-            location of the fun3d directory for meshes if FUN3D, one level above the scenario folders
-        output_file: filepath
-            optional location to write an output file for the forward and adjoint analysis
+            location of the directory which the remote and analylsis script communicate,
+            i.e. the fun3d directory for meshes if FUN3D, one level above the scenario folders
+        output_name: str
+            name of the output file from the analysis subprocess (not full filename, just prefix)
+        nprocs: int
+            number of procs for the system call or subprocess
+        aero_name: str
+            name of aero mesh / aero sens files (not full path just prefix)
+        struct_name: str
+            name of struct mesh / struct sens files (not full path just prefix)
         """
         self.analysis_file = analysis_file
         self.main_dir = main_dir
