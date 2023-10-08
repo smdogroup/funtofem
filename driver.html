@@ -179,14 +179,14 @@ Often times, we use the default comm manager and don’t specify it as follows.<
 <h2>Setting up a design optimization<a class="headerlink" href="#setting-up-a-design-optimization" title="Permalink to this heading">¶</a></h2>
 <p>See <a class="reference internal" href="model.html"><span class="doc">FUNtoFEM Model</span></a> for explanation of using the driver and model class for a design optimization. There is also an example in the examples directory.</p>
 <p>If the user wants a better initial design before optimization with the fully-coupled funtofem driver above, the
-<cite>TacsOnewayDriver</cite> can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not
+<cite>OnewayStructDriver</cite> can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not
 include shape variables directly in the driver at the moment, the tacs oneway driver supports shape optimization
 with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.</p>
 </section>
-<section id="building-and-using-the-tacsonewaydriver">
-<h2>Building and using the TacsOnewayDriver<a class="headerlink" href="#building-and-using-the-tacsonewaydriver" title="Permalink to this heading">¶</a></h2>
+<section id="building-and-using-the-onewaystructdriver">
+<h2>Building and using the OnewayStructDriver<a class="headerlink" href="#building-and-using-the-onewaystructdriver" title="Permalink to this heading">¶</a></h2>
 <p>Without shape optimization</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsOnewayDriver</span><span class="o">.</span><span class="n">prime_loads</span><span class="p">(</span><span class="n">funtofem_driver</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">OnewayStructDriver</span><span class="o">.</span><span class="n">prime_loads</span><span class="p">(</span><span class="n">funtofem_driver</span><span class="p">)</span>
 
 <span class="n">fail</span> <span class="o">=</span> <span class="n">tacs_driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 
@@ -194,7 +194,7 @@ with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.</p>
 </pre></div>
 </div>
 <p>With the shape optimization</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">TacsOnewayDriver</span><span class="o">.</span><span class="n">prime_loads_from_shape</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tacs_driver</span> <span class="o">=</span> <span class="n">OnewayStructDriver</span><span class="o">.</span><span class="n">prime_loads_from_shape</span><span class="p">(</span>
      <span class="n">solvers</span><span class="o">.</span><span class="n">flow</span><span class="p">,</span>
      <span class="n">tacs_aim</span><span class="p">,</span>
      <span class="n">transfer_settings</span><span class="p">,</span>
@@ -228,8 +228,8 @@ with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.</p>
 <section id="tacs-oneway-coupled-driver-class">
 <h3>TACS Oneway-Coupled Driver Class<a class="headerlink" href="#tacs-oneway-coupled-driver-class" title="Permalink to this heading">¶</a></h3>
 <dl class="py class">
-<dt class="sig sig-object py" id="funtofem.driver.TacsOnewayDriver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">funtofem.driver.</span></span><span class="sig-name descname"><span class="pre">TacsOnewayDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#funtofem.driver.TacsOnewayDriver" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="funtofem.driver.OnewayStructDriver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">funtofem.driver.</span></span><span class="sig-name descname"><span class="pre">OnewayStructDriver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#funtofem.driver.OnewayStructDriver" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </section>
@@ -258,7 +258,7 @@ with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.</p>
 </li>
 <li><a class="reference internal" href="#running-the-coupled-funtofem-driver">Running the coupled FUNtoFEM driver</a></li>
 <li><a class="reference internal" href="#setting-up-a-design-optimization">Setting up a design optimization</a></li>
-<li><a class="reference internal" href="#building-and-using-the-tacsonewaydriver">Building and using the TacsOnewayDriver</a></li>
+<li><a class="reference internal" href="#building-and-using-the-onewaystructdriver">Building and using the OnewayStructDriver</a></li>
 <li><a class="reference internal" href="#driver-classes">Driver Classes</a><ul>
 <li><a class="reference internal" href="#funtofem-driver-class">FUNtoFEM Driver Class</a></li>
 <li><a class="reference internal" href="#funtofem-nlbgs-driver-class">FUNtoFEM NLBGS Driver Class</a></li>
