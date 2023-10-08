@@ -15,6 +15,7 @@ from funtofem.interface import (
     Fun3dBC,
     Fun3dModel,
     make_test_directories,
+    Remote,
 )
 
 # check whether fun3d is available
@@ -24,7 +25,7 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from funtofem.driver import FuntofemShapeDriver
 
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
@@ -87,8 +88,8 @@ class TestFuntofemRemesh(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = FuntofemShapeDriver.aero_remesh(solvers, model, fun3d_remote)
+        remote = Remote(analysis_file, fun3d_dir, nprocs=48)
+        driver = FuntofemShapeDriver.aero_remesh(solvers, model, remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
@@ -183,8 +184,8 @@ class TestFuntofemRemesh(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = FuntofemShapeDriver.aero_remesh(solvers, model, fun3d_remote)
+        remote = Remote(analysis_file, fun3d_dir, nprocs=48)
+        driver = FuntofemShapeDriver.aero_remesh(solvers, model, remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(

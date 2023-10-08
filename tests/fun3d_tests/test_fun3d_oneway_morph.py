@@ -22,7 +22,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import Fun3dOnewayDriver
+    from funtofem.driver import OnewayAeroDriver
     from funtofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
@@ -85,7 +85,7 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         )
 
         # analysis driver for mesh morphing
-        driver = Fun3dOnewayDriver.aero_morph(solvers, model)
+        driver = OnewayAeroDriver.aero_morph(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(

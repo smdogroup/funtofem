@@ -13,7 +13,7 @@ from funtofem.interface import (
 from funtofem.driver import (
     FUNtoFEMnlbgs,
     TransferSettings,
-    TacsOnewayDriver,
+    OnewayStructDriver,
     TestAeroOnewayDriver,
 )
 
@@ -30,7 +30,7 @@ results_folder, output_dir = make_test_directories(comm, base_dir)
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
 
-class TestTacsOnewayDriver(unittest.TestCase):
+class TestOnewayStructDriver(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled TacsSteadyAnalysisDriver
     which uses fixed aero loads
@@ -70,14 +70,16 @@ class TestTacsOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -116,14 +118,16 @@ class TestTacsOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermal",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -162,14 +166,16 @@ class TestTacsOnewayDriver(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermoelastic",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -205,14 +211,14 @@ class TestTacsOnewayDriver(unittest.TestCase):
         )
         transfer_settings = TransferSettings(npts=5)
         aero_driver = TestAeroOnewayDriver(solvers, model, transfer_settings)
-        oneway_driver = TacsOnewayDriver.prime_loads(aero_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(aero_driver, transfer_settings)
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic-testaero_driver",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -222,5 +228,5 @@ class TestTacsOnewayDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestTacsOnewayDriver.FILEPATH, "w").close()
+    open(TestOnewayStructDriver.FILEPATH, "w").close()
     unittest.main()

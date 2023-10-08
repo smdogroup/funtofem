@@ -95,7 +95,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_model.setup()
 
-        tacs_driver = TacsOnewayDriver.prime_loads(
+        tacs_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
@@ -177,7 +177,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_model.setup()
 
-        tacs_driver = TacsOnewayDriver.prime_loads(
+        tacs_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
@@ -259,7 +259,7 @@ class TestTacsUnsteadyShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_model.setup()
 
-        tacs_driver = TacsOnewayDriver.prime_loads(
+        tacs_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
