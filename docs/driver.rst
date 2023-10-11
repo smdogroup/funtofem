@@ -153,17 +153,17 @@ Setting up a design optimization
 See :doc:`model` for explanation of using the driver and model class for a design optimization. There is also an example in the examples directory.
 
 If the user wants a better initial design before optimization with the fully-coupled funtofem driver above, the
-`TacsOnewayDriver` can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not 
+`OnewayStructDriver` can be used to optimize over fixed aerodynamic loads first. While the funtofem driver does not 
 include shape variables directly in the driver at the moment, the tacs oneway driver supports shape optimization
 with caps2tacs wrapper on the tacsAIM from ESP/CAPS shape variables.
 
-Building and using the TacsOnewayDriver
+Building and using the OnewayStructDriver
 ---------------------------------------
 Without shape optimization
 
 .. code-block:: python
 
-   tacs_driver = TacsOnewayDriver.prime_loads(funtofem_driver)
+   tacs_driver = OnewayStructDriver.prime_loads(funtofem_driver)
 
    fail = tacs_driver.solve_forward()
 
@@ -173,7 +173,7 @@ With the shape optimization
 
 .. code-block:: python
 
-   tacs_driver = TacsOnewayDriver.prime_loads_from_shape(
+   tacs_driver = OnewayStructDriver.prime_loads_from_shape(
         solvers.flow, 
         tacs_aim, 
         transfer_settings, 
@@ -206,5 +206,5 @@ TACS Oneway-Coupled Driver Class
 ================================
 .. currentmodule:: funtofem.driver
 
-.. autoclass:: TacsOnewayDriver
+.. autoclass:: OnewayStructDriver
     :members:

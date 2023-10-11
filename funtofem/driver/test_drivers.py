@@ -16,7 +16,7 @@ class NullDriver:
 
         # initialize variables
         for body in self.model.bodies:
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            # transfer to fixed structural loads in case the user got only aero loads from the OnewayAeroDriver
             body.initialize_transfer(
                 comm=comm,
                 struct_comm=comm_manager.struct_comm,
@@ -38,7 +38,7 @@ class NullDriver:
 class TestAeroOnewayDriver:
     def __init__(self, solvers, model, transfer_settings=None):
         """
-        Aerodynamic driver for unit tests (similar to Fun3dOnewayDriver).
+        Aerodynamic driver for unit tests (similar to OnewayAeroDriver).
         Requires TestAeroSolver in self.flow
 
         Parameters
@@ -59,7 +59,7 @@ class TestAeroOnewayDriver:
 
         # initialize variables
         for body in self.model.bodies:
-            # transfer to fixed structural loads in case the user got only aero loads from the Fun3dOnewayDriver
+            # transfer to fixed structural loads in case the user got only aero loads from the OnewayAeroDriver
             body.initialize_transfer(
                 comm=comm,
                 struct_comm=comm_manager.struct_comm,

@@ -10,7 +10,7 @@ from funtofem.model import (
     Function,
     Variable,
 )
-from funtofem.interface import SolverManager
+from funtofem.interface import SolverManager, Remote
 
 # check whether fun3d is available
 tacs_loader = importlib.util.find_spec("tacs")
@@ -23,7 +23,7 @@ if has_tacs:
 
 if has_fun3d:
     from funtofem.interface import Fun3dInterface
-    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from funtofem.driver import FuntofemShapeDriver
 
 np.random.seed(1234567)
 
@@ -31,7 +31,7 @@ comm = MPI.COMM_WORLD
 nprocs = comm.Get_size()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 fun3d_dir = os.path.join(base_dir, "meshes")
-fun3d_remote = Fun3dRemote.paths(fun3d_dir)
+fun3d_remote = Remote.paths(fun3d_dir)
 
 # build the funtofem model with one body and scenario
 model = FUNtoFEMmodel("wing")
