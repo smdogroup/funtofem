@@ -9,8 +9,9 @@ from funtofem.model import (
     Body,
     Function,
     Variable,
+    TransferSettings,
 )
-from funtofem.interface import SolverManager, Remote
+from funtofem.interface import SolverManager
 
 # check whether fun3d is available
 tacs_loader = importlib.util.find_spec("tacs")
@@ -19,11 +20,12 @@ has_tacs = tacs_loader is not None
 has_fun3d = fun3d_loader is not None
 
 if has_tacs:
-    from funtofem.interface import TacsSteadyInterface
+    from funtofem.interface import TacsInterface
+    from funtofem.driver import TacsOnewayDriver
 
 if has_fun3d:
     from funtofem.interface import Fun3dInterface
-    from funtofem.driver import FuntofemShapeDriver
+    from funtofem.driver import Fun3dOnewayDriver, Fun3dRemote
 
 np.random.seed(1234567)
 
@@ -31,7 +33,7 @@ comm = MPI.COMM_WORLD
 nprocs = comm.Get_size()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 fun3d_dir = os.path.join(base_dir, "meshes")
-fun3d_remote = Remote.paths(fun3d_dir)
+fun3d_remote = Fun3dRemote.paths(fun3d_dir)
 
 # build the funtofem model with one body and scenario
 model = FUNtoFEMmodel("wing")
@@ -44,17 +46,30 @@ test_scenario.adjoint_steps = 4000
 # aoa = test_scenario.get_variable("AOA")
 test_scenario.include(Function.lift()).include(Function.drag())
 test_scenario.include(Function.ksfailure()).include(Function.mass())
-test_scenario.set_flow_ref_vals(qinf=1e4)
 test_scenario.register_to(model)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
-solvers.structural = TacsSteadyInterface.create_from_bdf(
-    model=model, comm=comm, nprocs=nprocs, bdf_file=fun3d_remote.dat_file
+solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1e4)
+solvers.structural = TacsInterface.create_from_bdf(
+    model=model,
+    comm=comm,
+    nprocs=nprocs,
+    bdf_file=fun3d_remote.dat_file,
+    output_dir=fun3d_dir,
 )
-driver = FuntofemShapeDriver.analysis(solvers, model)
+transfer_settings = TransferSettings(npts=200, beta=0.5)
 
-# run the forward and adjoint analysis in one shot
-driver.solve_forward()
-driver.solve_adjoint()
+flow_driver = Fun3dOnewayDriver.analysis(solvers, model)
+struct_driver = TacsOnewayDriver.prime_loads(
+    flow_driver,
+    transfer_settings=transfer_settings,
+    nprocs=48,
+    run_adjoint=True,
+    fun3d_dir=fun3d_dir,
+)
+
+# run structural oneway analysis after aero oneway analysis
+# otherwise aero loads won't exist in the model
+struct_driver.solve_forward()
+struct_driver.solve_adjoint()

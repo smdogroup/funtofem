@@ -402,7 +402,7 @@ class FUNtoFEMmodel(object):
 
     def write_aero_loads(self, comm, filename, root=0):
         """
-        Write the aerodynamic loads file for the TacsOnewayDriver.
+        Write the aerodynamic loads file for the OnewayStructDriver.
 
         This file contains the following information:
 
@@ -476,7 +476,7 @@ class FUNtoFEMmodel(object):
 
     def write_struct_loads(self, comm, filename, root=0):
         """
-        Write the struct loads file for the TacsOnewayDriver.
+        Write the struct loads file for the OnewayStructDriver.
 
         This file contains the following information:
 
@@ -530,7 +530,7 @@ class FUNtoFEMmodel(object):
 
     def read_aero_loads(self, comm, filename, root=0):
         """
-        Read the aerodynamic loads file for the TacsOnewayDriver.
+        Read the aerodynamic loads file for the OnewayStructDriver.
 
         This file contains the following information:
 

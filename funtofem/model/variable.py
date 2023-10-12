@@ -86,6 +86,8 @@ class Variable(object):
         self.scale = scale
         self.analysis_type = analysis_type
 
+        self._scenario_name = None
+
     def set_bounds(
         self,
         lower=None,
@@ -129,6 +131,14 @@ class Variable(object):
 
         # return the object for method cascading
         return self
+
+    @property
+    def full_name(self) -> str:
+        """full scenario name if scenario variable, otherwise just regular name"""
+        if self._scenario_name is None:
+            return self.name
+        else:
+            return f"{self._scenario_name}.{self.name}"
 
     @classmethod
     def structural(cls, name: str, value=0.0):

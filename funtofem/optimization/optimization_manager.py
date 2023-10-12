@@ -22,7 +22,8 @@ limitations under the License.
 
 __all__ = ["OptimizationManager"]
 
-import os
+import os, numpy as np
+import matplotlib.pyplot as plt
 
 
 class OptimizationManager:
@@ -32,18 +33,31 @@ class OptimizationManager:
     Performs a gatekeeper feature to prevent double-running the forward analysis
     """
 
-    def __init__(self, driver, write_designs: bool = True, hot_start: bool = False):
+    def __init__(
+        self,
+        driver,
+        write_designs: bool = True,
+        hot_start: bool = False,
+        design_out_file=None,
+    ):
         """
         Constructs the optimization manager class using a funtofem model and driver
         Parameters
         --------------
-        driver : any driver coupled or oneway coupled, must have solve_forward and solve_adjoint methods
-
+        driver : any driver object in funtofem
+            coupled or oneway coupled driver, must have solve_forward and solve_adjoint methods
+        write_designs: bool
+            whether to write the design variable history at each iteration to a file
+        hot_start: bool
+            whether to reset the design history files in hot start (note this does not actually control the hot start itself, just an accompanying parameter)
+        design_out_file: path or str
+            path to the output file for writing design variable histories
         """
         # main attributes of the manager
         self.comm = driver.comm
         self.model = driver.model
         self.driver = driver
+        self.design_out_file = design_out_file
 
         # optimization meta data
         self._iteration = 0
@@ -58,14 +72,15 @@ class OptimizationManager:
         self.write_designs = write_designs
         if write_designs:
             self._design_folder = os.path.join(os.getcwd(), "design")
-            if not (os.path.exists(self._design_folder)):
+            if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
 
             # make the design file handle
             write_str = "a" if hot_start else "w"
             if self.comm.rank == 0:
                 self._design_hdl = open(
-                    os.path.join(self._design_folder, "design.txt"), write_str
+                    os.path.join(self._design_folder, f"{self.model.name}_design.txt"),
+                    write_str,
                 )
 
             # write an inital header for the design file
@@ -79,6 +94,16 @@ class OptimizationManager:
                         f"Starting new pyoptsparse optimization for the {self.model.name} model...\n"
                     )
                 self._design_hdl.flush()
+
+            # setup function history for optimization plots and the history file path
+            self._func_history = {
+                func.full_name: []
+                for func in self.model.get_functions(optim=True)
+                if func._plot
+            }
+            self._history_file = os.path.join(
+                self._design_folder, f"{self.model.name}_history.png"
+            )
 
     def _gatekeeper(self, x_dict):
         """
@@ -118,9 +143,14 @@ class OptimizationManager:
         # update the model design variables
         for var in self.model.get_variables():
             for var_key in self._x_dict:
-                if var.name == var_key:
+                if var.full_name == var_key:
                     # assumes here that only pyoptsparse single variables (no var groups are made)
                     var.value = float(self._x_dict[var_key])
+
+        if self.design_out_file is not None:
+            self.model.write_design_variables_file(
+                self.comm, self.design_out_file, root=0
+            )
 
         # run forward and adjoint analysis on the driver
         self.driver.solve_forward()
@@ -134,25 +164,42 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
-            self._funcs[func.name] = func.value.real
-            self._sens[func.name] = {}
+            self._funcs[func.full_name] = func.value.real
+            self._sens[func.full_name] = {}
             for var in self.model.get_variables():
-                self._sens[func.name][var.name] = func.get_gradient_component(var).real
+                self._sens[func.full_name][var.full_name] = func.get_gradient_component(
+                    var
+                ).real
 
+        # update and plot the current optimization history
+        if self.write_designs:
+            for func in self.model.get_functions(optim=True):
+                if not func._plot:
+                    continue
+                self._func_history[func.full_name] += [func.value.real]
+            self._plot_history()
         return
 
-    def add_sparse_variables(self, opt_problem):
+    def register_to_problem(self, opt_problem):
         """
-        add funtofem model variables to a pyoptsparse optimization problem
+        add funtofem model variables and functions to a pyoptsparse optimization problem
         """
         for var in self.model.get_variables():
             opt_problem.addVar(
-                var.name,
+                var.full_name,
                 lower=var.lower,
                 upper=var.upper,
                 value=var.value,
                 scale=var.scale,
             )
+
+        for func in self.model.get_functions(optim=True):
+            if func._objective:
+                opt_problem.addObj(func.full_name, scale=func.scale)
+            else:
+                opt_problem.addCon(
+                    func.full_name, lower=func.lower, upper=func.upper, scale=func.scale
+                )
 
         return
 
@@ -173,3 +220,61 @@ class OptimizationManager:
         self._gatekeeper(x_dict)
 
         return self._sens, fail
+
+    def _plot_history(self):
+        driver = self.driver
+        model = self.model
+
+        keys = list(self._func_history.keys())
+        nkeys = len(keys)
+        colors = plt.cm.jet(np.linspace(0, 1, nkeys))
+        if driver.comm.rank == 0:
+            func_keys = list(self._func_history.keys())
+            num_iterations = len(self._func_history[func_keys[0]])
+            iterations = [_ for _ in range(num_iterations)]
+            plt.figure()
+            ax = plt.subplot(111)
+            ind = 0
+            for func in model.get_functions(optim=True):
+                if func.full_name in func_keys:
+                    yvec = np.array(self._func_history[func.full_name])
+                    if func._objective:
+                        yvec *= func.scale
+                    else:  # constraint
+                        constr_bndry = 1.0
+                        # take relative errors against constraint boundaries, lower upper
+                        yfinal = yvec[-1]
+                        err_lower = 1e5
+                        err_upper = 1e5
+                        if func.lower is not None:
+                            # use abs error since could have div 0
+                            err_lower = abs(yfinal - func.lower)
+                        if func.upper is not None:
+                            # use abs error since could have div 0
+                            err_upper = abs(yfinal - func.upper)
+                        if err_lower < err_upper:
+                            constr_bndry = func.lower
+                        else:
+                            constr_bndry = func.upper
+                        if constr_bndry == 0.0:
+                            yvec = np.abs(yvec * func.scale)
+                        else:
+                            yvec = np.abs((yvec - constr_bndry) / constr_bndry)
+                    # plot the function
+                    ax.plot(
+                        iterations,
+                        yvec,
+                        color=colors[ind],
+                        linewidth=2,
+                        label=func.full_name,
+                    )
+                    ind += 1
+            # put axis on rhs of plot
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+            plt.xlabel("iterations")
+            plt.ylabel("func values")
+            plt.yscale("log")
+            plt.savefig(self._history_file, dpi=300)
+            plt.close("all")

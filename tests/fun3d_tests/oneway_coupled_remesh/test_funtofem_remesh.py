@@ -9,14 +9,7 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import (
-    SolverManager,
-    TestResult,
-    Fun3dBC,
-    Fun3dModel,
-    make_test_directories,
-    Remote,
-)
+from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel, Remote
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -35,9 +28,14 @@ np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "naca_wing_multi-disc.csm")
+
 analysis_file = os.path.join(base_dir, "run_funtofem_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
-results_folder, _ = make_test_directories(comm, base_dir)
+
+results_folder = os.path.join(base_dir, "results")
+if comm.rank == 0:  # make the results folder if doesn't exist
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
 
 active_cases = ["aero-struct"]  # ["aero", "struct", "aero-struct"]
 
@@ -79,11 +77,10 @@ class TestFuntofemRemesh(unittest.TestCase):
             lower=-1.0, value=0.0, upper=1.0
         ).register_to(wing)
         wing.register_to(model)
-
-        test_scenario = Scenario.steady("euler", steps=5000)
-        test_scenario.fun3d_project("funtofem_CAPS")
-        Function.lift().register_to(test_scenario)
-        Function.drag().register_to(test_scenario)
+        test_scenario = Scenario.steady("euler", steps=10).fun3d_project(
+            "funtofem_CAPS"
+        )
+        test_scenario.include(Function.lift()).include(Function.drag())
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -96,7 +93,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             "funtofem-remesh-aero-shape-euler-aeroelastic",
             model,
             driver,
-            self.FILEPATH,
+            TestFuntofemRemesh.FILEPATH,
             both_adjoint=True,
             epsilon=1.0,
         )
@@ -172,14 +169,16 @@ class TestFuntofemRemesh(unittest.TestCase):
         # add remaining constraints to tacs model
         caps2tacs.PinConstraint("root").register_to(tacs_model)
 
-        # define the scenario
-        test_scenario = Scenario.steady("euler", steps=5000)
-        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
+        # define the funtofem scenarios
+        test_scenario = (
+            Scenario.steady("euler", steps=5000)
+            .set_temperature(T_ref=300.0, T_inf=300.0)
+            .fun3d_project("funtofem_CAPS")
+        )
         test_scenario.adjoint_steps = 4000
-        test_scenario.fun3d_project("funtofem_CAPS")
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.lift().register_to(test_scenario)
-        Function.drag().register_to(test_scenario)
+        # test_scenario.get_variable("AOA")
+        test_scenario.include(Function.lift()).include(Function.drag())
+        test_scenario.include(Function.ksfailure(ks_weight=10.0))
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
@@ -192,7 +191,7 @@ class TestFuntofemRemesh(unittest.TestCase):
             "funtofem-remesh-aero+struct-shape-euler-aeroelastic",
             model,
             driver,
-            self.FILEPATH,
+            TestFuntofemRemesh.FILEPATH,
             both_adjoint=True,
             epsilon=0.1,
         )

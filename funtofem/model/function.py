@@ -43,7 +43,7 @@ class Function(object):
         optim=False,
         lower=None,
         upper=None,
-        scale=None,
+        scale=1.0,
         objective=False,
         plot=False,
     ):
@@ -322,24 +322,9 @@ class Function(object):
                 cls.center_of_mass("z"),
             ]
         elif direction in ["x", "y", "z"]:
-            return cls(name=f"{direction}", analysis_type="structural")
+            return cls(name=f"{direction}com", analysis_type="structural")
         else:
             raise AssertionError(f"Center of mass given direction {direction} input")
-
-    @classmethod
-    def xcom(cls):
-        """Class constructor for the x center of mass TACS function"""
-        return cls(name="xcom", analysis_type="structural")
-
-    @classmethod
-    def ycom(cls):
-        """Class constructor for the y center of mass TACS function"""
-        return cls(name="ycom", analysis_type="structural")
-
-    @classmethod
-    def zcom(cls):
-        """Class constructor for the z center of mass TACS function"""
-        return cls(name="zcom", analysis_type="structural")
 
     @classmethod
     def compliance(cls):

@@ -236,10 +236,13 @@ class TacsInterfaceSolver(unittest.TestCase):
             lower=0.01, value=1.0, upper=2.0
         ).register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("test", steps=150).include(Function.xcom())
-        test_scenario.include(Function.ycom()).include(Function.zcom())
-        test_scenario.include(Function.ksfailure()).include(Function.mass())
-        test_scenario.include(Function.compliance()).register_to(model)
+        test_scenario = Scenario.steady("test", steps=150)
+        for direc in ["x", "y", "z"]:
+            Function.center_of_mass(direction=direc).register_to(test_scenario)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.mass().register_to(test_scenario)
+        Function.compliance().register_to(test_scenario)
+        test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
         solvers.structural = TacsInterface.create_from_bdf(

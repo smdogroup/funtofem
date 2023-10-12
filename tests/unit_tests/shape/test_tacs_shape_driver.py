@@ -95,7 +95,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # setup the tacs model
         tacs_model.setup()
 
-        tacs_driver = TacsOnewayDriver.prime_loads(
+        tacs_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings=transfer_settings, nprocs=2
         )
 
@@ -111,7 +111,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     def test_shape_and_thick_steady_aeroelastic(self):
         # make the funtofem and tacs model
         f2f_model = FUNtoFEMmodel("wing")
@@ -177,7 +176,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 
@@ -193,7 +192,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermal(self):
         # make the funtofem and tacs model
@@ -257,7 +255,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 
@@ -273,7 +271,6 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         self.assertTrue(max_rel_error < rtol)
         return
 
-    @unittest.skip("temp")
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermoelastic(self):
         # make the funtofem and tacs model
@@ -337,7 +334,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
-        shape_driver = TacsOnewayDriver.prime_loads(
+        shape_driver = OnewayStructDriver.prime_loads(
             aero_driver, transfer_settings, nprocs=2
         )
 

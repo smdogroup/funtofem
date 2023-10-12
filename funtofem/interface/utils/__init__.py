@@ -23,6 +23,7 @@ if fun3d_loader is not None:
     from .fun3d_grid_interface import *
 
 from .test_utils import *
+from .remote import *
 
 # need to be updated and therefore commmented out for now
 # if fun3d_loader is not None: from .fun3d_client import *

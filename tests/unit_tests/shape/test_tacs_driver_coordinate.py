@@ -12,7 +12,7 @@ from funtofem.interface import (
     make_test_directories,
     CoordinateDerivativeTester,
 )
-from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
+from funtofem.driver import OnewayStructDriver, TransferSettings, FUNtoFEMnlbgs
 
 from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
@@ -63,7 +63,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -108,7 +108,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -154,7 +154,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -208,7 +208,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5

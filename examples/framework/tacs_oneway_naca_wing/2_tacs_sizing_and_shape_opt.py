@@ -1,7 +1,7 @@
 """
 Sean Engelstad, May 2023
 GT SMDO Lab, Dr. Graeme Kennedy
-TacsOnewayDriver example
+OnewayStructDriver example
 """
 
 from funtofem import *
@@ -160,7 +160,7 @@ f2f_model.write_sensitivity_file(
 tacs_aim.post_analysis()
 
 # build the tacs oneway driver
-tacs_driver = TacsOnewayDriver.prime_loads(driver=null_driver, nprocs=1)
+tacs_driver = OnewayStructDriver.prime_loads(driver=null_driver, nprocs=1)
 
 # --------------------------------------------------------------------------#
 # Setup OpenMDAO Problem and Perform Sizing Optimization on the Wing
