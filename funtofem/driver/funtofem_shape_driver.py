@@ -41,6 +41,7 @@ from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 import importlib.util, os, shutil, numpy as np
 from funtofem.optimization.optimization_manager import OptimizationManager
 from funtofem.interface import Remote
+import time
 
 caps_loader = importlib.util.find_spec("pyCAPS")
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -311,9 +312,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.setup_aim()
             self.struct_aim.pre_analysis()
 
-            # build the new structure geometry
-            self.struct_aim.pre_analysis()
-
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
                 self._move_struct_mesh()
@@ -346,10 +344,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.root_proc:
                 os.remove(self.remote.output_file)
 
+            start_time = time.time()
+            if self.comm.rank == 0:
+                print(f"Calling remote analysis..", flush=True)
             # system call funtofem forward + adjoint analysis
             os.system(
                 f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
+            elapsed_time = time.time() - start_time
+            if self.comm.rank == 0:
+                print(
+                    f"Done with remote analysis in {elapsed_time:2.5e} sec", flush=True
+                )
 
         else:
             if self.is_paired:
