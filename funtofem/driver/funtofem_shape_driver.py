@@ -322,7 +322,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.setup_aim()
             self.struct_aim.pre_analysis()
 
-            dt_struct = time.time() - start_time_struct()
+            dt_struct = time.time() - start_time_struct
             if self.comm.rank == 0:
                 print(f"F2F - Built struct mesh in {dt_struct:.5e} sec", flush=True)
 
@@ -347,6 +347,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._update_struct_transfer()
 
         if self.is_remote:
+            if self.comm.rank == 0:
+                print("F2F - writing design variables file", flush=True)
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
