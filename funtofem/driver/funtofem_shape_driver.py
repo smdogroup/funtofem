@@ -352,7 +352,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
-                filename=Remote.paths(self.remote.main_dir).design_file,
+                filename=Remote.paths(self.comm, self.remote.main_dir).design_file,
                 root=0,
             )
 
@@ -378,7 +378,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # read in the funtofem design input file
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Remote.paths(self.flow_dir).design_file,
+                    filename=Remote.paths(self.comm, self.flow_dir).design_file,
                     root=0,
                 )
 
@@ -390,7 +390,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.flow_dir).aero_sens_file
+                filepath = Remote.paths(self.comm, self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
@@ -434,8 +434,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.is_paired:
                 write_struct = True
                 write_aero = True
-                struct_sensfile = Remote.paths(self.flow_dir).struct_sens_file
-                aero_sensfile = Remote.paths(self.flow_dir).aero_sens_file
+                struct_sensfile = Remote.paths(self.comm, self.flow_dir).struct_sens_file
+                aero_sensfile = Remote.paths(self.comm, self.flow_dir).aero_sens_file
             else:
                 if self.struct_shape:
                     write_struct = True

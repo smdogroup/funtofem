@@ -40,13 +40,20 @@ class Remote:
         self.struct_name = struct_name
 
     @classmethod
-    def paths(cls, main_dir, aero_name="fun3d", struct_name="tacs"):
+    def paths(cls, comm, main_dir, aero_name="fun3d", struct_name="tacs"):
         return cls(
             analysis_file=None,
-            main_dir=main_dir,
+            main_dir=self.remote_dir(comm, main_dir),
             aero_name=aero_name,
             struct_name=struct_name,
         )
+
+    @classmethod
+    def remote_dir(cls, comm, main_dir):
+        _remote_dir = os.path.join(main_dir, "remote")
+        if comm.rank == 0 and not(os.path.exists(_remote_dir)):
+            os.mkdir(_remote_dir)
+        return _remote_dir
 
     @classmethod
     def fun3d_path(cls, main_dir, filename):
