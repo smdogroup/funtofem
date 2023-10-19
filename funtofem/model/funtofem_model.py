@@ -762,8 +762,8 @@ class FUNtoFEMmodel(object):
 
         # update the variable values on each processor
         for var in self.get_variables():
-            if var.name in variables_dict:
-                var.value = variables_dict[var.name]
+            if var.full_name in variables_dict:
+                var.value = variables_dict[var.full_name]
 
         return
 
@@ -812,7 +812,7 @@ class FUNtoFEMmodel(object):
                 # write each variable from that discipline
                 for var in variables[discipline]:
                     # only real numbers written to this file
-                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+                    hdl.write(f"\tvar {var.full_name} {var.value.real}\n")
 
             hdl.close()
 
