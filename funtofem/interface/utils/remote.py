@@ -43,7 +43,7 @@ class Remote:
     def paths(cls, comm, main_dir, aero_name="fun3d", struct_name="tacs"):
         return cls(
             analysis_file=None,
-            main_dir=self.remote_dir(comm, main_dir),
+            main_dir=cls.remote_dir(comm, main_dir),
             aero_name=aero_name,
             struct_name=struct_name,
         )

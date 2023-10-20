@@ -200,7 +200,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         if not self.is_remote:
             assert solvers.flow is not None
-            assert solvers.structural is not None
+            assert solvers.structural is not None or model.structural is not None
         self._first_forward = True
 
         # initialize adjoint state variables to zero for writing sens files
