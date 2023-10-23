@@ -676,7 +676,9 @@ class FUNtoFEMmodel(object):
             discpline_vars = []
             for var in variables:
                 # Write the variables whose analysis_type matches the discipline string.
-                if discipline == var.analysis_type:
+                # don't register aerodynamic vars to the fun3daim as handled by FUN3D
+                # may need to add extra flags here to make more general
+                if discipline == var.analysis_type and discipline != "aerodynamic":
                     discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
