@@ -633,7 +633,9 @@ class FUNtoFEMmodel(object):
         # return the loads data
         return loads_data
 
-    def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
+    def write_sensitivity_file(
+        self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
+    ):
         """
         Write the sensitivity file.
 
@@ -656,6 +658,8 @@ class FUNtoFEMmodel(object):
             The name of the discipline sensitivity data to be written
         root: int
             The rank of the processor that will write the file
+        write_dvs: bool
+            whether to write the design variables for this discipline
         """
 
         funcs = self.get_functions()
@@ -674,12 +678,11 @@ class FUNtoFEMmodel(object):
         if comm.rank == root:
             variables = self.get_variables()
             discpline_vars = []
-            for var in variables:
-                # Write the variables whose analysis_type matches the discipline string.
-                # don't register aerodynamic vars to the fun3daim as handled by FUN3D
-                # may need to add extra flags here to make more general
-                if discipline == var.analysis_type and discipline != "aerodynamic":
-                    discpline_vars.append(var)
+            if write_dvs:  # flag for registration then writing out discipline dvs
+                for var in variables:
+                    # Write the variables whose analysis_type matches the discipline string.
+                    if discipline == var.analysis_type:
+                        discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
             num_dvs = len(discpline_vars)

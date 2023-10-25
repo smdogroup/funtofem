@@ -306,6 +306,7 @@ class OnewayAeroDriver:
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                write_dvs=False,
             )
 
         # post analysis for FUN3D mesh morphing
@@ -366,6 +367,7 @@ class OnewayAeroDriver:
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                write_dvs=False,
             )
 
         # shape derivative section
