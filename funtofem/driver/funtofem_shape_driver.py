@@ -434,7 +434,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.is_paired:
                 write_struct = True
                 write_aero = True
-                struct_sensfile = Remote.paths(self.comm, self.flow_dir).struct_sens_file
+                struct_sensfile = Remote.paths(
+                    self.comm, self.flow_dir
+                ).struct_sens_file
                 aero_sensfile = Remote.paths(self.comm, self.flow_dir).aero_sens_file
             else:
                 if self.struct_shape:

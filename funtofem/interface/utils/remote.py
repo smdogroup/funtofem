@@ -51,7 +51,7 @@ class Remote:
     @classmethod
     def remote_dir(cls, comm, main_dir):
         _remote_dir = os.path.join(main_dir, "remote")
-        if comm.rank == 0 and not(os.path.exists(_remote_dir)):
+        if comm.rank == 0 and not (os.path.exists(_remote_dir)):
             os.mkdir(_remote_dir)
         return _remote_dir
 
