@@ -32,23 +32,28 @@ inline double F2FImagPart(const F2FComplex &c) { return imag(c); }
 inline double F2FRealPart(const double &r) { return r; }
 
 // Compute the absolute value
-inline F2FReal F2Ffabs(const F2FReal &c) {
-  if (c < 0.0) {
+inline F2FReal F2Ffabs(const F2FReal &c)
+{
+  if (c < 0.0)
+  {
     return -c;
   }
   return c;
 }
 
 // Compute the absolute value
-inline F2FComplex F2Ffabs(const F2FComplex &c) {
-  if (real(c) < 0.0) {
+inline F2FComplex F2Ffabs(const F2FComplex &c)
+{
+  if (real(c) < 0.0)
+  {
     return -c;
   }
   return c;
 }
 
-class TransferScheme {
- public:
+class TransferScheme
+{
+public:
   TransferScheme(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
                  MPI_Comm aero_comm, int aero_root, int struct_node_dof = 3,
                  int aero_node_dof = 3)
@@ -58,16 +63,17 @@ class TransferScheme {
         aero_comm(aero_comm),
         aero_root(aero_root),
         struct_node_dof(struct_node_dof),
-        aero_node_dof(aero_node_dof) {
+        aero_node_dof(aero_node_dof)
+  {
     na = 0;
     na_global = 0;
     ns = 0;
     ns_local = 0;
     mesh_update = 0;
 
-    Xa = NULL;        // Local array of aerodynamic nodes
-    Xs = NULL;        // Global array of structural nodes
-    Xs_local = NULL;  // Local array of structural nodes
+    Xa = NULL;       // Local array of aerodynamic nodes
+    Xs = NULL;       // Global array of structural nodes
+    Xs_local = NULL; // Local array of structural nodes
 
     object_id = object_count;
     object_count++;
@@ -92,7 +98,7 @@ class TransferScheme {
   int getLocalAeroArrayLen() { return aero_node_dof * na; }
   int getLocalStructArrayLen() { return struct_node_dof * ns_local; }
 
- protected:
+protected:
   // Distribute the structural mesh if mesh_update is true on one of the
   // processors.
   void distributeStructuralMesh();
@@ -124,21 +130,21 @@ class TransferScheme {
                       F2FScalar *W, double tol = 1e-7);
 
   // Communicators
-  MPI_Comm global_comm;  // Global communicator
-  MPI_Comm struct_comm;  // Communicator for the structures
-  int struct_root;       // Structural rank-0 proc on global_comm
-  MPI_Comm aero_comm;    // Communicator for the aerodynamics
-  int aero_root;         // Aerodynamic rank-0 proc on global_comm
-  int struct_node_dof;   // Degrees of freedom per structural node
-  int aero_node_dof;     // Degrees of freedom per aerodynamic node
+  MPI_Comm global_comm; // Global communicator
+  MPI_Comm struct_comm; // Communicator for the structures
+  int struct_root;      // Structural rank-0 proc on global_comm
+  MPI_Comm aero_comm;   // Communicator for the aerodynamics
+  int aero_root;        // Aerodynamic rank-0 proc on global_comm
+  int struct_node_dof;  // Degrees of freedom per structural node
+  int aero_node_dof;    // Degrees of freedom per aerodynamic node
 
   // Keep track if the mesh has been updated
   int mesh_update;
 
   // Aerodynamic data
-  F2FScalar *Xa;  // Aerodynamics node locations (x, y, z) at each node
-  int na;         // Number of local aerodynamic nodes
-  int na_global;  // Number of global aerodynamic nodes (on all aero procs)
+  F2FScalar *Xa; // Aerodynamics node locations (x, y, z) at each node
+  int na;        // Number of local aerodynamic nodes
+  int na_global; // Number of global aerodynamic nodes (on all aero procs)
 
   // Structural data
   // Degrees of freedom per node for the structural solution and load vector.
@@ -149,30 +155,35 @@ class TransferScheme {
   // however, if the structures uses u, v, w, theta_x, theta_y, theta_z, then
   // dof_per_node = 6. Handling this case is up to the specific transfer
   // scheme implementation.
-  F2FScalar *Xs;        // Global array of (x, y,z) locations for structures
-  F2FScalar *Xs_local;  // Local array of (x, y, z) locations for structures
-  int ns;        // Number of global structural nodes across all struct procs
-  int ns_local;  // Number of local structural nodes on this processor
+  F2FScalar *Xs;       // Global array of (x, y,z) locations for structures
+  F2FScalar *Xs_local; // Local array of (x, y, z) locations for structures
+  int ns;              // Number of global structural nodes across all struct procs
+  int ns_local;        // Number of local structural nodes on this processor
 
   // Transfer scheme object counter and ID
   static int object_count;
   int object_id;
 };
 
-class LDTransferScheme : public TransferScheme {
- public:
+class LDTransferScheme : public TransferScheme
+{
+public:
   LDTransferScheme(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
                    MPI_Comm aero_comm, int aero_root, int struct_node_dof = 3)
       : TransferScheme(global_comm, struct_comm, struct_root, aero_comm,
-                       aero_root, struct_node_dof, 3) {
+                       aero_root, struct_node_dof, 3)
+  {
     Us = NULL;
     Fa = NULL;
   }
-  virtual ~LDTransferScheme() {
-    if (Us) {
+  virtual ~LDTransferScheme()
+  {
+    if (Us)
+    {
       delete[] Us;
     }
-    if (Fa) {
+    if (Fa)
+    {
       delete[] Fa;
     }
   }
@@ -192,10 +203,12 @@ class LDTransferScheme : public TransferScheme {
   // Action of Jacobians. These are valid when the transfer scheme is derived
   // using the method of virtual work. If not, they must be implemented
   // directly.
-  virtual void applydLdfA(const F2FScalar *vecs, F2FScalar *prods) {
+  virtual void applydLdfA(const F2FScalar *vecs, F2FScalar *prods)
+  {
     applydDduSTrans(vecs, prods);
   }
-  virtual void applydLdfATrans(const F2FScalar *vecs, F2FScalar *prods) {
+  virtual void applydLdfATrans(const F2FScalar *vecs, F2FScalar *prods)
+  {
     applydDduS(vecs, prods);
   }
 
@@ -248,7 +261,7 @@ class LDTransferScheme : public TransferScheme {
                          const F2FScalar *test_vec_s2, const F2FScalar h,
                          const double rtol, const double atol);
 
- protected:
+protected:
   // Aerodynamic load data
   F2FScalar *Fa;
 
@@ -267,23 +280,27 @@ class LDTransferScheme : public TransferScheme {
   // Auxiliary functions for load transfer (needed in complex compute
   // rotation)
   void assembleM1(const F2FScalar *R, const F2FScalar *S, F2FScalar *A);
-  F2FScalar printDetM1(const F2FScalar *A);
 };
 
-class ThermalTransfer : public TransferScheme {
- public:
+class ThermalTransfer : public TransferScheme
+{
+public:
   ThermalTransfer(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
                   MPI_Comm aero_comm, int aero_root)
       : TransferScheme(global_comm, struct_comm, struct_root, aero_comm,
-                       aero_root, 1, 1) {
+                       aero_root, 1, 1)
+  {
     Ha = NULL;
     Ts = NULL;
   }
-  virtual ~ThermalTransfer() {
-    if (Ha) {
+  virtual ~ThermalTransfer()
+  {
+    if (Ha)
+    {
       delete[] Ha;
     }
-    if (Ts) {
+    if (Ts)
+    {
       delete[] Ts;
     }
   }
@@ -317,7 +334,7 @@ class ThermalTransfer : public TransferScheme {
                              const F2FScalar *test_vec_s2, const F2FScalar h,
                              const double rtol, const double atol);
 
- protected:
+protected:
   // Aerodynamic load data
   F2FScalar *Ha;
 
@@ -334,4 +351,4 @@ F2FScalar vec_mag(const F2FScalar *x);
 F2FScalar vec_dot(const F2FScalar *x, const F2FScalar *y);
 F2FScalar det(const F2FScalar *A);
 
-#endif  // TRANSFER_SCHEME_H
+#endif // TRANSFER_SCHEME_H

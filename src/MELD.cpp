@@ -36,7 +36,8 @@ MELD::MELD(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
                        aero_root),
       isymm(isymm),
       nn(num_nearest),
-      global_beta(beta) {
+      global_beta(beta)
+{
   // Initialize the aerostuctural connectivity
   global_conn = NULL;
   global_W = NULL;
@@ -53,43 +54,53 @@ MELD::MELD(MPI_Comm global_comm, MPI_Comm struct_comm, int struct_root,
   // Notify user of the type of transfer scheme they are using
   int rank;
   MPI_Comm_rank(global_comm, &rank);
-  if (rank == struct_root) {
+  if (rank == struct_root)
+  {
     printf("Transfer scheme [%i]: Creating scheme of type MELD...\n",
            object_id);
   }
 }
 
-MELD::~MELD() {
+MELD::~MELD()
+{
   // Free the aerostructural connectivity data
-  if (global_conn) {
+  if (global_conn)
+  {
     delete[] global_conn;
   }
 
   // Free the load transfer data
-  if (global_W) {
+  if (global_W)
+  {
     delete[] global_W;
   }
-  if (global_xs0bar) {
+  if (global_xs0bar)
+  {
     delete[] global_xs0bar;
   }
-  if (global_R) {
+  if (global_R)
+  {
     delete[] global_R;
   }
-  if (global_S) {
+  if (global_S)
+  {
     delete[] global_S;
   }
 
   // Free the Jacobian-vector product data
-  if (global_M1) {
+  if (global_M1)
+  {
     delete[] global_M1;
   }
-  if (global_ipiv) {
+  if (global_ipiv)
+  {
     delete[] global_ipiv;
   }
 
   int rank;
   MPI_Comm_rank(global_comm, &rank);
-  if (rank == struct_root) {
+  if (rank == struct_root)
+  {
     printf("Transfer scheme [%i]: freeing MELD data...\n", object_id);
   }
 }
@@ -98,29 +109,35 @@ MELD::~MELD() {
   Set aerostructural connectivity, compute weights, and allocate memory needed
   for transfers and products
 */
-void MELD::initialize() {
+void MELD::initialize()
+{
   // global number of structural nodes
   distributeStructuralMesh();
 
   // Check that user doesn't set more nearest nodes than exist in total
-  if (nn > ns) {
+  if (nn > ns)
+  {
     nn = ns;
   }
 
-  if (Us) {
+  if (Us)
+  {
     delete[] Us;
   }
   Us = NULL;
-  if (Fa) {
+  if (Fa)
+  {
     delete[] Fa;
   }
   Fa = NULL;
 
-  if (na > 0) {
+  if (na > 0)
+  {
     Fa = new F2FScalar[3 * na];
     memset(Fa, 0, 3 * na * sizeof(F2FScalar));
   }
-  if (ns > 0) {
+  if (ns > 0)
+  {
     Us = new F2FScalar[3 * ns];
     memset(Us, 0, 3 * ns * sizeof(F2FScalar));
   }
@@ -156,7 +173,8 @@ void MELD::initialize() {
   -------
   aero_disps   : aerodynamic node displacements
 */
-void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
+void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps)
+{
   // Check if struct nodes locations need to be redistributed
   distributeStructuralMesh();
 
@@ -171,11 +189,13 @@ void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
 
   // Add structural displacments to structural node locations
   F2FScalar *Xsd = new F2FScalar[3 * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns; j++)
+  {
     Xsd[j] = Xs[j] + Us[j];
   }
 
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     const F2FScalar *xa0 = &Xa[3 * i];
 
     // Compute the centroids of the original and displaced sets of nodes
@@ -207,8 +227,8 @@ void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
     rho[2] = R[2] * r[0] + R[5] * r[1] + R[8] * r[2];
 
     // Add rotated vector to centroid of second set to obtain final location
-    F2FScalar xa[3];  // location of displaced aerodynamic node
-    F2FScalar *ua = &aero_disps[3 * i];  // displacement of aerodynamic node
+    F2FScalar xa[3];                    // location of displaced aerodynamic node
+    F2FScalar *ua = &aero_disps[3 * i]; // displacement of aerodynamic node
     vec_add(xsbar, rho, xa);
     vec_diff(xa0, xa, ua);
   }
@@ -231,21 +251,28 @@ void MELD::transferDisps(const F2FScalar *struct_disps, F2FScalar *aero_disps) {
   xsbar : centroid
 */
 void MELD::computeCentroid(const int *local_conn, const F2FScalar *W,
-                           const F2FScalar *X, F2FScalar *xsbar) {
+                           const F2FScalar *X, F2FScalar *xsbar)
+{
   memset(xsbar, 0, 3 * sizeof(F2FScalar));
-  for (int j = 0; j < nn; j++) {
-    if (local_conn[j] < ns) {
+  for (int j = 0; j < nn; j++)
+  {
+    if (local_conn[j] < ns)
+    {
       const F2FScalar *xs = &X[3 * local_conn[j]];
 
-      for (int k = 0; k < 3; k++) {
+      for (int k = 0; k < 3; k++)
+      {
         xsbar[k] += W[j] * xs[k];
       }
-    } else {
+    }
+    else
+    {
       F2FScalar rxs[3];
       memcpy(rxs, &X[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
       rxs[isymm] *= -1.0;
 
-      for (int k = 0; k < 3; k++) {
+      for (int k = 0; k < 3; k++)
+      {
         xsbar[k] += W[j] * rxs[k];
       }
     }
@@ -271,25 +298,29 @@ void MELD::computeCentroid(const int *local_conn, const F2FScalar *W,
 void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
                              const int *local_conn, const F2FScalar *W,
                              const F2FScalar *xs0bar, const F2FScalar *xsbar,
-                             F2FScalar *H) {
+                             F2FScalar *H)
+{
   // Form the covariance matrix of the two point sets
   memset(H, 0, 9 * sizeof(F2FScalar));
-  F2FScalar detH;
 
-  for (int j = 0; j < nn; j++) {
-    F2FScalar q[3];  // vector from centroid to node
-    F2FScalar p[3];  // vector from diplaced centroid to displaced node
+  for (int j = 0; j < nn; j++)
+  {
+    F2FScalar q[3]; // vector from centroid to node
+    F2FScalar p[3]; // vector from diplaced centroid to displaced node
 
-    if (local_conn[j] < ns) {
+    if (local_conn[j] < ns)
+    {
       const F2FScalar *xs0 = &X[3 * local_conn[j]];
       const F2FScalar *xs = &Xd[3 * local_conn[j]];
 
       vec_diff(xs0bar, xs0, q);
       vec_diff(xsbar, xs, p);
-    } else {
+    }
+    else
+    {
       // We're dealing with a reflected node/displacement
-      F2FScalar rxs0[3];  // Reflected xs0
-      F2FScalar rxs[3];   // Reflected xs
+      F2FScalar rxs0[3]; // Reflected xs0
+      F2FScalar rxs[3];  // Reflected xs
 
       // Copy the node locations
       memcpy(rxs0, &X[3 * (local_conn[j] - ns)], 3 * sizeof(F2FScalar));
@@ -316,15 +347,6 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
     H[6] += W[j] * p[0] * q[2];
     H[7] += W[j] * p[1] * q[2];
     H[8] += W[j] * p[2] * q[2];
-
-  }
-
-  detH = det(H);
-  if (abs(F2FRealPart(detH)) < 1e-10) {
-    printf("Warning detH = %.4e < 1e-10 for covariance in funtofem MELD disp transfer... adding 1e-1*eye(3)\n", detH);
-    H[0] += 1e-1;
-    H[4] += 1e-1;
-    H[8] += 1e-1;
   }
 }
 
@@ -340,7 +362,8 @@ void MELD::computeCovariance(const F2FScalar *X, const F2FScalar *Xd,
   -------
   struct_loads : loads on structural nodes
 */
-void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
+void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads)
+{
   // Copy prescribed aero loads into member variable
   memcpy(Fa, aero_loads, 3 * na * sizeof(F2FScalar));
 
@@ -349,7 +372,8 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   memset(struct_loads_global, 0, 3 * ns * sizeof(F2FScalar));
 
   // Loop over all aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     // Compute vector d from centroid to aero node
     const F2FScalar *xa0 = &Xa[3 * i];
     const F2FScalar *xs0bar = &global_xs0bar[3 * i];
@@ -365,29 +389,25 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
     int *ipiv = &global_ipiv[15 * i];
     int m = 15, info = 0;
     LAPACKgetrf(&m, &m, M1, &m, ipiv, &info);
-    
-    // check the determinant of M1 after the LU factorization
-    F2FScalar detM1 = printDetM1(M1);
-    if (abs(F2FRealPart(detM1)) < 1e-10 ) {
-      printf("Warning det M1 = %.4e < 1e-10\n", detM1);
-    }
 
     const F2FScalar *fa = &Fa[3 * i];
     F2FScalar x[] = {-fa[0] * r[0], -fa[1] * r[0], -fa[2] * r[0],
                      -fa[0] * r[1], -fa[1] * r[1], -fa[2] * r[1],
                      -fa[0] * r[2], -fa[1] * r[2], -fa[2] * r[2],
-                     0.0,           0.0,           0.0,
-                     0.0,           0.0,           0.0};
+                     0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0};
     int one = 1;
     info = 0;
     LAPACKgetrs("N", &m, &one, M1, &m, ipiv, x, &m, &info);
     F2FScalar X[] = {x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]};
 
     // Compute load contribution of aerodynamic surface node to structural node
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[i * nn + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -400,7 +420,9 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
         fs[0] += w * (X[0] * q[0] + X[1] * q[1] + X[2] * q[2] + fa[0]);
         fs[1] += w * (X[3] * q[0] + X[4] * q[1] + X[5] * q[2] + fa[1]);
         fs[2] += w * (X[6] * q[0] + X[7] * q[1] + X[8] * q[2] + fa[2]);
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -446,7 +468,8 @@ void MELD::transferLoads(const F2FScalar *aero_loads, F2FScalar *struct_loads) {
   --------
   prods : output vector
 */
-void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods)
+{
   // Make a global image of the input vector
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
   structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
@@ -455,7 +478,8 @@ void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
 
   // Loop over all aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     F2FScalar *prod = &prods[3 * i];
 
     // Compute vector r from centroid to aero node
@@ -502,18 +526,22 @@ void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Loop over linked structural nodes and add up nonzero contributions to
     // Jacobian-vector product
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Compute vector q from centroid to structural node and get components
       // of vector input corresponding to current structural node
       F2FScalar q[3];
       F2FScalar v[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -530,7 +558,8 @@ void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
       //                               [ X[2] X[5] X[8] ][ v[2] ]
       F2FScalar w = global_W[nn * i + j];
 
-      for (int k = 0; k < 3; k++) {
+      for (int k = 0; k < 3; k++)
+      {
         F2FScalar *X = &XX[9 * k];
         prod[k] -= w * (q[0] * (X[0] * v[0] + X[3] * v[1] + X[6] * v[2]) +
                         q[1] * (X[1] * v[0] + X[4] * v[1] + X[7] * v[2]) +
@@ -556,13 +585,15 @@ void MELD::applydDduS(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   prods : output vector
 */
-void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods)
+{
   // Zero array of transpose Jacobian-vector products every call
   F2FScalar *prods_global = new F2FScalar[3 * ns];
   memset(prods_global, 0, 3 * ns * sizeof(F2FScalar));
 
   // Loop over aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     const F2FScalar *v = &vecs[3 * i];
 
     // Compute vector r from centroid to aero node
@@ -609,10 +640,12 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Loop over linked structural nodes and add up nonzero contributions to
     // Jacobian-vector product
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -627,13 +660,16 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
         prod[1] -= w * v[1];
         prod[2] -= w * v[2];
 
-        for (int k = 0; k < 3; k++) {
+        for (int k = 0; k < 3; k++)
+        {
           F2FScalar *X = &XX[9 * k];
           prod[0] -= w * (X[0] * q[0] + X[1] * q[1] + X[2] * q[2]) * v[k];
           prod[1] -= w * (X[3] * q[0] + X[4] * q[1] + X[5] * q[2]) * v[k];
           prod[2] -= w * (X[6] * q[0] + X[7] * q[1] + X[8] * q[2]) * v[k];
         }
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -650,7 +686,8 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
         rprod[1] += w * v[1];
         rprod[2] += w * v[2];
 
-        for (int k = 0; k < 3; k++) {
+        for (int k = 0; k < 3; k++)
+        {
           F2FScalar *X = &XX[9 * k];
           rprod[0] += w * (X[0] * q[0] + X[1] * q[1] + X[2] * q[2]) * v[k];
           rprod[1] += w * (X[3] * q[0] + X[4] * q[1] + X[5] * q[2]) * v[k];
@@ -684,7 +721,8 @@ void MELD::applydDduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   prods : output vector
 */
-void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods)
+{
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
   structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
@@ -693,7 +731,8 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods_global, 0, 3 * ns * sizeof(F2FScalar));
 
   // Loop over aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     // Compute vector r from centroid to aero node
     const F2FScalar *xa0 = &Xa[3 * i];
     const F2FScalar *xs0bar = &global_xs0bar[3 * i];
@@ -709,12 +748,12 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
     F2FScalar x[] = {-fa[0] * r[0], -fa[1] * r[0], -fa[2] * r[0],
                      -fa[0] * r[1], -fa[1] * r[1], -fa[2] * r[1],
                      -fa[0] * r[2], -fa[1] * r[2], -fa[2] * r[2],
-                     0.0,           0.0,           0.0,
-                     0.0,           0.0,           0.0};
+                     0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0};
     int m = 15, nrhs = 1, info = 0;
     LAPACKgetrs("N", &m, &nrhs, M1, &m, ipiv, x, &m, &info);
     F2FScalar XT[] = {x[0], x[3], x[6], x[1], x[4], x[7], x[2], x[5], x[8]};
-    F2FScalar nY[] = {-x[9],  -x[10], -x[11], -x[10], -x[12],
+    F2FScalar nY[] = {-x[9], -x[10], -x[11], -x[10], -x[12],
                       -x[13], -x[11], -x[13], -x[14]};
 
     // Assemble X and Y into matrix M2
@@ -730,17 +769,21 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
     // Build right-hand side of first system to be solved
     F2FScalar z2[15];
     memset(z2, 0.0, 15 * sizeof(F2FScalar));
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Get vector q and subset of input vector
       F2FScalar q[3];
       F2FScalar v[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -787,10 +830,12 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Loop over linked structural nodes and add contributions from aerodynamic
     // surface node to global structural loads
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -807,7 +852,9 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
         prod[0] -= w * (ZH[0] * q[0] + ZH[1] * q[1] + ZH[2] * q[2]);
         prod[1] -= w * (ZH[3] * q[0] + ZH[4] * q[1] + ZH[5] * q[2]);
         prod[2] -= w * (ZH[6] * q[0] + ZH[7] * q[1] + ZH[8] * q[2]);
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -854,7 +901,8 @@ void MELD::applydLduS(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   prods : output vector
 */
-void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods)
+{
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
   structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
@@ -863,7 +911,8 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   memset(prods_global, 0, 3 * ns * sizeof(F2FScalar));
 
   // Loop over all aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     // Compute vector r from centroid to aero node
     const F2FScalar *xa0 = &Xa[3 * i];
     const F2FScalar *xs0bar = &global_xs0bar[3 * i];
@@ -879,12 +928,12 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
     F2FScalar x[] = {-fa[0] * r[0], -fa[1] * r[0], -fa[2] * r[0],
                      -fa[0] * r[1], -fa[1] * r[1], -fa[2] * r[1],
                      -fa[0] * r[2], -fa[1] * r[2], -fa[2] * r[2],
-                     0.0,           0.0,           0.0,
-                     0.0,           0.0,           0.0};
+                     0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0};
     int m = 15, nrhs = 1, info = 0;
     LAPACKgetrs("N", &m, &nrhs, M1, &m, ipiv, x, &m, &info);
     F2FScalar XT[] = {x[0], x[3], x[6], x[1], x[4], x[7], x[2], x[5], x[8]};
-    F2FScalar nY[] = {-x[9],  -x[10], -x[11], -x[10], -x[12],
+    F2FScalar nY[] = {-x[9], -x[10], -x[11], -x[10], -x[12],
                       -x[13], -x[11], -x[13], -x[14]};
 
     // Assemble X and Y into matrix M2
@@ -900,17 +949,21 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
     // Build right-hand side of first system to be solved
     F2FScalar y2[15];
     memset(y2, 0.0, 15 * sizeof(F2FScalar));
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Get vector q and subset of input vector
       F2FScalar q[3];
       F2FScalar v[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(v, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -958,10 +1011,12 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Loop over linked structural nodes and add contributions from aerodynamic
     // surface node to global structural loads
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -978,7 +1033,9 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
         prod[0] -= w * (YF[0] * q[0] + YF[3] * q[1] + YF[6] * q[2]);
         prod[1] -= w * (YF[1] * q[0] + YF[4] * q[1] + YF[7] * q[2]);
         prod[2] -= w * (YF[2] * q[0] + YF[5] * q[1] + YF[8] * q[2]);
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -1026,7 +1083,8 @@ void MELD::applydLduSTrans(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   M3 : matrix system
 */
-void MELD::assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *M3) {
+void MELD::assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *M3)
+{
   // Set the entries to zero
   memset(M3, 0, 15 * 15 * sizeof(F2FScalar));
 
@@ -1154,8 +1212,10 @@ void MELD::assembleM3(const F2FScalar *R, const F2FScalar *S, F2FScalar *M3) {
   --------
   prods : output vector
 */
-void MELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
-  for (int i = 0; i < na; i++) {
+void MELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods)
+{
+  for (int i = 0; i < na; i++)
+  {
     // Get vector of adjoint variables and rotation matrix for each aerodynamic
     // node
     const F2FScalar *lam = &vecs[3 * i];
@@ -1181,18 +1241,21 @@ void MELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   prods : output vector
 */
-void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods)
+{
   // Set products to zero
   F2FScalar *prods_global = new F2FScalar[3 * ns];
   memset(prods_global, 0.0, 3 * ns * sizeof(F2FScalar));
 
   // Add structural displacments to structural node locations
   F2FScalar *Xsd = new F2FScalar[3 * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns; j++)
+  {
     Xsd[j] = Xs[j] + Us[j];
   }
 
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     const F2FScalar *lam = &vecs[3 * i];
 
     // Compute vector r from centroid to aero node
@@ -1233,10 +1296,12 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
     LAPACKgetrs("N", &m, &nrhs, M1, &m, ipiv, x, &m, &info);
     F2FScalar X[] = {x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]};
 
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -1262,7 +1327,9 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
         prod[2] += -w * (q[0] * X[6] + q[1] * X[7] + q[2] * X[8]) -
                    w * (X[2] * p[0] + X[5] * p[1] + X[8] * p[2]) +
                    w * (lam[0] * R[6] + lam[1] * R[7] + lam[2] * (R[8] - 1.0));
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
@@ -1323,14 +1390,16 @@ void MELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
   --------
   prods : output vector
 */
-void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods)
+{
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
   structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
   // Zero products
   memset(prods, 0, 3 * na * sizeof(F2FScalar));
 
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     const F2FScalar *fa = &Fa[3 * i];
     const F2FScalar *xs0bar = &global_xs0bar[3 * i];
     F2FScalar *prod = &prods[3 * i];
@@ -1364,18 +1433,22 @@ void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
     LAPACKgetrs("N", &m, &nrhs, M1, &m, ipiv, x, &m, &info);
     F2FScalar X3[] = {x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]};
 
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Compute vector q from centroid to structural node and get components
       // of vector input corresponding to current structural node
       F2FScalar q[3];
       F2FScalar lam[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(lam, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -1419,7 +1492,8 @@ void MELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
   -------
   prods : output vector
 */
-void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
+void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods)
+{
   F2FScalar *vecs_global = new F2FScalar[3 * ns];
   structGatherBcast(3 * ns_local, vecs, 3 * ns, vecs_global);
 
@@ -1429,12 +1503,14 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
 
   // Add structural displacments to structural node locations
   F2FScalar *Xsd = new F2FScalar[3 * ns];
-  for (int j = 0; j < 3 * ns; j++) {
+  for (int j = 0; j < 3 * ns; j++)
+  {
     Xsd[j] = Xs[j] + Us[j];
   }
 
   // Loop over aerodynamic surface nodes
-  for (int i = 0; i < na; i++) {
+  for (int i = 0; i < na; i++)
+  {
     // Compute vector r from centroid to aero node
     const F2FScalar *xa0 = &Xa[3 * i];
     const F2FScalar *xs0bar = &global_xs0bar[3 * i];
@@ -1454,12 +1530,12 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
     F2FScalar x[] = {-fa[0] * r[0], -fa[1] * r[0], -fa[2] * r[0],
                      -fa[0] * r[1], -fa[1] * r[1], -fa[2] * r[1],
                      -fa[0] * r[2], -fa[1] * r[2], -fa[2] * r[2],
-                     0.0,           0.0,           0.0,
-                     0.0,           0.0,           0.0};
+                     0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0};
     int m = 15, nrhs = 1, info = 0;
     LAPACKgetrs("N", &m, &nrhs, M1, &m, ipiv, x, &m, &info);
     F2FScalar XT[] = {x[0], x[3], x[6], x[1], x[4], x[7], x[2], x[5], x[8]};
-    F2FScalar nY[] = {-x[9],  -x[10], -x[11], -x[10], -x[12],
+    F2FScalar nY[] = {-x[9], -x[10], -x[11], -x[10], -x[12],
                       -x[13], -x[11], -x[13], -x[14]};
 
     // Assemble X and Y into matrix M2
@@ -1475,17 +1551,21 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
     // Build right-hand side of first system to be solved
     F2FScalar z2[15];
     memset(z2, 0.0, 15 * sizeof(F2FScalar));
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Get vector q, and subset of input vector
       F2FScalar q[3];
       F2FScalar lam[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(lam, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -1562,17 +1642,21 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Compute vector for third term
     F2FScalar qXlam[] = {0.0, 0.0, 0.0};
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
       // Get vector q and subset of input vector
       F2FScalar q[3];
       F2FScalar lam[3];
-      if (indx < ns) {
+      if (indx < ns)
+      {
         const F2FScalar *xs0 = &Xs[3 * indx];
         vec_diff(xs0bar, xs0, q);
         memcpy(lam, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
-      } else {
+      }
+      else
+      {
         indx -= ns;
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar rxs0[3];
@@ -1584,8 +1668,10 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
       }
 
       F2FScalar w = global_W[nn * i + j];
-      for (int m = 0; m < 3; m++) {
-        for (int n = 0; n < 3; n++) {
+      for (int m = 0; m < 3; m++)
+      {
+        for (int n = 0; n < 3; n++)
+        {
           qXlam[0] += w * q[m] * X1[m + 3 * n] * lam[n];
           qXlam[1] += w * q[m] * X2[m + 3 * n] * lam[n];
           qXlam[2] += w * q[m] * X3[m + 3 * n] * lam[n];
@@ -1595,10 +1681,12 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
 
     // Loop over linked structural nodes and add contributions from aerodynamic
     // surface node to global structural loads
-    for (int j = 0; j < nn; j++) {
+    for (int j = 0; j < nn; j++)
+    {
       int indx = global_conn[nn * i + j];
 
-      if (indx < ns) {
+      if (indx < ns)
+      {
         // Compute vector q from centroid to structural node
         const F2FScalar *xs0 = &Xs[3 * indx];
         F2FScalar q[3];
@@ -1634,7 +1722,9 @@ void MELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
         prod[0] += w * qXlam[0];
         prod[1] += w * qXlam[1];
         prod[2] += w * qXlam[2];
-      } else {
+      }
+      else
+      {
         indx -= ns;
 
         const F2FScalar *xs0 = &Xs[3 * indx];
