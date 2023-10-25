@@ -47,7 +47,7 @@ class Scenario(Base):
         uncoupled_steps=0,
         adjoint_steps=None,
         min_steps=None,
-        early_stopping=True,
+        early_stopping=False,
         T_ref=300,
         T_inf=300,
         qinf=1.0,
