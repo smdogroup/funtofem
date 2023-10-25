@@ -314,13 +314,13 @@ class Scenario(Base):
         self.T_ref = T_ref
         self.T_inf = T_inf
         return self
-    
-    def set_stop_criterion(self, early_stopping:bool=True, min_steps=None):
+
+    def set_stop_criterion(self, early_stopping: bool = True, min_steps=None):
         """
         turn on the early stopping criterion, note you probably don't need
         to set the min steps (as it defaults to the # of uncoupled steps)
         The stopping tolerances are set in each discipline interface
-        
+
         Parameters
         ----------
         early_stopping: bool

@@ -197,8 +197,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     forward_tol = solver.forward_tolerance
                     if forward_resid < forward_tol:
                         if self.comm.rank == 0:
-                            print(f"F2F Steady Forward analysis of scenario {scenario.name} exited early")
-                            print(f"\tat step {step} with tolerance {forward_resid} < {forward_tol}", flush=True)
+                            print(
+                                f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
+                            )
+                            print(
+                                f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
+                                flush=True,
+                            )
                         exit_early = True
                         break
             if exit_early:
@@ -277,8 +282,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     adjoint_tol = solver.adjoint_tolerance
                     if adjoint_resid < adjoint_tol:
                         if self.comm.rank == 0:
-                            print(f"F2F Steady Adjoint analysis of scenario {scenario.name}")
-                            print(f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}", flush=True)
+                            print(
+                                f"F2F Steady Adjoint analysis of scenario {scenario.name}"
+                            )
+                            print(
+                                f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
+                                flush=True,
+                            )
                         exit_early = True
                         break
             if exit_early:

@@ -619,7 +619,7 @@ class SolverInterface(object):
             The step number. Will start at the final step and march backwards to 0, the initial condition.
         """
         return 0
-    
+
     def get_forward_residual(self, step=0):
         """get the scalar total forward residual for this discipline interface"""
         return 0.0
