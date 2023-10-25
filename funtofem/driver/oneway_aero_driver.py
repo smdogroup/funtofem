@@ -261,7 +261,7 @@ class OnewayAeroDriver:
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
-                filename=Remote.paths(self.remote.main_dir).design_file,
+                filename=Remote.paths(self.comm, self.remote.main_dir).design_file,
                 root=0,
             )
 
@@ -279,7 +279,7 @@ class OnewayAeroDriver:
             if self.is_paired:
                 self.model.read_design_variables_file(
                     self.comm,
-                    filename=Remote.paths(self.flow_dir).design_file,
+                    filename=Remote.paths(self.comm, self.flow_dir).design_file,
                     root=0,
                 )
 
@@ -299,13 +299,14 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.flow_dir).aero_sens_file
+                filepath = Remote.paths(self.comm, self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                write_dvs=False,
             )
 
         # post analysis for FUN3D mesh morphing
@@ -359,13 +360,14 @@ class OnewayAeroDriver:
             if not self.is_paired:
                 filepath = self.flow_aim.sens_file_path
             else:
-                filepath = Remote.paths(self.flow_dir).aero_sens_file
+                filepath = Remote.paths(self.comm, self.flow_dir).aero_sens_file
 
             # write the sensitivity file for the FUN3D AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                write_dvs=False,
             )
 
         # shape derivative section

@@ -161,7 +161,7 @@ class OnewayStructDriver:
     def analysis_sens_file(self):
         """write location of sens file when used in FuntofemShapeDriver for double oneway drivers (analysis version)"""
         if self.fun3d_dir is None:
-            return Remote.paths(self.fun3d_dir).struct_sens_file
+            return Remote.paths(self.comm, self.fun3d_dir).struct_sens_file
         else:
             return None
 
