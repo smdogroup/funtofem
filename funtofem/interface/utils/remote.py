@@ -40,7 +40,7 @@ class Remote:
         self.struct_name = struct_name
 
     @classmethod
-    def paths(cls, main_dir, aero_name="fun3d", struct_name="struct"):
+    def paths(cls, main_dir, aero_name="fun3d", struct_name="tacs"):
         return cls(
             analysis_file=None,
             main_dir=main_dir,
