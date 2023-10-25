@@ -52,6 +52,8 @@ class Fun3dInterface(SolverInterface):
         auto_coords=True,
         coord_test_override=False,
         debug=False,
+        forward_tolerance=1e-9,
+        adjoint_tolerance=1e-9,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -110,6 +112,9 @@ class Fun3dInterface(SolverInterface):
         self._forward_resid = None
         self._adjoint_done = False
         self._adjoint_resid = None
+
+        self.forwrard_tolerance = forward_tolerance
+        self.adjoint_tolerance = adjoint_tolerance
 
         # coordinate derivative testing option
         self._coord_test_override = coord_test_override
@@ -624,8 +629,8 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_forward_residuals(
-            step=scenario.steps, norm=True
+        resid = self.get_forward_residual(
+            step=scenario.steps
         )  # step=scenario.steps
         self._forward_done = True
         self._forward_resid = resid
@@ -961,7 +966,7 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residuals(step=scenario.steps, norm=True)
+        resid = self.get_adjoint_residual(step=scenario.steps)
         self._adjoint_done = True
         self._adjoint_resid = resid
         if abs(resid.real) > 1.0e-10:
@@ -975,49 +980,38 @@ class Fun3dInterface(SolverInterface):
         os.chdir(self.root_dir)
         return
 
-    def get_forward_residuals(self, step, norm=True):
+    def get_forward_residual(self, step=0):
         """
-        Queries FUN3D forward flow residuals 1-6 to evaluate convergence
-        Returns list of R1-R6 if norm=False, else the total residual norm
+        Returns L2 norm of scalar residual norms for each flow state
+        L2norm([R1,...,R6])
 
         Parameters
         ----------
         step: int
             the time step number
-        norm: bool
-            whether to reduce length-6 residual vector to scalar norm
         """
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
             if self.comm.rank == 0:
                 print(f"Forward residuals = {residuals}")
-            if norm:
-                return np.linalg.norm(residuals)
-            else:
-                return residuals
+            return np.linalg.norm(residuals)
         else:
             return self._forward_resid
 
-    def get_adjoint_residuals(self, step, norm=True):
+    def get_adjoint_residual(self, step=0):
         """
-        Queries FUN3D adjoint residuals 1-6 to evaluate convergence
-        Returns list of R1-R6 if norm=False, else the total residual norm
+        Returns L2 norm of list of scalar adjoint residuals L2norm([R1,...,R6])
 
         Parameters
         ----------
         step: int
             the time step number
-        norm: bool
-            whether to reduce length-6 residual vector to scalar norm
         """
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
             if self.comm.rank == 0:
                 print(f"Adjoint residuals = {residuals}")
-            if norm:
-                return np.linalg.norm(residuals)
-            else:
-                return residuals
+            return np.linalg.norm(residuals)
         else:
             return self._adjoint_resid
 

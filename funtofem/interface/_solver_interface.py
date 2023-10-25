@@ -57,7 +57,9 @@ class SolverInterface(object):
                 struct_X = solver.get_mesh(ibody)
                 body.initialize_struct_nodes(struct_X)
         """
-        pass
+        # default tolerances
+        self.forward_tolerance = np.inf
+        self.adjoint_tolerance = np.inf
 
     """
     A base class to define what functions solver interfaces in FUNtoFEM need
@@ -617,6 +619,14 @@ class SolverInterface(object):
             The step number. Will start at the final step and march backwards to 0, the initial condition.
         """
         return 0
+    
+    def get_forward_residual(self, step=0):
+        """get the scalar total forward residual for this discipline interface"""
+        return 0.0
+
+    def get_adjoint_residual(self, step=0):
+        """get the scalar total adjoint residual for this discipline interface"""
+        return 0.0
 
     def test_adjoint(
         self,

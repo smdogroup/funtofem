@@ -125,9 +125,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     )
                 steps = 1000
 
-        # flow preconditioner steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)
-        for step in range(1, scenario.preconditioner_steps + 1):
-            # Take a step in the flow solver for preconditioner (just aerodynamic iteration)
+        # flow uncoupled steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)
+        for step in range(1, scenario.uncoupled_steps + 1):
+            # Take a step in the flow solver for (just aerodynamic iteration)
             fail = self.solvers.flow.conditioner_iterate(
                 scenario, self.model.bodies, step
             )
@@ -140,7 +140,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 return fail
 
         # Loop over the NLBGS steps
-        for step in range(scenario.preconditioner_steps + 1, steps + 1):
+        for step in range(scenario.uncoupled_steps + 1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
                 body.transfer_disps(scenario)
@@ -188,6 +188,19 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # Under-relaxation for solver stability
             for body in self.model.bodies:
                 body.aitken_relax(self.comm, scenario)
+
+            # check for early stopping criterion, exit if meets criterion
+            exit_early = False
+            for solver in self.solvers.solver_list:
+                forward_resid = abs(solver.get_forward_residual(step=0))
+                forward_tol = solver.forward_tolerance
+                if forward_resid < forward_tol:
+                    if self.comm.rank == 0:
+                        print(f"F2F Steady Forward analysis exited early at step {step} with tolerance {forward_resid} < {forward_tol}", flush=True)
+                    exit_early = True
+                    break
+            if exit_early:
+                break
 
         return fail
 
@@ -253,6 +266,19 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             for body in self.model.bodies:
                 body.aitken_adjoint_relax(self.comm, scenario)
+
+            # check for early stopping criterion, exit if meets criterion
+            exit_early = False
+            for solver in self.solvers.solver_list:
+                adjoint_resid = abs(solver.get_adjoint_residual(step=0))
+                adjoint_tol = solver.adjoint_tolerance
+                if adjoint_resid < adjoint_tol:
+                    if self.comm.rank == 0:
+                        print(f"F2F Steady Adjoint analysis exited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}", flush=True)
+                    exit_early = True
+                    break
+            if exit_early:
+                break
 
         self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
         return 0
