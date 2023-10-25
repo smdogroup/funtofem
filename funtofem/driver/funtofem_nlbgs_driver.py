@@ -191,14 +191,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
-            for solver in self.solvers.solver_list:
-                forward_resid = abs(solver.get_forward_residual(step=0))
-                forward_tol = solver.forward_tolerance
-                if forward_resid < forward_tol:
-                    if self.comm.rank == 0:
-                        print(f"F2F Steady Forward analysis exited early at step {step} with tolerance {forward_resid} < {forward_tol}", flush=True)
-                    exit_early = True
-                    break
+            if scenario.early_stopping and step > scenario.min_steps:
+                for solver in self.solvers.solver_list:
+                    forward_resid = abs(solver.get_forward_residual(step=0))
+                    forward_tol = solver.forward_tolerance
+                    if forward_resid < forward_tol:
+                        if self.comm.rank == 0:
+                            print(f"F2F Steady Forward analysis of scenario {scenario.name} exited early")
+                            print(f"\tat step {step} with tolerance {forward_resid} < {forward_tol}", flush=True)
+                        exit_early = True
+                        break
             if exit_early:
                 break
 
@@ -269,14 +271,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
-            for solver in self.solvers.solver_list:
-                adjoint_resid = abs(solver.get_adjoint_residual(step=0))
-                adjoint_tol = solver.adjoint_tolerance
-                if adjoint_resid < adjoint_tol:
-                    if self.comm.rank == 0:
-                        print(f"F2F Steady Adjoint analysis exited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}", flush=True)
-                    exit_early = True
-                    break
+            if scenario.early_stopping and step > scenario.min_steps:
+                for solver in self.solvers.solver_list:
+                    adjoint_resid = abs(solver.get_adjoint_residual(step=0))
+                    adjoint_tol = solver.adjoint_tolerance
+                    if adjoint_resid < adjoint_tol:
+                        if self.comm.rank == 0:
+                            print(f"F2F Steady Adjoint analysis of scenario {scenario.name}")
+                            print(f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}", flush=True)
+                        exit_early = True
+                        break
             if exit_early:
                 break
 
