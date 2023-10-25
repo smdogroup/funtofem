@@ -41,6 +41,7 @@ from .funtofem_nlbgs_driver import FUNtoFEMnlbgs
 import importlib.util, os, shutil, numpy as np
 from funtofem.optimization.optimization_manager import OptimizationManager
 from funtofem.interface import Remote
+import time
 
 caps_loader = importlib.util.find_spec("pyCAPS")
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -286,11 +287,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         Create new aero/struct geometries and run fully-coupled forward analysis.
         """
         if self.aero_shape:
+            start_time_aero = time.time()
+            if self.comm.rank == 0:
+                print("F2F - building aero mesh..", flush=True)
             if self.flow_aim.mesh_morph:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
             self.flow_aim.pre_analysis()
+
+            dt_aero = time.time() - start_time_aero
+            if self.comm.rank == 0:
+                print(f"F2F - built aero mesh in {dt_aero:.5e} sec", flush=True)
 
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired) and self._first_forward:
@@ -306,13 +314,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         if self.struct_shape:
             # self._update_struct_design()
+            start_time_struct = time.time()
+            if self.comm.rank == 0:
+                print("F2F - Building struct mesh")
             input_dict = {var.name: var.value for var in self.model.get_variables()}
             self.model.structural.update_design(input_dict)
             self.struct_aim.setup_aim()
             self.struct_aim.pre_analysis()
 
-            # build the new structure geometry
-            self.struct_aim.pre_analysis()
+            dt_struct = time.time() - start_time_struct
+            if self.comm.rank == 0:
+                print(f"F2F - Built struct mesh in {dt_struct:.5e} sec", flush=True)
 
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
@@ -335,6 +347,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._update_struct_transfer()
 
         if self.is_remote:
+            if self.comm.rank == 0:
+                print("F2F - writing design variables file", flush=True)
             # write the funtofem design input file
             self.model.write_design_variables_file(
                 self.comm,
@@ -343,13 +357,21 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             )
 
             # clear the output file
-            if self.root_proc:
+            if self.root_proc and os.path.exists(self.remote.output_file):
                 os.remove(self.remote.output_file)
 
+            start_time = time.time()
+            if self.comm.rank == 0:
+                print(f"Calling remote analysis..", flush=True)
             # system call funtofem forward + adjoint analysis
             os.system(
                 f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
+            elapsed_time = time.time() - start_time
+            if self.comm.rank == 0:
+                print(
+                    f"Done with remote analysis in {elapsed_time:2.5e} sec", flush=True
+                )
 
         else:
             if self.is_paired:
