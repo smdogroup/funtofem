@@ -184,6 +184,9 @@ class TacsSteadyInterface(SolverInterface):
         # returns the variables in the FUNtoFEM order. By scenario/body.
         self.variables = model.get_variables()
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Get the structural variables from the global list of variables.
         self.struct_variables = []
         for var in self.variables:

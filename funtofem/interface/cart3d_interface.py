@@ -74,6 +74,9 @@ class Cart3DInterface(SolverInterface):
         self.conv_hist = conv_hist
         self.adapt_growth = adapt_growth
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         self.original_tri = None
 
         # Store previous iteration's aerodynamic forces and displacements for

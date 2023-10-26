@@ -191,9 +191,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
-            if scenario.early_stopping and step > scenario.min_steps:
+            if scenario.early_stopping and step > scenario.min_forward_steps:
                 for solver in self.solvers.solver_list:
-                    forward_resid = abs(solver.get_forward_residual(step=0))
+                    forward_resid = abs(solver.get_forward_residual(step=step))
                     forward_tol = solver.forward_tolerance
                     if forward_resid < forward_tol:
                         if self.comm.rank == 0:
@@ -276,9 +276,9 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
-            if scenario.early_stopping and step > scenario.min_steps:
+            if scenario.early_stopping and step > scenario.min_adjoint_steps:
                 for solver in self.solvers.solver_list:
-                    adjoint_resid = abs(solver.get_adjoint_residual(step=0))
+                    adjoint_resid = abs(solver.get_adjoint_residual(step=step))
                     adjoint_tol = solver.adjoint_tolerance
                     if adjoint_resid < adjoint_tol:
                         if self.comm.rank == 0:

@@ -92,6 +92,9 @@ class PistonInterface(SolverInterface):
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         self.qinf = qinf  # dynamic pressure
         self.M = M
         self.U_inf = U_inf

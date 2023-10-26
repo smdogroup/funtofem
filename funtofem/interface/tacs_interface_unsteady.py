@@ -124,6 +124,9 @@ class TacsUnsteadyInterface(SolverInterface):
         self.tacs_comm = tacs_comm
         self.nprocs = nprocs
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Debug flag
         self._debug = debug
         if self.comm.rank != 0:

@@ -113,7 +113,7 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_done = False
         self._adjoint_resid = None
 
-        self.forwrard_tolerance = forward_tolerance
+        self.forward_tolerance = forward_tolerance
         self.adjoint_tolerance = adjoint_tolerance
 
         # coordinate derivative testing option
