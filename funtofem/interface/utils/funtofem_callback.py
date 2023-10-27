@@ -88,6 +88,9 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                 G12 = matInfo.g12
                 G13 = matInfo.g1z
                 G23 = matInfo.g2z
+                A1 = matInfo.a1
+                A2 = matInfo.a2
+                A3 = matInfo.a2
                 # If out-of-plane shear values are 0, Nastran defaults them to the in-plane
                 if G13 == 0.0:
                     G13 = G12
@@ -101,6 +104,9 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                     G12=G12,
                     G13=G13,
                     G23=G23,
+                    alpha1=A1,
+                    alpha2=A2,
+                    alpha3=A3,
                     Xt=matInfo.Xt,
                     Xc=matInfo.Xc,
                     Yt=matInfo.Yt,

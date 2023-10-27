@@ -16,7 +16,7 @@ def thermoelasticity_callback(
 
     # Create the constitutvie propertes and model
     props_plate = constitutive.MaterialProperties(
-        rho=rho, specific_heat=specific_heat, kappp=kappa, E=E, nu=nu, ys=ys
+        rho=rho, specific_heat=specific_heat, kappa=kappa, E=E, nu=nu, ys=ys
     )
 
     # Create the basis class
@@ -45,7 +45,7 @@ def elasticity_callback(
 
     # Create the constitutvie propertes and model
     props_plate = constitutive.MaterialProperties(
-        rho=rho, specific_heat=specific_heat, kappp=kappa, E=E, nu=nu, ys=ys
+        rho=rho, specific_heat=specific_heat, kappa=kappa, E=E, nu=nu, ys=ys
     )
 
     # Create the basis class

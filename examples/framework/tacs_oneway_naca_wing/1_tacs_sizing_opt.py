@@ -1,7 +1,7 @@
 """
 Sean Engelstad, May 2023
 GT SMDO Lab, Dr. Graeme Kennedy
-TacsOnewayDriver example
+OnewayStructDriver example
 """
 
 from funtofem import *
@@ -139,7 +139,7 @@ solvers.flow.copy_struct_mesh()
 null_driver = NullDriver(solvers, model=f2f_model, transfer_settings=None)
 
 # build the tacs oneway driver
-tacs_driver = TacsOnewayDriver.prime_loads(driver=null_driver)
+tacs_driver = OnewayStructDriver.prime_loads(driver=null_driver)
 
 # --------------------------------------------------------------------------#
 # Setup OpenMDAO Problem and Perform Sizing Optimization on the Wing

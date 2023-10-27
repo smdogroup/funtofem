@@ -27,7 +27,7 @@ class FuntofemComponent(ExplicitComponent):
         # add design variables to the model
         for var in model.get_variables():
             openmdao_model.add_design_var(
-                f"{subsystem_name}.{var.name}",
+                f"{subsystem_name}.{var.full_name}",
                 lower=var.lower,
                 upper=var.upper,
                 scaler=var.scale,
@@ -69,7 +69,7 @@ class FuntofemComponent(ExplicitComponent):
 
         # add f2f variables to openmdao
         for var in variables:
-            self.add_input(var.name, val=var.value)
+            self.add_input(var.full_name, val=var.value)
 
         # add f2f functions to openmdao
         functions = model.get_functions(optim=True)
@@ -78,7 +78,7 @@ class FuntofemComponent(ExplicitComponent):
 
         # store the variable dictionary of values
         # to prevent repeat analyses
-        self._x_dict = {var.name: var.value for var in model.get_variables()}
+        self._x_dict = {var.full_name: var.value for var in model.get_variables()}
         comm = driver.comm
         if write_dir is None:
             write_dir = os.getcwd()
@@ -108,7 +108,7 @@ class FuntofemComponent(ExplicitComponent):
         # declare any partial derivatives for optimization functions
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                self.declare_partials(func.full_name, var.name)
+                self.declare_partials(func.full_name, var.full_name)
 
     def update_design(self, inputs, analysis=True):
         driver = self.options["driver"]
@@ -117,9 +117,9 @@ class FuntofemComponent(ExplicitComponent):
 
         if analysis:  # forward analysis check new design
             for var in model.get_variables():
-                if var.value != float(inputs[var.name]):
+                if var.value != float(inputs[var.full_name]):
                     changed_design = True
-                    var.value = float(inputs[var.name])
+                    var.value = float(inputs[var.full_name])
 
             if self._first_analysis:
                 self._first_analysis = False
@@ -164,7 +164,7 @@ class FuntofemComponent(ExplicitComponent):
 
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
-                partials[func.full_name, var.name] = func.get_gradient_component(
+                partials[func.full_name, var.full_name] = func.get_gradient_component(
                     var
                 ).real
         return

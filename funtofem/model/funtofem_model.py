@@ -402,7 +402,7 @@ class FUNtoFEMmodel(object):
 
     def write_aero_loads(self, comm, filename, root=0):
         """
-        Write the aerodynamic loads file for the TacsOnewayDriver.
+        Write the aerodynamic loads file for the OnewayStructDriver.
 
         This file contains the following information:
 
@@ -476,7 +476,7 @@ class FUNtoFEMmodel(object):
 
     def write_struct_loads(self, comm, filename, root=0):
         """
-        Write the struct loads file for the TacsOnewayDriver.
+        Write the struct loads file for the OnewayStructDriver.
 
         This file contains the following information:
 
@@ -530,7 +530,7 @@ class FUNtoFEMmodel(object):
 
     def read_aero_loads(self, comm, filename, root=0):
         """
-        Read the aerodynamic loads file for the TacsOnewayDriver.
+        Read the aerodynamic loads file for the OnewayStructDriver.
 
         This file contains the following information:
 
@@ -633,7 +633,9 @@ class FUNtoFEMmodel(object):
         # return the loads data
         return loads_data
 
-    def write_sensitivity_file(self, comm, filename, discipline="aerodynamic", root=0):
+    def write_sensitivity_file(
+        self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
+    ):
         """
         Write the sensitivity file.
 
@@ -656,6 +658,8 @@ class FUNtoFEMmodel(object):
             The name of the discipline sensitivity data to be written
         root: int
             The rank of the processor that will write the file
+        write_dvs: bool
+            whether to write the design variables for this discipline
         """
 
         funcs = self.get_functions()
@@ -674,10 +678,11 @@ class FUNtoFEMmodel(object):
         if comm.rank == root:
             variables = self.get_variables()
             discpline_vars = []
-            for var in variables:
-                # Write the variables whose analysis_type matches the discipline string.
-                if discipline == var.analysis_type:
-                    discpline_vars.append(var)
+            if write_dvs:  # flag for registering dvs that will later get written out
+                for var in variables:
+                    # Write the variables whose analysis_type matches the discipline string.
+                    if discipline == var.analysis_type:
+                        discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
             num_dvs = len(discpline_vars)
@@ -762,8 +767,8 @@ class FUNtoFEMmodel(object):
 
         # update the variable values on each processor
         for var in self.get_variables():
-            if var.name in variables_dict:
-                var.value = variables_dict[var.name]
+            if var.full_name in variables_dict:
+                var.value = variables_dict[var.full_name]
 
         return
 
@@ -812,7 +817,7 @@ class FUNtoFEMmodel(object):
                 # write each variable from that discipline
                 for var in variables[discipline]:
                     # only real numbers written to this file
-                    hdl.write(f"\tvar {var.name} {var.value.real}\n")
+                    hdl.write(f"\tvar {var.full_name} {var.value.real}\n")
 
             hdl.close()
 
