@@ -86,7 +86,13 @@ class OnewayAeroDriver:
         Build a OnewayAeroDriver with fun3dAim shape variables and FUN3D analysis
         all in one, using the FUN3D mesh morphing.
         """
-        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False, external_shape=external_shape)
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            is_paired=False,
+            external_shape=external_shape,
+        )
 
     @classmethod
     def aero_remesh(cls, solvers, model, remote, external_shape=False):
@@ -95,7 +101,9 @@ class OnewayAeroDriver:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, remote=remote, is_paired=True, external_shape=external_shape)
+        return cls(
+            solvers, model, remote=remote, is_paired=True, external_shape=external_shape
+        )
 
     @classmethod
     def analysis(cls, solvers, model, transfer_settings=None, external_shape=False):
@@ -105,7 +113,13 @@ class OnewayAeroDriver:
             analysis and writing an aero.sens file to the FUN3D directory.
         If you are using the analysis driver by itself (e.g. for FUN3D mesh morphing) then turn "is_paired" off.
         """
-        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=True, external_shape=external_shape)
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            is_paired=True,
+            external_shape=external_shape,
+        )
 
     def __init__(
         self,

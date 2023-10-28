@@ -148,8 +148,12 @@ class Scenario(Base):
         self.Pr = Pr
 
         # early stopping criterion
-        self.min_forward_steps = min_forward_steps if min_forward_steps is not None else uncoupled_steps
-        self.min_adjoint_steps = min_adjoint_steps if min_adjoint_steps is not None else 0
+        self.min_forward_steps = (
+            min_forward_steps if min_forward_steps is not None else uncoupled_steps
+        )
+        self.min_adjoint_steps = (
+            min_adjoint_steps if min_adjoint_steps is not None else 0
+        )
         self.early_stopping = early_stopping
 
         # Heat capacity at constant pressure
@@ -319,7 +323,12 @@ class Scenario(Base):
         self.T_inf = T_inf
         return self
 
-    def set_stop_criterion(self, early_stopping: bool = True, min_forward_steps=None, min_adjoint_steps=None):
+    def set_stop_criterion(
+        self,
+        early_stopping: bool = True,
+        min_forward_steps=None,
+        min_adjoint_steps=None,
+    ):
         """
         turn on the early stopping criterion, note you probably don't need
         to set the min steps (as it defaults to the # of uncoupled steps)
