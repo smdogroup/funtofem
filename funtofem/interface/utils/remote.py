@@ -40,7 +40,7 @@ class Remote:
         self.output_name = output_name
         self.aero_name = aero_name
         self.struct_name = struct_name
-        self._remote_dir = cls.remote_dir(comm, main_dir)
+        self._remote_dir = self.remote_dir(comm, main_dir)
 
     @classmethod
     def paths(cls, comm, main_dir, aero_name="fun3d", struct_name="tacs"):
