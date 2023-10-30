@@ -875,9 +875,10 @@ class FUNtoFEMmodel(object):
 
         This file contains the following information:
 
-        Number of functionals
+        Number of functionals, number of variables
 
         Functional name, value
+        d(func_name)/d(var_name), value
 
         Parameters
         ----------
@@ -889,9 +890,8 @@ class FUNtoFEMmodel(object):
             The rank of the processor that will write the file
         """
 
-        funcs = self.get_functions()
-        # also add composite functions at the end
-        funcs += self.composite_functions
+        funcs = self.get_functions(all=True)
+        variables = self.get_variables()
 
         if comm.rank == root:
             # Write out the number of functionals and number of design variables
@@ -903,6 +903,9 @@ class FUNtoFEMmodel(object):
 
                 # Print the function value
                 data += "{}\n".format(func.value.real)
+
+                for var in variables:
+                    data += f"\td{func.full_name}/d{var.name} = {func.derivatives[var.full_name]}\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)

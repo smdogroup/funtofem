@@ -433,6 +433,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             super(FuntofemShapeDriver, self).solve_adjoint()
 
             if self.is_paired:
+                # write a functions file
+                func_file = Remote.paths(self.comm, self.flow_dir).functions_file
+                self.model.write_functions_file(self.comm, func_file)
+
                 write_struct = True
                 write_aero = True
                 struct_sensfile = Remote.paths(
