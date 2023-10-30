@@ -105,6 +105,11 @@ class OptimizationManager:
                 self._design_folder, f"{self.model.name}_history.png"
             )
 
+            # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
+            for func in self.model.get_functions():
+                for var in self.model.get_variables():
+                    func.derivatives[var] = 0.0
+
     def _gatekeeper(self, x_dict):
         """
         Gatekeeper function prevents double-running of the forward analysis during optimization

@@ -101,6 +101,11 @@ class FuntofemComponent(ExplicitComponent):
                     os.path.join(self._write_path, "design_hist.txt"), "w"
                 )
 
+        # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
+        for func in model.get_functions():
+            for var in model.get_variables():
+                func.derivatives[var] = 0.0
+
     def setup_partials(self):
         driver = self.options["driver"]
         model = driver.model
