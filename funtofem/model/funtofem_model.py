@@ -905,7 +905,7 @@ class FUNtoFEMmodel(object):
                 data += "{}\n".format(func.value.real)
 
                 for var in variables:
-                    data += f"\td{func.full_name}/d{var.name} = {func.derivatives[var.full_name]}\n"
+                    data += f"\td{func.full_name}/d{var.full_name} = {func.derivatives[var]}\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)

@@ -434,6 +434,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             if self.is_paired:
                 # write a functions file
+                if self.comm.rank == 0:
+                    print(f"Writing funtofem.out file")
                 func_file = Remote.paths(self.comm, self.flow_dir).functions_file
                 self.model.write_functions_file(self.comm, func_file)
 
