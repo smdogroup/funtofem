@@ -629,7 +629,9 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_forward_residual(step=scenario.steps, all=True)  # step=scenario.steps
+        resid = self.get_forward_residual(
+            step=scenario.steps, all=True
+        )  # step=scenario.steps
         if self.comm.rank == 0:
             print(f"Forward residuals = {resid}")
         self._forward_done = True
@@ -998,7 +1000,7 @@ class Fun3dInterface(SolverInterface):
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
         else:
             residuals = self._forward_resid
-        
+
         if all:
             return residuals
         else:
