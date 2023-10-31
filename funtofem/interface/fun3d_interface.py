@@ -629,13 +629,15 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_forward_residual(step=scenario.steps)  # step=scenario.steps
+        resid = self.get_forward_residual(step=scenario.steps, all=True)  # step=scenario.steps
+        if self.comm.rank == 0:
+            print(f"Forward residuals = {resid}")
         self._forward_done = True
         self._forward_resid = resid
-        if abs(resid.real) > 1.0e-10:
+        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
             if self.comm.rank == 0:
                 print(
-                    f"Warning: fun3d forward flow residual = {resid} > 1.0e-10, is rather large..."
+                    f"\tWarning: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is rather large..."
                 )
 
         self.fun3d_flow.post()
@@ -964,13 +966,15 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=scenario.steps)
+        resid = self.get_adjoint_residual(step=scenario.steps, all=True)
+        if self.comm.rank == 0:
+            print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
         self._adjoint_resid = resid
-        if abs(resid.real) > 1.0e-10:
+        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
             if self.comm.rank == 0:
                 print(
-                    f"Warning fun3d adjoint residual = {resid} > 1.0e-10, is rather large..."
+                    f"\tWarning fun3d adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is rather large..."
                 )
 
         # solve the initial condition adjoint
@@ -978,7 +982,7 @@ class Fun3dInterface(SolverInterface):
         os.chdir(self.root_dir)
         return
 
-    def get_forward_residual(self, step=0):
+    def get_forward_residual(self, step=0, all=False):
         """
         Returns L2 norm of scalar residual norms for each flow state
         L2norm([R1,...,R6])
@@ -987,16 +991,20 @@ class Fun3dInterface(SolverInterface):
         ----------
         step: int
             the time step number
+        all: bool
+            whether to return a list of all residuals or just a scalar
         """
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
-            if self.comm.rank == 0:
-                print(f"Forward residuals = {residuals}")
-            return np.linalg.norm(residuals)
         else:
-            return self._forward_resid
+            residuals = self._forward_resid
+        
+        if all:
+            return residuals
+        else:
+            return np.linalg.norm(residuals)
 
-    def get_adjoint_residual(self, step=0):
+    def get_adjoint_residual(self, step=0, all=False):
         """
         Returns L2 norm of list of scalar adjoint residuals L2norm([R1,...,R6])
 
@@ -1004,14 +1012,19 @@ class Fun3dInterface(SolverInterface):
         ----------
         step: int
             the time step number
+        all: bool
+            whether to return a list of all residuals or a scalar
         """
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            if self.comm.rank == 0:
-                print(f"Adjoint residuals = {residuals}")
             return np.linalg.norm(residuals)
         else:
-            return self._adjoint_resid
+            residuals = self._adjoint_resid
+
+        if all:
+            return residuals
+        else:
+            return np.linalg.norm(residuals)
 
     def set_states(self, scenario, bodies, step):
         """
