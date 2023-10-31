@@ -128,6 +128,10 @@ class Fun3dModel:
         self.fun3d_aim.grid_file = os.path.join(
             self.aflr_aim.analysis_dir, "aflr3_0.lb8.ugrid"
         )
+        # also set mapbc file
+        self.fun3d_aim.mapbc_file = os.path.join(
+            self.fun3d_aim.analysis_dir, "Flow", self.fun3d_aim.project_name + ".mapbc"
+        )
         return
 
     def _link_aims(self):

@@ -518,6 +518,19 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.flow_aim.grid_filepaths = grid_filepaths
+
+        # also setup the mapbc files
+        mapbc_filepaths = []
+        for scenario in self.model.scenarios:
+            filepath = os.path.join(
+                fun3d_dir,
+                scenario.name,
+                "Flow",
+                f"{scenario.fun3d_project_name}.mapbc",
+            )
+            mapbc_filepaths.append(filepath)
+        # set the mapbc filepaths into the fun3d aim
+        self.flow_aim.mapbc_filepaths = mapbc_filepaths
         return
 
     def _move_struct_mesh(self):
