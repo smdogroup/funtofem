@@ -78,6 +78,7 @@ class OnewayStructDriver:
             location of fun3d directory, used in an analysis file for FuntofemShapeDriver
         external_shape: bool
             whether the tacs aim shape analysis is performed outside the class
+        init_aero_load_transfer: 
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -221,6 +222,7 @@ class OnewayStructDriver:
         nprocs,
         transfer_settings,
         external_shape=False,
+        init_transfer=False
     ):
         """
         Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
@@ -271,12 +273,16 @@ class OnewayStructDriver:
                 body.initialize_variables(scenario)
             body._distribute_aero_loads(loads_data)
 
-        return cls(
+        tacs_driver = cls(
             solvers,
             model,
             nprocs=nprocs,
             external_shape=external_shape,
         )
+        if init_transfer:
+            tacs_driver._transfer_fixed_aero_loads()
+        return tacs_driver
+    
 
     @property
     def manager(self, hot_start: bool = False):
