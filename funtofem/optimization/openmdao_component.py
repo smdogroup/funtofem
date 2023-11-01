@@ -144,12 +144,11 @@ class FuntofemComponent(ExplicitComponent):
         track_history = self.options["track_history"]
         model = driver.model
         design_out_file = self.options["design_out_file"]
-        new_design = self.update_design(inputs, analysis=True)
+        self.update_design(inputs, analysis=True)
 
-        if new_design:
-            model.write_design_variables_file(driver.comm, design_out_file)
-            driver.solve_forward()
-            model.evaluate_composite_functions(compute_grad=False)
+        model.write_design_variables_file(driver.comm, design_out_file)
+        driver.solve_forward()
+        model.evaluate_composite_functions(compute_grad=False)
 
         if track_history:
             self._update_history()
@@ -161,11 +160,10 @@ class FuntofemComponent(ExplicitComponent):
     def compute_partials(self, inputs, partials):
         driver = self.options["driver"]
         model = driver.model
-        new_design = self.update_design(inputs, analysis=False)
+        self.update_design(inputs, analysis=False)
 
-        if new_design:
-            driver.solve_adjoint()
-            model.evaluate_composite_functions(compute_grad=True)
+        driver.solve_adjoint()
+        model.evaluate_composite_functions(compute_grad=True)
 
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
