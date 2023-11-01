@@ -241,6 +241,7 @@ class Function(object):
     def ksfailure(
         cls,
         ks_weight: float = 50.0,
+        safety_factor: float = 1.0,
     ):
         """
         Class constructor for the KS Failure function
@@ -248,7 +249,7 @@ class Function(object):
         return cls(
             name="ksfailure",
             analysis_type="structural",
-            options={"ksWeight": ks_weight},
+            options={"ksWeight": ks_weight, "safetyFactor": safety_factor},
         )
 
     @classmethod
