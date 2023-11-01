@@ -401,7 +401,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
-                write_dvs=True,
+                write_dvs=False,
             )
 
         # post analysis for FUN3D mesh morphing
@@ -479,7 +479,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     comm=self.comm,
                     filename=aero_sensfile,
                     discipline="aerodynamic",
-                    write_dvs=True,
+                    write_dvs=False,
                 )
 
         if self.struct_shape:  # either remote or regular
