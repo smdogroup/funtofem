@@ -194,7 +194,7 @@ class Fun3dAim:
         self._mapbc_filepaths = new_filepaths
         return
 
-    def _move_grid_files(self):
+    def _move_grid_files(self, include_mapbc=False):
         """
         move each of the grid files in the preAnalysis after a new grid is
         destination files are all called fun3d_CAPS.lb8.ugrid
@@ -211,11 +211,12 @@ class Fun3dAim:
             shutil.copy(src, dest)
 
         # also move the mapbc files to each scenario from fun3d aim dir
-        if self.comm.rank == 0:
-            print(f"copying mapbc files")
-        src = self.mapbc_file
-        for dest in self.mapbc_filepaths:
-            shutil.copy(src, dest)
+        if include_mapbc:
+            if self.comm.rank == 0:
+                print(f"copying mapbc files")
+            src = self.mapbc_file
+            for dest in self.mapbc_filepaths:
+                shutil.copy(src, dest)
         return
 
     def _move_sens_files(self, src):
