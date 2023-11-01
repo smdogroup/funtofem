@@ -890,7 +890,7 @@ class FUNtoFEMmodel(object):
             The rank of the processor that will write the file
         """
 
-        funcs = self.get_functions(all=True)
+        funcs = self.get_functions(optim=True)
         variables = self.get_variables()
 
         if comm.rank == root:
@@ -902,7 +902,9 @@ class FUNtoFEMmodel(object):
                 data += "{}\n".format(func.full_name)
 
                 # Print the function value
-                data += "{}\n".format(func.value.real)
+                data += "{}\n".format(
+                    func.value.real if func.value is not None else None
+                )
 
                 for var in variables:
                     data += f"\td{func.full_name}/d{var.full_name} = {func.derivatives[var]}\n"

@@ -161,7 +161,7 @@ class OptimizationManager:
         self.driver.solve_forward()
         self.driver.solve_adjoint()
 
-        # evaluate any composite functions once the main analysis functions are computed
+        # evaluate composite functions if not evaluated yet
         self.model.evaluate_composite_functions()
 
         # store the functions and sensitivities from the complete analysis

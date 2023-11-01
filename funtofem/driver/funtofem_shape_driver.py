@@ -218,6 +218,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 assert self.model.flow.is_setup
                 self._setup_grid_filepaths()
 
+        # initialize all derivative values to zero including off-scenario
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
         return
 
     def _initialize_funtofem(self):
@@ -414,12 +418,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             else:
                 self._get_remote_functions(discipline="aerodynamic")
 
+        # evaluate composite functions
+        self.model.evaluate_composite_functions(compute_grad=False)
         return
 
     def solve_adjoint(self):
         """
         Run the fully-coupled adjoint analysis and extract shape derivatives.
         """
+        self._zero_derivatives()
 
         if self.aero_shape:
             if self.flow_aim.mesh_morph:
@@ -433,12 +440,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             super(FuntofemShapeDriver, self).solve_adjoint()
 
             if self.is_paired:
-                # write a functions file
-                if self.comm.rank == 0:
-                    print(f"Writing funtofem.out file")
-                func_file = Remote.paths(self.comm, self.flow_dir).functions_file
-                self.model.write_functions_file(self.comm, func_file)
-
                 write_struct = True
                 write_aero = True
                 struct_sensfile = Remote.paths(
@@ -501,6 +502,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
+
+        # evaluate the composite functions
+        self.model.evaluate_composite_functions(compute_grad=True)
+
+        # write a functions file
+        if self.is_remote and self.is_paired and self.comm.rank == 0:
+            print(f"Writing funtofem.out file")
+            self.model.write_functions_file(self.comm, self.remote.functions_file)
+
         return
 
     def _setup_grid_filepaths(self):
@@ -592,11 +602,19 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             func.value = remote_functions[ifunc]
         return
 
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.set_gradient_component(var, 0.0)
+        return
+
     def _get_struct_shape_derivatives(self, scenario):
         """
         Gather shape derivatives together from TACS AIM and store the data in the FUNtoFEM model.
         """
         gradients = None
+        variables = self.model.get_variables()
 
         # read shape gradients from tacs aim on root proc
         if self.root_proc:
@@ -605,10 +623,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
-                for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_struct_aim.dynout[func.full_name].deriv(
-                        var.name
+                for ivar, var in enumerate(variables):
+                    var_name = (
+                        var.name if var.analysis_type == "shape" else var.full_name
                     )
+                    if var.analysis_type in ["structural", "shape"]:
+                        derivative = direct_struct_aim.dynout[func.full_name].deriv(
+                            var_name
+                        )
+                    else:
+                        derivative = 0.0
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors
@@ -616,7 +640,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
-            for ivar, var in enumerate(self.shape_variables):
+            for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
                 func.add_gradient_component(var, derivative)
 
@@ -627,6 +651,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         Gather shape derivatives together from FUN3D AIM and store the data in the FUNtoFEM model.
         """
         gradients = None
+        variables = self.model.get_variables()
 
         # read shape gradients from tacs aim on root proc
         flow_aim_root = self.flow_aim.root
@@ -636,8 +661,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for ifunc, func in enumerate(scenario.functions):
                 gradients.append([])
-                for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_flow_aim.dynout[func.full_name].deriv(var.name)
+                for ivar, var in enumerate(variables):
+                    var_name = (
+                        var.name if var.analysis_type == "shape" else var.full_name
+                    )
+                    if var.analysis_type in ["shape", "aerodynamic"]:
+                        derivative = direct_flow_aim[func.full_name].deriv(var_name)
+                    else:
+                        derivative = 0.0
                     gradients[ifunc].append(derivative)
 
         # broadcast shape gradients to all other processors
@@ -645,7 +676,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
-            for ivar, var in enumerate(self.shape_variables):
+            for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
                 func.add_gradient_component(var, derivative)
 
