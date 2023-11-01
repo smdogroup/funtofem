@@ -517,9 +517,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.model.evaluate_composite_functions(compute_grad=True)
 
         # write a functions file
-        if self.is_remote and self.is_paired and self.comm.rank == 0:
-            print(f"Writing funtofem.out file")
-            self.model.write_functions_file(self.comm, self.remote.functions_file)
+        if self.is_remote and self.is_paired:
+            print("Writing funtofem.out file", flush=True)
+            self.model.write_functions_file(
+                self.comm, self.remote.functions_file, optim=True
+            )
 
         return
 
