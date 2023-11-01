@@ -226,9 +226,9 @@ class FUNtoFEMmodel(object):
             # not in Fun3dAim for now...
 
             # add aerodynamic variable names to varnames
-            for var in aero_variables:
-                if var.active:
-                    active_aero_vars.append(var)
+            # for var in aero_variables:
+            #     if var.active:
+            #         active_aero_vars.append(var)
 
             # input the design parameters into the Fun3dModel and Fun3dAim
             self.flow.set_variables(active_shape_vars, active_aero_vars)
@@ -823,7 +823,7 @@ class FUNtoFEMmodel(object):
 
         return
 
-    def read_functions_file(self, comm, filename, root=0):
+    def read_functions_file(self, comm, filename, root=0, **kwargs):
         """
         Read the functions variables file funtofem.out
 
@@ -843,6 +843,7 @@ class FUNtoFEMmodel(object):
         """
 
         functions_dict = None
+        gradients_dict = None
         if comm.rank == root:  # read the file in on the root processor
             functions_dict = {}
 
@@ -852,24 +853,37 @@ class FUNtoFEMmodel(object):
 
             for line in lines:
                 chunks = line.split(" ")
-                if len(chunks) == 2:
-                    func_name = chunks[0]
-                    func_value = chunks[1]
+                if len(chunks) == 3:  # func values
+                    func_name = chunks[1]
+                    func_value = chunks[2].strip()
 
                     # only real numbers are read in from the file
                     functions_dict[func_name] = float(func_value)
+                    gradients_dict[func_name] = {}
+                if len(chunks) == 2:  # derivative
+                    var_name = chunks[0].strip()
+                    derivative = chunks[1].strip()
+
+                    # only real numbers are read in from the file
+                    gradients_dict[func_name][var_name] = float(derivative)
 
         # broadcast the dictionary to the root processor
         functions_dict = comm.bcast(functions_dict, root=root)
+        gradients_dict = comm.bcast(gradients_dict, root=root)
 
         # update the variable values on each processor
-        for func in self.get_functions():
-            if func.name in functions_dict:
-                func.value = functions_dict[func.name]
+        # only updates the analysis functions
+        for func in self.get_functions(kwargs):
+            if func.full_name in functions_dict:
+                func.value = functions_dict[func.full_name]
+            for var in self.get_variables():
+                c_gradients = gradients_dict[func.full_name]
+                if var.full_name in c_gradients:
+                    func.derivatives[var] = c_gradients[var.full_name]
 
         return
 
-    def write_functions_file(self, comm, filename, root=0):
+    def write_functions_file(self, comm, filename, root=0, **kwargs):
         """
         Write the functions file funtofem.out
 
@@ -890,7 +904,7 @@ class FUNtoFEMmodel(object):
             The rank of the processor that will write the file
         """
 
-        funcs = self.get_functions(optim=True)
+        funcs = self.get_functions(kwargs)
         variables = self.get_variables()
 
         if comm.rank == root:
@@ -899,15 +913,11 @@ class FUNtoFEMmodel(object):
 
             for n, func in enumerate(funcs):
                 # Print the function name
-                data += "{}\n".format(func.full_name)
-
-                # Print the function value
-                data += "{}\n".format(
-                    func.value.real if func.value is not None else None
-                )
+                func_value = func.value.real if func.value is not None else None
+                data += f"func {func.full_name} = {func_value:.5e}\n"
 
                 for var in variables:
-                    data += f"\td{func.full_name}/d{var.full_name} = {func.derivatives[var]}\n"
+                    data += f"\t{var.full_name} = {func.derivatives[var]}\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)

@@ -439,6 +439,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # call funtofem adjoint analysis for non-remote driver
             super(FuntofemShapeDriver, self).solve_adjoint()
 
+            # write analysis functions file in analysis or system call
+            if self.is_paired:
+                self.model.write_functions_file(
+                    self.comm, Remote.paths(self.comm, self.flow_dir).functions_file
+                )
+
             if self.is_paired:
                 write_struct = True
                 write_aero = True
@@ -502,6 +508,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
+
+        # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
+        if self.is_remote and self.is_paired:
+            self.model.read_functions_file(self.comm, self.remote.functions_file)
 
         # evaluate the composite functions
         self.model.evaluate_composite_functions(compute_grad=True)
@@ -665,7 +675,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     var_name = (
                         var.name if var.analysis_type == "shape" else var.full_name
                     )
-                    if var.analysis_type in ["shape", "aerodynamic"]:
+                    # get aerodynamic derivatives from the funtofem.out files instead of Fun3dAim since
+                    # it is kind of buggy to create Aerodynamic Analysis DVs currently
+                    if var.analysis_type in ["shape"]:  # ["shape", "aerodynamic"]
                         derivative = direct_flow_aim.dynout[func.full_name].deriv(
                             var_name
                         )
