@@ -606,7 +606,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """zero all model derivatives"""
         for func in self.model.get_functions(all=True):
             for var in self.model.get_variables():
-                func.set_gradient_component(var, 0.0)
+                func.derivatives[var] = 0.0
         return
 
     def _get_struct_shape_derivatives(self, scenario):
