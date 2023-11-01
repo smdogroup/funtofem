@@ -419,7 +419,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._get_remote_functions(discipline="aerodynamic")
 
         # evaluate composite functions
-        self.evaluate_composite_functions(compute_grad=False)
+        self.model.evaluate_composite_functions(compute_grad=False)
         return
 
     def solve_adjoint(self):
@@ -504,7 +504,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._get_aero_shape_derivatives(scenario)
 
         # evaluate the composite functions
-        self.evaluate_composite_functions(compute_grad=True)
+        self.model.evaluate_composite_functions(compute_grad=True)
 
         # write a functions file
         if self.is_remote and self.is_paired and self.comm.rank == 0:
