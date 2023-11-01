@@ -606,7 +606,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """zero all model derivatives"""
         for func in self.model.get_functions(all=True):
             for var in self.model.get_variables():
-                func.set_gradient_component(var, 0.0)
+                func.derivatives[var] = 0.0
         return
 
     def _get_struct_shape_derivatives(self, scenario):
@@ -666,7 +666,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         var.name if var.analysis_type == "shape" else var.full_name
                     )
                     if var.analysis_type in ["shape", "aerodynamic"]:
-                        derivative = direct_flow_aim[func.full_name].deriv(var_name)
+                        derivative = direct_flow_aim.dynout[func.full_name].deriv(
+                            var_name
+                        )
                     else:
                         derivative = 0.0
                     gradients[ifunc].append(derivative)
