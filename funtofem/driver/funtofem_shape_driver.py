@@ -433,6 +433,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             super(FuntofemShapeDriver, self).solve_adjoint()
 
             if self.is_paired:
+                # write a functions file
+                if self.comm.rank == 0:
+                    print(f"Writing funtofem.out file")
+                func_file = Remote.paths(self.comm, self.flow_dir).functions_file
+                self.model.write_functions_file(self.comm, func_file)
+
                 write_struct = True
                 write_aero = True
                 struct_sensfile = Remote.paths(
@@ -514,6 +520,19 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.flow_aim.grid_filepaths = grid_filepaths
+
+        # also setup the mapbc files
+        mapbc_filepaths = []
+        for scenario in self.model.scenarios:
+            filepath = os.path.join(
+                fun3d_dir,
+                scenario.name,
+                "Flow",
+                f"{scenario.fun3d_project_name}.mapbc",
+            )
+            mapbc_filepaths.append(filepath)
+        # set the mapbc filepaths into the fun3d aim
+        self.flow_aim.mapbc_filepaths = mapbc_filepaths
         return
 
     def _move_struct_mesh(self):

@@ -93,6 +93,8 @@ class Fun3dAim:
         self._aim = None
         self._grid_file = None
         self._grid_filepaths = []
+        self._mapbc_file = None
+        self._mapbc_filepaths = []
 
         self._fun3d_dir = None
 
@@ -182,6 +184,16 @@ class Fun3dAim:
         self._grid_filepaths = new_filepaths
         return
 
+    @property
+    def mapbc_filepaths(self):
+        return self._mapbc_filepaths
+
+    @mapbc_filepaths.setter
+    def mapbc_filepaths(self, new_filepaths):
+        """set the grid filepaths from each fun3d scenario, from the fun3d interface"""
+        self._mapbc_filepaths = new_filepaths
+        return
+
     def _move_grid_files(self):
         """
         move each of the grid files in the preAnalysis after a new grid is
@@ -192,9 +204,17 @@ class Fun3dAim:
                 return
             else:
                 self._first_grid_move = False
-        print(f"copying grid files = {self._first_grid_move}")
+        if self.comm.rank == 0:
+            print(f"copying grid files")
         src = self.grid_file
         for dest in self.grid_filepaths:
+            shutil.copy(src, dest)
+
+        # also move the mapbc files to each scenario from fun3d aim dir
+        if self.comm.rank == 0:
+            print(f"copying mapbc files")
+        src = self.mapbc_file
+        for dest in self.mapbc_filepaths:
             shutil.copy(src, dest)
         return
 
@@ -277,6 +297,14 @@ class Fun3dAim:
     @grid_file.setter
     def grid_file(self, new_grid_file):
         self._grid_file = new_grid_file
+
+    @property
+    def mapbc_file(self):
+        return self._mapbc_file
+
+    @mapbc_file.setter
+    def mapbc_file(self, new_mapbc_file):
+        self._mapbc_file = new_mapbc_file
 
     @property
     def sens_file_path(self):
