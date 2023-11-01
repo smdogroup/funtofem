@@ -205,7 +205,10 @@ class Fun3dInterface(SolverInterface):
         os.chdir(flow_dir)
 
         if self.comm.rank == 0:
-            print(f"Funtofem starting forward analysis on scenario {scenario.name}")
+            print(
+                f"Funtofem starting forward analysis on scenario {scenario.name}",
+                flush=True,
+            )
 
         if self._debug:
             print(
@@ -671,7 +674,10 @@ class Fun3dInterface(SolverInterface):
         os.chdir(adjoint_dir)
 
         if self.comm.rank == 0:
-            print(f"Funtofem starting adjoint analysis of scenario {scenario.name}")
+            print(
+                f"Funtofem starting adjoint analysis of scenario {scenario.name}",
+                flush=True,
+            )
 
         # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
         # if mesh morphing is online

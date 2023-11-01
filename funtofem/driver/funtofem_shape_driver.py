@@ -666,7 +666,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         var.name if var.analysis_type == "shape" else var.full_name
                     )
                     if var.analysis_type in ["shape", "aerodynamic"]:
-                        derivative = direct_flow_aim[func.full_name].deriv(var_name)
+                        derivative = direct_flow_aim.dynout[func.full_name].deriv(
+                            var_name
+                        )
                     else:
                         derivative = 0.0
                     gradients[ifunc].append(derivative)
