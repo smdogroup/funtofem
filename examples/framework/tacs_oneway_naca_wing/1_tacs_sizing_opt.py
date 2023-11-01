@@ -32,6 +32,9 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 tacs_aim = tacs_model.tacs_aim
 
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
+aluminum_stringer = caps2tacs.Orthotropic.smeared_stringer(
+    aluminum, area_ratio=0.5
+).register_to(tacs_model)
 
 # setup the thickness design variables + automatic shell properties
 # using Composite functions, this part has to go after all funtofem variables are defined...
@@ -43,7 +46,7 @@ init_thickness = 0.08
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+        caps_group=name, material=aluminum_stringer, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
@@ -52,7 +55,7 @@ for irib in range(1, nribs + 1):
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+        caps_group=name, material=aluminum_stringer, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
@@ -61,7 +64,7 @@ for ispar in range(1, nspars + 1):
 for iOML in range(1, nOML + 1):
     name = f"OML{iOML}"
     caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+        caps_group=name, material=aluminum_stringer, membrane_thickness=init_thickness
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
@@ -149,12 +152,15 @@ tacs_driver = OnewayStructDriver.prime_loads(driver=null_driver)
 prob = om.Problem()
 
 # Create the OpenMDAO component using the built-in Funtofem component
-f2f_subsystem = FuntofemComponent(driver=tacs_driver, write_dir=tacs_aim.analysis_dir)
+design_out_file = "design-stringer.txt"
+f2f_subsystem = FuntofemComponent(
+    driver=tacs_driver, write_dir=tacs_aim.analysis_dir, design_out_file=design_out_file
+)
 prob.model.add_subsystem("f2fSystem", f2f_subsystem)
 f2f_subsystem.register_to_model(prob.model, "f2fSystem")
 
 # setup the optimizer settings # COBYLA for auto-FDing
-optimizer = "pyoptsparse"
+optimizer = "scipy"
 if optimizer == "scipy":
     prob.driver = om.ScipyOptimizeDriver(optimizer="SLSQP", tol=1.0e-9, disp=True)
 elif optimizer == "pyoptsparse":
