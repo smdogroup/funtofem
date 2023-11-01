@@ -31,7 +31,10 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 )
 tacs_aim = tacs_model.tacs_aim
 
-aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
+aluminum = caps2tacs.Isotropic.aluminum()
+aluminum_stringer = caps2tacs.Orthotropic.smeared_stringer(
+    aluminum, area_ratio=0.5
+).register_to(tacs_model)
 
 # setup the thickness design variables + automatic shell properties
 # using Composite functions, this part has to go after all funtofem variables are defined...
@@ -42,8 +45,11 @@ nOML = int(tacs_aim.get_output_parameter("nOML"))
 init_thickness = 0.08
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
-    caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+    caps2tacs.CompositeProperty.one_ply(
+        caps_group=name,
+        material=aluminum_stringer,
+        thickness=init_thickness,
+        ply_angle=0,
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
@@ -51,8 +57,11 @@ for irib in range(1, nribs + 1):
 
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
-    caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+    caps2tacs.CompositeProperty.one_ply(
+        caps_group=name,
+        material=aluminum_stringer,
+        thickness=init_thickness,
+        ply_angle=0,
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
@@ -60,8 +69,11 @@ for ispar in range(1, nspars + 1):
 
 for iOML in range(1, nOML + 1):
     name = f"OML{iOML}"
-    caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=init_thickness
+    caps2tacs.CompositeProperty.one_ply(
+        caps_group=name,
+        material=aluminum_stringer,
+        thickness=init_thickness,
+        ply_angle=0,
     ).register_to(tacs_model)
     Variable.structural(name, value=init_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0

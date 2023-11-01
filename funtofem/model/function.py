@@ -130,7 +130,7 @@ class Function(object):
 
     @property
     def full_name(self) -> str:
-        return f"{self._scenario_name}.{self.name}"
+        return f"{self._scenario_name}-{self.name}"
 
     def zero_derivatives(self):
         """
