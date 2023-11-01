@@ -244,7 +244,7 @@ class Fun3dAim:
             for dv in shape_variables:
                 DV_dict[dv.name] = {}
             for dv in aero_variables:
-                DV_dict[dv.name] = {}
+                DV_dict[dv.full_name] = {}
             self.aim.input.Design_Variable = DV_dict
         self._shape_variables += shape_variables
         return

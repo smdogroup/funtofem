@@ -226,9 +226,9 @@ class FUNtoFEMmodel(object):
             # not in Fun3dAim for now...
 
             # add aerodynamic variable names to varnames
-            # for var in aero_variables:
-            #     if var.active:
-            #         active_aero_vars.append(var)
+            for var in aero_variables:
+                if var.active:
+                    active_aero_vars.append(var)
 
             # input the design parameters into the Fun3dModel and Fun3dAim
             self.flow.set_variables(active_shape_vars, active_aero_vars)
