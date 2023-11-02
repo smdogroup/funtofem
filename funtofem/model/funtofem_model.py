@@ -917,17 +917,16 @@ class FUNtoFEMmodel(object):
                 # Print the function name
                 func_value = func.value.real if func.value is not None else None
                 if full_precision:
-                    data += f"func {func.full_name} = {func_value}\n"
+                    data += f"func {func.full_name} {func_value}\n"
                 else:
-                    data += f"func {func.full_name} = {func_value:.5e}\n"
+                    data += f"func {func.full_name} {func_value:.5e}\n"
 
                 for var in variables:
+                    derivative = float(func.derivatives[var])
                     if full_precision:
-                        data += f"\t{var.full_name} = {func.derivatives[var].real}\n"
+                        data += f"\t{var.full_name} {derivative}\n"
                     else:
-                        data += (
-                            f"\t{var.full_name} = {func.derivatives[var].real:.5e}\n"
-                        )
+                        data += f"\t{var.full_name} {derivative:.5e}\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)
