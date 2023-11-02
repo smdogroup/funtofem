@@ -94,3 +94,7 @@ class Remote:
     @property
     def functions_file(self):
         return os.path.join(self._remote_dir, "funtofem.out")
+
+    @property
+    def timing_file(self):
+        return os.path.join(self._remote_dir, "timing.txt")

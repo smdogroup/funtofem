@@ -222,6 +222,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         for func in self.model.get_functions(all=True):
             for var in self.model.get_variables():
                 func.derivatives[var] = 0.0
+
+        # initial timing data message
+        self._iteration = 0
+        self._write_timing_data(
+            msg="Funtofem Shape Driver timing data..\n", overwrite=True
+        )
         return
 
     def _initialize_funtofem(self):
@@ -243,6 +249,20 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 body.initialize_adjoint_variables(
                     scenario
                 )  # for writing sens files even in forward case
+
+    def _write_timing_data(self, msg, overwrite=False):
+        """write to the funtofem timing file"""
+        if not self.is_remote:
+            return
+        if self.comm.rank == 0:
+            hdl = open(self.remote.timing_file, "w" if overwrite else "a")
+            hdl.write(msg + "\n")
+            hdl.flush()
+            hdl.close()
+
+        # MPI Barrier for other processors
+        self.comm.Barrier()
+        return
 
     def _update_struct_transfer(self):
         """update struct nnodes and transfer scheme if struct remeshing in the loop"""
@@ -290,6 +310,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
         Create new aero/struct geometries and run fully-coupled forward analysis.
         """
+        # write the initial timing data output
+        self._write_timing_data(msg=f"Iteration {self._iteration}:")
+        self._iteration += 1
+        self._iteration_start = time.time()
+
         if self.aero_shape:
             start_time_aero = time.time()
             if self.comm.rank == 0:
@@ -301,6 +326,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.flow_aim.pre_analysis()
 
             dt_aero = time.time() - start_time_aero
+            self._write_timing_data(msg=f"\tbuilt aero mesh in {dt_aero:.5e} sec")
             if self.comm.rank == 0:
                 print(f"F2F - built aero mesh in {dt_aero:.5e} sec", flush=True)
 
@@ -327,6 +353,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.pre_analysis()
 
             dt_struct = time.time() - start_time_struct
+            self._write_timing_data(f"\tbuilt struct mesh in {dt_struct:.5e} sec")
             if self.comm.rank == 0:
                 print(f"F2F - Built struct mesh in {dt_struct:.5e} sec", flush=True)
 
@@ -371,10 +398,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             os.system(
                 f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
-            elapsed_time = time.time() - start_time
+            remote_forward_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tran system call forward analysis in {remote_forward_time:.5e} sec"
+            )
             if self.comm.rank == 0:
                 print(
-                    f"Done with remote analysis in {elapsed_time:2.5e} sec", flush=True
+                    f"Done with remote analysis in {remote_forward_time:2.5e} sec",
+                    flush=True,
                 )
 
         else:
@@ -386,8 +417,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     root=0,
                 )
 
+            start_time = time.time()
             # call solve forward of super class for no shape, fully-coupled analysis
             super(FuntofemShapeDriver, self).solve_forward()
+
+            forward_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tran nlbgs forward analysis in {forward_time:.5e} sec"
+            )
 
         # write sens file for remote to read or if shape change all in one
         if not self.is_remote:
@@ -409,8 +446,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # src for movement of sens file or None if not moving it
             sens_file_src = self.remote.aero_sens_file if self.is_paired else None
 
+            start_time = time.time()
+
             # run the tacs aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
+
+            flow_post1_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tflow postAnalysis of forward in time {flow_post1_time:.5e} sec"
+            )
 
             # get the analysis function values
             if self.flow_aim.mesh_morph:
@@ -432,12 +476,26 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.flow_aim.mesh_morph:
                 self.flow_aim.set_design_sensitivity(True, include_file=False)
 
+            start_time = time.time()
+
             # run the pre analysis to generate a new mesh
             self.flow_aim.pre_analysis()
 
+            flow_adjoint_pre_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tflow preAnalysis of adjoint in time {flow_adjoint_pre_time:.5e} sec"
+            )
+
         if not self.is_remote:
+            start_time = time.time()
+
             # call funtofem adjoint analysis for non-remote driver
             super(FuntofemShapeDriver, self).solve_adjoint()
+
+            remote_adjoint_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tsystem call adjoint analysis in {remote_adjoint_time:.5e} sec"
+            )
 
             # write analysis functions file in analysis or system call
             if self.is_paired:
@@ -489,6 +547,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 tacs_sens_dest = self.struct_aim.sens_file_path
                 shutil.copy(tacs_sens_src, tacs_sens_dest)
 
+            start_time = time.time()
+
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
 
@@ -497,9 +557,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_struct_shape_derivatives(scenario)
 
+            struct_post_time = time.time() - start_time
+            self._write_timing_data(
+                f"\tstruct postAnalysis in {struct_post_time:.5e} sec"
+            )
+
         if self.aero_shape:  # either remote or regular
             # src for movement of sens file if it was the paired driver case
             sens_file_src = self.remote.aero_sens_file if self.is_paired else None
+
+            start_time = time.time()
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
@@ -508,6 +575,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
+
+            aero_post_time = time.time() - start_time
+            self._write_timing_data(f"\taero postAnalysis in {aero_post_time:.5e} sec")
 
         # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
         if self.is_remote and self.is_paired:
@@ -522,6 +592,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.model.write_functions_file(
                 self.comm, self.remote.functions_file, full_precision=False, optim=True
             )
+
+        full_iteration_time = time.time() - self._iteration_start
+        self._write_timing_data(
+            f"\titeration {self._iteration-1} took {full_iteration_time:.5e} sec"
+        )
 
         return
 
