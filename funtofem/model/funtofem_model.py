@@ -846,6 +846,7 @@ class FUNtoFEMmodel(object):
         gradients_dict = None
         if comm.rank == root:  # read the file in on the root processor
             functions_dict = {}
+            gradients_dict = {}
 
             hdl = open(filename, "r")
             lines = hdl.readlines()
