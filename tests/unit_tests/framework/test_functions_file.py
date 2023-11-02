@@ -34,8 +34,8 @@ _, output_dir = make_test_directories(comm, base_dir)
 
 remote = Remote(comm, ".py", base_dir, nprocs=1)
 
-class TestFunctionsFile(unittest.TestCase):
 
+class TestFunctionsFile(unittest.TestCase):
     def test_multiscenario_aeroelastic(self):
         """
         test composite functions over two scenarios with aerothermoelastic coupling and a funtofem driver
@@ -93,9 +93,7 @@ class TestFunctionsFile(unittest.TestCase):
         solvers.flow = TestAerodynamicSolver(comm, model)
 
         # instantiate the driver to in initialize transfer scheme
-        FUNtoFEMnlbgs(
-            solvers, transfer_settings=TransferSettings(npts=5), model=model
-        )
+        FUNtoFEMnlbgs(solvers, transfer_settings=TransferSettings(npts=5), model=model)
 
         # set analysis functions to random values
         for func in model.get_functions():
@@ -120,10 +118,14 @@ class TestFunctionsFile(unittest.TestCase):
         model.evaluate_composite_functions(compute_grad=True)
 
         # write out the functions file again
-        model.write_functions_file(comm, remote._functions_file+"2", full_precision=True)
+        model.write_functions_file(
+            comm, remote._functions_file + "2", full_precision=True
+        )
 
         # write the full functions file for optimization
-        model.write_functions_file(comm, remote.functions_file, full_precision=False, optim=True)
+        model.write_functions_file(
+            comm, remote.functions_file, full_precision=False, optim=True
+        )
 
 
 if __name__ == "__main__":
