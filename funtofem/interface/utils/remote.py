@@ -88,5 +88,9 @@ class Remote:
         return os.path.join(self._remote_dir, "funtofem.in")
 
     @property
+    def _functions_file(self):
+        return os.path.join(self._remote_dir, "_funtofem.out")
+
+    @property
     def functions_file(self):
         return os.path.join(self._remote_dir, "funtofem.out")

@@ -442,7 +442,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # write analysis functions file in analysis or system call
             if self.is_paired:
                 self.model.write_functions_file(
-                    self.comm, Remote.paths(self.comm, self.flow_dir).functions_file
+                    self.comm, Remote.paths(self.comm, self.flow_dir)._functions_file
                 )
 
             if self.is_paired:
@@ -511,7 +511,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
         if self.is_remote and self.is_paired:
-            self.model.read_functions_file(self.comm, self.remote.functions_file)
+            self.model.read_functions_file(self.comm, self.remote._functions_file)
 
         # evaluate the composite functions
         self.model.evaluate_composite_functions(compute_grad=True)
