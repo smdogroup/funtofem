@@ -520,7 +520,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         if self.is_remote and self.is_paired:
             print("Writing funtofem.out file", flush=True)
             self.model.write_functions_file(
-                self.comm, self.remote.functions_file, optim=True
+                self.comm, self.remote.functions_file, full_precision=False, optim=True
             )
 
         return

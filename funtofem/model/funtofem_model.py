@@ -883,7 +883,9 @@ class FUNtoFEMmodel(object):
 
         return
 
-    def write_functions_file(self, comm, filename, root=0, **kwargs):
+    def write_functions_file(
+        self, comm, filename, root=0, full_precision=True, **kwargs
+    ):
         """
         Write the functions file funtofem.out
 
@@ -914,10 +916,18 @@ class FUNtoFEMmodel(object):
             for n, func in enumerate(funcs):
                 # Print the function name
                 func_value = func.value.real if func.value is not None else None
-                data += f"func {func.full_name} = {func_value:.5e}\n"
+                if full_precision:
+                    data += f"func {func.full_name} = {func_value}\n"
+                else:
+                    data += f"func {func.full_name} = {func_value:.5e}\n"
 
                 for var in variables:
-                    data += f"\t{var.full_name} = {func.derivatives[var]}\n"
+                    if full_precision:
+                        data += f"\t{var.full_name} = {func.derivatives[var].real}\n"
+                    else:
+                        data += (
+                            f"\t{var.full_name} = {func.derivatives[var].real:.5e}\n"
+                        )
 
             with open(filename, "w") as fp:
                 fp.write(data)
