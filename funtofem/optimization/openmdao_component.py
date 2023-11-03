@@ -93,7 +93,7 @@ class FuntofemComponent(ExplicitComponent):
         # store function optimization history
         if track_history:
             self._func_history = {
-                func.full_name: [] for func in functions if func._plot
+                func.plot_name: [] for func in functions if func._plot
             }
 
             if comm.rank == 0:
@@ -183,8 +183,8 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
         model = driver.model
         for func in model.get_functions(optim=True):
-            if func.full_name in self._func_history:
-                self._func_history[func.full_name].append(func.value.real)
+            if func.plot_name in self._func_history:
+                self._func_history[func.plot_name].append(func.value.real)
 
         if driver.comm.rank == 0:
             self._plot_history()
@@ -216,8 +216,8 @@ class FuntofemComponent(ExplicitComponent):
             ind = 0
             colors = plt.cm.jet(np.linspace(0, 1, nkeys))
             for func in model.get_functions(optim=True):
-                if func.full_name in func_keys:
-                    yvec = np.array(self._func_history[func.full_name])
+                if func.plot_name in func_keys:
+                    yvec = np.array(self._func_history[func.plot_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -246,7 +246,7 @@ class FuntofemComponent(ExplicitComponent):
                         yvec,
                         color=colors[ind],
                         linewidth=2,
-                        label=func.full_name,
+                        label=func.plot_name,
                     )
                     ind += 1
 
