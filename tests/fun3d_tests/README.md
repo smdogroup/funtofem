@@ -2,12 +2,13 @@
 
 * `fully_coupled_disc_deriv/` - Compare the complex-step and adjoint derivatives for `structural` and `aerodynamic` discipline design variables in steady-state, fully-coupled FUN3D-TACS analysis, with the `FuntofemNlbgs` driver. The test is repeated for <i>laminar, viscous</i> FUN3D flow, and <i>aeroelastic, aerothermal, aerothermoelastic</i> couplings.
 * `fully_coupled_remesh/` - Compare the finite difference and adjoint derivatives of a fully-coupled aerostructural analysis with aerodynamic remeshing, using the `FuntofemShapeDriver` for FUN3D and TACS. One subtest has fixed structure and the other has structure remeshing with the `TacsAim`.  A symmetric NACA 0012 wing geometry is used.
-* `fun3d_oneway_remesh/` - Compare the finite difference and adjoint derivatives of a oneway-coupled aerodynamic analysis in FUN3D, using aerodynamic remeshing with the `Fun3dOnewayDriver`. The symmetric NACA 0012 wing geometry is used.
+* `fun3d_oneway_remesh/` - Compare the finite difference and adjoint derivatives of a oneway-coupled aerodynamic analysis in FUN3D, using aerodynamic remeshing with the `OnewayAeroDriver`. The symmetric NACA 0012 wing geometry is used.
+* `oneway_coupled_remesh/` - Run aerodynamic and structural oneway-coupled analysis in the same analysis file, then perform an aero-structural optimization in the main run script `test_funtofem_remesh.py`.
 * `test_fun3d_aim.py` - Use `caps2fun` to create a `Fun3dAim` + `AflrAim` from ESP/CAPS, and build an aerodynamic mesh of a symmetric NACA 0012 wing.
 * `test_fun3d_grid_deformation.py` - Complex-step test for the FUN3D grid deformation analysis $x_G(u_A)$. This test uses a custom `Fun3dGridInterface` class which is only used for this test. The complex-step analysis transfers input covariant $du_A/ds$ to $dx_G/ds$, while the adjoint analysis transfers the output contravariant $\partial f/\partial x_G$ to $\partial f/\partial u_A$.
 * `test_fun3d_interface_ajps.py` - Complex-step test for FUN3D aeroelastic analysis adjoint-jacobian products. Total derivatives are computed using covariant and contravariant test vectors for both the complex-step and adjoint analyses.
-* `test_fun3d_oneway_aero.py` - Demonstrate a oneway-coupled analysis with the `Fun3dOnewayDriver` on a sym NACA 0012 wing.
-* `test_fun3d_oneway_morph.py` - Compare the adjoint derivative to finite difference for aerodynamic mesh morphing with the  `Fun3dOnewayDriver` and an AOA shape variable. 
+* `test_fun3d_oneway_aero.py` - Demonstrate a oneway-coupled analysis with the `OnewayAeroDriver` on a sym NACA 0012 wing.
+* `test_fun3d_oneway_morph.py` - Compare the adjoint derivative to finite difference for aerodynamic mesh morphing with the  `OnewayAeroDriver` and an AOA shape variable. 
 * `test_fun3d_single_aero_coords.py` - Complex-step test for individual aerodynamic surface coordinates and directions in fully-coupled FUN3D-TACS aeroelastic analysis. 
 * `test_fun3d_test-struct.py` - Isolate the FUN3D aerodynamic solver by replacing the TACS structural solver with the `TestStructuralSolver`. 
 * `test_fun3d_aero_coord.py` - Compare the complex-step and adjoint for aerodynamic coordinate derivatives of FUN3D-TACS fully-coupled analysis. A linearized aerodynamic coordinate function $\overline{f}(x)$ is used with random direction $p\equiv dx_{A0}/dx$.

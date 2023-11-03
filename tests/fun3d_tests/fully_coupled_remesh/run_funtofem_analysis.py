@@ -10,7 +10,7 @@ from funtofem.model import (
     Function,
     Variable,
 )
-from funtofem.interface import SolverManager
+from funtofem.interface import SolverManager, Remote
 
 # check whether fun3d is available
 tacs_loader = importlib.util.find_spec("tacs")
@@ -23,7 +23,7 @@ if has_tacs:
 
 if has_fun3d:
     from funtofem.interface import Fun3dInterface
-    from funtofem.driver import FuntofemShapeDriver, Fun3dRemote
+    from funtofem.driver import FuntofemShapeDriver
 
 np.random.seed(1234567)
 
@@ -31,7 +31,7 @@ comm = MPI.COMM_WORLD
 nprocs = comm.Get_size()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 fun3d_dir = os.path.join(base_dir, "meshes")
-fun3d_remote = Fun3dRemote.paths(fun3d_dir)
+fun3d_remote = Remote.paths(fun3d_dir)
 
 # build the funtofem model with one body and scenario
 model = FUNtoFEMmodel("wing")
@@ -44,11 +44,12 @@ test_scenario.adjoint_steps = 4000
 # aoa = test_scenario.get_variable("AOA")
 test_scenario.include(Function.lift()).include(Function.drag())
 test_scenario.include(Function.ksfailure()).include(Function.mass())
+test_scenario.set_flow_ref_vals(qinf=1e4)
 test_scenario.register_to(model)
 
 # build the solvers and coupled driver
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(qinf=1e4)
+solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=model, comm=comm, nprocs=nprocs, bdf_file=fun3d_remote.dat_file
 )

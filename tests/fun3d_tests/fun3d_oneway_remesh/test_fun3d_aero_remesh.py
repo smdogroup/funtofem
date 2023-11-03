@@ -9,28 +9,30 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import (
+    SolverManager,
+    TestResult,
+    Fun3dBC,
+    Fun3dModel,
+    make_test_directories,
+    Remote,
+)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import Fun3dOnewayDriver, Fun3dRemote
+    from funtofem.driver import OnewayAeroDriver
 
 np.random.seed(1234567)
 
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "naca_wing.csm")
-
 analysis_file = os.path.join(base_dir, "run_fun3d_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
@@ -66,26 +68,24 @@ class TestFun3dOnewayRemesh(unittest.TestCase):
             lower=-1.0, value=0.0, upper=1.0
         ).register_to(wing)
         wing.register_to(model)
-        test_scenario = (
-            Scenario.steady("euler", steps=10)
-            .set_temperature(T_ref=300.0, T_inf=300.0)
-            .fun3d_project("funtofem_CAPS")
-        )
-        # test_scenario.get_variable("AOA").set_bounds(value=2.0)
-        test_scenario.include(Function.lift()).include(Function.drag())
+
+        test_scenario = Scenario.steady("euler", steps=5000)
+        test_scenario.fun3d_project("funtofem_CAPS")
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        fun3d_remote = Fun3dRemote(analysis_file, fun3d_dir, nprocs=48)
-        driver = Fun3dOnewayDriver.aero_remesh(solvers, model, fun3d_remote)
+        remote = Remote(analysis_file, fun3d_dir, nprocs=48)
+        driver = OnewayAeroDriver.aero_remesh(solvers, model, remote)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
             "fun3d+oneway-remesh-euler",
             model,
             driver,
-            TestFun3dOnewayRemesh.FILEPATH,
+            self.FILEPATH,
             both_adjoint=False,
             epsilon=1e-1,
         )

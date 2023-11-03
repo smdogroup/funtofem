@@ -48,6 +48,8 @@ class Scenario(Base):
         adjoint_steps=None,
         T_ref=300,
         T_inf=300,
+        qinf=1.0,
+        flow_dt=1.0,
         tacs_integration_settings=None,
         fun3d_project_name="funtofem_CAPS",
         suther1=1.458205e-6,
@@ -81,6 +83,10 @@ class Scenario(Base):
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
             Fluid freestream reference temperature in Kelvin.
+        qinf: float
+            elastic load dimensionalization factor = 0.5 * rho_inf * v_inf^2
+        flow_dt: float
+            Equals the nondimensional time step in fun3d.nml (time_step_nondim)
         tacs_integration_settings: :class:`~interface.TacsUnsteadyInterface`
             Optional TacsIntegrator settings for the unsteady interface (required for unsteady)
         fun3d_project_name: filename
@@ -121,6 +127,9 @@ class Scenario(Base):
 
         self.T_ref = T_ref
         self.T_inf = T_inf
+        self.qinf = qinf
+        self.flow_dt = flow_dt
+
         self.suther1 = suther1
         self.suther2 = suther2
         self.gamma = gamma
@@ -223,7 +232,7 @@ class Scenario(Base):
         is_adjoint = lambda func: func.adjoint
         return len(list(filter(is_adjoint, self.functions)))
 
-    def get_variable(self, varname, set_active=True):
+    def get_variable(self, varname, set_active=True) -> Variable:
         """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
         var = None
         for discipline in self.variables:
@@ -236,7 +245,7 @@ class Scenario(Base):
         if var is None:
             raise AssertionError(f"Can't find variable from scenario {self.name}")
 
-    def add_variable(self, vartype, var):
+    def add_variable(self, vartype, var: Variable):
         """
         Add a new variable to the scenario's variable dictionary
 
@@ -247,7 +256,8 @@ class Scenario(Base):
         var: Variable object
             variable to be added
         """
-        var.scenario = self.id
+        # var.scenario = self.id
+        var._scenario_name = self.name
 
         super(Scenario, self).add_variable(vartype, var)
 
@@ -291,6 +301,28 @@ class Scenario(Base):
         """
         self.T_ref = T_ref
         self.T_inf = T_inf
+        return self
+
+    def set_flow_ref_vals(self, qinf: float = 1.0, flow_dt: float = 1.0):
+        """
+        Set flow reference values for FUN3D nondimensionalization.
+        flow_dt should always be 1.0 for steady scenarios.
+
+        Parameters
+        ----------
+        flow_dt: float
+            Flow solver time step size. Used to scale the adjoint term coming into and out of
+            FUN3D since FUN3D currently uses a different adjoint formulation than FUNtoFEM.
+            Should be equal to non-dimensional time step in fun3d.nml (equals time_step_nondim)
+        qinf: float
+            Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
+        """
+
+        self.qinf = qinf
+        self.flow_dt = flow_dt
+
+        if self.steady is True and float(self.flow_dt) != 1.0:
+            raise ValueError("For steady cases, flow_dt must be set to 1.")
         return self
 
     def set_id(self, id):
@@ -364,3 +396,13 @@ class Scenario(Base):
         dkdtA = dmu_dtA * cp / Pr
 
         return dkdtA
+
+    def __str__(self):
+        line1 = f"Scenario (<ID> <Name>): {self.id} {self.name}"
+        line2 = f"    Coupling Group: {self.group}"
+        line3 = f"    Steps: {self.steps}"
+        line4 = f"    Steady-state: {self.steady}"
+
+        output = (line1, line2, line3, line4)
+
+        return "\n".join(output)

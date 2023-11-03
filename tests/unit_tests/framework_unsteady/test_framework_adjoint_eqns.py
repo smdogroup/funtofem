@@ -8,6 +8,7 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TestStructuralSolver,
     SolverManager,
+    make_test_directories,
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
@@ -17,20 +18,9 @@ complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 np.random.seed(123456)
-
-# steps = 10  # used for Nstep case
-# couplings = ["aeroelastic", "aerothermal", "aerothermoelastic"]
-# coupling = "aeroelastic"
-# d(struct func)/d(struct var) passes to machine precision (TD and matrix)
-# both structDV cases pass, but aeroDV cases don't do as well
-# worst case is d(aero func)/d(aero var) 1e-2 right now
-# DV_cases = ["structural", "aerodynamic"]
 
 # settings for each test
 DV_cases = ["structural"]
@@ -91,7 +81,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # to compare with adjoint equations
 
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S2 = -1 * plate.get_struct_disps_ajp(scenario).copy()
@@ -107,7 +97,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
 
         # need this to set the disps so the load transfer jacobian is
         # correct in intermediate steps
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_S1 = -1 * plate.get_struct_disps_ajp(scenario).copy()
@@ -138,7 +128,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # df/duS1 = 0
         # seed MELD with u_S^1 => u_A^2 transfer here so Jacobians are correct
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         D2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
         plate.transfer.applydDduSTrans(psi_D2[:, 0].copy(), D2_ajp)
@@ -274,7 +264,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # to compare with adjoint equations
 
         step = 2
-        plate.transfer_temps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_temps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_P2 = -1 * plate.get_struct_temps_ajp(scenario).copy()
@@ -289,7 +279,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         step = 1
 
         # sometimes I comment this extra transfer out
-        plate.transfer_temps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_temps(test_scenario, time_index=step)
 
         test_struct.iterate_adjoint(scenario, bodies, step)
         psi_P1 = -1 * plate.get_struct_temps_ajp(scenario).copy()
@@ -320,7 +310,7 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         # df/dtS1 = 0
         # seed MELD with t_S^1 => t_A^2 transfer here so Jacobians are correct
         step = 2
-        plate.transfer_disps(test_scenario, time_index=step - 1, jump=True)
+        plate.transfer_disps(test_scenario, time_index=step)
 
         T2_ajp = np.zeros(plate.struct_nnodes, dtype=plate.dtype)
         plate.thermal_transfer.applydTdtSTrans(psi_T2[:, 0].copy(), T2_ajp)
@@ -408,116 +398,8 @@ class TestFrameworkAdjointEqns(unittest.TestCase):
         assert TD_rel_error < 1e-9
         return
 
-    # @unittest.skip("temp")
-    # def test_Nstep_adjoint_eqns(self):
-    #     # build the funtofem model with an unsteady scenario
-    #     model = FUNtoFEMmodel("test")
-    #     plate = Body("plate", analysis_type=coupling)
-    #     if "structural" in DV_cases:
-    #         for iS in range(5):
-    #             Variable.structural(f"thick{iS}").set_bounds(value=0.1).register_to(
-    #                 plate
-    #             )
-    #     if "aerodynamic" in DV_cases:
-    #         for iA in range(5):
-    #             Variable.aerodynamic(f"aero{iA}").set_bounds(value=0.1).register_to(
-    #                 plate
-    #             )
-    #     plate.register_to(model)
-    #     test_scenario = Scenario.unsteady("test", steps=steps)
-    #     # just do one function for now
-    #     if function_type == "structural":
-    #         test_scenario.include(Function.ksfailure())
-    #     elif function_type == "aerodynamic":
-    #         test_scenario.include(Function.lift())
-    #     test_scenario.register_to(model)
-
-    #     # build a funtofem driver
-    #     solvers = SolverManager(comm)
-    #     solvers.flow = TestAerodynamicSolver(comm, model)
-    #     solvers.structural = TestStructuralSolver(comm, model)
-    #     driver = FUNtoFEMnlbgs(
-    #         solvers, transfer_settings=TransferSettings(npts=10), model=model
-    #     )
-    #     test_aero = solvers.flow
-    #     test_struct = solvers.structural
-    #     aero_data = test_aero.scenario_data[test_scenario.id]
-    #     struct_data = test_struct.scenario_data[test_scenario.id]
-    #     bodies = model.bodies
-    #     scenario = test_scenario
-
-    #     driver.solve_forward()
-    #     plate.initialize_adjoint_variables(test_scenario)
-    #     # solve the adjoint variables and store states at each step
-    #     # to compare with adjoint equations
-
-    #     plate.transfer_disps(test_scenario, time_index=steps - 1, jump=True)
-
-    #     psi_D = {}
-    #     psi_A = {}
-    #     psi_L = {}
-    #     psi_S = {}
-
-    #     for istep in range(1, steps + 1):
-    #         step = steps - istep + 1  # reverse step
-
-    #         test_struct.iterate_adjoint(scenario, bodies, step)
-    #         psi_S[step] = -1 * plate.get_struct_disps_ajp(scenario).copy()
-    #         plate.transfer_loads_adjoint(scenario)
-    #         test_aero.iterate_adjoint(scenario, bodies, step)
-    #         plate.transfer_disps_adjoint(scenario)
-
-    #         psi_L[step] = -1 * plate.get_struct_loads_ajp(scenario).copy()
-    #         psi_A[step] = -1 * plate.get_aero_loads_ajp(scenario).copy()
-    #         psi_D[step] = -1 * plate.get_aero_disps_ajp(scenario).copy()
-
-    #     # post-analyze the adjoint equations
-    #     resids = []
-    #     for istep in range(1, steps + 1):
-    #         step = steps - istep + 1
-    #         # check each of the equations
-    #         # df/duAi = 0
-    #         df_duA = psi_D[step] - aero_data.Jac1.T @ psi_A[step]
-    #         resids += [np.linalg.norm(df_duA)]
-
-    #         # df/dfAi = 0
-    #         aero_out = np.zeros(3 * plate.aero_nnodes, dtype=plate.dtype)
-    #         plate.transfer.applydLdfATrans(psi_L[step][:, 0].copy(), aero_out)
-    #         df_dfA = psi_A[step] + np.expand_dims(aero_out, axis=-1)
-    #         resids += [np.linalg.norm(df_dfA)]
-
-    #         # df/dfSi = 0
-    #         df_dfS = psi_L[step] - struct_data.Jac1.T @ psi_S[step]
-    #         if step == steps:
-    #             df_dfS += np.expand_dims(struct_data.func_coefs1, axis=-1)
-    #         resids += [np.linalg.norm(df_dfS)]
-
-    #         # df/duSi = 0
-    #         if step < steps:
-    #             D2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
-    #             plate.transfer.applydDduSTrans(psi_D[step + 1][:, 0].copy(), D2_ajp)
-    #             L2_ajp = np.zeros(3 * plate.struct_nnodes, dtype=plate.dtype)
-    #             plate.transfer.applydLduSTrans(psi_L[step + 1][:, 0].copy(), L2_ajp)
-    #             df_duS = psi_S[step] + np.expand_dims(D2_ajp + L2_ajp, axis=-1)
-    #         else:
-    #             df_duS = psi_S[step]
-    #         resids += [np.linalg.norm(df_duS)]
-
-    #     print(f"{steps} step adjoint eqns")
-
-    #     resids = [abs(_) for _ in resids]
-    #     passing_resid = [_ < 1e-9 for _ in resids]
-    #     npassing = sum(passing_resid)
-    #     nresid = len(resids)
-    #     print(f"\t{npassing}/{nresid} passing residuals")
-    #     print(f"\tresids = {resids}")
-    #     print(f"\tmax resid = {max(resids)}")
-
-    #     assert max(resids) < 1e-9
-    #     return
-
 
 if __name__ == "__main__":
-    if comm.rank == 0:
-        open(TestFrameworkAdjointEqns.FILENAME, "w").close()  # clear file
+    # if comm.rank == 0:
+    #    open(TestFrameworkAdjointEqns.FILEPATH, "w").close()  # clear file
     unittest.main()

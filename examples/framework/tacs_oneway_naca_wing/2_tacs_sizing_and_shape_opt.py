@@ -1,7 +1,7 @@
 """
 Sean Engelstad, May 2023
 GT SMDO Lab, Dr. Graeme Kennedy
-TacsOnewayDriver example
+OnewayStructDriver example
 """
 
 from funtofem import *
@@ -88,17 +88,13 @@ for prefix in ["rib", "spar"]:
 wing.register_to(f2f_model)
 
 # make the scenario(s)
-tacs_scenario = Scenario.steady(
-    "tacs", steps=100
-)  # steps number doesn't do anything here since uncoupled
-tacs_scenario.include(
-    Function.mass().optimize(scale=1.0e-2, objective=True, plot=True)
-)  # optim is automatically set to true for optimization tracking using set_bounds()
-tacs_scenario.include(
-    Function.ksfailure(ks_weight=10.0).optimize(
-        scale=30.0, upper=0.267, objective=False, plot=True
-    )
+tacs_scenario = Scenario.steady("tacs", steps=100)
+Function.mass().optimize(scale=1.0e-2, objective=True, plot=True).register_to(
+    tacs_scenario
 )
+Function.ksfailure(ks_weight=10.0).optimize(
+    scale=30.0, upper=0.267, objective=False, plot=True
+).register_to(tacs_scenario)
 tacs_scenario.register_to(f2f_model)
 
 # make the composite functions for adjacency constraints
@@ -164,7 +160,7 @@ f2f_model.write_sensitivity_file(
 tacs_aim.post_analysis()
 
 # build the tacs oneway driver
-tacs_driver = TacsOnewayDriver.prime_loads(driver=null_driver, nprocs=1)
+tacs_driver = OnewayStructDriver.prime_loads(driver=null_driver, nprocs=1)
 
 # --------------------------------------------------------------------------#
 # Setup OpenMDAO Problem and Perform Sizing Optimization on the Wing

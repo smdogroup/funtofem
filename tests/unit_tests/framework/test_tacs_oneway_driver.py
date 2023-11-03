@@ -5,18 +5,19 @@ from funtofem import TransferScheme
 from funtofem.model import FUNtoFEMmodel, Variable, Scenario, Body, Function
 from funtofem.interface import (
     TestAerodynamicSolver,
-    TacsSteadyInterface,
+    TacsInterface,
     SolverManager,
     TestResult,
+    make_test_directories,
 )
 from funtofem.driver import (
     FUNtoFEMnlbgs,
     TransferSettings,
-    TacsOnewayDriver,
+    OnewayStructDriver,
     TestAeroOnewayDriver,
 )
 
-from bdf_test_utils import thermoelasticity_callback, elasticity_callback
+from _bdf_test_utils import thermoelasticity_callback, elasticity_callback
 
 np.random.seed(1234567)
 
@@ -24,22 +25,19 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
 
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 
 
-class TestTacsOnewayDriver(unittest.TestCase):
+class TestOnewayStructDriver(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled TacsSteadyAnalysisDriver
     which uses fixed aero loads
     TODO : in the case of an unsteady one, add methods for those too?
     """
 
-    FILENAME = "oneway-driver.txt"
+    FILENAME = "test-tacs-oneway-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_aeroelastic(self):
@@ -52,28 +50,36 @@ class TestTacsOnewayDriver(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=200)
+        Function.ksfailure().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -91,32 +97,37 @@ class TestTacsOnewayDriver(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = (
-            Scenario.steady("test", steps=150)
-            .include(Function.ksfailure())
-            .include(Function.temperature())
-        )
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
+        Function.temperature().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermal",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -134,32 +145,37 @@ class TestTacsOnewayDriver(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = (
-            Scenario.steady("test", steps=150)
-            .include(Function.ksfailure())
-            .include(Function.temperature())
-        )
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
+        Function.temperature().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_dir,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(
+            coupled_driver, transfer_settings
+        )
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aerothermoelastic",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -177,26 +193,32 @@ class TestTacsOnewayDriver(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
+        scenario = Scenario.steady("test", steps=150)
+        Function.ksfailure().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+        solvers.structural = TacsInterface.create_from_bdf(
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_dir,
         )
         transfer_settings = TransferSettings(npts=5)
         aero_driver = TestAeroOnewayDriver(solvers, model, transfer_settings)
-        oneway_driver = TacsOnewayDriver.prime_loads(aero_driver, transfer_settings)
+        oneway_driver = OnewayStructDriver.prime_loads(aero_driver, transfer_settings)
 
         # run teh oomplex step test
         max_rel_error = TestResult.derivative_test(
             "oneway-aeroelastic-testaero_driver",
             model,
             oneway_driver,
-            TestTacsOnewayDriver.FILEPATH,
+            TestOnewayStructDriver.FILEPATH,
             complex_mode=complex_mode,
         )
         rtol = 1e-7 if complex_mode else 1e-3
@@ -206,5 +228,5 @@ class TestTacsOnewayDriver(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    open(TestTacsOnewayDriver.FILEPATH, "w").close()
+    open(TestOnewayStructDriver.FILEPATH, "w").close()
     unittest.main()

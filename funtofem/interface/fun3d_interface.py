@@ -28,6 +28,7 @@ from fun3d.solvers import Flow, Adjoint
 from fun3d import interface
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
+from .utils.general_utils import real_norm, imag_norm
 
 
 class Fun3dInterface(SolverInterface):
@@ -45,14 +46,12 @@ class Fun3dInterface(SolverInterface):
         self,
         comm,
         model,
-        flow_dt=1.0,
-        qinf=1.0,
-        thermal_scale=1.0,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
         auto_coords=True,
         coord_test_override=False,
+        debug=False,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -65,14 +64,20 @@ class Fun3dInterface(SolverInterface):
         comm: MPI.comm
             MPI communicator
         model: :class:`FUNtoFEMmodel`
-            FUNtoFEM model. This instantiatio
-        flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since
-            FUN3D currently uses a different adjoint formulation than FUNtoFEM.
-        qinf: float
-            Dynamic pressure of the freestream flow. Used to nondimensionalize force in FUN3D.
-        thermal_scale: float
-            TODO
+            FUNtoFEM model. This is used to loop over different scenarios and bodies for the flow analysis.
+        fun3d_dir: path
+            location of the FUN3D directory which holds sub-dirs of scenarios (super-directory of each scenario)
+        forward_options: dict
+            list of forward options passed into FUN3D f2py objects - see unsteady FUN3D-TACS examples
+        adjoint_options
+            list of adjoint options passed into FUN3D f2py objects - see unsteady FUN3D-TACS examples
+        auto_coords: bool
+            whether the aerodynamic coordinates of FUN3D are pulled into the FUNtoFEM body class upon instantiation or not.
+            if not, then the _initialize_body_nodes() is called later (after the new aero mesh is built)
+        coord_test_override: bool
+            override the aero displacements in F2F to add fixed displacements for mesh morphing coordinate derivative tests
+        debug: bool
+            whether to print debug statements or not such as the real/imag norms of state vectors in FUN3D
         """
 
         self.comm = comm
@@ -93,18 +98,11 @@ class Fun3dInterface(SolverInterface):
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
 
-        # Temporary measure until FUN3D adjoint is reformulated
-        self.flow_dt = flow_dt
-        for scen in model.scenarios:
-            if scen.steady is True and float(self.flow_dt) != 1.0:
-                raise ValueError("For steady cases, flow_dt must be set to 1.")
-
-        # dynamic pressure
-        self.qinf = qinf
+        # dynamic pressure derivative term
         self.dFdqinf = []
 
         # heat flux
-        self.thermal_scale = thermal_scale  # = 1/2 * rho_inf * (V_inf)^3
+        self.thermal_scale = 1.0  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
 
         # fun3d residual data
@@ -117,28 +115,17 @@ class Fun3dInterface(SolverInterface):
         self._coord_test_override = coord_test_override
         self._aero_X_orig = None
 
+        # set debug flag
+        self._debug = debug
+        if self.comm.rank != 0:
+            self._debug = False
+
         # Initialize the nodes associated with the bodies
         self.auto_coords = auto_coords
         if auto_coords:
             self._initialize_body_nodes(model.scenarios[0], model.bodies)
 
         return
-
-    def set_units(self, qinf: float, flow_dt: float = 1.0):
-        """
-        separate method to change qinf units
-        Parameters
-        ----------------------------------------------
-        qinf: float
-            elastic load dim factor = 0.5 * rho_inf * v_inf^2
-        flow_dt: float
-            dimensionalization constant for time steps out of FUN3D
-        """
-        self.qinf = qinf
-        self.flow_dt = flow_dt
-
-        # return obj for method cascading
-        return self
 
     def _initialize_body_nodes(self, scenario, bodies):
         # Change directories to the flow directory
@@ -212,6 +199,11 @@ class Fun3dInterface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        if self._debug:
+            print(
+                f"Comm {self.comm.Get_rank()} check at the start of fun3d_interface:initialize."
+            )
+
         # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
         # if mesh morphing is online
         if self.model.flow is not None:
@@ -233,6 +225,11 @@ class Fun3dInterface(SolverInterface):
         self.fun3d_flow.initialize_data()
         interface.design_initialize()
         self.fun3d_flow.initialize_grid()
+
+        if self._debug:
+            print(
+                f"Comm {self.comm.Get_rank()} check after initialize_grid in fun3d_interface:initialize."
+            )
 
         # Set the node locations based
         for ibody, body in enumerate(bodies, 1):
@@ -290,8 +287,20 @@ class Fun3dInterface(SolverInterface):
 
         for function in scenario.functions:
             if function.adjoint:
-                start = 1 if function.stop == -1 else function.start
-                stop = 1 if function.stop == -1 else function.stop
+                unsteady = not (scenario.steady)
+                if function.analysis_type != "aerodynamic":
+                    start = 1
+                    stop = 1
+                else:
+                    start = 1 if function.start is None else function.start
+                    if unsteady:
+                        # default aero function to include all time steps for the unsteady case
+                        stop = (
+                            scenario.steps if function.stop is None else function.stop
+                        )
+                    else:
+                        stop = 1 if function.stop is None else function.stop
+
                 ftype = -1 if function.averaging else 1
 
                 interface.design_push_composite_func(
@@ -352,7 +361,7 @@ class Fun3dInterface(SolverInterface):
                     var.id, var.active, var.value, var.lower, var.upper
                 )
             elif "dynamic pressure" == var.name.lower():
-                self.qinf = var.value
+                scenario.qinf = var.value
             elif "thermal scale" == var.name.lower():
                 self.thermal_scale = var.value
 
@@ -440,7 +449,7 @@ class Fun3dInterface(SolverInterface):
         for ibody, body in enumerate(bodies, 1):
             aero_nnodes = body.get_num_aero_nodes()
 
-            if aero_nnodes > 0:
+            if aero_nnodes > 0 and step > 0:
                 # Aero solver contribution = dGdxa0^T psi_G
                 # dx, dy, dz are the x, y, and z components of dG/dxA0
                 (
@@ -452,9 +461,15 @@ class Fun3dInterface(SolverInterface):
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 for ifunc in range(nfunctions):
-                    aero_shape_term[0::3, ifunc] += dGdxa0_x[:, ifunc] * self.flow_dt
-                    aero_shape_term[1::3, ifunc] += dGdxa0_y[:, ifunc] * self.flow_dt
-                    aero_shape_term[2::3, ifunc] += dGdxa0_z[:, ifunc] * self.flow_dt
+                    aero_shape_term[0::3, ifunc] += (
+                        dGdxa0_x[:, ifunc] * scenario.flow_dt
+                    )
+                    aero_shape_term[1::3, ifunc] += (
+                        dGdxa0_y[:, ifunc] * scenario.flow_dt
+                    )
+                    aero_shape_term[2::3, ifunc] += (
+                        dGdxa0_z[:, ifunc] * scenario.flow_dt
+                    )
 
         return
 
@@ -526,6 +541,22 @@ class Fun3dInterface(SolverInterface):
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
+            if self._debug:
+                struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
+                struct_loads = body.get_struct_loads(scenario, time_index=step - 1)
+                print(f"========================================")
+                print(f"Inside fun3d_interface:iterate, step: {step}")
+                if struct_loads is not None:
+                    print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                    print(f"norm of imag struct_loads: {imag_norm(struct_loads)}")
+                if struct_disps is not None:
+                    print(f"norm of real struct_disps: {real_norm(struct_disps)}")
+                    print(f"norm of imag struct_disps: {imag_norm(struct_disps)}")
+                if aero_disps is not None:
+                    print(f"norm of real aero_disps: {real_norm(aero_disps)}")
+                    print(f"norm of imaginary aero_disps: {imag_norm(aero_disps)}")
+                print(f"========================================\n", flush=True)
+
         # Take a step in FUN3D
         self.comm.Barrier()
         bcont = self.fun3d_flow.iterate()
@@ -544,9 +575,17 @@ class Fun3dInterface(SolverInterface):
                 fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
 
                 # Set the dimensional values of the forces
-                aero_loads[0::3] = self.qinf * fx[:]
-                aero_loads[1::3] = self.qinf * fy[:]
-                aero_loads[2::3] = self.qinf * fz[:]
+                aero_loads[0::3] = scenario.qinf * fx[:]
+                aero_loads[1::3] = scenario.qinf * fy[:]
+                aero_loads[2::3] = scenario.qinf * fz[:]
+
+            if self._debug:
+                print(f"========================================")
+                print(f"Inside fun3d_interface:iterate, after iterate, step: {step}")
+                if aero_loads is not None:
+                    print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                    print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
+                print(f"========================================\n", flush=True)
 
             # Compute the heat flux on the body
             # FUN3D is nondimensional, it doesn't output a heat flux (which can't be scaled linearly).
@@ -756,14 +795,32 @@ class Fun3dInterface(SolverInterface):
                 lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
                 for func in range(nfuncs):
-                    lam_x[:, func] = self.qinf * psi_F[0::3, func] / self.flow_dt
-                    lam_y[:, func] = self.qinf * psi_F[1::3, func] / self.flow_dt
-                    lam_z[:, func] = self.qinf * psi_F[2::3, func] / self.flow_dt
+                    lam_x[:, func] = (
+                        scenario.qinf * psi_F[0::3, func] / scenario.flow_dt
+                    )
+                    lam_y[:, func] = (
+                        scenario.qinf * psi_F[1::3, func] / scenario.flow_dt
+                    )
+                    lam_z[:, func] = (
+                        scenario.qinf * psi_F[2::3, func] / scenario.flow_dt
+                    )
+
+                    if self._debug:
+                        print(f"========================================")
+                        print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
+                        print(f"func: {func}")
+                        print(
+                            f"norm of real psi_F: {real_norm(lam_x[:, func])}, {real_norm(lam_y[:, func])}, {real_norm(lam_z[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_F: {imag_norm(lam_x[:, func])}, {imag_norm(lam_y[:, func])}, {imag_norm(lam_z[:, func])}"
+                        )
+                        print(f"========================================\n", flush=True)
 
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
                 # Get the aero loads
-                aero_loads = body.get_aero_loads(scenario)
+                aero_loads = body.get_aero_loads(scenario, time_index=step)
 
                 # Add the contributions to the derivative of the dynamic pressure
                 for func in range(nfuncs):
@@ -772,14 +829,30 @@ class Fun3dInterface(SolverInterface):
                         self.dFdqinf[func] = 0.0
                     if step > 0:
                         self.dFdqinf[func] -= (
-                            np.dot(aero_loads, psi_F[:, func]) / self.qinf
+                            np.dot(aero_loads, psi_F[:, func]) / scenario.qinf
                         )
+                    if self._debug:
+                        print(f"========================================")
+                        print(
+                            f"Inside fun3d_interface:iterate_adjoint after dFdqinf contribution, step: {step}"
+                        )
+                        print(f"func: {func}")
+                        if self.dFdqinf[func] is not None:
+                            print(
+                                f"norm of real dFdqinf: {real_norm(self.dFdqinf[func])}"
+                            )
+                            print(
+                                f"norm of imaginary dFdqinf: {imag_norm(self.dFdqinf[func])}"
+                            )
+                        else:
+                            print(f"dFdqinf[func] is NoneType")
+                        print(f"========================================\n", flush=True)
 
             # Get the adjoint Jacobian products for the aero heat flux
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
-            aero_flux = body.get_aero_heat_flux(scenario)
-            aero_temps = body.get_aero_temps(scenario)
+            aero_flux = body.get_aero_heat_flux(scenario, time_index=step)
+            aero_temps = body.get_aero_temps(scenario, time_index=step)
 
             if aero_flux_ajp is not None and aero_nnodes > 0:
                 # Solve the aero heat flux integration adjoint
@@ -792,7 +865,7 @@ class Fun3dInterface(SolverInterface):
                 dtype = TransferScheme.dtype
                 lam = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
 
-                scale = scenario.T_inf / self.flow_dt
+                scale = scenario.T_inf / scenario.flow_dt
 
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
@@ -826,9 +899,21 @@ class Fun3dInterface(SolverInterface):
                 )
 
                 for func in range(nfuncs):
-                    aero_disps_ajp[0::3, func] = lam_x[:, func] * self.flow_dt
-                    aero_disps_ajp[1::3, func] = lam_y[:, func] * self.flow_dt
-                    aero_disps_ajp[2::3, func] = lam_z[:, func] * self.flow_dt
+                    aero_disps_ajp[0::3, func] = lam_x[:, func] * scenario.flow_dt
+                    aero_disps_ajp[1::3, func] = lam_y[:, func] * scenario.flow_dt
+                    aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
+
+                    if self._debug:
+                        print(f"========================================")
+                        print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
+                        print(f"func: {func}")
+                        print(
+                            f"norm of real psi_D: {real_norm(lam_x[:, func])}, {real_norm(lam_y[:, func])}, {real_norm(lam_z[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_D: {imag_norm(lam_x[:, func])}, {imag_norm(lam_y[:, func])}, {imag_norm(lam_z[:, func])}"
+                        )
+                        print(f"========================================\n", flush=True)
 
             # Extract aero_temps_ajp = dA/dt_A^{T} * psi_A from FUN3D
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
@@ -836,29 +921,28 @@ class Fun3dInterface(SolverInterface):
 
             if aero_temps_ajp is not None and aero_nnodes > 0:
                 # additional terms
-                heat_flux = body.get_aero_heat_flux(scenario)
                 dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
 
                 lam_t = self.fun3d_adjoint.extract_thermal_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
 
-                scale = self.flow_dt / scenario.T_inf
+                scale = scenario.flow_dt / scenario.T_inf
                 for func in range(nfuncs):
                     aero_temps_ajp[:, func] = scale * lam_t[:, func]
 
                     # contribution from viscosity in adjoint path
                     aero_temps_ajp[:, func] += (
-                        self.flow_dt
+                        scenario.flow_dt
                         * aero_flux_ajp[:, func]
-                        * (heat_flux[:] / k_dim[:])
+                        * (aero_flux[:] / k_dim[:])
                         * dkdtA[:]
                     )
 
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
             #         self.fun3d_adjoint.extract_rigid_adjoint_product(nfuncs)
-            #         * self.flow_dt
+            #         * scenario.flow_dt
             #     )
 
         return fail
@@ -939,7 +1023,8 @@ class Fun3dInterface(SolverInterface):
 
     def set_states(self, scenario, bodies, step):
         """
-        Loads the saved aerodynamic forces for the time dependent adjoint
+        Loads the saved aerodynamic displacements and temperatures
+        for the time dependent adjoint.
 
         Parameters
         ----------
@@ -950,6 +1035,29 @@ class Fun3dInterface(SolverInterface):
         step: int
             the time step number
         """
+
+        # Deform aerodynamic mesh
+        for ibody, body in enumerate(bodies, 1):
+            aero_disps = body.get_aero_disps(
+                scenario, time_index=step, add_dxa0=self._coord_test_override
+            )
+            aero_nnodes = body.get_num_aero_nodes()
+            deform = "deform" in body.motion_type
+            if deform and aero_disps is not None and aero_nnodes > 0:
+                dx = np.asfortranarray(aero_disps[0::3])
+                dy = np.asfortranarray(aero_disps[1::3])
+                dz = np.asfortranarray(aero_disps[2::3])
+                self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
+
+            # if "rigid" in body.motion_type and body.transfer is not None:
+            #     transform = np.asfortranarray(body.rigid_transform)
+            #     self.fun3d_flow.input_rigid_transform(transform, body=ibody)
+
+            aero_temps = body.get_aero_temps(scenario, time_index=step)
+            if aero_temps is not None and aero_nnodes > 0:
+                # Nondimensionalize by freestream temperature
+                temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         return
 
@@ -1067,7 +1175,6 @@ class Fun3dInterface(SolverInterface):
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
-            qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
@@ -1087,7 +1194,6 @@ class Fun3dInterface(SolverInterface):
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
-            qinf=fun3d_interface.qinf,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,

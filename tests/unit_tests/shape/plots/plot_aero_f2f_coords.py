@@ -12,9 +12,9 @@ from funtofem.interface import (
     TacsIntegrationSettings,
     CoordinateDerivativeTester,
 )
-from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
+from funtofem.driver import OnewayStructDriver, TransferSettings, FUNtoFEMnlbgs
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 import matplotlib.pyplot as plt
 

@@ -9,28 +9,22 @@ from funtofem.interface import (
     TestAerodynamicSolver,
     TacsInterface,
     SolverManager,
-    TacsIntegrationSettings,
+    make_test_directories,
     CoordinateDerivativeTester,
 )
-from funtofem.driver import TacsOnewayDriver, TransferSettings, FUNtoFEMnlbgs
+from funtofem.driver import OnewayStructDriver, TransferSettings, FUNtoFEMnlbgs
 
-from bdf_test_utils import elasticity_callback, thermoelasticity_callback
+from _bdf_test_utils import elasticity_callback, thermoelasticity_callback
 import unittest
 
 np.random.seed(123456)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "input_files", "test_bdf_file.bdf")
-
-
 complex_mode = TransferScheme.dtype == complex and TACS.dtype == complex
 nprocs = 1
 comm = MPI.COMM_WORLD
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_folder = make_test_directories(comm, base_dir)
 
 
 @unittest.skipIf(
@@ -58,13 +52,18 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=elasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=elasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -98,13 +97,18 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -139,13 +143,18 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5
@@ -188,13 +197,18 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
         solvers.structural = TacsInterface.create_from_bdf(
-            model, comm, 1, bdf_filename, callback=thermoelasticity_callback
+            model,
+            comm,
+            1,
+            bdf_filename,
+            callback=thermoelasticity_callback,
+            output_dir=output_folder,
         )
         transfer_settings = TransferSettings(npts=5)
         coupled_driver = FUNtoFEMnlbgs(
             solvers, transfer_settings=transfer_settings, model=model
         )
-        oneway_driver = TacsOnewayDriver.prime_loads(coupled_driver)
+        oneway_driver = OnewayStructDriver.prime_loads(coupled_driver)
 
         epsilon = 1e-30 if complex_mode else 1e-4
         rtol = 1e-9 if complex_mode else 1e-5

@@ -547,7 +547,7 @@ class MeldBuilder(Builder):
         beta=0.5,
         check_partials=False,
         linearized=False,
-        body_tags=[],
+        body_tags=None,
     ):
         self.aero_builder = aero_builder
         self.struct_builder = struct_builder
@@ -556,7 +556,7 @@ class MeldBuilder(Builder):
         self.beta = beta
         self.check_partials = check_partials
         self.linearized = linearized
-        self.body_tags = body_tags
+        self.body_tags = body_tags if body_tags is not None else []
 
         if len(self.body_tags) > 0:  # make into lists, potentially for different bodies
             if not hasattr(self.n, "__len__"):

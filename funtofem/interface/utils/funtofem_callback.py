@@ -20,6 +20,8 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
         propertyID = kwargs["propID"]
         propInfo = fea_assembler.bdfInfo.properties[propertyID]
 
+        thermal_materials = fea_assembler.bdfInfo.thermal_materials
+
         # compute the thickness by checking the dvprel has propID equal to the propID from the kwarg of the callback
         # this information is unavailable to a user creating their own element callback without an fea_assembler object
         t = None
@@ -51,19 +53,44 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
         def matCallBack(matInfo):
             # Nastran isotropic material card
             if matInfo.type == "MAT1":
+                mid = matInfo.mid
+                specific_heat = 921  # default
+                kappa = 230  # default
+                if (mid + 100) in thermal_materials:
+                    thermal_mat = thermal_materials[mid + 100]
+                    if thermal_mat.type == "MAT4":
+                        kappa = thermal_mat.k
+                        specific_heat = thermal_mat.cp
+
                 mat = constitutive.MaterialProperties(
                     rho=matInfo.rho,
                     E=matInfo.e,
                     nu=matInfo.nu,
                     ys=matInfo.St,
                     alpha=matInfo.a,
+                    kappa=kappa,
+                    specific_heat=specific_heat,
                 )
+
+            # TBD find associated MAT4 property, with MID+=100
 
             # Nastran orthotropic material card
             elif matInfo.type == "MAT8":
+                mid = matInfo.mid
+                if (mid + 100) in thermal_materials:  # orthotropic thermal
+                    thermal_mat = thermal_materials[mid + 100]
+                    if thermal_mat.type == "MAT5":
+                        kappa1 = thermal_mat.kxx
+                        kappa2 = thermal_mat.kyy
+                        kappa3 = thermal_mat.kzz
+                        specific_heat = thermal_mat.cp
+
                 G12 = matInfo.g12
                 G13 = matInfo.g1z
                 G23 = matInfo.g2z
+                A1 = matInfo.a1
+                A2 = matInfo.a2
+                A3 = matInfo.a2
                 # If out-of-plane shear values are 0, Nastran defaults them to the in-plane
                 if G13 == 0.0:
                     G13 = G12
@@ -77,11 +104,18 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
                     G12=G12,
                     G13=G13,
                     G23=G23,
+                    alpha1=A1,
+                    alpha2=A2,
+                    alpha3=A3,
                     Xt=matInfo.Xt,
                     Xc=matInfo.Xc,
                     Yt=matInfo.Yt,
                     Yc=matInfo.Yc,
                     S12=matInfo.S,
+                    kappa1=kappa1,
+                    kappa2=kappa2,
+                    kappa3=kappa3,
+                    specific_heat=specific_heat,
                 )
                 # Nastran 2D anisotropic material card
             elif matInfo.type == "MAT2":

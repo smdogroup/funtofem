@@ -27,6 +27,7 @@ from mpi4py import MPI
 from funtofem import TransferScheme
 from ._funtofem_driver import FUNtoFEMDriver
 from ..optimization.optimization_manager import OptimizationManager
+from ..interface.utils.general_utils import real_norm, imag_norm
 
 try:
     from .hermes_transfer import HermesTransfer
@@ -41,6 +42,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         comm_manager=None,
         transfer_settings=None,
         model=None,
+        debug=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -63,6 +65,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             comm_manager=comm_manager,
             transfer_settings=transfer_settings,
             model=model,
+            debug=debug,
         )
 
         return
@@ -156,6 +159,22 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             for body in self.model.bodies:
                 body.transfer_loads(scenario)
                 body.transfer_heat_flux(scenario)
+
+                if self._debug:
+                    struct_loads = body.get_struct_loads(scenario)
+                    aero_loads = body.get_aero_loads(scenario)
+                    print(f"========================================")
+                    print(f"Inside nlbgs driver, step: {step}")
+                    if struct_loads is not None:
+                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                        print(
+                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
+                        )
+                    print(f"aero_loads: {aero_loads}")
+                    if aero_loads is not None:
+                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
+                    print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
             fail = self.solvers.structural.iterate(scenario, self.model.bodies, step)
@@ -272,8 +291,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for time_index in range(1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index - 1, jump=True)
-                body.transfer_temps(scenario, time_index - 1, jump=True)
+                body.transfer_disps(scenario, time_index)
+                body.transfer_temps(scenario, time_index)
 
             # Take a step in the flow solver
             fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
@@ -288,6 +307,23 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             for body in self.model.bodies:
                 body.transfer_loads(scenario, time_index)
                 body.transfer_heat_flux(scenario, time_index)
+
+                if self._debug:
+                    struct_loads = body.get_struct_loads(
+                        scenario, time_index=time_index
+                    )
+                    aero_loads = body.get_aero_loads(scenario, time_index=time_index)
+                    print(f"========================================")
+                    print(f"Inside nlbgs driver, step: {time_index}")
+                    if struct_loads is not None:
+                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
+                        print(
+                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
+                        )
+                    if aero_loads is not None:
+                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
+                    print(f"========================================\n", flush=True)
 
             # Take a step in the FEM model
             fail = self.solvers.structural.iterate(
@@ -335,8 +371,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # load current state, affects MELD jacobians in the adjoint matrix (esp. load transfer)
             for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index=step - 1, jump=True)
-                body.transfer_temps(scenario, time_index=step - 1, jump=True)
+                body.transfer_disps(scenario, time_index=step)
+                body.transfer_temps(scenario, time_index=step)
 
             self.solvers.flow.set_states(scenario, self.model.bodies, step)
             # Due to the staggering, we linearize the transfer about t_s^(n-1)

@@ -905,7 +905,7 @@ class Body(Base):
         else:
             return None
 
-    def transfer_disps(self, scenario, time_index=0, jump=False):
+    def transfer_disps(self, scenario, time_index=0):
         """
         Transfer the displacements on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -921,12 +921,12 @@ class Body(Base):
         """
         if self.transfer is not None:
             if scenario.steady:
-                aero_disps = self.aero_disps[scenario.id]
                 struct_disps = self.struct_disps[scenario.id]
+                aero_disps = self.aero_disps[scenario.id]
             else:
-                aero_time_index = time_index + 1 if jump else time_index
-                aero_disps = self.aero_disps[scenario.id][aero_time_index]
-                struct_disps = self.struct_disps[scenario.id][time_index]
+                # must transfer from previous time step (so there is transfer across time levels)
+                struct_disps = self.struct_disps[scenario.id][time_index - 1]
+                aero_disps = self.aero_disps[scenario.id][time_index]
             self.transfer.transferDisps(struct_disps, aero_disps)
 
         return
@@ -954,7 +954,7 @@ class Body(Base):
 
         return
 
-    def transfer_temps(self, scenario, time_index=0, jump=False):
+    def transfer_temps(self, scenario, time_index=0):
         """
         Transfer the temperatures on the structural mesh to the aerodynamic mesh
         for the given scenario.
@@ -971,9 +971,9 @@ class Body(Base):
                 struct_temps = self.struct_temps[scenario.id]
                 aero_temps = self.aero_temps[scenario.id]
             else:
-                aero_time_index = time_index + 1 if jump else time_index
-                struct_temps = self.struct_temps[scenario.id][time_index]
-                aero_temps = self.aero_temps[scenario.id][aero_time_index]
+                # must transfer from previous time step (so there is transfer across time levels)
+                struct_temps = self.struct_temps[scenario.id][time_index - 1]
+                aero_temps = self.aero_temps[scenario.id][time_index]
             self.thermal_transfer.transferTemp(struct_temps, aero_temps)
 
         return
@@ -1887,6 +1887,19 @@ class Body(Base):
         """
 
         return
+
+    def __str__(self):
+        line1 = f"Body (<ID> <Name>): {self.id} {self.name}"
+        line2 = f"    Boundary: {self.boundary}"
+        line3 = f"    Coupling Group: {self.group}"
+        line4 = f"    Motion type: {self.motion_type}"
+        line5 = f"    Transfer scheme: {type(self.transfer)}"
+        line6 = f"    Relaxation scheme: {type(self.relaxation_scheme)}"
+        line7 = f"    Shape parameterization: {type(self.shape)}"
+
+        output = (line1, line2, line3, line4, line5, line6, line7)
+
+        return "\n".join(output)
 
     # def _aitken_adjoint_relax(self, scenario):
     #     nfunctions = scenario.count_adjoint_functions()

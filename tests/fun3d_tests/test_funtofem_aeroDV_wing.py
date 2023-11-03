@@ -4,13 +4,12 @@ from mpi4py import MPI
 # from funtofem import TransferScheme
 from funtofem.model import (
     FUNtoFEMmodel,
-    Variable,
     Scenario,
     Body,
     Function,
     AitkenRelaxation,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import SolverManager, TestResult, make_test_directories
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
@@ -22,7 +21,7 @@ if has_fun3d:
     from funtofem.interface import Fun3dInterface
 
 if tacs_loader is not None:
-    from funtofem.interface import TacsSteadyInterface
+    from funtofem.interface import TacsInterface
 
 np.random.seed(1234567)
 
@@ -32,11 +31,7 @@ csm_path = os.path.join(base_dir, "naca_wing.csm")
 fun3d_dir = os.path.join(base_dir, "meshes")
 nprocs = comm.Get_size()
 bdf_file = os.path.join(base_dir, "meshes", "tacs_CAPS.dat")
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, output_dir = make_test_directories(comm, base_dir)
 
 
 class TestFuntofemMorph(unittest.TestCase):
@@ -66,15 +61,14 @@ class TestFuntofemMorph(unittest.TestCase):
         test_scenario.adjoint_steps = 4000
 
         test_scenario.include(Function.lift()).include(Function.drag())
+        test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes").set_units(
-            qinf=1e4
-        )
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=nprocs, bdf_file=bdf_file
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.structural = TacsInterface.create_from_bdf(
+            model, comm, nprocs=nprocs, bdf_file=bdf_file, output_dir=output_dir
         )
 
         # analysis driver for mesh morphing

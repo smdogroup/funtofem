@@ -9,14 +9,20 @@ from funtofem.model import (
     Body,
     Function,
 )
-from funtofem.interface import SolverManager, TestResult, Fun3dBC, Fun3dModel
+from funtofem.interface import (
+    SolverManager,
+    TestResult,
+    Fun3dBC,
+    Fun3dModel,
+    make_test_directories,
+)
 
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 
 if has_fun3d:
-    from funtofem.driver import Fun3dOnewayDriver
+    from funtofem.driver import OnewayAeroDriver
     from funtofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
@@ -24,21 +30,15 @@ np.random.seed(1234567)
 comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "meshes", "naca_wing.csm")
-
 analysis_file = os.path.join(base_dir, "run_fun3d_analysis.py")
 fun3d_dir = os.path.join(base_dir, "meshes")
-
-results_folder = os.path.join(base_dir, "results")
-if comm.rank == 0:  # make the results folder if doesn't exist
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+results_folder, _ = make_test_directories(comm, base_dir)
 
 
 class TestFun3dOnewayMorph(unittest.TestCase):
     """
     This class performs unit test on the oneway-coupled FUN3D driver
     which uses fixed struct disps or no struct disps
-    TODO : in the case of an unsteady one, add methods for those too?
     """
 
     FILENAME = "fun3d-oneway-shape-driver.txt"
@@ -85,14 +85,14 @@ class TestFun3dOnewayMorph(unittest.TestCase):
         )
 
         # analysis driver for mesh morphing
-        driver = Fun3dOnewayDriver.aero_morph(solvers, model)
+        driver = OnewayAeroDriver.aero_morph(solvers, model)
 
         # run the complex step test on the model and driver
         max_rel_error = TestResult.finite_difference(
             "fun3d+oneway-morph-euler-aeroelastic",
             model,
             driver,
-            TestFun3dOnewayMorph.FILEPATH,
+            self.FILEPATH,
             epsilon=1e-4,
             both_adjoint=False,  # have to run adjoint twice to read funcVals from sensFile
         )

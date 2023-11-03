@@ -1,12 +1,8 @@
 # Unsteady Framework Tests #
 * `test_framework_adjoint_eqns.py` - hardcode the unsteady adjoint equation matrix and total derivatives for two unsteady steps, to verify the unsteady framework.
 * `test_framework_unsteady.py` - Test the fully-coupled unsteady analysis with the TestAero+TestStruct solvers.
-* `test_funtofem_unsteady_aero_coord.py` - Test the aerodynamic coordinate derivatives of a fully-coupled unsteady analysis with the TestAero + TACS solvers.
-* `test_funtofem_unsteady_struct_coord.py` - Test the structural coordinate derivatives of a fully-coupled unsteady analysis with the TestAero + TACS solvers.
-* `test_tacs_adjoint_equations.py` - this test is still in dev, but essentially hardcodes the adojint equations from the unsteady adjoint matrix. (since the integration tests work though, it is probably not needed anymore).
-* `test_tacs_driver_unsteady_coordinate.py` - Test the structural coordinate derivatives of a oneway-coupled TACS analysis.
+* `test_tacs_interface_unsteady.py` - Test the structural and aerodynamic derivatives of a fully-coupled unsteady analysis with TestAero + TACS solvers using default f2f callback and _mesh_plate.py mesh.
 * `test_tacs_interface_unsteady.py` - Test the structural and aerodynamic derivatives of a fully-coupled unsteady analysis with TestAero + TACS solvers.
-* `test_tacs_unsteady_shape_driver.py` - Test the structural shape derivatives in ESP/CAPS using the TACS AIM in an unsteady, fully-coupled analysis with TestAero + TACS solvers.
 * `test_unsteady_solvers.py` - directional derivative test for the two test aero + test struct solvers for unsteady.
 
 ## Unsteady Aeroelastic Analysis

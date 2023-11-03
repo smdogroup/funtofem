@@ -1,0 +1,5 @@
+*.dat
+*.adjoint
+*.grid_info
+fort.*
+debug*
