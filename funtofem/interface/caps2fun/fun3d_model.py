@@ -6,11 +6,12 @@ from .aflr_aim import AflrAim
 
 
 class Fun3dModel:
-    def __init__(self, fun3d_aim, aflr_aim, comm, project_name="caps"):
+    def __init__(self, fun3d_aim, aflr_aim, comm, project_name="caps", root: int = 0):
         self._fun3d_aim = fun3d_aim
         self._aflr_aim = aflr_aim
         self.project_name = project_name
         self.comm = comm
+        self.root = root
         self._variables = {}
 
         self.caps_problem = fun3d_aim.caps_problem
@@ -30,6 +31,7 @@ class Fun3dModel:
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
         mesh_morph=False,
+        root: int = 0,
         verbosity=0,
     ):
         """
@@ -42,14 +44,14 @@ class Fun3dModel:
             MPI communicator
         """
         caps_problem = None
-        if comm.rank == 0:
+        if comm.rank == root:
             caps_problem = pyCAPS.Problem(
                 problemName=problem_name, capsFile=csm_file, outLevel=verbosity
             )
-        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph)
-        aflr_aim = AflrAim(caps_problem, comm)
+        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph, root=root)
+        aflr_aim = AflrAim(caps_problem, comm, root=root)
 
-        return cls(fun3d_aim, aflr_aim, comm, project_name)
+        return cls(fun3d_aim, aflr_aim, comm, project_name, root=root)
 
     @classmethod
     def build_morph(
@@ -57,6 +59,7 @@ class Fun3dModel:
         csm_file,
         comm,
         project_name="fun3d_CAPS",
+        root: int = 0,
         problem_name: str = "capsFluid",
     ):
         return cls.build(
@@ -64,6 +67,7 @@ class Fun3dModel:
             comm=comm,
             project_name=project_name,
             problem_name=problem_name,
+            root=root,
             mesh_morph=True,
         )
 

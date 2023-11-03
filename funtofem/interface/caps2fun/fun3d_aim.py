@@ -79,7 +79,7 @@ class Fun3dBC:
 
 
 class Fun3dAim:
-    def __init__(self, caps_problem, comm, mesh_morph=False, root=0):
+    def __init__(self, caps_problem, comm, mesh_morph=False, root: int = 0):
         """Fun3dAim wrapper class for use in FUNtoFEM"""
         self.caps_problem = caps_problem
         self.comm = comm
@@ -204,19 +204,19 @@ class Fun3dAim:
                 return
             else:
                 self._first_grid_move = False
-        if self.comm.rank == 0:
+        if self.comm.rank == self.root:
             print(f"copying grid files")
-        src = self.grid_file
-        for dest in self.grid_filepaths:
-            shutil.copy(src, dest)
+            src = self.grid_file
+            for dest in self.grid_filepaths:
+                shutil.copy(src, dest)
 
         # also move the mapbc files to each scenario from fun3d aim dir
         if include_mapbc:
-            if self.comm.rank == 0:
+            if self.comm.rank == self.root:
                 print(f"copying mapbc files")
-            src = self.mapbc_file
-            for dest in self.mapbc_filepaths:
-                shutil.copy(src, dest)
+                src = self.mapbc_file
+                for dest in self.mapbc_filepaths:
+                    shutil.copy(src, dest)
         return
 
     def _move_sens_files(self, src):

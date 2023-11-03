@@ -343,8 +343,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         model=self.model,
                         comm=self.comm,
                         nprocs=self.struct_nprocs,
-                        bdf_file=self.struct_aim.dat_file_path,
-                        output_dir=self.struct_aim.analysis_dir,
+                        bdf_file=self.struct_aim.root_dat_file,
+                        output_dir=self.struct_aim.root_analysis_dir,
                     )
 
                 # update the structural part of transfer scheme due to remeshing
@@ -455,7 +455,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             else:
                 if self.struct_shape:
                     write_struct = True
-                    struct_sensfile = self.struct_aim.sens_file_path
+                    struct_sensfile = self.struct_aim.root_sens_file
                 else:
                     write_struct = False
 
@@ -483,11 +483,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 )
 
         if self.struct_shape:  # either remote or regular
-            if self.is_paired:
-                # move struct sens file to tacs aim directory
-                tacs_sens_src = self.remote.struct_sens_file
-                tacs_sens_dest = self.struct_aim.sens_file_path
-                shutil.copy(tacs_sens_src, tacs_sens_dest)
+            # copy sens file to potetially parallel tacs AIMs
+            if self.struct_aim.root_proc:
+                if self.is_paired:
+                    # move struct sens file to tacs aim directory
+                    src = self.remote.struct_sens_file
+                else:
+                    src = self.struct_aim.root_sens_file
+
+                for proc in self.struct_aim.active_procs[1:]:
+                    dest = self.struct_aim.sens_file_path(proc)
+                    shutil.copy(src, dest)
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
@@ -558,15 +564,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         return
 
     def _move_struct_mesh(self):
-        if self.comm.rank == 0:
+        if self.struct_aim.root_proc:
             if self.uses_tacs:
                 bdf_src = os.path.join(
-                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.bdf"
+                    self.struct_aim.root_analysis_dir,
+                    f"{self.struct_aim.project_name}.bdf",
                 )
                 bdf_dest = self.remote.bdf_file
                 shutil.copy(bdf_src, bdf_dest)
                 dat_src = os.path.join(
-                    self.struct_aim.analysis_dir, f"{self.struct_aim.project_name}.dat"
+                    self.struct_aim.root_analysis_dir,
+                    f"{self.struct_aim.project_name}.dat",
                 )
                 dat_dest = self.remote.dat_file
                 shutil.copy(dat_src, dat_dest)
@@ -578,6 +586,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # TBD on other solvers
 
     def _update_struct_design(self):
+        # currently not using this method
         if self.comm.rank == 0:
             aim = self.struct_aim.aim
             input_dict = {var.name: var.value for var in self.model.get_variables()}
@@ -594,20 +603,23 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         functions = self.model.get_functions()
         nfunc = len(functions)
         remote_functions = None
-        if self.root_proc:
-            remote_functions = np.zeros((nfunc))
-            direct_aim = None
-            # depending on which AIM is available, read function values from that
-            if discipline == "aerodynamic":
-                direct_aim = self.flow_aim.aim
-            elif discipline == "structural":
-                direct_aim = self.struct_aim.aim
-            for ifunc, func in enumerate(functions):
-                remote_functions[ifunc] = direct_aim.dynout[func.full_name].value
+
+        if self.flow_aim.root_proc:
+            remote_functions = [
+                self.flow_aim.aim.dynout[func.full_name].value for func in functions
+            ]
+
+        if self.struct_aim.root_proc:
+            remote_functions = [
+                self.struct_aim.aim.dynout[func.full_name].value for func in functions
+            ]
 
         # broadcast the function values to other processors
-        flow_aim_root = self.flow_aim.root
-        remote_functions = self.comm.bcast(remote_functions, root=flow_aim_root)
+        if discipline == "aerodynamic":
+            root = self.flow_aim.root
+        else:
+            root = self.struct_aim.root_proc_ind
+        remote_functions = self.comm.bcast(remote_functions, root=root)
 
         # update model function values in the remote version of the driver
         for ifunc, func in enumerate(functions):
@@ -625,36 +637,50 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
         Gather shape derivatives together from TACS AIM and store the data in the FUNtoFEM model.
         """
-        gradients = None
         variables = self.model.get_variables()
 
-        # read shape gradients from tacs aim on root proc
-        if self.root_proc:
-            gradients = []
-            direct_struct_aim = self.struct_aim.aim
+        # read shape gradients from tacs aim among different processors
+        # including sometimes parallel versions of the struct AIM
+        gradients = []
 
-            for ifunc, func in enumerate(scenario.functions):
-                gradients.append([])
-                for ivar, var in enumerate(variables):
-                    var_name = (
-                        var.name if var.analysis_type == "shape" else var.full_name
-                    )
-                    if var.analysis_type in ["structural", "shape"]:
-                        derivative = direct_struct_aim.dynout[func.full_name].deriv(
-                            var_name
+        for ifunc, func in enumerate(scenario.functions):
+            gradients.append([])
+            for ivar, var in enumerate(variables):
+                derivative = None
+                if var.analysis_type == "structural":
+                    if self.struct_aim.root_proc:
+                        derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
+                            var.full_name
                         )
+                elif var.analysis_type == "shape":
+                    # if tacs aim do this, make this more modular later
+                    if self.uses_tacs:  # for parallel tacsAIMs
+                        c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
+                        if self.comm.rank == c_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                        # then broadcast the derivative to other processors
+                        derivative = self.comm.bcast(derivative, root=c_proc)
                     else:
-                        derivative = 0.0
-                    gradients[ifunc].append(derivative)
+                        if self.root_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                else:
+                    derivative = 0.0
 
-        # broadcast shape gradients to all other processors
-        gradients = self.comm.bcast(gradients, root=0)
+                # updat the derivatives list
+                gradients[ifunc].append(derivative)
+
+        # mpi comm barrier
+        self.comm.Barrier()
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.add_gradient_component(var, derivative)
+                func.add_gradient_component(var, gradients[ifunc][ivar])
 
         return
 
