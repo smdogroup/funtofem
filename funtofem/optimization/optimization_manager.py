@@ -97,7 +97,7 @@ class OptimizationManager:
 
             # setup function history for optimization plots and the history file path
             self._func_history = {
-                func.full_name: []
+                func.plot_name: []
                 for func in self.model.get_functions(optim=True)
                 if func._plot
             }
@@ -181,7 +181,7 @@ class OptimizationManager:
             for func in self.model.get_functions(optim=True):
                 if not func._plot:
                     continue
-                self._func_history[func.full_name] += [func.value.real]
+                self._func_history[func.plot_name] += [func.value.real]
             self._plot_history()
         return
 
@@ -241,8 +241,8 @@ class OptimizationManager:
             ax = plt.subplot(111)
             ind = 0
             for func in model.get_functions(optim=True):
-                if func.full_name in func_keys:
-                    yvec = np.array(self._func_history[func.full_name])
+                if func.plot_name in func_keys:
+                    yvec = np.array(self._func_history[func.plot_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -271,7 +271,7 @@ class OptimizationManager:
                         yvec,
                         color=colors[ind],
                         linewidth=2,
-                        label=func.full_name,
+                        label=func.plot_name,
                     )
                     ind += 1
             # put axis on rhs of plot
