@@ -601,7 +601,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         Note: it does not matter which AIM we read the function values from since it's the same.
         """
         functions = self.model.get_functions()
-        nfunc = len(functions)
         remote_functions = None
 
         if self.flow_aim.root_proc:
