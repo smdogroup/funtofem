@@ -325,10 +325,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the pre analysis to generate a new mesh
             self.flow_aim.pre_analysis()
 
-            dt_aero = time.time() - start_time_aero
-            self._write_timing_data(msg=f"\tbuilt aero mesh in {dt_aero:.5e} sec")
+            dt_aero = (time.time() - start_time_aero)/60.0
+            self._write_timing_data(msg=f"\tbuilt aero mesh in {dt_aero:.4f} min")
             if self.comm.rank == 0:
-                print(f"F2F - built aero mesh in {dt_aero:.5e} sec", flush=True)
+                print(f"F2F - built aero mesh in {dt_aero:.4f} min", flush=True)
 
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired) and self._first_forward:
@@ -352,10 +352,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.struct_aim.setup_aim()
             self.struct_aim.pre_analysis()
 
-            dt_struct = time.time() - start_time_struct
-            self._write_timing_data(f"\tbuilt struct mesh in {dt_struct:.5e} sec")
+            dt_struct = (time.time() - start_time_struct)/60.0
+            self._write_timing_data(f"\tbuilt struct mesh in {dt_struct:.4f} min")
             if self.comm.rank == 0:
-                print(f"F2F - Built struct mesh in {dt_struct:.5e} sec", flush=True)
+                print(f"F2F - Built struct mesh in {dt_struct:.4f} min", flush=True)
 
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
@@ -398,13 +398,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             os.system(
                 f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
-            remote_forward_time = time.time() - start_time
+            remote_forward_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tran system call forward analysis in {remote_forward_time:.5e} sec"
+                f"\tran system call forward analysis in {remote_forward_time:.4f} min"
             )
             if self.comm.rank == 0:
                 print(
-                    f"Done with remote analysis in {remote_forward_time:2.5e} sec",
+                    f"Done with remote analysis in {remote_forward_time:.4f} min",
                     flush=True,
                 )
 
@@ -421,9 +421,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # call solve forward of super class for no shape, fully-coupled analysis
             super(FuntofemShapeDriver, self).solve_forward()
 
-            forward_time = time.time() - start_time
+            forward_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tran nlbgs forward analysis in {forward_time:.5e} sec"
+                f"\tran nlbgs forward analysis in {forward_time:.4f} min"
             )
 
         # write sens file for remote to read or if shape change all in one
@@ -451,9 +451,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the tacs aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
 
-            flow_post1_time = time.time() - start_time
+            flow_post1_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tflow postAnalysis of forward in time {flow_post1_time:.5e} sec"
+                f"\tflow postAnalysis of forward in time {flow_post1_time:.4f} min"
             )
 
             # get the analysis function values
@@ -481,9 +481,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the pre analysis to generate a new mesh
             self.flow_aim.pre_analysis()
 
-            flow_adjoint_pre_time = time.time() - start_time
+            flow_adjoint_pre_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tflow preAnalysis of adjoint in time {flow_adjoint_pre_time:.5e} sec"
+                f"\tflow preAnalysis of adjoint in time {flow_adjoint_pre_time:.4f} min"
             )
 
         if not self.is_remote:
@@ -492,9 +492,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # call funtofem adjoint analysis for non-remote driver
             super(FuntofemShapeDriver, self).solve_adjoint()
 
-            remote_adjoint_time = time.time() - start_time
+            remote_adjoint_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tsystem call adjoint analysis in {remote_adjoint_time:.5e} sec"
+                f"\tsystem call adjoint analysis in {remote_adjoint_time:.4f} min"
             )
 
             # write analysis functions file in analysis or system call
@@ -557,9 +557,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_struct_shape_derivatives(scenario)
 
-            struct_post_time = time.time() - start_time
+            struct_post_time = (time.time() - start_time)/60.0
             self._write_timing_data(
-                f"\tstruct postAnalysis in {struct_post_time:.5e} sec"
+                f"\tstruct postAnalysis in {struct_post_time:.4f} min"
             )
 
         if self.aero_shape:  # either remote or regular
@@ -576,8 +576,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for scenario in self.model.scenarios:
                 self._get_aero_shape_derivatives(scenario)
 
-            aero_post_time = time.time() - start_time
-            self._write_timing_data(f"\taero postAnalysis in {aero_post_time:.5e} sec")
+            aero_post_time = (time.time() - start_time)/60.0
+            self._write_timing_data(f"\taero postAnalysis in {aero_post_time:.4f} min")
 
         # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
         if self.is_remote and self.is_paired:
@@ -593,9 +593,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.comm, self.remote.functions_file, full_precision=False, optim=True
             )
 
-        full_iteration_time = time.time() - self._iteration_start
+        full_iteration_time = (time.time() - self._iteration_start)/60.0
         self._write_timing_data(
-            f"\titeration {self._iteration-1} took {full_iteration_time:.5e} sec"
+            f"\titeration {self._iteration-1} took {full_iteration_time:.4f} min"
         )
 
         return
