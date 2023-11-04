@@ -848,7 +848,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @property
     def is_remote(self) -> bool:
         """whether we are calling FUN3D in a remote manner"""
-        return self.remote is not None
+        return self.remote is not None and self.is_paired
 
     @property
     def manager(self, hot_start: bool = False):
