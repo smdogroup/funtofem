@@ -321,6 +321,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self._iteration += 1
         self._iteration_start = time.time()
 
+        # build meshes for each discipline (potentially in parallel across each ESP/CAPS AIM instance)
+        start_mesh_time = time.time()
+
+        # build aero mesh first
         if self.aero_shape:
             start_time_aero = time.time()
             if self.comm.rank == self.flow_aim.root:
@@ -331,15 +335,39 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the pre analysis to generate a new mesh
             self.flow_aim.pre_analysis()
 
-            dt_aero = (time.time() - start_time_aero) / 60.0
+        # then build struct meshes
+        if self.struct_shape:
+            # self._update_struct_design()
+            if self.comm.rank == 0:
+                print("F2F - Building struct mesh")
+            input_dict = {var.name: var.value for var in self.model.get_variables()}
+            self.model.structural.update_design(input_dict)
+            self.struct_aim.setup_aim()
+            self.struct_aim.pre_analysis()
+
+        # done building meshes => report timing data
+        self.comm.Barrier()
+
+        if self.aero_shape or self.struct_shape:
+            dt_mesh = (time.time() - start_mesh_time) / 60.0
+            if self.struct_shape and self.aero_shape:
+                msg = f"\tbuilt aero + struct meshes in {dt_mesh:.4f} min"
+            elif self.struct_shape:
+                msg = f"\tbuilt struct mesh in {dt_mesh:.4f} min"
+            else:  # aero shape
+                msg = f"\tbuilt aero mesh in {dt_mesh:.4f} min"
+
             self._write_timing_data(
-                msg=f"\tbuilt aero mesh in {dt_aero:.4f} min",
+                msg=msg,
                 root=self.flow_aim.root,
                 barrier=False,
             )
-            if self.comm.rank == self.flow_aim.root:
-                print(f"F2F - built aero mesh in {dt_aero:.4f} min", flush=True)
+            if self.comm.rank == 0:
+                print(msg, flush=True)
 
+        # rebuild solver interfaces if need be
+        # first for the aero / flow interfaces
+        if self.aero_shape:
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired) and self._first_forward:
                 if self.uses_fun3d:
@@ -352,25 +380,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     self._initialize_funtofem()
                     self._first_forward = False
 
-        # mpi barrier to make sure FUN3D is re-initialized on all nodes for morphing
-        # before proceeding to next part of analysis
-        self.comm.Barrier()
-
+        # rebuild the struct solver interface if need be
         if self.struct_shape:
-            # self._update_struct_design()
-            start_time_struct = time.time()
-            if self.comm.rank == 0:
-                print("F2F - Building struct mesh")
-            input_dict = {var.name: var.value for var in self.model.get_variables()}
-            self.model.structural.update_design(input_dict)
-            self.struct_aim.setup_aim()
-            self.struct_aim.pre_analysis()
-
-            dt_struct = (time.time() - start_time_struct) / 60.0
-            self._write_timing_data(f"\tbuilt struct mesh in {dt_struct:.4f} min")
-            if self.comm.rank == 0:
-                print(f"F2F - Built struct mesh in {dt_struct:.4f} min", flush=True)
-
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
                 self._move_struct_mesh()
