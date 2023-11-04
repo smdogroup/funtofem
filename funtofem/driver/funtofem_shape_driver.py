@@ -257,7 +257,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self, msg, overwrite=False, root: int = 0, barrier: bool = False
     ):
         """write to the funtofem timing file"""
-        if not self.is_remote:
+        if not (self.remote):  # check whether we have a remote or not
             return
         if self.comm.rank == root:
             hdl = open(self.remote.timing_file, "w" if overwrite else "a")
