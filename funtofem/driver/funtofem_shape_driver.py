@@ -458,8 +458,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                root=self.flow_aim.root,
                 write_dvs=False,
             )
+
+        self.comm.Barrier()
 
         # post analysis for FUN3D mesh morphing
         if self.aero_shape:  # either remote or regular
