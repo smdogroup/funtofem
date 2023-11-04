@@ -20,11 +20,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+NOTE : Written by Sean Engelstad, Georgia Tech 2023
+
+This class performs oneway-coupled structural analysis for structural and shape optimization of aircraft structures.
+It relies on ESP/CAPS for shape derivatives currently.
+"""
 
 # TACS one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["OnewayStructDriver"]
 
-from funtofem.interface.solver_manager import SolverManager
 from funtofem.optimization.optimization_manager import OptimizationManager
 from mpi4py import MPI
 import numpy as np
@@ -463,7 +468,7 @@ class OnewayStructDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.struct_aim.root_sens_file_path
+                filename=self.struct_aim.root_sens_file
                 if not self.fun3d_dir
                 else self.analysis_sens_file,
                 discipline="structural",
@@ -477,8 +482,14 @@ class OnewayStructDriver:
                     if self.comm.rank == 0:
                         shutil.copy(src, dest)
 
+            # wait til the file is done writing on other procs
+            self.comm.Barrier()
+
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
+
+            # wait til parallel tacsAIM instances run post_analysis before getting shape derivatives
+            self.comm.Barrier()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
