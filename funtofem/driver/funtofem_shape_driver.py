@@ -782,7 +782,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     # if tacs aim do this, make this more modular later
                     if self.uses_tacs:  # for parallel tacsAIMs
                         c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
-                        print(f"c_proc = {c_proc} on rank {self.comm.rank}", flush=True)
                         if self.comm.rank == c_proc:
                             derivative = self.struct_aim.aim.dynout[
                                 func.full_name
