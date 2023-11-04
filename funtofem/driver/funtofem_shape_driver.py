@@ -602,6 +602,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     dest = self.struct_aim.sens_file_path(proc)
                     shutil.copy(src, dest)
 
+            self.comm.Barrier()
             start_time = time.time()
 
             # run the tacs aim postAnalysis to compute the chain rule product
