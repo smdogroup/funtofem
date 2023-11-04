@@ -610,6 +610,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
 
+            # wait for all procs to finish their post_analysis before getting results
+            self.comm.Barrier()
+
             self._get_remote_functions(discipline="structural")
 
             for scenario in self.model.scenarios:
