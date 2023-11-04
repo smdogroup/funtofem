@@ -482,8 +482,14 @@ class OnewayStructDriver:
                     if self.comm.rank == 0:
                         shutil.copy(src, dest)
 
+            # wait til the file is done writing on other procs
+            self.comm.Barrier()
+
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
+
+            # wait til parallel tacsAIM instances run post_analysis before getting shape derivatives
+            self.comm.Barrier()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
