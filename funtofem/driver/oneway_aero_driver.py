@@ -25,6 +25,8 @@ limitations under the License.
 __all__ = ["OnewayAeroDriver"]
 
 """
+Written by Sean Engelstad, Georgia Tech 2023
+
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
 to split our OnewayAeroDriver scripts in implementation into two files, a my_fun3d_driver.py and a my_fun3d_analyzer.py.
 The file my_fun3d_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
