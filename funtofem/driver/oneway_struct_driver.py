@@ -28,6 +28,7 @@ from funtofem.interface.solver_manager import SolverManager
 from funtofem.optimization.optimization_manager import OptimizationManager
 from mpi4py import MPI
 import numpy as np
+import shutil
 import importlib.util
 from funtofem.interface import Remote
 
@@ -310,14 +311,14 @@ class OnewayStructDriver:
         if self.external_shape:
             return self._dat_file_path
         else:
-            return self.struct_aim.dat_file_path
+            return self.struct_aim.root_dat_file_path
 
     @property
     def analysis_dir(self):
         if self.external_shape:
             return self._analysis_dir
         else:
-            return self.struct_aim.analysis_dir
+            return self.struct_aim.root_analysis_dir
 
     def input_paths(self, dat_file_path, analysis_dir):
         """
@@ -462,11 +463,19 @@ class OnewayStructDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.struct_aim.sens_file_path
+                filename=self.struct_aim.root_sens_file_path
                 if not self.fun3d_dir
                 else self.analysis_sens_file,
                 discipline="structural",
             )
+
+            # copy struct sens files for parallel instances
+            if self.uses_tacs:
+                src = self.struct_aim.root_sens_file_path
+                for proc in self.struct_aim.active_procs:
+                    dest = self.struct_aim.sens_file_path(proc)
+                    if self.comm.rank == 0:
+                        shutil.copy(src, dest)
 
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
@@ -504,29 +513,50 @@ class OnewayStructDriver:
         get shape derivatives together from tacs aim
         and store the data in the funtofem model
         """
-        gradients = None
+        variables = self.model.get_variables()
 
-        # read shape gradients from tacs aim on root proc
-        if self.root_proc:
-            gradients = []
-            direct_struct_aim = self.struct_aim.aim
+        # read shape gradients from tacs aim among different processors
+        # including sometimes parallel versions of the struct AIM
+        gradients = []
 
-            for ifunc, func in enumerate(scenario.functions):
-                gradients.append([])
-                for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_struct_aim.dynout[func.full_name].deriv(
-                        var.name
-                    )
-                    gradients[ifunc].append(derivative)
+        for ifunc, func in enumerate(scenario.functions):
+            gradients.append([])
+            for ivar, var in enumerate(variables):
+                derivative = None
+                if var.analysis_type == "structural":
+                    if self.struct_aim.root_proc:
+                        derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
+                            var.full_name
+                        )
+                elif var.analysis_type == "shape":
+                    # if tacs aim do this, make this more modular later
+                    if self.uses_tacs:  # for parallel tacsAIMs
+                        c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
+                        if self.comm.rank == c_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                        # then broadcast the derivative to other processors
+                        derivative = self.comm.bcast(derivative, root=c_proc)
+                    else:
+                        if self.root_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                else:
+                    derivative = 0.0
 
-        # broadcast shape gradients to all other processors
-        gradients = self.comm.bcast(gradients, root=0)
+                # updat the derivatives list
+                gradients[ifunc].append(derivative)
+
+        # mpi comm barrier
+        self.comm.Barrier()
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
-            for ivar, var in enumerate(self.shape_variables):
+            for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.add_gradient_component(var, derivative)
+                func.add_gradient_component(var, gradients[ifunc][ivar])
 
         return
 

@@ -254,7 +254,7 @@ class OnewayAeroDriver:
         """
 
         if self.change_shape:
-            if self.flow_aim.mesh_morph and self.comm.rank == 0:
+            if self.flow_aim.mesh_morph and self.root_proc:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
@@ -413,7 +413,10 @@ class OnewayAeroDriver:
 
     @property
     def root_proc(self) -> bool:
-        return self.comm.rank == 0
+        if self.flow_aim is not None:
+            return self.comm.rank == self.flow_aim.root
+        else:
+            return self.comm.rank == 0
 
     @property
     def flow_dir(self):
@@ -550,10 +553,6 @@ class OnewayAeroDriver:
     @property
     def manager(self, hot_start: bool = False):
         return OptimizationManager(self, hot_start=hot_start)
-
-    @property
-    def root_proc(self) -> bool:
-        return self.comm.rank == 0
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
         """extract the coordinate derivatives at a given time step"""
