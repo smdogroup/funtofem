@@ -171,7 +171,9 @@ class FUNtoFEMmodel(object):
             comm = self.structural.comm
             if self.structural.root_proc:
                 esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+            esp_caps_despmtrs = comm.bcast(
+                esp_caps_despmtrs, root=self.structural.root_proc_ind
+            )
 
             for var in shape_variables:
                 matching_despmtr = False
@@ -210,7 +212,7 @@ class FUNtoFEMmodel(object):
             comm = self.flow.comm
             if self.flow.root_proc:
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=self.flow.root)
 
             active_shape_vars = []
             active_aero_vars = []

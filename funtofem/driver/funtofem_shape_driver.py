@@ -223,6 +223,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for var in self.model.get_variables():
                 func.derivatives[var] = 0.0
 
+        if not self.is_paired and remote is None:
+            self.remote = Remote(solvers.comm, None, self.flow_dir, nprocs=1)
+
         # initial timing data message
         self._iteration = 0
         self._write_timing_data(
@@ -250,18 +253,21 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     scenario
                 )  # for writing sens files even in forward case
 
-    def _write_timing_data(self, msg, overwrite=False):
+    def _write_timing_data(
+        self, msg, overwrite=False, root: int = 0, barrier: bool = False
+    ):
         """write to the funtofem timing file"""
         if not self.is_remote:
             return
-        if self.comm.rank == 0:
+        if self.comm.rank == root:
             hdl = open(self.remote.timing_file, "w" if overwrite else "a")
             hdl.write(msg + "\n")
             hdl.flush()
             hdl.close()
 
         # MPI Barrier for other processors
-        self.comm.Barrier()
+        if barrier:
+            self.comm.Barrier()
         return
 
     def _update_struct_transfer(self):
@@ -317,7 +323,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         if self.aero_shape:
             start_time_aero = time.time()
-            if self.comm.rank == 0:
+            if self.comm.rank == self.flow_aim.root:
                 print("F2F - building aero mesh..", flush=True)
             if self.flow_aim.mesh_morph:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
@@ -326,21 +332,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.flow_aim.pre_analysis()
 
             dt_aero = (time.time() - start_time_aero) / 60.0
-            self._write_timing_data(msg=f"\tbuilt aero mesh in {dt_aero:.4f} min")
-            if self.comm.rank == 0:
+            self._write_timing_data(
+                msg=f"\tbuilt aero mesh in {dt_aero:.4f} min",
+                root=self.flow_aim.root,
+                barrier=False,
+            )
+            if self.comm.rank == self.flow_aim.root:
                 print(f"F2F - built aero mesh in {dt_aero:.4f} min", flush=True)
-
-            # for FUN3D mesh morphing now initialize body nodes
-            if not (self.is_paired) and self._first_forward:
-                if self.uses_fun3d:
-                    assert not (self.solvers.flow.auto_coords)
-                    self.solvers.flow._initialize_body_nodes(
-                        self.model.scenarios[0], self.model.bodies
-                    )
-
-                    # initialize funtofem transfer data with new aero_nnodes size
-                    self._initialize_funtofem()
-                    self._first_forward = False
 
         if self.struct_shape:
             # self._update_struct_design()
@@ -357,6 +355,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.comm.rank == 0:
                 print(f"F2F - Built struct mesh in {dt_struct:.4f} min", flush=True)
 
+        # mpi barrier for done building meshes of each discipline
+        self.comm.Barrier()
+
+        if self.struct_shape:  # make the struct solver interface
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
                 self._move_struct_mesh()
@@ -376,6 +378,22 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
                 # update the structural part of transfer scheme due to remeshing
                 self._update_struct_transfer()
+
+        # move on to making the flow solver interface
+        self.comm.Barrier()
+
+        if self.aero_shape:  # update Fun3dInterface if using mesh_morphing
+            # for FUN3D mesh morphing now initialize body nodes
+            if not (self.is_paired) and self._first_forward:
+                if self.uses_fun3d:
+                    assert not (self.solvers.flow.auto_coords)
+                    self.solvers.flow._initialize_body_nodes(
+                        self.model.scenarios[0], self.model.bodies
+                    )
+
+                    # initialize funtofem transfer data with new aero_nnodes size
+                    self._initialize_funtofem()
+                    self._first_forward = False
 
         # after all meshes are built other procs should wait
         self.comm.Barrier()
@@ -419,6 +437,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     filename=Remote.paths(self.comm, self.flow_dir).design_file,
                     root=0,
                 )
+
+            if self.comm.rank == 0:
+                print(f"funtofem starting nlbgs forward analysis..", flush=True)
 
             start_time = time.time()
             # call solve forward of super class for no shape, fully-coupled analysis

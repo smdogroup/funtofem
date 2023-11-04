@@ -52,7 +52,7 @@ class Fun3dModel:
             )
         fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph, root=root)
         aflr_aim = AflrAim(caps_problem, comm, root=root)
-
+        comm.Barrier()
         return cls(fun3d_aim, aflr_aim, comm, project_name, root=root)
 
     @classmethod
