@@ -6,7 +6,9 @@ from .aflr_aim import AflrAim
 
 
 class Fun3dModel:
-    def __init__(self, fun3d_aim, aflr_aim, comm, project_name="caps", root: int = 0):
+    def __init__(
+        self, fun3d_aim, aflr_aim, comm, project_name="fun3d_CAPS", root: int = 0
+    ):
         self._fun3d_aim = fun3d_aim
         self._aflr_aim = aflr_aim
         self.project_name = project_name
@@ -99,7 +101,7 @@ class Fun3dModel:
         """set the project names into both aims for grid filenames"""
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
-        self.fun3d_aim._metadata.project_name = self.project_name
+        self.fun3d_aim._metadata["project_name"] = self.project_name
         if self.aflr_aim.root_proc:
             self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name

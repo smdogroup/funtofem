@@ -3,12 +3,6 @@ __all__ = ["Fun3dAim", "Fun3dBC"]
 import os, shutil
 
 
-class Fun3dAimMetaData:
-    def __init__(self, project_name, analysis_dir):
-        self.project_name = project_name
-        self.analysis_dir = analysis_dir
-
-
 class Fun3dBC:
     BC_TYPES = [
         "inviscid",
@@ -113,11 +107,16 @@ class Fun3dAim:
             self.aim.input.Mesh_Morph = mesh_morph
             self.aim.input.Mesh_Morph_Combine = mesh_morph
 
+        class Fun3dAimMetaData:
+            def __init__(self, project_name, analysis_dir):
+                self.project_name = project_name
+                self.analysis_dir = analysis_dir
+
         self._metadata = None
         if self.root_proc:
-            self._metadata = Fun3dAimMetaData(
-                project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
-            )
+            self._metadata = {}
+            self._metadata["project_name"] = self.aim.input.Proj_Name
+            self._metadata["analysis_dir"] = self.aim.analysisDir
         self._metadata = self.comm.bcast(self._metadata, root=root)
 
     @property
@@ -172,7 +171,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self._metadata.project_name
+        return self._metadata["project_name"]
 
     @property
     def grid_filepaths(self):
@@ -263,7 +262,7 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self._metadata.analysis_dir
+        return self._metadata["analysis_dir"]
 
     @property
     def mesh_morph_filename(self):
