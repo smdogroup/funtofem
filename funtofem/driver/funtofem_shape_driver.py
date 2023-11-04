@@ -462,7 +462,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 write_dvs=False,
             )
 
-        self.comm.Barrier()
+            self.comm.Barrier()
 
         # post analysis for FUN3D mesh morphing
         if self.aero_shape:  # either remote or regular
@@ -557,6 +557,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.model.write_sensitivity_file(
                     comm=self.comm,
                     filename=struct_sensfile,
+                    root=0,
                     discipline="structural",
                 )
 
@@ -566,6 +567,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     comm=self.comm,
                     filename=aero_sensfile,
                     discipline="aerodynamic",
+                    root=0,
                     write_dvs=False,
                 )
 
