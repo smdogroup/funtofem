@@ -374,7 +374,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if not (self.is_paired) and self._first_forward:
                 if self.uses_fun3d:
                     self.comm.Barrier()
- 
+
                     assert not (self.solvers.flow.auto_coords)
                     self.solvers.flow._initialize_body_nodes(
                         self.model.scenarios[0], self.model.bodies
@@ -782,12 +782,14 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     # if tacs aim do this, make this more modular later
                     if self.uses_tacs:  # for parallel tacsAIMs
                         c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
+                        print(f"c_proc = {c_proc} on rank {self.comm.rank}", flush=True)
                         if self.comm.rank == c_proc:
                             derivative = self.struct_aim.aim.dynout[
                                 func.full_name
                             ].deriv(var.name)
                         # then broadcast the derivative to other processors
                         derivative = self.comm.bcast(derivative, root=c_proc)
+                        self.comm.Barrier()
                     else:
                         if self.root_proc:
                             derivative = self.struct_aim.aim.dynout[
