@@ -257,7 +257,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self, msg, overwrite=False, root: int = 0, barrier: bool = False
     ):
         """write to the funtofem timing file"""
-        if not self.is_remote:
+        if not (self.remote):  # check whether we have a remote or not
             return
         if self.comm.rank == root:
             hdl = open(self.remote.timing_file, "w" if overwrite else "a")
@@ -460,8 +460,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 comm=self.comm,
                 filename=filepath,
                 discipline="aerodynamic",
+                root=self.flow_aim.root,
                 write_dvs=False,
             )
+
+            self.comm.Barrier()
 
         # post analysis for FUN3D mesh morphing
         if self.aero_shape:  # either remote or regular
@@ -556,6 +559,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.model.write_sensitivity_file(
                     comm=self.comm,
                     filename=struct_sensfile,
+                    root=0,
                     discipline="structural",
                 )
 
@@ -565,6 +569,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     comm=self.comm,
                     filename=aero_sensfile,
                     discipline="aerodynamic",
+                    root=0,
                     write_dvs=False,
                 )
 
