@@ -340,6 +340,22 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.comm.rank == self.flow_aim.root:
                 print(f"F2F - built aero mesh in {dt_aero:.4f} min", flush=True)
 
+            # for FUN3D mesh morphing now initialize body nodes
+            if not (self.is_paired) and self._first_forward:
+                if self.uses_fun3d:
+                    assert not (self.solvers.flow.auto_coords)
+                    self.solvers.flow._initialize_body_nodes(
+                        self.model.scenarios[0], self.model.bodies
+                    )
+
+                    # initialize funtofem transfer data with new aero_nnodes size
+                    self._initialize_funtofem()
+                    self._first_forward = False
+
+        # mpi barrier to make sure FUN3D is re-initialized on all nodes for morphing
+        # before proceeding to next part of analysis
+        self.comm.Barrier()
+
         if self.struct_shape:
             # self._update_struct_design()
             start_time_struct = time.time()
@@ -355,10 +371,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.comm.rank == 0:
                 print(f"F2F - Built struct mesh in {dt_struct:.4f} min", flush=True)
 
-        # mpi barrier for done building meshes of each discipline
-        self.comm.Barrier()
-
-        if self.struct_shape:  # make the struct solver interface
             # move the bdf and dat file to the fun3d_dir
             if self.is_remote:
                 self._move_struct_mesh()
@@ -379,23 +391,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # update the structural part of transfer scheme due to remeshing
                 self._update_struct_transfer()
 
-        # move on to making the flow solver interface
-        self.comm.Barrier()
-
-        if self.aero_shape:  # update Fun3dInterface if using mesh_morphing
-            # for FUN3D mesh morphing now initialize body nodes
-            if not (self.is_paired) and self._first_forward:
-                if self.uses_fun3d:
-                    assert not (self.solvers.flow.auto_coords)
-                    self.solvers.flow._initialize_body_nodes(
-                        self.model.scenarios[0], self.model.bodies
-                    )
-
-                    # initialize funtofem transfer data with new aero_nnodes size
-                    self._initialize_funtofem()
-                    self._first_forward = False
-
-        # after all meshes are built other procs should wait
+        # move on to running the analysis
         self.comm.Barrier()
 
         if self.is_remote:
