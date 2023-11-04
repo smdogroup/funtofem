@@ -691,19 +691,20 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         return
 
     def _move_struct_mesh(self):
-        if self.struct_aim.root_proc:
-            if self.uses_tacs:
-                bdf_src = os.path.join(
-                    self.struct_aim.root_analysis_dir,
-                    f"{self.struct_aim.project_name}.bdf",
-                )
-                bdf_dest = self.remote.bdf_file
+        if self.uses_tacs:
+            bdf_src = os.path.join(
+                self.struct_aim.root_analysis_dir,
+                f"{self.struct_aim.project_name}.bdf",
+            )
+            bdf_dest = self.remote.bdf_file
+            if self.struct_aim.root_proc:
                 shutil.copy(bdf_src, bdf_dest)
-                dat_src = os.path.join(
-                    self.struct_aim.root_analysis_dir,
-                    f"{self.struct_aim.project_name}.dat",
-                )
-                dat_dest = self.remote.dat_file
+            dat_src = os.path.join(
+                self.struct_aim.root_analysis_dir,
+                f"{self.struct_aim.project_name}.dat",
+            )
+            dat_dest = self.remote.dat_file
+            if self.struct_aim.root_proc:
                 shutil.copy(dat_src, dat_dest)
 
     @property
