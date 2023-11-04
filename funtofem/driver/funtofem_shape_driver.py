@@ -343,6 +343,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             # for FUN3D mesh morphing now initialize body nodes
             if not (self.is_paired) and self._first_forward:
                 if self.uses_fun3d:
+                    self.comm.Barrier()
+ 
                     assert not (self.solvers.flow.auto_coords)
                     self.solvers.flow._initialize_body_nodes(
                         self.model.scenarios[0], self.model.bodies
