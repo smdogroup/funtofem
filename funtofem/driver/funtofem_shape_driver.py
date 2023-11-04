@@ -615,6 +615,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             self._get_remote_functions(discipline="structural")
 
+            self.comm.Barrier()
+
             for scenario in self.model.scenarios:
                 self._get_struct_shape_derivatives(scenario)
 
@@ -622,6 +624,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self._write_timing_data(
                 f"\tstruct postAnalysis in {struct_post_time:.4f} min"
             )
+
+        self.comm.Barrier()
 
         if self.aero_shape:  # either remote or regular
             # src for movement of sens file if it was the paired driver case
@@ -737,12 +741,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         functions = self.model.get_functions()
         remote_functions = None
 
-        if self.flow_aim.root_proc:
+        if discipline == "aerodynamic" and self.flow_aim.root_proc:
             remote_functions = [
                 self.flow_aim.aim.dynout[func.full_name].value for func in functions
             ]
 
-        if self.struct_aim.root_proc:
+        if discipline == "structural" and self.struct_aim.root_proc:
             remote_functions = [
                 self.struct_aim.aim.dynout[func.full_name].value for func in functions
             ]
