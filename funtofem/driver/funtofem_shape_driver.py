@@ -590,17 +590,19 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.comm.Barrier()
 
         if self.struct_shape:  # either remote or regular
-            # copy sens file to potetially parallel tacs AIMs
-            if self.struct_aim.root_proc:
-                if self.is_paired:
-                    # move struct sens file to tacs aim directory
-                    src = self.remote.struct_sens_file
-                else:
-                    src = self.struct_aim.root_sens_file
+            if self.is_paired:
+                src = self.remote.struct_sens_file
+            else:
+                src = self.struct_aim.root_sens_file
 
-                for proc in self.struct_aim.active_procs[1:]:
-                    dest = self.struct_aim.sens_file_path(proc)
+            # copy sens file to potetially parallel tacs AIMs
+            for proc in self.struct_aim.active_procs[1:]:
+                dest = self.struct_aim.sens_file_path(proc)
+
+                if self.struct_aim.root_proc:
                     shutil.copy(src, dest)
+                # not sure if this barrier is necessary here but just in case
+                self.comm.Barrier()
 
             self.comm.Barrier()
             start_time = time.time()
