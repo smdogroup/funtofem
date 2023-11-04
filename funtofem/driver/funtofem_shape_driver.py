@@ -557,7 +557,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             else:
                 if self.struct_shape:
                     write_struct = True
-                    struct_sensfile = self.struct_aim.root_sens_file_path
+                    struct_sensfile = self.struct_aim.root_sens_file
                 else:
                     write_struct = False
 
