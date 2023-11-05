@@ -476,7 +476,7 @@ class OnewayStructDriver:
         dt_meshing = (time.time() - _start_meshing_time) / 60.0
         self._write_timing_data(
             f"\tstruct mesh built in {dt_meshing} min",
-            overwrite=True,
+            overwrite=False,
             barrier=True,
             root=0,
         )
@@ -493,7 +493,7 @@ class OnewayStructDriver:
         dt_forward = (time.time() - _start_forward_analysis) / 60.0
         self._write_timing_data(
             f"\tstruct forward analysis in {dt_forward} min",
-            overwrite=True,
+            overwrite=False,
             barrier=True,
             root=0,
         )
@@ -525,7 +525,7 @@ class OnewayStructDriver:
         dt_adjoint = (time.time() - _start_adjoint) / 60.0
         self._write_timing_data(
             f"\tstruct adjoint analysis in {dt_adjoint} min",
-            overwrite=True,
+            overwrite=False,
             barrier=True,
             root=0,
         )
@@ -576,14 +576,14 @@ class OnewayStructDriver:
         dt_derivatives = (time.time() - _start_derivatives) / 60.0
         self._write_timing_data(
             f"\tderivative computation in {dt_derivatives} min",
-            overwrite=True,
+            overwrite=False,
             barrier=True,
             root=0,
         )
         dt_iteration = (time.time() - self._starting_time) / 60.0
         self._write_timing_data(
             f"\titeration {self._iteration-1} took {dt_iteration} min",
-            overwrite=True,
+            overwrite=False,
             barrier=True,
             root=0,
         )
