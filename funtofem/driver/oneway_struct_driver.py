@@ -588,6 +588,9 @@ class OnewayStructDriver:
             root=0,
         )
 
+        # delete the old struct interface if planning to remesh again
+        if self.change_shape:
+            del self.struct_interface
         # end of change shape section
         return
 
