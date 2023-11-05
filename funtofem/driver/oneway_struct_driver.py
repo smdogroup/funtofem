@@ -316,7 +316,7 @@ class OnewayStructDriver:
         if self.external_shape:
             return self._dat_file_path
         else:
-            return self.struct_aim.root_dat_file_path
+            return self.struct_aim.root_dat_file
 
     @property
     def analysis_dir(self):
@@ -476,8 +476,8 @@ class OnewayStructDriver:
 
             # copy struct sens files for parallel instances
             if self.uses_tacs:
-                src = self.struct_aim.root_sens_file_path
-                for proc in self.struct_aim.active_procs:
+                src = self.struct_aim.root_sens_file
+                for proc in self.struct_aim.active_procs[1:]:
                     dest = self.struct_aim.sens_file_path(proc)
                     if self.comm.rank == 0:
                         shutil.copy(src, dest)
@@ -534,12 +534,7 @@ class OnewayStructDriver:
             gradients.append([])
             for ivar, var in enumerate(variables):
                 derivative = None
-                if var.analysis_type == "structural":
-                    if self.struct_aim.root_proc:
-                        derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
-                            var.full_name
-                        )
-                elif var.analysis_type == "shape":
+                if var.analysis_type == "shape":
                     # if tacs aim do this, make this more modular later
                     if self.uses_tacs:  # for parallel tacsAIMs
                         c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
