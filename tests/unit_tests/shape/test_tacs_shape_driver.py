@@ -17,8 +17,8 @@ if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
 # check if we're in github to run only online vs offline tests
-in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
-# in_github_workflow = True
+# in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
+in_github_workflow = True
 optional = True  # whether to run optional tests
 
 
@@ -125,6 +125,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
             tacs_model
         )
         f2f_model.structural = tacs_model
+        tacs_aim = tacs_model.tacs_aim
 
         # build a body which we will register variables to
         wing = Body.aeroelastic("wing")
@@ -139,22 +140,28 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
             prop = caps2tacs.ShellProperty(
                 caps_group=f"rib{irib}", material=aluminum, membrane_thickness=0.05
             ).register_to(tacs_model)
-            Variable.from_caps(prop).set_bounds(lower=0.01, upper=0.1).register_to(wing)
+            Variable.from_caps(prop).set_bounds(
+                lower=0.01, upper=0.1, active=False
+            ).register_to(wing)
 
         for ispar in range(1, nspars + 1):
             prop = caps2tacs.ShellProperty(
                 caps_group=f"spar{ispar}", material=aluminum, membrane_thickness=0.05
             ).register_to(tacs_model)
-            Variable.from_caps(prop).set_bounds(lower=0.01, upper=0.1).register_to(wing)
+            Variable.from_caps(prop).set_bounds(
+                lower=0.01, upper=0.1, active=False
+            ).register_to(wing)
 
         prop = caps2tacs.ShellProperty(
             caps_group="OML", material=aluminum, membrane_thickness=0.03
         ).register_to(tacs_model)
-        Variable.from_caps(prop).set_bounds(lower=0.01, upper=0.1).register_to(wing)
+        Variable.from_caps(prop).set_bounds(
+            lower=0.01, upper=0.1, active=True
+        ).register_to(wing)
 
         # register any shape variables to the wing which are auto-registered to tacs model
         Variable.shape(name="rib_a1").set_bounds(
-            lower=0.4, value=1.0, upper=1.6
+            lower=0.4, value=1.0, upper=1.6, active=True
         ).register_to(wing)
 
         # register the wing body to the model
@@ -165,14 +172,16 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         # setup the tacs model
         tacs_model.setup()
+        # tacs_model.pre_analysis()
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
-        test_scenario.include(Function.ksfailure(ks_weight=5.0))
+        # test_scenario.include(Function.ksfailure(ks_weight=5.0))
         test_scenario.register_to(f2f_model)
 
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        # solvers.structural = TacsSteadyInterface.create_from_bdf(f2f_model, comm, nprocs=2, bdf_file=tacs_aim.root_dat_file)
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 

@@ -149,6 +149,8 @@ class FUNtoFEMmodel(object):
                 shape_variables = base.variables["shape"]
 
             for var in struct_variables:
+                if not (var.active):
+                    continue
                 # check if matching shell property exists
                 matching_prop = False
                 for prop in self.structural.tacs_aim._properties:
@@ -219,6 +221,8 @@ class FUNtoFEMmodel(object):
 
             # add shape variable names to varnames
             for var in shape_variables:
+                if not (var.active):
+                    continue
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
                         active_shape_vars.append(var)
@@ -683,7 +687,7 @@ class FUNtoFEMmodel(object):
             if write_dvs:  # flag for registering dvs that will later get written out
                 for var in variables:
                     # Write the variables whose analysis_type matches the discipline string.
-                    if discipline == var.analysis_type:
+                    if discipline == var.analysis_type and var.active:
                         discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
