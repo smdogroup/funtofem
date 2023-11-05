@@ -826,7 +826,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.add_gradient_component(var, gradients[ifunc][ivar])
+                func.set_gradient_component(var, gradients[ifunc][ivar])
 
         return
 
@@ -866,7 +866,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.add_gradient_component(var, derivative)
+                func.set_gradient_component(var, derivative)
 
         return
 

@@ -17,8 +17,8 @@ if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
 
 # check if we're in github to run only online vs offline tests
-# in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
-in_github_workflow = True
+in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
+# in_github_workflow = True
 optional = True  # whether to run optional tests
 
 
@@ -141,7 +141,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
                 caps_group=f"rib{irib}", material=aluminum, membrane_thickness=0.05
             ).register_to(tacs_model)
             Variable.from_caps(prop).set_bounds(
-                lower=0.01, upper=0.1, active=False
+                lower=0.01, upper=0.1, active=True
             ).register_to(wing)
 
         for ispar in range(1, nspars + 1):
@@ -149,7 +149,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
                 caps_group=f"spar{ispar}", material=aluminum, membrane_thickness=0.05
             ).register_to(tacs_model)
             Variable.from_caps(prop).set_bounds(
-                lower=0.01, upper=0.1, active=False
+                lower=0.01, upper=0.1, active=True
             ).register_to(wing)
 
         prop = caps2tacs.ShellProperty(
@@ -176,7 +176,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
-        # test_scenario.include(Function.ksfailure(ks_weight=5.0))
+        test_scenario.include(Function.ksfailure(ks_weight=5.0))
         test_scenario.register_to(f2f_model)
 
         solvers = SolverManager(comm)
@@ -197,6 +197,11 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
             complex_mode=False,
             epsilon=1e-4,
         )
+
+        # for func in f2f_model.get_functions():
+        #     for var in f2f_model.get_variables():
+        #         print(f"d{func.name}/d{var.name} = {func.derivatives[var]} on rank {comm.rank}")
+
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
         return

@@ -534,15 +534,7 @@ class OnewayStructDriver:
             gradients.append([])
             for ivar, var in enumerate(variables):
                 derivative = None
-                if var.analysis_type == "structural":
-                    if self.struct_aim.root_proc:
-                        derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
-                            var.full_name
-                        )
-                    derivative = self.comm.bcast(
-                        derivative, root=self.struct_aim.root_proc_ind
-                    )
-                elif var.analysis_type == "shape":
+                if var.analysis_type == "shape":
                     # if tacs aim do this, make this more modular later
                     if self.uses_tacs:  # for parallel tacsAIMs
                         c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
