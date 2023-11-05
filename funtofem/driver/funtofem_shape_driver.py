@@ -538,7 +538,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             remote_adjoint_time = (time.time() - start_time) / 60.0
             self._write_timing_data(
-                f"\tsystem call adjoint analysis in {remote_adjoint_time:.4f} min"
+                f"\tran nlbgs adjoint analysis in {remote_adjoint_time:.4f} min"
             )
 
             # write analysis functions file in analysis or system call
