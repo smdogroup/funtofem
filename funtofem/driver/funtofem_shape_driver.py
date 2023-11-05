@@ -652,7 +652,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.model.evaluate_composite_functions(compute_grad=True)
 
         # write a functions file
-        if self.is_remote and self.is_paired:
+        if self.remote is not None:
             print("Writing funtofem.out file", flush=True)
             self.model.write_functions_file(
                 self.comm, self.remote.functions_file, full_precision=False, optim=True
@@ -789,6 +789,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
                             var.full_name
                         )
+                    derivative = self.comm.bcast(
+                        derivative, root=self.struct_aim.root_proc_ind
+                    )
                 elif var.analysis_type == "shape":
                     # if tacs aim do this, make this more modular later
                     if self.uses_tacs:  # for parallel tacsAIMs
@@ -799,7 +802,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                             ].deriv(var.name)
                         # then broadcast the derivative to other processors
                         derivative = self.comm.bcast(derivative, root=c_proc)
-                        self.comm.Barrier()
                     else:
                         if self.root_proc:
                             derivative = self.struct_aim.aim.dynout[
@@ -807,6 +809,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                             ].deriv(var.name)
                 else:
                     derivative = 0.0
+
+                self.comm.Barrier()
+                if derivative is None:
+                    raise AssertionError(
+                        f"F2F shape driver could not get d{func.name}/d{var.full_name} derivative from struct_aim"
+                    )
 
                 # updat the derivatives list
                 gradients[ifunc].append(derivative)
