@@ -24,6 +24,7 @@ __all__ = ["OptimizationManager"]
 
 import os, numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 class OptimizationManager:
@@ -278,6 +279,9 @@ class OptimizationManager:
             box = ax.get_position()
             ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
             ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+            # set x-axis to integers only (since it represents iterations)
+            ax = plt.figure().gca()
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")
