@@ -1617,8 +1617,6 @@ class Body(Base):
                     self.aero_loads[scenario_id][
                         3 * ind : 3 * ind + 3
                     ] = scenario_entry_dict[aero_id]["load"]
-                    aero_load = scenario_entry_dict[aero_id]["load"]
-                    print(f"ind = {ind}, aero_load = {aero_load}")
                 if self.thermal_transfer is not None:
                     self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
                         aero_id
