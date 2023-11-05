@@ -136,9 +136,22 @@ class OptimizationManager:
 
             # check for nans in any of the function values values
             fail = False
-            for key in self._funcs:
-                if np.isnan(self._funcs[key]):
+            for func_key in self._funcs:
+                c_sens = self._funcs[func_key]
+                if np.isnan(self._funcs[func_key]):
+                    if self.comm.rank == 0:
+                        print(
+                            f"Warning: func {func_key} = {self._funcs[var_key]} and has a nan"
+                        )
                     fail = True
+                for var_key in c_sens:
+                    if np.isnan(c_sens[var_key]):
+                        if self.comm.rank == 0:
+                            print(
+                                f"Warning: d{func_key}/d{var_key} = {c_sens[var_key]} and has a nan"
+                            )
+                        fail = True
+                if fail:
                     break
 
             # write the new function values
