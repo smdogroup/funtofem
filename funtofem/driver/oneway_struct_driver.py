@@ -66,6 +66,7 @@ class OnewayStructDriver:
         nprocs=None,
         fun3d_dir=None,
         external_shape=False,
+        timing_file=None,
     ):
         """
         build the analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
@@ -84,7 +85,8 @@ class OnewayStructDriver:
             location of fun3d directory, used in an analysis file for FuntofemShapeDriver
         external_shape: bool
             whether the tacs aim shape analysis is performed outside the class
-        init_aero_load_transfer:
+        timing_file: str or Path object
+            file to write timing data to
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -94,6 +96,7 @@ class OnewayStructDriver:
         self.transfer_settings = transfer_settings
         self.external_shape = external_shape
         self._shape_init_transfer = False
+        self.timing_file = timing_file
 
         self.struct_interface = solvers.structural
         self.struct_aim = None
@@ -148,6 +151,9 @@ class OnewayStructDriver:
                     # transfer aero to struct loads
                     body.transfer_loads(scenario)
                     body.transfer_heat_flux(scenario)
+
+    def _write_timing_data(self, msg, root: int = 0, barrier=False):
+        """write timing statistics to the timing file"""
 
     @property
     def change_shape(self) -> bool:
