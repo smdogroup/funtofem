@@ -164,6 +164,14 @@ class OptimizationManager:
                 self.model.write_design_variables_file(
                     self.comm, self.design_out_file, root=0
                 )
+
+            # update and plot the current optimization history
+            if self.write_designs and not (fail):
+                for func in self.model.get_functions(optim=True):
+                    if not func._plot:
+                        continue
+                    self._func_history[func.plot_name] += [func.value.real]
+                self._plot_history()
         return fail
 
     def _run_complete_analysis(self):
@@ -196,14 +204,6 @@ class OptimizationManager:
                 self._sens[func.full_name][var.full_name] = func.get_gradient_component(
                     var
                 ).real
-
-        # update and plot the current optimization history
-        if self.write_designs:
-            for func in self.model.get_functions(optim=True):
-                if not func._plot:
-                    continue
-                self._func_history[func.plot_name] += [func.value.real]
-            self._plot_history()
         return
 
     def register_to_problem(self, opt_problem):
