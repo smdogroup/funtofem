@@ -198,6 +198,7 @@ class OnewayStructDriver:
     def uses_tacs(self) -> bool:
         return self._struct_solver_type == "tacs"
 
+    @property
     def analysis_sens_file(self):
         """write location of sens file when used in FuntofemShapeDriver for double oneway drivers (analysis version)"""
         if self.fun3d_dir is None:
@@ -557,7 +558,8 @@ class OnewayStructDriver:
                 src = self.struct_aim.root_sens_file
                 for proc in self.struct_aim.active_procs[1:]:
                     dest = self.struct_aim.sens_file_path(proc)
-                    if self.comm.rank == self.struct_aim.root_proc:
+                    self.comm.Barrier()
+                    if self.comm.rank == self.struct_aim.root_proc_ind:
                         shutil.copy(src, dest)
 
             # wait til the file is done writing on other procs
