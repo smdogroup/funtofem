@@ -134,12 +134,24 @@ class OptimizationManager:
             # increment the iteration number
             self._iteration += 1
 
+            # check for nans in any of the function values values
+            fail = False
+            for key in self._funcs:
+                if np.isnan(self._funcs[key]):
+                    fail = True
+                    break
+
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
                 self._design_hdl.write(f"Functions = {self._funcs}\n")
                 self._design_hdl.flush()
 
-        return
+            # only update design file if analysis didn't fail and give nans
+            if self.design_out_file is not None and not (fail):
+                self.model.write_design_variables_file(
+                    self.comm, self.design_out_file, root=0
+                )
+        return fail
 
     def _run_complete_analysis(self):
         """
@@ -152,11 +164,6 @@ class OptimizationManager:
                 if var.full_name == var_key:
                     # assumes here that only pyoptsparse single variables (no var groups are made)
                     var.value = float(self._x_dict[var_key])
-
-        if self.design_out_file is not None:
-            self.model.write_design_variables_file(
-                self.comm, self.design_out_file, root=0
-            )
 
         # run forward and adjoint analysis on the driver
         self.driver.solve_forward()
@@ -213,17 +220,14 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        fail = False
-        self._gatekeeper(x_dict)
-
+        fail = self._gatekeeper(x_dict)
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        fail = False
-        self._gatekeeper(x_dict)
+        fail = self._gatekeeper(x_dict)
 
         return self._sens, fail
 
