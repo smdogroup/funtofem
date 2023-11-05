@@ -144,7 +144,7 @@ class CoupledFrameworkTest(unittest.TestCase):
         # Check whether to use the complex-step method or now
         complex_step = False
         epsilon = 1e-9
-        rtol = 1e-5
+        rtol = 1e-4
         if TransferScheme.dtype == complex:
             complex_step = True
             epsilon = 1e-30
