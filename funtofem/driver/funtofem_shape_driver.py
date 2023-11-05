@@ -826,8 +826,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.set_gradient_component(var, gradients[ifunc][ivar])
-
+                # only overwrite struct derivatives in remote driver case
+                if var.analysis_type == "structural" and self.is_remote:
+                    func.set_gradient_component(var, gradients[ifunc][ivar])
+                elif var.analysis_type == "shape":
+                    func.add_gradient_component(var, gradients[ifunc][ivar])
         return
 
     def _get_aero_shape_derivatives(self, scenario):
@@ -866,8 +869,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         for ifunc, func in enumerate(scenario.functions):
             for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.set_gradient_component(var, derivative)
-
+                if var.analysis_type == "shape":
+                    func.add_gradient_component(var, gradients[ifunc][ivar])
         return
 
     @property
