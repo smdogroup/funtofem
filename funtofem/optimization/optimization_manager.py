@@ -137,7 +137,7 @@ class OptimizationManager:
             # check for nans in any of the function values values
             fail = False
             for func_key in self._funcs:
-                c_sens = self._funcs[func_key]
+                c_sens = self._sens[func_key]
                 if np.isnan(self._funcs[func_key]):
                     if self.comm.rank == 0:
                         print(
