@@ -118,6 +118,7 @@ class OptimizationManager:
         """
 
         # only if a new design run a complete analysis
+        fail = False
         if not (x_dict == self._x_dict):
             # write the new design dict
             if self.comm.rank == 0 and self.write_designs:
@@ -135,7 +136,6 @@ class OptimizationManager:
             self._iteration += 1
 
             # check for nans in any of the function values values
-            fail = False
             for func_key in self._funcs:
                 c_sens = self._sens[func_key]
                 if np.isnan(self._funcs[func_key]):
