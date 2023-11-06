@@ -233,9 +233,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             for var in self.model.get_variables():
                 func.derivatives[var] = 0.0
 
-        if not self.is_paired and remote is None:
-            self.remote = Remote(solvers.comm, None, self.flow_dir, nprocs=1)
-
         # initial timing data message
         self._iteration = 0
         if self.is_paired and not (self.is_remote):
@@ -270,10 +267,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self, msg, overwrite=False, root: int = 0, barrier: bool = False
     ):
         """write to the funtofem timing file"""
-        if not (self.remote):  # check whether we have a remote or not
-            return
+        remote = (
+            Remote.paths(self.comm, self.flow_dir)
+            if self.remote is None
+            else self.remote
+        )
         if self.comm.rank == root:
-            hdl = open(self.remote.timing_file, "w" if overwrite else "a")
+            hdl = open(remote.timing_file, "w" if overwrite else "a")
             hdl.write(msg + "\n")
             hdl.flush()
             hdl.close()
@@ -330,7 +330,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         Create new aero/struct geometries and run fully-coupled forward analysis.
         """
         # write the initial timing data output
-        self._write_timing_data(msg=f"Iteration {self._iteration}:")
+        if self.remote_meshing or self.is_remote:
+            self._write_timing_data(msg=f"Iteration {self._iteration}:")
         self._iteration += 1
         self._iteration_start = time.time()
 
@@ -497,7 +498,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # write sens file for remote to read or if shape change all in one
         if not self.is_remote:
-            if not self.is_paired:
+            if not self.remote_meshing:
                 filepath = self.flow_aim.sens_file_path
             else:
                 filepath = Remote.paths(self.comm, self.flow_dir).aero_sens_file
@@ -516,7 +517,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # post analysis for FUN3D mesh morphing
         if self.aero_shape:  # either remote or regular
             # src for movement of sens file or None if not moving it
-            sens_file_src = self.remote.aero_sens_file if self.is_paired else None
+            sens_file_src = self.remote.aero_sens_file if self.remote_meshing else None
 
             start_time = time.time()
 
@@ -535,6 +536,20 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self._get_remote_functions(discipline="aerodynamic")
 
         # other procs wait for flow aim postAnalysis
+        self.comm.Barrier()
+
+        # write analysis functions file in analysis or system call
+        # f not(self.remote_meshing) and not(self.is_remote):
+        #   # case where we are writing shape derivatives from analysis script which does meshing
+        #   # to the remote driver (only writes analysis functions here)
+        #   self.model.write_functions_file(
+        #       self.comm, Remote.paths(self.comm, self.flow_dir)._functions_file
+        #   )
+
+        # get analysis functions from the funtofem.out file
+        if self.is_remote and not (self.remote_meshing):
+            self.model.read_functions_file(self.comm, self.remote._functions_file)
+
         self.comm.Barrier()
 
         # evaluate composite functions
@@ -583,7 +598,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     self.comm, Remote.paths(self.comm, self.flow_dir)._functions_file
                 )
 
-            if self.is_paired:
+            if self.remote_meshing:
                 write_struct = True
                 write_aero = True
                 struct_sensfile = Remote.paths(
@@ -626,7 +641,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.comm.Barrier()
 
         if self.struct_shape:  # either remote or regular
-            if self.is_paired:
+            if self.remote_meshing:
                 src = self.remote.struct_sens_file
             else:
                 src = self.struct_aim.root_sens_file
@@ -665,7 +680,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         if self.aero_shape:  # either remote or regular
             # src for movement of sens file if it was the paired driver case
-            sens_file_src = self.remote.aero_sens_file if self.is_paired else None
+            sens_file_src = self.remote.aero_sens_file if self.remote_meshing else None
 
             start_time = time.time()
 
@@ -683,7 +698,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.comm.Barrier()
 
         # write analysis functions file in analysis or system call
-        if self.is_paired and not self.change_shape:
+        if self.is_paired and not (self.is_remote):
             # case where we are writing shape derivatives from analysis script which does meshing
             # to the remote driver (only writes analysis functions here)
             self.model.write_functions_file(
@@ -766,8 +781,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
     @property
     def flow_dir(self):
+        if self.solvers is None:
+            return None
         if self.uses_fun3d:
             return self.solvers.flow.fun3d_dir
+        else:
+            return None
         # TBD on other solvers
 
     def _update_struct_design(self):
@@ -955,6 +974,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @property
     def uses_fun3d(self) -> bool:
         return self._flow_solver_type == "fun3d"
+
+    @property
+    def remote_meshing(self) -> bool:
+        # case in which the remote is doing meshing
+        if self.is_paired:
+            if self.is_remote and (self.aero_shape or self.struct_shape):
+                return True
+            elif not (self.is_remote) and not (self.change_shape):
+                return True
+            else:
+                return False
+        return False
 
     @property
     def tacs_model(self):
