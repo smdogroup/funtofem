@@ -230,9 +230,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # initial timing data message
         self._iteration = 0
-        self._write_timing_data(
-            msg="Funtofem Shape Driver timing data..\n", overwrite=True
-        )
+        if self.is_paired and not (self.is_remote):
+            pass
+        else:  # only write the initial message from the remote driver / non-paired driver
+            self._write_timing_data(
+                msg="Funtofem Shape Driver timing data..\n", overwrite=True
+            )
         return
 
     def _initialize_funtofem(self):
@@ -326,9 +329,29 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # build meshes for each discipline (potentially in parallel across each ESP/CAPS AIM instance)
         start_mesh_time = time.time()
 
+        if self.is_remote and not (self.change_shape):
+            # case where remote does not perform meshing (write the new design).
+            # technically we don't need the separate call here (just needs to be before the system call),
+            # but this is more logical and easier to follow
+            self.model.write_design_variables_file(
+                self.comm,
+                filename=Remote.paths(self.comm, self.remote.main_dir).design_file,
+                root=0,
+            )
+
+        if not (self.is_remote) and self.change_shape:
+            # case where analysis script does the meshing and the remote does not.
+            # need to read new shape variable values before doing the meshing
+            self.model.read_design_variables_file(
+                self.comm,
+                filename=Remote.paths(self.comm, self.flow_dir).design_file,
+                root=0,
+            )
+
+        self.comm.Barrier()
+
         # build aero mesh first
         if self.aero_shape:
-            start_time_aero = time.time()
             if self.comm.rank == self.flow_aim.root:
                 print("F2F - building aero mesh..", flush=True)
             if self.flow_aim.mesh_morph:
@@ -410,14 +433,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.comm.Barrier()
 
         if self.is_remote:
-            if self.comm.rank == 0:
-                print("F2F - writing design variables file", flush=True)
-            # write the funtofem design input file
-            self.model.write_design_variables_file(
-                self.comm,
-                filename=Remote.paths(self.comm, self.remote.main_dir).design_file,
-                root=0,
-            )
+            # write the funtofem design input file for new shape design
+            # case where remote does meshing
+            if self.change_shape:
+                if self.comm.rank == 0:
+                    print("F2F - writing design variables file", flush=True)
+                self.model.write_design_variables_file(
+                    self.comm,
+                    filename=Remote.paths(self.comm, self.remote.main_dir).design_file,
+                    root=0,
+                )
 
             # clear the output file
             if self.root_proc and os.path.exists(self.remote.output_file):
@@ -426,14 +451,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             start_time = time.time()
             if self.comm.rank == 0:
                 print(f"Calling remote analysis..", flush=True)
+
             # system call funtofem forward + adjoint analysis
             os.system(
                 f"mpiexec_mpt -n {self.remote.nprocs} python {self.remote.analysis_file} 2>&1 > {self.remote.output_file}"
             )
             remote_forward_time = (time.time() - start_time) / 60.0
-            self._write_timing_data(
-                f"\tran system call forward analysis in {remote_forward_time:.4f} min"
-            )
+            self._write_timing_data(f"\tdone with system call forward analysis")
             if self.comm.rank == 0:
                 print(
                     f"Done with remote analysis in {remote_forward_time:.4f} min",
@@ -441,8 +465,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 )
 
         else:
-            if self.is_paired:
+            if self.is_paired and not self.change_shape:
                 # read in the funtofem design input file
+                # case where remote does meshing and analysis does no meshing
                 self.model.read_design_variables_file(
                     self.comm,
                     filename=Remote.paths(self.comm, self.flow_dir).design_file,
@@ -505,6 +530,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # evaluate composite functions
         self.model.evaluate_composite_functions(compute_grad=False)
+
         return
 
     def solve_adjoint(self):
@@ -542,7 +568,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             )
 
             # write analysis functions file in analysis or system call
-            if self.is_paired:
+            if self.is_paired and not self.change_shape:
+                # case where we are just writing the non-shape derivatives
                 self.model.write_functions_file(
                     self.comm, Remote.paths(self.comm, self.flow_dir)._functions_file
                 )
@@ -644,6 +671,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             aero_post_time = (time.time() - start_time) / 60.0
             self._write_timing_data(f"\taero postAnalysis in {aero_post_time:.4f} min")
 
+        self.comm.Barrier()
+
+        # write analysis functions file in analysis or system call
+        if self.is_paired and not self.change_shape:
+            # case where we are writing shape derivatives from analysis script which does meshing
+            # to the remote driver (only writes analysis functions here)
+            self.model.write_functions_file(
+                self.comm, Remote.paths(self.comm, self.flow_dir)._functions_file
+            )
+
         # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
         if self.is_remote and self.is_paired:
             self.model.read_functions_file(self.comm, self.remote._functions_file)
@@ -651,7 +688,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # evaluate the composite functions
         self.model.evaluate_composite_functions(compute_grad=True)
 
-        # write a functions file
+        # write a functions file for all functionals
         if self.remote is not None:
             print("Writing funtofem.out file", flush=True)
             self.model.write_functions_file(
@@ -659,8 +696,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             )
 
         full_iteration_time = (time.time() - self._iteration_start) / 60.0
+        prefix = "remote" if self.is_remote else "analysis"
         self._write_timing_data(
-            f"\titeration {self._iteration-1} took {full_iteration_time:.4f} min"
+            f"\t{prefix} - iteration took {full_iteration_time:.4f} min"
         )
 
         # mpi barrier for end of post analysis
