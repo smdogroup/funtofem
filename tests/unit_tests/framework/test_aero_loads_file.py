@@ -85,10 +85,12 @@ class TestAeroLoadsFile(unittest.TestCase):
         # verify the aero loads are the same
         new_aero_loads = plate.aero_loads[scenario.id]
         diff_aero_loads = new_aero_loads - orig_aero_loads
+        orig_norm = np.max(np.abs(orig_aero_loads))
         abs_err_norm = np.max(np.abs(diff_aero_loads))
-        rel_err_norm = abs_err_norm / np.max(np.abs(orig_aero_loads))
+        rel_err_norm = abs_err_norm / orig_norm
 
         print("aeroelastic aero loads test:")
+        print(f"\taero load norm = {orig_norm:.5f}")
         print(f"\tabs error = {abs_err_norm:.5f}")
         print(f"\trel error = {rel_err_norm:.5f}")
         rtol = 1e-7
