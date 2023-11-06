@@ -99,19 +99,27 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         model,
         transfer_settings=None,
         comm_manager=None,
+        struct_nprocs=48,
+        auto_run: bool = True,
     ):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_analysis.py script:
             this object would be responsible for running the FUN3D
             analysis and writing an aero.sens file to the fun3d directory
         """
-        return cls(
+        analysis_driver = cls(
             solvers,
             model=model,
             transfer_settings=transfer_settings,
             comm_manager=comm_manager,
+            struct_nprocs=struct_nprocs,
             is_paired=True,
         )
+
+        if auto_run:
+            analysis_driver.solve_forward()
+            analysis_driver.solve_adjoint()
+        return analysis_driver
 
     def __init__(
         self,
@@ -393,7 +401,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         # rebuild solver interfaces if need be
         # first for the aero / flow interfaces
         if self.aero_shape:
-            # for FUN3D mesh morphing now initialize body nodes
+            # for FUN3D mesh morphing / remeshing in analysis driver =>
+            #     we initialize the body nodes into F2F
             if not (self.is_paired) and self._first_forward:
                 if self.uses_fun3d:
                     self.comm.Barrier()
