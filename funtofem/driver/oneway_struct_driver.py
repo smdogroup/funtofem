@@ -221,6 +221,7 @@ class OnewayStructDriver:
         nprocs,
         transfer_settings,
         external_shape=False,
+        init_transfer=False,
     ):
         """
         Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
@@ -242,6 +243,8 @@ class OnewayStructDriver:
             Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
         external_shape: bool
             whether the tacs aim shape analysis is performed outside this class
+        timing_file: str or path
+            path to funtofem timing file statistics
         """
         comm = solvers.comm
         world_rank = comm.Get_rank()
@@ -271,12 +274,15 @@ class OnewayStructDriver:
                 body.initialize_variables(scenario)
             body._distribute_aero_loads(loads_data)
 
-        return cls(
+        tacs_driver = cls(
             solvers,
             model,
             nprocs=nprocs,
             external_shape=external_shape,
         )
+        if init_transfer:
+            tacs_driver._transfer_fixed_aero_loads()
+        return tacs_driver
 
     @property
     def manager(self, hot_start: bool = False):
