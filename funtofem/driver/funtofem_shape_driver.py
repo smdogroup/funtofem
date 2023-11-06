@@ -404,7 +404,11 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         if self.aero_shape:
             # for FUN3D mesh morphing / remeshing in analysis driver =>
             #     we initialize the body nodes into F2F
-            if not (self.is_paired) and self._first_forward:
+            if (
+                self.solvers.flow is not None
+                and self.aero_shape
+                and self._first_forward
+            ):
                 if self.uses_fun3d:
                     self.comm.Barrier()
 
