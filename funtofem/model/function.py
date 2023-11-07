@@ -44,7 +44,6 @@ class Function(object):
         lower=None,
         upper=None,
         scale=1.0,
-        plot_scale=1.0,
         objective=False,
         plot=False,
         plot_name=None,
@@ -105,7 +104,6 @@ class Function(object):
         self.lower = lower
         self.upper = upper
         self.scale = scale
-        self.plot_scale = plot_scale
         self._objective = objective
         self._plot = plot
 
@@ -164,7 +162,6 @@ class Function(object):
         objective=False,
         plot=False,
         plot_name=None,
-        plot_scale=1.0,
     ):
         """
         automatically sets optim=True for optimization and sets optimization bounds for
@@ -178,7 +175,6 @@ class Function(object):
         self._plot = plot
         if plot_name is not None:
             self._plot_name = plot_name
-        self.plot_scale = plot_scale
         return self
 
     def set_gradient_component(self, var, value):
