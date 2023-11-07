@@ -262,7 +262,7 @@ class OptimizationManager:
                 if func.plot_name in func_keys:
                     yvec = np.array(self._func_history[func.plot_name])
                     if func._objective:
-                        yvec *= func.scale
+                        yvec *= func.plot_scale
                     else:  # constraint
                         constr_bndry = 1.0
                         # take relative errors against constraint boundaries, lower upper
@@ -280,7 +280,7 @@ class OptimizationManager:
                         else:
                             constr_bndry = func.upper
                         if constr_bndry == 0.0:
-                            yvec = np.abs(yvec * func.scale)
+                            yvec = np.abs(yvec * func.plot_scale)
                         else:
                             yvec = np.abs((yvec - constr_bndry) / constr_bndry)
                     # plot the function
