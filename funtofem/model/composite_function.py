@@ -22,6 +22,7 @@ class CompositeFunction:
         optim=False,
         plot_name: str = None,
         plot: bool = False,
+        plot_scale=1.0,
     ):
         """
         Define a function dependent on the analysis functions above
@@ -56,6 +57,7 @@ class CompositeFunction:
         self._objective = False
         self._plot = False
         self._plot_name = plot_name
+        self.plot_scale = plot_scale
 
         # Store the value of the function here
         self._eval_forward = False
@@ -82,6 +84,7 @@ class CompositeFunction:
         objective=False,
         plot=False,
         plot_name: str = None,
+        plot_scale=1.0,
     ):
         """
         automatically sets optim=True for optimization and sets optimization bounds for
@@ -95,6 +98,7 @@ class CompositeFunction:
         self._plot = plot
         if plot_name is not None:
             self._plot_name = plot_name
+        self.plot_scale = plot_scale
         return self
 
     @property
