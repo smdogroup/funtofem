@@ -406,134 +406,6 @@ class FUNtoFEMmodel(object):
                 composite_func.evaluate_gradient()
         return
 
-    def write_aero_loads(self, comm, filename, root=0):
-        """
-        Write the aerodynamic loads file for the OnewayStructDriver.
-
-        This file contains the following information:
-
-        # of Bodies, # of Scenarios
-
-        # aero mesh section
-        Body_mesh name
-        for node in surface_nodes:
-            node, xpos, ypos, zpos
-
-        # aero loads section
-        for each body and scenario:
-            Scenario name
-            Body name
-            for node in surface_nodes:
-                id hflux xload yload zload
-
-        Parameters
-        ----------
-        comm: MPI communicator
-            Global communicator across all FUNtoFEM processors
-        filename: str
-            The name of the file to be generated
-        root: int
-            The rank of the processor that will write the file
-        """
-        if comm.rank == root:
-            data = ""
-            # Specify the number of scenarios in file
-            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
-            data += "aeromesh" + "\n"
-
-        for body in self.bodies:
-            if comm.rank == root:
-                data += f"body_mesh {body.id} {body.name} {body.aero_nnodes} \n"
-
-            id, aeroX = body._collect_aero_mesh(comm, root=root)
-
-            if comm.rank == root:
-                for i in range(len(id)):
-                    data += "{} {} {} {} \n".format(
-                        int(id[i]),
-                        aeroX[3 * i + 0].real,
-                        aeroX[3 * i + 1].real,
-                        aeroX[3 * i + 2].real,
-                    )
-        if comm.rank == root:
-            data += f"aeroloads \n"
-
-        for scenario in self.scenarios:
-            if comm.rank == root:
-                data += f"scenario {scenario.id} {scenario.name} \n"
-
-            for body in self.bodies:
-                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
-
-                if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
-                    for i in range(len(id)):
-                        data += "{} {} {} {} {} \n".format(
-                            int(id[i]),
-                            load[3 * i + 0].real,
-                            load[3 * i + 1].real,
-                            load[3 * i + 2].real,
-                            float(hflux[i].real),
-                        )
-
-                    with open(filename, "w") as fp:
-                        fp.write(data)
-        return
-
-    def write_struct_loads(self, comm, filename, root=0):
-        """
-        Write the struct loads file for the OnewayStructDriver.
-
-        This file contains the following information:
-
-        # of Bodies, # of Scenarios
-
-        # struct loads section
-        for each body and scenario:
-            Scenario name
-            Body name
-            for node in surface_nodes:
-                id hflux xload yload zload
-
-        Parameters
-        ----------
-        comm: MPI communicator
-            Global communicator across all FUNtoFEM processors
-        filename: str
-            The name of the file to be generated
-        root: int
-            The rank of the processor that will write the file
-        """
-        if comm.rank == root:
-            data = ""
-            # Specify the number of scenarios in file
-            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
-
-        if comm.rank == root:
-            data += f"structloads \n"
-
-        for scenario in self.scenarios:
-            if comm.rank == root:
-                data += f"scenario {scenario.id} {scenario.name} \n"
-
-            for body in self.bodies:
-                id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
-
-                if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
-                    for i in range(len(id)):
-                        data += "{} {} {} {} {} \n".format(
-                            int(id[i]),
-                            load[3 * i + 0].real,
-                            load[3 * i + 1].real,
-                            load[3 * i + 2].real,
-                            float(hflux[i].real),
-                        )
-
-                    with open(filename, "w") as fp:
-                        fp.write(data)
-        return
-
     def read_aero_loads(self, comm, filename, root=0):
         """
         Read the aerodynamic loads file for the OnewayStructDriver.
@@ -638,6 +510,134 @@ class FUNtoFEMmodel(object):
 
         # return the loads data
         return loads_data
+
+    def write_struct_loads(self, comm, filename, root=0):
+        """
+        Write the struct loads file for the OnewayStructDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # struct loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        if comm.rank == root:
+            data = ""
+            # Specify the number of scenarios in file
+            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
+
+        if comm.rank == root:
+            data += f"structloads \n"
+
+        for scenario in self.scenarios:
+            if comm.rank == root:
+                data += f"scenario {scenario.id} {scenario.name} \n"
+
+            for body in self.bodies:
+                id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
+
+                if comm.rank == root:
+                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    for i in range(len(id)):
+                        data += "{} {} {} {} {} \n".format(
+                            int(id[i]),
+                            load[3 * i + 0].real,
+                            load[3 * i + 1].real,
+                            load[3 * i + 2].real,
+                            float(hflux[i].real),
+                        )
+
+                    with open(filename, "w") as fp:
+                        fp.write(data)
+        return
+
+    def write_aero_loads(self, comm, filename, root=0):
+        """
+        Write the aerodynamic loads file for the OnewayStructDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        if comm.rank == root:
+            data = ""
+            # Specify the number of scenarios in file
+            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
+            data += "aeromesh" + "\n"
+
+        for body in self.bodies:
+            if comm.rank == root:
+                data += f"body_mesh {body.id} {body.name} {body.aero_nnodes} \n"
+
+            id, aeroX = body._collect_aero_mesh(comm, root=root)
+
+            if comm.rank == root:
+                for i in range(len(id)):
+                    data += "{} {} {} {} \n".format(
+                        int(id[i]),
+                        aeroX[3 * i + 0].real,
+                        aeroX[3 * i + 1].real,
+                        aeroX[3 * i + 2].real,
+                    )
+        if comm.rank == root:
+            data += f"aeroloads \n"
+
+        for scenario in self.scenarios:
+            if comm.rank == root:
+                data += f"scenario {scenario.id} {scenario.name} \n"
+
+            for body in self.bodies:
+                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
+
+                if comm.rank == root:
+                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    for i in range(len(id)):
+                        data += "{} {} {} {} {} \n".format(
+                            int(id[i]),
+                            load[3 * i + 0].real,
+                            load[3 * i + 1].real,
+                            load[3 * i + 2].real,
+                            float(hflux[i].real),
+                        )
+
+                    with open(filename, "w") as fp:
+                        fp.write(data)
+        return
 
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
