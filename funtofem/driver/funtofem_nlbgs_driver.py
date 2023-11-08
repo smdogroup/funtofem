@@ -125,10 +125,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     )
                 steps = 1000
 
-        # flow uncoupled steps (mainly for aerothermal and aerothermoelastic analysis to precondition temperatures)
+        # flow uncoupled steps (mainly for aerothermal and aerothermoelastic analysis)
         for step in range(1, scenario.uncoupled_steps + 1):
             # Take a step in the flow solver for (just aerodynamic iteration)
-            fail = self.solvers.flow.conditioner_iterate(
+            fail = self.solvers.flow.uncoupled_iterate(
                 scenario, self.model.bodies, step
             )
 

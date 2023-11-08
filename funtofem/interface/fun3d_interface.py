@@ -484,10 +484,11 @@ class Fun3dInterface(SolverInterface):
 
         return
 
-    def conditioner_iterate(self, scenario, bodies, step):
+    def uncoupled_iterate(self, scenario, bodies, step):
         """
-        flow solver preconditioner iterations for aerothermal and aerothermoelastic analysis
-        to solve temperature profiles to stagnation first
+        Flow solver uncoupled iterations for aerothermal and aerothermoelastic analysis to
+        get a decent flow solution before perturbing with coupling.
+        
         Parameters
         ----------
         scenario: :class:`~scenario.Scenario`
