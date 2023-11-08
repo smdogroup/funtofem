@@ -10,7 +10,7 @@ import openmdao.api as om
 from mpi4py import MPI
 
 # --------------------------------------------------------------#
-# Setup CAPS Problem and FUNtoFEM model
+# Setup CAPS Problem and FUNtoFEM model - NOTE: not complete, needs stringer PR
 # --------------------------------------------------------------#
 comm = MPI.COMM_WORLD
 f2f_model = FUNtoFEMmodel("tacs_wing")
