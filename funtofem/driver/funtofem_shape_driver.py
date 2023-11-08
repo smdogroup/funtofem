@@ -99,7 +99,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         model,
         transfer_settings=None,
         comm_manager=None,
-        struct_nprocs=48,
+        struct_nprocs=1,
         auto_run: bool = True,
     ):
         """
