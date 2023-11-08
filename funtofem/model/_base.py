@@ -199,9 +199,10 @@ class Base(object):
             "rigid_motion",
             "shape",
             "controls",
+            "thermal",
         ]:
             print(
-                "Warning: vartype specified is not a recognized variable type",
+                f'Warning: vartype "{vartype}" is not a recognized variable type',
                 flush=True,
             )
 
