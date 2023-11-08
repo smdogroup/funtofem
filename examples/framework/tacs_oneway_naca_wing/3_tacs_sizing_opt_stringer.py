@@ -101,26 +101,26 @@ tacs_scenario.register_to(f2f_model)
 
 # make the composite functions for adjacency constraints
 variables = f2f_model.get_variables()
-adj_ratio = 2.0
-adj_scale = 10.0
+adjacency_ratio = 2.0
+adjacency_scale = 10.0
 for irib in range(
     1, nribs
 ):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
     left_rib = f2f_model.get_variables(names=f"rib{irib}")
     right_rib = f2f_model.get_variables(names=f"rib{irib+1}")
     # make a composite function for relative diff in rib thicknesses
-    adj_rib_constr = (left_rib - right_rib) / left_rib
-    adj_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+    adjacency_rib_constr = (left_rib - right_rib) / left_rib
+    adjacency_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
+        lower=-adjacency_ratio, upper=adjacency_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for ispar in range(1, nspars):
     left_spar = f2f_model.get_variables(names=f"spar{ispar}")
     right_spar = f2f_model.get_variables(names=f"spar{ispar+1}")
     # make a composite function for relative diff in spar thicknesses
-    adj_spar_constr = (left_spar - right_spar) / left_spar
-    adj_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+    adjacency_spar_constr = (left_spar - right_spar) / left_spar
+    adjacency_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
+        lower=-adjacency_ratio, upper=adjacency_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 for iOML in range(1, nOML):
@@ -129,7 +129,7 @@ for iOML in range(1, nOML):
     # make a composite function for relative diff in OML thicknesses
     adj_OML_constr = (left_OML - right_OML) / left_OML
     adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+        lower=-adjacency_ratio, upper=adjacency_ratio, scale=1.0, objective=False
     ).register_to(f2f_model)
 
 # make the BDF and DAT file for TACS structural analysis
