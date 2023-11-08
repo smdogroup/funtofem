@@ -141,7 +141,7 @@ class CoupledFrameworkTest(unittest.TestCase):
     def test_coupled_derivatives(self):
         model, driver = self._setup_model_and_driver()
 
-        # Check whether to use the complex-step method or now
+        # Check whether to use the complex-step method or not
         complex_step = False
         epsilon = 1e-9
         rtol = 1e-4
