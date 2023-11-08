@@ -488,7 +488,7 @@ class Fun3dInterface(SolverInterface):
         """
         Flow solver uncoupled iterations for aerothermal and aerothermoelastic analysis to
         get a decent flow solution before perturbing with coupling.
-        
+
         Parameters
         ----------
         scenario: :class:`~scenario.Scenario`
