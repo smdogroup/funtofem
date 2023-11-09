@@ -70,6 +70,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         transfer_settings=None,
         comm_manager=None,
         struct_nprocs=48,
+        forward_flow_post_analysis=False,
     ):
         """
         Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
@@ -81,16 +82,23 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             comm_manager=comm_manager,
             is_paired=False,
             struct_nprocs=struct_nprocs,
+            forward_flow_post_analysis=forward_flow_post_analysis,
         )
 
     @classmethod
-    def aero_remesh(cls, solvers, model, remote):
+    def aero_remesh(cls, solvers, model, remote, forward_flow_post_analysis=False):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model=model, remote=remote, is_paired=True)
+        return cls(
+            solvers,
+            model=model,
+            remote=remote,
+            is_paired=True,
+            forward_flow_post_analysis=forward_flow_post_analysis,
+        )
 
     @classmethod
     def analysis(
@@ -101,6 +109,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         comm_manager=None,
         struct_nprocs=1,
         auto_run: bool = True,
+        forward_flow_post_analysis=False,
     ):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_analysis.py script:
@@ -114,6 +123,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             comm_manager=comm_manager,
             struct_nprocs=struct_nprocs,
             is_paired=True,
+            forward_flow_post_analysis=forward_flow_post_analysis,
         )
 
         if auto_run:
@@ -130,6 +140,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         remote=None,
         is_paired=False,
         struct_nprocs=48,
+        forward_flow_post_analysis=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -148,6 +159,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
+        forward_flow_post_analysis: bool
+            whether to only do preAnalysis at start of forward and postAnalysis at end of adjoint
+            for long optimization iterations (then this would be False). If we want to get analysis function
+            values from the forward analysis remote driver this would be True as we want to do both adjoint and flow postAnalysis.
         """
 
         # construct super class
@@ -162,6 +177,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self.shape_variables = [
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
+        self.forward_flow_post_analysis = forward_flow_post_analysis
 
         # make sure the solver interfaces are TACS and FUN3D
         if not (self.change_shape) and self.is_remote:
@@ -519,7 +535,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             self.comm.Barrier()
 
         # post analysis for FUN3D mesh morphing
-        if self.aero_shape:  # either remote or regular
+        if self.aero_shape and (
+            self.forward_flow_post_analysis or self.flow_aim.mesh_morph
+        ):
             # src for movement of sens file or None if not moving it
             sens_file_src = self.remote.aero_sens_file if self.remote_meshing else None
 
@@ -567,7 +585,10 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         """
         self._zero_derivatives()
 
-        if self.aero_shape:
+        # the additional adjoint aim preAnalysis is required by mesh morphing, but not necessarily in other cases
+        if self.aero_shape and (
+            self.forward_flow_post_analysis or self.flow_aim.mesh_morph
+        ):
             if self.flow_aim.mesh_morph:
                 self.flow_aim.set_design_sensitivity(True, include_file=False)
 
