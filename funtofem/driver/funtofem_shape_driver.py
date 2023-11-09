@@ -393,6 +393,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if fail:
                 raise RuntimeError("F2F shape driver aero preAnalysis failed..")
 
+        self.comm.Barrier()
+
         # then build struct meshes
         if self.struct_shape:
             # self._update_struct_design()
