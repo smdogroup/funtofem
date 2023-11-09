@@ -383,7 +383,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            self.flow_aim.pre_analysis()
+            try:
+                self.flow_aim.pre_analysis()
+                local_fail = False
+            except:
+                local_fail = True
+            fail = self.comm.gather(local_fail, root=0)
+            fail = self.comm.bcast(fail, root=0)
+            if fail:
+                raise RuntimeError("F2F shape driver aero preAnalysis failed..")
 
         # then build struct meshes
         if self.struct_shape:
@@ -393,7 +401,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             input_dict = {var.name: var.value for var in self.model.get_variables()}
             self.model.structural.update_design(input_dict)
             self.struct_aim.setup_aim()
-            self.struct_aim.pre_analysis()
+
+            try:
+                self.struct_aim.pre_analysis()
+                local_fail = False
+            except:
+                local_fail = True
+            fail = self.comm.gather(local_fail, root=0)
+            fail = self.comm.bcast(fail, root=0)
+            if fail:
+                raise RuntimeError("F2F shape driver struct preAnalysis failed..")
 
         # done building meshes => report timing data
         self.comm.Barrier()
