@@ -24,6 +24,7 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np, os, importlib
 from .variable import Variable
+from .function import CompositeFunction
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -1029,20 +1030,32 @@ class FUNtoFEMmodel(object):
             "     ------------------------------------------------------------------------------------"
         )
         for func in model_functions:
+            if isinstance(func, CompositeFunction):
+                analysis_type = func.analysis_type
+                adjoint = "N/A"
+                start = "N/A"
+                stop = "N/A"
+                averaging = "N/A"
+            else:
+                analysis_type = func.analysis_type
+                adjoint = func.adjoint
+                start = func.start
+                stop = func.stop
+                averaging = func.averaging
             if len(func.name) >= 8:
                 print(
                     "     | ",
                     func.name,
                     "\t| ",
-                    func.analysis_type,
+                    analysis_type,
                     "\t| ",
-                    func.adjoint,
+                    adjoint,
                     "\t| [",
-                    func.start,
+                    start,
                     ",",
-                    func.stop,
+                    stop,
                     "] \t| ",
-                    func.averaging,
+                    averaging,
                     "\t|",
                 )
             else:
@@ -1050,15 +1063,15 @@ class FUNtoFEMmodel(object):
                     "     | ",
                     func.name,
                     "\t\t| ",
-                    func.analysis_type,
+                    analysis_type,
                     "\t| ",
-                    func.adjoint,
+                    adjoint,
                     "\t| [",
-                    func.start,
+                    start,
                     ",",
-                    func.stop,
+                    stop,
                     "] \t| ",
-                    func.averaging,
+                    averaging,
                     "\t|",
                 )
         print(

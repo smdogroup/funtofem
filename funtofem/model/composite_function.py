@@ -48,6 +48,7 @@ class CompositeFunction:
         self.functions = unique(functions)
         self.variables = unique(variables)
         self.optim = optim
+        self.analysis_type = "composite"
 
         # optimization settings
         self.lower = None
