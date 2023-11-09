@@ -28,6 +28,7 @@ class Base(object):
     """
     Base class for FUNtoFEM bodies and scenarios
     """
+    VAR_TYPES = ["structural", "aerodynamic", "rigid_motion", "shape", "control", "thermal"]
 
     def __init__(self, name, id=0, group=None):
         """
@@ -193,14 +194,7 @@ class Base(object):
             type of variable
         """
 
-        if not vartype in [
-            "structural",
-            "aerodynamic",
-            "rigid_motion",
-            "shape",
-            "controls",
-            "thermal",
-        ]:
+        if not vartype in self.VAR_TYPES:
             print(
                 f'Warning: vartype "{vartype}" is not a recognized variable type',
                 flush=True,
