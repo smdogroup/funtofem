@@ -277,7 +277,6 @@ class Fun3dAim:
             self.apply_shape_variables()
             self.aim.preAnalysis()
             self._move_grid_files()
-        self.comm.Barrier()
         return
 
     def post_analysis(self, sens_file_src=None):
