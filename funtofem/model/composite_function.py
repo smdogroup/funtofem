@@ -13,7 +13,16 @@ def unique(vec):
 
 
 class CompositeFunction:
-    def __init__(self, name: str, eval_hdl, functions, variables=[], optim=False):
+    def __init__(
+        self,
+        name: str,
+        eval_hdl,
+        functions,
+        variables=[],
+        optim=False,
+        plot_name: str = None,
+        plot: bool = False,
+    ):
         """
         Define a function dependent on the analysis functions above
 
@@ -28,6 +37,10 @@ class CompositeFunction:
         optim: bool
             whether to include this function in the optimization objective/constraints
             (can be active but not an objective/constraint if it is used to compute composite functions)
+        plot: bool
+            whether to include this function in optimization plots
+        plot_name: str
+            what name to give for optimization plots
         """
 
         self._name = name
@@ -42,6 +55,7 @@ class CompositeFunction:
         self.scale = None
         self._objective = False
         self._plot = False
+        self._plot_name = plot_name
 
         # Store the value of the function here
         self._eval_forward = False
@@ -60,7 +74,15 @@ class CompositeFunction:
         self._done_complex_step = False
         return
 
-    def optimize(self, lower=None, upper=None, scale=None, objective=False, plot=False):
+    def optimize(
+        self,
+        lower=None,
+        upper=None,
+        scale=None,
+        objective=False,
+        plot=False,
+        plot_name: str = None,
+    ):
         """
         automatically sets optim=True for optimization and sets optimization bounds for
         OpenMDAO or pyoptsparse
@@ -71,7 +93,16 @@ class CompositeFunction:
         self.scale = scale
         self._objective = objective
         self._plot = plot
+        if plot_name is not None:
+            self._plot_name = plot_name
         return self
+
+    @property
+    def plot_name(self) -> str:
+        if self._plot_name is not None:
+            return self._plot_name
+        else:
+            return self.full_name
 
     def setup_derivative_dict(self, variables):
         for var in variables:

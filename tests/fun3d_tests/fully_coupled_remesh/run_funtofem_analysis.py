@@ -53,8 +53,4 @@ solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=model, comm=comm, nprocs=nprocs, bdf_file=fun3d_remote.dat_file
 )
-driver = FuntofemShapeDriver.analysis(solvers, model)
-
-# run the forward and adjoint analysis in one shot
-driver.solve_forward()
-driver.solve_adjoint()
+driver = FuntofemShapeDriver.analysis(solvers, model, auto_run=True)

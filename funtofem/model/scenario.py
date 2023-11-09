@@ -44,8 +44,11 @@ class Scenario(Base):
         steady=True,
         fun3d=True,
         steps=1000,
-        preconditioner_steps=0,
+        uncoupled_steps=0,
         adjoint_steps=None,
+        min_forward_steps=None,
+        min_adjoint_steps=None,
+        early_stopping=False,
         T_ref=300,
         T_inf=300,
         qinf=1.0,
@@ -74,11 +77,19 @@ class Scenario(Base):
             whether or not you are using FUN3D. If true, the scenario class will auto-populate 'aerodynamic' required by FUN3D
         steps: int
             the total number of fun3d time steps to run for the scenario
-        preconditioner_steps: int
-            the number of fun3d iterations ran before coupled iterations for preconditioning
+        uncoupled_steps: int
+            the number of fun3d iterations ran before coupled iterations
         adjoint_steps: int
             optional number of adjoint steps when using FUN3D analysis, can have different
             number of forward and adjoint steps in steady-state
+        early_stopping: bool
+            whether to activate the early stopping criterion
+        min_forward_steps: int
+            (optional) minimum number of steps required before early stopping can happen. Note
+            this is set to the # of uncoupled steps if not provided (hence you probably don't need to set this
+            but you can in special circumstances)
+        min_adjoint_steps: int
+            (optional) minimum number of adjoint steps required before early stopping criterion is applied
         T_ref: double
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
@@ -121,7 +132,7 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
-        self.preconditioner_steps = preconditioner_steps
+        self.uncoupled_steps = uncoupled_steps
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
 
@@ -135,6 +146,15 @@ class Scenario(Base):
         self.gamma = gamma
         self.R_specific = R_specific
         self.Pr = Pr
+
+        # early stopping criterion
+        self.min_forward_steps = (
+            min_forward_steps if min_forward_steps is not None else uncoupled_steps
+        )
+        self.min_adjoint_steps = (
+            min_adjoint_steps if min_adjoint_steps is not None else 0
+        )
+        self.early_stopping = early_stopping
 
         # Heat capacity at constant pressure
         cp = self.R_specific * self.gamma / (self.gamma - 1)
@@ -156,12 +176,12 @@ class Scenario(Base):
             self.add_variable("aerodynamic", zrate)
 
     @classmethod
-    def steady(cls, name: str, steps: int, preconditioner_steps: int = 0):
+    def steady(cls, name: str, steps: int, uncoupled_steps: int = 0):
         return cls(
             name=name,
             steady=True,
             steps=steps,
-            preconditioner_steps=preconditioner_steps,
+            uncoupled_steps=uncoupled_steps,
         )
 
     @classmethod
@@ -169,7 +189,7 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        preconditioner_steps: int = 0,
+        uncoupled_steps: int = 0,
         tacs_integration_settings=None,
     ):
         return cls(
@@ -177,7 +197,7 @@ class Scenario(Base):
             steady=False,
             steps=steps,
             tacs_integration_settings=tacs_integration_settings,
-            preconditioner_steps=preconditioner_steps,
+            uncoupled_steps=uncoupled_steps,
         )
 
     def add_function(self, function):
@@ -301,6 +321,33 @@ class Scenario(Base):
         """
         self.T_ref = T_ref
         self.T_inf = T_inf
+        return self
+
+    def set_stop_criterion(
+        self,
+        early_stopping: bool = True,
+        min_forward_steps=None,
+        min_adjoint_steps=None,
+    ):
+        """
+        turn on the early stopping criterion, note you probably don't need
+        to set the min steps (as it defaults to the # of uncoupled steps)
+        The stopping tolerances are set in each discipline interface
+
+        Parameters
+        ----------
+        early_stopping: bool
+            whether to perform early stopping criterion
+        min_forward_steps: int
+            (optional) - the minimum number of steps for engaging the early stop criterion for forward analysis
+        min_adjoint_steps: int
+            (optional) - the minimum number of steps for engaging the early stopping criterion for adjoint analysis
+        """
+        self.early_stopping = early_stopping
+        if min_forward_steps is not None:
+            self.min_forward_steps = min_forward_steps
+        if min_adjoint_steps is not None:
+            self.min_adjoint_steps = min_adjoint_steps
         return self
 
     def set_flow_ref_vals(self, qinf: float = 1.0, flow_dt: float = 1.0):

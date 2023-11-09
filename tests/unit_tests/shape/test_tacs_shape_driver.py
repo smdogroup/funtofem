@@ -125,6 +125,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
             tacs_model
         )
         f2f_model.structural = tacs_model
+        tacs_aim = tacs_model.tacs_aim
 
         # build a body which we will register variables to
         wing = Body.aeroelastic("wing")
@@ -165,6 +166,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         # setup the tacs model
         tacs_model.setup()
+        # tacs_model.pre_analysis()
 
         # make a funtofem scenario
         test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
@@ -173,6 +175,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, f2f_model)
+        # solvers.structural = TacsSteadyInterface.create_from_bdf(f2f_model, comm, nprocs=2, bdf_file=tacs_aim.root_dat_file)
         transfer_settings = TransferSettings(npts=200, beta=0.5)
         aero_driver = TestAeroOnewayDriver(solvers, f2f_model, transfer_settings)
 
@@ -188,6 +191,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
             complex_mode=False,
             epsilon=1e-4,
         )
+
         rtol = 1e-4
         self.assertTrue(max_rel_error < rtol)
         return

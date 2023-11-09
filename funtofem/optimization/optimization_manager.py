@@ -24,6 +24,7 @@ __all__ = ["OptimizationManager"]
 
 import os, numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 class OptimizationManager:
@@ -97,13 +98,18 @@ class OptimizationManager:
 
             # setup function history for optimization plots and the history file path
             self._func_history = {
-                func.full_name: []
+                func.plot_name: []
                 for func in self.model.get_functions(optim=True)
                 if func._plot
             }
             self._history_file = os.path.join(
                 self._design_folder, f"{self.model.name}_history.png"
             )
+
+            # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
+            for func in self.model.get_functions():
+                for var in self.model.get_variables():
+                    func.derivatives[var] = 0.0
 
     def _gatekeeper(self, x_dict):
         """
@@ -112,6 +118,7 @@ class OptimizationManager:
         """
 
         # only if a new design run a complete analysis
+        fail = False
         if not (x_dict == self._x_dict):
             # write the new design dict
             if self.comm.rank == 0 and self.write_designs:
@@ -128,12 +135,44 @@ class OptimizationManager:
             # increment the iteration number
             self._iteration += 1
 
+            # check for nans in any of the function values values
+            for func_key in self._funcs:
+                c_sens = self._sens[func_key]
+                if np.isnan(self._funcs[func_key]):
+                    if self.comm.rank == 0:
+                        print(
+                            f"Warning: func {func_key} = {self._funcs[var_key]} and has a nan"
+                        )
+                    fail = True
+                for var_key in c_sens:
+                    if np.isnan(c_sens[var_key]):
+                        if self.comm.rank == 0:
+                            print(
+                                f"Warning: d{func_key}/d{var_key} = {c_sens[var_key]} and has a nan"
+                            )
+                        fail = True
+                if fail:
+                    break
+
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
                 self._design_hdl.write(f"Functions = {self._funcs}\n")
                 self._design_hdl.flush()
 
-        return
+            # only update design file if analysis didn't fail and give nans
+            if self.design_out_file is not None and not (fail):
+                self.model.write_design_variables_file(
+                    self.comm, self.design_out_file, root=0
+                )
+
+            # update and plot the current optimization history
+            if self.write_designs and not (fail):
+                for func in self.model.get_functions(optim=True):
+                    if not func._plot:
+                        continue
+                    self._func_history[func.plot_name] += [func.value.real]
+                self._plot_history()
+        return fail
 
     def _run_complete_analysis(self):
         """
@@ -147,16 +186,11 @@ class OptimizationManager:
                     # assumes here that only pyoptsparse single variables (no var groups are made)
                     var.value = float(self._x_dict[var_key])
 
-        if self.design_out_file is not None:
-            self.model.write_design_variables_file(
-                self.comm, self.design_out_file, root=0
-            )
-
         # run forward and adjoint analysis on the driver
         self.driver.solve_forward()
         self.driver.solve_adjoint()
 
-        # evaluate any composite functions once the main analysis functions are computed
+        # evaluate composite functions if not evaluated yet
         self.model.evaluate_composite_functions()
 
         # store the functions and sensitivities from the complete analysis
@@ -170,14 +204,6 @@ class OptimizationManager:
                 self._sens[func.full_name][var.full_name] = func.get_gradient_component(
                     var
                 ).real
-
-        # update and plot the current optimization history
-        if self.write_designs:
-            for func in self.model.get_functions(optim=True):
-                if not func._plot:
-                    continue
-                self._func_history[func.full_name] += [func.value.real]
-            self._plot_history()
         return
 
     def register_to_problem(self, opt_problem):
@@ -207,17 +233,14 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        fail = False
-        self._gatekeeper(x_dict)
-
+        fail = self._gatekeeper(x_dict)
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        fail = False
-        self._gatekeeper(x_dict)
+        fail = self._gatekeeper(x_dict)
 
         return self._sens, fail
 
@@ -236,8 +259,8 @@ class OptimizationManager:
             ax = plt.subplot(111)
             ind = 0
             for func in model.get_functions(optim=True):
-                if func.full_name in func_keys:
-                    yvec = np.array(self._func_history[func.full_name])
+                if func.plot_name in func_keys:
+                    yvec = np.array(self._func_history[func.plot_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -266,13 +289,15 @@ class OptimizationManager:
                         yvec,
                         color=colors[ind],
                         linewidth=2,
-                        label=func.full_name,
+                        label=func.plot_name,
                     )
                     ind += 1
             # put axis on rhs of plot
             box = ax.get_position()
             ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
             ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+            # set x-axis to integers only (since it represents iterations)
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             plt.xlabel("iterations")
             plt.ylabel("func values")
             plt.yscale("log")

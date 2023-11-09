@@ -93,13 +93,18 @@ class FuntofemComponent(ExplicitComponent):
         # store function optimization history
         if track_history:
             self._func_history = {
-                func.full_name: [] for func in functions if func._plot
+                func.plot_name: [] for func in functions if func._plot
             }
 
             if comm.rank == 0:
                 self._design_hdl = open(
                     os.path.join(self._write_path, "design_hist.txt"), "w"
                 )
+
+        # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
+        for func in model.get_functions():
+            for var in model.get_variables():
+                func.derivatives[var] = 0.0
 
     def setup_partials(self):
         driver = self.options["driver"]
@@ -139,12 +144,11 @@ class FuntofemComponent(ExplicitComponent):
         track_history = self.options["track_history"]
         model = driver.model
         design_out_file = self.options["design_out_file"]
-        new_design = self.update_design(inputs, analysis=True)
+        self.update_design(inputs, analysis=True)
 
-        if new_design:
-            model.write_design_variables_file(driver.comm, design_out_file)
-            driver.solve_forward()
-            model.evaluate_composite_functions(compute_grad=False)
+        model.write_design_variables_file(driver.comm, design_out_file)
+        driver.solve_forward()
+        model.evaluate_composite_functions(compute_grad=False)
 
         if track_history:
             self._update_history()
@@ -156,11 +160,10 @@ class FuntofemComponent(ExplicitComponent):
     def compute_partials(self, inputs, partials):
         driver = self.options["driver"]
         model = driver.model
-        new_design = self.update_design(inputs, analysis=False)
+        self.update_design(inputs, analysis=False)
 
-        if new_design:
-            driver.solve_adjoint()
-            model.evaluate_composite_functions(compute_grad=True)
+        driver.solve_adjoint()
+        model.evaluate_composite_functions(compute_grad=True)
 
         for func in model.get_functions(optim=True):
             for var in model.get_variables():
@@ -180,8 +183,8 @@ class FuntofemComponent(ExplicitComponent):
         driver = self.options["driver"]
         model = driver.model
         for func in model.get_functions(optim=True):
-            if func.full_name in self._func_history:
-                self._func_history[func.full_name].append(func.value.real)
+            if func.plot_name in self._func_history:
+                self._func_history[func.plot_name].append(func.value.real)
 
         if driver.comm.rank == 0:
             self._plot_history()
@@ -213,8 +216,8 @@ class FuntofemComponent(ExplicitComponent):
             ind = 0
             colors = plt.cm.jet(np.linspace(0, 1, nkeys))
             for func in model.get_functions(optim=True):
-                if func.full_name in func_keys:
-                    yvec = np.array(self._func_history[func.full_name])
+                if func.plot_name in func_keys:
+                    yvec = np.array(self._func_history[func.plot_name])
                     if func._objective:
                         yvec *= func.scale
                     else:  # constraint
@@ -243,7 +246,7 @@ class FuntofemComponent(ExplicitComponent):
                         yvec,
                         color=colors[ind],
                         linewidth=2,
-                        label=func.full_name,
+                        label=func.plot_name,
                     )
                     ind += 1
 

@@ -6,11 +6,14 @@ from .aflr_aim import AflrAim
 
 
 class Fun3dModel:
-    def __init__(self, fun3d_aim, aflr_aim, comm, project_name="caps"):
+    def __init__(
+        self, fun3d_aim, aflr_aim, comm, project_name="fun3d_CAPS", root: int = 0
+    ):
         self._fun3d_aim = fun3d_aim
         self._aflr_aim = aflr_aim
         self.project_name = project_name
         self.comm = comm
+        self.root = root
         self._variables = {}
 
         self.caps_problem = fun3d_aim.caps_problem
@@ -30,6 +33,7 @@ class Fun3dModel:
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
         mesh_morph=False,
+        root: int = 0,
         verbosity=0,
     ):
         """
@@ -42,14 +46,14 @@ class Fun3dModel:
             MPI communicator
         """
         caps_problem = None
-        if comm.rank == 0:
+        if comm.rank == root:
             caps_problem = pyCAPS.Problem(
                 problemName=problem_name, capsFile=csm_file, outLevel=verbosity
             )
-        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph)
-        aflr_aim = AflrAim(caps_problem, comm)
-
-        return cls(fun3d_aim, aflr_aim, comm, project_name)
+        fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph, root=root)
+        aflr_aim = AflrAim(caps_problem, comm, root=root)
+        comm.Barrier()
+        return cls(fun3d_aim, aflr_aim, comm, project_name, root=root)
 
     @classmethod
     def build_morph(
@@ -57,6 +61,7 @@ class Fun3dModel:
         csm_file,
         comm,
         project_name="fun3d_CAPS",
+        root: int = 0,
         problem_name: str = "capsFluid",
     ):
         return cls.build(
@@ -64,6 +69,7 @@ class Fun3dModel:
             comm=comm,
             project_name=project_name,
             problem_name=problem_name,
+            root=root,
             mesh_morph=True,
         )
 
@@ -95,7 +101,7 @@ class Fun3dModel:
         """set the project names into both aims for grid filenames"""
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
-        self.fun3d_aim._metadata.project_name = self.project_name
+        self.fun3d_aim._metadata["project_name"] = self.project_name
         if self.aflr_aim.root_proc:
             self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
             self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
@@ -127,6 +133,10 @@ class Fun3dModel:
     def _set_grid_filename(self):
         self.fun3d_aim.grid_file = os.path.join(
             self.aflr_aim.analysis_dir, "aflr3_0.lb8.ugrid"
+        )
+        # also set mapbc file
+        self.fun3d_aim.mapbc_file = os.path.join(
+            self.fun3d_aim.analysis_dir, "Flow", self.fun3d_aim.project_name + ".mapbc"
         )
         return
 

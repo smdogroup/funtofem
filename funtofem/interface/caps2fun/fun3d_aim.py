@@ -3,12 +3,6 @@ __all__ = ["Fun3dAim", "Fun3dBC"]
 import os, shutil
 
 
-class Fun3dAimMetaData:
-    def __init__(self, project_name, analysis_dir):
-        self.project_name = project_name
-        self.analysis_dir = analysis_dir
-
-
 class Fun3dBC:
     BC_TYPES = [
         "inviscid",
@@ -79,7 +73,7 @@ class Fun3dBC:
 
 
 class Fun3dAim:
-    def __init__(self, caps_problem, comm, mesh_morph=False, root=0):
+    def __init__(self, caps_problem, comm, mesh_morph=False, root: int = 0):
         """Fun3dAim wrapper class for use in FUNtoFEM"""
         self.caps_problem = caps_problem
         self.comm = comm
@@ -93,6 +87,8 @@ class Fun3dAim:
         self._aim = None
         self._grid_file = None
         self._grid_filepaths = []
+        self._mapbc_file = None
+        self._mapbc_filepaths = []
 
         self._fun3d_dir = None
 
@@ -111,11 +107,16 @@ class Fun3dAim:
             self.aim.input.Mesh_Morph = mesh_morph
             self.aim.input.Mesh_Morph_Combine = mesh_morph
 
+        class Fun3dAimMetaData:
+            def __init__(self, project_name, analysis_dir):
+                self.project_name = project_name
+                self.analysis_dir = analysis_dir
+
         self._metadata = None
         if self.root_proc:
-            self._metadata = Fun3dAimMetaData(
-                project_name=self.aim.input.Proj_Name, analysis_dir=self.aim.analysisDir
-            )
+            self._metadata = {}
+            self._metadata["project_name"] = self.aim.input.Proj_Name
+            self._metadata["analysis_dir"] = self.aim.analysisDir
         self._metadata = self.comm.bcast(self._metadata, root=root)
 
     @property
@@ -170,7 +171,7 @@ class Fun3dAim:
 
     @property
     def project_name(self):
-        return self._metadata.project_name
+        return self._metadata["project_name"]
 
     @property
     def grid_filepaths(self):
@@ -182,7 +183,17 @@ class Fun3dAim:
         self._grid_filepaths = new_filepaths
         return
 
-    def _move_grid_files(self):
+    @property
+    def mapbc_filepaths(self):
+        return self._mapbc_filepaths
+
+    @mapbc_filepaths.setter
+    def mapbc_filepaths(self, new_filepaths):
+        """set the grid filepaths from each fun3d scenario, from the fun3d interface"""
+        self._mapbc_filepaths = new_filepaths
+        return
+
+    def _move_grid_files(self, include_mapbc=False):
         """
         move each of the grid files in the preAnalysis after a new grid is
         destination files are all called fun3d_CAPS.lb8.ugrid
@@ -192,10 +203,19 @@ class Fun3dAim:
                 return
             else:
                 self._first_grid_move = False
-        print(f"copying grid files = {self._first_grid_move}")
-        src = self.grid_file
-        for dest in self.grid_filepaths:
-            shutil.copy(src, dest)
+        if self.comm.rank == self.root:
+            print(f"copying grid files")
+            src = self.grid_file
+            for dest in self.grid_filepaths:
+                shutil.copy(src, dest)
+
+        # also move the mapbc files to each scenario from fun3d aim dir
+        if include_mapbc:
+            if self.comm.rank == self.root:
+                print(f"copying mapbc files")
+                src = self.mapbc_file
+                for dest in self.mapbc_filepaths:
+                    shutil.copy(src, dest)
         return
 
     def _move_sens_files(self, src):
@@ -223,7 +243,7 @@ class Fun3dAim:
             for dv in shape_variables:
                 DV_dict[dv.name] = {}
             for dv in aero_variables:
-                DV_dict[dv.name] = {}
+                DV_dict[dv.full_name] = {}
             self.aim.input.Design_Variable = DV_dict
         self._shape_variables += shape_variables
         return
@@ -242,7 +262,7 @@ class Fun3dAim:
 
     @property
     def analysis_dir(self) -> str:
-        return self._metadata.analysis_dir
+        return self._metadata["analysis_dir"]
 
     @property
     def mesh_morph_filename(self):
@@ -277,6 +297,14 @@ class Fun3dAim:
     @grid_file.setter
     def grid_file(self, new_grid_file):
         self._grid_file = new_grid_file
+
+    @property
+    def mapbc_file(self):
+        return self._mapbc_file
+
+    @mapbc_file.setter
+    def mapbc_file(self, new_mapbc_file):
+        self._mapbc_file = new_mapbc_file
 
     @property
     def sens_file_path(self):

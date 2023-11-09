@@ -135,6 +135,9 @@ class TestAerodynamicSolver(SolverInterface):
         self.npts = 10
         np.random.seed(0)
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Get the list of active design variables
         self.variables = model.get_variables()
 
@@ -461,6 +464,9 @@ class TestStructuralSolver(SolverInterface):
         self.comm = comm
         self.npts = 25
         np.random.seed(54321)
+
+        # setup forward and adjoint tolerances
+        super().__init__()
 
         # Get the list of active design variables
         self.variables = model.get_variables()

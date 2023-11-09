@@ -184,6 +184,9 @@ class TacsSteadyInterface(SolverInterface):
         # returns the variables in the FUNtoFEM order. By scenario/body.
         self.variables = model.get_variables()
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Get the structural variables from the global list of variables.
         self.struct_variables = []
         for var in self.variables:
@@ -355,8 +358,13 @@ class TacsSteadyInterface(SolverInterface):
                     ksweight = 50.0
                     if func.options is not None and "ksweight" in func.options:
                         ksweight = func.options["ksweight"]
+                    safetyFactor = 1.0
+                    if func.options is not None and "safetyFactor" in func.options:
+                        safetyFactor = func.options["safetyFactor"]
                     func_list.append(
-                        functions.KSFailure(self.assembler, ksWeight=ksweight)
+                        functions.KSFailure(
+                            self.assembler, ksWeight=ksweight, safetyFactor=safetyFactor
+                        )
                     )
                     func_tag.append(1)
 

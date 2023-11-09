@@ -124,6 +124,9 @@ class TacsUnsteadyInterface(SolverInterface):
         self.tacs_comm = tacs_comm
         self.nprocs = nprocs
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Debug flag
         self._debug = debug
         if self.comm.rank != 0:
@@ -325,8 +328,13 @@ class TacsUnsteadyInterface(SolverInterface):
                     ksweight = 50.0
                     if func.options is not None and "ksweight" in func.options:
                         ksweight = func.options["ksweight"]
+                    safetyFactor = 1.0
+                    if func.options is not None and "safetyFactor" in func.options:
+                        safetyFactor = func.options["safetyFactor"]
                     func_list.append(
-                        functions.KSFailure(self.assembler, ksWeight=ksweight)
+                        functions.KSFailure(
+                            self.assembler, ksWeight=ksweight, safetyFactor=safetyFactor
+                        )
                     )
                     func_tag.append(1)
 
