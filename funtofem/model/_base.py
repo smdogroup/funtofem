@@ -28,7 +28,15 @@ class Base(object):
     """
     Base class for FUNtoFEM bodies and scenarios
     """
-    VAR_TYPES = ["structural", "aerodynamic", "rigid_motion", "shape", "control", "thermal"]
+
+    VAR_TYPES = [
+        "structural",
+        "aerodynamic",
+        "rigid_motion",
+        "shape",
+        "control",
+        "thermal",
+    ]
 
     def __init__(self, name, id=0, group=None):
         """
