@@ -138,7 +138,7 @@ class Variable(object):
         if self._scenario_name is None:
             return self.name
         else:
-            return f"{self._scenario_name}.{self.name}"
+            return f"{self._scenario_name}-{self.name}"
 
     @classmethod
     def structural(cls, name: str, value=0.0):

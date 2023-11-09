@@ -24,6 +24,7 @@ __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np, os, importlib
 from .variable import Variable
+from .function import CompositeFunction
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -149,6 +150,8 @@ class FUNtoFEMmodel(object):
                 shape_variables = base.variables["shape"]
 
             for var in struct_variables:
+                if not (var.active):
+                    continue
                 # check if matching shell property exists
                 matching_prop = False
                 for prop in self.structural.tacs_aim._properties:
@@ -171,7 +174,9 @@ class FUNtoFEMmodel(object):
             comm = self.structural.comm
             if self.structural.root_proc:
                 esp_caps_despmtrs = list(self.structural.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+            esp_caps_despmtrs = comm.bcast(
+                esp_caps_despmtrs, root=self.structural.root_proc_ind
+            )
 
             for var in shape_variables:
                 matching_despmtr = False
@@ -210,13 +215,15 @@ class FUNtoFEMmodel(object):
             comm = self.flow.comm
             if self.flow.root_proc:
                 esp_caps_despmtrs = list(self.flow.geometry.despmtr.keys())
-            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=0)
+            esp_caps_despmtrs = comm.bcast(esp_caps_despmtrs, root=self.flow.root)
 
             active_shape_vars = []
             active_aero_vars = []
 
             # add shape variable names to varnames
             for var in shape_variables:
+                if not (var.active):
+                    continue
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
                         active_shape_vars.append(var)
@@ -400,134 +407,6 @@ class FUNtoFEMmodel(object):
                 composite_func.evaluate_gradient()
         return
 
-    def write_aero_loads(self, comm, filename, root=0):
-        """
-        Write the aerodynamic loads file for the OnewayStructDriver.
-
-        This file contains the following information:
-
-        # of Bodies, # of Scenarios
-
-        # aero mesh section
-        Body_mesh name
-        for node in surface_nodes:
-            node, xpos, ypos, zpos
-
-        # aero loads section
-        for each body and scenario:
-            Scenario name
-            Body name
-            for node in surface_nodes:
-                id hflux xload yload zload
-
-        Parameters
-        ----------
-        comm: MPI communicator
-            Global communicator across all FUNtoFEM processors
-        filename: str
-            The name of the file to be generated
-        root: int
-            The rank of the processor that will write the file
-        """
-        if comm.rank == root:
-            data = ""
-            # Specify the number of scenarios in file
-            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
-            data += "aeromesh" + "\n"
-
-        for body in self.bodies:
-            if comm.rank == root:
-                data += f"body_mesh {body.id} {body.name} {body.aero_nnodes} \n"
-
-            id, aeroX = body._collect_aero_mesh(comm, root=root)
-
-            if comm.rank == root:
-                for i in range(len(id)):
-                    data += "{} {} {} {} \n".format(
-                        int(id[i]),
-                        aeroX[3 * i + 0].real,
-                        aeroX[3 * i + 1].real,
-                        aeroX[3 * i + 2].real,
-                    )
-        if comm.rank == root:
-            data += f"aeroloads \n"
-
-        for scenario in self.scenarios:
-            if comm.rank == root:
-                data += f"scenario {scenario.id} {scenario.name} \n"
-
-            for body in self.bodies:
-                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
-
-                if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
-                    for i in range(len(id)):
-                        data += "{} {} {} {} {} \n".format(
-                            int(id[i]),
-                            load[3 * i + 0].real,
-                            load[3 * i + 1].real,
-                            load[3 * i + 2].real,
-                            float(hflux[i].real),
-                        )
-
-                    with open(filename, "w") as fp:
-                        fp.write(data)
-        return
-
-    def write_struct_loads(self, comm, filename, root=0):
-        """
-        Write the struct loads file for the OnewayStructDriver.
-
-        This file contains the following information:
-
-        # of Bodies, # of Scenarios
-
-        # struct loads section
-        for each body and scenario:
-            Scenario name
-            Body name
-            for node in surface_nodes:
-                id hflux xload yload zload
-
-        Parameters
-        ----------
-        comm: MPI communicator
-            Global communicator across all FUNtoFEM processors
-        filename: str
-            The name of the file to be generated
-        root: int
-            The rank of the processor that will write the file
-        """
-        if comm.rank == root:
-            data = ""
-            # Specify the number of scenarios in file
-            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
-
-        if comm.rank == root:
-            data += f"structloads \n"
-
-        for scenario in self.scenarios:
-            if comm.rank == root:
-                data += f"scenario {scenario.id} {scenario.name} \n"
-
-            for body in self.bodies:
-                id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
-
-                if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
-                    for i in range(len(id)):
-                        data += "{} {} {} {} {} \n".format(
-                            int(id[i]),
-                            load[3 * i + 0].real,
-                            load[3 * i + 1].real,
-                            load[3 * i + 2].real,
-                            float(hflux[i].real),
-                        )
-
-                    with open(filename, "w") as fp:
-                        fp.write(data)
-        return
-
     def read_aero_loads(self, comm, filename, root=0):
         """
         Read the aerodynamic loads file for the OnewayStructDriver.
@@ -633,6 +512,134 @@ class FUNtoFEMmodel(object):
         # return the loads data
         return loads_data
 
+    def write_struct_loads(self, comm, filename, root=0):
+        """
+        Write the struct loads file for the OnewayStructDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # struct loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        if comm.rank == root:
+            data = ""
+            # Specify the number of scenarios in file
+            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
+
+        if comm.rank == root:
+            data += f"structloads \n"
+
+        for scenario in self.scenarios:
+            if comm.rank == root:
+                data += f"scenario {scenario.id} {scenario.name} \n"
+
+            for body in self.bodies:
+                id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
+
+                if comm.rank == root:
+                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    for i in range(len(id)):
+                        data += "{} {} {} {} {} \n".format(
+                            int(id[i]),
+                            load[3 * i + 0].real,
+                            load[3 * i + 1].real,
+                            load[3 * i + 2].real,
+                            float(hflux[i].real),
+                        )
+
+                    with open(filename, "w") as fp:
+                        fp.write(data)
+        return
+
+    def write_aero_loads(self, comm, filename, root=0):
+        """
+        Write the aerodynamic loads file for the OnewayStructDriver.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id hflux xload yload zload
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        if comm.rank == root:
+            data = ""
+            # Specify the number of scenarios in file
+            data += f"{len(self.bodies)} {len(self.scenarios)} \n"
+            data += "aeromesh" + "\n"
+
+        for body in self.bodies:
+            if comm.rank == root:
+                data += f"body_mesh {body.id} {body.name} {body.aero_nnodes} \n"
+
+            id, aeroX = body._collect_aero_mesh(comm, root=root)
+
+            if comm.rank == root:
+                for i in range(len(id)):
+                    data += "{} {} {} {} \n".format(
+                        int(id[i]),
+                        aeroX[3 * i + 0].real,
+                        aeroX[3 * i + 1].real,
+                        aeroX[3 * i + 2].real,
+                    )
+        if comm.rank == root:
+            data += f"aeroloads \n"
+
+        for scenario in self.scenarios:
+            if comm.rank == root:
+                data += f"scenario {scenario.id} {scenario.name} \n"
+
+            for body in self.bodies:
+                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
+
+                if comm.rank == root:
+                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    for i in range(len(id)):
+                        data += "{} {} {} {} {} \n".format(
+                            int(id[i]),
+                            load[3 * i + 0].real,
+                            load[3 * i + 1].real,
+                            load[3 * i + 2].real,
+                            float(hflux[i].real),
+                        )
+
+                    with open(filename, "w") as fp:
+                        fp.write(data)
+        return
+
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
     ):
@@ -681,7 +688,7 @@ class FUNtoFEMmodel(object):
             if write_dvs:  # flag for registering dvs that will later get written out
                 for var in variables:
                     # Write the variables whose analysis_type matches the discipline string.
-                    if discipline == var.analysis_type:
+                    if discipline == var.analysis_type and var.active:
                         discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
@@ -823,7 +830,7 @@ class FUNtoFEMmodel(object):
 
         return
 
-    def read_functions_file(self, comm, filename, root=0):
+    def read_functions_file(self, comm, filename, root=0, **kwargs):
         """
         Read the functions variables file funtofem.out
 
@@ -843,8 +850,10 @@ class FUNtoFEMmodel(object):
         """
 
         functions_dict = None
+        gradients_dict = None
         if comm.rank == root:  # read the file in on the root processor
             functions_dict = {}
+            gradients_dict = {}
 
             hdl = open(filename, "r")
             lines = hdl.readlines()
@@ -852,32 +861,48 @@ class FUNtoFEMmodel(object):
 
             for line in lines:
                 chunks = line.split(" ")
-                if len(chunks) == 2:
-                    func_name = chunks[0]
-                    func_value = chunks[1]
+                if len(chunks) == 3:  # func values
+                    func_name = chunks[1]
+                    func_value = chunks[2].strip()
 
                     # only real numbers are read in from the file
                     functions_dict[func_name] = float(func_value)
+                    gradients_dict[func_name] = {}
+                if len(chunks) == 2:  # derivative
+                    var_name = chunks[0].strip()
+                    derivative = chunks[1].strip()
+
+                    # only real numbers are read in from the file
+                    gradients_dict[func_name][var_name] = float(derivative)
 
         # broadcast the dictionary to the root processor
         functions_dict = comm.bcast(functions_dict, root=root)
+        gradients_dict = comm.bcast(gradients_dict, root=root)
 
         # update the variable values on each processor
-        for func in self.get_functions():
-            if func.name in functions_dict:
-                func.value = functions_dict[func.name]
+        # only updates the analysis functions
+        for func in self.get_functions(kwargs):
+            if func.full_name in functions_dict:
+                func.value = functions_dict[func.full_name]
+            for var in self.get_variables():
+                c_gradients = gradients_dict[func.full_name]
+                if var.full_name in c_gradients:
+                    func.derivatives[var] = c_gradients[var.full_name]
 
         return
 
-    def write_functions_file(self, comm, filename, root=0):
+    def write_functions_file(
+        self, comm, filename, root=0, full_precision=True, **kwargs
+    ):
         """
         Write the functions file funtofem.out
 
         This file contains the following information:
 
-        Number of functionals
+        Number of functionals, number of variables
 
         Functional name, value
+        d(func_name)/d(var_name), value
 
         Parameters
         ----------
@@ -889,9 +914,8 @@ class FUNtoFEMmodel(object):
             The rank of the processor that will write the file
         """
 
-        funcs = self.get_functions()
-        # also add composite functions at the end
-        funcs += self.composite_functions
+        funcs = self.get_functions(kwargs)
+        variables = self.get_variables()
 
         if comm.rank == root:
             # Write out the number of functionals and number of design variables
@@ -899,10 +923,18 @@ class FUNtoFEMmodel(object):
 
             for n, func in enumerate(funcs):
                 # Print the function name
-                data += "{}\n".format(func.full_name)
+                func_value = func.value.real if func.value is not None else None
+                if full_precision:
+                    data += f"func {func.full_name} {func_value}\n"
+                else:
+                    data += f"func {func.full_name} {func_value:.5e}\n"
 
-                # Print the function value
-                data += "{}\n".format(func.value.real)
+                for var in variables:
+                    derivative = float(func.derivatives[var])
+                    if full_precision:
+                        data += f"\t{var.full_name} {derivative}\n"
+                    else:
+                        data += f"\t{var.full_name} {derivative:.5e}\n"
 
             with open(filename, "w") as fp:
                 fp.write(data)
@@ -998,20 +1030,32 @@ class FUNtoFEMmodel(object):
             "     ------------------------------------------------------------------------------------"
         )
         for func in model_functions:
+            if isinstance(func, CompositeFunction):
+                analysis_type = func.analysis_type
+                adjoint = "N/A"
+                start = "N/A"
+                stop = "N/A"
+                averaging = "N/A"
+            else:
+                analysis_type = func.analysis_type
+                adjoint = func.adjoint
+                start = func.start
+                stop = func.stop
+                averaging = func.averaging
             if len(func.name) >= 8:
                 print(
                     "     | ",
                     func.name,
                     "\t| ",
-                    func.analysis_type,
+                    analysis_type,
                     "\t| ",
-                    func.adjoint,
+                    adjoint,
                     "\t| [",
-                    func.start,
+                    start,
                     ",",
-                    func.stop,
+                    stop,
                     "] \t| ",
-                    func.averaging,
+                    averaging,
                     "\t|",
                 )
             else:
@@ -1019,15 +1063,15 @@ class FUNtoFEMmodel(object):
                     "     | ",
                     func.name,
                     "\t\t| ",
-                    func.analysis_type,
+                    analysis_type,
                     "\t| ",
-                    func.adjoint,
+                    adjoint,
                     "\t| [",
-                    func.start,
+                    start,
                     ",",
-                    func.stop,
+                    stop,
                     "] \t| ",
-                    func.averaging,
+                    averaging,
                     "\t|",
                 )
         print(

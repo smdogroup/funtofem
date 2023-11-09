@@ -1598,18 +1598,31 @@ class Body(Base):
         """
         distribute the aero loads and heat flux from a loads file
         """
+        print(f"F2F - starting to distribute loads")
+
         for scenario_id in data:
             scenario_data = data[scenario_id]
+
+            # create a dict for this entry
+            scenario_entry_dict = {}
             for entry in scenario_data:
-                for ind, aero_id in enumerate(self.aero_id):
-                    if entry["aeroID"] == aero_id and entry["bodyName"] == self.name:
-                        if self.transfer is not None:
-                            self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = entry[
-                                "load"
-                            ]
-                        if self.thermal_transfer is not None:
-                            self.aero_heat_flux[scenario_id][ind] = entry["hflux"]
-                        break
+                if entry["bodyName"] == self.name:
+                    scenario_entry_dict[entry["aeroID"]] = {
+                        "load": entry["load"],
+                        "hflux": entry["hflux"],
+                    }
+
+            for ind, aero_id in enumerate(self.aero_id):
+                if self.transfer is not None:
+                    self.aero_loads[scenario_id][
+                        3 * ind : 3 * ind + 3
+                    ] = scenario_entry_dict[aero_id]["load"]
+                if self.thermal_transfer is not None:
+                    self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
+                        aero_id
+                    ]["hflux"]
+
+        print(f"F2F - done distribute loads")
 
     def _collect_aero_mesh(self, comm, root=0):
         """

@@ -90,6 +90,9 @@ class SU2Interface(SolverInterface):
         self.su2ad = None
         self.func_values = {}
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Get the initial aero surface meshes
         self.initialize(model.scenarios[0], model.bodies, first_pass=True)
         self.post(model.scenarios[0], model.bodies, first_pass=True)

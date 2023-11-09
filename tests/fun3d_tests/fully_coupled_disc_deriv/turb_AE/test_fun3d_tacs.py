@@ -41,7 +41,7 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)
@@ -88,7 +88,7 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)

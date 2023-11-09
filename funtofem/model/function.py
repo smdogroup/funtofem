@@ -46,6 +46,7 @@ class Function(object):
         scale=1.0,
         objective=False,
         plot=False,
+        plot_name=None,
     ):
         """
 
@@ -82,8 +83,10 @@ class Function(object):
             scale for optimization
         objective: bool
             boolean for whether this is an objective/constraint function
-        objective: bool
+        plot: bool
             whether to plot the function
+        plot_name: str
+            what name to use for optimization plots
 
         Examples
         --------
@@ -108,6 +111,8 @@ class Function(object):
         self.scenario = None
         self.body = body
 
+        self._plot_name = plot_name
+
         self.start = start
         self.stop = stop
         self.averaging = averaging
@@ -130,7 +135,14 @@ class Function(object):
 
     @property
     def full_name(self) -> str:
-        return f"{self._scenario_name}.{self.name}"
+        return f"{self._scenario_name}-{self.name}"
+
+    @property
+    def plot_name(self) -> str:
+        if self._plot_name is not None:
+            return self._plot_name
+        else:
+            return self.full_name
 
     def zero_derivatives(self):
         """
@@ -142,7 +154,15 @@ class Function(object):
 
         return
 
-    def optimize(self, lower=None, upper=None, scale=None, objective=False, plot=False):
+    def optimize(
+        self,
+        lower=None,
+        upper=None,
+        scale=None,
+        objective=False,
+        plot=False,
+        plot_name=None,
+    ):
         """
         automatically sets optim=True for optimization and sets optimization bounds for
         OpenMDAO or pyoptsparse
@@ -153,6 +173,8 @@ class Function(object):
         self.scale = scale
         self._objective = objective
         self._plot = plot
+        if plot_name is not None:
+            self._plot_name = plot_name
         return self
 
     def set_gradient_component(self, var, value):
@@ -241,6 +263,7 @@ class Function(object):
     def ksfailure(
         cls,
         ks_weight: float = 50.0,
+        safety_factor: float = 1.0,
     ):
         """
         Class constructor for the KS Failure function
@@ -248,7 +271,7 @@ class Function(object):
         return cls(
             name="ksfailure",
             analysis_type="structural",
-            options={"ksWeight": ks_weight},
+            options={"ksWeight": ks_weight, "safetyFactor": safety_factor},
         )
 
     @classmethod

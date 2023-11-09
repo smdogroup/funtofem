@@ -20,14 +20,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+NOTE : Written by Sean Engelstad, Georgia Tech 2023
+
+This class performs oneway-coupled structural analysis for structural and shape optimization of aircraft structures.
+It relies on ESP/CAPS for shape derivatives currently.
+"""
 
 # TACS one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["OnewayStructDriver"]
 
-from funtofem.interface.solver_manager import SolverManager
 from funtofem.optimization.optimization_manager import OptimizationManager
 from mpi4py import MPI
 import numpy as np
+import shutil, os
+import time
 import importlib.util
 from funtofem.interface import Remote
 
@@ -60,6 +67,7 @@ class OnewayStructDriver:
         nprocs=None,
         fun3d_dir=None,
         external_shape=False,
+        timing_file=None,
     ):
         """
         build the analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
@@ -78,6 +86,8 @@ class OnewayStructDriver:
             location of fun3d directory, used in an analysis file for FuntofemShapeDriver
         external_shape: bool
             whether the tacs aim shape analysis is performed outside the class
+        timing_file: str or Path object
+            file to write timing data to
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -87,6 +97,7 @@ class OnewayStructDriver:
         self.transfer_settings = transfer_settings
         self.external_shape = external_shape
         self._shape_init_transfer = False
+        self.timing_file = timing_file
 
         self.struct_interface = solvers.structural
         self.struct_aim = None
@@ -142,6 +153,35 @@ class OnewayStructDriver:
                     body.transfer_loads(scenario)
                     body.transfer_heat_flux(scenario)
 
+        # make timing file if one was not provided
+        if self.change_shape:
+            self.timing_file = os.path.join(
+                self.struct_aim.root_analysis_dir, "timing.txt"
+            )
+
+        # initialize timing file
+        self._iteration = 0
+        self._write_timing_data(
+            "Funtofem OnewayStructDriver Timing data:\n", overwrite=True, root=0
+        )
+
+    def _write_timing_data(
+        self, msg, overwrite=False, root: int = 0, barrier: bool = False
+    ):
+        """write to the funtofem timing file"""
+        if not (self.timing_file):  # check whether we have a timing file or not
+            return
+        if self.comm.rank == root:
+            hdl = open(self.timing_file, "w" if overwrite else "a")
+            hdl.write(msg + "\n")
+            hdl.flush()
+            hdl.close()
+
+        # MPI Barrier for other processors
+        if barrier:
+            self.comm.Barrier()
+        return
+
     @property
     def change_shape(self) -> bool:
         return len(self.shape_variables) > 0
@@ -158,6 +198,7 @@ class OnewayStructDriver:
     def uses_tacs(self) -> bool:
         return self._struct_solver_type == "tacs"
 
+    @property
     def analysis_sens_file(self):
         """write location of sens file when used in FuntofemShapeDriver for double oneway drivers (analysis version)"""
         if self.fun3d_dir is None:
@@ -173,6 +214,7 @@ class OnewayStructDriver:
         nprocs=None,
         external_shape=False,
         fun3d_dir=None,
+        timing_file=None,
     ):
         """
         Used to prime struct/aero loads for optimization over TACS analysis.
@@ -196,6 +238,8 @@ class OnewayStructDriver:
             used for transferring fixed aero loads to struct loads, need to give this or it uses default
         external_shape: bool
             whether to do shape analysis with ESP/CAPS inside this driver or outside of it
+        timing_file: str or path
+            location of funtofem timing file
         """
         driver.solve_forward()
         if transfer_settings is None:
@@ -210,6 +254,7 @@ class OnewayStructDriver:
             nprocs=nprocs,
             external_shape=external_shape,
             fun3d_dir=fun3d_dir,
+            timing_file=timing_file,
         )
 
     @classmethod
@@ -221,6 +266,8 @@ class OnewayStructDriver:
         nprocs,
         transfer_settings,
         external_shape=False,
+        init_transfer=False,
+        timing_file=None,
     ):
         """
         Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
@@ -242,6 +289,8 @@ class OnewayStructDriver:
             Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
         external_shape: bool
             whether the tacs aim shape analysis is performed outside this class
+        timing_file: str or path
+            path to funtofem timing file statistics
         """
         comm = solvers.comm
         world_rank = comm.Get_rank()
@@ -271,12 +320,16 @@ class OnewayStructDriver:
                 body.initialize_variables(scenario)
             body._distribute_aero_loads(loads_data)
 
-        return cls(
+        tacs_driver = cls(
             solvers,
             model,
             nprocs=nprocs,
             external_shape=external_shape,
+            timing_file=timing_file,
         )
+        if init_transfer:
+            tacs_driver._transfer_fixed_aero_loads()
+        return tacs_driver
 
     @property
     def manager(self, hot_start: bool = False):
@@ -305,14 +358,14 @@ class OnewayStructDriver:
         if self.external_shape:
             return self._dat_file_path
         else:
-            return self.struct_aim.dat_file_path
+            return self.struct_aim.root_dat_file
 
     @property
     def analysis_dir(self):
         if self.external_shape:
             return self._analysis_dir
         else:
-            return self.struct_aim.analysis_dir
+            return self.struct_aim.root_analysis_dir
 
     def input_paths(self, dat_file_path, analysis_dir):
         """
@@ -392,6 +445,13 @@ class OnewayStructDriver:
         assumes shape variables have already been changed
         """
 
+        self._write_timing_data(
+            f"Starting iteration {self._iteration}", overwrite=False, root=0
+        )
+        self._starting_time = time.time()
+        _start_meshing_time = self._starting_time * 1.0
+        self._iteration += 1
+
         if self.change_shape:
             if not self.external_shape:
                 input_dict = {var.name: var.value for var in self.model.get_variables()}
@@ -414,6 +474,15 @@ class OnewayStructDriver:
             self._transfer_fixed_aero_loads()
         # end of change shape section
 
+        dt_meshing = (time.time() - _start_meshing_time) / 60.0
+        self._write_timing_data(
+            f"\tstruct mesh built in {dt_meshing} min",
+            overwrite=False,
+            barrier=True,
+            root=0,
+        )
+        _start_forward_analysis = time.time()
+
         if self.steady:
             for scenario in self.model.scenarios:
                 self._solve_steady_forward(scenario, self.model.bodies)
@@ -422,14 +491,24 @@ class OnewayStructDriver:
             for scenario in self.model.scenarios:
                 self._solve_unsteady_forward(scenario, self.model.bodies)
 
+        dt_forward = (time.time() - _start_forward_analysis) / 60.0
+        self._write_timing_data(
+            f"\tstruct forward analysis in {dt_forward} min",
+            overwrite=False,
+            barrier=True,
+            root=0,
+        )
+
     def solve_adjoint(self):
         """
         solve the adjoint analysis for the given shape
         assumes the forward analysis for this shape has already been performed
         """
 
-        # run the adjoint structural analysis
+        # timing data
+        _start_adjoint = time.time()
 
+        # run the adjoint structural analysis
         functions = self.model.get_functions()
 
         # Zero the derivative values stored in the function
@@ -444,6 +523,15 @@ class OnewayStructDriver:
             for scenario in self.model.scenarios:
                 self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
+        dt_adjoint = (time.time() - _start_adjoint) / 60.0
+        self._write_timing_data(
+            f"\tstruct adjoint analysis in {dt_adjoint} min",
+            overwrite=False,
+            barrier=True,
+            root=0,
+        )
+        _start_derivatives = time.time()
+
         # transfer loads adjoint since fa -> fs has shape dependency
         if self.change_shape:
             # TODO : for unsteady this part might have to be included before extract coordinate derivatives?
@@ -457,18 +545,54 @@ class OnewayStructDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.struct_aim.sens_file_path
+                filename=self.struct_aim.root_sens_file
                 if not self.fun3d_dir
                 else self.analysis_sens_file,
                 discipline="structural",
             )
 
+            self.comm.Barrier()
+
+            # copy struct sens files for parallel instances
+            if self.uses_tacs:
+                src = self.struct_aim.root_sens_file
+                for proc in self.struct_aim.active_procs[1:]:
+                    dest = self.struct_aim.sens_file_path(proc)
+                    self.comm.Barrier()
+                    if self.comm.rank == self.struct_aim.root_proc_ind:
+                        shutil.copy(src, dest)
+
+            # wait til the file is done writing on other procs
+            self.comm.Barrier()
+
             # run the tacs aim postAnalysis to compute the chain rule product
             self.struct_aim.post_analysis()
+
+            # wait til parallel tacsAIM instances run post_analysis before getting shape derivatives
+            self.comm.Barrier()
 
             # store the shape variables in the function gradients
             for scenario in self.model.scenarios:
                 self._get_shape_derivatives(scenario)
+
+        dt_derivatives = (time.time() - _start_derivatives) / 60.0
+        self._write_timing_data(
+            f"\tderivative computation in {dt_derivatives} min",
+            overwrite=False,
+            barrier=True,
+            root=0,
+        )
+        dt_iteration = (time.time() - self._starting_time) / 60.0
+        self._write_timing_data(
+            f"\titeration {self._iteration-1} took {dt_iteration} min",
+            overwrite=False,
+            barrier=True,
+            root=0,
+        )
+
+        # delete the old struct interface if planning to remesh again
+        if self.change_shape:
+            del self.struct_interface
         # end of change shape section
         return
 
@@ -499,29 +623,45 @@ class OnewayStructDriver:
         get shape derivatives together from tacs aim
         and store the data in the funtofem model
         """
-        gradients = None
+        variables = self.model.get_variables()
 
-        # read shape gradients from tacs aim on root proc
-        if self.root_proc:
-            gradients = []
-            direct_struct_aim = self.struct_aim.aim
+        # read shape gradients from tacs aim among different processors
+        # including sometimes parallel versions of the struct AIM
+        gradients = []
 
-            for ifunc, func in enumerate(scenario.functions):
-                gradients.append([])
-                for ivar, var in enumerate(self.shape_variables):
-                    derivative = direct_struct_aim.dynout[func.full_name].deriv(
-                        var.name
-                    )
-                    gradients[ifunc].append(derivative)
+        for ifunc, func in enumerate(scenario.functions):
+            gradients.append([])
+            for ivar, var in enumerate(variables):
+                derivative = None
+                if var.analysis_type == "shape":
+                    # if tacs aim do this, make this more modular later
+                    if self.uses_tacs:  # for parallel tacsAIMs
+                        c_proc = self.struct_aim.get_proc_with_shape_var(var.name)
+                        if self.comm.rank == c_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                        # then broadcast the derivative to other processors
+                        derivative = self.comm.bcast(derivative, root=c_proc)
+                    else:
+                        if self.root_proc:
+                            derivative = self.struct_aim.aim.dynout[
+                                func.full_name
+                            ].deriv(var.name)
+                else:
+                    derivative = 0.0
 
-        # broadcast shape gradients to all other processors
-        gradients = self.comm.bcast(gradients, root=0)
+                # updat the derivatives list
+                gradients[ifunc].append(derivative)
+
+        # mpi comm barrier
+        self.comm.Barrier()
 
         # store shape derivatives in funtofem model on all processors
         for ifunc, func in enumerate(scenario.functions):
-            for ivar, var in enumerate(self.shape_variables):
+            for ivar, var in enumerate(variables):
                 derivative = gradients[ifunc][ivar]
-                func.add_gradient_component(var, derivative)
+                func.add_gradient_component(var, gradients[ifunc][ivar])
 
         return
 

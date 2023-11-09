@@ -1121,6 +1121,9 @@ void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
     prod[1] -= rd[1];
     prod[2] -= rd[2];
   }
+
+  // Clean up the allocated memory
+  delete[] vecs_global;
 }
 
 /*

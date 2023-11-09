@@ -25,6 +25,8 @@ limitations under the License.
 __all__ = ["OnewayAeroDriver"]
 
 """
+Written by Sean Engelstad, Georgia Tech 2023
+
 Unfortunately, FUN3D has to be completely re-initialized for new aerodynamic meshes, so we have
 to split our OnewayAeroDriver scripts in implementation into two files, a my_fun3d_driver.py and a my_fun3d_analyzer.py.
 The file my_fun3d_driver.py is called from a run.pbs script and manages the optimization and AIMs; this file
@@ -81,31 +83,45 @@ if fun3d_loader is not None:  # check whether we can import FUN3D
 
 class OnewayAeroDriver:
     @classmethod
-    def aero_morph(cls, solvers, model, transfer_settings=None):
+    def aero_morph(cls, solvers, model, transfer_settings=None, external_shape=False):
         """
         Build a OnewayAeroDriver with fun3dAim shape variables and FUN3D analysis
         all in one, using the FUN3D mesh morphing.
         """
-        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=False)
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            is_paired=False,
+            external_shape=external_shape,
+        )
 
     @classmethod
-    def aero_remesh(cls, solvers, model, remote):
+    def aero_remesh(cls, solvers, model, remote, external_shape=False):
         """
         Build a OnewayAeroDriver object for the my_fun3d_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
 
         """
-        return cls(solvers, model, remote=remote, is_paired=True)
+        return cls(
+            solvers, model, remote=remote, is_paired=True, external_shape=external_shape
+        )
 
     @classmethod
-    def analysis(cls, solvers, model, transfer_settings=None):
+    def analysis(cls, solvers, model, transfer_settings=None, external_shape=False):
         """
         Build an OnewayAeroDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
             analysis and writing an aero.sens file to the FUN3D directory.
         If you are using the analysis driver by itself (e.g. for FUN3D mesh morphing) then turn "is_paired" off.
         """
-        return cls(solvers, model, transfer_settings=transfer_settings, is_paired=True)
+        return cls(
+            solvers,
+            model,
+            transfer_settings=transfer_settings,
+            is_paired=True,
+            external_shape=external_shape,
+        )
 
     def __init__(
         self,
@@ -114,6 +130,7 @@ class OnewayAeroDriver:
         transfer_settings=None,
         remote=None,
         is_paired=False,
+        external_shape=False,
     ):
         """
         Build the FUN3D analysis driver for shape/no shape change. Able to run another FUN3D analysis remotely or
@@ -137,6 +154,7 @@ class OnewayAeroDriver:
         self.transfer_settings = transfer_settings
         self.remote = remote
         self.is_paired = is_paired
+        self.external_shape = external_shape
 
         # store the shape variables list
         self.shape_variables = [
@@ -238,7 +256,7 @@ class OnewayAeroDriver:
         """
 
         if self.change_shape:
-            if self.flow_aim.mesh_morph and self.comm.rank == 0:
+            if self.flow_aim.mesh_morph and self.root_proc:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
@@ -397,7 +415,10 @@ class OnewayAeroDriver:
 
     @property
     def root_proc(self) -> bool:
-        return self.comm.rank == 0
+        if self.flow_aim is not None:
+            return self.comm.rank == self.flow_aim.root
+        else:
+            return self.comm.rank == 0
 
     @property
     def flow_dir(self):
@@ -497,7 +518,7 @@ class OnewayAeroDriver:
 
     @property
     def change_shape(self) -> bool:
-        return len(self.shape_variables) > 0
+        return len(self.shape_variables) > 0 and not self.external_shape
 
     def _setup_grid_filepaths(self):
         """setup the filepaths for each fun3d grid file in scenarios"""
@@ -516,15 +537,24 @@ class OnewayAeroDriver:
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
         self.flow_aim.grid_filepaths = grid_filepaths
+
+        # also setup the mapbc files
+        mapbc_filepaths = []
+        for scenario in self.model.scenarios:
+            filepath = os.path.join(
+                fun3d_dir,
+                scenario.name,
+                "Flow",
+                f"{scenario.fun3d_project_name}.mapbc",
+            )
+            mapbc_filepaths.append(filepath)
+        # set the mapbc filepaths into the fun3d aim
+        self.flow_aim.mapbc_filepaths = mapbc_filepaths
         return
 
     @property
     def manager(self, hot_start: bool = False):
         return OptimizationManager(self, hot_start=hot_start)
-
-    @property
-    def root_proc(self) -> bool:
-        return self.comm.rank == 0
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
         """extract the coordinate derivatives at a given time step"""
