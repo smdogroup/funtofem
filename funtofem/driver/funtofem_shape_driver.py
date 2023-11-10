@@ -388,9 +388,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 local_fail = False
             except:
                 local_fail = True
-            fail = self.comm.gather(local_fail, root=0)
-            fail = self.comm.bcast(fail, root=0)
-            if fail:
+            if local_fail:
                 raise RuntimeError("F2F shape driver aero preAnalysis failed..")
 
         self.comm.Barrier()
@@ -409,9 +407,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 local_fail = False
             except:
                 local_fail = True
-            fail = self.comm.gather(local_fail, root=0)
-            fail = self.comm.bcast(fail, root=0)
-            if fail:
+            if local_fail:
                 raise RuntimeError("F2F shape driver struct preAnalysis failed..")
 
         # done building meshes => report timing data
