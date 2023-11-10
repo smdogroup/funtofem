@@ -497,9 +497,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.comm.rank == 0:
                 print(f"Calling remote analysis..", flush=True)
 
-            # clear out ESP/CAPS lock files in case of geometry failure
-            if self.comm.rank == 0:
-                os.system("rm -rf **/capsLock")
             self.comm.Barrier()
 
             # system call funtofem forward + adjoint analysis
