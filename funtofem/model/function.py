@@ -135,7 +135,10 @@ class Function(object):
 
     @property
     def full_name(self) -> str:
-        return f"{self._scenario_name}-{self.name}"
+        if self._scenario_name is not None:
+            return f"{self._scenario_name}-{self.name}"
+        else:
+            return self.name
 
     @property
     def plot_name(self) -> str:
