@@ -133,11 +133,13 @@ class PlotManager:
         show_scales=False,
         legend_frac: float = 0.8,
         yaxis_name="func values",
+        color_offset: int = 0,
     ):
         if plot_name is None:
             plot_name = "f2f-history"
         plt.style.use(niceplots.get_style())
         fig, ax = plt.subplots()
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         for ifunc, func in enumerate(self.functions):
             if self.valid_function(func):
                 if show_scales:
@@ -149,16 +151,9 @@ class PlotManager:
                     self.iterations,
                     self.get_hist_array(func),
                     linewidth=2,
+                    color=colors[ifunc + color_offset],
                     label=label,
                 )
-                # if not (func._objective):  # plot constraint boundaries
-                #     ax.plot(
-                #         self.iterations,
-                #         self.get_constr_array(func),
-                #         "--",
-                #         linewidth=2,
-                #     )
-                #     # color=colors[ifunc],
             else:
                 print(f"Warning function {func.name} is not in function history list..")
         grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(self.constr_dicts)))
