@@ -170,7 +170,8 @@ class Function(object):
         self.optim = True
         self.lower = lower
         self.upper = upper
-        self.scale = scale
+        if scale is not None:
+            self.scale = scale
         self._objective = objective
         self._plot = plot
         if plot_name is not None:
@@ -252,11 +253,11 @@ class Function(object):
         self.averaging = averaging
         return self
 
-    def register_to(self, scenario):
+    def register_to(self, obj):
         """
         Register the function to the scenario.
         """
-        scenario.include(self)
+        obj.include(self)
         return self
 
     @classmethod
@@ -348,6 +349,10 @@ class Function(object):
             return cls(name=f"{direction}com", analysis_type="structural")
         else:
             raise AssertionError(f"Center of mass given direction {direction} input")
+
+    @classmethod
+    def plot(cls, name: str):
+        return cls(name=name)  # analysis type doesn't matter for plotting
 
     @classmethod
     def compliance(cls):
