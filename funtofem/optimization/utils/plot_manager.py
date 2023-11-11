@@ -127,7 +127,13 @@ class PlotManager:
     def iterations(self) -> list:
         return [_ for _ in range(len(self.hist_dict_list))]
 
-    def __call__(self, plot_name=None, show_scales=False, legend_frac: float = 0.8):
+    def __call__(
+        self,
+        plot_name=None,
+        show_scales=False,
+        legend_frac: float = 0.8,
+        yaxis_name="func values",
+    ):
         if plot_name is None:
             plot_name = "f2f-history"
         plt.style.use(niceplots.get_style())
@@ -174,7 +180,7 @@ class PlotManager:
         # set x-axis to integers only (since it represents iterations)
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_xlabel("iterations")
-        ax.set_ylabel("func values")
+        ax.set_ylabel(yaxis_name)
         niceplots.adjust_spines(ax)
         niceplots.save_figs(
             fig,
