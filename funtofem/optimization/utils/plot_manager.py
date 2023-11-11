@@ -183,4 +183,5 @@ class PlotManager:
             format_kwargs={"png": {"dpi": 400}},
             bbox_inches="tight",
         )
+        plt.close("all")
         return
