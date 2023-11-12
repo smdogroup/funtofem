@@ -8,7 +8,9 @@ import niceplots
 
 class PlotManager:
     @classmethod
-    def from_hist_file(cls, hist_file, accepted_names=None, plot_names=None):
+    def from_hist_file(
+        cls, hist_file, accepted_names=None, plot_names=None, ignore_other_names=False
+    ):
         """
         hist_file : a path to a design_hist.txt file
         get the history function dicts from the history file
@@ -26,18 +28,33 @@ class PlotManager:
 
         hist_dict_list = []
         for line in lines:
-            if "Functions" in line:
+            if "New design" in line:
+                hist_dict = {}
+            if "New design" in line or "Functions" in line:
                 after_lbrace = line.split("{")[1]
                 before_rbrace = after_lbrace.split("}")[0]
                 chunks = before_rbrace.split(",")
-                pre_colons = [chunk.split(":")[0] for chunk in chunks]
+                pre_colons = []
+                post_colons = []
+                for chunk in chunks:
+                    if len(chunk.split(":")) == 2:
+                        pre_colons += [chunk.split(":")[0]]
+                        post_colons += [chunk.split(":")[1]]
+                    elif len(chunk.split(":")) == 3:
+                        temp = chunk.split(":")[:2]
+                        temp1 = temp[0].strip()
+                        temp2 = temp[1].split("'")[0].strip()
+                        pre_colons += [temp1 + ":" + temp2]
+                        post_colons += [chunk.split(":")[2]]
                 names = [_.split("'")[1] for _ in pre_colons]
-                post_colons = [chunk.split(":")[1] for chunk in chunks]
                 values = [float(_.strip()) for _ in post_colons]
 
-                hist_dict = {}
                 for i, name in enumerate(names):
-                    if accepted_names is not None and not (name in accepted_names):
+                    if (
+                        accepted_names is not None
+                        and not (name in accepted_names)
+                        and ignore_other_names
+                    ):
                         continue
                     if use_name_map:
                         plot_name = name_map[name]
@@ -46,6 +63,7 @@ class PlotManager:
 
                     value = values[i]
                     hist_dict[plot_name] = value
+            if "Functions" in line:
                 hist_dict_list += [hist_dict]
         print(f"sample hist dict = {hist_dict_list[0]}")
         return cls(hist_dict_list=hist_dict_list)
@@ -130,59 +148,65 @@ class PlotManager:
     def __call__(
         self,
         plot_name=None,
+        niceplots_style="doumont-light",
         show_scales=False,
         legend_frac: float = 0.8,
         yaxis_name="func values",
         color_offset: int = 0,
+        yscale_log=False,
     ):
         if plot_name is None:
             plot_name = "f2f-history"
-        plt.style.use(niceplots.get_style())
-        fig, ax = plt.subplots()
-        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-        for ifunc, func in enumerate(self.functions):
-            if self.valid_function(func):
-                if show_scales:
-                    omag = int(np.floor(np.log(func.scale) / np.log(10)))
-                    label = func.plot_name + self.get_r_string(omag)
+
+        with plt.style.context(niceplots.get_style(niceplots_style)):
+            fig, ax = plt.subplots()
+            colors = niceplots.get_colors_list(niceplots_style)
+            for ifunc, func in enumerate(self.functions):
+                if self.valid_function(func):
+                    if show_scales:
+                        omag = int(np.floor(np.log(func.scale) / np.log(10)))
+                        label = func.plot_name + self.get_r_string(omag)
+                    else:
+                        label = func.plot_name
+                    ax.plot(
+                        self.iterations,
+                        self.get_hist_array(func),
+                        linewidth=2,
+                        color=colors[ifunc + color_offset],
+                        label=label,
+                    )
                 else:
-                    label = func.plot_name
+                    print(
+                        f"Warning function {func.name} is not in function history list.."
+                    )
+            grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(self.constr_dicts)))
+            for icon, constr_dict in enumerate(self.constr_dicts):
+                name = constr_dict["name"]
+                value = constr_dict["value"]
                 ax.plot(
                     self.iterations,
-                    self.get_hist_array(func),
+                    np.array([value for _ in self.iterations]),
+                    linestyle="dotted",
                     linewidth=2,
-                    color=colors[ifunc + color_offset],
-                    label=label,
+                    color=grey_colors[icon],
+                    label=name,
                 )
-            else:
-                print(f"Warning function {func.name} is not in function history list..")
-        grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(self.constr_dicts)))
-        for icon, constr_dict in enumerate(self.constr_dicts):
-            name = constr_dict["name"]
-            value = constr_dict["value"]
-            ax.plot(
-                self.iterations,
-                np.array([value for _ in self.iterations]),
-                linestyle="dotted",
-                linewidth=2,
-                color=grey_colors[icon],
-                label=name,
+            # put axis on rhs of plot
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * legend_frac, box.height])
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+            # set x-axis to integers only (since it represents iterations)
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.set_xlabel("iterations")
+            ax.set_ylabel(yaxis_name)
+            if yscale_log:
+                ax.set_yscale("log")
+            niceplots.adjust_spines(ax)
+            niceplots.save_figs(
+                fig,
+                plot_name,
+                ["png", "svg"],
+                format_kwargs={"png": {"dpi": 400}},
+                bbox_inches="tight",
             )
-        # put axis on rhs of plot
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * legend_frac, box.height])
-        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-        # set x-axis to integers only (since it represents iterations)
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.set_xlabel("iterations")
-        ax.set_ylabel(yaxis_name)
-        niceplots.adjust_spines(ax)
-        niceplots.save_figs(
-            fig,
-            plot_name,
-            ["png", "svg"],
-            format_kwargs={"png": {"dpi": 400}},
-            bbox_inches="tight",
-        )
-        plt.close("all")
         return
