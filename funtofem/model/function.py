@@ -135,7 +135,10 @@ class Function(object):
 
     @property
     def full_name(self) -> str:
-        return f"{self._scenario_name}-{self.name}"
+        if self._scenario_name is not None:
+            return f"{self._scenario_name}-{self.name}"
+        else:
+            return self.name
 
     @property
     def plot_name(self) -> str:
@@ -158,7 +161,7 @@ class Function(object):
         self,
         lower=None,
         upper=None,
-        scale=None,
+        scale=1.0,
         objective=False,
         plot=False,
         plot_name=None,
@@ -255,6 +258,7 @@ class Function(object):
     def register_to(self, scenario):
         """
         Register the function to the scenario.
+        NOTE: sometimes we also register to a plotter object which mimics a scenario.
         """
         scenario.include(self)
         return self
@@ -348,6 +352,10 @@ class Function(object):
             return cls(name=f"{direction}com", analysis_type="structural")
         else:
             raise AssertionError(f"Center of mass given direction {direction} input")
+
+    @classmethod
+    def plot(cls, name: str):
+        return cls(name=name)  # analysis type doesn't matter for plotting
 
     @classmethod
     def compliance(cls):
