@@ -161,7 +161,7 @@ class Function(object):
         self,
         lower=None,
         upper=None,
-        scale=None,
+        scale=1.0,
         objective=False,
         plot=False,
         plot_name=None,
@@ -173,8 +173,7 @@ class Function(object):
         self.optim = True
         self.lower = lower
         self.upper = upper
-        if scale is not None:
-            self.scale = scale
+        self.scale = scale
         self._objective = objective
         self._plot = plot
         if plot_name is not None:
@@ -256,11 +255,12 @@ class Function(object):
         self.averaging = averaging
         return self
 
-    def register_to(self, obj):
+    def register_to(self, scenario):
         """
         Register the function to the scenario.
+        NOTE: sometimes we also register to a plotter object which mimics a scenario.
         """
-        obj.include(self)
+        scenario.include(self)
         return self
 
     @classmethod
