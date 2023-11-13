@@ -78,6 +78,7 @@ optional_dependencies = {
     "testing": ["testflo>=1.4.7"],
     "docs": ["sphinx"],
     "mphys": ["mphys>=1.1.0", "openmdao>=3.25.0"],
+    "plots": ["niceplots"],
 }
 
 # Add an optional dependency that concatenates all others
