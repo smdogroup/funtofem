@@ -373,6 +373,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 root=0,
             )
 
+        if not (self.is_remote) and self.is_paired:
+            # remove the _functions_file so remote will fail
+            if self.comm.rank == 0:
+                analysis_functions_file = Remote.paths(
+                    self.comm, self.flow_dir
+                )._functions_file
+                if os.path.exists(analysis_functions_file):
+                    os.remove(analysis_functions_file)
+                # also remove capsLock in case meshing is done in the analysis script
+                if self.change_shape:
+                    os.system("rm -f **/**/capsLock")
+
         self.comm.Barrier()
 
         # build aero mesh first
@@ -749,7 +761,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         # get any remaining aero, struct derivatives from the funtofem.out file (only for analysis functions)
         if self.is_remote and self.is_paired:
-            self.model.read_functions_file(self.comm, self.remote._functions_file)
+            try:
+                self.model.read_functions_file(self.comm, self.remote._functions_file)
+                local_fail = False
+            except:
+                local_fail = True
+            if local_fail:
+                raise RuntimeError(
+                    "Failed to read local functions file in remote driver => usually negative cell volumes occured."
+                )
 
         # evaluate the composite functions
         self.model.evaluate_composite_functions(compute_grad=True)
