@@ -264,6 +264,7 @@ class OptimizationManager:
             num_iterations = len(self._func_history[func_keys[0]])
             iterations = [_ for _ in range(num_iterations)]
             plt.figure()
+
             ax = plt.subplot(111)
             ind = 0
             for func in model.get_functions(optim=True):
