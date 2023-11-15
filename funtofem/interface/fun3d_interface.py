@@ -52,8 +52,8 @@ class Fun3dInterface(SolverInterface):
         auto_coords=True,
         coord_test_override=False,
         debug=False,
-        forward_tolerance=1e-9,
-        adjoint_tolerance=1e-9,
+        forward_tolerance=1e-6,
+        adjoint_tolerance=1e-6,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -643,14 +643,15 @@ class Fun3dInterface(SolverInterface):
             print(f"Forward residuals = {resid}")
         self._forward_done = True
         self._forward_resid = resid
-        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
-            if self.comm.rank == 0:
-                print(
-                    f"\tWarning: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is rather large..."
-                )
 
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
+
+        # throw a runtime error if adjoint didn't converge sufficiently
+        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
+            raise RuntimeError(
+                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
+            )
         return
 
     def initialize_adjoint(self, scenario, bodies):
@@ -986,15 +987,16 @@ class Fun3dInterface(SolverInterface):
             print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
         self._adjoint_resid = resid
-        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
-            if self.comm.rank == 0:
-                print(
-                    f"\tWarning fun3d adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is rather large..."
-                )
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
         os.chdir(self.root_dir)
+
+        # throw a runtime error if adjoint didn't converge sufficiently
+        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
+            raise RuntimeError(
+                f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
+            )
         return
 
     def get_forward_residual(self, step=0, all=False):
