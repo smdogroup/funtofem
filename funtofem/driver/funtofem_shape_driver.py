@@ -771,6 +771,15 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     "Failed to read local functions file in remote driver => usually negative cell volumes occured."
                 )
 
+            # check if any derivatives have a very large magnitude
+            for ifunc, func in enumerate(self.model.get_functions()):
+                for ivar, var in enumerate(self.model.get_variables()):
+                    deriv = func.derivatives[var]
+                    if abs(deriv) > 1e10:
+                        raise RuntimeError(
+                            f"Funtofem - Derivative d{func.name}/d{var.name} = {deriv} > 1e10.."
+                        )
+
         # evaluate the composite functions
         self.model.evaluate_composite_functions(compute_grad=True)
 

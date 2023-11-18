@@ -75,6 +75,9 @@ class OptimizationManager:
             self._design_folder = os.path.join(os.getcwd(), "design")
             if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
+            self._checkpoints_folder = os.path.join(self._design_folder, "checkpoints")
+            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0:
+                os.mkdir(self._checkpoints_folder)
 
             # make the design file handle
             write_str = "a" if hot_start else "w"
@@ -132,9 +135,6 @@ class OptimizationManager:
             # run a complete analysis - both forward and adjoint
             self._run_complete_analysis()
 
-            # increment the iteration number
-            self._iteration += 1
-
             # check for nans in any of the function values values
             for func_key in self._funcs:
                 c_sens = self._sens[func_key]
@@ -164,6 +164,19 @@ class OptimizationManager:
                 self.model.write_design_variables_file(
                     self.comm, self.design_out_file, root=0
                 )
+            if not (fail):
+                # also write the design to the checkpoints folder
+                dvs_file = os.path.join(
+                    self._checkpoints_folder, f"funtofem{self._iteration}.in"
+                )
+                self.model.write_design_variables_file(self.comm, dvs_file, root=0)
+                func_file = os.path.join(
+                    self._checkpoints_folder, f"funtofem{self._iteration}.out"
+                )
+                self.model.write_functions_file(
+                    self.comm, func_file, full_precision=False, optim=True
+                )
+                self._iteration += 1
 
             # update and plot the current optimization history
             if self.write_designs and not (fail):
