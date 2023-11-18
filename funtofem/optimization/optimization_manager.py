@@ -114,6 +114,16 @@ class OptimizationManager:
                 for var in self.model.get_variables():
                     func.derivatives[var] = 0.0
 
+            # initialize funcs, sens in case of failure on first design iteration of hot start
+            self._funcs = {
+                func.full_name: 0.0 for func in self.model.get_functions(optim=True)
+            }
+            self._sens = {}
+            for func in self.model.get_functions(optim=True):
+                self._sens[func.full_name] = {}
+                for var in self.model.get_variables():
+                    self._sens[func.full_name][var.full_name] = 0.0
+
     def _gatekeeper(self, x_dict):
         """
         Gatekeeper function prevents double-running of the forward analysis during optimization
