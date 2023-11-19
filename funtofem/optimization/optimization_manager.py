@@ -25,6 +25,7 @@ __all__ = ["OptimizationManager"]
 import os, numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+import shutil
 
 
 class OptimizationManager:
@@ -40,6 +41,7 @@ class OptimizationManager:
         write_designs: bool = True,
         hot_start: bool = False,
         design_out_file=None,
+        hot_start_file=None,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -53,12 +55,15 @@ class OptimizationManager:
             whether to reset the design history files in hot start (note this does not actually control the hot start itself, just an accompanying parameter)
         design_out_file: path or str
             path to the output file for writing design variable histories
+        hot_start_file: path or str
+            path to the hot start file which we copy and paste into the checkpoints folder from each design. The user can move this back to the main directory to restart from a previous iteration in case the optimization fails at some point.
         """
         # main attributes of the manager
         self.comm = driver.comm
         self.model = driver.model
         self.driver = driver
         self.design_out_file = design_out_file
+        self.hot_start_file = hot_start_file
 
         # optimization meta data
         self._iteration = 0
@@ -186,6 +191,10 @@ class OptimizationManager:
                 self.model.write_functions_file(
                     self.comm, func_file, full_precision=False, optim=True
                 )
+                # copy the hotstart file to the checkpoints folder
+                src = self.hot_start_file
+                dest = os.path.join(self._checkpoints_folder, "hot_start.hst")
+                shutil.copy(src, dest)
                 self._iteration += 1
 
             # update and plot the current optimization history
