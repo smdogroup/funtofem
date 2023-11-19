@@ -25,6 +25,7 @@ __all__ = ["OptimizationManager"]
 import os, numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+import shutil
 
 
 class OptimizationManager:
@@ -40,6 +41,7 @@ class OptimizationManager:
         write_designs: bool = True,
         hot_start: bool = False,
         design_out_file=None,
+        hot_start_file=None,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -53,12 +55,15 @@ class OptimizationManager:
             whether to reset the design history files in hot start (note this does not actually control the hot start itself, just an accompanying parameter)
         design_out_file: path or str
             path to the output file for writing design variable histories
+        hot_start_file: path or str
+            path to the hot start file which we copy and paste into the checkpoints folder from each design. The user can move this back to the main directory to restart from a previous iteration in case the optimization fails at some point.
         """
         # main attributes of the manager
         self.comm = driver.comm
         self.model = driver.model
         self.driver = driver
         self.design_out_file = design_out_file
+        self.hot_start_file = hot_start_file
 
         # optimization meta data
         self._iteration = 0
@@ -75,6 +80,9 @@ class OptimizationManager:
             self._design_folder = os.path.join(os.getcwd(), "design")
             if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
+            self._checkpoints_folder = os.path.join(self._design_folder, "checkpoints")
+            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0:
+                os.mkdir(self._checkpoints_folder)
 
             # make the design file handle
             write_str = "a" if hot_start else "w"
@@ -111,6 +119,16 @@ class OptimizationManager:
                 for var in self.model.get_variables():
                     func.derivatives[var] = 0.0
 
+            # initialize funcs, sens in case of failure on first design iteration of hot start
+            self._funcs = {
+                func.full_name: 0.0 for func in self.model.get_functions(optim=True)
+            }
+            self._sens = {}
+            for func in self.model.get_functions(optim=True):
+                self._sens[func.full_name] = {}
+                for var in self.model.get_variables():
+                    self._sens[func.full_name][var.full_name] = 0.0
+
     def _gatekeeper(self, x_dict):
         """
         Gatekeeper function prevents double-running of the forward analysis during optimization
@@ -131,9 +149,6 @@ class OptimizationManager:
 
             # run a complete analysis - both forward and adjoint
             self._run_complete_analysis()
-
-            # increment the iteration number
-            self._iteration += 1
 
             # check for nans in any of the function values values
             for func_key in self._funcs:
@@ -164,6 +179,25 @@ class OptimizationManager:
                 self.model.write_design_variables_file(
                     self.comm, self.design_out_file, root=0
                 )
+            if not (fail):
+                # also write the design to the checkpoints folder
+                dvs_file = os.path.join(
+                    self._checkpoints_folder, f"funtofem{self._iteration}.in"
+                )
+                self.model.write_design_variables_file(self.comm, dvs_file, root=0)
+                func_file = os.path.join(
+                    self._checkpoints_folder, f"funtofem{self._iteration}.out"
+                )
+                self.model.write_functions_file(
+                    self.comm, func_file, full_precision=False, optim=True
+                )
+                # copy the hotstart file to the checkpoints folder
+                src = self.hot_start_file
+                dest = os.path.join(
+                    self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                )
+                shutil.copy(src, dest)
+                self._iteration += 1
 
             # update and plot the current optimization history
             if self.write_designs and not (fail):
@@ -233,15 +267,23 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        fail = self._gatekeeper(x_dict)
+        try:
+            self._gatekeeper(x_dict)
+            fail = False
+        except:
+            fail = True
+            print("warning: eval functions failure..")
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        fail = self._gatekeeper(x_dict)
-
+        try:
+            self._gatekeeper(x_dict)
+            fail = False
+        except:
+            fail = True
         return self._sens, fail
 
     def _plot_history(self):
