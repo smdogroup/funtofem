@@ -193,7 +193,9 @@ class OptimizationManager:
                 )
                 # copy the hotstart file to the checkpoints folder
                 src = self.hot_start_file
-                dest = os.path.join(self._checkpoints_folder, "hot_start.hst")
+                dest = os.path.join(
+                    self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                )
                 shutil.copy(src, dest)
                 self._iteration += 1
 
