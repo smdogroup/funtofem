@@ -154,8 +154,8 @@ class PlotManager:
         yaxis_name="func values",
         color_offset: int = 0,
         yscale_log=False,
-        xmargin:int=0.02,
-        ymargin:int=0.02,
+        xmargin: int = 0.02,
+        ymargin: int = 0.02,
     ):
         if plot_name is None:
             plot_name = "f2f-history"
