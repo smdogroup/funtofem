@@ -160,6 +160,7 @@ class PlotManager:
 
         with plt.style.context(niceplots.get_style(niceplots_style)):
             fig, ax = plt.subplots()
+            plt.margins(x=0.02, y=0.02)
             colors = niceplots.get_colors_list(niceplots_style)
             for ifunc, func in enumerate(self.functions):
                 if self.valid_function(func):
