@@ -192,11 +192,12 @@ class OptimizationManager:
                     self.comm, func_file, full_precision=False, optim=True
                 )
                 # copy the hotstart file to the checkpoints folder
-                src = self.hot_start_file
-                dest = os.path.join(
-                    self._checkpoints_folder, f"hot_start{self._iteration}.hst"
-                )
-                shutil.copy(src, dest)
+                if self.hot_start_file is not None:
+                    src = self.hot_start_file
+                    dest = os.path.join(
+                        self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                    )
+                    shutil.copy(src, dest)
                 self._iteration += 1
 
             # update and plot the current optimization history
