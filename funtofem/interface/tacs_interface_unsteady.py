@@ -101,6 +101,10 @@ class TacsOutputGeneratorUnsteady:
             self.f5.writeToFile(filepath)
         return
 
+    def _deallocate(self):
+        self.f5.__dealloc__()
+        return
+
 
 class TacsUnsteadyInterface(SolverInterface):
     """
@@ -823,7 +827,7 @@ class TacsUnsteadyInterface(SolverInterface):
 
         pass
 
-    def __del__(self):
+    def _deallocate(self):
         """free memory during oneway struct and two-way coupled shape drivers"""
 
         # Create the scenario-independent solution data
@@ -848,7 +852,7 @@ class TacsUnsteadyInterface(SolverInterface):
                 self.integrator[scenario.id].__dealloc__()
         if self.assembler is not None:
             self.assembler.__dealloc__()
-        del self.gen_output
+        self.gen_output._deallocate()
         return
 
     def step_pre(self, scenario, bodies, step):
