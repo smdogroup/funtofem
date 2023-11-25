@@ -711,7 +711,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             if not self.is_remote:
                 # delete struct interface to free up memory in shape change
-                self.solvers.structural._deallocate()
+                # self.solvers.structural._deallocate()
                 del self.solvers.structural
                 self.comm.Barrier()
 
