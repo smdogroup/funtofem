@@ -962,6 +962,35 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
+    def _deallocate(self):
+        """free up memory before full delete"""
+        if self.assembler is not None:
+            self.res.__dealloc__()
+            self.ans.__dealloc__()
+            self.ext_force.__dealloc__()
+            self.update.__dealloc__()
+            self.struct_X.__dealloc__()
+            self.mat.__dealloc__()  # check this one
+            self.pc.__dealloc__()
+            self.gmres.__dealloc__()
+            self.u.__dealloc__()
+            for i in range(len(self.func_list)):
+                self.dfdx[i].__dealloc__()
+                self.dfdXpts[i].__dealloc__()
+                self.dfdu.append[i].__dealloc__()
+                self.psi.append[i].__dealloc__()
+            del self.u
+            for i in range(len(self.func_list)):
+                del self.dfdx[i]
+                del self.dfdXpts[i]
+                del self.dfdu[i]
+                del self.psi[i]
+
+            self.assembler.__dealloc__()
+
+        self.gen_output._deallocate()
+        return
+
     @classmethod
     def create_from_bdf(
         cls,
@@ -1144,3 +1173,7 @@ class TacsOutputGenerator:
             self.f5.writeToFile(filename)
         self.count += 1
         return
+
+    def _deallocate(self):
+        """free up memory before delete"""
+        self.f5.__dealloc__()
