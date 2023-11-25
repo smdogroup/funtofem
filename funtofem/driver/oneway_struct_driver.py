@@ -553,6 +553,10 @@ class OnewayStructDriver:
 
             self.comm.Barrier()
 
+            # delete struct interface to free up memory in shape change
+            del self.struct_interface
+            self.comm.Barrier()
+
             # copy struct sens files for parallel instances
             if self.uses_tacs:
                 src = self.struct_aim.root_sens_file

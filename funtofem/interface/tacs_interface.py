@@ -962,6 +962,32 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
+    def __del__(self):
+        """free memory during oneway struct and two-way coupled shape drivers"""
+
+        # Create the scenario-independent solution data
+        if self.assembler is not None:
+            self.res.__dealloc__()
+            self.ans.__dealloc__()
+            self.ext_force.__dealloc__()
+            self.update.__dealloc__()
+            self.struct_X.__dealloc__()
+            self.mat.__dealloc__()  # check this one
+            self.pc.__dealloc__()
+            self.gmres.__dealloc__()
+
+            self.u.__dealloc__()
+            for i in range(len(self.func_list)):
+                self.dfdx[i].__dealloc__()
+                self.dfdXpts[i].__dealloc__()
+                self.dfdu.append[i].__dealloc__()
+                self.psi.append[i].__dealloc__()
+
+            self.assembler.__dealloc__()
+
+        del self.gen_output
+        return
+
     @classmethod
     def create_from_bdf(
         cls,
@@ -1144,3 +1170,6 @@ class TacsOutputGenerator:
             self.f5.writeToFile(filename)
         self.count += 1
         return
+
+    def __del__(self):
+        self.f5.__dealloc__()
