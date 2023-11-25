@@ -554,7 +554,7 @@ class OnewayStructDriver:
             self.comm.Barrier()
 
             # delete struct interface to free up memory in shape change
-            self.struct_interface.deallocate()
+            self.struct_interface._deallocate()
             del self.struct_interface
             self.comm.Barrier()
 
@@ -595,9 +595,6 @@ class OnewayStructDriver:
             root=0,
         )
 
-        # delete the old struct interface if planning to remesh again
-        if self.change_shape:
-            del self.struct_interface
         # end of change shape section
         return
 

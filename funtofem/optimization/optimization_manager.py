@@ -40,6 +40,7 @@ class OptimizationManager:
         write_designs: bool = True,
         hot_start: bool = False,
         design_out_file=None,
+        debug: bool = False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -59,6 +60,7 @@ class OptimizationManager:
         self.model = driver.model
         self.driver = driver
         self.design_out_file = design_out_file
+        self.debug = debug
 
         # optimization meta data
         self._iteration = 0
@@ -233,23 +235,32 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        try:
+        if not (self.debug):
+            try:
+                self._gatekeeper(x_dict)
+                fail = False
+            except:
+                fail = True
+                print("warning: eval functions failure..")
+        else:  # debug
             self._gatekeeper(x_dict)
             fail = False
-        except:
-            fail = True
-            print("warning: eval functions failure..")
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        try:
+        if not (self.debug):
+            try:
+                self._gatekeeper(x_dict)
+                fail = False
+            except:
+                fail = True
+                print("warning: eval func gradients failure..")
+        else:  # debug
             self._gatekeeper(x_dict)
             fail = False
-        except:
-            fail = True
         return self._sens, fail
 
     def _plot_history(self):
