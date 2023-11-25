@@ -194,6 +194,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if scenario.early_stopping and step > scenario.min_forward_steps:
                 for solver in self.solvers.solver_list:
                     forward_resid = abs(solver.get_forward_residual(step=step))
+                    if self.comm.rank == 0:
+                        print(f"forward resid = {forward_resid}", flush=True)
                     forward_tol = solver.forward_tolerance
                     if forward_resid < forward_tol:
                         if self.comm.rank == 0:

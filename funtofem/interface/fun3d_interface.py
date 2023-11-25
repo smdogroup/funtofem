@@ -436,6 +436,10 @@ class Fun3dInterface(SolverInterface):
                     elif var.name.lower() == "dynamic pressure":
                         deriv = self.comm.reduce(self.dFdqinf[func])
 
+                    # if abs(deriv) > 1e10:  # for adjoint divergence
+                    #    raise RuntimeError(
+                    #        f"Funtofem: FUN3D adjoint likely diverged and produced a very large derivative for {function.name} {var.name}"
+                    #    )
                     # function.set_gradient_component(var, deriv)
                     function.add_gradient_component(var, deriv)
 
