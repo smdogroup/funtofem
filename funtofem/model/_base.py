@@ -275,6 +275,19 @@ class Base(object):
 
         return full_list
 
+    def get_variable(self, varname, set_active=True) -> Variable:
+        """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
+        var = None
+        for discipline in self.variables:
+            discipline_vars = self.variables[discipline]
+            for var in discipline_vars:
+                if var.name == varname:
+                    if set_active:
+                        var.active = True
+                    return var
+        if var is None:
+            raise AssertionError(f"Can't find variable from scenario {self.name}")
+
     def set_coupled_variables(self, base):
         """
         **[model call]**

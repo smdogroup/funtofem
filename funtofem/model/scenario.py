@@ -252,19 +252,6 @@ class Scenario(Base):
         is_adjoint = lambda func: func.adjoint
         return len(list(filter(is_adjoint, self.functions)))
 
-    def get_variable(self, varname, set_active=True) -> Variable:
-        """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
-        var = None
-        for discipline in self.variables:
-            discipline_vars = self.variables[discipline]
-            for var in discipline_vars:
-                if var.name == varname:
-                    if set_active:
-                        var.active = True
-                    return var
-        if var is None:
-            raise AssertionError(f"Can't find variable from scenario {self.name}")
-
     def add_variable(self, vartype, var: Variable):
         """
         Add a new variable to the scenario's variable dictionary
