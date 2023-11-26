@@ -275,7 +275,7 @@ class Base(object):
 
         return full_list
 
-    def get_variable(self, varname, set_active=True) -> Variable:
+    def get_variable(self, varname, set_active=True):
         """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
         var = None
         for discipline in self.variables:
