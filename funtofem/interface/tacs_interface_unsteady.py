@@ -592,6 +592,8 @@ class TacsUnsteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+        # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
+        self.set_variables(scenario, bodies)
         if self.tacs_proc:
             # Save the solution vector
             self.scenario_data[scenario.id].u.copyValues(self.ans)
