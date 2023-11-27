@@ -14,7 +14,7 @@ python:
 
 target_platform:
   - osx-64 # [osx]
-  - osx-arm64 # [osx]
+  #- osx-arm64 # [osx]
   - linux-64 # [linux64]
   #- linux-aarch64 # [linux64]
   #- linux-ppc64le # [linux64]
