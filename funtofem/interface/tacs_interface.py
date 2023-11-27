@@ -435,7 +435,7 @@ class TacsSteadyInterface(SolverInterface):
 
             # This assumes that the TACS variables are not distributed and are set
             # only on the tacs_comm root processor.
-            if self.tacs_comm.rank == 0:
+            if self.comm.rank == 0:
                 for i, var in enumerate(self.struct_variables):
                     xarray[i] = var.value
 
