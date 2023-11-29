@@ -1042,7 +1042,7 @@ class Fun3dInterface(SolverInterface):
             # read the first 5 or 6 residuals, just 5 for now in the hack
             resids = [abs(float(_)) for _ in chunks[1:6]]
             resid = max(resids)
-            #print(f"resids = {resids}, max resid = {resid}")
+            # print(f"resids = {resids}, max resid = {resid}")
 
         self.comm.Barrier()
         resid = self.comm.bcast(resid, root=0)

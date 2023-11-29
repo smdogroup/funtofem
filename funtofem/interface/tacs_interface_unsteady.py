@@ -829,34 +829,6 @@ class TacsUnsteadyInterface(SolverInterface):
 
         pass
 
-    def _deallocate(self):
-        """free memory during oneway struct and two-way coupled shape drivers"""
-
-        # Create the scenario-independent solution data
-        if self.assembler is not None:
-            self.ans.__dealloc__()
-            self.ext_force.__dealloc__()
-            self.struct_X.__dealloc__()
-            self.struct_rhs_vec.__dealloc__()
-            self.u.__dealloc__()
-            self.q.__dealloc__()
-            self.qdot.__dealloc__()
-            self.qddot.__dealloc__()
-            for i in range(len(self.func_list)):
-                self.dfdx[i].__dealloc__()
-                self.dfdXpts[i].__dealloc__()
-                self.dfdu[i].__dealloc__()
-                self.psi[i].__dealloc__()
-        if self.tacs_proc:
-            for scenario in self.model.scenarios:
-                self.F[scenario.id].__dealloc__()
-                self.auxElems[scenario.id].__dealloc__()
-                self.integrator[scenario.id].__dealloc__()
-        if self.assembler is not None:
-            self.assembler.__dealloc__()
-        self.gen_output._deallocate()
-        return
-
     def step_pre(self, scenario, bodies, step):
         pass
 
