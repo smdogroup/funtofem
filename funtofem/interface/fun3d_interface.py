@@ -661,7 +661,10 @@ class Fun3dInterface(SolverInterface):
             hdl.close()
 
             last_line = lines[-1]
-            chunks = last_line.split(" ")
+            chunks = last_line.split("  ")
+
+            print(f"last_line = {last_line}")
+            print(f"chunks = {chunks}")
 
             # read the first 5 or 6 residuals, just 5 for now in the hack
             resids = [abs(float(_)) for _ in chunks[1:6]]
@@ -1034,11 +1037,12 @@ class Fun3dInterface(SolverInterface):
             hdl.close()
 
             last_line = lines[-1]
-            chunks = last_line.split(" ")
+            chunks = last_line.split("  ")
 
             # read the first 5 or 6 residuals, just 5 for now in the hack
             resids = [abs(float(_)) for _ in chunks[1:6]]
             resid = max(resids)
+            #print(f"resids = {resids}, max resid = {resid}")
 
         self.comm.Barrier()
         resid = self.comm.bcast(resid, root=0)
@@ -1047,6 +1051,7 @@ class Fun3dInterface(SolverInterface):
         self._adjoint_resid = resid
 
         if self.comm.rank == 0:
+            print(f"resid = {resid}, resids = {resids}")
             print(f"F2F - adjoint residuals, scenario {scenario.name} fun3d = {resid}")
 
         # return from adjoint dir to root
