@@ -101,6 +101,10 @@ class TacsOutputGeneratorUnsteady:
             self.f5.writeToFile(filepath)
         return
 
+    def _deallocate(self):
+        self.f5.__dealloc__()
+        return
+
 
 class TacsUnsteadyInterface(SolverInterface):
     """
@@ -146,6 +150,7 @@ class TacsUnsteadyInterface(SolverInterface):
         self._coord_deriv_override = False
 
         # initialize variables
+        self.model = model
         self._initialize_variables(
             model, assembler, thermal_index=thermal_index, struct_id=struct_id
         )
@@ -587,6 +592,8 @@ class TacsUnsteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+        # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
+        self.set_variables(scenario, bodies)
         if self.tacs_proc:
             # Save the solution vector
             self.scenario_data[scenario.id].u.copyValues(self.ans)

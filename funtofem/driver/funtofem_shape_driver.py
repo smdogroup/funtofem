@@ -709,6 +709,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # not sure if this barrier is necessary here but just in case
                 self.comm.Barrier()
 
+            if not self.is_remote:
+                # delete struct interface to free up memory in shape change
+                # self.solvers.structural._deallocate()
+                del self.solvers.structural
+                self.comm.Barrier()
+
             self.comm.Barrier()
             start_time = time.time()
 

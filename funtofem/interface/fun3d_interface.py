@@ -46,6 +46,7 @@ class Fun3dInterface(SolverInterface):
         self,
         comm,
         model,
+        fun3d_project_name,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
@@ -84,6 +85,7 @@ class Fun3dInterface(SolverInterface):
 
         self.comm = comm
         self.model = model
+        self.fun3d_project_name = fun3d_project_name
 
         #  Instantiate FUN3D
         self.fun3d_flow = Flow()
@@ -108,9 +110,7 @@ class Fun3dInterface(SolverInterface):
         self.dHdq = []
 
         # fun3d residual data
-        self._forward_done = False
         self._forward_resid = None
-        self._adjoint_done = False
         self._adjoint_resid = None
 
         self.forward_tolerance = forward_tolerance
@@ -203,6 +203,9 @@ class Fun3dInterface(SolverInterface):
         # Change directory to the directory associated with the scenario
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
+
+        # reset forward residuals
+        self._forward_resid = None
 
         if self.comm.rank == 0:
             print(
@@ -640,19 +643,46 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_forward_residual(
-            step=scenario.steps, all=True
-        )  # step=scenario.steps
-        if self.comm.rank == 0:
-            print(f"Forward residuals = {resid}")
-        self._forward_done = True
-        self._forward_resid = resid
+        # resid = self.get_forward_residual(
+        #     step=scenario.steps, all=True
+        # )  # step=scenario.steps
+        # if self.comm.rank == 0:
+        #     print(f"Forward residuals = {resid}")
+        # self._forward_done = True
+        # self._forward_resid = resid
 
         self.fun3d_flow.post()
+
+        # get the forward residuals from fileIO
+        resid = None
+        if self.comm.rank == 0:
+            hdl = open(self.fun3d_project_name + "_hist.dat", "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            last_line = lines[-1]
+            chunks = last_line.split("  ")
+
+            print(f"last_line = {last_line}")
+            print(f"chunks = {chunks}")
+
+            # read the first 5 or 6 residuals, just 5 for now in the hack
+            resids = [abs(float(_)) for _ in chunks[1:6]]
+            resid = max(resids)
+
+        self.comm.Barrier()
+        resid = self.comm.bcast(resid, root=0)
+
+        # save the resid in forward residual
+        self._forward_resid = resid
+        if self.comm.rank == 0:
+            print(f"F2F - forward residuals, scenario {scenario.name} fun3d = {resid}")
+
+        # return from flow_dir to root
         os.chdir(self.root_dir)
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
+        if abs(resid) > self.forward_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -678,6 +708,9 @@ class Fun3dInterface(SolverInterface):
 
         adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
         os.chdir(adjoint_dir)
+
+        # reset adjoint residuals
+        self._adjoint_resid = None
 
         if self.comm.rank == 0:
             print(
@@ -985,19 +1018,47 @@ class Fun3dInterface(SolverInterface):
             list of FUNtoFEM bodies.
         """
 
-        # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=scenario.steps, all=True)
-        if self.comm.rank == 0:
-            print(f"Adjoint residuals = {resid}")
-        self._adjoint_done = True
-        self._adjoint_resid = resid
+        # this part is buggy so ignoring for now
+        # # report warning if flow residual too large
+        # resid = self.get_adjoint_residual(step=scenario.steps, all=True)
+        # if self.comm.rank == 0:
+        #     print(f"Adjoint residuals = {resid}")
+        # self._adjoint_done = True
+        # self._adjoint_resid = resid
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
+
+        # get the forward residuals from fileIO
+        resid = None
+        if self.comm.rank == 0:
+            hdl = open(self.fun3d_project_name + "_hist.dat", "r")
+            lines = hdl.readlines()
+            hdl.close()
+
+            last_line = lines[-1]
+            chunks = last_line.split("  ")
+
+            # read the first 5 or 6 residuals, just 5 for now in the hack
+            resids = [abs(float(_)) for _ in chunks[1:6]]
+            resid = max(resids)
+            # print(f"resids = {resids}, max resid = {resid}")
+
+        self.comm.Barrier()
+        resid = self.comm.bcast(resid, root=0)
+
+        # save the residual in the adjoint
+        self._adjoint_resid = resid
+
+        if self.comm.rank == 0:
+            print(f"resid = {resid}, resids = {resids}")
+            print(f"F2F - adjoint residuals, scenario {scenario.name} fun3d = {resid}")
+
+        # return from adjoint dir to root
         os.chdir(self.root_dir)
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
+        if abs(resid) > self.adjoint_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
             )
@@ -1015,15 +1076,18 @@ class Fun3dInterface(SolverInterface):
         all: bool
             whether to return a list of all residuals or just a scalar
         """
-        if not self._forward_done:
-            residuals = self.fun3d_flow.get_flow_rms_residual(step)
-        else:
-            residuals = self._forward_resid
+        # this interface in FUN3D is broken..
+        # if not self._forward_done:
+        #     residuals = self.fun3d_flow.get_flow_rms_residual(step)
+        # else:
+        #     residuals = self._forward_resid
 
-        if all:
-            return residuals
-        else:
-            return np.linalg.norm(residuals)
+        # if all:
+        #     return residuals
+        # else:
+        #     return np.linalg.norm(residuals)
+        assert self._forward_resid is not None
+        return self._forward_resid
 
     def get_adjoint_residual(self, step=0, all=False):
         """
@@ -1036,16 +1100,18 @@ class Fun3dInterface(SolverInterface):
         all: bool
             whether to return a list of all residuals or a scalar
         """
-        if not self._adjoint_done:
-            residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            return np.linalg.norm(residuals)
-        else:
-            residuals = self._adjoint_resid
+        # if not self._adjoint_done:
+        #     residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
+        #     return np.linalg.norm(residuals)
+        # else:
+        #     residuals = self._adjoint_resid
 
-        if all:
-            return residuals
-        else:
-            return np.linalg.norm(residuals)
+        # if all:
+        #     return residuals
+        # else:
+        #     return np.linalg.norm(residuals)
+        assert self._forward_resid is not None
+        return self._forward_resid
 
     def set_states(self, scenario, bodies, step):
         """
