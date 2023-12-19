@@ -1,4 +1,4 @@
-# "Stupid Simple" Wing
+# "Super Simple" Wing
 Testing out fully-coupled aeroelastic optimizations on a simple wing geometry.
 
 ## Preliminary Sizing
