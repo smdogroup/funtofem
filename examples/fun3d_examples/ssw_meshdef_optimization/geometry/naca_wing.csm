@@ -1,15 +1,7 @@
-# Naca wing example
-# Sean Engelstad August 2023
-# SMDO Lab Georgia Tech, Prof. Graeme Kennedy
+# Super Simple Wing
 
-cfgpmtr view:flow 1
-cfgpmtr view:struct 0
-
-#--- ifthen view:flow EQ 1
-#---    ifthen view:struct EQ 1
-#---     throw 999
-#---    endif
-#--- endif
+cfgpmtr view:flow 0
+cfgpmtr view:struct 1
 
 # aero design parameters
 
@@ -43,8 +35,8 @@ set margin3 10.0
 
 # wing solid body
 mark
-udprim naca camber camber thickness thickness
-udprim naca camber camber thickness thickness
+udprim naca camber camber thickness thickness sharpte 1
+udprim naca camber camber thickness thickness sharpte 1
 translate 0 0 -sspan
 loft 0
 translate 0 0 0.5*sspan
@@ -234,6 +226,4 @@ endif
 
 
 end
-|||||||||||
-||||||||||||||||||||||||||||||
-|||||||||||||||||||||||||||||||
+|||
