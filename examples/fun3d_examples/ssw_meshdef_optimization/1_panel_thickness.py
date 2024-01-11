@@ -13,7 +13,7 @@ import os
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "geometry", "naca_wing.csm")
+csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 
 # Optimization options
 hot_start = False
@@ -64,16 +64,13 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
-caps2tacs.PinConstraint("station2").register_to(tacs_model)
-caps2tacs.TemperatureConstraint("midplane", temperature=0).register_to(tacs_model)
 
 # ---------------------------------------------------->
 
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aerothermoelastic("wing", boundary=5)
-# aerothermoelastic
+wing = Body.aeroelastic("wing", boundary=1)
 
 # setup the material and shell properties
 titanium_alloy = caps2tacs.Isotropic.titanium_alloy().register_to(tacs_model)
