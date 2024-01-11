@@ -88,12 +88,12 @@ elseif chopMode EQ 4 #LE + middle
    intersect
 endif
 
-rotatez twist1 0 0
+rotatez -twist1 0 0
 translate 0 0 -z1
 
 select face
-    attribute wingSolid $root
-    attribute tagComp $root
+   attribute wingSolid $root
+   attribute tagComp $root
 
 # Station 2
 # ----------------------
@@ -139,7 +139,7 @@ elseif chopMode EQ 4 #LE + middle
    intersect
 endif
 
-rotatez twist2 0 0
+rotatez -twist2 0 0
 translate 0 0 -z2
 
 # Station 3
@@ -181,12 +181,12 @@ elseif chopMode EQ 2 # middle
 elseif chopMode EQ 3 # TE
    box xTE_chop -10.0 -1.0 (2*chord-xTE_chop) 20.0 2.0
    intersect
-elseif chopMode EQ 4 #LE + middle
+elseif chopMode EQ 4 # LE + middle
    box -chord -10.0 -1.0 (chord+xTE_chop) 20.0 2.0
    intersect
 endif
 
-rotatez twist3 0 0
+rotatez -twist3 0 0
 translate 0 0 -z3
 
 
@@ -234,7 +234,7 @@ elseif chopMode EQ 4 #LE + middle
    intersect
 endif
 
-rotatez twist4 0 0
+rotatez -twist4 0 0
 translate 0 0 -z4
 
 select face
@@ -256,46 +256,46 @@ ifthen chopMode EQ 0
    select face 1
       select add 2
       select add 3
-      attribute tagComp $wingUpper
+      attribute tagComp1 $wingUpper
    select face 4
       select add 5
       select add 6
-      attribute tagComp $wingLower
+      attribute tagComp1 $wingLower
    select edge 1
       select add 5
       select add 8
-      attribute tagComp $teEdge
+      attribute tagComp1 $teEdge
    select edge 3
       select add 6
       select add 9
-      attribute tagComp $leEdge
+      attribute tagComp1 $leEdge
 elseif chopMode EQ 2
    select face 4
       select add 5
       select add 6
-      attribute tagComp $wingUpper
+      attribute tagComp1 $wingUpper
    select face 10
       select add 11
       select add 12
-      attribute tagComp $wingLower
+      attribute tagComp1 $wingLower
    select face 7
       select add 8
       select add 9
-      attribute tagComp $frontFace
+      attribute tagComp1 $frontFace
    select face 1
       select add 2
       select add 3
-      attribute tagComp $rearFace
+      attribute tagComp1 $rearFace
 endif
    
 
 udprim editAttr filename <<
- EDGE ADJ2FACE tagComp=root
- SET tagComp=rootEdge
+   EDGE ADJ2FACE tagComp=root
+   SET tagComp=rootEdge
 
- EDGE ADJ2FACE tagComp=tip
- SET tagComp=tipEdge
+   EDGE ADJ2FACE tagComp=tip
+   SET tagComp=tipEdge
 >>
 
 end
-|||
+||||||

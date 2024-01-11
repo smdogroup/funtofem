@@ -26,13 +26,14 @@ despmtr nspars 2
 
 
 # Make the full wing solid
-udparg $/wing tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
-udparg $/wing twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
-udparg $/wing chord chord sspan sspan camber camber xCamber xCamber
-udparg $/wing LEchop LEchop TEchop TEchop 
-udparg $/wing chopMode chopMode
-udparg $/wing nribs nribs nspars nspars
-udprim $/wing midplane midplane
+udparg $/wingStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/wingStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/wingStruct chord chord sspan sspan camber camber xCamber xCamber
+udparg $/wingStruct LEchop LEchop TEchop TEchop 
+udparg $/wingStruct chopMode chopMode
+udparg $/wingStruct nribs nribs nspars nspars
+udparg $/wingStruct aoa aoa
+udprim $/wingStruct midplane midplane
 
 end
 |
