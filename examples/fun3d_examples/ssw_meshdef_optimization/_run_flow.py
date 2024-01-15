@@ -2,8 +2,10 @@
 _run_flow.py
 
 Run a FUN3D analysis using the OnewayAeroDriver.
-The flow solver is run first to generate aerodynamic loads on the structure which are saved to uncoupled_loads.txt.
-A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS to solve the structural sizing optimization problem.
+The flow solver is run first to generate aerodynamic loads on the structure which are 
+saved to uncoupled_loads.txt.
+A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS 
+to solve the structural sizing optimization problem.
 """
 
 from funtofem import *
@@ -18,11 +20,11 @@ q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
 f2f_model = FUNtoFEMmodel("ssw_flow")
-wing = Body.aerothermoelastic("wing", boundary=4)
+wing = Body.aeroelastic("wing", boundary=3)
 wing.register_to(f2f_model)
 
 # Make a FUNtoFEM scenario
-cruise = Scenario.steady("cruise", steps=500)
+cruise = Scenario.steady("cruise", steps=1000)
 Function.lift().register_to(cruise)
 Function.drag().register_to(cruise)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
@@ -34,7 +36,9 @@ cruise.register_to(f2f_model)
 # -----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(comm, f2f_model, fun3d_dir="cfd")
+solvers.flow = Fun3dInterface(
+    comm, f2f_model, fun3d_project_name="ssw-turb", fun3d_dir="cfd"
+)
 my_transfer_settings = TransferSettings(npts=200)
 fun3d_driver = OnewayAeroDriver(
     solvers, f2f_model, transfer_settings=my_transfer_settings
