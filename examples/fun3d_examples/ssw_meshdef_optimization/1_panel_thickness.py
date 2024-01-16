@@ -69,7 +69,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=1)
+wing = Body.aeroelastic("wing", boundary=3)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -131,7 +131,7 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=350, uncoupled_steps=100)  # 2000
+cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)  # 2000
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
@@ -139,8 +139,8 @@ ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 cruise.include(mass).include(ksfailure)
-cruise.set_temperature(T_ref=216, T_inf=216)
-cruise.set_flow_ref_vals(qinf=3.16e4)
+cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
+cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
 
 # ---------------------------------------------------->
@@ -170,7 +170,12 @@ for isection, prefix in enumerate(section_prefix):
 
 solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(
-    comm, f2f_model, fun3d_project_name="ssw-turb", fun3d_dir="cfd"
+    comm,
+    f2f_model,
+    fun3d_project_name="ssw-turb",
+    fun3d_dir="cfd",
+    forward_tolerance=1e-4,
+    adjoint_tolerance=1e-4,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
@@ -206,21 +211,23 @@ f2f_driver = FUNtoFEMnlbgs(
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
+design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
 design_out_file = os.path.join(base_dir, "design", "sizing.txt")
 
 design_folder = os.path.join(base_dir, "design")
-if not os.path.exists(design_folder):
-    os.mkdir(design_folder)
+if comm.rank == 0:
+    if not os.path.exists(design_folder):
+        os.mkdir(design_folder)
 history_file = os.path.join(design_folder, "sizing.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # reload previous design
 # not needed since we are hot starting
-# f2f_model.read_design_variables_file(comm, design_out_file)
+# f2f_model.read_design_variables_file(comm, design_in_file)
 
 # Reload the previous design
-f2f_model.read_design_variables_file(comm, design_out_file)
+f2f_model.read_design_variables_file(comm, design_in_file)
 
 manager = OptimizationManager(
     f2f_driver,
