@@ -1,1 +1,1 @@
-# minimize (lift - lift*)^2 with respect 
+# minimize (lift - lift*)^2 with respect
