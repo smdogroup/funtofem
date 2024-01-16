@@ -87,7 +87,7 @@ for irib in range(1, nribs + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=False,
+        active=True,
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -99,7 +99,7 @@ for ispar in range(1, nspars + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=False,
+        active=True,
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -111,7 +111,7 @@ for iOML in range(1, nOML + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=False,
+        active=True,
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
@@ -123,7 +123,7 @@ for prefix in ["LE", "TE"]:
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=False,
+        active=True,
     ).register_to(wing)
 
 # register the wing body to the model
@@ -152,7 +152,7 @@ ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
 )
 cl_cruise = Function.lift(body=0)
 aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=2.0, upper=15)
-cruise.include(mass).include(ksfailure).include(cl_cruise).include(aoa_cruise)
+cruise.include(mass).include(ksfailure).include(cl_cruise)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -238,7 +238,6 @@ hot_start_file = history_file if hot_start else None
 f2f_model.read_design_variables_file(comm, design_in_file)
 
 f2f_model.print_summary()
-
 
 manager = OptimizationManager(
     f2f_driver,
