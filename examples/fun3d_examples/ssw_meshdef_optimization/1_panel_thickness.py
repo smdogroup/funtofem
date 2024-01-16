@@ -1,7 +1,8 @@
 """
 1_panel_thickness.py
-Run a oneway-coupled optimization of the panel thicknesses of the wing structure. The flow solver is run first to generate aerodynamic loads on the structure which are saved to uncoupled_loads.txt.
-A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS to solve the structural sizing optimization problem.
+
+Run a coupled optimization of the panel thicknesses of the wing structure.
+No shape variables are included in this optimization.
 """
 
 from pyoptsparse import SLSQP, Optimization
@@ -18,6 +19,8 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 # Optimization options
 hot_start = False
 store_history = True
+
+nprocs_tacs = 8
 
 # FUNTOFEM MODEL
 # <----------------------------------------------------
@@ -46,10 +49,8 @@ tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative t
 f2f_model.structural = tacs_model
 
 tacs_aim = tacs_model.tacs_aim
-tacs_aim.set_config_parameter("mode:flow", 0)
-tacs_aim.set_config_parameter("mode:struct", 1)
-tacs_aim.set_config_parameter("wing:allOMLgroups", 0)
-tacs_aim.set_config_parameter("wing:includeTE", 0)
+tacs_aim.set_config_parameter("view:flow", 0)
+tacs_aim.set_config_parameter("view:struct", 1)
 
 for proc in tacs_aim.active_procs:
     if comm.rank == proc:
@@ -58,8 +59,6 @@ for proc in tacs_aim.active_procs:
             "chord": {"numEdgePoints": 20},
             "span": {"numEdgePoints": 8},
             "vert": {"numEdgePoints": 4},
-            "LEribFace": {"tessParams": [0.03, 0.1, 3]},
-            "LEribEdge": {"numEdgePoints": 20},
         }
 
 # add tacs constraints in
@@ -73,16 +72,16 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 wing = Body.aeroelastic("wing", boundary=1)
 
 # setup the material and shell properties
-titanium_alloy = caps2tacs.Isotropic.titanium_alloy().register_to(tacs_model)
+aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
-nribs = int(tacs_model.get_config_parameter("wing:nribs"))
-nspars = int(tacs_model.get_config_parameter("wing:nspars"))
+nribs = int(tacs_model.get_config_parameter("nribs"))
+nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = nribs - 1
 
 for irib in range(1, nribs + 1):
     name = f"rib{irib}"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=titanium_alloy, membrane_thickness=0.04
+        caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
@@ -91,7 +90,7 @@ for irib in range(1, nribs + 1):
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=titanium_alloy, membrane_thickness=0.04
+        caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
@@ -100,32 +99,16 @@ for ispar in range(1, nspars + 1):
 for iOML in range(1, nOML + 1):
     name = f"OML{iOML}"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=titanium_alloy, membrane_thickness=0.04
+        caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
     ).register_to(wing)
-
-    name = f"LE{iOML}"
-    prop = caps2tacs.ShellProperty(
-        caps_group=name, material=titanium_alloy, membrane_thickness=0.04
-    ).register_to(tacs_model)
-    Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
-    ).register_to(wing)
-
-    # name = f"TE{iOML}"
-    # prop = caps2tacs.ShellProperty(
-    #     caps_group=name, material=titanium_alloy, membrane_thickness=0.04
-    # ).register_to(tacs_model)
-    # Variable.structural(name, value=0.01).set_bounds(
-    #     lower=0.001, upper=0.15, scale=100.0
-    # ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
     name = f"{prefix}spar"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=titanium_alloy, membrane_thickness=0.04
+        caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
@@ -148,17 +131,17 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-climb = Scenario.steady("cruise", steps=350, uncoupled_steps=200)  # 2000
+cruise = Scenario.steady("cruise", steps=350, uncoupled_steps=100)  # 2000
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
-    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-climb"
+    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
-climb.include(mass).include(ksfailure)
-climb.set_temperature(T_ref=216, T_inf=216)
-climb.set_flow_ref_vals(qinf=3.16e4)
-climb.register_to(f2f_model)
+cruise.include(mass).include(ksfailure)
+cruise.set_temperature(T_ref=216, T_inf=216)
+cruise.set_flow_ref_vals(qinf=3.16e4)
+cruise.register_to(f2f_model)
 
 # ---------------------------------------------------->
 
@@ -186,27 +169,35 @@ for isection, prefix in enumerate(section_prefix):
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
+solvers.flow = Fun3dInterface(
+    comm, f2f_model, fun3d_project_name="ssw-turb", fun3d_dir="cfd"
+)
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
-    nprocs=8,
+    nprocs=nprocs_tacs,
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
 )
 
 # read in aero loads
-aero_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "uncoupled_loads.txt")
-f2f_model.read_aero_loads(comm, aero_loads_file)
+# aero_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "uncoupled_loads.txt")
+# f2f_model.read_aero_loads(comm, aero_loads_file)
 
 transfer_settings = TransferSettings(npts=200)
 
 # build the shape driver from the file
-tacs_driver = OnewayStructDriver.prime_loads_from_file(
-    filename=aero_loads_file,
-    solvers=solvers,
-    model=f2f_model,
-    nprocs=8,
-    transfer_settings=transfer_settings,
+# tacs_driver = OnewayStructDriver.prime_loads_from_file(
+#     filename=aero_loads_file,
+#     solvers=solvers,
+#     model=f2f_model,
+#     nprocs=nprocs_tacs,
+#     transfer_settings=transfer_settings,
+# )
+
+# Build the FUNtoFEM driver
+f2f_driver = FUNtoFEMnlbgs(
+    solvers=solvers, transfer_settings=transfer_settings, model=f2f_model
 )
 
 # ---------------------------------------------------->
@@ -228,8 +219,11 @@ hot_start_file = history_file if hot_start else None
 # not needed since we are hot starting
 # f2f_model.read_design_variables_file(comm, design_out_file)
 
+# Reload the previous design
+f2f_model.read_design_variables_file(comm, design_out_file)
+
 manager = OptimizationManager(
-    tacs_driver,
+    f2f_driver,
     design_out_file=design_out_file,
     hot_start=hot_start,
     debug=True,
@@ -237,7 +231,7 @@ manager = OptimizationManager(
 )
 
 # create the pyoptsparse optimization problem
-opt_problem = Optimization("hsctOpt", manager.eval_functions)
+opt_problem = Optimization("sswOpt", manager.eval_functions)
 
 # add funtofem model variables to pyoptsparse
 manager.register_to_problem(opt_problem)
