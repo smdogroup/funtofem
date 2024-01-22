@@ -7,7 +7,7 @@ comm = MPI.COMM_WORLD
 
 # Set whether to build an inviscid or viscous mesh
 # ------------------------------------------------
-# case = "inviscid"  # "turbulent"
+# case = "inviscid"
 case = "turbulent"
 if case == "inviscid":
     project_name = "ssw-inviscid"
@@ -46,7 +46,7 @@ if case == "inviscid":
     Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
 else:
     aflr_aim.set_boundary_layer(
-        initial_spacing=0.0001, max_layers=35, thickness=0.01, use_quads=True
+        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
     )
     Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
 
