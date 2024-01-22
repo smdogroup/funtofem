@@ -8,7 +8,10 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'turbulent'
+  viscous_terms = 'inviscid'
+/
+&turbulent_diffusion_models
+  turbulence_model = 'sa-neg'
 /
 &reference_physical_properties
   mach_number     = 0.5
@@ -18,15 +21,19 @@
   temperature_units = 'Kelvin'
 /
 &code_run_control
-  restart_write_freq = 1
+  restart_write_freq = 100
   restart_read       = 'off'
-  steps              =  1000
+  steps              =  300
+/
+&force_moment_integ_properties
+  area_reference = 5.0
 /
 &inviscid_flux_method
   flux_construction       = 'roe'
   flux_limiter            = 'hminmod'
   smooth_limiter_coeff    = 1.0
-  freeze_limiter_iteration = 400
+  freeze_limiter_iteration = 80
+  first_order_iterations = 50
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
@@ -41,11 +48,13 @@
 /
 &global
   moving_grid = .true.
-  boundary_animation_freq = 500
-  volume_animation_freq = 500
+  boundary_animation_freq = 300
+  volume_animation_freq = 0
 /
 &elasticity_gmres
-  elasticity = 2
+  elasticity = 1
+  tol = 1e-10
+  tol_abs = 1e-12
 /
 &slice_data
   nslices       = 1
