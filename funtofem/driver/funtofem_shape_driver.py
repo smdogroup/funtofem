@@ -364,16 +364,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 root=0,
             )
 
-        if not (self.is_remote) and self.change_shape:
-            # case where analysis script does the meshing and the remote does not.
-            # need to read new shape variable values before doing the meshing
-            self.model.read_design_variables_file(
-                self.comm,
-                filename=Remote.paths(self.comm, self.flow_dir).design_file,
-                root=0,
-            )
-
         if not (self.is_remote) and self.is_paired:
+            if self.change_shape:
+                # case where analysis script does the meshing and the remote does not.
+                # need to read new shape variable values before doing the meshing
+                self.model.read_design_variables_file(
+                    self.comm,
+                    filename=Remote.paths(self.comm, self.flow_dir).design_file,
+                    root=0,
+                )
+
             # remove the _functions_file so remote will fail
             if self.comm.rank == 0:
                 analysis_functions_file = Remote.paths(
