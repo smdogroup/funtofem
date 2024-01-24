@@ -39,7 +39,7 @@ q_inf = 1.21945e4  # Dynamic pressure
 # F2F MODEL and SHAPE MODELS
 # ----------------------------------------
 
-f2f_model = FUNtoFEMmodel("ssw-sizing")
+f2f_model = FUNtoFEMmodel("ssw-sizing-1way")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
@@ -47,7 +47,7 @@ tacs_model = caps2tacs.TacsModel.build(
     active_procs=[0],
     verbosity=1,
 )
-tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
     edge_pt_max=20,
     global_mesh_size=0.3,
@@ -69,8 +69,6 @@ for proc in tacs_aim.active_procs:
             "chord": {"numEdgePoints": 20},
             "span": {"numEdgePoints": 8},
             "vert": {"numEdgePoints": 4},
-            # "LEribFace": {"tessParams": [0.03, 0.1, 3]},
-            # "LEribEdge": {"numEdgePoints": 20},
         }
 
 # add tacs constraints in
@@ -80,7 +78,6 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # -------------------------------------------------
 
 wing = Body.aeroelastic("wing", boundary=3)
-# aerothermoelastic
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -138,7 +135,7 @@ tacs_aim.pre_analysis()
 # ----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=350, uncoupled_steps=200)  # 2000
+cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
@@ -200,19 +197,15 @@ tacs_driver = OnewayStructDriver.prime_loads_from_file(
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
 # design_in_file = os.path.join(base_dir, "design", "sizing.txt")
-design_out_file = os.path.join(base_dir, "design", "sizing.txt")
+design_out_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
 
 design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "sizing.hst")
+history_file = os.path.join(design_folder, "sizing-oneway.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
-
-# reload previous design
-# not needed since we are hot starting
-# f2f_model.read_design_variables_file(comm, design_out_file)
 
 manager = OptimizationManager(
     tacs_driver,

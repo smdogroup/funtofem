@@ -37,7 +37,7 @@ tacs_model = caps2tacs.TacsModel.build(
     active_procs=[0],
     verbosity=1,
 )
-tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
     edge_pt_max=20,
     global_mesh_size=0.3,
@@ -143,7 +143,7 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)  # 2000
+cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=False, plot=True, plot_name="mass"
 )
@@ -219,20 +219,16 @@ f2f_driver = FUNtoFEMnlbgs(
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-design_out_file = os.path.join(base_dir, "design", "sizing.txt")
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
+design_out_file = os.path.join(base_dir, "design", "design-2.txt")
 
 design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "sizing.hst")
+history_file = os.path.join(design_folder, "design-2.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
-
-# reload previous design
-# not needed since we are hot starting
-# f2f_model.read_design_variables_file(comm, design_in_file)
 
 # Reload the previous design
 f2f_model.read_design_variables_file(comm, design_in_file)
