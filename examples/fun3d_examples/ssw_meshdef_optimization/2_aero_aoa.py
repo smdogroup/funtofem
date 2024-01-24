@@ -35,7 +35,7 @@ tacs_model = caps2tacs.TacsModel.build(
     comm=comm,
     problem_name="capsStruct2",
     active_procs=[0],
-    verbosity=1,
+    verbosity=0,
 )
 tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
@@ -85,7 +85,7 @@ for irib in range(1, nribs + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -97,7 +97,7 @@ for ispar in range(1, nspars + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -109,7 +109,7 @@ for iOML in range(1, nOML + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
@@ -121,7 +121,7 @@ for prefix in ["LE", "TE"]:
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 # register the wing body to the model
@@ -142,15 +142,12 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
-mass = Function.mass().optimize(
-    scale=1.0e-4, objective=False, plot=True, plot_name="mass"
-)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 cl_cruise = Function.lift(body=0)
 aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=2.0, upper=15)
-cruise.include(mass).include(ksfailure).include(cl_cruise)
+cruise.include(ksfailure).include(cl_cruise)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -161,19 +158,19 @@ cruise.register_to(f2f_model)
 # <----------------------------------------------------
 
 # skin thickness adjacency constraints
-variables = f2f_model.get_variables()
-section_prefix = ["rib", "OML"]
-section_nums = [nribs, nOML]
-for isection, prefix in enumerate(section_prefix):
-    section_num = section_nums[isection]
-    for iconstr in range(1, section_num):
-        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
-        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-        ).register_to(f2f_model)
+# variables = f2f_model.get_variables()
+# section_prefix = ["rib", "OML"]
+# section_nums = [nribs, nOML]
+# for isection, prefix in enumerate(section_prefix):
+#     section_num = section_nums[isection]
+#     for iconstr in range(1, section_num):
+#         left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
+#         right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+#         adj_constr = (left_var - right_var) / left_var
+#         adj_ratio = 0.15
+#         adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+#             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+#         ).register_to(f2f_model)
 
 cl_target = 1.2
 
@@ -231,7 +228,8 @@ hot_start_file = history_file if hot_start else None
 # Reload the previous design
 f2f_model.read_design_variables_file(comm, design_in_file)
 
-f2f_model.print_summary()
+if comm.rank == 0:
+    f2f_model.print_summary()
 
 manager = OptimizationManager(
     f2f_driver,
