@@ -53,9 +53,7 @@ tacs_model.mesh_aim.set_mesh(
     global_mesh_size=0.3,
     max_surf_offset=0.2,
     max_dihedral_angle=15,
-).register_to(
-    tacs_model
-)
+).register_to(tacs_model)
 f2f_model.structural = tacs_model
 
 tacs_aim = tacs_model.tacs_aim
