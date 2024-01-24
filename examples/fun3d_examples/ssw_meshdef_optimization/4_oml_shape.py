@@ -146,7 +146,7 @@ for irib in range(1, nribs + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -158,7 +158,7 @@ for ispar in range(1, nspars + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -170,7 +170,7 @@ for iOML in range(1, nOML + 1):
         lower=0.001,
         upper=0.15,
         scale=100.0,
-        active=True,
+        active=False,
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
@@ -182,6 +182,14 @@ for prefix in ["LE", "TE"]:
         lower=0.001,
         upper=0.15,
         scale=100.0,
+        active=False,
+    ).register_to(wing)
+
+for prefix in range(1, 4 + 1):
+    Variable.shape(f"tc{prefix}", value=0.2).set_bounds(
+        lower=0.05,
+        upper=0.5,
+        scale=10.0,
         active=True,
     ).register_to(wing)
 
