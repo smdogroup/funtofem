@@ -1,8 +1,8 @@
 """
 3_geom_twist.py
 
-Run a coupled optimization of the panel thicknesses of the wing structure.
-No shape variables are included in this optimization.
+Run a coupled optimization of the geometric twist at each station.
+No thickness variables here.
 """
 
 from pyoptsparse import SLSQP, Optimization
@@ -37,7 +37,7 @@ tacs_model = caps2tacs.TacsModel.build(
     active_procs=[0],
     verbosity=0,
 )
-tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
+tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
     edge_pt_max=20,
     global_mesh_size=0.3,
@@ -63,6 +63,67 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
+
+# FUN3D AIM Stuff
+# Set up FUN3D model, AIMs, and turn on the flow view
+# ------------------------------------------------
+fun3d_model = Fun3dModel.build(
+    csm_file=csm_path, comm=comm, project_name="ssw-turb", mesh_morph=True, verbosity=0
+)
+aflr_aim = fun3d_model.aflr_aim
+fun3d_aim = fun3d_model.fun3d_aim
+fun3d_aim.set_config_parameter("view:flow", 1)
+fun3d_aim.set_config_parameter("view:struct", 0)
+# ------------------------------------------------
+
+global_max = 10
+global_min = 0.1
+
+aflr_aim.set_surface_mesh(
+    ff_growth=1.2,
+    mesh_length=1.0,
+    min_scale=global_min,
+    max_scale=global_max,
+    use_quads=True,
+)
+
+if comm.rank == 0:
+    aflr_aim._aflr4_aim.input.Mesh_Sizing = {
+        "rootEdgeMesh": {"numEdgePoints": 150},
+        "wingJointEdgeMesh": {"numEdgePoints": 150},
+    }
+case = "inviscid"
+if case == "inviscid":
+    Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
+else:
+    aflr_aim.set_boundary_layer(
+        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
+    )
+    Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
+
+refinement = 1
+
+FluidMeshOptions = {"aflr4AIM": {}, "aflr3AIM": {}}
+
+FluidMeshOptions["aflr4AIM"]["Mesh_Sizing"] = {
+    "leEdgeMesh": {"scaleFactor": 0.08, "edgeWeight": 1.0},
+    "teEdgeMesh": {"scaleFactor": 0.2},
+    "tipEdgeMesh": {"scaleFactor": 0.5},
+    "rootEdgeMesh": {"scaleFactor": 0.5},
+    "wingMesh": {"scaleFactor": 1.0, "AFLR4_quad_local": 1.0, "min_scale": global_min},
+}
+
+FluidMeshOptions["aflr4AIM"]["curv_factor"] = 0.001
+FluidMeshOptions["aflr4AIM"]["ff_cdfr"] = 1.2
+FluidMeshOptions["aflr4AIM"]["mer_all"] = 1
+
+aflr_aim.saveDictOptions(FluidMeshOptions)
+
+Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
+Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+
+fun3d_model.setup()
+f2f_model.flow = fun3d_model
 
 # ---------------------------------------------------->
 
@@ -150,7 +211,7 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)  # 2000
+cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
@@ -202,14 +263,8 @@ solvers.flow = Fun3dInterface(
     fun3d_project_name="ssw-turb",
     fun3d_dir="cfd",
     forward_tolerance=1e-4,
-    adjoint_tolerance=1e-4,
-)
-solvers.structural = TacsSteadyInterface.create_from_bdf(
-    model=f2f_model,
-    comm=comm,
-    nprocs=nprocs_tacs,
-    bdf_file=tacs_aim.root_dat_file,
-    prefix=tacs_aim.root_analysis_dir,
+    adjoint_tolerance=1e-1,
+    auto_coords=False,
 )
 
 transfer_settings = TransferSettings(npts=200)
@@ -219,7 +274,7 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
     solvers=solvers,
     model=f2f_model,
     transfer_settings=transfer_settings,
-    struct_nprocs=nprocs_tacs,
+    struct_nprocs=nprocs_tacs
 )
 
 # ---------------------------------------------------->
@@ -228,14 +283,15 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-design_out_file = os.path.join(base_dir, "design", "sizing.txt")
+design_in_file = os.path.join(base_dir, "design", "design-2.txt")
+design_out_file = os.path.join(base_dir, "design", "design-3.txt")
+
 
 design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "sizing.hst")
+history_file = os.path.join(design_folder, "design-3.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
