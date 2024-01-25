@@ -1113,23 +1113,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
         return
 
-    def _print_transfer(self, print_comm=False):
-        print("\n---------------------")
-        print("| Transfer Settings |")
-        print("---------------------")
-
-        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
-        print(f"    No. points: {self.transfer_settings.npts}")
-        print(f"    Beta: {self.transfer_settings.beta}")
-        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
-        print(f"    No. points: {self.transfer_settings.thermal_npts}")
-        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
-
-        if print_comm:
-            print(self.comm_manager)
-
-        return
-
     def __str__(self):
         line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
         line2 = f"  Using remote: {self.is_remote}"

@@ -328,7 +328,7 @@ class FUNtoFEMDriver(object):
     def _solve_unsteady_adjoint(self, scenario):
         return 1
 
-    def print_summary(self, print_level=0):
+    def print_summary(self, print_model=False, print_comm=False):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
         """
@@ -337,6 +337,33 @@ class FUNtoFEMDriver(object):
         print("||               FUNtoFEM Driver Summary                ||")
         print("==========================================================")
         print(self)
+        
+        self._print_transfer(print_comm=print_comm)
+
+        if print_model:
+            print(
+                "\nPrinting abbreviated model summary. For details print model summary directly."
+            )
+            self.model.print_summary(print_level=-1, ignore_rigid=True)
+
+        return
+
+    def _print_transfer(self, print_comm=False):
+        print("\n---------------------")
+        print("| Transfer Settings |")
+        print("---------------------")
+
+        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
+        print(f"    No. points: {self.transfer_settings.npts}")
+        print(f"    Beta: {self.transfer_settings.beta}")
+        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
+        print(f"    No. points: {self.transfer_settings.thermal_npts}")
+        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
+
+        if print_comm:
+            print(self.comm_manager)
+            
+        return
 
     def __str__(self):
         line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
