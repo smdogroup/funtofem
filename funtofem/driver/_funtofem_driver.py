@@ -337,7 +337,7 @@ class FUNtoFEMDriver(object):
         print("||               FUNtoFEM Driver Summary                ||")
         print("==========================================================")
         print(self)
-        
+
         self._print_transfer(print_comm=print_comm)
 
         if print_model:
@@ -362,7 +362,7 @@ class FUNtoFEMDriver(object):
 
         if print_comm:
             print(self.comm_manager)
-            
+
         return
 
     def __str__(self):
