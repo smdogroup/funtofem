@@ -327,3 +327,22 @@ class FUNtoFEMDriver(object):
 
     def _solve_unsteady_adjoint(self, scenario):
         return 1
+
+    def print_summary(self, print_level=0):
+        """
+        Print out a summary of the FUNtoFEM driver for inspection.
+        """
+
+        print("==========================================================")
+        print("||               FUNtoFEM Driver Summary                ||")
+        print("==========================================================")
+        print(self)
+
+    def __str__(self):
+        line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
+        line2 = f"  Model: {self.model.name}"
+        line3 = f"  Number of scenarios: {len(self.model.scenarios)}"
+
+        output = (line1, line2, line3)
+
+        return "\n".join(output)
