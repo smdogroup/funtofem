@@ -435,20 +435,20 @@ class Fun3dClient(SolverInterface):
                         for i, var in enumerate(scenario.variables[vartype]):
                             if var.active:
                                 if function.adjoint:
-                                    scenario.derivatives[vartype][offset + func][
-                                        i
-                                    ] = self.fun3d_client.get_design_global_derivative(
-                                        function.id, var.id
+                                    scenario.derivatives[vartype][offset + func][i] = (
+                                        self.fun3d_client.get_design_global_derivative(
+                                            function.id, var.id
+                                        )
                                     )
                                 else:
                                     scenario.derivatives[vartype][offset + func][
                                         i
                                     ] = 0.0
-                                scenario.derivatives[vartype][offset + func][
-                                    i
-                                ] = self.comm.bcast(
-                                    scenario.derivatives[vartype][offset + func][i],
-                                    root=0,
+                                scenario.derivatives[vartype][offset + func][i] = (
+                                    self.comm.bcast(
+                                        scenario.derivatives[vartype][offset + func][i],
+                                        root=0,
+                                    )
                                 )
 
                 for ibody, body in enumerate(bodies, 1):
@@ -457,20 +457,22 @@ class Fun3dClient(SolverInterface):
                             for i, var in enumerate(body.variables[vartype]):
                                 if var.active:
                                     if function.adjoint:
-                                        body.derivatives[vartype][offset + func][
-                                            i
-                                        ] = self.fun3d_client.get_design_rigid_derivative(
-                                            ibody, function.id, var.id
+                                        body.derivatives[vartype][offset + func][i] = (
+                                            self.fun3d_client.get_design_rigid_derivative(
+                                                ibody, function.id, var.id
+                                            )
                                         )
                                     else:
                                         body.derivatives[vartype][offset + func][
                                             i
                                         ] = 0.0
-                                    scenario.derivatives[vartype][offset + func][
-                                        i
-                                    ] = self.comm.bcast(
-                                        scenario.derivatives[vartype][offset + func][i],
-                                        root=0,
+                                    scenario.derivatives[vartype][offset + func][i] = (
+                                        self.comm.bcast(
+                                            scenario.derivatives[vartype][
+                                                offset + func
+                                            ][i],
+                                            root=0,
+                                        )
                                     )
 
         except FUN3DAeroException as e:
