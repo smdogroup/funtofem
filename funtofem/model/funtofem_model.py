@@ -1021,13 +1021,16 @@ class FUNtoFEMmodel(object):
     def _print_functions(self):
         model_functions = self.get_functions(all=True)
         print(
-            "     ------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------"
         )
+        self._print_long("Function", width=12, indent_line=5)
+        self._print_long("Analysis Type", width=15)
+        self._print_long("Comp. Adjoint", width=15)
+        self._print_long("Time Range", width=20)
+        self._print_long("Averaging", end_line=True)
+
         print(
-            "     | Function \t| Analysis Type\t| Comp. Adjoint\t| Time Range\t| Averaging\t|"
-        )
-        print(
-            "     ------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------"
         )
         for func in model_functions:
             if isinstance(func, CompositeFunction):
@@ -1042,40 +1045,15 @@ class FUNtoFEMmodel(object):
                 start = func.start
                 stop = func.stop
                 averaging = func.averaging
-            if len(func.name) >= 8:
-                print(
-                    "     | ",
-                    func.name,
-                    "\t| ",
-                    analysis_type,
-                    "\t| ",
-                    adjoint,
-                    "\t| [",
-                    start,
-                    ",",
-                    stop,
-                    "] \t| ",
-                    averaging,
-                    "\t|",
-                )
-            else:
-                print(
-                    "     | ",
-                    func.name,
-                    "\t\t| ",
-                    analysis_type,
-                    "\t| ",
-                    adjoint,
-                    "\t| [",
-                    start,
-                    ",",
-                    stop,
-                    "] \t| ",
-                    averaging,
-                    "\t|",
-                )
+            _time_range = " ".join(("[", str(start), ",", str(stop), "]"))
+            adjoint = str(adjoint)
+            self._print_long(func.name, width=12, indent_line=5)
+            self._print_long(analysis_type, width=15)
+            self._print_long(adjoint, width=15)
+            self._print_long(_time_range, width=20)
+            self._print_long(averaging, end_line=True)
         print(
-            "     ------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------"
         )
 
         return
@@ -1083,37 +1061,52 @@ class FUNtoFEMmodel(object):
     def _print_variables(self):
         model_variables = self.get_variables()
         print(
-            "     ------------------------------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
+        self._print_long("Variable", width=12, indent_line=5)
+        self._print_long("Var. ID", width=10)
+        self._print_long("Value", width=16)
+        self._print_long("Bounds", width=24)
+        self._print_long("Active", width=8)
+        self._print_long("Coupled", width=9, end_line=True)
+
         print(
-            "     | Variable\t\t| Var. ID\t| Value \t| Bounds\t\t| Active\t| Coupled\t|"
-        )
-        print(
-            "     ------------------------------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
         for var in model_variables:
-            print(
-                "     | ",
-                var.name,
-                "\t\t|",
-                var.id,
-                "\t\t|",
-                var.value,
-                " \t| [",
-                var.lower,
-                ",",
-                var.upper,
-                "] \t|",
-                var.active,
-                " \t|",
-                var.coupled,
-                "\t|",
-            )
+            _name = "{:s}".format(var.name)
+            _id = "{: d}".format(var.id)
+            _value = "{:#.8g}".format(var.value)
+            _lower = "{:#.3g}".format(var.lower)
+            _upper = "{:#.3g}".format(var.upper)
+            _active = str(var.active)
+            _coupled = str(var.coupled)
+            _bounds = " ".join(("[", _lower, ",", _upper, "]"))
+
+            self._print_long(_name, width=12, indent_line=5)
+            self._print_long(_id, width=10, align="<")
+            self._print_long(_value, width=16)
+            self._print_long(_bounds, width=24)
+            self._print_long(_active, width=8)
+            self._print_long(_coupled, width=9, end_line=True)
 
         print(
-            "     ------------------------------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
 
+        return
+
+    def _print_long(self, value, width=12, indent_line=0, end_line=False, align="^"):
+        if value is None:
+            value = "None"
+        if indent_line > 0:
+            print("{val:{wid}}".format(wid=indent_line, val=""), end="")
+        if not end_line:
+            print("|{val:{ali}{wid}}".format(wid=width, ali=align, val=value), end="")
+        else:
+            print(
+                "|{val:{ali}{wid}}|".format(wid=width, ali=align, val=value), end="\n"
+            )
         return
 
     def __str__(self):
