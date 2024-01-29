@@ -71,7 +71,7 @@ class FUNtoFEMDriver(object):
 
         if transfer_settings is None:
             transfer_settings = TransferSettings()
-        self.transer_settings = transfer_settings
+        self.transfer_settings = transfer_settings
 
         # communicator
         self.comm = comm_manager.master_comm
