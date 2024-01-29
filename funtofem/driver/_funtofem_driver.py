@@ -25,6 +25,7 @@ __all__ = ["FUNtoFEMDriver"]
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
+from .transfer_settings import TransferSettings
 
 try:
     from .hermes_transfer import HermesTransfer
@@ -67,6 +68,10 @@ class FUNtoFEMDriver(object):
             # use default comm manager from solvers if not available
             comm_manager = solvers.comm_manager
         self.comm_manager = comm_manager
+
+        if transfer_settings is None:
+            transfer_settings = TransferSettings()
+        self.transer_settings = transfer_settings
 
         # communicator
         self.comm = comm_manager.master_comm
@@ -113,7 +118,7 @@ class FUNtoFEMDriver(object):
                 self.struct_root,
                 self.aero_comm,
                 self.aero_root,
-                transfer_settings=transfer_settings,
+                transfer_settings=self.transfer_settings,
             )
 
         # Initialize the shape parameterization

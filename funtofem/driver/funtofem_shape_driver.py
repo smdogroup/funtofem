@@ -170,7 +170,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             solvers, comm_manager, transfer_settings, model
         )
 
-        self.transfer_settings = transfer_settings
         self.remote = remote
         self.is_paired = is_paired
         self.struct_nprocs = struct_nprocs
