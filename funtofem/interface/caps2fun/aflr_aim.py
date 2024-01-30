@@ -104,12 +104,13 @@ class AflrAim:
         """
         Set AFLR3 and AFLR4 options via dictionaries.
         """
-        dictOptions = self._dictOptions
+        if self.root_proc:
+            dictOptions = self._dictOptions
 
-        for ind, option in enumerate(dictOptions["aflr4AIM"]):
-            self.surface_aim.input[option].value = dictOptions["aflr4AIM"][option]
+            for ind, option in enumerate(dictOptions["aflr4AIM"]):
+                self.surface_aim.input[option].value = dictOptions["aflr4AIM"][option]
 
-        for ind, option in enumerate(dictOptions["aflr3AIM"]):
-            self.volume_aim.input[option].value = dictOptions["aflr3AIM"][option]
+            for ind, option in enumerate(dictOptions["aflr3AIM"]):
+                self.volume_aim.input[option].value = dictOptions["aflr3AIM"][option]
 
         return self
