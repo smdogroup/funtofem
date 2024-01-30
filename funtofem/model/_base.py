@@ -258,6 +258,23 @@ class Base(object):
 
         return full_list
 
+    def get_inactive_variables(self):
+        """
+        Get the list of active variables in body or scenario
+
+        Returns
+        -------
+        active_list: list of variables
+            list of active variables
+        """
+        full_list = []
+        is_active = lambda var: var.active == False
+
+        for vartype in self.variables:
+            full_list.extend(list(filter(is_active, self.variables[vartype])))
+
+        return full_list
+
     def get_uncoupled_variables(self):
         """
         Get the list of uncoupled, active variables in body or scenario
