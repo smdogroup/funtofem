@@ -150,8 +150,6 @@ class FUNtoFEMmodel(object):
                 shape_variables = base.variables["shape"]
 
             for var in struct_variables:
-                if not (var.active):
-                    continue
                 # check if matching shell property exists
                 matching_prop = False
                 for prop in self.structural.tacs_aim._properties:
@@ -167,7 +165,10 @@ class FUNtoFEMmodel(object):
 
                 if matching_prop and not (matching_dv):
                     caps2tacs.ThicknessVariable(
-                        caps_group=var.name, value=var.value, name=var.name
+                        caps_group=var.name,
+                        value=var.value,
+                        name=var.name,
+                        active=var.active,
                     ).register_to(self.structural)
 
             esp_caps_despmtrs = None
@@ -241,7 +242,7 @@ class FUNtoFEMmodel(object):
             self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
-    def get_variables(self, names=None):
+    def get_variables(self, names=None, all=False):
         """
         Get all the coupled and uncoupled variable objects for the entire model.
         Coupled variables only appear once.
@@ -250,6 +251,8 @@ class FUNtoFEMmodel(object):
         ----------
         names: str or List[str]
             one variable name or a list of variable names
+        all: bool
+            Flag to include inactive variables.
 
         Returns
         -------
@@ -263,12 +266,16 @@ class FUNtoFEMmodel(object):
                     dv.extend(scenario.get_active_variables())
                 else:
                     dv.extend(scenario.get_uncoupled_variables())
+                if all:
+                    dv.extend(scenario.get_inactive_variables())
 
             for body in self.bodies:
                 if body.group_root:
                     dv.extend(body.get_active_variables())
                 else:
                     dv.extend(body.get_uncoupled_variables())
+                if all:
+                    dv.extend(body.get_inactive_variables())
             return dv
 
         elif isinstance(names, str):
@@ -742,6 +749,9 @@ class FUNtoFEMmodel(object):
         Discipline
         Var_name Var_value
 
+        IMPORTANT: To correctly set inactive variables, make sure to call (e.g.) tacs_aim.setup_aim(),
+        then read_design_variables_file, then tacs_aim.pre_analysis.
+
         Parameters
         ----------
         comm: MPI communicator
@@ -773,9 +783,13 @@ class FUNtoFEMmodel(object):
         variables_dict = comm.bcast(variables_dict, root=root)
 
         # update the variable values on each processor
-        for var in self.get_variables():
+        for var in self.get_variables(all=True):
             if var.full_name in variables_dict:
                 var.value = variables_dict[var.full_name]
+
+        if self.structural is not None:
+            input_dict = {var.name: var.value for var in self.get_variables(all=True)}
+            self.structural.update_design(input_dict)
 
         return
 
