@@ -37,13 +37,25 @@ class Fun3dModel:
         verbosity=0,
     ):
         """
-        make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
+        Make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
         Parameters
         ---------------------------------
         csm_file : filepath
-            filename / full path of ESP/CAPS Constructive Solid Model or .CSM file
+            Filename / full path of ESP/CAPS Constructive Solid Model or .CSM file.
         comm : MPI.COMM
-            MPI communicator
+            MPI communicator.
+        project_name : str
+            Name of the case that is passed to the flow side, e.g., what is used to name the FUN3D input files.
+        problem_name : str
+            CAPS problem name, internal name used to define the CAPS problem and determines the name of the directory
+            that is created by CAPS to build the fluid mesh, geometry, sensitivity files, etc.
+        mesh_morph : bool
+            Turn mesh morphing on or off for use with shape variables that alter the fluid geometry
+            (e.g., when using mesh deformation rather than remeshing).
+        root : int
+            The rank of the processor that will control this process.
+        verbosity : int
+            Parameter passed directly to pyCAPS to determine output level.
         """
         caps_problem = None
         if comm.rank == root:
@@ -54,24 +66,6 @@ class Fun3dModel:
         aflr_aim = AflrAim(caps_problem, comm, root=root)
         comm.Barrier()
         return cls(fun3d_aim, aflr_aim, comm, project_name, root=root)
-
-    @classmethod
-    def build_morph(
-        cls,
-        csm_file,
-        comm,
-        project_name="fun3d_CAPS",
-        root: int = 0,
-        problem_name: str = "capsFluid",
-    ):
-        return cls.build(
-            csm_file=csm_file,
-            comm=comm,
-            project_name=project_name,
-            problem_name=problem_name,
-            root=root,
-            mesh_morph=True,
-        )
 
     @property
     def root_proc(self) -> bool:
