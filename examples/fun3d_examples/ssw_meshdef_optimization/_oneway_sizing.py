@@ -13,7 +13,7 @@ to solve the structural sizing optimization problem.
 Local machine optimization for the panel thicknesses using nribs-1 OML panels and nribs-1 LE panels
 """
 
-from pyoptsparse import SLSQP, Optimization
+from pyoptsparse import SNOPT, Optimization
 
 # script inputs
 hot_start = False
@@ -220,7 +220,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SLSQP(options={"IPRINT": 1})
+snoptimizer = SNOPT(options={"Verify level": 3})
 
 sol = snoptimizer(
     opt_problem,
