@@ -242,7 +242,8 @@ select face
    attribute tagComp $tip
    
 # Rule all of the sections together
-rule 0
+#rule 0
+blend
 
 ifthen midplane EQ 1
    select face
@@ -254,40 +255,23 @@ endif
 
 ifthen chopMode EQ 0
    select face 1
-      select add 2
-      select add 3
       attribute tagComp1 $wingUpper
-   select face 4
-      select add 5
-      select add 6
+   select face 2
       attribute tagComp1 $wingLower
    select edge 1
-      select add 5
-      select add 8
       attribute tagComp1 $teEdge
    select edge 3
-      select add 6
-      select add 9
       attribute tagComp1 $leEdge
 elseif chopMode EQ 2
-   select face 4
-      select add 5
-      select add 6
+   select face 2
       attribute tagComp1 $wingUpper
-   select face 10
-      select add 11
-      select add 12
+   select face 4
       attribute tagComp1 $wingLower
-   select face 7
-      select add 8
-      select add 9
+   select face 3
       attribute tagComp1 $frontFace
    select face 1
-      select add 2
-      select add 3
       attribute tagComp1 $rearFace
 endif
-   
 
 udprim editAttr filename <<
    EDGE ADJ2FACE tagComp=root
@@ -298,4 +282,4 @@ udprim editAttr filename <<
 >>
 
 end
-||||||
+||||||||||||||

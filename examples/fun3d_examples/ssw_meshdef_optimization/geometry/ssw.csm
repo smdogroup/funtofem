@@ -26,10 +26,10 @@ despmtr tc3 0.12
 despmtr tc4 0.1
 
 # Geomtric twist parameters
-despmtr twist1 4.0
-despmtr twist2 2.0
-despmtr twist3 1.0
-despmtr twist4 -3.0
+despmtr twist1 0.0
+despmtr twist2 0.0
+despmtr twist3 0.0
+despmtr twist4 0.0
 
 # Internal structure parameters
 despmtr LEchop 0.05
@@ -58,3 +58,4 @@ ifthen view:flow EQ 1
 endif
 
 end
+||
