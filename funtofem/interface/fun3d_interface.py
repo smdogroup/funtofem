@@ -1270,6 +1270,7 @@ class Fun3dInterface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            fun3d_project_name=fun3d_interface.fun3d_project_name,
         )
 
     @classmethod
@@ -1289,4 +1290,5 @@ class Fun3dInterface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            fun3d_project_name=fun3d_interface.fun3d_project_name,
         )
