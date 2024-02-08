@@ -168,8 +168,8 @@ class OptimizationManager:
                                 f"Warning: d{func_key}/d{var_key} = {c_sens[var_key]} and has a nan"
                             )
                         fail = True
-                if fail:
-                    break
+                # if fail:
+                #     break
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
