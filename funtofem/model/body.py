@@ -43,6 +43,7 @@ class AitkenRelaxation:
         theta_therm_init=0.125,
         theta_min=0.01,
         theta_max=1.0,
+        debug=False,
     ):
         """
         Construct an aitken relaxation setting object
@@ -61,6 +62,9 @@ class AitkenRelaxation:
         self.theta_therm_init = theta_therm_init
         self.theta_min = theta_min
         self.theta_max = theta_max
+        self.debug = debug
+
+        return
 
 
 class SimpleRelaxation:
@@ -75,12 +79,16 @@ class SimpleRelaxation:
         tenth_steps: int = 50,
         min_learning_rate: float = 1.0e-4,
         min_learning_rate_t: float = 1.0e-4,
+        debug=False,
     ):
         self.theta = theta_init
         self.theta_t = theta_therm_init
         self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
         self.min_learning_rate = min_learning_rate
         self.min_learning_rate_t = min_learning_rate_t
+        self.debug = debug
+
+        return
 
     def relax_displacement(self):
         """
@@ -1412,6 +1420,12 @@ class Body(Base):
                 np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
             )
 
+            # Update default parameters
+            self.theta_init = self.relaxation_scheme.theta_init
+            self.theta_therm_init = self.relaxation_scheme.theta_therm_init
+            self.theta_min = self.relaxation_scheme.theta_min
+            self.theta_max = self.relaxation_scheme.theta_max
+
             self.aitken_is_initialized = True
 
         if self.transfer is not None:
@@ -1422,16 +1436,26 @@ class Body(Base):
                 norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
                 norm2 = comm.allreduce(norm2)
 
+                if comm.rank == 0 and self.relaxation_scheme.debug:
+                    print(f"Aitken norm2: {norm2}", flush=True)
+
                 # Only update theta if the displacements changed
                 if norm2 > tol:
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
-                    self.theta *= 1.0 - value / norm2
+                    self.theta += (self.theta - 1) * value / norm2
+
+                    if comm.rank == 0 and self.relaxation_scheme.debug:
+                        print(f"Calculated theta: {self.theta}", flush=True)
 
                     self.theta = np.max(
                         (np.min((self.theta, self.theta_max)), self.theta_min)
                     )
+
+                    if comm.rank == 0 and self.relaxation_scheme.debug:
+                        print(f"Max theta: {self.theta_max}")
+                        print(f"Min theta: {self.theta_min}", flush=True)
 
                 # handle the min/max for complex step
                 if type(self.theta) == np.complex128 or type(self.theta) == complex:
@@ -1443,6 +1467,9 @@ class Body(Base):
 
                 # call the scheme to drop the learning rate for the next iteration
                 self.relaxation_scheme.relax_displacement()
+
+            if comm.rank == 0 and self.relaxation_scheme.debug:
+                print(f"Bounded theta: {self.theta}", flush=True)
 
             # perform the aitken update for displacement transfer
             self.aitken_vec += self.theta * up
@@ -1462,7 +1489,7 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
-                    self.theta_t *= 1.0 - value / norm2
+                    self.theta_t += (self.theta_t - 1) * value / norm2
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
@@ -1491,7 +1518,7 @@ class Body(Base):
             return
 
         # exit early to not perform aitken adjoint relax
-        return
+        # return
 
         # number of nodes and functions
         ns = self.struct_nnodes
@@ -1526,7 +1553,8 @@ class Body(Base):
                         # Compute the tentative theta value
                         value = (up - self.prev_adj_update_t[:, ifunc]).dot(up)
                         value = comm.allreduce(value.real)
-                        self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        self.theta_adj_t[ifunc] += (self.theta_adj_t[ifunc] - 1) * value / norm2
 
                         self.theta_adj_t[ifunc] = np.max(
                             (
