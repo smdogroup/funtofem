@@ -1518,7 +1518,7 @@ class Body(Base):
             return
 
         # exit early to not perform aitken adjoint relax
-        # return
+        return
 
         # number of nodes and functions
         ns = self.struct_nnodes
@@ -1554,7 +1554,9 @@ class Body(Base):
                         value = (up - self.prev_adj_update_t[:, ifunc]).dot(up)
                         value = comm.allreduce(value.real)
                         # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
-                        self.theta_adj_t[ifunc] += (self.theta_adj_t[ifunc] - 1) * value / norm2
+                        self.theta_adj_t[ifunc] += (
+                            (self.theta_adj_t[ifunc] - 1) * value / norm2
+                        )
 
                         self.theta_adj_t[ifunc] = np.max(
                             (
