@@ -544,7 +544,6 @@ class TestStructuralSolver(SolverInterface):
         for scenario in model.scenarios:
             self.scenario_data[scenario.id] = ScenarioData(self.npts, self.struct_dvs)
 
-
         if default_mesh:
             # Set random initial node locations
             self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
@@ -553,7 +552,7 @@ class TestStructuralSolver(SolverInterface):
             struct_id = np.arange(1, self.npts + 1)
             for body in model.bodies:
                 body.initialize_struct_nodes(self.struct_X, struct_id)
-            
+
         else:
             for body in model.bodies:
                 # Make TACS Interface first to initialize struct mesh into bodies
