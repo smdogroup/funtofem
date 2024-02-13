@@ -213,6 +213,10 @@ manager = OptimizationManager(
     hot_start_file=hot_start_file,
 )
 
+if comm.rank == 0:
+    # f2f_driver.print_summary()
+    f2f_model.print_summary()
+
 # create the pyoptsparse optimization problem
 opt_problem = Optimization("sswOpt", manager.eval_functions)
 
@@ -231,4 +235,5 @@ sol = snoptimizer(
 
 # print final solution
 sol_xdict = sol.xStar
-print(f"Final solution = {sol_xdict}", flush=True)
+if comm.rank == 0:
+    print(f"Final solution = {sol_xdict}", flush=True)
