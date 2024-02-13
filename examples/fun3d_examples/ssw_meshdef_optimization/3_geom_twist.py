@@ -5,7 +5,7 @@ Run a coupled optimization of the geometric twist at each station.
 No thickness variables here.
 """
 
-from pyoptsparse import SLSQP, Optimization
+from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
@@ -281,7 +281,7 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "design-2.txt")
+# design_in_file = os.path.join(base_dir, "design", "design-2.txt")
 design_out_file = os.path.join(base_dir, "design", "design-3.txt")
 
 
@@ -294,9 +294,10 @@ store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-f2f_model.read_design_variables_file(comm, design_in_file)
+# f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
+    f2f_driver.print_summary()
     f2f_model.print_summary()
 
 manager = OptimizationManager(
@@ -314,7 +315,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SLSQP(options={"IPRINT": 1})
+snoptimizer = SNOPT(options={"IPRINT": 1})
 
 sol = snoptimizer(
     opt_problem,
@@ -325,6 +326,7 @@ sol = snoptimizer(
 
 # print final solution
 sol_xdict = sol.xStar
-print(f"Final solution = {sol_xdict}", flush=True)
+if comm.rank == 0:
+    print(f"Final solution = {sol_xdict}", flush=True)
 
 # ---------------------------------------------------->

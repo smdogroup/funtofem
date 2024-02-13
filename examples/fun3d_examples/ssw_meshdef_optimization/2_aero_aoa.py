@@ -5,7 +5,7 @@ Run a coupled optimization of the angle of attack to minimize lift (L-L_*)^2.
 No shape variables are included in this optimization.
 """
 
-from pyoptsparse import SLSQP, Optimization
+from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
@@ -19,6 +19,18 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 # Optimization options
 hot_start = False
 store_history = True
+
+# create an OptimizationManager object for the pyoptsparse optimization problem
+design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
+design_out_file = os.path.join(base_dir, "design", "design-2.txt")
+
+design_folder = os.path.join(base_dir, "design")
+if comm.rank == 0:
+    if not os.path.exists(design_folder):
+        os.mkdir(design_folder)
+history_file = os.path.join(design_folder, "design-2.hst")
+store_history_file = history_file if store_history else None
+hot_start_file = history_file if hot_start else None
 
 nprocs_tacs = 8
 
@@ -115,7 +127,7 @@ for iOML in range(1, nOML + 1):
 for prefix in ["LE", "TE"]:
     name = f"{prefix}spar"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=0.04
+        caps_group=name, material=aluminum, membrane_thickness=0.14
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001,
@@ -128,11 +140,13 @@ for prefix in ["LE", "TE"]:
 wing.register_to(f2f_model)
 
 # ---------------------------------------------------->
+tacs_aim.setup_aim()
+# Reload the previous design
+# f2f_model.read_design_variables_file(comm, design_in_file)
 
 # INITIAL STRUCTURE MESH, SINCE NO STRUCT SHAPE VARS
 # <----------------------------------------------------
 
-tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
 # ---------------------------------------------------->
@@ -141,13 +155,14 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
+cruise = Scenario.steady("cruise", steps=1500, uncoupled_steps=0)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
+mass = Function.mass()
 cl_cruise = Function.lift(body=0)
-aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=2.0, upper=15)
-cruise.include(ksfailure).include(cl_cruise)
+aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=4.0, upper=15)
+cruise.include(ksfailure).include(cl_cruise).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -172,11 +187,15 @@ cruise.register_to(f2f_model)
 #             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
 #         ).register_to(f2f_model)
 
-cl_target = 1.2
 
-cruise_lift = (cl_cruise - cl_target) ** 2
-cruise_lift.set_name(f"LiftObj").optimize(
-    lower=-1e-2, upper=10, scale=1.0, objective=True, plot=True, plot_name="Lift-Obj"
+_wing_area = 5
+_specific_gravity = 9.8
+weight = mass * _specific_gravity
+lift_dim = cl_cruise * q_inf * _wing_area
+
+lift_obj = (lift_dim / weight - 1) ** 2
+lift_obj.set_name(f"LiftObj").optimize(
+    lower=-1e-2, upper=10, scale=1.0, objective=True, plot=True, plot_name="LiftObj"
 ).register_to(f2f_model)
 
 # ---------------------------------------------------->
@@ -190,8 +209,8 @@ solvers.flow = Fun3dInterface(
     f2f_model,
     fun3d_project_name="ssw-turb",
     fun3d_dir="cfd",
-    forward_tolerance=1e-4,
-    adjoint_tolerance=1e-4,
+    forward_tolerance=1e-9,
+    adjoint_tolerance=1e-6,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
@@ -213,23 +232,9 @@ f2f_driver = FUNtoFEMnlbgs(
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------
 
-# create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "design-1.txt")
-design_out_file = os.path.join(base_dir, "design", "design-2.txt")
-
-design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
-    if not os.path.exists(design_folder):
-        os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-2.hst")
-store_history_file = history_file if store_history else None
-hot_start_file = history_file if hot_start else None
-
-# Reload the previous design
-f2f_model.read_design_variables_file(comm, design_in_file)
-
-if comm.rank == 0:
-    f2f_model.print_summary()
+    f2f_driver.print_summary()
+    f2f_model.print_summary(ignore_rigid=True)
 
 manager = OptimizationManager(
     f2f_driver,
@@ -246,7 +251,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SLSQP(options={"IPRINT": 1})
+snoptimizer = SNOPT(options={"Verify  level": 3})
 
 sol = snoptimizer(
     opt_problem,
@@ -257,6 +262,7 @@ sol = snoptimizer(
 
 # print final solution
 sol_xdict = sol.xStar
-print(f"Final solution = {sol_xdict}", flush=True)
+if comm.rank == 0:
+    print(f"Final solution = {sol_xdict}", flush=True)
 
 # ---------------------------------------------------->

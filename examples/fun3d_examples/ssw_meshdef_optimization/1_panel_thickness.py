@@ -5,7 +5,7 @@ Run a coupled optimization of the panel thicknesses of the wing structure.
 No shape variables are included in this optimization.
 """
 
-from pyoptsparse import SLSQP, Optimization
+from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
@@ -22,6 +22,14 @@ store_history = True
 
 nprocs_tacs = 8
 
+global_debug_flag = False
+
+# Derivative test stuff
+FILENAME = "complex-step.txt"
+FILEPATH = os.path.join(base_dir, FILENAME)
+
+aitken_file = os.path.join(base_dir, "aitken-hist.txt")
+
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
@@ -29,7 +37,7 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing")
+f2f_model = FUNtoFEMmodel("ssw-sizing1")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
@@ -67,6 +75,11 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
+# wing = Body.aeroelastic("wing", boundary=3).relaxation(
+#     AitkenRelaxation(
+#         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
+#     )
+# )
 wing = Body.aeroelastic("wing", boundary=3)
 
 # setup the material and shell properties
@@ -129,14 +142,14 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
+cruise = Scenario.steady("pw-cruise", steps=5000, uncoupled_steps=0)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
-ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
+ksfailure = Function.ksfailure(ks_weight=150.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
-cruise.include(mass).include(ksfailure)
+cruise.include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -170,10 +183,11 @@ solvers = SolverManager(comm)
 solvers.flow = Fun3dInterface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-turb",
+    fun3d_project_name="ssw-pw1.2",
     fun3d_dir="cfd",
-    forward_tolerance=1e-4,
+    forward_tolerance=1e-7,
     adjoint_tolerance=1e-4,
+    debug=global_debug_flag,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
@@ -181,26 +195,17 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
     nprocs=nprocs_tacs,
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
+    debug=global_debug_flag,
 )
-
-# read in aero loads
-# aero_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "uncoupled_loads.txt")
-# f2f_model.read_aero_loads(comm, aero_loads_file)
 
 transfer_settings = TransferSettings(npts=200)
 
-# build the shape driver from the file
-# tacs_driver = OnewayStructDriver.prime_loads_from_file(
-#     filename=aero_loads_file,
-#     solvers=solvers,
-#     model=f2f_model,
-#     nprocs=nprocs_tacs,
-#     transfer_settings=transfer_settings,
-# )
-
 # Build the FUNtoFEM driver
 f2f_driver = FUNtoFEMnlbgs(
-    solvers=solvers, transfer_settings=transfer_settings, model=f2f_model
+    solvers=solvers,
+    transfer_settings=transfer_settings,
+    model=f2f_model,
+    debug=global_debug_flag,
 )
 
 # ---------------------------------------------------->
@@ -221,13 +226,17 @@ store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-f2f_model.read_design_variables_file(comm, design_in_file)
+# f2f_model.read_design_variables_file(comm, design_in_file)
+
+if comm.rank == 0:
+    f2f_driver.print_summary()
+    f2f_model.print_summary()
 
 manager = OptimizationManager(
     f2f_driver,
     design_out_file=design_out_file,
     hot_start=hot_start,
-    debug=True,
+    debug=global_debug_flag,
     hot_start_file=hot_start_file,
 )
 
@@ -238,7 +247,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SLSQP(options={"IPRINT": 1})
+snoptimizer = SNOPT(options={"Verify level": 3})
 
 sol = snoptimizer(
     opt_problem,
@@ -249,6 +258,8 @@ sol = snoptimizer(
 
 # print final solution
 sol_xdict = sol.xStar
-print(f"Final solution = {sol_xdict}", flush=True)
+
+if comm.rank == 0:
+    print(f"Final solution = {sol_xdict}", flush=True)
 
 # ---------------------------------------------------->
