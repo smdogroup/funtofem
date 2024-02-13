@@ -599,7 +599,9 @@ class Body(Base):
             if self.relaxation_scheme.write_history:
                 self._aitken_hdl = open(self.relaxation_scheme.history_file, "w")
 
-                self._aitken_hdl.write("Writing aitken relaxation history file for forward evaluation...\n")
+                self._aitken_hdl.write(
+                    "Writing aitken relaxation history file for forward evaluation...\n"
+                )
                 self._aitken_hdl.write("Calc_theta, bounded_theta\n")
 
                 self._aitken_hdl.flush()
