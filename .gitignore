@@ -30,3 +30,6 @@ work
 *.pbs
 *.o*
 *.in
+examples/fun3d_examples/ssw_meshdef_optimization/geometry/port7681.jrnl
+examples/fun3d_examples/ssw_meshdef_optimization/geometry/autosave.csm
+**/Scratch
