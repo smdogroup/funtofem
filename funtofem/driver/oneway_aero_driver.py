@@ -108,7 +108,14 @@ class OnewayAeroDriver:
         )
 
     @classmethod
-    def analysis(cls, solvers, model, transfer_settings=None, external_shape=False, is_paired=True):
+    def analysis(
+        cls,
+        solvers,
+        model,
+        transfer_settings=None,
+        external_shape=False,
+        is_paired=True,
+    ):
         """
         Build an OnewayAeroDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
