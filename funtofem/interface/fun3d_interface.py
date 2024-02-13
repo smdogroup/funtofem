@@ -46,6 +46,7 @@ class Fun3dInterface(SolverInterface):
         self,
         comm,
         model,
+        complex_mode=False,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
@@ -96,6 +97,13 @@ class Fun3dInterface(SolverInterface):
         else:
             self.fun3d_dir = fun3d_dir
 
+        # FUN3D 14.0 now explicitly requires double vs complex_double types
+        self.complex_mode = complex_mode
+
+        if self.comm.rank == 0:
+            print(f"complex mode = {complex_mode}", flush=True)
+            print(f"construct f2f interface {self.complex_mode}", flush=True)
+
         # command line options
         self.forward_options = forward_options
         self.adjoint_options = adjoint_options
@@ -137,6 +145,9 @@ class Fun3dInterface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        if self.comm.rank == 0:
+            print(f"initialize body nodes f2f", flush=True)
+
         # Do the steps to initialize FUN3D
         self.fun3d_flow.initialize_project(comm=self.comm)
         if self.forward_options is None:
@@ -144,9 +155,19 @@ class Fun3dInterface(SolverInterface):
         else:
             options = self.forward_options
         self.fun3d_flow.setOptions(kwargs=options)
+        
+        if self.comm.rank == 0:
+            print(f"initialize data grid f2f cmplx mode {self.complex_mode}", flush=True)
         self.fun3d_flow.initialize_data()
+        if self.comm.rank == 0:
+            print(f"design initialize f2f cmplx mode {self.complex_mode}", flush=True)
         interface.design_initialize()
+        if self.comm.rank == 0:
+            print(f"initialize grid f2f cmplx mode {self.complex_mode}", flush=True)
         self.fun3d_flow.initialize_grid()
+
+        if self.comm.rank == 0:
+            print(f"initialize flow solution f2f", flush=True)
 
         # Initialize the flow solution
         bcont = self.fun3d_flow.initialize_solution()
@@ -249,8 +270,8 @@ class Fun3dInterface(SolverInterface):
             aero_nnodes = body.get_num_aero_nodes()
 
             if aero_nnodes > 0:
-                fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                fun3d_aero_X = aero_X if self.complex_mode else aero_X.astype(np.double)
+                interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id.astype(np.int64))
                 interface.design_push_body_name(ibody, body.name)
             else:
                 interface.design_push_body_mesh(ibody, [], [])
@@ -545,6 +566,9 @@ class Fun3dInterface(SolverInterface):
                 dx = np.asfortranarray(aero_disps[0::3])
                 dy = np.asfortranarray(aero_disps[1::3])
                 dz = np.asfortranarray(aero_disps[2::3])
+                dx = dx if self.complex_mode else dx.astype(np.double)
+                dy = dy if self.complex_mode else dy.astype(np.double)
+                dz = dz if self.complex_mode else dz.astype(np.double)
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # if "rigid" in body.motion_type and body.transfer is not None:
@@ -555,6 +579,7 @@ class Fun3dInterface(SolverInterface):
             if aero_temps is not None and aero_nnodes > 0:
                 # Nondimensionalize by freestream temperature
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                temps = temps if self.complex_mode else temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
             if self._debug:
@@ -712,8 +737,8 @@ class Fun3dInterface(SolverInterface):
                 aero_id = body.get_aero_node_ids()
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_nnodes > 0:
-                    fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                    fun3d_aero_X = aero_X if self.complex_mode else aero_X.astype(np.double)
+                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id.astype(np.int64))
                     interface.design_push_body_name(ibody, body.name)
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
@@ -737,6 +762,9 @@ class Fun3dInterface(SolverInterface):
                     dx = np.asfortranarray(aero_disps[0::3])
                     dy = np.asfortranarray(aero_disps[1::3])
                     dz = np.asfortranarray(aero_disps[2::3])
+                    dx = dx if self.complex_mode else dx.astype(np.double)
+                    dy = dy if self.complex_mode else dy.astype(np.double)
+                    dz = dz if self.complex_mode else dz.astype(np.double)
                     self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
 
                 aero_temps = body.get_aero_temps(scenario)
@@ -761,8 +789,8 @@ class Fun3dInterface(SolverInterface):
                 aero_id = body.get_aero_node_ids()
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_nnodes > 0:
-                    fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                    fun3d_aero_X = aero_X if self.complex_mode else aero_X.astype(np.double)
+                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id.astype(np.int64))
                     interface.design_push_body_name(ibody, body.name)
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
@@ -842,6 +870,17 @@ class Fun3dInterface(SolverInterface):
                         )
                         print(f"========================================\n", flush=True)
 
+                if not self.complex_mode:
+                    lam_x = lam_x.astype(np.double)
+                    lam_y = lam_y.astype(np.double)
+                    lam_z = lam_z.astype(np.double)
+
+                lam_x = np.asfortranarray(lam_x)
+                lam_y = np.asfortranarray(lam_y)
+                lam_z = np.asfortranarray(lam_z)
+
+                if self.comm.rank == 0:
+                    print(f"input force adjoint step {rstep}", flush=True)
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
                 # Get the aero loads
@@ -892,8 +931,13 @@ class Fun3dInterface(SolverInterface):
 
                 scale = scenario.T_inf / scenario.flow_dt
 
+                if not self.complex_mode:
+                    lam = lam.astype(np.double)
+
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
+
+                lam = np.asfortranarray(lam)
 
                 self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
@@ -912,6 +956,8 @@ class Fun3dInterface(SolverInterface):
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
+        if self.comm.rank == 0:
+            print(f"iterate fun3d adjoint step {rstep}", flush=True)
         self.fun3d_adjoint.iterate(rstep)
 
         for ibody, body in enumerate(bodies, 1):
@@ -919,6 +965,8 @@ class Fun3dInterface(SolverInterface):
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             if aero_disps_ajp is not None and aero_nnodes > 0:
+                if self.comm.rank == 0:
+                    print(f"extract grid adjoint product step {rstep}", flush=True)
                 lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
@@ -970,6 +1018,8 @@ class Fun3dInterface(SolverInterface):
             #         * scenario.flow_dt
             #     )
 
+        if self.comm.rank == 0:
+            print(f"complete f2f adjoint iteration step {rstep}", flush=True)
         return fail
 
     def post_adjoint(self, scenario, bodies):
@@ -1073,6 +1123,10 @@ class Fun3dInterface(SolverInterface):
                 dx = np.asfortranarray(aero_disps[0::3])
                 dy = np.asfortranarray(aero_disps[1::3])
                 dz = np.asfortranarray(aero_disps[2::3])
+                if not self.complex_mode:
+                    dx = dx.astype(np.double)
+                    dy = dy.astype(np.double)
+                    dz = dz.astype(np.double)
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # if "rigid" in body.motion_type and body.transfer is not None:
@@ -1083,6 +1137,8 @@ class Fun3dInterface(SolverInterface):
             if aero_temps is not None and aero_nnodes > 0:
                 # Nondimensionalize by freestream temperature
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                if not self.complex_mode:
+                    temps = temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         return
@@ -1197,7 +1253,7 @@ class Fun3dInterface(SolverInterface):
         # unload and reload fun3d Flow, Adjoint as real versions
         os.environ["CMPLX_MODE"] = ""
         importlib.reload(sys.modules["fun3d.interface"])
-
+        print(f"copy real interface", flush=True)
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
@@ -1214,12 +1270,14 @@ class Fun3dInterface(SolverInterface):
         """
 
         # unload and reload fun3d Flow, Adjoint as complex versions
+        print(f"copy complex interface 1", flush=True)
         os.environ["CMPLX_MODE"] = "1"
         importlib.reload(sys.modules["fun3d.interface"])
-
+        print(f"copy complex interface..", flush=True)
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
+            complex_mode=True,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
