@@ -44,6 +44,7 @@ class AitkenRelaxation:
         theta_min=0.01,
         theta_max=1.0,
         debug=False,
+        history_file=None,
     ):
         """
         Construct an aitken relaxation setting object
@@ -63,6 +64,10 @@ class AitkenRelaxation:
         self.theta_min = theta_min
         self.theta_max = theta_max
         self.debug = debug
+        self.history_file = history_file
+        self.write_history = False
+        if self.history_file is not None:
+            self.write_history = True
 
         return
 
@@ -589,6 +594,15 @@ class Body(Base):
         # Initialize the thermal transfer
         if self.thermal_transfer is not None:
             self.thermal_transfer.initialize()
+
+        if self.use_aitken_accel and comm.rank == 0:
+            if self.relaxation_scheme.write_history:
+                self._aitken_hdl = open(self.relaxation_scheme.history_file, "w")
+
+                self._aitken_hdl.write("Writing aitken relaxation history file for forward evaluation...\n")
+                self._aitken_hdl.write("Calc_theta, bounded_theta\n")
+
+                self._aitken_hdl.flush()
 
         return
 
@@ -1446,7 +1460,10 @@ class Body(Base):
                     value = comm.allreduce(value)
                     self.theta += (self.theta - 1) * value / norm2
 
-                    if comm.rank == 0 and self.relaxation_scheme.debug:
+                    if self.relaxation_scheme.write_history and comm.rank == 0:
+                        self._aitken_hdl.write(f"{self.theta.real}")
+
+                    if self.relaxation_scheme.debug and comm.rank == 0:
                         print(f"Calculated theta: {self.theta}", flush=True)
 
                     self.theta = np.max(
@@ -1456,6 +1473,9 @@ class Body(Base):
                     if comm.rank == 0 and self.relaxation_scheme.debug:
                         print(f"Max theta: {self.theta_max}")
                         print(f"Min theta: {self.theta_min}", flush=True)
+                else:
+                    if self.relaxation_scheme.write_history and comm.rank == 0:
+                        self._aitken_hdl.write(f"NUL")
 
                 # handle the min/max for complex step
                 if type(self.theta) == np.complex128 or type(self.theta) == complex:
@@ -1468,8 +1488,12 @@ class Body(Base):
                 # call the scheme to drop the learning rate for the next iteration
                 self.relaxation_scheme.relax_displacement()
 
-            if comm.rank == 0 and self.relaxation_scheme.debug:
+            if self.relaxation_scheme.debug and comm.rank == 0:
                 print(f"Bounded theta: {self.theta}", flush=True)
+
+            if self.relaxation_scheme.write_history and comm.rank == 0:
+                self._aitken_hdl.write(f", {self.theta.real}\n")
+                self._aitken_hdl.flush()
 
             # perform the aitken update for displacement transfer
             self.aitken_vec += self.theta * up
@@ -1518,7 +1542,7 @@ class Body(Base):
             return
 
         # exit early to not perform aitken adjoint relax
-        return
+        # return
 
         # number of nodes and functions
         ns = self.struct_nnodes
@@ -1529,6 +1553,10 @@ class Body(Base):
             # self.theta_adj = self.theta_init
             # self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             # self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            self.theta_adj = np.ones((nf), dtype=self.dtype) * self.theta_init
+
+            self.prev_adj_update = np.zeros((ns, nf), dtype=self.dtype)
+            self.aitken_adj_vec = np.zeros((ns, nf), dtype=self.dtype)
 
             # Aitken data for the temperatures
             self.theta_adj_t = np.ones((nf), dtype=self.dtype) * self.theta_init
@@ -1538,6 +1566,40 @@ class Body(Base):
 
             self.aitken_adj_is_initialized = True
 
+        # Elastic adjoint transfer
+        struct_disps_ajp = self.get_struct_disps_ajp(scenario)
+        if self.transfer is not None:
+            for ifunc in range(nf):
+                up = struct_disps_ajp[:, ifunc] - self.aitken_adj_vec[:, ifunc]
+
+                if self.use_aitken_accel:
+                    norm2 = np.linalg.norm(up - self.prev_adj_update[:, ifunc]) ** 2.0
+                    norm2 = comm.allreduce(norm2)
+
+                    # Only update theta if the displacements changed
+                    if norm2 > tol:
+                        # Compute the tentative theta value
+                        value = (up - self.prev_adj_update[:, ifunc]).dot(up)
+                        value = comm.allreduce(value.real)
+                        # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        self.theta_adj[ifunc] += (
+                            (self.theta_adj[ifunc] - 1) * value / norm2
+                        )
+
+                        self.theta_adj[ifunc] = np.max(
+                            (
+                                np.min((self.theta_adj[ifunc], self.theta_max)),
+                                self.theta_min,
+                            )
+                        )
+
+                    if (
+                        type(self.theta_adj[ifunc]) == np.complex128
+                        or type(self.theta_adj[ifunc]) == complex
+                    ):
+                        self.theta_adj[ifunc] = self.theta_adj[ifunc].real + 0.0j
+
+        # Thermal adjoint transfer
         struct_flux_ajp = self.get_struct_heat_flux_ajp(scenario)
         if self.thermal_transfer is not None:
             for ifunc in range(nf):
