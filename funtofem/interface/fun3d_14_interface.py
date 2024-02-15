@@ -31,7 +31,7 @@ from ._solver_interface import SolverInterface
 from .utils.general_utils import real_norm, imag_norm
 
 
-class Fun3dInterface(SolverInterface):
+class Fun3d14Interface(SolverInterface):
     """
     FUNtoFEM interface class for FUN3D 14.0.2. Works for both steady and unsteady analysis.
     Requires the FUN3D directory structure.
