@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["Fun3dInterface"]
+__all__ = ["Fun3d14Interface"]
 
 import numpy as np
 import os, sys, importlib, shutil
@@ -31,9 +31,9 @@ from ._solver_interface import SolverInterface
 from .utils.general_utils import real_norm, imag_norm
 
 
-class Fun3dInterface(SolverInterface):
+class Fun3d14Interface(SolverInterface):
     """
-    FUNtoFEM interface class for FUN3D version 13.6. Works for both steady and unsteady analysis.
+    FUNtoFEM interface class for FUN3D 14.0.2. Works for both steady and unsteady analysis.
     Requires the FUN3D directory structure.
     During the forward analysis, the FUN3D interface will operate in the scenario.name/Flow directory and
     scenario.name/Adjoint directory for the adjoint.
@@ -46,7 +46,7 @@ class Fun3dInterface(SolverInterface):
         self,
         comm,
         model,
-        fun3d_project_name,
+        complex_mode=False,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
@@ -85,7 +85,6 @@ class Fun3dInterface(SolverInterface):
 
         self.comm = comm
         self.model = model
-        self.fun3d_project_name = fun3d_project_name
 
         #  Instantiate FUN3D
         self.fun3d_flow = Flow()
@@ -97,6 +96,9 @@ class Fun3dInterface(SolverInterface):
             self.fun3d_dir = self.root_dir
         else:
             self.fun3d_dir = fun3d_dir
+
+        # FUN3D 14.0 now explicitly requires double vs complex_double types
+        self.complex_mode = complex_mode
 
         # command line options
         self.forward_options = forward_options
@@ -110,7 +112,9 @@ class Fun3dInterface(SolverInterface):
         self.dHdq = []
 
         # fun3d residual data
+        self._forward_done = False
         self._forward_resid = None
+        self._adjoint_done = False
         self._adjoint_resid = None
 
         self.forward_tolerance = forward_tolerance
@@ -144,6 +148,7 @@ class Fun3dInterface(SolverInterface):
         else:
             options = self.forward_options
         self.fun3d_flow.setOptions(kwargs=options)
+
         self.fun3d_flow.initialize_data()
         interface.design_initialize()
         self.fun3d_flow.initialize_grid()
@@ -204,8 +209,8 @@ class Fun3dInterface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
-        # reset forward residuals
-        self._forward_resid = None
+        # keep track of last successful step in case FUN3D exits early
+        self._last_forward_step = 0
 
         if self.comm.rank == 0:
             print(
@@ -252,8 +257,10 @@ class Fun3dInterface(SolverInterface):
             aero_nnodes = body.get_num_aero_nodes()
 
             if aero_nnodes > 0:
-                fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                fun3d_aero_X = aero_X if self.complex_mode else aero_X.astype(np.double)
+                interface.design_push_body_mesh(
+                    ibody, fun3d_aero_X, aero_id.astype(np.int64)
+                )
                 interface.design_push_body_name(ibody, body.name)
             else:
                 interface.design_push_body_mesh(ibody, [], [])
@@ -537,6 +544,9 @@ class Fun3dInterface(SolverInterface):
             the time step number
         """
 
+        # update last succesful FUN3D step
+        self._last_forward_step = step
+
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
             aero_disps = body.get_aero_disps(
@@ -548,6 +558,9 @@ class Fun3dInterface(SolverInterface):
                 dx = np.asfortranarray(aero_disps[0::3])
                 dy = np.asfortranarray(aero_disps[1::3])
                 dz = np.asfortranarray(aero_disps[2::3])
+                dx = dx if self.complex_mode else dx.astype(np.double)
+                dy = dy if self.complex_mode else dy.astype(np.double)
+                dz = dz if self.complex_mode else dz.astype(np.double)
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # if "rigid" in body.motion_type and body.transfer is not None:
@@ -558,6 +571,7 @@ class Fun3dInterface(SolverInterface):
             if aero_temps is not None and aero_nnodes > 0:
                 # Nondimensionalize by freestream temperature
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                temps = temps if self.complex_mode else temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
             if self._debug:
@@ -643,46 +657,19 @@ class Fun3dInterface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        # resid = self.get_forward_residual(
-        #     step=scenario.steps, all=True
-        # )  # step=scenario.steps
-        # if self.comm.rank == 0:
-        #     print(f"Forward residuals = {resid}")
-        # self._forward_done = True
-        # self._forward_resid = resid
+        resid = self.get_forward_residual(
+            step=self._last_forward_step, all=True
+        )  # step=scenario.steps
+        if self.comm.rank == 0:
+            print(f"Forward residuals = {resid}")
+        self._forward_done = True
+        self._forward_resid = resid
 
         self.fun3d_flow.post()
-
-        # get the forward residuals from fileIO
-        resid = None
-        if self.comm.rank == 0:
-            hdl = open(self.fun3d_project_name + "_hist.dat", "r")
-            lines = hdl.readlines()
-            hdl.close()
-
-            last_line = lines[-1]
-            chunks = last_line.split("  ")
-
-            print(f"last_line = {last_line}")
-            print(f"chunks = {chunks}")
-
-            # read the first 5 or 6 residuals, just 5 for now in the hack
-            resids = [abs(float(_)) for _ in chunks[1:6]]
-            resid = max(resids)
-
-        self.comm.Barrier()
-        resid = self.comm.bcast(resid, root=0)
-
-        # save the resid in forward residual
-        self._forward_resid = resid
-        if self.comm.rank == 0:
-            print(f"F2F - forward residuals, scenario {scenario.name} fun3d = {resid}")
-
-        # return from flow_dir to root
         os.chdir(self.root_dir)
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(resid) > self.forward_tolerance:
+        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -709,8 +696,8 @@ class Fun3dInterface(SolverInterface):
         adjoint_dir = os.path.join(self.fun3d_dir, scenario.name, "Adjoint")
         os.chdir(adjoint_dir)
 
-        # reset adjoint residuals
-        self._adjoint_resid = None
+        # keep track of last succesful adjoint step
+        self._last_adjoint_step = 0
 
         if self.comm.rank == 0:
             print(
@@ -745,8 +732,12 @@ class Fun3dInterface(SolverInterface):
                 aero_id = body.get_aero_node_ids()
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_nnodes > 0:
-                    fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                    fun3d_aero_X = (
+                        aero_X if self.complex_mode else aero_X.astype(np.double)
+                    )
+                    interface.design_push_body_mesh(
+                        ibody, fun3d_aero_X, aero_id.astype(np.int64)
+                    )
                     interface.design_push_body_name(ibody, body.name)
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
@@ -770,6 +761,9 @@ class Fun3dInterface(SolverInterface):
                     dx = np.asfortranarray(aero_disps[0::3])
                     dy = np.asfortranarray(aero_disps[1::3])
                     dz = np.asfortranarray(aero_disps[2::3])
+                    dx = dx if self.complex_mode else dx.astype(np.double)
+                    dy = dy if self.complex_mode else dy.astype(np.double)
+                    dz = dz if self.complex_mode else dz.astype(np.double)
                     self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
 
                 aero_temps = body.get_aero_temps(scenario)
@@ -794,8 +788,12 @@ class Fun3dInterface(SolverInterface):
                 aero_id = body.get_aero_node_ids()
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_nnodes > 0:
-                    fun3d_aero_X = np.reshape(aero_X, (3, -1), order="F")
-                    interface.design_push_body_mesh(ibody, fun3d_aero_X, aero_id)
+                    fun3d_aero_X = (
+                        aero_X if self.complex_mode else aero_X.astype(np.double)
+                    )
+                    interface.design_push_body_mesh(
+                        ibody, fun3d_aero_X, aero_id.astype(np.int64)
+                    )
                     interface.design_push_body_name(ibody, body.name)
                 else:
                     interface.design_push_body_mesh(ibody, [], [])
@@ -838,6 +836,9 @@ class Fun3dInterface(SolverInterface):
         if scenario.steady:
             rstep = step
 
+        # update the last successful adjoint step in case FUN3D exits early
+        self._last_adjoint_step = step
+
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
             # Get the adjoint Jacobian product for the aerodynamic loads
@@ -875,6 +876,17 @@ class Fun3dInterface(SolverInterface):
                         )
                         print(f"========================================\n", flush=True)
 
+                if not self.complex_mode:
+                    lam_x = lam_x.astype(np.double)
+                    lam_y = lam_y.astype(np.double)
+                    lam_z = lam_z.astype(np.double)
+
+                lam_x = np.asfortranarray(lam_x)
+                lam_y = np.asfortranarray(lam_y)
+                lam_z = np.asfortranarray(lam_z)
+
+                if self.comm.rank == 0:
+                    print(f"input force adjoint step {rstep}", flush=True)
                 self.fun3d_adjoint.input_force_adjoint(lam_x, lam_y, lam_z, body=ibody)
 
                 # Get the aero loads
@@ -925,8 +937,13 @@ class Fun3dInterface(SolverInterface):
 
                 scale = scenario.T_inf / scenario.flow_dt
 
+                if not self.complex_mode:
+                    lam = lam.astype(np.double)
+
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
+
+                lam = np.asfortranarray(lam)
 
                 self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
 
@@ -945,6 +962,8 @@ class Fun3dInterface(SolverInterface):
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
+        if self.comm.rank == 0:
+            print(f"iterate fun3d adjoint step {rstep}", flush=True)
         self.fun3d_adjoint.iterate(rstep)
 
         for ibody, body in enumerate(bodies, 1):
@@ -952,6 +971,8 @@ class Fun3dInterface(SolverInterface):
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
             if aero_disps_ajp is not None and aero_nnodes > 0:
+                if self.comm.rank == 0:
+                    print(f"extract grid adjoint product step {rstep}", flush=True)
                 lam_x, lam_y, lam_z = self.fun3d_adjoint.extract_grid_adjoint_product(
                     aero_nnodes, nfuncs, body=ibody
                 )
@@ -1003,6 +1024,8 @@ class Fun3dInterface(SolverInterface):
             #         * scenario.flow_dt
             #     )
 
+        if self.comm.rank == 0:
+            print(f"complete f2f adjoint iteration step {rstep}", flush=True)
         return fail
 
     def post_adjoint(self, scenario, bodies):
@@ -1018,47 +1041,19 @@ class Fun3dInterface(SolverInterface):
             list of FUNtoFEM bodies.
         """
 
-        # this part is buggy so ignoring for now
-        # # report warning if flow residual too large
-        # resid = self.get_adjoint_residual(step=scenario.steps, all=True)
-        # if self.comm.rank == 0:
-        #     print(f"Adjoint residuals = {resid}")
-        # self._adjoint_done = True
-        # self._adjoint_resid = resid
+        # report warning if flow residual too large
+        resid = self.get_adjoint_residual(step=self._last_adjoint_step, all=True)
+        if self.comm.rank == 0:
+            print(f"Adjoint residuals = {resid}")
+        self._adjoint_done = True
+        self._adjoint_resid = resid
 
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
-
-        # get the forward residuals from fileIO
-        resid = None
-        if self.comm.rank == 0:
-            hdl = open(self.fun3d_project_name + "_hist.dat", "r")
-            lines = hdl.readlines()
-            hdl.close()
-
-            last_line = lines[-1]
-            chunks = last_line.split("  ")
-
-            # read the first 5 or 6 residuals, just 5 for now in the hack
-            resids = [abs(float(_)) for _ in chunks[1:6]]
-            resid = max(resids)
-            # print(f"resids = {resids}, max resid = {resid}")
-
-        self.comm.Barrier()
-        resid = self.comm.bcast(resid, root=0)
-
-        # save the residual in the adjoint
-        self._adjoint_resid = resid
-
-        if self.comm.rank == 0:
-            print(f"resid = {resid}, resids = {resids}")
-            print(f"F2F - adjoint residuals, scenario {scenario.name} fun3d = {resid}")
-
-        # return from adjoint dir to root
         os.chdir(self.root_dir)
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(resid) > self.adjoint_tolerance:
+        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
             )
@@ -1076,18 +1071,15 @@ class Fun3dInterface(SolverInterface):
         all: bool
             whether to return a list of all residuals or just a scalar
         """
-        # this interface in FUN3D is broken..
-        # if not self._forward_done:
-        #     residuals = self.fun3d_flow.get_flow_rms_residual(step)
-        # else:
-        #     residuals = self._forward_resid
+        if not self._forward_done:
+            residuals = self.fun3d_flow.get_flow_rms_residual(step)
+        else:
+            residuals = self._forward_resid
 
-        # if all:
-        #     return residuals
-        # else:
-        #     return np.linalg.norm(residuals)
-        assert self._forward_resid is not None
-        return self._forward_resid
+        if all:
+            return residuals
+        else:
+            return np.linalg.norm(residuals)
 
     def get_adjoint_residual(self, step=0, all=False):
         """
@@ -1100,18 +1092,16 @@ class Fun3dInterface(SolverInterface):
         all: bool
             whether to return a list of all residuals or a scalar
         """
-        # if not self._adjoint_done:
-        #     residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-        #     return np.linalg.norm(residuals)
-        # else:
-        #     residuals = self._adjoint_resid
+        if not self._adjoint_done:
+            residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
+            return np.linalg.norm(residuals)
+        else:
+            residuals = self._adjoint_resid
 
-        # if all:
-        #     return residuals
-        # else:
-        #     return np.linalg.norm(residuals)
-        assert self._forward_resid is not None
-        return self._forward_resid
+        if all:
+            return residuals
+        else:
+            return np.linalg.norm(residuals)
 
     def set_states(self, scenario, bodies, step):
         """
@@ -1139,6 +1129,10 @@ class Fun3dInterface(SolverInterface):
                 dx = np.asfortranarray(aero_disps[0::3])
                 dy = np.asfortranarray(aero_disps[1::3])
                 dz = np.asfortranarray(aero_disps[2::3])
+                if not self.complex_mode:
+                    dx = dx.astype(np.double)
+                    dy = dy.astype(np.double)
+                    dz = dz.astype(np.double)
                 self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # if "rigid" in body.motion_type and body.transfer is not None:
@@ -1149,6 +1143,8 @@ class Fun3dInterface(SolverInterface):
             if aero_temps is not None and aero_nnodes > 0:
                 # Nondimensionalize by freestream temperature
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                if not self.complex_mode:
+                    temps = temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
 
         return
@@ -1263,14 +1259,13 @@ class Fun3dInterface(SolverInterface):
         # unload and reload fun3d Flow, Adjoint as real versions
         os.environ["CMPLX_MODE"] = ""
         importlib.reload(sys.modules["fun3d.interface"])
-
+        print(f"copy real interface", flush=True)
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
-            fun3d_project_name=fun3d_interface.fun3d_project_name,
         )
 
     @classmethod
@@ -1281,14 +1276,15 @@ class Fun3dInterface(SolverInterface):
         """
 
         # unload and reload fun3d Flow, Adjoint as complex versions
+        print(f"copy complex interface 1", flush=True)
         os.environ["CMPLX_MODE"] = "1"
         importlib.reload(sys.modules["fun3d.interface"])
-
+        print(f"copy complex interface..", flush=True)
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
+            complex_mode=True,
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
-            fun3d_project_name=fun3d_interface.fun3d_project_name,
         )
