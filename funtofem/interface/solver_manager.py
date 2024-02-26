@@ -122,6 +122,7 @@ class SolverManager:
         """
         switch fun3d flow to complex
         """
+        print(f"inside make flow complex", flush=True)
         self.flow = Fun3dInterface.copy_complex_interface(self.flow)
         return self
 

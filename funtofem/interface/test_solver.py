@@ -981,7 +981,9 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # perform complex step method
+        print(f"uses fun3d = {driver.solvers.uses_fun3d}", flush=True)
         if driver.solvers.uses_fun3d:
+            print(f"make flow complex call", flush=True)
             driver.solvers.make_flow_complex()
         variables = model.get_variables()
 

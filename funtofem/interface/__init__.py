@@ -43,6 +43,7 @@ from .caps2fun import *
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
     from .fun3d_interface import *
+    from .fun3d_14_interface import *
 
 # SU2 interface, with python package "pysu2"
 su2_loader = importlib.util.find_spec("pysu2")
