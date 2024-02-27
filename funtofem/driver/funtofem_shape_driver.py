@@ -170,7 +170,6 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             solvers, comm_manager, transfer_settings, model
         )
 
-        self.transfer_settings = transfer_settings
         self.remote = remote
         self.is_paired = is_paired
         self.struct_nprocs = struct_nprocs
@@ -364,16 +363,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 root=0,
             )
 
-        if not (self.is_remote) and self.change_shape:
-            # case where analysis script does the meshing and the remote does not.
-            # need to read new shape variable values before doing the meshing
-            self.model.read_design_variables_file(
-                self.comm,
-                filename=Remote.paths(self.comm, self.flow_dir).design_file,
-                root=0,
-            )
-
         if not (self.is_remote) and self.is_paired:
+            if self.change_shape:
+                # case where analysis script does the meshing and the remote does not.
+                # need to read new shape variable values before doing the meshing
+                self.model.read_design_variables_file(
+                    self.comm,
+                    filename=Remote.paths(self.comm, self.flow_dir).design_file,
+                    root=0,
+                )
+
             # remove the _functions_file so remote will fail
             if self.comm.rank == 0:
                 analysis_functions_file = Remote.paths(
@@ -708,6 +707,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     shutil.copy(src, dest)
                 # not sure if this barrier is necessary here but just in case
                 self.comm.Barrier()
+
+            # if not self.is_remote:
+            #     # delete struct interface to free up memory in shape change
+            #     # self.solvers.structural._deallocate()
+            #     del self.solvers.structural
+            #     self.comm.Barrier()
 
             self.comm.Barrier()
             start_time = time.time()
@@ -1061,3 +1066,59 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     @property
     def tacs_model(self):
         return self.model.structural
+
+    def print_summary(self, print_model=False, print_comm=False):
+        """
+        Print out a summary of the FUNtoFEM driver for inspection.
+        """
+
+        print("\n\n==========================================================")
+        print("||               FUNtoFEM Driver Summary                ||")
+        print("==========================================================")
+        print(self)
+
+        self._print_shape_change()
+        self._print_transfer(print_comm=print_comm)
+
+        if print_model:
+            print(
+                "\nPrinting abbreviated model summary. For details print model summary directly."
+            )
+            self.model.print_summary(print_level=-1, ignore_rigid=True)
+
+        return
+
+    def _print_shape_change(self):
+        _num_shape_vars = len(self.shape_variables)
+        print("\n--------------------")
+        print("|   Shape Change   |")
+        print("--------------------")
+
+        print(f"  No. shape variables: {_num_shape_vars}")
+        print(f"  Aerodynamic shape change: {self.aero_shape}")
+        print(f"  Structural shape change:  {self.struct_shape}")
+
+        print(f"  Meshing:", end=" ")
+        if self.is_paired:
+            # Remeshing
+            print(f" RE-MESH")
+            if self.change_shape:
+                print(f"    Remote is meshing.")
+            else:
+                print(f"    Analysis script is meshing.")
+        else:
+            # Morphing
+            print(f" MORPH")
+
+        return
+
+    def __str__(self):
+        line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
+        line2 = f"  Using remote: {self.is_remote}"
+        line3 = f"  Flow solver type: {self._flow_solver_type}"
+        line4 = f"  Structural solver type: {self._struct_solver_type}"
+        line5 = f"    No. structural procs: {self.struct_nprocs}"
+
+        output = (line1, line2, line3, line4, line5)
+
+        return "\n".join(output)

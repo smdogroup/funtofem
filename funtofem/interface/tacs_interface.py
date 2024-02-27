@@ -435,7 +435,7 @@ class TacsSteadyInterface(SolverInterface):
 
             # This assumes that the TACS variables are not distributed and are set
             # only on the tacs_comm root processor.
-            if self.tacs_comm.rank == 0:
+            if self.comm.rank == 0:
                 for i, var in enumerate(self.struct_variables):
                     xarray[i] = var.value
 
@@ -676,6 +676,8 @@ class TacsSteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+        # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
+        self.set_variables(scenario, bodies)
         if self.tacs_proc:
             # Save the solution vector
             self.scenario_data[scenario].u.copyValues(self.ans)
@@ -1144,3 +1146,7 @@ class TacsOutputGenerator:
             self.f5.writeToFile(filename)
         self.count += 1
         return
+
+    def _deallocate(self):
+        """free up memory before delete"""
+        self.f5.__dealloc__()

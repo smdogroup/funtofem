@@ -154,12 +154,15 @@ class PlotManager:
         yaxis_name="func values",
         color_offset: int = 0,
         yscale_log=False,
+        xmargin: int = 0.02,
+        ymargin: int = 0.02,
     ):
         if plot_name is None:
             plot_name = "f2f-history"
 
         with plt.style.context(niceplots.get_style(niceplots_style)):
             fig, ax = plt.subplots()
+            plt.margins(x=xmargin, y=ymargin)
             colors = niceplots.get_colors_list(niceplots_style)
             for ifunc, func in enumerate(self.functions):
                 if self.valid_function(func):

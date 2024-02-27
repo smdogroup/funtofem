@@ -24,7 +24,7 @@
   freeze_limiter_iteration = 100
 /
 &code_run_control
-  restart_write_freq = 1000
+  restart_write_freq = 500
   restart_read       = 'off'
   steps              =  500
 /
@@ -44,6 +44,7 @@
   moving_grid = .true.
   boundary_animation_freq = 1000
   volume_animation_freq = 1000
+  recompute_turb_dist = .false.
 /
 &slice_data
   nslices	= 1
