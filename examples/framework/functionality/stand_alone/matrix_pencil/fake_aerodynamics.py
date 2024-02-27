@@ -103,8 +103,8 @@ class FakeAerodynamics(SolverInterface):
                     if vartype == "aerodynamic":
                         for i, var in enumerate(scenario.variables[vartype]):
                             if var.active and "force" in var.name:
-                                scenario.derivatives[vartype][offset + func][
-                                    i
-                                ] = -np.sum(self.fixed_step_psi_A)
+                                scenario.derivatives[vartype][offset + func][i] = (
+                                    -np.sum(self.fixed_step_psi_A)
+                                )
 
         return 0

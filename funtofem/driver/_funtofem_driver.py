@@ -25,6 +25,7 @@ __all__ = ["FUNtoFEMDriver"]
 import numpy as np
 from mpi4py import MPI
 from funtofem import TransferScheme
+from .transfer_settings import TransferSettings
 
 try:
     from .hermes_transfer import HermesTransfer
@@ -67,6 +68,10 @@ class FUNtoFEMDriver(object):
             # use default comm manager from solvers if not available
             comm_manager = solvers.comm_manager
         self.comm_manager = comm_manager
+
+        if transfer_settings is None:
+            transfer_settings = TransferSettings()
+        self.transfer_settings = transfer_settings
 
         # communicator
         self.comm = comm_manager.master_comm
@@ -113,7 +118,7 @@ class FUNtoFEMDriver(object):
                 self.struct_root,
                 self.aero_comm,
                 self.aero_root,
-                transfer_settings=transfer_settings,
+                transfer_settings=self.transfer_settings,
             )
 
         # Initialize the shape parameterization
@@ -327,3 +332,49 @@ class FUNtoFEMDriver(object):
 
     def _solve_unsteady_adjoint(self, scenario):
         return 1
+
+    def print_summary(self, print_model=False, print_comm=False):
+        """
+        Print out a summary of the FUNtoFEM driver for inspection.
+        """
+
+        print("==========================================================")
+        print("||               FUNtoFEM Driver Summary                ||")
+        print("==========================================================")
+        print(self)
+
+        self._print_transfer(print_comm=print_comm)
+
+        if print_model:
+            print(
+                "\nPrinting abbreviated model summary. For details print model summary directly."
+            )
+            self.model.print_summary(print_level=-1, ignore_rigid=True)
+
+        return
+
+    def _print_transfer(self, print_comm=False):
+        print("\n---------------------")
+        print("| Transfer Settings |")
+        print("---------------------")
+
+        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
+        print(f"    No. points: {self.transfer_settings.npts}")
+        print(f"    Beta: {self.transfer_settings.beta}")
+        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
+        print(f"    No. points: {self.transfer_settings.thermal_npts}")
+        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
+
+        if print_comm:
+            print(self.comm_manager)
+
+        return
+
+    def __str__(self):
+        line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
+        line2 = f"  Model: {self.model.name}"
+        line3 = f"  Number of scenarios: {len(self.model.scenarios)}"
+
+        output = (line1, line2, line3)
+
+        return "\n".join(output)

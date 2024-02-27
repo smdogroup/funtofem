@@ -53,10 +53,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(
+            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
         transfer_settings = TransferSettings(
@@ -98,10 +100,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(
+            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
         transfer_settings = TransferSettings(
