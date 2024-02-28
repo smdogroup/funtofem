@@ -55,7 +55,7 @@ class EgadsAim:
         """
         Cascaded method to set the mesh input settings to the egadsAim.
         """
-        
+
         if self.root_proc:
             self.aim.input.Edge_Point_Min = edge_pt_min
             self.aim.input.Edge_Point_Max = edge_pt_max
