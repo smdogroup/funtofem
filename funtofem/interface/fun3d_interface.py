@@ -670,6 +670,9 @@ class Fun3dInterface(SolverInterface):
             resids = [abs(float(_)) for _ in chunks[1:6]]
             resid = max(resids)
 
+            print(f"resids = {resids}", flush=True)
+            print(f"resid = {resid}", flush=True)
+
         self.comm.Barrier()
         resid = self.comm.bcast(resid, root=0)
 
@@ -684,7 +687,7 @@ class Fun3dInterface(SolverInterface):
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(resid) > self.forward_tolerance:
             raise RuntimeError(
-                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
+                f"Funtofem/Fun3dInterface scenario {scenario.name}: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
         return
 

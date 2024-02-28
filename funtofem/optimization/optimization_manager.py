@@ -42,6 +42,7 @@ class OptimizationManager:
         hot_start: bool = False,
         design_out_file=None,
         hot_start_file=None,
+        debug=False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -64,6 +65,7 @@ class OptimizationManager:
         self.driver = driver
         self.design_out_file = design_out_file
         self.hot_start_file = hot_start_file
+        self.debug = debug
 
         # optimization meta data
         self._iteration = 0
@@ -192,11 +194,12 @@ class OptimizationManager:
                     self.comm, func_file, full_precision=False, optim=True
                 )
                 # copy the hotstart file to the checkpoints folder
-                src = self.hot_start_file
-                dest = os.path.join(
-                    self._checkpoints_folder, f"hot_start{self._iteration}.hst"
-                )
-                shutil.copy(src, dest)
+                if self.comm.rank == 0:
+                    src = self.hot_start_file
+                    dest = os.path.join(
+                        self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                    )
+                    shutil.copy(src, dest)
                 self._iteration += 1
 
             # update and plot the current optimization history
@@ -267,23 +270,31 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        try:
+        fail = False
+        if not self.debug:
+            try:
+                self._gatekeeper(x_dict)
+                fail = False
+            except:
+                fail = True
+                print("warning: eval functions failure..")
+        else:
             self._gatekeeper(x_dict)
-            fail = False
-        except:
-            fail = True
-            print("warning: eval functions failure..")
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        try:
+        fail = False
+        if not self.debug:
+            try:
+                self._gatekeeper(x_dict)
+                fail = False
+            except:
+                fail = True
+        else:
             self._gatekeeper(x_dict)
-            fail = False
-        except:
-            fail = True
         return self._sens, fail
 
     def _plot_history(self):

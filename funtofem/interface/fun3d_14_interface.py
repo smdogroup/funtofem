@@ -31,7 +31,7 @@ from ._solver_interface import SolverInterface
 from .utils.general_utils import real_norm, imag_norm
 
 
-class Fun3dInterface(SolverInterface):
+class Fun3d14Interface(SolverInterface):
     """
     FUNtoFEM interface class for FUN3D 14.0.2. Works for both steady and unsteady analysis.
     Requires the FUN3D directory structure.
@@ -378,6 +378,10 @@ class Fun3dInterface(SolverInterface):
         # push the global aerodynamic variables to fun3d
         for var in scenario.variables["aerodynamic"]:
             if var.id <= 6:
+                print(
+                    f"var id {var.id}, value = {var.value} type {type(var.value)}, lower {var.lower} type {type(var.lower)}",
+                    flush=True,
+                )
                 interface.design_push_global_var(
                     var.id, var.active, var.value, var.lower, var.upper
                 )
@@ -770,6 +774,7 @@ class Fun3dInterface(SolverInterface):
                 if body.thermal_transfer is not None:
                     # Nondimensionalize by freestream temperature
                     temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                    temps = temps if self.complex_mode else temps.astype(np.double)
                     self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
 
             self.fun3d_adjoint.initialize_solution()

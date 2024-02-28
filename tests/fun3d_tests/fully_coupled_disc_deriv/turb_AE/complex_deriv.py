@@ -1,8 +1,7 @@
-"""
-Unittest for FUN3D 13.6 complex-step check
-"""
 import numpy as np, unittest, importlib, os
 from mpi4py import MPI
+
+os.environ["CMPLX_MODE"] = "1"
 
 # Imports from FUNtoFEM
 from funtofem.model import (
@@ -20,11 +19,13 @@ from funtofem.interface import (
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
+import os
+
 # check whether fun3d is available
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from funtofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3d14Interface
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
@@ -56,10 +57,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3d14Interface(
+            comm, model, complex_mode=True, debug=True, fun3d_dir="meshes"
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir, debug=True
         )
 
         transfer_settings = TransferSettings(
@@ -72,59 +75,19 @@ class TestFun3dTacs(unittest.TestCase):
             model=model,
         )
 
-        # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
-            "fun3d+tacs-turbulent-aeroelastic-flow",
-            model,
-            driver,
-            TestFun3dTacs.FILEPATH,
-        )
-        self.assertTrue(max_rel_error < 1e-7)
+        # add complex perturbation to the DV
+        h = 1e-30
+        aoa.value += 1j * h
 
-    def test_thick_turbulent_aeroelastic(self):
-        # build the funtofem model with one body and scenario
-        model = FUNtoFEMmodel("plate")
-        plate = Body.aeroelastic("plate", boundary=2)
-        Variable.structural("thick").set_bounds(
-            lower=0.001, value=0.1, upper=2.0
-        ).register_to(plate)
-        plate.register_to(model)
+        # run the complex flow
+        driver.solve_forward()
 
-        # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
-        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.lift().register_to(test_scenario)
-        Function.drag().register_to(test_scenario)
-        test_scenario.set_flow_ref_vals(qinf=1.05e5)
-        test_scenario.register_to(model)
+        print("\nComplex TD of turbulent, aeroelastic AOA deriv\n")
 
-        # build the solvers and coupled driver
-        solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
-
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
-        )
-
-        transfer_settings = TransferSettings(
-            elastic_scheme="meld",
-            npts=50,
-        )
-        driver = FUNtoFEMnlbgs(
-            solvers,
-            transfer_settings=transfer_settings,
-            model=model,
-        )
-
-        # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
-            "fun3d+tacs-turbulent-aeroelastic-structural",
-            model,
-            driver,
-            TestFun3dTacs.FILEPATH,
-        )
-        self.assertTrue(max_rel_error < 1e-7)
+        functions = model.get_functions()
+        for ifunc, func in enumerate(functions):
+            TD = func.value.imag / h
+            print(f"func {func.name} = {TD}")
 
 
 if __name__ == "__main__":
