@@ -151,7 +151,8 @@ class Aflr4Aim:
         min_scale=0.01,
         max_scale=1,
         mer_all=1,
-        use_quads=False,
+        use_aflr4_quads=False,
+        use_egads_quads=False,
         mesh_length=None,
     ):
         """
@@ -165,5 +166,7 @@ class Aflr4Aim:
             self.aim.input.mer_all = mer_all
             if mesh_length is not None:
                 self.aim.input.Mesh_Length_Factor = mesh_length
-            if use_quads:
+            if use_aflr4_quads:
                 self.aim.input.Mesh_Gen_Input_String = "mquad=1 mpp=3"
+            if use_egads_quads:
+                self.aim.input.EGADS_Quad = True
