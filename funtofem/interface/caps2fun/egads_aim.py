@@ -47,7 +47,7 @@ class EgadsAim:
         self,
         edge_pt_min: int = 15,
         edge_pt_max=20,
-        mesh_elements: str = "Quad",
+        mesh_elements: str = "Mixed",
         global_mesh_size: float = 0.25,
         max_surf_offset: float = 0.01,
         max_dihedral_angle: float = 15,
@@ -57,10 +57,10 @@ class EgadsAim:
         """
         
         if self.root_proc:
-            self._aim.input.Edge_Point_Min = edge_pt_min
-            self._aim.input.Edge_Point_Max = edge_pt_max
-            self._aim.input.Mesh_Elements = mesh_elements
-            self._aim.input.Tess_Params = [
+            self.aim.input.Edge_Point_Min = edge_pt_min
+            self.aim.input.Edge_Point_Max = edge_pt_max
+            self.aim.input.Mesh_Elements = mesh_elements
+            self.aim.input.Tess_Params = [
                 global_mesh_size,
                 max_surf_offset,
                 max_dihedral_angle,
