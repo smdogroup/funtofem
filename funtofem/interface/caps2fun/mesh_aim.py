@@ -63,21 +63,23 @@ class MeshAim:
     def analysis_dir(self):
         _analysis_dir = None
         if self.comm.rank == self.root:
-            _analysis_dir = self.volume_aim.analysisDir
+            _analysis_dir = self.volume_aim.aim.analysisDir
         _analysis_dir = self.comm.bcast(_analysis_dir, root=self.root)
         return _analysis_dir
 
     def link_surface_mesh(self):
         """link the surface mesh to volume mesh"""
         if self.root_proc:
-            self.volume_aim.input["Surface_Mesh"].link(
-                self.surface_aim.output["Surface_Mesh"]
+            self.volume_aim.aim.input["Surface_Mesh"].link(
+                self.surface_aim.aim.output["Surface_Mesh"]
             )
 
     def _build_aim(self):
         if self.root_proc:
-            self._vol_aim = self.volume_aim._build_sub_aim()
-            self._surf_aim = self.surface_aim._build_sub_aim()
+            # self._vol_aim = self.volume_aim._build_sub_aim()
+            # self._surf_aim = self.surface_aim._build_sub_aim()
+            self.volume_aim._build_sub_aim()
+            self.surface_aim._build_sub_aim()
         return
 
     def saveDictOptions(self, dictOptions):

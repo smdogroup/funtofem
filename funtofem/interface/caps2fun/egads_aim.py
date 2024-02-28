@@ -37,11 +37,11 @@ class EgadsAim:
 
     def _build_sub_aim(self):
         if self.root_proc:
-            self.aim = self.caps_problem.analysis.create(
+            self._aim = self.caps_problem.analysis.create(
                 aim="egadsTessAIM", name="egads"
             )
 
-            return self.aim
+            return self._aim
 
     def set_surface_mesh(
         self,
@@ -55,16 +55,16 @@ class EgadsAim:
         """
         Cascaded method to set the mesh input settings to the egadsAim.
         """
-        for proc in self.active_procs:
-            if self.comm.rank == proc:
-                self._aim.input.Edge_Point_Min = edge_pt_min
-                self._aim.input.Edge_Point_Max = edge_pt_max
-                self._aim.input.Mesh_Elements = mesh_elements
-                self._aim.input.Tess_Params = [
-                    global_mesh_size,
-                    max_surf_offset,
-                    max_dihedral_angle,
-                ]
+        
+        if self.root_proc:
+            self._aim.input.Edge_Point_Min = edge_pt_min
+            self._aim.input.Edge_Point_Max = edge_pt_max
+            self._aim.input.Mesh_Elements = mesh_elements
+            self._aim.input.Tess_Params = [
+                global_mesh_size,
+                max_surf_offset,
+                max_dihedral_angle,
+            ]
 
         return self
 

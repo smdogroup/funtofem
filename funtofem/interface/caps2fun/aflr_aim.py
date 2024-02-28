@@ -30,36 +30,36 @@ class Aflr3Aim:
     def aim(self):
         return self._aim
 
-    @property
-    def analysis_dir(self):
-        _analysis_dir = None
-        if self.comm.rank == self.root:
-            _analysis_dir = self.volume_aim.analysisDir
-        _analysis_dir = self.comm.bcast(_analysis_dir, root=self.root)
-        return _analysis_dir
+    # @property
+    # def analysis_dir(self):
+    #     _analysis_dir = None
+    #     if self.comm.rank == self.root:
+    #         _analysis_dir = self.volume_aim.analysisDir
+    #     _analysis_dir = self.comm.bcast(_analysis_dir, root=self.root)
+    #     return _analysis_dir
 
-    def link_surface_mesh(self):
-        """link the surface mesh to volume mesh"""
-        if self.root_proc:
-            self.volume_aim.input["Surface_Mesh"].link(
-                self.surface_aim.output["Surface_Mesh"]
-            )
+    # def link_surface_mesh(self):
+    #     """link the surface mesh to volume mesh"""
+    #     if self.root_proc:
+    #         self.volume_aim.input["Surface_Mesh"].link(
+    #             self.surface_aim.output["Surface_Mesh"]
+    #         )
 
     def _build_sub_aim(self):
         if self.root_proc:
-            self.aim = self.caps_problem.analysis.create(aim="aflr3AIM", name="aflr3")
+            self._aim = self.caps_problem.analysis.create(aim="aflr3AIM", name="aflr3")
 
-            return self.aim
+            return self._aim
 
     def set_boundary_layer(
         self, initial_spacing=0.001, thickness=0.1, max_layers=1000, use_quads=False
     ):
         if self.root_proc:
-            self.volume_aim.input.BL_Initial_Spacing = initial_spacing
-            self.volume_aim.input.BL_Thickness = thickness
-            self.volume_aim.input.BL_Max_Layers = max_layers
+            self.aim.input.BL_Initial_Spacing = initial_spacing
+            self.aim.input.BL_Thickness = thickness
+            self.aim.input.BL_Max_Layers = max_layers
         if use_quads and (thickness > 0.0):
-            self.volume_aim.input.Mesh_Gen_Input_String = "-blc3"
+            self.aim.input.Mesh_Gen_Input_String = "-blc3"
         return self
 
     def save_dict_options(self, dictOptions):
@@ -112,9 +112,9 @@ class Aflr4Aim:
         Only call from root_proc.
         """
         if self.root_proc:
-            self.aim = self.caps_problem.analysis.create(aim="aflr4AIM", name="aflr4")
+            self._aim = self.caps_problem.analysis.create(aim="aflr4AIM", name="aflr4")
 
-            return self.aim
+            return self._aim
 
     def save_dict_options(self, dictOptions: dict = None):
         """

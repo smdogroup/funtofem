@@ -22,6 +22,7 @@ class Fun3dModel:
         root: int = 0,
     ):
         self._fun3d_aim = fun3d_aim
+        self._mesh_aim = mesh_aim
         self._surface_aim = mesh_aim.surface_aim
         self._volume_aim = mesh_aim.volume_aim
 
@@ -131,8 +132,8 @@ class Fun3dModel:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
         self.fun3d_aim._metadata["project_name"] = self.project_name
         if self.mesh_aim.root_proc:
-            self.mesh_aim.surface_aim.input.Proj_Name = self.project_name
-            self.mesh_aim.volume_aim.input.Proj_Name = self.project_name
+            self.mesh_aim.surface_aim.aim.input.Proj_Name = self.project_name
+            self.mesh_aim.volume_aim.aim.input.Proj_Name = self.project_name
         return
 
     def set_variables(self, shape_varnames, aero_varnames):
@@ -175,7 +176,7 @@ class Fun3dModel:
         self.mesh_aim.link_surface_mesh()
         if self.root_proc:
             self.fun3d_aim.aim.input["Mesh"].link(
-                self.mesh_aim.volume_aim.output["Volume_Mesh"]
+                self.mesh_aim.volume_aim.aim.output["Volume_Mesh"]
             )
         return
 
