@@ -42,7 +42,7 @@ class OptimizationManager:
         hot_start: bool = False,
         design_out_file=None,
         hot_start_file=None,
-        debug=False,
+        debug: bool = False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -194,7 +194,7 @@ class OptimizationManager:
                     self.comm, func_file, full_precision=False, optim=True
                 )
                 # copy the hotstart file to the checkpoints folder
-                if self.comm.rank == 0:
+                if self.hot_start_file is not None and self.comm.rank == 0:
                     src = self.hot_start_file
                     dest = os.path.join(
                         self._checkpoints_folder, f"hot_start{self._iteration}.hst"
@@ -270,31 +270,32 @@ class OptimizationManager:
         """
         obtain the functions dictionary for pyoptsparse
         """
-        fail = False
-        if not self.debug:
+        if not (self.debug):
             try:
                 self._gatekeeper(x_dict)
                 fail = False
             except:
                 fail = True
                 print("warning: eval functions failure..")
-        else:
+        else:  # debug
             self._gatekeeper(x_dict)
+            fail = False
         return self._funcs, fail
 
     def eval_gradients(self, x_dict, funcs):
         """
         obtain the sensitivity dictionary for pyoptsparse
         """
-        fail = False
-        if not self.debug:
+        if not (self.debug):
             try:
                 self._gatekeeper(x_dict)
                 fail = False
             except:
                 fail = True
-        else:
+                print("warning: eval func gradients failure..")
+        else:  # debug
             self._gatekeeper(x_dict)
+            fail = False
         return self._sens, fail
 
     def _plot_history(self):

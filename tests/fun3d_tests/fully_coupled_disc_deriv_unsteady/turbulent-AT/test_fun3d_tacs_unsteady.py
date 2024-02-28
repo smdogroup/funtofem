@@ -82,6 +82,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         solvers.flow = Fun3dInterface(
             comm,
             model,
+            fun3d_project_name="miniMesh",
             fun3d_dir="meshes",
             forward_options={"timedep_adj_frozen": True},
             adjoint_options={"timedep_adj_frozen": True},
@@ -141,6 +142,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         solvers.flow = Fun3dInterface(
             comm,
             model,
+            fun3d_project_name="miniMesh",
             fun3d_dir="meshes",
             forward_options={"timedep_adj_frozen": True},
             adjoint_options={"timedep_adj_frozen": True},

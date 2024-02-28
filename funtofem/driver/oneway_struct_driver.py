@@ -545,12 +545,20 @@ class OnewayStructDriver:
             # write the sensitivity file for the tacs AIM
             self.model.write_sensitivity_file(
                 comm=self.comm,
-                filename=self.struct_aim.root_sens_file
-                if not self.fun3d_dir
-                else self.analysis_sens_file,
+                filename=(
+                    self.struct_aim.root_sens_file
+                    if not self.fun3d_dir
+                    else self.analysis_sens_file
+                ),
                 discipline="structural",
             )
 
+            self.comm.Barrier()
+
+            # delete struct interface to free up memory in shape change
+            # self.struct_interface._deallocate()
+            # self.comm.Barrier()
+            del self.struct_interface
             self.comm.Barrier()
 
             # copy struct sens files for parallel instances
@@ -590,9 +598,6 @@ class OnewayStructDriver:
             root=0,
         )
 
-        # delete the old struct interface if planning to remesh again
-        if self.change_shape:
-            del self.struct_interface
         # end of change shape section
         return
 
