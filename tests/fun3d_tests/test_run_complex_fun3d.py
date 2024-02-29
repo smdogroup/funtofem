@@ -22,7 +22,7 @@ _, output_dir = make_test_directories(comm, base_dir)
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from funtofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3d14Interface
 
     """
     Goal here is to start run a complex flow for funtofem_coupling.f90 internal complex step test
@@ -45,60 +45,13 @@ if has_fun3d:
 
     # build the solvers and coupled driver
     solvers = SolverManager(comm)
-    solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+    solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
-    # build a tacs communicator on one proc
-    n_tacs_procs = 1
-    world_rank = comm.Get_rank()
-    if world_rank < n_tacs_procs:
-        color = 55
-        key = world_rank
-    else:
-        color = MPI.UNDEFINED
-        key = world_rank
-    tacs_comm = comm.Split(color, key)
-
-    # build the tacs assembler of the flat plate
-    assembler = None
-    if comm.rank < n_tacs_procs:
-        # Create the constitutvie propertes and model
-        props_plate = constitutive.MaterialProperties(
-            rho=4540.0,
-            specific_heat=463.0,
-            kappa=6.89,
-            E=118e9,
-            nu=0.325,
-            ys=1050e6,
-        )
-        con_plate = constitutive.SolidConstitutive(props_plate, t=1.0, tNum=0)
-        model_plate = elements.LinearThermoelasticity3D(con_plate)
-
-        # Create the basis class
-        quad_basis = elements.LinearHexaBasis()
-
-        # Create the element
-        element_plate = elements.Element3D(model_plate, quad_basis)
-        varsPerNode = model_plate.getVarsPerNode()
-
-        # Load in the mesh
-        mesh = TACS.MeshLoader(tacs_comm)
-        bdf_path = os.path.join(os.getcwd(), "meshes", "tacs_aero.bdf")
-        mesh.scanBDFFile(bdf_path)
-
-        # Set the element
-        mesh.setElement(0, element_plate)
-
-        # Create the assembler object
-        assembler = mesh.createTACS(varsPerNode)
-
-    solvers.structural = TacsSteadyInterface(
-        comm,
-        model,
-        assembler,
-        gen_output=None,
-        thermal_index=3,
-        output_folder=output_dir,
-    )
+    bdf_file = os.path.join(base_dir, "meshes", "turbulent_miniMesh", "nastran_CAPS.dat")
+    solvers.structural = TacsSteadyInterface.create_from_bdf(
+        model, comm, nprocs=1, bdf_file=bdf_file, prefix=output_dir
+    )   
+ 
     # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
     transfer_settings = TransferSettings(npts=10, elastic_scheme="meld")
     driver = FUNtoFEMnlbgs(

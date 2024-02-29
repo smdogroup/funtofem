@@ -942,11 +942,11 @@ class Fun3d14Interface(SolverInterface):
 
                 scale = scenario.T_inf / scenario.flow_dt
 
-                if not self.complex_mode:
-                    lam = lam.astype(np.double)
-
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
+
+                if not self.complex_mode:
+                    lam = lam.astype(np.double)
 
                 lam = np.asfortranarray(lam)
 
@@ -959,6 +959,32 @@ class Fun3d14Interface(SolverInterface):
                         self.dHdq[func] -= (
                             np.dot(aero_flux, psi_H[:, func]) / self.thermal_scale
                         )
+
+                    if self._debug: # and self.comm.rank == 0
+                        print(f"========================================")
+                        print(
+                            f"Inside fun3d_interface:iterate_adjoint after input cqa adjoint, step: {step}"
+                        )
+                        print(f"func: {func}")
+                        if psi_H is not None:
+                            print(
+                                f"norm of real psi_H (heat flux adjoint): {real_norm(psi_H)}"
+                            )
+                            print(
+                                f"norm of imaginary psi_H (heat flux adjoint): {imag_norm(psi_H)}"
+                            )
+                        else:
+                            print(f"psi_H is None")
+                        if lam is not None:
+                            print(
+                                f"norm of real lam (thermal): {real_norm(lam)}"
+                            )
+                            print(
+                                f"norm of imaginary lam (thermal): {imag_norm(lam)}"
+                            )
+                        else:
+                            print(f"lam is None")
+                        print(f"========================================\n", flush=True)
 
             # if "rigid" in body.motion_type:
             #     self.fun3d_adjoint.input_rigid_transform(
@@ -1022,6 +1048,18 @@ class Fun3d14Interface(SolverInterface):
                         * (aero_flux[:] / k_dim[:])
                         * dkdtA[:]
                     )
+
+                    if self._debug: # and self.comm.rank == 0
+                        print(f"========================================")
+                        print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
+                        print(f"func: {func}")
+                        print(
+                            f"norm of real psi_T (temps): {real_norm(lam_t[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_T (temps): {imag_norm(lam_t[:, func])}"
+                        )
+                        print(f"========================================\n", flush=True)
 
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
