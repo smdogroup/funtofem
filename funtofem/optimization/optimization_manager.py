@@ -169,7 +169,7 @@ class OptimizationManager:
                             )
                         fail = True
                 if fail:
-                    break
+                    return fail
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
