@@ -12,7 +12,7 @@ This repository contains the FUNtoFEM coupling framework and load and displaceme
 Dependencies:
 * CMake
 * MPI and mpi4py
-* Cython
+* Cython (0.29.36)
 * Lapack/BLAS
 
 Options:
