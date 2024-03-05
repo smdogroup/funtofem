@@ -48,7 +48,7 @@ class EgadsAim:
         edge_pt_min: int = 15,
         edge_pt_max=20,
         mesh_elements: str = "Mixed",
-        global_mesh_size: float = 0.25,
+        global_mesh_size: float = 0.5,
         max_surf_offset: float = 0.01,
         max_dihedral_angle: float = 15,
     ):
