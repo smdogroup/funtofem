@@ -976,12 +976,14 @@ class Fun3d14Interface(SolverInterface):
                         else:
                             print(f"psi_H is None")
                         if lam is not None:
+                            np.set_printoptions(threshold=sys.maxsize)
                             print(
                                 f"norm of real lam (thermal): {real_norm(lam)}"
                             )
                             print(
                                 f"norm of imaginary lam (thermal): {imag_norm(lam)}"
                             )
+                            print(f"lam = {lam}")
                         else:
                             print(f"lam is None")
                         print(f"========================================\n", flush=True)

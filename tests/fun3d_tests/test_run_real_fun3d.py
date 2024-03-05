@@ -1,7 +1,7 @@
 import importlib, os
 from mpi4py import MPI
 
-os.environ["CMPLX_MODE"] = "1"
+#os.environ["CMPLX_MODE"] = "1"
 
 # from funtofem import TransferScheme
 from tacs import TACS, elements, constitutive
@@ -27,13 +27,13 @@ if has_fun3d:
     from funtofem.interface import Fun3d14Interface
 
     """
-    Goal here is to start run a complex flow for funtofem_coupling.f90 internal complex step test
-    Need to set massoud / funtofem_internal_adjoint_test = .true. in the nml
+    Goal here is to start run a real flow for funtofem_coupling.f90 internal FD test
+    Need to set massoud/ funtofem_internal_adjoint_test = .true. in the nml
     """
 
     # build the funtofem model with one body and scenario
     model = FUNtoFEMmodel("plate")
-    plate = Body.aeroelastic("plate", boundary=6).relaxation(AitkenRelaxation())
+    plate = Body.aerothermoelastic("plate", boundary=6).relaxation(AitkenRelaxation())
     Variable.structural("thickness").set_bounds(
         lower=0.001, value=0.1, upper=2.0
     ).register_to(plate)

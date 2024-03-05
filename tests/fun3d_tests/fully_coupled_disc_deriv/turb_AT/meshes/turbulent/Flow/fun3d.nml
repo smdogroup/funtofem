@@ -37,6 +37,7 @@
   schedule_cflturb(1:2) = 5.0,50.0
 /
 &elasticity_gmres
+  elasticity = 2
   tol = 1.e-20
   tol_abs = 1.e-30
 /
@@ -67,5 +68,7 @@
   z = .true.
 /
 &massoud_output
+  funtofem_internal_adjoint_test = .true.
   funtofem_include_skin_friction = .true.
+  funtofem_test_epsilon = 1e-4
 /

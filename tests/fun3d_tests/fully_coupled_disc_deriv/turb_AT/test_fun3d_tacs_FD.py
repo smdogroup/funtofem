@@ -79,6 +79,7 @@ class TestFun3dTacs(unittest.TestCase):
             model,
             driver,
             TestFun3dTacs.FILEPATH,
+            epsilon=1e-4,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
@@ -125,6 +126,7 @@ class TestFun3dTacs(unittest.TestCase):
             model,
             driver,
             TestFun3dTacs.FILEPATH,
+            epsilon=1e-4,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
