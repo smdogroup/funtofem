@@ -259,6 +259,7 @@ class Fun3dThermalInterface(Fun3d14Interface):
         cqaL = body.get_aero_heat_flux(scenario)
 
         fd_product -= np.dot(cqaL, lamH[:,0]) / epsilon
+        adj_product *= -1.0
 
         rel_error = (adj_product - fd_product) / fd_product
 
