@@ -44,7 +44,6 @@ class Fun3dThermalInterface(Fun3d14Interface):
         self,
         comm,
         model,
-        flow_dt=1.0,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
@@ -62,9 +61,6 @@ class Fun3dThermalInterface(Fun3d14Interface):
             MPI communicator
         model: :class:`FUNtoFEMmodel`
             FUNtoFEM model. This instantiatio
-        flow_dt: float
-            flow solver time step size. Used to scale the adjoint term coming into and out of FUN3D since
-            FUN3D currently uses a different adjoint formulation than FUNtoFEM.
         fun3d_dir: path
             path to the Flow directory of the fun3d scenario
         forward_options: dict
@@ -77,7 +73,6 @@ class Fun3dThermalInterface(Fun3d14Interface):
         super(Fun3dThermalInterface, self).__init__(
             comm=comm,
             model=model,
-            flow_dt=flow_dt,
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
@@ -134,6 +129,8 @@ class Fun3dThermalInterface(Fun3d14Interface):
                         # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)
                         cqa = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
                         heat_flux[:] = cqa[:]
+            
+                self._last_forward_step = step+1
 
             # post analysis in fun3d interface
             super(Fun3dThermalInterface, self).post(scenario, self.model.bodies)
@@ -176,7 +173,8 @@ class Fun3dThermalInterface(Fun3d14Interface):
 
                         self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
                 # run the adjoint analysis
-                self.fun3d_adjoint.iterate(1)
+                self.fun3d_adjoint.iterate(step+1)
+                self._last_adjoint_step = step+1
 
                 # extract the surface aero displacements adjoint
                 for ibody, body in enumerate(self.model.bodies, 1):
@@ -227,10 +225,8 @@ class Fun3dThermalInterface(Fun3d14Interface):
 
         if not fun3d_therm_interface.complex_mode:
             lamH = lamH.astype(np.double)
-
-        lamH = 0.1 * (np.ones(na) + 0.001 *np.random.rand(na))
         
-        _lamH = np.reshape(lamH, newshape=(na,1))
+        _lamH = lamH * 1.0
         _lamH = np.asfortranarray(_lamH)
         body._lamH = _lamH
 
