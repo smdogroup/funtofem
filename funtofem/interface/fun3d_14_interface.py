@@ -960,7 +960,7 @@ class Fun3d14Interface(SolverInterface):
                             np.dot(aero_flux, psi_H[:, func]) / self.thermal_scale
                         )
 
-                    if self._debug: # and self.comm.rank == 0
+                    if self._debug:  # and self.comm.rank == 0
                         print(f"========================================")
                         print(
                             f"Inside fun3d_interface:iterate_adjoint after input cqa adjoint, step: {step}"
@@ -977,12 +977,8 @@ class Fun3d14Interface(SolverInterface):
                             print(f"psi_H is None")
                         if lam is not None:
                             np.set_printoptions(threshold=sys.maxsize)
-                            print(
-                                f"norm of real lam (thermal): {real_norm(lam)}"
-                            )
-                            print(
-                                f"norm of imaginary lam (thermal): {imag_norm(lam)}"
-                            )
+                            print(f"norm of real lam (thermal): {real_norm(lam)}")
+                            print(f"norm of imaginary lam (thermal): {imag_norm(lam)}")
                             print(f"lam = {lam}")
                         else:
                             print(f"lam is None")
@@ -1051,7 +1047,7 @@ class Fun3d14Interface(SolverInterface):
                         * dkdtA[:]
                     )
 
-                    if self._debug: # and self.comm.rank == 0
+                    if self._debug:  # and self.comm.rank == 0
                         print(f"========================================")
                         print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
                         print(f"func: {func}")

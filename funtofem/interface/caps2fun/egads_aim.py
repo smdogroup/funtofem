@@ -16,7 +16,6 @@ class EgadsAim:
     """
 
     def __init__(self, caps_problem, comm, root=0):
-
         self.caps_problem = caps_problem
         self.comm = comm
         self.root = root

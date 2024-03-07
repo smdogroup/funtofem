@@ -52,7 +52,9 @@ class TestTurbulentAerothermal(unittest.TestCase):
         # suppress stdout during each FUN3D analysis
         # build the solvers and coupled driver
         comm = MPI.COMM_WORLD
-        _fun3d_interface = Fun3d14Interface(comm, model, fun3d_dir="meshes", complex_mode=False)
+        _fun3d_interface = Fun3d14Interface(
+            comm, model, fun3d_dir="meshes", complex_mode=False
+        )
         # solvers.structural = TestStructuralSolver(comm, model, thermal_k=100.0)
         # # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
         # transfer_settings = TransferSettings()
@@ -78,9 +80,9 @@ class TestTurbulentAerothermal(unittest.TestCase):
         temp0 = np.ones(na) + 0.01 * np.random.rand(na)
         aero_temps[:] = temp0[:]
         dTds = np.random.rand(na)
-        lamH = 0.1 * (np.ones(na) + 0.001 *np.random.rand(na))
-        
-        _lamH = np.reshape(lamH, newshape=(na,1))
+        lamH = 0.1 * (np.ones(na) + 0.001 * np.random.rand(na))
+
+        _lamH = np.reshape(lamH, newshape=(na, 1))
         _lamH = np.asfortranarray(_lamH)
 
         adj_product = None
@@ -109,15 +111,19 @@ class TestTurbulentAerothermal(unittest.TestCase):
             # _fun3d_interface.fun3d_adjoint.input_force_adjoint(lam_x, lam_x, lam_x, body=1)
 
             _fun3d_interface.fun3d_adjoint.input_cqa_adjoint(_lamH, body=1)
-            _fun3d_interface.fun3d_adjoint.iterate(i+1)
-        lamT = _fun3d_interface.fun3d_adjoint.extract_thermal_adjoint_product(na, 1, body=1)
+            _fun3d_interface.fun3d_adjoint.iterate(i + 1)
+        lamT = _fun3d_interface.fun3d_adjoint.extract_thermal_adjoint_product(
+            na, 1, body=1
+        )
         _fun3d_interface.post_adjoint(test_scenario, [plate])
 
-        adj_product = np.dot(lamT[:,0], dTds)
+        adj_product = np.dot(lamT[:, 0], dTds)
 
         # forward analysis h(T+dT/ds*eps)
         _fun3d_interface.initialize(test_scenario, [plate])
-        _fun3d_interface.fun3d_flow.input_wall_temperature(temp0+dTds*epsilon, body=1)
+        _fun3d_interface.fun3d_flow.input_wall_temperature(
+            temp0 + dTds * epsilon, body=1
+        )
         comm.Barrier()
         for i in range(test_steps):
             _fun3d_interface.fun3d_flow.iterate()
@@ -128,7 +134,9 @@ class TestTurbulentAerothermal(unittest.TestCase):
 
         # forward analysis h(T-dT/ds*eps)
         _fun3d_interface.initialize(test_scenario, [plate])
-        _fun3d_interface.fun3d_flow.input_wall_temperature(temp0-dTds*epsilon, body=1)
+        _fun3d_interface.fun3d_flow.input_wall_temperature(
+            temp0 - dTds * epsilon, body=1
+        )
         comm.Barrier()
         for i in range(test_steps):
             _fun3d_interface.fun3d_flow.iterate()

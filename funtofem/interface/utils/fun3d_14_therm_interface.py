@@ -34,7 +34,7 @@ class Fun3dThermalInterface(Fun3d14Interface):
 
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
-    
+
     Intended use: run one forward + adjoint analysis with a FUNtoFEM nlbgs driver
     separately also creating a Fun3d14Interface. Then keep those states saved in the body class
     then we can compute the finite difference here about those states.
@@ -76,7 +76,7 @@ class Fun3dThermalInterface(Fun3d14Interface):
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
-            complex_mode=complex_mode
+            complex_mode=complex_mode,
         )
 
         # state variables related to grid deformation
@@ -102,8 +102,12 @@ class Fun3dThermalInterface(Fun3d14Interface):
         """forward thermal analysis of FUN3D"""
         for scenario in self.model.scenarios:
             # pre analysis setup
-            super(Fun3dThermalInterface, self).set_variables(scenario, self.model.bodies)
-            super(Fun3dThermalInterface, self).set_functions(scenario, self.model.bodies)
+            super(Fun3dThermalInterface, self).set_variables(
+                scenario, self.model.bodies
+            )
+            super(Fun3dThermalInterface, self).set_functions(
+                scenario, self.model.bodies
+            )
             super(Fun3dThermalInterface, self).initialize(scenario, self.model.bodies)
 
             """forward analysis starts here"""
@@ -129,8 +133,8 @@ class Fun3dThermalInterface(Fun3d14Interface):
                         # Extract the area-weighted temperature gradient normal to the wall (along the unit norm)
                         cqa = self.fun3d_flow.extract_cqa(aero_nnodes, body=ibody)
                         heat_flux[:] = cqa[:]
-            
-                self._last_forward_step = step+1
+
+                self._last_forward_step = step + 1
 
             # post analysis in fun3d interface
             super(Fun3dThermalInterface, self).post(scenario, self.model.bodies)
@@ -140,8 +144,12 @@ class Fun3dThermalInterface(Fun3d14Interface):
         """adjoint grid deformation analysis in FUN3D"""
         for scenario in self.model.scenarios:
             # pre analysis setup
-            super(Fun3dThermalInterface, self).set_variables(scenario, self.model.bodies)
-            super(Fun3dThermalInterface, self).set_functions(scenario, self.model.bodies)
+            super(Fun3dThermalInterface, self).set_variables(
+                scenario, self.model.bodies
+            )
+            super(Fun3dThermalInterface, self).set_functions(
+                scenario, self.model.bodies
+            )
             # for body in self.model.bodies:
             #     body.initialize_adjoint_variables(scenario)
             super(Fun3dThermalInterface, self).initialize_adjoint(
@@ -154,7 +162,6 @@ class Fun3dThermalInterface(Fun3d14Interface):
             nf = scenario.count_adjoint_functions()
 
             for step in range(scenario.steps):
-
                 for ibody, body in enumerate(self.model.bodies, 1):
                     # Get the adjoint Jacobian products for the aero heat flux
                     aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
@@ -173,8 +180,8 @@ class Fun3dThermalInterface(Fun3d14Interface):
 
                         self.fun3d_adjoint.input_cqa_adjoint(lam, body=ibody)
                 # run the adjoint analysis
-                self.fun3d_adjoint.iterate(step+1)
-                self._last_adjoint_step = step+1
+                self.fun3d_adjoint.iterate(step + 1)
+                self._last_adjoint_step = step + 1
 
                 # extract the surface aero displacements adjoint
                 for ibody, body in enumerate(self.model.bodies, 1):
@@ -191,15 +198,12 @@ class Fun3dThermalInterface(Fun3d14Interface):
                         for func in range(nf):
                             aero_temps_ajp[:, func] = scale * lam_t[:, func]
 
-
             # call post adjoint
             super(Fun3dThermalInterface, self).post_adjoint(scenario, self.model.bodies)
         return
 
     @classmethod
-    def finite_diff_test(
-        cls, fun3d_therm_interface, filename="fun3d_therm_test.txt"
-    ):
+    def finite_diff_test(cls, fun3d_therm_interface, filename="fun3d_therm_test.txt"):
         assert isinstance(fun3d_therm_interface, cls)
         model = fun3d_therm_interface.model
         body = model.bodies[0]
@@ -225,7 +229,7 @@ class Fun3dThermalInterface(Fun3d14Interface):
 
         if not fun3d_therm_interface.complex_mode:
             lamH = lamH.astype(np.double)
-        
+
         _lamH = lamH * 1.0
         _lamH = np.asfortranarray(_lamH)
         body._lamH = _lamH
@@ -242,23 +246,23 @@ class Fun3dThermalInterface(Fun3d14Interface):
         fun3d_therm_interface.solve_adjoint()
         lamT = body.get_aero_temps_ajp(scenario)
 
-        adj_product = np.dot(lamT[:,0], dTds)
+        adj_product = np.dot(lamT[:, 0], dTds)
 
         # forward analysis h(T+dT/ds*eps)
         aero_temps = body.get_aero_temps(scenario)
-        aero_temps[:] = temp0[:] + dTds[:]*epsilon
+        aero_temps[:] = temp0[:] + dTds[:] * epsilon
         fun3d_therm_interface.solve_forward()
         cqaR = body.get_aero_heat_flux(scenario)
 
-        fd_product += np.dot(cqaR, lamH[:,0]) / epsilon
+        fd_product += np.dot(cqaR, lamH[:, 0]) / epsilon
 
         # forward analysis h(T-dT/ds*eps)
         aero_temps = body.get_aero_temps(scenario)
-        aero_temps[:] = temp0[:] - dTds[:]*epsilon
+        aero_temps[:] = temp0[:] - dTds[:] * epsilon
         fun3d_therm_interface.solve_forward()
         cqaL = body.get_aero_heat_flux(scenario)
 
-        fd_product -= np.dot(cqaL, lamH[:,0]) / epsilon
+        fd_product -= np.dot(cqaL, lamH[:, 0]) / epsilon
         adj_product *= -1.0
 
         rel_error = (adj_product - fd_product) / fd_product
@@ -278,6 +282,6 @@ class Fun3dThermalInterface(Fun3d14Interface):
             adjoint_TD=[adj_product],
             rel_error=[rel_error],
             comm=fun3d_therm_interface.comm,
-            method="finite_diff"
+            method="finite_diff",
         ).write(hdl)
         return rel_error

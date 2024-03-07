@@ -49,11 +49,13 @@ if has_fun3d:
     solvers = SolverManager(comm)
     solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
-    bdf_file = os.path.join(base_dir, "meshes", "turbulent_miniMesh", "nastran_CAPS.dat")
+    bdf_file = os.path.join(
+        base_dir, "meshes", "turbulent_miniMesh", "nastran_CAPS.dat"
+    )
     solvers.structural = TacsSteadyInterface.create_from_bdf(
         model, comm, nprocs=1, bdf_file=bdf_file, prefix=output_dir
-    )   
- 
+    )
+
     # comm_manager = CommManager(comm, tacs_comm, 0, comm, 0)
     transfer_settings = TransferSettings(npts=10, elastic_scheme="meld")
     driver = FUNtoFEMnlbgs(
@@ -63,7 +65,7 @@ if has_fun3d:
     )
 
     # change the flow to complex
-    #driver.solvers.make_flow_complex()
+    # driver.solvers.make_flow_complex()
 
     # run the complex flow
     driver.solve_forward()

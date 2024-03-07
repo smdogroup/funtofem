@@ -12,11 +12,7 @@ from funtofem.model import (
     AitkenRelaxation,
     Variable,
 )
-from funtofem.interface import (
-    make_test_directories,
-    SolverManager,
-    TacsSteadyInterface
-)
+from funtofem.interface import make_test_directories, SolverManager, TacsSteadyInterface
 from funtofem.driver import TransferSettings, FUNtoFEMnlbgs
 
 # check whether fun3d is available
@@ -30,6 +26,7 @@ comm = MPI.COMM_WORLD
 base_dir = os.path.dirname(os.path.abspath(__file__))
 results_folder, output_dir = make_test_directories(comm, base_dir)
 bdf_filename = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
+
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestTurbulentAerothermal(unittest.TestCase):
@@ -65,7 +62,7 @@ class TestTurbulentAerothermal(unittest.TestCase):
             elastic_scheme="meld",
             npts=50,
         )
-        
+
         # perform one forward + adjoint analysis with NLBGS
         driver = FUNtoFEMnlbgs(
             solvers,
