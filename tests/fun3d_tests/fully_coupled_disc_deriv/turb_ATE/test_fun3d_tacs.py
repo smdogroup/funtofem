@@ -25,7 +25,7 @@ from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from funtofem.interface import Fun3d14Interface
+    from funtofem.interface import Fun3dInterface
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
@@ -59,7 +59,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -104,7 +104,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
