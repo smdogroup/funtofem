@@ -260,7 +260,7 @@ class OnewayStructDriver:
     @classmethod
     def prime_loads_from_unsteady_files(
         cls,
-        files:list,
+        files: list,
         solvers,
         model,
         nprocs,
@@ -303,13 +303,15 @@ class OnewayStructDriver:
         # initialize transfer settings
         comm_manager = solvers.comm_manager
 
-        for itime,file in enumerate(files):
+        for itime, file in enumerate(files):
             # read in the loads from the file for each time step
             loads_data = model._read_aero_loads(comm, file)
 
             # initialize the transfer scheme then distribute aero loads
             for body in model.bodies:
-                if itime == 0: # only initialize transfer and scenario data on the first time step after the aero mesh is loaded
+                if (
+                    itime == 0
+                ):  # only initialize transfer and scenario data on the first time step after the aero mesh is loaded
                     body.initialize_transfer(
                         comm=comm,
                         struct_comm=tacs_comm,
@@ -321,7 +323,7 @@ class OnewayStructDriver:
                     for scenario in model.scenarios:
                         assert not scenario.steady
                         body.initialize_variables(scenario)
-                
+
                 body._distribute_aero_loads(loads_data, steady=False, itime=itime)
 
         tacs_driver = cls(
@@ -509,17 +511,24 @@ class OnewayStructDriver:
                             np.ones(ns, dtype=dtype) * scenario.T_ref
                         )
 
-                else: # unsteady
+                else:  # unsteady
                     if body.transfer is not None:
-                        body.struct_loads[scenario.id] = [np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)]
-                        body.struct_disps[scenario.id] = [np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)]
+                        body.struct_loads[scenario.id] = [
+                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
+                        body.struct_disps[scenario.id] = [
+                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
 
                     # initialize new struct heat flux
                     if body.thermal_transfer is not None:
-                        body.struct_heat_flux[scenario.id] = [np.zeros(ns, dtype=dtype) for _ in range(scenario.steps)]
-                        body.struct_temps[scenario.id] = [(
-                            np.ones(ns, dtype=dtype) * scenario.T_ref
-                        ) for _ in range(scenario.steps)]
+                        body.struct_heat_flux[scenario.id] = [
+                            np.zeros(ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
+                        body.struct_temps[scenario.id] = [
+                            (np.ones(ns, dtype=dtype) * scenario.T_ref)
+                            for _ in range(scenario.steps)
+                        ]
 
                 # transfer disps to prevent seg fault if coming from OnewayAeroDriver
                 body.transfer_disps(scenario)

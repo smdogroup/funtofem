@@ -72,7 +72,10 @@ class TestUnsteadyAeroLoadsFiles(unittest.TestCase):
         ).solve_forward()
 
         # save initial loads in an array
-        orig_aero_loads = [plate.aero_loads[scenario.id][itime] * 1.0 for itime in range(scenario.steps)]
+        orig_aero_loads = [
+            plate.aero_loads[scenario.id][itime] * 1.0
+            for itime in range(scenario.steps)
+        ]
         loads_files = f2f_model.write_unsteady_aero_loads(comm, prefix="aero", root=0)
 
         # zero the aero loads
