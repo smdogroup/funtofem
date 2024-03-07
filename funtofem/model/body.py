@@ -1427,7 +1427,7 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
-                    self.theta *= value / norm2
+                    self.theta *= 1.0 - value / norm2
 
                     self.theta = np.max(
                         (np.min((self.theta, self.theta_max)), self.theta_min)

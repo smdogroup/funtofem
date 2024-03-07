@@ -76,7 +76,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.finite_difference(
+        max_rel_error = TestResult.complex_step(
             "fun3d+tacs-turbulent-aerothermoelastic-structural",
             model,
             driver,
@@ -121,7 +121,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.finite_difference(
+        max_rel_error = TestResult.complex_step(
             "fun3d+tacs-turbulent-aerothermoelastic-flow",
             model,
             driver,

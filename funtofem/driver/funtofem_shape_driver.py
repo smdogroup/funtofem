@@ -394,15 +394,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            # TEMP for debug
-            self.flow_aim.pre_analysis()
-            # try:
-            #    self.flow_aim.pre_analysis()
-            #    local_fail = False
-            # except:
-            #    local_fail = True
-            # if local_fail:
-            #    raise RuntimeError("F2F shape driver aero preAnalysis failed..")
+            try:
+               self.flow_aim.pre_analysis()
+               local_fail = False
+            except:
+               local_fail = True
+            if local_fail:
+               raise RuntimeError("F2F shape driver aero preAnalysis failed..")
 
         self.comm.Barrier()
 
