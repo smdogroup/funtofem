@@ -378,10 +378,6 @@ class Fun3d14Interface(SolverInterface):
         # push the global aerodynamic variables to fun3d
         for var in scenario.variables["aerodynamic"]:
             if var.id <= 6:
-                print(
-                    f"var id {var.id}, value = {var.value} type {type(var.value)}, lower {var.lower} type {type(var.lower)}",
-                    flush=True,
-                )
                 interface.design_push_global_var(
                     var.id, var.active, var.value, var.lower, var.upper
                 )

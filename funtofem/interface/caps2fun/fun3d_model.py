@@ -77,11 +77,9 @@ class Fun3dModel:
         """
         caps_problem = None
         if comm.rank == root:
-            print(f"caps problem pre", flush=True)
             caps_problem = pyCAPS.Problem(
                 problemName=problem_name, capsFile=csm_file, outLevel=verbosity
             )
-            print(f"caps problem post", flush=True)
         fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph, root=root)
         mesh_aim = MeshAim(
             caps_problem,

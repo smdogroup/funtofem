@@ -670,9 +670,6 @@ class Fun3dInterface(SolverInterface):
             resids = [abs(float(_)) for _ in chunks[1:6]]
             resid = max(resids)
 
-            print(f"resids = {resids}", flush=True)
-            print(f"resid = {resid}", flush=True)
-
         self.comm.Barrier()
         resid = self.comm.bcast(resid, root=0)
 

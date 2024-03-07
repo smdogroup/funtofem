@@ -68,7 +68,5 @@
   z = .true.
 /
 &massoud_output
-  funtofem_internal_adjoint_test = .true.
   funtofem_include_skin_friction = .true.
-  funtofem_test_epsilon = 1e-4
 /
