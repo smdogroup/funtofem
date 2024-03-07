@@ -414,7 +414,7 @@ class FUNtoFEMmodel(object):
                 composite_func.evaluate_gradient()
         return
 
-    def read_aero_loads(self, comm, filename, root=0):
+    def _read_aero_loads(self, comm, filename, root=0):
         """
         Read the aerodynamic loads file for the OnewayStructDriver.
 
@@ -572,8 +572,18 @@ class FUNtoFEMmodel(object):
                     with open(filename, "w") as fp:
                         fp.write(data)
         return
+    
+    @classmethod
+    def _get_loads_filename(cls, prefix, itime:int, suffix=".txt", padding=3):
+        """routine to get default padded 0 aero loads filenames"""
+        return prefix + "_" + f"%0{padding}d" % itime + suffix
+    
+    def get_loads_files(self, prefix, suffix=".txt"):
+        """get a list of the loads files for this unsteady scenario"""
+        max_steps = max([scenario.steps for scenario in self.scenarios])
+        return [FUNtoFEMmodel._get_loads_filename(prefix,itime=itime, suffix=suffix) for itime in range(max_steps)]
 
-    def write_aero_loads(self, comm, filename, root=0):
+    def write_aero_loads(self, comm, filename, itime=0, root=0):
         """
         Write the aerodynamic loads file for the OnewayStructDriver.
 
@@ -599,6 +609,8 @@ class FUNtoFEMmodel(object):
             Global communicator across all FUNtoFEM processors
         filename: str
             The name of the file to be generated
+        itime: int
+            The time step of the loads to write  out (irrelevant if steady)
         root: int
             The rank of the processor that will write the file
         """
@@ -630,7 +642,7 @@ class FUNtoFEMmodel(object):
                 data += f"scenario {scenario.id} {scenario.name} \n"
 
             for body in self.bodies:
-                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
+                id, hflux, load = body._collect_aero_loads(comm, scenario, itime=itime, root=root)
 
                 if comm.rank == root:
                     data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
@@ -645,7 +657,25 @@ class FUNtoFEMmodel(object):
 
                     with open(filename, "w") as fp:
                         fp.write(data)
-        return
+        return 
+    
+    def write_unsteady_aero_loads(self, comm, prefix, suffix=".txt", root=0):
+        """
+        Write the aerodynamic loads files for unsteady scenarios for the OnewayStructDriver.
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        prefix: str
+            file prefix
+        root: int
+            The rank of the processor that will write the file
+        """
+        loads_files = self.get_loads_files(prefix, suffix)
+        for itime,load_file in enumerate(loads_files):
+            self.write_aero_loads(comm, load_file, itime=itime, root=root)
+        return loads_files
 
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
