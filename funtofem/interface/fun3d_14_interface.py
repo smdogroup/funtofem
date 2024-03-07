@@ -53,6 +53,7 @@ class Fun3d14Interface(SolverInterface):
         auto_coords=True,
         coord_test_override=False,
         debug=False,
+        external_mesh_morph=False,
         forward_tolerance=1e-6,
         adjoint_tolerance=1e-6,
     ):
@@ -81,6 +82,8 @@ class Fun3d14Interface(SolverInterface):
             override the aero displacements in F2F to add fixed displacements for mesh morphing coordinate derivative tests
         debug: bool
             whether to print debug statements or not such as the real/imag norms of state vectors in FUN3D
+        external_mesh_morph: bool
+            override for AFRL to set mesh morph through constructor instead of caps2fun
         """
 
         self.comm = comm
@@ -128,6 +131,8 @@ class Fun3d14Interface(SolverInterface):
         self._debug = debug
         if self.comm.rank != 0:
             self._debug = False
+
+        self.external_mesh_morph = external_mesh_morph
 
         # Initialize the nodes associated with the bodies
         self.auto_coords = auto_coords
@@ -269,6 +274,8 @@ class Fun3d14Interface(SolverInterface):
         # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
         if self.model.flow is not None:
             self.fun3d_flow.set_mesh_morph(self.model.flow.mesh_morph)
+        elif self.external_mesh_morph:
+            self.fun3d_flow.set_mesh_morph(True)
 
         bcont = self.fun3d_flow.initialize_solution()
         if bcont == 0:
@@ -277,18 +284,24 @@ class Fun3d14Interface(SolverInterface):
             return 1
 
         # update FUNtoFEM xA0 coords from FUN3D if doing mesh morphing
+        _update_aero_coords = False
         if self.model.flow is not None:
-            if self.model.flow.mesh_morph:
-                for ibody, body in enumerate(bodies, 1):
-                    aero_X = body.get_aero_nodes()
-                    aero_nnodes = body.get_num_aero_nodes()
+            _update_aero_coords = self.model.flow.mesh_morph
+        else:
+            _update_aero_coords = self.external_mesh_morph
 
-                    if aero_nnodes > 0:
-                        x, y, z = interface.extract_surface(aero_nnodes, body=ibody)
+        # update the aero coordinates in FUNtoFEM after mesh morphing
+        if _update_aero_coords:
+            for ibody, body in enumerate(bodies, 1):
+                aero_X = body.get_aero_nodes()
+                aero_nnodes = body.get_num_aero_nodes()
 
-                        aero_X[0::3] = x[:]
-                        aero_X[1::3] = y[:]
-                        aero_X[2::3] = z[:]
+                if aero_nnodes > 0:
+                    x, y, z = interface.extract_surface(aero_nnodes, body=ibody)
+
+                    aero_X[0::3] = x[:]
+                    aero_X[1::3] = y[:]
+                    aero_X[2::3] = z[:]
 
         return 0
 
@@ -750,6 +763,8 @@ class Fun3d14Interface(SolverInterface):
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
+            elif self.external_mesh_morph:
+                self.fun3d_adjoint.set_mesh_morph(True)
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
@@ -804,6 +819,8 @@ class Fun3d14Interface(SolverInterface):
             # turn on mesh morphing with Fun3dAim if the Fun3dModel has it on
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
+            elif self.external_mesh_morph:
+                self.fun3d_adjoint.set_mesh_morph(True)
 
             self.fun3d_adjoint.initialize_solution()
 
