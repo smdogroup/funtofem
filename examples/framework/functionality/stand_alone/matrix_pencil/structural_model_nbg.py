@@ -533,28 +533,28 @@ class SpringStructure(SolverInterface):
                     for i, var in enumerate(scenario.variables[vartype]):
                         if var.name == "alpha0" and var.active:
                             if self.comm.rank == 0:
-                                scenario.derivatives[vartype][offset + ifunc][
-                                    i
-                                ] = self.dfdx[1]
+                                scenario.derivatives[vartype][offset + ifunc][i] = (
+                                    self.dfdx[1]
+                                )
 
-                            scenario.derivatives[vartype][offset + ifunc][
-                                i
-                            ] = self.comm.bcast(
-                                scenario.derivatives[vartype][offset + ifunc][i],
-                                root=0,
+                            scenario.derivatives[vartype][offset + ifunc][i] = (
+                                self.comm.bcast(
+                                    scenario.derivatives[vartype][offset + ifunc][i],
+                                    root=0,
+                                )
                             )
 
                         if var.name == "struct_dt" and var.active:
                             if self.comm.rank == 0:
-                                scenario.derivatives[vartype][offset + ifunc][
-                                    i
-                                ] = self.dfdx[0]
+                                scenario.derivatives[vartype][offset + ifunc][i] = (
+                                    self.dfdx[0]
+                                )
 
-                            scenario.derivatives[vartype][offset + ifunc][
-                                i
-                            ] = self.comm.bcast(
-                                scenario.derivatives[vartype][offset + ifunc][i],
-                                root=0,
+                            scenario.derivatives[vartype][offset + ifunc][i] = (
+                                self.comm.bcast(
+                                    scenario.derivatives[vartype][offset + ifunc][i],
+                                    root=0,
+                                )
                             )
 
     def eval_func(self, x, name="dt"):
