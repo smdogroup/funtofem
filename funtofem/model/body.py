@@ -1594,11 +1594,11 @@ class Body(Base):
 
         return
 
-    def _distribute_aero_loads(self, data):
+    def _distribute_aero_loads(self, data, steady: bool = True, itime: int = 0):
         """
         distribute the aero loads and heat flux from a loads file
         """
-        print(f"F2F - starting to distribute loads")
+        print(f"F2F - starting to distribute loads Time Step {itime}")
 
         for scenario_id in data:
             scenario_data = data[scenario_id]
@@ -1613,16 +1613,31 @@ class Body(Base):
                     }
 
             for ind, aero_id in enumerate(self.aero_id):
-                if self.transfer is not None:
-                    self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = (
-                        scenario_entry_dict[aero_id]["load"]
-                    )
-                if self.thermal_transfer is not None:
-                    self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
-                        aero_id
-                    ]["hflux"]
+                if steady:
+                    if self.transfer is not None:
+                        self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = (
+                            scenario_entry_dict[aero_id]["load"]
+                        )
+                    if self.thermal_transfer is not None:
+                        self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
+                            aero_id
+                        ]["hflux"]
 
-        print(f"F2F - done distribute loads")
+                else:  # unsteady
+                    if self.transfer is not None:
+                        # make sure this time index exists in the case of scenarios with different # of time steps
+                        if itime < len(self.aero_loads[scenario_id]):
+                            self.aero_loads[scenario_id][itime][
+                                3 * ind : 3 * ind + 3
+                            ] = scenario_entry_dict[aero_id]["load"]
+                    if self.thermal_transfer is not None:
+                        # make sure this time index exists in the case of scenarios with different # of time steps
+                        if itime < len(self.aero_heat_flux[scenario_id]):
+                            self.aero_heat_flux[scenario_id][itime][ind] = (
+                                scenario_entry_dict[aero_id]["hflux"]
+                            )
+
+        print(f"\tF2F - done distribute loads Time step {itime}")
 
     def _collect_aero_mesh(self, comm, root=0):
         """
@@ -1658,18 +1673,30 @@ class Body(Base):
 
         return aero_ids, aero_X
 
-    def _collect_aero_loads(self, comm, scenario, root=0):
+    def _collect_aero_loads(self, comm, scenario, itime: int = 0, root=0):
         """
         gather the aerodynamic load and heat flux from each MPI processor onto the root
         Then return the global aero ids, heat fluxes, and loads, which are later written to a file
         """
+        if itime >= scenario.steps:
+            return [], [], []
         all_aero_ids = comm.gather(self.aero_id, root=root)
         if self.transfer is not None:
-            all_aero_loads = comm.gather(self.aero_loads[scenario.id], root=root)
+            _loads = (
+                self.aero_loads[scenario.id]
+                if scenario.steady
+                else self.aero_loads[scenario.id][itime]
+            )
+            all_aero_loads = comm.gather(_loads, root=root)
         else:
             all_aero_loads = []
         if self.thermal_transfer is not None:
-            all_aero_hflux = comm.gather(self.aero_heat_flux[scenario.id], root=root)
+            _hflux = (
+                self.aero_heat_flux[scenario.id]
+                if scenario.steady
+                else self.aero_heat_flux[scenario.id][itime]
+            )
+            all_aero_hflux = comm.gather(_hflux, root=root)
         else:
             all_aero_hflux = []
 
