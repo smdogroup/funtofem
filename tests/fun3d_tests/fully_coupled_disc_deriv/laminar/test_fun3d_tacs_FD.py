@@ -1,5 +1,5 @@
 """
-Unittest for FUN3D 13.6 complex-step check
+Unittest for FUN3D 14.0.2 finite-difference check
 """
 
 import numpy as np, unittest, importlib, os
@@ -25,7 +25,7 @@ from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from funtofem.interface import Fun3dInterface
+    from funtofem.interface import Fun3d14Interface
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
@@ -59,9 +59,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -78,7 +76,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aerothermoelastic-structural",
             model,
             driver,
@@ -106,9 +104,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -125,7 +121,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aerothermoelastic-flow",
             model,
             driver,
@@ -153,9 +149,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -172,7 +166,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aeroelastic-structural",
             model,
             driver,
@@ -199,9 +193,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -218,7 +210,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aeroelastic-flow",
             model,
             driver,
@@ -246,9 +238,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -265,7 +255,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aerothermal-structural",
             model,
             driver,
@@ -292,9 +282,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(
-            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -311,7 +299,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         # run the complex step test on the model and driver
-        max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
             "fun3d+tacs-laminar-aerothermal-flow",
             model,
             driver,

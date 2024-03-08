@@ -684,7 +684,7 @@ class Fun3dInterface(SolverInterface):
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(resid) > self.forward_tolerance:
             raise RuntimeError(
-                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
+                f"Funtofem/Fun3dInterface scenario {scenario.name}: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
         return
 
