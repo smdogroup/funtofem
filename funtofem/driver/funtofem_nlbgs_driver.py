@@ -192,22 +192,27 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
             if scenario.early_stopping and step > scenario.min_forward_steps:
+                all_converged = True
                 for solver in self.solvers.solver_list:
                     forward_resid = abs(solver.get_forward_residual(step=step))
                     if self.comm.rank == 0:
                         print(f"forward resid = {forward_resid}", flush=True)
                     forward_tol = solver.forward_tolerance
-                    if forward_resid < forward_tol:
-                        if self.comm.rank == 0:
-                            print(
-                                f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
-                            )
-                            print(
-                                f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
-                                flush=True,
-                            )
-                        exit_early = True
+                    if forward_resid > forward_tol:
+                        all_converged = False
                         break
+                
+                if all_converged: 
+                    if self.comm.rank == 0:
+                        print(
+                            f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
+                        )
+                        print(
+                            f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
+                            flush=True,
+                        )
+                    exit_early = True
+                    break
             if exit_early:
                 break
 
@@ -278,21 +283,31 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
+            print(f"scenario min adjoint steps = {scenario.min_adjoint_steps}", flush=True)
             if scenario.early_stopping and step > scenario.min_adjoint_steps:
-                for solver in self.solvers.solver_list:
+                all_converged = True # assume all converged until proven otherwise (then when one isn't exit for loop)
+                for isolver,solver in enumerate(self.solvers.solver_list):
                     adjoint_resid = abs(solver.get_adjoint_residual(step=step))
                     adjoint_tol = solver.adjoint_tolerance
-                    if adjoint_resid < adjoint_tol:
-                        if self.comm.rank == 0:
-                            print(
-                                f"F2F Steady Adjoint analysis of scenario {scenario.name}"
-                            )
-                            print(
-                                f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
-                                flush=True,
-                            )
-                        exit_early = True
-                        break
+                    if isolver == 0:
+                        adjoint_resids = solver.get_adjoint_residual(step=step, all=True)
+                        print(f"adjoint residuals = {adjoint_resids}", flush=True)
+                    print(f"adjoint step {step} solver {isolver} resid = {adjoint_resid}, tol = {adjoint_tol}", flush=True)
+                    if adjoint_resid > adjoint_tol:
+                        all_converged = False
+                     
+                if all_converged:
+                    if self.comm.rank == 0:
+                        print(
+                            f"F2F Steady Adjoint analysis of scenario {scenario.name}"
+                        )
+                        print(
+                            f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
+                            flush=True,
+                        )
+                    exit_early = True
+                    break
+            
             if exit_early:
                 break
 

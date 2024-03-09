@@ -668,8 +668,12 @@ class Fun3d14Interface(SolverInterface):
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
 
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(f"scalar forward resid in post scenario {scenario.name} = {scalar_resid}", flush=True)
+
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
+        if scalar_resid > self.forward_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -1082,7 +1086,7 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=self._last_adjoint_step, all=True)
+        resid = self.get_adjoint_residual(step=self._last_adjoint_step, outer=False, all=True)
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
@@ -1091,6 +1095,10 @@ class Fun3d14Interface(SolverInterface):
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
         os.chdir(self.root_dir)
+
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(f"scalar resid in adjoint post scenario {scenario.name} = {scalar_resid}",flush = True)
 
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
@@ -1121,7 +1129,7 @@ class Fun3d14Interface(SolverInterface):
         else:
             return np.linalg.norm(residuals)
 
-    def get_adjoint_residual(self, step=0, all=False):
+    def get_adjoint_residual(self, step=0, outer=True, all=False):
         """
         Returns L2 norm of list of scalar adjoint residuals L2norm([R1,...,R6])
 
@@ -1129,12 +1137,16 @@ class Fun3d14Interface(SolverInterface):
         ----------
         step: int
             the time step number
+        outer : bool
+            whether it corresponds to the outer coupled iteration or the inner flow adjoint iterations
         all: bool
             whether to return a list of all residuals or a scalar
         """
+        if outer: # just overwrite to the saved last adjoint step since we don't have the scenario data
+            step = self._last_adjoint_step
+
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            return np.linalg.norm(residuals)
         else:
             residuals = self._adjoint_resid
 

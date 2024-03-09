@@ -78,24 +78,24 @@ class TestFun3dTacs(unittest.TestCase):
 
         # run the complex step test on the model and driver
         # max_rel_error = TestResult.complex_step(
-        #max_rel_error = TestResult.finite_difference(
-        #    "fun3d+tacs-turbulent-aeroelastic-flow",
-        #    model,
-        #    driver,
-        #    TestFun3dTacs.FILEPATH,
-        #)
-        #self.assertTrue(max_rel_error < 1e-7)
+        max_rel_error = TestResult.finite_difference(
+            "fun3d+tacs-turbulent-aeroelastic-flow",
+            model,
+            driver,
+            TestFun3dTacs.FILEPATH,
+        )
+        self.assertTrue(max_rel_error < 1e-7)
  
-        driver.solve_forward()
-        time2 = time.time()
-        driver.solve_adjoint()
+        #driver.solve_forward()
+        #time2 = time.time()
+        #driver.solve_adjoint()
 
-        _end_time = time.time()
-        dt_full = _end_time - start_time
-        dt_adjoint = _end_time - time2
+        #_end_time = time.time()
+        #dt_full = _end_time - start_time
+        #dt_adjoint = _end_time - time2
         
-        print(f"full time = {dt_full} sec", flush=True)
-        print(f"adjoint time = {dt_adjoint} sec", flush=True)
+        #print(f"full time = {dt_full} sec", flush=True)
+        #print(f"adjoint time = {dt_adjoint} sec", flush=True)
 
 if __name__ == "__main__":
     # open and close the file to reset it
