@@ -48,6 +48,7 @@ class Scenario(Base):
         adjoint_steps=None,
         min_forward_steps=None,
         min_adjoint_steps=None,
+        coupling_frequency=1,
         early_stopping=False,
         T_ref=300,
         T_inf=300,
@@ -132,6 +133,7 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
+        self.coupling_frequency = coupling_frequency
         self.uncoupled_steps = uncoupled_steps
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
@@ -176,11 +178,12 @@ class Scenario(Base):
             self.add_variable("aerodynamic", zrate)
 
     @classmethod
-    def steady(cls, name: str, steps: int, uncoupled_steps: int = 0):
+    def steady(cls, name: str, steps: int, coupling_frequency:int=1, uncoupled_steps: int = 0):
         return cls(
             name=name,
             steady=True,
             steps=steps,
+            coupling_frequency=coupling_frequency,
             uncoupled_steps=uncoupled_steps,
         )
 

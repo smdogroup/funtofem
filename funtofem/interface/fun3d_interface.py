@@ -945,7 +945,9 @@ class Fun3dInterface(SolverInterface):
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
-        self.fun3d_adjoint.iterate(rstep)
+        for i_coupled in range(1,scenario.coupling_frequency+1):
+           adj_step = scenario.coupling_frequency * (rstep-1) + i_coupled
+           self.fun3d_adjoint.iterate(adj_step)
 
         for ibody, body in enumerate(bodies, 1):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D

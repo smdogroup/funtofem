@@ -838,7 +838,7 @@ class Fun3d14Interface(SolverInterface):
             rstep = step
 
         # update the last successful adjoint step in case FUN3D exits early
-        self._last_adjoint_step = step
+        #self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
@@ -989,7 +989,10 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        self.fun3d_adjoint.iterate(rstep)
+        for i_coupled in range(1, scenario.coupling_frequency+1):
+            adj_step = scenario.coupling_frequency * (rstep-1) + i_coupled
+            self.fun3d_adjoint.iterate(adj_step)
+            self._last_adjoint_step = adj_step
 
         for ibody, body in enumerate(bodies, 1):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
