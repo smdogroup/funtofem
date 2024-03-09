@@ -25,7 +25,7 @@ __all__ = ["Scenario"]
 from ._base import Base
 from .variable import Variable
 from .function import Function
-
+import numpy as np
 import importlib
 
 tacs_loader = importlib.util.find_spec("tacs")
@@ -127,7 +127,7 @@ class Scenario(Base):
         self.id = id
         self.group = group
         self.group_master = False
-        self.adjoint_steps = adjoint_steps
+        self._adjoint_steps = adjoint_steps
         self.variables = {}
 
         self.functions = []
@@ -202,6 +202,24 @@ class Scenario(Base):
             tacs_integration_settings=tacs_integration_settings,
             uncoupled_steps=uncoupled_steps,
         )
+
+    @property
+    def adjoint_steps(self) -> int: 
+        """
+        in the steady case it's best to choose the 
+        adjoint steps based on the funtofem coupling frequency
+        """
+        if self._adjoint_steps is not None and self.steady:
+            return self._adjoint_steps
+        elif not self.steady:
+            return None # defaults to number of steps in unsteady case
+        else: # choose it based on funtofem coupling frequency in steady case
+            return int(np.ceil(self.steps/self.coupling_frequency))
+
+    @adjoint_steps.setter
+    def adjoint_steps(self, new_steps:int):
+        assert self.steady
+        self._adjoint_steps = new_steps
 
     def add_function(self, function):
         """
