@@ -1,6 +1,7 @@
 """
 Unittest for FUN3D 14.0.2 finite-difference test
 """
+
 import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 import time
@@ -39,12 +40,13 @@ early_stopping = True
 forward_tol = 1e-11
 adjoint_tol = 1e-9
 
+
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_alpha_turbulent_aeroelastic(self):
-        start_time = time.time()        
+        start_time = time.time()
 
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
@@ -52,8 +54,12 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
-        test_scenario.set_stop_criterion(early_stopping=early_stopping, min_forward_steps=50)
+        test_scenario = Scenario.steady(
+            "turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10
+        )
+        test_scenario.set_stop_criterion(
+            early_stopping=early_stopping, min_forward_steps=50
+        )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.lift().register_to(test_scenario)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
@@ -65,7 +71,13 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=forward_tol, adjoint_tolerance=adjoint_tol)
+        solvers.flow = Fun3d14Interface(
+            comm,
+            model,
+            fun3d_dir="meshes",
+            forward_tolerance=forward_tol,
+            adjoint_tolerance=adjoint_tol,
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -102,10 +114,14 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
-        test_scenario.set_stop_criterion(early_stopping=early_stopping, min_forward_steps=50)
+        test_scenario = Scenario.steady(
+            "turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10
+        )
+        test_scenario.set_stop_criterion(
+            early_stopping=early_stopping, min_forward_steps=50
+        )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.lift().register_to(test_scenario)        
+        Function.lift().register_to(test_scenario)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.drag().register_to(test_scenario)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
@@ -113,7 +129,13 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=forward_tol, adjoint_tolerance=adjoint_tol)
+        solvers.flow = Fun3d14Interface(
+            comm,
+            model,
+            fun3d_dir="meshes",
+            forward_tolerance=forward_tol,
+            adjoint_tolerance=adjoint_tol,
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -138,6 +160,7 @@ class TestFun3dTacs(unittest.TestCase):
             TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 2e-3)
+
 
 if __name__ == "__main__":
     # open and close the file to reset it

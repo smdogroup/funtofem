@@ -760,6 +760,14 @@ class Fun3dInterface(SolverInterface):
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
 
+            # set the funtofem coupling frequency
+            # would need to be implemented in FUN3D adjoint
+            # self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
+            if scenario.coupling_frequency != 1:
+                raise AssertionError(
+                    "Funtofem has not implemented funtofem coupling in FUN3D 13.6"
+                )
+
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(
@@ -945,9 +953,9 @@ class Fun3dInterface(SolverInterface):
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
-        for i_coupled in range(1,scenario.coupling_frequency+1):
-           adj_step = scenario.coupling_frequency * (rstep-1) + i_coupled
-           self.fun3d_adjoint.iterate(adj_step)
+        for i_coupled in range(1, scenario.coupling_frequency + 1):
+            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
+            self.fun3d_adjoint.iterate(adj_step)
 
         for ibody, body in enumerate(bodies, 1):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D

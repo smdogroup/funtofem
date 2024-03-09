@@ -315,7 +315,9 @@ class Fun3d14Interface(SolverInterface):
                     start = 1
                     stop = 1
                     if ct == 1 and scenario.early_stopping:
-                        raise AssertionError("Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails")
+                        raise AssertionError(
+                            "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
+                        )
                 else:
                     start = 1 if function.start is None else function.start
                     if unsteady:
@@ -674,7 +676,10 @@ class Fun3d14Interface(SolverInterface):
 
         scalar_resid = abs(np.linalg.norm(resid).real)
         if self.comm.rank == 0:
-            print(f"scalar forward resid in post scenario {scenario.name} = {scalar_resid}", flush=True)
+            print(
+                f"scalar forward resid in post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
 
         # throw a runtime error if adjoint didn't converge sufficiently
         if scalar_resid > self.forward_tolerance:
@@ -850,7 +855,7 @@ class Fun3d14Interface(SolverInterface):
             rstep = step
 
         # update the last successful adjoint step in case FUN3D exits early
-        #self._last_adjoint_step = step
+        # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
@@ -1001,8 +1006,8 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        for i_coupled in range(1, scenario.coupling_frequency+1):
-            adj_step = scenario.coupling_frequency * (rstep-1) + i_coupled
+        for i_coupled in range(1, scenario.coupling_frequency + 1):
+            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
             self.fun3d_adjoint.iterate(adj_step)
             self._last_adjoint_step = adj_step
 
@@ -1094,7 +1099,9 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=self._last_adjoint_step, outer=False, all=True)
+        resid = self.get_adjoint_residual(
+            step=self._last_adjoint_step, outer=False, all=True
+        )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
@@ -1106,7 +1113,10 @@ class Fun3d14Interface(SolverInterface):
 
         scalar_resid = abs(np.linalg.norm(resid).real)
         if self.comm.rank == 0:
-            print(f"scalar resid in adjoint post scenario {scenario.name} = {scalar_resid}",flush = True)
+            print(
+                f"scalar resid in adjoint post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
 
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
@@ -1150,7 +1160,9 @@ class Fun3d14Interface(SolverInterface):
         all: bool
             whether to return a list of all residuals or a scalar
         """
-        if outer: # just overwrite to the saved last adjoint step since we don't have the scenario data
+        if (
+            outer
+        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
             step = self._last_adjoint_step
 
         if not self._adjoint_done:

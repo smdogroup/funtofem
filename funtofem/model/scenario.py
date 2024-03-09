@@ -153,7 +153,9 @@ class Scenario(Base):
 
         # early stopping criterion
         self.min_forward_steps = (
-            min_forward_steps if min_forward_steps is not None else uncoupled_steps+self.UNCOUPLED_STEP_BUFFER
+            min_forward_steps
+            if min_forward_steps is not None
+            else uncoupled_steps + self.UNCOUPLED_STEP_BUFFER
         )
         self.min_adjoint_steps = (
             min_adjoint_steps if min_adjoint_steps is not None else 0
@@ -180,7 +182,13 @@ class Scenario(Base):
             self.add_variable("aerodynamic", zrate)
 
     @classmethod
-    def steady(cls, name: str, steps: int, coupling_frequency:int=1, uncoupled_steps: int = 0):
+    def steady(
+        cls,
+        name: str,
+        steps: int,
+        coupling_frequency: int = 1,
+        uncoupled_steps: int = 0,
+    ):
         return cls(
             name=name,
             steady=True,
@@ -206,20 +214,20 @@ class Scenario(Base):
         )
 
     @property
-    def adjoint_steps(self) -> int: 
+    def adjoint_steps(self) -> int:
         """
-        in the steady case it's best to choose the 
+        in the steady case it's best to choose the
         adjoint steps based on the funtofem coupling frequency
         """
         if self._adjoint_steps is not None and self.steady:
             return self._adjoint_steps
         elif not self.steady:
-            return None # defaults to number of steps in unsteady case
-        else: # choose it based on funtofem coupling frequency in steady case
-            return int(np.ceil(self.steps/self.coupling_frequency))
+            return None  # defaults to number of steps in unsteady case
+        else:  # choose it based on funtofem coupling frequency in steady case
+            return int(np.ceil(self.steps / self.coupling_frequency))
 
     @adjoint_steps.setter
-    def adjoint_steps(self, new_steps:int):
+    def adjoint_steps(self, new_steps: int):
         assert self.steady
         self._adjoint_steps = new_steps
 
