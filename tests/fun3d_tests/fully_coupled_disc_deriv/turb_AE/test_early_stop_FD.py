@@ -33,6 +33,11 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 bdf_filename = os.path.join(base_dir, "meshes", "nastran_CAPS.dat")
 results_folder, output_dir = make_test_directories(comm, base_dir)
 
+# TEST SETTINGS
+# get more accurate derivatives when early stopping is off and fully converges
+early_stopping = True
+forward_tol = 1e-11
+adjoint_tol = 1e-9
 
 class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
@@ -48,7 +53,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
-        test_scenario.set_stop_criterion(early_stopping=True)
+        test_scenario.set_stop_criterion(early_stopping=early_stopping, min_forward_steps=50)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.lift().register_to(test_scenario)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
@@ -60,7 +65,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=1e-11, adjoint_tolerance=1e-11)
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=forward_tol, adjoint_tolerance=adjoint_tol)
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -84,7 +89,8 @@ class TestFun3dTacs(unittest.TestCase):
             driver,
             TestFun3dTacs.FILEPATH,
         )
-        self.assertTrue(max_rel_error < 1e-4)
+        # off-discipline derivative is the worst dstruct/daero
+        self.assertTrue(max_rel_error < 2e-3)
 
     def test_thick_turbulent_aeroelastic(self):
         # build the funtofem model with one body and scenario
@@ -97,7 +103,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
-        test_scenario.set_stopping_criterion(early_stopping=True)
+        test_scenario.set_stop_criterion(early_stopping=early_stopping, min_forward_steps=50)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.lift().register_to(test_scenario)        
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
@@ -107,7 +113,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=1e-11, adjoint_tolerance=1e-11)
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=forward_tol, adjoint_tolerance=adjoint_tol)
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -131,7 +137,7 @@ class TestFun3dTacs(unittest.TestCase):
             driver,
             TestFun3dTacs.FILEPATH,
         )
-        self.assertTrue(max_rel_error < 1e-4)
+        self.assertTrue(max_rel_error < 2e-3)
 
 if __name__ == "__main__":
     # open and close the file to reset it

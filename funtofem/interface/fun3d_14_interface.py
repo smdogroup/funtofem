@@ -759,6 +759,9 @@ class Fun3d14Interface(SolverInterface):
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
 
+            # set the funtofem coupling frequency
+            self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
+
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(
@@ -774,6 +777,7 @@ class Fun3d14Interface(SolverInterface):
                     dz = dz if self.complex_mode else dz.astype(np.double)
                     self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
 
+                # shouldn't we set a time step here for the aerothermal derivatives?
                 aero_temps = body.get_aero_temps(scenario)
                 if body.thermal_transfer is not None:
                     # Nondimensionalize by freestream temperature

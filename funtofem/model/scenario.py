@@ -36,6 +36,8 @@ if tacs_loader is not None:
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
 
+    UNCOUPLED_STEP_BUFFER = 10
+
     def __init__(
         self,
         name,
@@ -46,7 +48,7 @@ class Scenario(Base):
         steps=1000,
         uncoupled_steps=0,
         adjoint_steps=None,
-        min_forward_steps=None,
+        min_forward_steps=50,
         min_adjoint_steps=None,
         coupling_frequency=1,
         early_stopping=False,
@@ -151,7 +153,7 @@ class Scenario(Base):
 
         # early stopping criterion
         self.min_forward_steps = (
-            min_forward_steps if min_forward_steps is not None else uncoupled_steps
+            min_forward_steps if min_forward_steps is not None else uncoupled_steps+self.UNCOUPLED_STEP_BUFFER
         )
         self.min_adjoint_steps = (
             min_adjoint_steps if min_adjoint_steps is not None else 0
