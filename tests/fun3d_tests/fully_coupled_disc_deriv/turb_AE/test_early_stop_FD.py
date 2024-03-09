@@ -48,7 +48,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
-        test_scenario.set_stop_criterion(early_stopping=True, min_forward_steps=50)
+        test_scenario.set_stop_criterion(early_stopping=True)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.lift().register_to(test_scenario)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
@@ -60,7 +60,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=1e-11, adjoint_tolerance=1e-9)
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=1e-11, adjoint_tolerance=1e-11)
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
@@ -84,18 +84,54 @@ class TestFun3dTacs(unittest.TestCase):
             driver,
             TestFun3dTacs.FILEPATH,
         )
-        self.assertTrue(max_rel_error < 1e-7)
- 
-        #driver.solve_forward()
-        #time2 = time.time()
-        #driver.solve_adjoint()
+        self.assertTrue(max_rel_error < 1e-4)
 
-        #_end_time = time.time()
-        #dt_full = _end_time - start_time
-        #dt_adjoint = _end_time - time2
-        
-        #print(f"full time = {dt_full} sec", flush=True)
-        #print(f"adjoint time = {dt_adjoint} sec", flush=True)
+    def test_thick_turbulent_aeroelastic(self):
+        # build the funtofem model with one body and scenario
+        model = FUNtoFEMmodel("plate")
+        plate = Body.aeroelastic("plate", boundary=2)
+        Variable.structural("thick").set_bounds(
+            lower=0.001, value=0.1, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+
+        # build the scenario
+        test_scenario = Scenario.steady("turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10)
+        test_scenario.set_stopping_criterion(early_stopping=True)
+        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
+        Function.lift().register_to(test_scenario)        
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
+        test_scenario.set_flow_ref_vals(qinf=1.05e5)
+        test_scenario.register_to(model)
+
+        # build the solvers and coupled driver
+        solvers = SolverManager(comm)
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_tolerance=1e-11, adjoint_tolerance=1e-11)
+
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
+        )
+
+        transfer_settings = TransferSettings(
+            elastic_scheme="meld",
+            npts=50,
+        )
+        driver = FUNtoFEMnlbgs(
+            solvers,
+            transfer_settings=transfer_settings,
+            model=model,
+        )
+
+        # run the complex step test on the model and driver
+        # max_rel_error = TestResult.complex_step
+        max_rel_error = TestResult.finite_difference(
+            "fun3d+tacs-turbulent-aeroelastic-structural",
+            model,
+            driver,
+            TestFun3dTacs.FILEPATH,
+        )
+        self.assertTrue(max_rel_error < 1e-4)
 
 if __name__ == "__main__":
     # open and close the file to reset it

@@ -306,12 +306,16 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        ct = 0
         for function in scenario.functions:
             if function.adjoint:
+                ct += 1
                 unsteady = not (scenario.steady)
                 if function.analysis_type != "aerodynamic":
                     start = 1
                     stop = 1
+                    if ct == 1 and scenario.early_stopping:
+                        raise AssertionError("Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails")
                 else:
                     start = 1 if function.start is None else function.start
                     if unsteady:
