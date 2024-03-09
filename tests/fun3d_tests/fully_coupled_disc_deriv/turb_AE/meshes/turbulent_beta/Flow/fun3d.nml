@@ -35,7 +35,7 @@
   schedule_iteration(1:2) = 1,200
   schedule_cfl(1:2) = 1.0, 100.0
   schedule_cflturb(1:2) = 5.0,50.0
-  hanim = .true.
+  hanim = .false.
 /
 &hanim
   cfl_increase_factor = 1.2
