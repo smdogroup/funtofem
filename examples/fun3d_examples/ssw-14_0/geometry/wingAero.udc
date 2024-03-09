@@ -77,7 +77,7 @@ udprim editAttr filename <<
 >>
 
 select body
-   attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
+   attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM;egadsTessAIM
    attribute capsMeshLength 1.0
 
 rotatex 90 0 0
