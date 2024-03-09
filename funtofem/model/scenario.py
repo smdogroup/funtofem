@@ -25,7 +25,7 @@ __all__ = ["Scenario"]
 from ._base import Base
 from .variable import Variable
 from .function import Function
-
+import numpy as np
 import importlib
 
 tacs_loader = importlib.util.find_spec("tacs")
@@ -35,6 +35,8 @@ if tacs_loader is not None:
 
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
+
+    UNCOUPLED_STEP_BUFFER = 10
 
     def __init__(
         self,
@@ -46,8 +48,9 @@ class Scenario(Base):
         steps=1000,
         uncoupled_steps=0,
         adjoint_steps=None,
-        min_forward_steps=None,
+        min_forward_steps=50,
         min_adjoint_steps=None,
+        coupling_frequency=1,
         early_stopping=False,
         T_ref=300,
         T_inf=300,
@@ -126,12 +129,13 @@ class Scenario(Base):
         self.id = id
         self.group = group
         self.group_master = False
-        self.adjoint_steps = adjoint_steps
+        self._adjoint_steps = adjoint_steps
         self.variables = {}
 
         self.functions = []
         self.steady = steady
         self.steps = steps
+        self.coupling_frequency = coupling_frequency
         self.uncoupled_steps = uncoupled_steps
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
@@ -149,7 +153,9 @@ class Scenario(Base):
 
         # early stopping criterion
         self.min_forward_steps = (
-            min_forward_steps if min_forward_steps is not None else uncoupled_steps
+            min_forward_steps
+            if min_forward_steps is not None
+            else uncoupled_steps + self.UNCOUPLED_STEP_BUFFER
         )
         self.min_adjoint_steps = (
             min_adjoint_steps if min_adjoint_steps is not None else 0
@@ -176,11 +182,18 @@ class Scenario(Base):
             self.add_variable("aerodynamic", zrate)
 
     @classmethod
-    def steady(cls, name: str, steps: int, uncoupled_steps: int = 0):
+    def steady(
+        cls,
+        name: str,
+        steps: int,
+        coupling_frequency: int = 1,
+        uncoupled_steps: int = 0,
+    ):
         return cls(
             name=name,
             steady=True,
             steps=steps,
+            coupling_frequency=coupling_frequency,
             uncoupled_steps=uncoupled_steps,
         )
 
@@ -199,6 +212,24 @@ class Scenario(Base):
             tacs_integration_settings=tacs_integration_settings,
             uncoupled_steps=uncoupled_steps,
         )
+
+    @property
+    def adjoint_steps(self) -> int:
+        """
+        in the steady case it's best to choose the
+        adjoint steps based on the funtofem coupling frequency
+        """
+        if self._adjoint_steps is not None and self.steady:
+            return self._adjoint_steps
+        elif not self.steady:
+            return None  # defaults to number of steps in unsteady case
+        else:  # choose it based on funtofem coupling frequency in steady case
+            return int(np.ceil(self.steps / self.coupling_frequency))
+
+    @adjoint_steps.setter
+    def adjoint_steps(self, new_steps: int):
+        assert self.steady
+        self._adjoint_steps = new_steps
 
     def add_function(self, function):
         """

@@ -306,12 +306,18 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        ct = 0
         for function in scenario.functions:
             if function.adjoint:
+                ct += 1
                 unsteady = not (scenario.steady)
                 if function.analysis_type != "aerodynamic":
                     start = 1
                     stop = 1
+                    if ct == 1 and scenario.early_stopping:
+                        raise AssertionError(
+                            "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
+                        )
                 else:
                     start = 1 if function.start is None else function.start
                     if unsteady:
@@ -668,8 +674,15 @@ class Fun3d14Interface(SolverInterface):
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
 
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(
+                f"scalar forward resid in post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
+
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
+        if scalar_resid > self.forward_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -751,6 +764,9 @@ class Fun3d14Interface(SolverInterface):
             if self.model.flow is not None:
                 self.fun3d_adjoint.set_mesh_morph(self.model.flow.mesh_morph)
 
+            # set the funtofem coupling frequency
+            self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
+
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(
@@ -766,6 +782,7 @@ class Fun3d14Interface(SolverInterface):
                     dz = dz if self.complex_mode else dz.astype(np.double)
                     self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
 
+                # shouldn't we set a time step here for the aerothermal derivatives?
                 aero_temps = body.get_aero_temps(scenario)
                 if body.thermal_transfer is not None:
                     # Nondimensionalize by freestream temperature
@@ -838,7 +855,7 @@ class Fun3d14Interface(SolverInterface):
             rstep = step
 
         # update the last successful adjoint step in case FUN3D exits early
-        self._last_adjoint_step = step
+        # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
@@ -989,7 +1006,10 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        self.fun3d_adjoint.iterate(rstep)
+        for i_coupled in range(1, scenario.coupling_frequency + 1):
+            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
+            self.fun3d_adjoint.iterate(adj_step)
+            self._last_adjoint_step = adj_step
 
         for ibody, body in enumerate(bodies, 1):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
@@ -1079,7 +1099,9 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=self._last_adjoint_step, all=True)
+        resid = self.get_adjoint_residual(
+            step=self._last_adjoint_step, outer=False, all=True
+        )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
@@ -1088,6 +1110,13 @@ class Fun3d14Interface(SolverInterface):
         # solve the initial condition adjoint
         self.fun3d_adjoint.post()
         os.chdir(self.root_dir)
+
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(
+                f"scalar resid in adjoint post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
 
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
@@ -1118,7 +1147,7 @@ class Fun3d14Interface(SolverInterface):
         else:
             return np.linalg.norm(residuals)
 
-    def get_adjoint_residual(self, step=0, all=False):
+    def get_adjoint_residual(self, step=0, outer=True, all=False):
         """
         Returns L2 norm of list of scalar adjoint residuals L2norm([R1,...,R6])
 
@@ -1126,12 +1155,18 @@ class Fun3d14Interface(SolverInterface):
         ----------
         step: int
             the time step number
+        outer : bool
+            whether it corresponds to the outer coupled iteration or the inner flow adjoint iterations
         all: bool
             whether to return a list of all residuals or a scalar
         """
+        if (
+            outer
+        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
+            step = self._last_adjoint_step
+
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            return np.linalg.norm(residuals)
         else:
             residuals = self._adjoint_resid
 
