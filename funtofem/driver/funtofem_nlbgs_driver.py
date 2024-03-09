@@ -196,7 +196,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 for solver in self.solvers.solver_list:
                     forward_resid = abs(solver.get_forward_residual(step=step))
                     if self.comm.rank == 0:
-                        print(f"forward resid = {forward_resid}", flush=True)
+                        print(f"f2f scenario {scenario.name}, forward resid = {forward_resid}", flush=True)
                     forward_tol = solver.forward_tolerance
                     if forward_resid > forward_tol:
                         all_converged = False
@@ -283,23 +283,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
             # check for early stopping criterion, exit if meets criterion
             exit_early = False
-            print(
-                f"scenario min adjoint steps = {scenario.min_adjoint_steps}", flush=True
-            )
             if scenario.early_stopping and step > scenario.min_adjoint_steps:
                 all_converged = True  # assume all converged until proven otherwise (then when one isn't exit for loop)
                 for isolver, solver in enumerate(self.solvers.solver_list):
                     adjoint_resid = abs(solver.get_adjoint_residual(step=step))
                     adjoint_tol = solver.adjoint_tolerance
-                    if isolver == 0:
-                        adjoint_resids = solver.get_adjoint_residual(
-                            step=step, all=True
-                        )
-                        print(f"adjoint residuals = {adjoint_resids}", flush=True)
-                    print(
-                        f"adjoint step {step} solver {isolver} resid = {adjoint_resid}, tol = {adjoint_tol}",
-                        flush=True,
-                    )
+                    if self.comm.rank == 0 and adjoint_tol != np.inf:
+                        print(f"f2f scenario {scenario.name} adjoint resid = {adjoint_resid}", flush=True)
                     if adjoint_resid > adjoint_tol:
                         all_converged = False
 

@@ -9,7 +9,7 @@ from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
-import os
+import os, time
 
 comm = MPI.COMM_WORLD
 
@@ -19,6 +19,8 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 # Optimization options
 hot_start = False
 store_history = True
+
+test_derivatives = True
 
 nprocs_tacs = 8
 
@@ -142,8 +144,9 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=250, uncoupled_steps=0)
-cruise.adjoint_steps = 3000
+cruise = Scenario.steady("cruise", steps=500, coupling_frequency=50, uncoupled_steps=0)
+cruise.adjoint_steps = 100 # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
@@ -185,8 +188,10 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_tolerance=1e-7,
-    adjoint_tolerance=1e-4,
+    forward_stop_tolerance=1e-12,
+    forward_min_tolerance=1e-8,
+    adjoint_stop_tolerance=1e-10,
+    adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
 # fun3d_project_name = "ssw-pw1.2"
@@ -209,7 +214,32 @@ f2f_driver = FUNtoFEMnlbgs(
     debug=global_debug_flag,
 )
 
-# ---------------------------------------------------->
+if test_derivatives: # test using the finite difference test
+    # load the previous design
+    design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt") 
+    f2f_model.read_design_variables_file(comm, design_in_file)
+   
+    start_time = time.time()
+     
+    # run the finite difference test
+    max_rel_error = TestResult.derivative_test(
+        "fun3d+tacs-ssw1",
+        model=f2f_model,
+        driver=f2f_driver,
+        status_file="1-derivs.txt",
+        complex_mode=False,
+        epsilon=1e-4,
+    )
+
+    end_time = time.time()
+    dt = end_time - start_time
+    if self.comm.rank == 0:
+        print(f"total time for ssw derivative test is {dt} seconds", flush=True)    
+        print(f"max rel error = {max_rel_error}", flush=True)
+
+    # exit before optimization
+    exit()
+
 
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------

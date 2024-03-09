@@ -50,6 +50,7 @@
 /
 &massoud_output
   funtofem_include_skin_friction = .true.
+  funtofem_restart_grid_adjoint = .true.
 /
 &global
   moving_grid = .true.
