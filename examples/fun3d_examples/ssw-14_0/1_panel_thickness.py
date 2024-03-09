@@ -216,8 +216,8 @@ f2f_driver = FUNtoFEMnlbgs(
 
 if test_derivatives: # test using the finite difference test
     # load the previous design
-    design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt") 
-    f2f_model.read_design_variables_file(comm, design_in_file)
+    #design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt") 
+    #f2f_model.read_design_variables_file(comm, design_in_file)
    
     start_time = time.time()
      
