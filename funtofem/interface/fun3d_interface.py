@@ -765,7 +765,7 @@ class Fun3dInterface(SolverInterface):
             # self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
             if scenario.coupling_frequency != 1:
                 raise AssertionError(
-                    "Funtofem has not implemented funtofem coupling in FUN3D 13.6"
+                    "FUNtoFEM has not implemented loose adjoint coupling in FUN3D 13.6"
                 )
 
             # Deform the aero mesh before finishing FUN3D initialization
