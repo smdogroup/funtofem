@@ -37,10 +37,10 @@
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
-  time_step_nondim =   0.1
+  time_step_nondim =   1.0
   subiterations =          0
   schedule_iteration(1:2) = 1, 200
-  schedule_cfl(1:2) = 2.0, 300.0
+  schedule_cfl(1:2) = 2.0, 50.0
   schedule_cflturb(1:2) = 2.0, 300.0
   hanim = .true.
 /
