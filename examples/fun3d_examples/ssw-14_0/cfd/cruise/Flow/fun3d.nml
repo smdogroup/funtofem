@@ -56,11 +56,12 @@
   moving_grid = .true.
   boundary_animation_freq = 300
   volume_animation_freq = 0
+  recompute_turb_dist = .false.
 /
 &elasticity_gmres
-  elasticity = 1
-  tol = 1e-10
-  tol_abs = 1e-12
+  elasticity = 2
+  tol = 1e-20
+  tol_abs = 1e-30
 /
 &slice_data
   nslices       = 1

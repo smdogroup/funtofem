@@ -99,7 +99,7 @@ for irib in range(1, nribs + 1):
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
     ).register_to(wing)
-
+    
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
     prop = caps2tacs.ShellProperty(
@@ -150,7 +150,7 @@ cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
-ksfailure = Function.ksfailure(ks_weight=150.0, safety_factor=1.5).optimize(
+ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 cruise.include(ksfailure).include(mass)
@@ -164,19 +164,21 @@ cruise.register_to(f2f_model)
 # <----------------------------------------------------
 
 # skin thickness adjacency constraints
-variables = f2f_model.get_variables()
-section_prefix = ["rib", "OML"]
-section_nums = [nribs, nOML]
-for isection, prefix in enumerate(section_prefix):
-    section_num = section_nums[isection]
-    for iconstr in range(1, section_num):
-        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
-        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-        ).register_to(f2f_model)
+if not test_derivatives:
+    variables = f2f_model.get_variables()
+    section_prefix = ["rib", "OML"]
+    section_nums = [nribs, nOML]
+    for isection, prefix in enumerate(section_prefix):
+        section_num = section_nums[isection]
+        for iconstr in range(1, section_num):
+            left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
+            right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+            adj_constr = (left_var - right_var) / left_var
+            adj_ratio = 0.15
+            adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+                lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+            ).register_to(f2f_model)
+    
 
 # ---------------------------------------------------->
 
