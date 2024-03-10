@@ -60,8 +60,8 @@
 /
 &elasticity_gmres
   elasticity = 2
-  tol = 1e-20
-  tol_abs = 1e-30
+  tol = 1e-15
+  tol_abs = 1e-20
 /
 &slice_data
   nslices       = 1
