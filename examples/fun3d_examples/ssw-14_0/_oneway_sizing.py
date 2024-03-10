@@ -18,6 +18,7 @@ from pyoptsparse import SNOPT, Optimization
 # script inputs
 hot_start = False
 store_history = True
+test_derivatives = False
 
 # import openmdao.api as om
 from funtofem import *
@@ -149,19 +150,20 @@ cruise.register_to(f2f_model)
 # -------------------------------------------------------
 
 # skin thickness adjacency constraints
-variables = f2f_model.get_variables()
-section_prefix = ["rib", "OML"]
-section_nums = [nribs, nOML]
-for isection, prefix in enumerate(section_prefix):
-    section_num = section_nums[isection]
-    for iconstr in range(1, section_num):
-        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
-        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-        ).register_to(f2f_model)
+if not test_derivatives:
+    variables = f2f_model.get_variables()
+    section_prefix = ["rib", "OML"]
+    section_nums = [nribs, nOML]
+    for isection, prefix in enumerate(section_prefix):
+        section_num = section_nums[isection]
+        for iconstr in range(1, section_num):
+            left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
+            right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+            adj_constr = (left_var - right_var) / left_var
+            adj_ratio = 0.15
+            adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+                lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+            ).register_to(f2f_model)
 
 # DISCIPLINE INTERFACES AND DRIVERS
 # -----------------------------------------------------
@@ -177,7 +179,6 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
 
 # read in aero loads
 aero_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "uncoupled_loads.txt")
-f2f_model.read_aero_loads(comm, aero_loads_file)
 
 transfer_settings = TransferSettings(npts=200)
 
@@ -189,6 +190,21 @@ tacs_driver = OnewayStructDriver.prime_loads_from_file(
     nprocs=nprocs,
     transfer_settings=transfer_settings,
 )
+
+if test_derivatives: # test using the finite difference test
+   
+    #start_time = time.time()
+     
+    # run the finite difference test
+    max_rel_error = TestResult.derivative_test(
+        "fun3d+tacs-ssw1",
+        model=f2f_model,
+        driver=tacs_driver,
+        status_file="1-derivs.txt",
+        complex_mode=False,
+        epsilon=1e-4,
+    )
+    exit()
 
 # PYOPTSPARSE OPTMIZATION
 # -------------------------------------------------------------

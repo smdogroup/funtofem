@@ -235,7 +235,7 @@ if test_derivatives: # test using the finite difference test
 
     end_time = time.time()
     dt = end_time - start_time
-    if self.comm.rank == 0:
+    if comm.rank == 0:
         print(f"total time for ssw derivative test is {dt} seconds", flush=True)    
         print(f"max rel error = {max_rel_error}", flush=True)
 
