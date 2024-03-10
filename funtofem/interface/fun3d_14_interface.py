@@ -214,6 +214,8 @@ class Fun3d14Interface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        self._forward_done = False
+
         # keep track of last successful step in case FUN3D exits early
         self._last_forward_step = 0
 
@@ -719,6 +721,7 @@ class Fun3d14Interface(SolverInterface):
 
         # keep track of last succesful adjoint step
         self._last_adjoint_step = 0
+        self._adjoint_done = False
 
         if self.comm.rank == 0:
             print(
