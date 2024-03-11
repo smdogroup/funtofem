@@ -314,7 +314,9 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # check if any aerodynamic functions
-        no_aerodynamic = not any([func.analysis_type == "aerodynamic" for func in scenario.functions])
+        no_aerodynamic = not any(
+            [func.analysis_type == "aerodynamic" for func in scenario.functions]
+        )
 
         ct = 0
         for function in scenario.functions:
