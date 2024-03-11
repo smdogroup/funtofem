@@ -314,7 +314,7 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # check if any aerodynamic functions
-        no_aerodynamic = not any([func.analysis_type == "aerodynamic" for func in scenario.functions])
+        no_aerodynamic = any([func.analysis_type == "aerodynamic" for func in scenario.functions])
 
         ct = 0
         for function in scenario.functions:
@@ -324,7 +324,7 @@ class Fun3d14Interface(SolverInterface):
                 if function.analysis_type != "aerodynamic":
                     start = 1
                     stop = 1
-                    if ct == 1 and scenario.early_stopping and no_aerodynamic:
+                    if ct == 1 and scenario.early_stopping and any_aerodynamic:
                         raise AssertionError(
                             "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
                         )
