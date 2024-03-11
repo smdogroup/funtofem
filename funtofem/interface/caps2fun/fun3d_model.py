@@ -1,16 +1,31 @@
+"""
+Written by Sean Engelstad and Brian Burke, Georgia Tech SMDO Lab, 2024.
+"""
+
 __all__ = ["Fun3dModel"]
 
 import pyCAPS, os
 from .fun3d_aim import Fun3dAim
-from .aflr_aim import AflrAim
+from .mesh_aim import MeshAim
 
 
 class Fun3dModel:
+    SURFACE_AIMS = ["egads", "aflr4"]
+    VOLUME_AIMS = ["aflr3"]
+
     def __init__(
-        self, fun3d_aim, aflr_aim, comm, project_name="fun3d_CAPS", root: int = 0
+        self,
+        fun3d_aim,
+        mesh_aim: MeshAim,
+        comm,
+        project_name="fun3d_CAPS",
+        root: int = 0,
     ):
         self._fun3d_aim = fun3d_aim
-        self._aflr_aim = aflr_aim
+        self._mesh_aim = mesh_aim
+        self._surface_aim = mesh_aim.surface_aim
+        self._volume_aim = mesh_aim.volume_aim
+
         self.project_name = project_name
         self.comm = comm
         self.root = root
@@ -23,6 +38,7 @@ class Fun3dModel:
         self._shape_varnames = []
         self._aero_varnames = []
         self._setup = False
+
         return
 
     @classmethod
@@ -32,12 +48,14 @@ class Fun3dModel:
         comm,
         project_name="fun3d_CAPS",
         problem_name: str = "capsFluid",
+        volume_mesh="aflr3",
+        surface_mesh="aflr4",
         mesh_morph=False,
         root: int = 0,
         verbosity=0,
     ):
         """
-        Make a pyCAPS problem with the tacsAIM and egadsAIM on serial / root proc
+        Make a pyCAPS problem with the fun3dAIM and mesh AIMs on serial / root proc
         Parameters
         ---------------------------------
         csm_file : filepath
@@ -63,9 +81,17 @@ class Fun3dModel:
                 problemName=problem_name, capsFile=csm_file, outLevel=verbosity
             )
         fun3d_aim = Fun3dAim(caps_problem, comm, mesh_morph=mesh_morph, root=root)
-        aflr_aim = AflrAim(caps_problem, comm, root=root)
+        mesh_aim = MeshAim(
+            caps_problem,
+            comm,
+            volume_mesh=volume_mesh,
+            surface_mesh=surface_mesh,
+            root=root,
+        )
+
         comm.Barrier()
-        return cls(fun3d_aim, aflr_aim, comm, project_name, root=root)
+
+        return cls(fun3d_aim, mesh_aim, comm, project_name, root=root)
 
     @property
     def root_proc(self) -> bool:
@@ -76,8 +102,15 @@ class Fun3dModel:
         return self._fun3d_aim
 
     @property
-    def aflr_aim(self) -> AflrAim:
-        return self._aflr_aim
+    def aflr_aim(self) -> MeshAim:
+        """
+        Leaving this here for backwards 'compatibility'.
+        """
+        return self.mesh_aim
+
+    @property
+    def mesh_aim(self) -> MeshAim:
+        return self._mesh_aim
 
     @property
     def mesh_morph(self) -> bool:
@@ -92,13 +125,15 @@ class Fun3dModel:
         return self.fun3d_aim.mesh_morph_filepath
 
     def _set_project_names(self):
-        """set the project names into both aims for grid filenames"""
+        """
+        Set the project names into both aims for grid filenames.
+        """
         if self.fun3d_aim.root_proc:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
         self.fun3d_aim._metadata["project_name"] = self.project_name
-        if self.aflr_aim.root_proc:
-            self.aflr_aim.surface_aim.input.Proj_Name = self.project_name
-            self.aflr_aim.volume_aim.input.Proj_Name = self.project_name
+        if self.mesh_aim.root_proc:
+            self.mesh_aim.surface_aim.aim.input.Proj_Name = self.project_name
+            self.mesh_aim.volume_aim.aim.input.Proj_Name = self.project_name
         return
 
     def set_variables(self, shape_varnames, aero_varnames):
@@ -115,18 +150,20 @@ class Fun3dModel:
         return self._setup and len(self._shape_varnames) > 0
 
     def setup(self):
-        """setup the fun3d model before analysis"""
+        """
+        Setup the fun3d model before analysis.
+        """
         self._link_aims()
         self.fun3d_aim.set_boundary_conditions()
-        if self.aflr_aim._dictOptions is not None:
-            self.aflr_aim._setDictOptions()
+        if self.mesh_aim._dictOptions is not None:
+            self.mesh_aim._setDictOptions()
         self._set_grid_filename()
         self._setup = True
         return
 
     def _set_grid_filename(self):
         self.fun3d_aim.grid_file = os.path.join(
-            self.aflr_aim.analysis_dir, "aflr3_0.lb8.ugrid"
+            self.mesh_aim.analysis_dir, "aflr3_0.lb8.ugrid"
         )
         # also set mapbc file
         self.fun3d_aim.mapbc_file = os.path.join(
@@ -136,10 +173,10 @@ class Fun3dModel:
 
     def _link_aims(self):
         """link the fun3d to aflr aim"""
-        self.aflr_aim.link_surface_mesh()
+        self.mesh_aim.link_surface_mesh()
         if self.root_proc:
             self.fun3d_aim.aim.input["Mesh"].link(
-                self.aflr_aim.volume_aim.output["Volume_Mesh"]
+                self.mesh_aim.volume_aim.aim.output["Volume_Mesh"]
             )
         return
 

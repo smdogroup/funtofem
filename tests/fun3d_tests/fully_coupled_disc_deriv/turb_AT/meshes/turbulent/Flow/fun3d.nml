@@ -37,6 +37,7 @@
   schedule_cflturb(1:2) = 5.0,50.0
 /
 &elasticity_gmres
+  elasticity = 2
   tol = 1.e-20
   tol_abs = 1.e-30
 /

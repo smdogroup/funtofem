@@ -448,7 +448,7 @@ class OnewayAeroDriver:
         # run the forward analysis via iterate
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
-            self.solvers.flow.iterate(scenario, bodies, step=0)
+            self.solvers.flow.iterate(scenario, bodies, step=step)
         self.solvers.flow.post(scenario, bodies)
 
         # get functions to store the function values into the model
