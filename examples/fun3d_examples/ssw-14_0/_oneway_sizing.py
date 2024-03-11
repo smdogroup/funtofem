@@ -191,10 +191,9 @@ tacs_driver = OnewayStructDriver.prime_loads_from_file(
     transfer_settings=transfer_settings,
 )
 
-if test_derivatives: # test using the finite difference test
-   
-    #start_time = time.time()
-     
+if test_derivatives:  # test using the finite difference test
+    # start_time = time.time()
+
     # run the finite difference test
     max_rel_error = TestResult.derivative_test(
         "fun3d+tacs-ssw1",

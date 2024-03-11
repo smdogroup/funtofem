@@ -99,7 +99,7 @@ for irib in range(1, nribs + 1):
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001, upper=0.15, scale=100.0
     ).register_to(wing)
-    
+
 for ispar in range(1, nspars + 1):
     name = f"spar{ispar}"
     prop = caps2tacs.ShellProperty(
@@ -144,8 +144,10 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=500, coupling_frequency=50, uncoupled_steps=0)
-cruise.adjoint_steps = 100 # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+cruise = Scenario.steady("cruise", steps=1000, coupling_frequency=50, uncoupled_steps=0)
+cruise.adjoint_steps = (
+    100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+)
 cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
@@ -173,12 +175,14 @@ if not test_derivatives:
         for iconstr in range(1, section_num):
             left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
             right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-            adj_constr = (left_var - right_var) / left_var
-            adj_ratio = 0.15
+            # adj_constr = (left_var - right_var) / left_var
+            # adj_ratio = 0.15
+            adj_constr = left_var - right_var
+            adj_diff = 0.002
             adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-                lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+                lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
             ).register_to(f2f_model)
-    
+
 
 # ---------------------------------------------------->
 
@@ -192,7 +196,7 @@ solvers.flow = Fun3d14Interface(
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-12,
     forward_min_tolerance=1e-8,
-    adjoint_stop_tolerance=1e-10,
+    adjoint_stop_tolerance=1e-12,
     adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
@@ -216,13 +220,13 @@ f2f_driver = FUNtoFEMnlbgs(
     debug=global_debug_flag,
 )
 
-if test_derivatives: # test using the finite difference test
+if test_derivatives:  # test using the finite difference test
     # load the previous design
-    #design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt") 
-    #f2f_model.read_design_variables_file(comm, design_in_file)
-   
+    # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
+    # f2f_model.read_design_variables_file(comm, design_in_file)
+
     start_time = time.time()
-     
+
     # run the finite difference test
     max_rel_error = TestResult.derivative_test(
         "fun3d+tacs-ssw1",
@@ -236,7 +240,7 @@ if test_derivatives: # test using the finite difference test
     end_time = time.time()
     dt = end_time - start_time
     if comm.rank == 0:
-        print(f"total time for ssw derivative test is {dt} seconds", flush=True)    
+        print(f"total time for ssw derivative test is {dt} seconds", flush=True)
         print(f"max rel error = {max_rel_error}", flush=True)
 
     # exit before optimization
@@ -262,7 +266,7 @@ hot_start_file = history_file if hot_start else None
 # f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
-    #f2f_driver.print_summary()
+    # f2f_driver.print_summary()
     f2f_model.print_summary()
 
 manager = OptimizationManager(
@@ -280,7 +284,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level": 3})
+snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-8})
 
 sol = snoptimizer(
     opt_problem,

@@ -38,7 +38,11 @@ cruise.register_to(f2f_model)
 
 solvers = SolverManager(comm)
 solvers.flow = Fun3d14Interface(
-    comm, f2f_model, fun3d_dir="cfd", forward_stop_tolerance=1e-10, forward_min_tolerance=1e-6
+    comm,
+    f2f_model,
+    fun3d_dir="cfd",
+    forward_stop_tolerance=1e-10,
+    forward_min_tolerance=1e-6,
 )
 my_transfer_settings = TransferSettings(npts=200)
 fun3d_driver = OnewayAeroDriver(
