@@ -78,7 +78,6 @@ jobs:
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis=5.1.0 -q -y;
-          pip install cython;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} TACS_DIR=$TACS_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
