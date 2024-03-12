@@ -53,8 +53,10 @@ class Fun3d14Interface(SolverInterface):
         auto_coords=True,
         coord_test_override=False,
         debug=False,
-        forward_tolerance=1e-6,
-        adjoint_tolerance=1e-6,
+        forward_min_tolerance=1e-9,
+        forward_stop_tolerance=1e-6,
+        adjoint_min_tolerance=1e-8,
+        adjoint_stop_tolerance=1e-6,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -117,8 +119,11 @@ class Fun3d14Interface(SolverInterface):
         self._adjoint_done = False
         self._adjoint_resid = None
 
-        self.forward_tolerance = forward_tolerance
-        self.adjoint_tolerance = adjoint_tolerance
+        self.forward_tolerance = forward_stop_tolerance
+        self.adjoint_tolerance = adjoint_stop_tolerance
+
+        self.forward_min_tolerance = forward_min_tolerance
+        self.adjoint_min_tolerance = adjoint_min_tolerance
 
         # coordinate derivative testing option
         self._coord_test_override = coord_test_override
@@ -208,6 +213,8 @@ class Fun3d14Interface(SolverInterface):
         # Change directory to the directory associated with the scenario
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
+
+        self._forward_done = False
 
         # keep track of last successful step in case FUN3D exits early
         self._last_forward_step = 0
@@ -306,6 +313,11 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        # check if any aerodynamic functions
+        any_aerodynamic = any(
+            [func.analysis_type == "aerodynamic" for func in scenario.functions]
+        )
+
         ct = 0
         for function in scenario.functions:
             if function.adjoint:
@@ -314,7 +326,8 @@ class Fun3d14Interface(SolverInterface):
                 if function.analysis_type != "aerodynamic":
                     start = 1
                     stop = 1
-                    if ct == 1 and scenario.early_stopping:
+
+                    if ct == 1 and scenario.early_stopping and any_aerodynamic:
                         raise AssertionError(
                             "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
                         )
@@ -682,7 +695,7 @@ class Fun3d14Interface(SolverInterface):
             )
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if scalar_resid > self.forward_tolerance:
+        if scalar_resid > self.forward_min_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -711,6 +724,7 @@ class Fun3d14Interface(SolverInterface):
 
         # keep track of last succesful adjoint step
         self._last_adjoint_step = 0
+        self._adjoint_done = False
 
         if self.comm.rank == 0:
             print(
@@ -1119,7 +1133,7 @@ class Fun3d14Interface(SolverInterface):
             )
 
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
+        if abs(np.linalg.norm(resid).real) > self.adjoint_min_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
             )
