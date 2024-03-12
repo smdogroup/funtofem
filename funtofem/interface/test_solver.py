@@ -266,7 +266,7 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
+        for findex, func in enumerate(scenario.adjoint_functions):
             for vindex, var in enumerate(self.aero_variables):
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
@@ -756,7 +756,7 @@ class TestStructuralSolver(SolverInterface):
             struct_disps_ajp = body.get_struct_disps_ajp(scenario)
             struct_loads_ajp = body.get_struct_loads_ajp(scenario)
             if struct_disps_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     struct_loads_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
                     )
@@ -769,7 +769,7 @@ class TestStructuralSolver(SolverInterface):
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
 
             if struct_temps_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     struct_flux_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, struct_temps_ajp[:, k]
                     )
