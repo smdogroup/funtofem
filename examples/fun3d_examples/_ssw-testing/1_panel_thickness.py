@@ -145,7 +145,9 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0)
+cruise = Scenario.steady(
+    "cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0
+)
 cruise.adjoint_steps = (
     100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
@@ -286,7 +288,13 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-4, "Major Optimality tol" : 1e-4})
+snoptimizer = SNOPT(
+    options={
+        "Verify level": 0,
+        "Function precision": 1e-4,
+        "Major Optimality tol": 1e-4,
+    }
+)
 
 sol = snoptimizer(
     opt_problem,
