@@ -34,7 +34,7 @@ f2f_model = FUNtoFEMmodel("ssw-aoa")
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # register the wing body to the model
 wing.register_to(f2f_model)

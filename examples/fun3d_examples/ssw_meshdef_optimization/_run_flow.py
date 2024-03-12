@@ -20,7 +20,7 @@ q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
 f2f_model = FUNtoFEMmodel("ssw_flow")
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 wing.register_to(f2f_model)
 
 # Make a FUNtoFEM scenario

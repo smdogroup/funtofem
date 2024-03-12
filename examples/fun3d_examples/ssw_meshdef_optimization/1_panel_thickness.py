@@ -80,7 +80,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 #         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
 #     )
 # )
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)

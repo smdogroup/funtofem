@@ -128,7 +128,7 @@ f2f_model.flow = fun3d_model
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
