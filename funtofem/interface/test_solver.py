@@ -1050,8 +1050,6 @@ class TestResult:
         # central difference approximation
         variables = model.get_variables()
         # compute forward analysise f(x) and df/dx with adjoint
-        for ivar in range(nvariables):
-            variables[ivar].value += epsilon * dxds[ivar]
         driver.solve_forward()
         driver.solve_adjoint()
         gradients = model.get_function_gradients(all=True)
