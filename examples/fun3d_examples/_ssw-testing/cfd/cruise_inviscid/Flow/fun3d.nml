@@ -10,9 +10,6 @@
   eqn_type = 'compressible'
   viscous_terms = 'inviscid'
 /
-&turbulent_diffusion_models
-  turbulence_model = 'sa-neg'
-/
 &reference_physical_properties
   mach_number     = 0.5
   angle_of_attack = 2.0
