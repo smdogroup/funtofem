@@ -292,12 +292,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     adjoint_resid = abs(solver.get_adjoint_residual(step=step))
                     adjoint_tol = solver.adjoint_tolerance
 
-                    if self.comm.rank == 0 and adjoint_tol != np.inf:
-                        print(
-                            f"f2f scenario {scenario.name} adjoint resid = {adjoint_resid}",
-                            flush=True,
-                        )
-
                     if adjoint_resid > adjoint_tol:
                         all_converged = False
 

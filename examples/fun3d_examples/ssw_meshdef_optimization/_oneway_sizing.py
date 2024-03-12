@@ -75,7 +75,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # -------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)

@@ -295,19 +295,20 @@ class TestAerodynamicSolver(SolverInterface):
         if step == 0:
             return
 
-        for findex, func in enumerate(scenario.functions):
+        for ifunc, func in enumerate(scenario.adjoint_functions):
+            ifull = scenario.adjoint_map[ifunc]
             for body in bodies:
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                 if aero_loads_ajp is not None:
-                    aero_shape_term[:, findex] += np.dot(
-                        aero_loads_ajp[:, findex], self.scenario_data[scenario.id].b1
+                    aero_shape_term[:, ifull] += np.dot(
+                        aero_loads_ajp[:, ifunc], self.scenario_data[scenario.id].b1
                     )
 
                 aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
-                    aero_shape_term[:, findex] += np.dot(
-                        aero_flux_ajp[:, findex], self.scenario_data[scenario.id].b2
+                    aero_shape_term[:, ifull] += np.dot(
+                        aero_flux_ajp[:, ifunc], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -397,7 +398,7 @@ class TestAerodynamicSolver(SolverInterface):
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             if aero_loads_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     aero_disps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, aero_loads_ajp[:, k]
                     )
@@ -409,7 +410,7 @@ class TestAerodynamicSolver(SolverInterface):
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             if aero_flux_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     aero_temps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, aero_flux_ajp[:, k]
                     )
@@ -611,7 +612,7 @@ class TestStructuralSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
+        for findex, func in enumerate(scenario.adjoint_functions):
             for vindex, var in enumerate(self.struct_variables):
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
@@ -640,19 +641,21 @@ class TestStructuralSolver(SolverInterface):
         if step == 0:
             return
 
-        for findex, func in enumerate(scenario.functions):
+        adjoint_map = scenario.adjoint_map
+        for ifunc, func in enumerate(scenario.adjoint_functions):
+            ifull = adjoint_map[ifunc]
             for body in bodies:
                 struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
                 struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                 if struct_disps_ajp is not None:
-                    struct_shape_term[:, findex] += np.dot(
-                        struct_disps_ajp[:, findex], self.scenario_data[scenario.id].b1
+                    struct_shape_term[:, ifull] += np.dot(
+                        struct_disps_ajp[:, ifunc], self.scenario_data[scenario.id].b1
                     )
 
                 struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                 if struct_temps_ajp is not None:
-                    struct_shape_term[:, findex] += np.dot(
-                        struct_temps_ajp[:, findex], self.scenario_data[scenario.id].b2
+                    struct_shape_term[:, ifull] += np.dot(
+                        struct_temps_ajp[:, ifunc], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -1083,7 +1086,11 @@ class TestResult:
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
-            (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon if central_diff else (f_functions[ifunc] - m_functions[ifunc])/epsilon
+            (
+                (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+                if central_diff
+                else (f_functions[ifunc] - m_functions[ifunc]) / epsilon
+            )
             for ifunc in range(nfunctions)
         ]
 
