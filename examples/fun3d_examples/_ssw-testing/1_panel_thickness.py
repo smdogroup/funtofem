@@ -146,10 +146,10 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise_turb", steps=500, coupling_frequency=30, uncoupled_steps=0
+    "cruise_turb", steps=1500, coupling_frequency=30, uncoupled_steps=0
 )
 cruise.adjoint_steps = (
-    300  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+    150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
 cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
 
@@ -200,7 +200,7 @@ solvers.flow = Fun3d14Interface(
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
     forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=1e-12,
+    adjoint_stop_tolerance=1e-13,
     adjoint_min_tolerance=1e-10,
     debug=global_debug_flag,
 )
