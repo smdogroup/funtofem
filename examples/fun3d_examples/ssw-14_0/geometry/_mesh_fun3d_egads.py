@@ -43,9 +43,10 @@ mesh_aim.surface_aim.set_surface_mesh(
     max_dihedral_angle=15,
 )
 
-num_pts_up = 80
-num_pts_bot = 80
-num_pts_y = 110
+frac = 1.0
+num_pts_up = int(frac*80)
+num_pts_bot = int(frac*80)
+num_pts_y = int(frac*110)
 mesh_aim.surface_aim.aim.input.Mesh_Sizing = {
     "teEdgeMesh": {
         "numEdgePoints": num_pts_y,
