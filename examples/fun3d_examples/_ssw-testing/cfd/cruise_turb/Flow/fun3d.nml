@@ -8,7 +8,7 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'inviscid'
+  viscous_terms = 'turbulent'
 /
 &turbulent_diffusion_models
   turbulence_model = 'sa-neg'
@@ -61,6 +61,9 @@
 /
 &elasticity_gmres
   elasticity = 2
+  preconditioner_iters = 10
+  nsearch = 100 ! num GMRES steps
+  nrestarts = 15 ! leads to 50*15 = 750 grid iterations
   tol = 1e-22
   tol_abs = 1e-30
 /

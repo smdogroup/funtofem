@@ -40,7 +40,7 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing1-turb")
+f2f_model = FUNtoFEMmodel("ssw-sizing1")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
@@ -146,7 +146,7 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise_turb", steps=500, coupling_frequency=30, uncoupled_steps=0
+    "cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0
 )
 cruise.adjoint_steps = (
     100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
