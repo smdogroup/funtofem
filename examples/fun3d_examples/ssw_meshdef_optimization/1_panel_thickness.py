@@ -9,7 +9,7 @@ from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
-import os
+import os, time
 
 comm = MPI.COMM_WORLD
 
@@ -19,6 +19,8 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 # Optimization options
 hot_start = False
 store_history = True
+
+test_derivatives = False
 
 nprocs_tacs = 8
 
@@ -142,11 +144,15 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("pw-cruise", steps=5000, uncoupled_steps=0)
+cruise = Scenario.steady("cruise", steps=1000, coupling_frequency=50, uncoupled_steps=0)
+cruise.adjoint_steps = (
+    100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+)
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
-ksfailure = Function.ksfailure(ks_weight=150.0, safety_factor=1.5).optimize(
+ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 cruise.include(ksfailure).include(mass)
@@ -160,19 +166,22 @@ cruise.register_to(f2f_model)
 # <----------------------------------------------------
 
 # skin thickness adjacency constraints
-variables = f2f_model.get_variables()
-section_prefix = ["rib", "OML"]
-section_nums = [nribs, nOML]
-for isection, prefix in enumerate(section_prefix):
-    section_num = section_nums[isection]
-    for iconstr in range(1, section_num):
-        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
-        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
-        ).register_to(f2f_model)
+if not test_derivatives:
+    variables = f2f_model.get_variables()
+    section_prefix = ["rib", "OML"]
+    section_nums = [nribs, nOML]
+    for isection, prefix in enumerate(section_prefix):
+        section_num = section_nums[isection]
+        for iconstr in range(1, section_num):
+            left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
+            right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+            # adj_constr = (left_var - right_var) / left_var
+            # adj_ratio = 0.15
+            adj_constr = left_var - right_var
+            adj_diff = 0.002
+            adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+                lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
+            ).register_to(f2f_model)
 
 # ---------------------------------------------------->
 
@@ -180,13 +189,14 @@ for isection, prefix in enumerate(section_prefix):
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-pw1.2",
     fun3d_dir="cfd",
-    forward_tolerance=1e-7,
-    adjoint_tolerance=1e-4,
+    forward_stop_tolerance=1e-12,
+    forward_min_tolerance=1e-8,
+    adjoint_stop_tolerance=1e-12,
+    adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
@@ -208,7 +218,32 @@ f2f_driver = FUNtoFEMnlbgs(
     debug=global_debug_flag,
 )
 
-# ---------------------------------------------------->
+if test_derivatives:  # test using the finite difference test
+    # load the previous design
+    # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
+    # f2f_model.read_design_variables_file(comm, design_in_file)
+
+    start_time = time.time()
+
+    # run the finite difference test
+    max_rel_error = TestResult.derivative_test(
+        "fun3d+tacs-ssw1",
+        model=f2f_model,
+        driver=f2f_driver,
+        status_file="1-derivs.txt",
+        complex_mode=False,
+        epsilon=1e-4,
+    )
+
+    end_time = time.time()
+    dt = end_time - start_time
+    if comm.rank == 0:
+        print(f"total time for ssw derivative test is {dt} seconds", flush=True)
+        print(f"max rel error = {max_rel_error}", flush=True)
+
+    # exit before optimization
+    exit()
+
 
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------
@@ -236,7 +271,7 @@ manager = OptimizationManager(
     f2f_driver,
     design_out_file=design_out_file,
     hot_start=hot_start,
-    debug=global_debug_flag,
+    debug=True,
     hot_start_file=hot_start_file,
 )
 
@@ -248,6 +283,7 @@ manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
 snoptimizer = SNOPT(options={"Verify level": 3})
+# snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-8})
 
 sol = snoptimizer(
     opt_problem,
