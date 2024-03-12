@@ -18,7 +18,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 
 # Optimization options
-hot_start = True
+hot_start = False
 store_history = True
 
 test_derivatives = False
@@ -150,6 +150,7 @@ cruise.adjoint_steps = (
     100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
 cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
+
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
