@@ -3,6 +3,7 @@
 
 Run a coupled optimization of the panel thicknesses of the wing structure.
 No shape variables are included in this optimization.
+This example is finished and converged well in SNOPT
 """
 
 from pyoptsparse import SNOPT, Optimization
