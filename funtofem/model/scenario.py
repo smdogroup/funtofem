@@ -257,6 +257,22 @@ class Scenario(Base):
         self.functions.append(function)
         # return the object for method cascading
         return self
+    
+    @property
+    def adjoint_functions(self) -> list:
+        """return a list of the adjoint functions only"""
+        return [func for func in self.functions if func.adjoint]
+    
+    @property
+    def adjoint_map(self) -> dict:
+        """return an int map from adjoint function index to full function list index"""
+        adj_dict = {}
+        adj_ct = 0
+        for ifunc,func in enumerate(self.functions):
+            if func.adjoint:
+                adj_dict[adj_ct] = ifunc
+                adj_ct += 1
+        return adj_dict
 
     def count_functions(self):
         """
