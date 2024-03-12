@@ -464,6 +464,7 @@ class Fun3dInterface(SolverInterface):
         """
 
         nfunctions = scenario.count_adjoint_functions()
+        adjoint_map = scenario.adjoint_map
         for ibody, body in enumerate(bodies, 1):
             aero_nnodes = body.get_num_aero_nodes()
 
@@ -479,13 +480,14 @@ class Fun3dInterface(SolverInterface):
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 for ifunc in range(nfunctions):
-                    aero_shape_term[0::3, ifunc] += (
+                    ifull = adjoint_map[ifunc]
+                    aero_shape_term[0::3, ifull] += (
                         dGdxa0_x[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[1::3, ifunc] += (
+                    aero_shape_term[1::3, ifull] += (
                         dGdxa0_y[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[2::3, ifunc] += (
+                    aero_shape_term[2::3, ifull] += (
                         dGdxa0_z[:, ifunc] * scenario.flow_dt
                     )
 

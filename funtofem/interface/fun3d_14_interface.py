@@ -312,67 +312,62 @@ class Fun3d14Interface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
-        
+
         # check if any aerodynamic functions
         any_aerodynamic = any(
             [func.analysis_type == "aerodynamic" for func in scenario.functions]
         )
 
         ct = 0
-        for function in scenario.functions:
-            if function.adjoint:
-                ct += 1
-                unsteady = not (scenario.steady)
-                if function.analysis_type != "aerodynamic":
-                    start = 1
-                    stop = 1
+        for function in scenario.adjoint_functions:
+            ct += 1
+            unsteady = not (scenario.steady)
+            if function.analysis_type != "aerodynamic":
+                start = 1
+                stop = 1
 
-                    if ct == 1 and scenario.early_stopping and any_aerodynamic:
-                        raise AssertionError(
-                            "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
-                        )
+                if ct == 1 and scenario.early_stopping and any_aerodynamic:
+                    raise AssertionError(
+                        "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
+                    )
+            else:
+                start = 1 if function.start is None else function.start
+                if unsteady:
+                    # default aero function to include all time steps for the unsteady case
+                    stop = scenario.steps if function.stop is None else function.stop
                 else:
-                    start = 1 if function.start is None else function.start
-                    if unsteady:
-                        # default aero function to include all time steps for the unsteady case
-                        stop = (
-                            scenario.steps if function.stop is None else function.stop
-                        )
-                    else:
-                        stop = 1 if function.stop is None else function.stop
+                    stop = 1 if function.stop is None else function.stop
 
-                ftype = -1 if function.averaging else 1
+            ftype = -1 if function.averaging else 1
 
-                interface.design_push_composite_func(
-                    function.id,
-                    1,
-                    start,
-                    stop,
-                    1.0,
-                    0.0,
-                    1.0,
-                    function.value,
-                    ftype,
-                    100.0,
-                    -100.0,
-                )
+            interface.design_push_composite_func(
+                function.id,
+                1,
+                start,
+                stop,
+                1.0,
+                0.0,
+                1.0,
+                function.value,
+                ftype,
+                100.0,
+                -100.0,
+            )
 
-                if function.body == -1:
-                    boundary = 0
-                else:
-                    boundary = bodies[function.body].boundary
+            if function.body == -1:
+                boundary = 0
+            else:
+                boundary = bodies[function.body].boundary
 
-                # The funtofem function in FUN3D acts as any adjoint function
-                # that isn't dependent on FUN3D variables
-                name = (
-                    function.name
-                    if function.analysis_type == "aerodynamic"
-                    else "funtofem"
-                )
+            # The funtofem function in FUN3D acts as any adjoint function
+            # that isn't dependent on FUN3D variables
+            name = (
+                function.name if function.analysis_type == "aerodynamic" else "funtofem"
+            )
 
-                interface.design_push_component_func(
-                    function.id, 1, boundary, name, function.value, 1.0, 0.0, 1.0
-                )
+            interface.design_push_component_func(
+                function.id, 1, boundary, name, function.value, 1.0, 0.0, 1.0
+            )
 
         return
 
@@ -455,7 +450,7 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies. Bodies contains unused but necessary rigid motion variables
         """
 
-        for func, function in enumerate(scenario.functions):
+        for ifunc, function in enumerate(scenario.functions):
             if function.adjoint:
                 for var in scenario.get_active_variables():
                     if var.id <= 6:
@@ -463,7 +458,7 @@ class Fun3d14Interface(SolverInterface):
                             function.id, var.id
                         )
                     elif var.name.lower() == "dynamic pressure":
-                        deriv = self.comm.reduce(self.dFdqinf[func])
+                        deriv = self.comm.reduce(self.dFdqinf[ifunc])
 
                     # if abs(deriv) > 1e10:  # for adjoint divergence
                     #    raise RuntimeError(
@@ -490,6 +485,7 @@ class Fun3d14Interface(SolverInterface):
         """
 
         nfunctions = scenario.count_adjoint_functions()
+        adjoint_map = scenario.adjoint_map
         for ibody, body in enumerate(bodies, 1):
             aero_nnodes = body.get_num_aero_nodes()
 
@@ -505,13 +501,14 @@ class Fun3d14Interface(SolverInterface):
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 for ifunc in range(nfunctions):
-                    aero_shape_term[0::3, ifunc] += (
+                    ifull = adjoint_map[ifunc]
+                    aero_shape_term[0::3, ifull] += (
                         dGdxa0_x[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[1::3, ifunc] += (
+                    aero_shape_term[1::3, ifull] += (
                         dGdxa0_y[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[2::3, ifunc] += (
+                    aero_shape_term[2::3, ifull] += (
                         dGdxa0_z[:, ifunc] * scenario.flow_dt
                     )
 
