@@ -13,7 +13,7 @@ to solve the structural sizing optimization problem.
 Local machine optimization for the panel thicknesses using nribs-1 OML panels and nribs-1 LE panels
 """
 
-#from pyoptsparse import SLSQP, Optimization
+# from pyoptsparse import SLSQP, Optimization
 from pyoptsparse import SNOPT, Optimization
 
 # script inputs
