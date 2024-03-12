@@ -300,7 +300,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                             f"f2f scenario {scenario.name} adjoint resid = {adjoint_resid}",
                             flush=True,
                         )
-      
+
                     if adjoint_resid > adjoint_tol:
                         all_converged = False
 
