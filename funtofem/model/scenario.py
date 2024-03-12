@@ -274,6 +274,11 @@ class Scenario(Base):
                 adj_ct += 1
         return adj_dict
 
+    @property
+    def reverse_adjoint_map(self) -> dict:
+        """return an int map from full function index to adjoint function index"""
+        return {key: self.adjoint_map[key] for key in self.adjoint_map}
+
     def count_functions(self):
         """
         Returns the number of functions in this scenario
