@@ -1032,6 +1032,7 @@ class TestResult:
         driver,
         status_file,
         epsilon=1e-5,
+        central_diff=True,
         both_adjoint=False,  # have to call adjoint in both times for certain drivers
     ):
         """
@@ -1062,23 +1063,31 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # compute f(x-h)
-        for ivar in range(nvariables):
-            variables[ivar].value -= epsilon * dxds[ivar]
-        driver.solve_forward()
-        if both_adjoint:
-            driver.solve_adjoint()
-        i_functions = [func.value.real for func in model.get_functions(all=True)]
+        if central_diff:
+            for ivar in range(nvariables):
+                variables[ivar].value -= epsilon * dxds[ivar]
+            driver.solve_forward()
+            if both_adjoint:
+                driver.solve_adjoint()
+            i_functions = [func.value.real for func in model.get_functions(all=True)]
+        else:
+            i_functions = [None for func in model.get_functions()]
 
         # compute f(x+h)
+        alpha = 2 if central_diff else 1
         for ivar in range(nvariables):
-            variables[ivar].value += 2 * epsilon * dxds[ivar]
+            variables[ivar].value += alpha * epsilon * dxds[ivar]
         driver.solve_forward()
         if both_adjoint:
             driver.solve_adjoint()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
-            (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+            (
+                (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+                if central_diff
+                else (f_functions[ifunc] - m_functions[ifunc]) / epsilon
+            )
             for ifunc in range(nfunctions)
         ]
 
@@ -1104,7 +1113,7 @@ class TestResult:
             m_funcs=m_functions,
             f_funcs=f_functions,
             epsilon=epsilon,
-            method="finite_diff",
+            method="central_diff" if central_diff else "finite_diff",
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
