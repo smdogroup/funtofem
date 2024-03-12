@@ -61,6 +61,7 @@
 /
 &elasticity_gmres
   elasticity = 2
+  nrestarts = 20
   tol = 1e-20
   tol_abs = 1e-30
 /
