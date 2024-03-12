@@ -144,7 +144,7 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise_inviscid", steps=2000, coupling_frequency=30, uncoupled_steps=0)
+cruise = Scenario.steady("cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0)
 cruise.adjoint_steps = (
     100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
@@ -195,9 +195,9 @@ solvers.flow = Fun3d14Interface(
     f2f_model,
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-16,
-    forward_min_tolerance=1e-8,
-    adjoint_stop_tolerance=1e-15,
-    adjoint_min_tolerance=1e-8,
+    forward_min_tolerance=1e-12,
+    adjoint_stop_tolerance=1e-16,
+    adjoint_min_tolerance=1e-12,
     debug=global_debug_flag,
 )
 # fun3d_project_name = "ssw-pw1.2"
@@ -284,7 +284,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-8})
+snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-9})
 
 sol = snoptimizer(
     opt_problem,
