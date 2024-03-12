@@ -23,6 +23,8 @@ interface sharpTE in 1
 interface LEchop in 1
 interface TEchop in 1
 
+interface wingCap in 0
+
 interface midplane in 1 #0 is off, 1 is upper, 2 is lower
 interface chopMode in 1 #0 is off, 1 is LE, 2 is middle, 3 is TE
 
@@ -243,7 +245,12 @@ select face
    
 # Rule all of the sections together
 #rule 0
-blend
+#blend 0 -1;0.75
+ifthen wingCap EQ 0
+   blend
+elseif wingCap EQ 1
+   blend 0 -1;0.75
+endif
 
 ifthen midplane EQ 1
    select face
@@ -282,4 +289,4 @@ udprim editAttr filename <<
 >>
 
 end
-||||||||||||||
+|||||||||||||||

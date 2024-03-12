@@ -35,19 +35,55 @@ global_max = 10
 global_min = 0.1
 
 mesh_aim.surface_aim.set_surface_mesh(
-    edge_pt_min=15,
-    edge_pt_max=20,
+    edge_pt_min=10,
+    edge_pt_max=200,
     mesh_elements="Mixed",
-    global_mesh_size=0.5,
+    global_mesh_size=0.0,
     max_surf_offset=0.01,
     max_dihedral_angle=15,
 )
+
+num_pts_up = 80
+num_pts_bot = 80
+num_pts_y = 110
+mesh_aim.surface_aim.aim.input.Mesh_Sizing = {
+    "teEdgeMesh": {
+        "numEdgePoints": num_pts_y,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0, 0.05],
+    },
+    "leEdgeMesh": {
+        "numEdgePoints": num_pts_y,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0, 0.05],
+    },
+    "tipUpperEdgeMesh": {
+        "numEdgePoints": num_pts_up,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0.005, 0.002],
+    },
+    "tipLowerEdgeMesh": {
+        "numEdgePoints": num_pts_bot,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0.002, 0.005],
+    },
+    "rootUpperEdgeMesh": {
+        "numEdgePoints": num_pts_up,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0.005, 0.002],
+    },
+    "rootLowerEdgeMesh": {
+        "numEdgePoints": num_pts_bot,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0.002, 0.005],
+    },
+}
 
 if case == "inviscid":
     Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
 else:
     mesh_aim.volume_aim.set_boundary_layer(
-        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
+        initial_spacing=1e-5, max_layers=50, thickness=0.05, use_quads=True
     )
     Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
 
@@ -57,8 +93,8 @@ FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
 
 mesh_aim.saveDictOptions(FluidMeshOptions)
 
-Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
-Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+Fun3dBC.SymmetryY(caps_group="symmetry").register_to(fun3d_model)
+Fun3dBC.Farfield(caps_group="farfield").register_to(fun3d_model)
 
 fun3d_model.setup()
 fun3d_aim.pre_analysis()
