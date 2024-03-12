@@ -14,7 +14,7 @@ import os, time
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
+csm_path = os.path.join(base_dir, "geometry_orig", "ssw.csm")
 
 # Optimization options
 hot_start = False
@@ -144,7 +144,7 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=2000, coupling_frequency=30, uncoupled_steps=0)
+cruise = Scenario.steady("cruise_inviscid", steps=2000, coupling_frequency=30, uncoupled_steps=0)
 cruise.adjoint_steps = (
     200  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
