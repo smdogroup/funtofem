@@ -3,6 +3,7 @@
 
 Run a coupled optimization of the geometric twist at each station and the 
 panel thicknesses.
+TODO : need to finish this example
 """
 
 from pyoptsparse import SLSQP, Optimization

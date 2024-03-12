@@ -3,6 +3,7 @@
 
 Run a coupled optimization of the panel thicknesses of the wing structure.
 No shape variables are included in this optimization.
+This example is finished and converged well in SNOPT
 """
 
 from pyoptsparse import SNOPT, Optimization
@@ -82,7 +83,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 #         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
 #     )
 # )
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -144,11 +145,12 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=1000, coupling_frequency=50, uncoupled_steps=0)
+cruise = Scenario.steady("cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0)
 cruise.adjoint_steps = (
     100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
-cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
+
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
@@ -194,10 +196,10 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_stop_tolerance=1e-12,
-    forward_min_tolerance=1e-8,
-    adjoint_stop_tolerance=1e-12,
-    adjoint_min_tolerance=1e-8,
+    forward_stop_tolerance=1e-15,
+    forward_min_tolerance=1e-12,
+    adjoint_stop_tolerance=4e-16,
+    adjoint_min_tolerance=1e-12,
     debug=global_debug_flag,
 )
 # fun3d_project_name = "ssw-pw1.2"
@@ -263,7 +265,7 @@ store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-# f2f_model.read_design_variables_file(comm, design_in_file)
+f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
     # f2f_driver.print_summary()
@@ -284,7 +286,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-8})
+snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-4, "Major Optimality tol" : 1e-4})
 
 sol = snoptimizer(
     opt_problem,
