@@ -30,7 +30,7 @@ import os
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "geometry_orig", "ssw.csm")
+csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 
 nprocs = 4
 
@@ -240,7 +240,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level" : 3, "Function precision" : 1e-9})
+snoptimizer = SNOPT()
 
 sol = snoptimizer(
     opt_problem,
