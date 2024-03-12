@@ -142,11 +142,15 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("pw-cruise", steps=5000, uncoupled_steps=0)
+cruise = Scenario.steady("cruise", steps=1000, coupling_frequency=50, uncoupled_steps=0)
+cruise.adjoint_steps = (
+    100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+)
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
-ksfailure = Function.ksfailure(ks_weight=150.0, safety_factor=1.5).optimize(
+ksfailure = Function.ksfailure(ks_weight=50.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 cruise.include(ksfailure).include(mass)
@@ -168,10 +172,12 @@ for isection, prefix in enumerate(section_prefix):
     for iconstr in range(1, section_num):
         left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
         right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
+        # adj_constr = (left_var - right_var) / left_var
+        # adj_ratio = 0.15
+        adj_constr = left_var - right_var
+        adj_diff = 0.002
         adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+            lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
         ).register_to(f2f_model)
 
 # ---------------------------------------------------->
@@ -180,13 +186,14 @@ for isection, prefix in enumerate(section_prefix):
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-pw1.2",
     fun3d_dir="cfd",
-    forward_tolerance=1e-7,
-    adjoint_tolerance=1e-4,
+    forward_stop_tolerance=1e-12,
+    forward_min_tolerance=1e-8,
+    adjoint_stop_tolerance=1e-12,
+    adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
@@ -208,7 +215,6 @@ f2f_driver = FUNtoFEMnlbgs(
     debug=global_debug_flag,
 )
 
-# ---------------------------------------------------->
 
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------
@@ -248,6 +254,7 @@ manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
 snoptimizer = SNOPT(options={"Verify level": 3})
+# snoptimizer = SNOPT(options={"Verify level": 0, "Function precision": 1e-8})
 
 sol = snoptimizer(
     opt_problem,

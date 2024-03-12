@@ -312,7 +312,7 @@ class Fun3d14Interface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
-        
+
         # check if any aerodynamic functions
         any_aerodynamic = any(
             [func.analysis_type == "aerodynamic" for func in scenario.functions]
