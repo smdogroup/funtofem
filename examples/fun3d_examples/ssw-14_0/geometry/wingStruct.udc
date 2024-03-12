@@ -50,7 +50,7 @@ udparg $/wingSolid twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
 udparg $/wingSolid chord chord sspan sspan camber camber xCamber xCamber
 udparg $/wingSolid LEchop LEchop TEchop TEchop 
 udparg $/wingSolid chopMode chopMode
-udprim $/wingSolid midplane midplane wingCap 0
+udprim $/wingSolid midplane midplane
 store wingSolid
 
 # Make the spars

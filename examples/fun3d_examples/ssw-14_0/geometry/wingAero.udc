@@ -31,12 +31,12 @@ udparg $/wingSolid tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
 udparg $/wingSolid twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
 udparg $/wingSolid chord chord sspan sspan camber camber xCamber xCamber
 udparg $/wingSolid chopMode 0
-udprim $/wingSolid midplane 0 wingCap 1
+udprim $/wingSolid midplane 0
 store wingSolid
 
 box -ff -ff -ff 2*ff 2*ff 2*ff
-   attribute capsGroup $farfield
-   attribute capsMesh $farfieldMesh
+   attribute capsGroup $Farfield
+   attribute capsMesh $Farfield
    attribute AFLR_GBC $FARFIELD_UG3_GBC
    attribute AFLR4_CMP_ID 1
    attribute AFLR4_Scale_Factor 10.0
@@ -60,29 +60,20 @@ select edge $tagComp1 $leEdge
 select edge $tagComp1 $teEdge
    attribute capsMesh $teEdgeMesh
 
+select edge $tagComp $tipEdge
+   attribute capsMesh $tipEdgeMesh
+
 select face $capsGroup $*
 select not
-   attribute capsGroup $symmetry
-   attribute capsMesh $symmetryMesh
+   attribute capsGroup $SymmetryY
+   attribute capsMesh $SymmetryY
    attribute AFLR4_CMP_ID 2
    attribute AFLR_GBC $BL_INT_UG3_GBC
 
 udprim editAttr filename <<
-   EDGE ADJ2FACE tagComp1=wingUpper
-   AND ADJ2FACE capsGroup=symmetry
-   SET capsMesh=rootUpperEdgeMesh
-
-   EDGE ADJ2FACE tagComp1=wingLower
-   AND ADJ2FACE capsGroup=symmetry
-   SET capsMesh=rootLowerEdgeMesh
-
-   EDGE ADJ2FACE tagComp1=wingUpper
-   AND ADJ2FACE tagComp=tip
-   SET capsMesh=tipUpperEdgeMesh
-
-   EDGE ADJ2FACE tagComp1=wingLower
-   AND ADJ2FACE tagComp=tip
-   SET capsMesh=tipLowerEdgeMesh
+   EDGE ADJ2FACE capsGroup=wing
+   AND ADJ2FACE capsGroup=SymmetryY
+   SET capsMesh=rootEdgeMesh
 >>
 
 select body
@@ -93,4 +84,4 @@ rotatex 90 0 0
 rotatez -aoa 0 0
 
 end
-||||||||
+|||||||

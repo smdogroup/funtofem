@@ -34,8 +34,8 @@ if comm.rank == 0:
     aim = egads_aim.aim
     aim.input.Mesh_Sizing = {
         "chord": {"numEdgePoints": 20},
-        "span": {"numEdgePoints": 10},
-        "vert": {"numEdgePoints": 10},
+        "span": {"numEdgePoints": 8},
+        "vert": {"numEdgePoints": 4},
         # "LEribFace": {"tessParams": [0.01, 0.1, 3]},
         # "LEribEdge": {"numEdgePoints": 20},
     }

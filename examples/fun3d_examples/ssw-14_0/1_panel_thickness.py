@@ -14,10 +14,10 @@ import os, time
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csm_path = os.path.join(base_dir, "geometry_orig", "ssw.csm")
+csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 
 # Optimization options
-hot_start = False
+hot_start = True
 store_history = True
 
 test_derivatives = False
@@ -196,7 +196,7 @@ solvers.flow = Fun3d14Interface(
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
     forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=3e-16,
+    adjoint_stop_tolerance=4e-16,
     adjoint_min_tolerance=1e-12,
     debug=global_debug_flag,
 )
