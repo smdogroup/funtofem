@@ -7,8 +7,8 @@ comm = MPI.COMM_WORLD
 
 # Set whether to build an inviscid or viscous mesh
 # ------------------------------------------------
-# case = "inviscid"
-case = "turbulent"
+case = "inviscid"
+#case = "turbulent"
 if case == "inviscid":
     project_name = "ssw-inviscid"
 else:  # turbulent

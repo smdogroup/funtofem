@@ -146,9 +146,9 @@ tacs_aim.pre_analysis()
 # make a funtofem scenario
 cruise = Scenario.steady("cruise_inviscid", steps=2000, coupling_frequency=30, uncoupled_steps=0)
 cruise.adjoint_steps = (
-    200  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+    100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
-cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=50)
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
 )
@@ -194,7 +194,7 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_stop_tolerance=1e-17,
+    forward_stop_tolerance=1e-16,
     forward_min_tolerance=1e-8,
     adjoint_stop_tolerance=1e-15,
     adjoint_min_tolerance=1e-8,
