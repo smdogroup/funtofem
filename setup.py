@@ -96,8 +96,9 @@ setup(
     description="Aerothermoelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
+    python_requires=">=3.9.0",
     extras_require=optional_dependencies,
-    install_requires=["numpy", "mpi4py>=3.1.1"],
+    install_requires=["numpy<2.0.0", "mpi4py>=3.1.1"],
     packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )
