@@ -1083,7 +1083,11 @@ class TestResult:
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
-            (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon if central_diff else (f_functions[ifunc] - m_functions[ifunc])/epsilon
+            (
+                (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+                if central_diff
+                else (f_functions[ifunc] - m_functions[ifunc]) / epsilon
+            )
             for ifunc in range(nfunctions)
         ]
 
