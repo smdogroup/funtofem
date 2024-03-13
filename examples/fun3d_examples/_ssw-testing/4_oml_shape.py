@@ -282,7 +282,7 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "design-3.txt")
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
 design_out_file = os.path.join(base_dir, "design", "design-4.txt")
 
 design_folder = os.path.join(base_dir, "design")
