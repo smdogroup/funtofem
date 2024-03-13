@@ -32,14 +32,14 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
         # make two scenarios, each with same functions (intend to have identical functions in general case)
         # make the first scenario
         test_scenario1 = Scenario.steady("test1", steps=20)
-        Function.ksfailure().register_to(test_scenario1)
-        Function.mass().register_to(test_scenario1)
+        Function.test_aero().register_to(test_scenario1)
+        Function.test_struct().register_to(test_scenario1)
         test_scenario1.register_to(model)
 
         # make the second scenario
         test_scenario2 = Scenario.steady("test2", steps=20)
-        Function.ksfailure().register_to(test_scenario2)
-        Function.mass().register_to(test_scenario2)
+        Function.test_aero().register_to(test_scenario2)
+        Function.test_struct().register_to(test_scenario2)
         test_scenario2.register_to(model)
 
         # build the solvers and driver
@@ -72,14 +72,14 @@ class MultiScenarioFrameworkTest(unittest.TestCase):
         # make two scenarios, each with same functions (intend to have identical functions in general case)
         # make the first scenario
         test_scenario1 = Scenario.steady("test1", steps=20)
-        Function.ksfailure().register_to(test_scenario1)
-        Function.mass().register_to(test_scenario1)
+        Function.test_aero().register_to(test_scenario1)
+        Function.test_struct().register_to(test_scenario1)
         test_scenario1.register_to(model)
 
         # make the second scenario
         test_scenario2 = Scenario.steady("test2", steps=20)
-        Function.ksfailure().register_to(test_scenario2)
-        Function.mass().register_to(test_scenario2)
+        Function.test_aero().register_to(test_scenario2)
+        Function.test_struct().register_to(test_scenario2)
         test_scenario2.register_to(model)
 
         # build the solvers and driver

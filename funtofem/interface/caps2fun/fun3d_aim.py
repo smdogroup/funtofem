@@ -204,7 +204,7 @@ class Fun3dAim:
             else:
                 self._first_grid_move = False
         if self.comm.rank == self.root:
-            print(f"copying grid files")
+            print(f"F2F - copying grid files", flush=True)
             src = self.grid_file
             for dest in self.grid_filepaths:
                 shutil.copy(src, dest)
@@ -212,7 +212,7 @@ class Fun3dAim:
         # also move the mapbc files to each scenario from fun3d aim dir
         if include_mapbc:
             if self.comm.rank == self.root:
-                print(f"copying mapbc files")
+                print(f"F2F - copying mapbc files", flush=True)
                 src = self.mapbc_file
                 for dest in self.mapbc_filepaths:
                     shutil.copy(src, dest)

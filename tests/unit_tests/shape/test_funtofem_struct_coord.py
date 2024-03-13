@@ -50,6 +50,7 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         # build the scenario
         scenario = Scenario.steady("test", steps=200).include(Function.ksfailure())
         scenario.include(Function.drag()).include(Function.lift())
+        Function.mass().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver

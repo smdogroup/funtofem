@@ -194,9 +194,9 @@ class FUNtoFEMmodel(object):
 
                 # create a matching shape variable in caps2tacs
                 if matching_despmtr and not matching_shape_dv:
-                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
-                        self.structural
-                    )
+                    caps2tacs.ShapeVariable(
+                        name=var.name, value=var.value, active=var.active
+                    ).register_to(self.structural)
         return
 
     def _send_flow_variables(self, base):
@@ -280,13 +280,13 @@ class FUNtoFEMmodel(object):
 
         elif isinstance(names, str):
             # get the one variable associated with that name
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name == names:
                     return var
 
         elif isinstance(names, list) and isinstance(names[0], str):
             varlist = []
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name in names:
                     varlist.append(var)
             return varlist

@@ -712,13 +712,14 @@ class Body(Base):
 
         # Count up the number of functions for this scenario
         nf = scenario.count_adjoint_functions()
+        nf_all = scenario.count_functions()
         self.aitken_init = True
 
         # Allocate the adjoint variables and internal body variables required
         ns = 3 * self.struct_nnodes
         na = 3 * self.aero_nnodes
-        self.aero_shape_term[scenario.id] = np.zeros((na, nf), dtype=self.dtype)
-        self.struct_shape_term[scenario.id] = np.zeros((ns, nf), dtype=self.dtype)
+        self.aero_shape_term[scenario.id] = np.zeros((na, nf_all), dtype=self.dtype)
+        self.struct_shape_term[scenario.id] = np.zeros((ns, nf_all), dtype=self.dtype)
 
         if self.transfer is not None:
             ns = 3 * self.struct_nnodes

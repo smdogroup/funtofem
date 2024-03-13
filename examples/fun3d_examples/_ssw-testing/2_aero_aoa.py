@@ -3,7 +3,6 @@
 
 Run a coupled optimization of the angle of attack to minimize lift (L-L_*)^2.
 No shape variables are included in this optimization.
-TODO : haven't finished these examples aren't finished yet
 """
 
 from pyoptsparse import SNOPT, Optimization
@@ -22,7 +21,7 @@ hot_start = False
 store_history = True
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
 design_out_file = os.path.join(base_dir, "design", "design-2.txt")
 
 design_folder = os.path.join(base_dir, "design")
@@ -80,7 +79,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -143,7 +142,7 @@ wing.register_to(f2f_model)
 # ---------------------------------------------------->
 tacs_aim.setup_aim()
 # Reload the previous design
-# f2f_model.read_design_variables_file(comm, design_in_file)
+f2f_model.read_design_variables_file(comm, design_in_file)
 
 # INITIAL STRUCTURE MESH, SINCE NO STRUCT SHAPE VARS
 # <----------------------------------------------------
@@ -156,14 +155,18 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=1500, uncoupled_steps=0)
+cruise = Scenario.steady(
+    "cruise_inviscid", steps=500, coupling_frequency=30, uncoupled_steps=0
+)
+cruise.adjoint_steps = 100
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
 mass = Function.mass()
 cl_cruise = Function.lift(body=0)
 aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=4.0, upper=15)
-cruise.include(ksfailure).include(cl_cruise).include(mass)
+cruise.include(cl_cruise).include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -205,13 +208,14 @@ lift_obj.set_name(f"LiftObj").optimize(
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-turb",
     fun3d_dir="cfd",
-    forward_tolerance=1e-9,
-    adjoint_tolerance=1e-6,
+    forward_stop_tolerance=1e-15,
+    forward_min_tolerance=1e-12,
+    adjoint_stop_tolerance=4e-16,
+    adjoint_min_tolerance=1e-12,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
@@ -252,7 +256,13 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify  level": 3})
+snoptimizer = SNOPT(
+    options={
+        "Verify level": 0,
+        "Function precision": 1e-4,
+        "Major Optimality tol": 1e-4,
+    }
+)
 
 sol = snoptimizer(
     opt_problem,
