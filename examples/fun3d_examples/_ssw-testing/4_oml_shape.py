@@ -67,9 +67,15 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # Set up FUN3D model, AIMs, and turn on the flow view
 # ------------------------------------------------
 fun3d_model = Fun3dModel.build(
-    csm_file=csm_path, comm=comm, project_name="ssw-turb", mesh_morph=True, verbosity=0
+    csm_file=csm_path,
+    comm=comm,
+    project_name="ssw-inviscid",
+    verbosity=0,
+    mesh_morph=True,
+    volume_mesh="aflr3",
+    surface_mesh="egads",
 )
-aflr_aim = fun3d_model.aflr_aim
+mesh_aim = fun3d_model.mesh_aim
 fun3d_aim = fun3d_model.fun3d_aim
 fun3d_aim.set_config_parameter("view:flow", 1)
 fun3d_aim.set_config_parameter("view:struct", 0)
@@ -78,19 +84,15 @@ fun3d_aim.set_config_parameter("view:struct", 0)
 global_max = 10
 global_min = 0.1
 
-aflr_aim.set_surface_mesh(
-    ff_growth=1.2,
-    mesh_length=1.0,
-    min_scale=global_min,
-    max_scale=global_max,
-    use_quads=True,
+mesh_aim.surface_aim.set_surface_mesh(
+    edge_pt_min=15,
+    edge_pt_max=20,
+    mesh_elements="Mixed",
+    global_mesh_size=0.5,
+    max_surf_offset=0.01,
+    max_dihedral_angle=15,
 )
 
-if comm.rank == 0:
-    aflr_aim._aflr4_aim.input.Mesh_Sizing = {
-        "rootEdgeMesh": {"numEdgePoints": 150},
-        "wingJointEdgeMesh": {"numEdgePoints": 150},
-    }
 case = "inviscid"
 if case == "inviscid":
     Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
@@ -102,34 +104,21 @@ else:
 
 refinement = 1
 
-FluidMeshOptions = {"aflr4AIM": {}, "aflr3AIM": {}}
+FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
 
-FluidMeshOptions["aflr4AIM"]["Mesh_Sizing"] = {
-    "leEdgeMesh": {"scaleFactor": 0.08, "edgeWeight": 1.0},
-    "teEdgeMesh": {"scaleFactor": 0.2},
-    "tipEdgeMesh": {"scaleFactor": 0.5},
-    "rootEdgeMesh": {"scaleFactor": 0.5},
-    "wingMesh": {"scaleFactor": 1.0, "AFLR4_quad_local": 1.0, "min_scale": global_min},
-}
-
-FluidMeshOptions["aflr4AIM"]["curv_factor"] = 0.001
-FluidMeshOptions["aflr4AIM"]["ff_cdfr"] = 1.2
-FluidMeshOptions["aflr4AIM"]["mer_all"] = 1
-
-aflr_aim.saveDictOptions(FluidMeshOptions)
+mesh_aim.saveDictOptions(FluidMeshOptions)
 
 Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
 Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
 
 fun3d_model.setup()
 f2f_model.flow = fun3d_model
-
 # ---------------------------------------------------->
 
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -218,7 +207,8 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
+cruise = Scenario.steady("cruise_inviscid", steps=300, uncoupled_steps=0)
+cruise.fun3d_project_name = "ssw-inviscid"
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
@@ -245,10 +235,12 @@ for isection, prefix in enumerate(section_prefix):
     for iconstr in range(1, section_num):
         left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
         right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-        adj_constr = (left_var - right_var) / left_var
-        adj_ratio = 0.15
+        # adj_constr = (left_var - right_var) / left_var
+        # adj_ratio = 0.15
+        adj_constr = left_var - right_var
+        adj_diff = 0.002
         adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-            lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
+            lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
         ).register_to(f2f_model)
 
 cl_target = 1.2
@@ -264,13 +256,14 @@ cruise_lift.set_name(f"LiftObj").optimize(
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-turb",
     fun3d_dir="cfd",
-    forward_tolerance=1e-4,
-    adjoint_tolerance=1e-1,
+    forward_stop_tolerance=1e-15,
+    forward_min_tolerance=1e-12,
+    adjoint_stop_tolerance=4e-16,
+    adjoint_min_tolerance=1e-12,
     auto_coords=False,
 )
 
@@ -324,11 +317,12 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SLSQP(options={"IPRINT": 1})
 
-sol = snoptimizer(
-    opt_problem,
-    sens=manager.eval_gradients,
-    storeHistory=store_history_file,
-    hotStart=hot_start_file,
+snoptimizer = SNOPT(
+    options={
+        "Verify level": 0,
+        "Function precision": 1e-4,
+        "Major Optimality tol": 1e-4,
+    }
 )
 
 # print final solution
