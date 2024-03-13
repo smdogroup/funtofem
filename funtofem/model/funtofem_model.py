@@ -150,6 +150,9 @@ class FUNtoFEMmodel(object):
                 shape_variables = base.variables["shape"]
 
             for var in struct_variables:
+                if not var.active:
+                    continue
+
                 # check if matching shell property exists
                 matching_prop = False
                 for prop in self.structural.tacs_aim._properties:
@@ -180,6 +183,8 @@ class FUNtoFEMmodel(object):
             )
 
             for var in shape_variables:
+                if not var.active:
+                    continue
                 matching_despmtr = False
                 for despmtr in esp_caps_despmtrs:
                     if var.name == despmtr:
