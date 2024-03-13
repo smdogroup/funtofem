@@ -201,6 +201,7 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady("cruise_inviscid", steps=300, uncoupled_steps=0)
+cruise.fun3d_project_name = "ssw-inviscid"
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )

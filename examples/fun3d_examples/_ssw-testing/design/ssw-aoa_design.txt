@@ -1,0 +1,26 @@
+Starting new pyoptsparse optimization for the ssw-aoa model...
+New design = {'cruise_inviscid-AOA': 4.0}
+Functions = {'cruise_inviscid-ksfailure': 1.462584166419923, 'LiftObj': 2611.7748946323877}
+New design = {'cruise_inviscid-AOA': 4.05}
+Functions = {'cruise_inviscid-ksfailure': 1.4748394194340373, 'LiftObj': 2653.9673298935136}
+New design = {'cruise_inviscid-AOA': 3.0}
+Functions = {'cruise_inviscid-ksfailure': 1.1970446146006262, 'LiftObj': 1796.565178621095}
+New design = {'cruise_inviscid-AOA': 2.0}
+Functions = {'cruise_inviscid-ksfailure': 0.9323812568130243, 'LiftObj': 1122.6684543072604}
+New design = {'cruise_inviscid-AOA': -2.109749452212326}
+Functions = {'cruise_inviscid-ksfailure': 0.15203863230186201, 'LiftObj': 15.434858011988199}
+New design = {'cruise_inviscid-AOA': -1.6793395669399136}
+Functions = {'cruise_inviscid-ksfailure': 0.11580862043491363, 'LiftObj': 9.375044802915717e-06}
+New design = {'cruise_inviscid-AOA': -1.6790015534899805}
+Functions = {'cruise_inviscid-ksfailure': 0.11585678016191794, 'LiftObj': 1.1622995925026093e-05}
+New design = {'cruise_inviscid-AOA': -1.6791796516193596}
+Functions = {'cruise_inviscid-ksfailure': 0.1158101295700179, 'LiftObj': 1.4699656351889348e-08}
+New design = {'cruise_inviscid-AOA': -1.6791857427235923}
+Functions = {'cruise_inviscid-ksfailure': 0.11581732910042533, 'LiftObj': 3.7163522633493774e-07}
+New design = {'cruise_inviscid-AOA': -1.679182697171476}
+Functions = {'cruise_inviscid-ksfailure': 0.1158796712874236, 'LiftObj': 9.430820986049214e-06}
+New design = {'cruise_inviscid-AOA': -1.6791811743954177}
+Functions = {'cruise_inviscid-ksfailure': 0.11580904697082303, 'LiftObj': 6.011645073748487e-10}
+New design = {'cruise_inviscid-AOA': -1.679180918246754}
+Functions = {'cruise_inviscid-ksfailure': 0.11582491298158057, 'LiftObj': 2.2670628732432214e-07}
+New design = {'cruise_inviscid-AOA': -1.6791811618523624}

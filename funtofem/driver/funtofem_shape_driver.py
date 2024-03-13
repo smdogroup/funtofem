@@ -814,14 +814,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             fun3d_dir = self.remote.main_dir
         grid_filepaths = []
         for scenario in self.model.scenarios:
-            if self.model.flow is not None:
-                project_name = self.model.flow.project_name
-            else:
-                project_name = scenario.fun3d_project_name
-                if project_name is None:
-                    raise AssertionError(
-                        "Funtofem - didn't set the fun3d_project_name in the Scenario class."
-                    )
+            project_name = scenario.fun3d_project_name
             filepath = os.path.join(
                 fun3d_dir,
                 scenario.name,
