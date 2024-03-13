@@ -3,7 +3,6 @@
 
 Run a coupled optimization of the angle of attack to minimize lift (L-L_*)^2.
 No shape variables are included in this optimization.
-TODO : haven't finished these examples aren't finished yet
 """
 
 from pyoptsparse import SNOPT, Optimization

@@ -3,10 +3,9 @@
 
 Run a coupled optimization of the geometric twist at each station and the 
 panel thicknesses.
-TODO : need to finish this example
 """
 
-from pyoptsparse import SLSQP, Optimization
+from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
@@ -315,9 +314,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SLSQP(options={"IPRINT": 1})
-
-snoptimizer = SNOPT(
+sol = snoptimizer = SNOPT(
     options={
         "Verify level": 0,
         "Function precision": 1e-4,

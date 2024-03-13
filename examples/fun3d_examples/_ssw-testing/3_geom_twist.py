@@ -3,7 +3,6 @@
 
 Run a coupled optimization of the geometric twist at each station.
 No thickness variables here.
-TODO : this example isn't done yet
 """
 
 from pyoptsparse import SNOPT, Optimization
