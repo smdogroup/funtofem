@@ -69,13 +69,13 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 fun3d_model = Fun3dModel.build(
     csm_file=csm_path,
     comm=comm,
-    project_name="ssw-turb",
+    project_name="ssw-inviscid",
     verbosity=0,
     mesh_morph=True,
     volume_mesh="aflr3",
     surface_mesh="egads",
 )
-aflr_aim = fun3d_model.aflr_aim
+mesh_aim = fun3d_model.mesh_aim
 fun3d_aim = fun3d_model.fun3d_aim
 fun3d_aim.set_config_parameter("view:flow", 1)
 fun3d_aim.set_config_parameter("view:struct", 0)
@@ -246,10 +246,9 @@ cruise_lift.set_name(f"LiftObj").optimize(
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-inviscid",
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
     forward_min_tolerance=1e-12,
