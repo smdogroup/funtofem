@@ -143,7 +143,7 @@ class OptimizationManager:
             # write the new design dict
             if self.comm.rank == 0 and self.write_designs:
                 regular_dict = {key: float(x_dict[key]) for key in x_dict}
-                self._design_hdl.write(f"New design = {regular_dict}\n")
+                self._design_hdl.write(f"Design {self._iteration} = {regular_dict}\n")
                 self._design_hdl.flush()
 
             # change the design
@@ -173,7 +173,14 @@ class OptimizationManager:
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
-                self._design_hdl.write(f"Functions = {self._funcs}\n")
+                solvers = self.driver.solvers
+                self._design_hdl.write(
+                    f"\tForward residual = {solvers.forward_residual}\n"
+                )
+                self._design_hdl.write(
+                    f"\tAdjoint residual = {solvers.adjoint_residual}\n"
+                )
+                self._design_hdl.write(f"\tFunctions = {self._funcs}\n")
                 self._design_hdl.flush()
 
             # only update design file if analysis didn't fail and give nans
