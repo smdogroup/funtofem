@@ -156,7 +156,9 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, coupling_frequency=30, uncoupled_steps=0)
+cruise = Scenario.steady(
+    "cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0
+)
 cruise.adjoint_steps = 100
 cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
@@ -165,7 +167,7 @@ ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
 mass = Function.mass()
 cl_cruise = Function.lift(body=0)
 aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=4.0, upper=15)
-cruise.include(ksfailure).include(cl_cruise).include(mass)
+cruise.include(cl_cruise).include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
