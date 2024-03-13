@@ -233,8 +233,8 @@ section_nums = [nribs, nOML]
 for isection, prefix in enumerate(section_prefix):
     section_num = section_nums[isection]
     for iconstr in range(1, section_num):
-        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
+        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}", all=True)
+        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}", all=True)
         # adj_constr = (left_var - right_var) / left_var
         # adj_ratio = 0.15
         adj_constr = left_var - right_var

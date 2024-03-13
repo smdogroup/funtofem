@@ -280,13 +280,13 @@ class FUNtoFEMmodel(object):
 
         elif isinstance(names, str):
             # get the one variable associated with that name
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name == names:
                     return var
 
         elif isinstance(names, list) and isinstance(names[0], str):
             varlist = []
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name in names:
                     varlist.append(var)
             return varlist
