@@ -314,12 +314,19 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-sol = snoptimizer = SNOPT(
+snoptimizer = SNOPT(
     options={
         "Verify level": 0,
         "Function precision": 1e-4,
         "Major Optimality tol": 1e-4,
     }
+)
+
+sol = snoptimizer(
+    opt_problem,
+    sens=manager.eval_gradients,
+    storeHistory=store_history_file,
+    hotStart=hot_start_file,
 )
 
 # print final solution
