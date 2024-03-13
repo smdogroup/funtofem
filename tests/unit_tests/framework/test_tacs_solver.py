@@ -240,8 +240,8 @@ class TacsInterfaceSolver(unittest.TestCase):
         for direc in ["x", "y", "z"]:
             Function.center_of_mass(direction=direc).register_to(test_scenario)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.mass().register_to(test_scenario)
         Function.compliance().register_to(test_scenario)
+        Function.mass().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)

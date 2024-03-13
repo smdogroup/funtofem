@@ -814,11 +814,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             fun3d_dir = self.remote.main_dir
         grid_filepaths = []
         for scenario in self.model.scenarios:
+            project_name = scenario.fun3d_project_name
             filepath = os.path.join(
                 fun3d_dir,
                 scenario.name,
                 "Flow",
-                f"{scenario.fun3d_project_name}.lb8.ugrid",
+                f"{project_name}.lb8.ugrid",
             )
             grid_filepaths.append(filepath)
         # set the grid filepaths into the fun3d aim
