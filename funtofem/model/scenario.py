@@ -57,7 +57,7 @@ class Scenario(Base):
         qinf=1.0,
         flow_dt=1.0,
         tacs_integration_settings=None,
-        fun3d_project_name="funtofem_CAPS",
+        fun3d_project_name=None,
         suther1=1.458205e-6,
         suther2=110.3333,
         gamma=1.4,

@@ -239,6 +239,9 @@ class Fun3d14Interface(SolverInterface):
                 dest = os.path.join(
                     self.root_dir, flow_dir, self.model.flow.mesh_morph_filename
                 )
+                print(
+                    f"F2F scenario {scenario.name} copying mesh morph file to dest {dest}"
+                )
                 shutil.copy2(src, dest)
 
         # Do the steps to initialize FUN3D
