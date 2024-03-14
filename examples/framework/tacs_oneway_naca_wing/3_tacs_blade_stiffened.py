@@ -2,6 +2,8 @@
 Sean Engelstad, May 2023
 GT SMDO Lab, Dr. Graeme Kennedy
 OnewayStructDriver example
+
+Source for callback: Alasdair Christison Gray
 """
 
 from funtofem import *
