@@ -76,115 +76,128 @@ VerticalDirection = np.array([0.0, 0.0, 1.0])
 # ==============================================================================
 
 
-def blade_elemCallBack(
-    dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs
-):
+def blade_elemCallBack(structDV_names):
+    def _elemcallback(
+        dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs
+    ):
 
-    prop = constitutive.MaterialProperties(
-        rho=compositeProperties["rho"],
-        E1=compositeProperties["E11"],
-        E2=compositeProperties["E22"],
-        G12=compositeProperties["G12"],
-        G13=compositeProperties["G13"],
-        G23=compositeProperties["G23"],
-        nu12=compositeProperties["nu12"],
-        T1=compositeProperties["T1"],
-        C1=compositeProperties["C1"],
-        T2=compositeProperties["T2"],
-        C2=compositeProperties["C2"],
-        S12=compositeProperties["S12"],
-    )
-    ply = constitutive.OrthotropicPly(1.0, prop)
+        prop = constitutive.MaterialProperties(
+            rho=compositeProperties["rho"],
+            E1=compositeProperties["E11"],
+            E2=compositeProperties["E22"],
+            G12=compositeProperties["G12"],
+            G13=compositeProperties["G13"],
+            G23=compositeProperties["G23"],
+            nu12=compositeProperties["nu12"],
+            T1=compositeProperties["T1"],
+            C1=compositeProperties["C1"],
+            T2=compositeProperties["T2"],
+            C2=compositeProperties["C2"],
+            S12=compositeProperties["S12"],
+        )
+        ply = constitutive.OrthotropicPly(1.0, prop)
 
-    # Use a 0-deg biased layup for the skin and a +-45-deg biased layup spars and ribs.
-    # Align the stiffeners in the skins with the trailing edge spar, and the stiffeners
-    # in the spars and ribs vertically.
-    # The panel length values I set here are approximate, to get the real values, you'd
-    # need to run an optimization with panel length design variables and constraints.
-    if "OML" in compDescript:
-        plyAngles = skinPlyAngles
-        panelPlyFractions = skinPlyFracs
-        refAxis = TESparDirection
-        panelLength = 0.65
-    else:
-        plyAngles = sparRibPlyAngles
-        panelPlyFractions = sparRibPlyFracs
-        refAxis = VerticalDirection
-        if "rib" in compDescript:
-            panelLength = 0.38
-        elif "spar" in compDescript:
-            panelLength = 0.36
+        # Use a 0-deg biased layup for the skin and a +-45-deg biased layup spars and ribs.
+        # Align the stiffeners in the skins with the trailing edge spar, and the stiffeners
+        # in the spars and ribs vertically.
+        # The panel length values I set here are approximate, to get the real values, you'd
+        # need to run an optimization with panel length design variables and constraints.
+        if "OML" in compDescript:
+            plyAngles = skinPlyAngles
+            panelPlyFractions = skinPlyFracs
+            refAxis = TESparDirection
+            panelLength = 0.65
+        else:
+            plyAngles = sparRibPlyAngles
+            panelPlyFractions = sparRibPlyFracs
+            refAxis = VerticalDirection
+            if "rib" in compDescript:
+                panelLength = 0.38
+            elif "spar" in compDescript:
+                panelLength = 0.36
 
-    # Always use the 0-deg biased layup for the stiffeners
-    stiffenerPlyFractions = skinPlyFracs
-    numPlies = len(plyAngles)
+        # get the dv index associated with the panel thickness variable
+        # from sorted struct DV names
+        dv_name = compDescript.split(" ")[-1]
+        found = False
+        for dv_ind, _dv_name in enumerate(structDV_names):
+            if dv_name == _dv_name:
+                found = True
+                break
+        if not(found) and len(structDV_names) > 0:
+            raise AssertionError("Struct DV name not found")
 
-    # --- Setup DV numbering and scaling ---
+        # Always use the 0-deg biased layup for the stiffeners
+        stiffenerPlyFractions = skinPlyFracs
+        numPlies = len(plyAngles)
 
-    # The ordering of the DVs used by the BladeStiffenedShell model is:
-    # - panel length
-    # - stiffener pitch
-    # - panel thickness
-    # - panel ply fractions (not used in this case)
-    # - stiffener height
-    # - stiffener thickness
-    # - stiffener ply fractions (not used in this case)
-    currDVNum = dvNum
-    DVScales = []
+        # --- Setup DV numbering and scaling ---
 
-    panelLengthNum = currDVNum
-    DVScales.append(panelLengthScale)
-    currDVNum += 1
+        # The ordering of the DVs used by the BladeStiffenedShell model is:
+        # - panel length
+        # - stiffener pitch
+        # - panel thickness
+        # - panel ply fractions (not used in this case)
+        # - stiffener height
+        # - stiffener thickness
+        # - stiffener ply fractions (not used in this case)
+        currDVNum = dvNum
+        DVScales = []
 
-    stiffenerPitchNum = currDVNum
-    DVScales.append(stiffenerPitchScale)
-    currDVNum += 1
+        panelLengthNum = -1
+        #DVScales.append(panelLengthScale)
+        #currDVNum += 1
 
-    panelThicknessNum = currDVNum
-    DVScales.append(panelThicknessScale)
-    currDVNum += 1
+        stiffenerPitchNum = -1
+        #DVScales.append(stiffenerPitchScale)
+        #currDVNum += 1
 
-    stiffenerHeightNum = currDVNum
-    DVScales.append(stiffenerHeightScale)
-    currDVNum += 1
+        panelThicknessNum = dv_ind
+        #DVScales.append(panelThicknessScale)
+        #currDVNum += 1
 
-    stiffenerThicknessNum = currDVNum
-    DVScales.append(stiffenerThicknessScale)
-    currDVNum += 1
+        stiffenerHeightNum = -1
+        #DVScales.append(stiffenerHeightScale)
+        #currDVNum += 1
 
-    # print(f"making blade stiffeners")
-    con = constitutive.BladeStiffenedShellConstitutive(
-        panelPly=ply,
-        stiffenerPly=ply,
-        panelLength=panelLength,
-        stiffenerPitch=stiffenerPitch,
-        panelThick=panelThickness,
-        panelPlyAngles=plyAngles,
-        panelPlyFracs=panelPlyFractions,
-        stiffenerHeight=stiffenerHeight,
-        stiffenerThick=stiffenerThickness,
-        stiffenerPlyAngles=plyAngles,
-        stiffenerPlyFracs=stiffenerPlyFractions,
-        panelLengthNum=panelLengthNum,
-        stiffenerPitchNum=stiffenerPitchNum,
-        panelThickNum=panelThicknessNum,
-        stiffenerHeightNum=stiffenerHeightNum,
-        stiffenerThickNum=stiffenerThicknessNum,
-    )
-    con.setStiffenerPitchBounds(stiffenerPitchMin, stiffenerPitchMax)
-    con.setPanelThicknessBounds(panelThicknessMin, panelThicknessMax)
-    con.setStiffenerHeightBounds(stiffenerHeightMin, stiffenerHeightMax)
-    con.setStiffenerThicknessBounds(stiffenerThicknessMin, stiffenerThicknessMax)
+        stiffenerThicknessNum = -1
+        #DVScales.append(stiffenerThicknessScale)
+        #currDVNum += 1
 
-    # --- Create reference axis transform to define the stiffener direction ---
-    transform = elements.ShellRefAxisTransform(refAxis)
+        # print(f"making blade stiffeners")
+        con = constitutive.BladeStiffenedShellConstitutive(
+            panelPly=ply,
+            stiffenerPly=ply,
+            panelLength=panelLength,
+            stiffenerPitch=stiffenerPitch,
+            panelThick=panelThickness,
+            panelPlyAngles=plyAngles,
+            panelPlyFracs=panelPlyFractions,
+            stiffenerHeight=stiffenerHeight,
+            stiffenerThick=stiffenerThickness,
+            stiffenerPlyAngles=plyAngles,
+            stiffenerPlyFracs=stiffenerPlyFractions,
+            panelLengthNum=panelLengthNum,
+            stiffenerPitchNum=stiffenerPitchNum,
+            panelThickNum=panelThicknessNum,
+            stiffenerHeightNum=stiffenerHeightNum,
+            stiffenerThickNum=stiffenerThicknessNum,
+        )
+        con.setStiffenerPitchBounds(stiffenerPitchMin, stiffenerPitchMax)
+        con.setPanelThicknessBounds(panelThicknessMin, panelThicknessMax)
+        con.setStiffenerHeightBounds(stiffenerHeightMin, stiffenerHeightMax)
+        con.setStiffenerThicknessBounds(stiffenerThicknessMin, stiffenerThicknessMax)
 
-    # --- Create the element object ---
-    if elemDescripts[0] == "CQUAD4":
-        elem = elements.Quad4Shell(transform, con)
-    elif elemDescripts[0] == "CQUAD9":
-        elem = elements.Quad9Shell(transform, con)
-    elif elemDescripts[0] == "CQUAD16":
-        elem = elements.Quad16Shell(transform, con)
+        # --- Create reference axis transform to define the stiffener direction ---
+        transform = elements.ShellRefAxisTransform(refAxis)
 
-    return elem, DVScales
+        # --- Create the element object ---
+        if elemDescripts[0] == "CQUAD4":
+            elem = elements.Quad4Shell(transform, con)
+        elif elemDescripts[0] == "CQUAD9":
+            elem = elements.Quad9Shell(transform, con)
+        elif elemDescripts[0] == "CQUAD16":
+            elem = elements.Quad16Shell(transform, con)
+
+        return elem, DVScales
+    return _elemcallback
