@@ -143,8 +143,8 @@ tmp_structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
     nprocs=1,
-    bdf_file=tacs_aim.dat_file_path,
-    prefix=tacs_aim.analysis_dir,
+    bdf_file=tacs_aim.root_dat_file_path,
+    prefix=tacs_aim.root_analysis_dir,
 )
 solvers.flow.copy_struct_mesh()
 null_driver = NullDriver(solvers, model=f2f_model, transfer_settings=None)
