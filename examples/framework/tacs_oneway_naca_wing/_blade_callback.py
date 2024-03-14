@@ -77,9 +77,7 @@ VerticalDirection = np.array([0.0, 0.0, 1.0])
 
 
 def blade_elemCallBack(structDV_names):
-    def _elemcallback(
-        dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs
-    ):
+    def _elemcallback(dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs):
 
         prop = constitutive.MaterialProperties(
             rho=compositeProperties["rho"],
@@ -124,7 +122,7 @@ def blade_elemCallBack(structDV_names):
             if dv_name == _dv_name:
                 found = True
                 break
-        if not(found) and len(structDV_names) > 0:
+        if not (found) and len(structDV_names) > 0:
             raise AssertionError("Struct DV name not found")
 
         # Always use the 0-deg biased layup for the stiffeners
@@ -145,24 +143,24 @@ def blade_elemCallBack(structDV_names):
         DVScales = []
 
         panelLengthNum = -1
-        #DVScales.append(panelLengthScale)
-        #currDVNum += 1
+        # DVScales.append(panelLengthScale)
+        # currDVNum += 1
 
         stiffenerPitchNum = -1
-        #DVScales.append(stiffenerPitchScale)
-        #currDVNum += 1
+        # DVScales.append(stiffenerPitchScale)
+        # currDVNum += 1
 
         panelThicknessNum = dv_ind
-        #DVScales.append(panelThicknessScale)
-        #currDVNum += 1
+        # DVScales.append(panelThicknessScale)
+        # currDVNum += 1
 
         stiffenerHeightNum = -1
-        #DVScales.append(stiffenerHeightScale)
-        #currDVNum += 1
+        # DVScales.append(stiffenerHeightScale)
+        # currDVNum += 1
 
         stiffenerThicknessNum = -1
-        #DVScales.append(stiffenerThicknessScale)
-        #currDVNum += 1
+        # DVScales.append(stiffenerThicknessScale)
+        # currDVNum += 1
 
         # print(f"making blade stiffeners")
         con = constitutive.BladeStiffenedShellConstitutive(
@@ -200,4 +198,5 @@ def blade_elemCallBack(structDV_names):
             elem = elements.Quad16Shell(transform, con)
 
         return elem, DVScales
+
     return _elemcallback
