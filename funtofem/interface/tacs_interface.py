@@ -977,6 +977,7 @@ class TacsSteadyInterface(SolverInterface):
         thermal_index=-1,
         override_rotx=False,
         debug=False,
+        add_loads=False,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1049,7 +1050,8 @@ class TacsSteadyInterface(SolverInterface):
             fea_assembler.initialize(callback)
 
             # get any constant loads for static case
-            Fvec = addLoadsFromBDF(fea_assembler)
+            if add_loads:
+                Fvec = addLoadsFromBDF(fea_assembler)
             # Fvec = None
 
             # Retrieve the assembler from pyTACS fea_assembler object
