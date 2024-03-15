@@ -23,18 +23,36 @@ jobs:
         include:
           # real versions
           - OS: ubuntu-latest
-            BUILD_DIR: linux-64
+            TARGET: linux-64
+            SCALAR: real
+
+          - OS: macos-latest
+            TARGET: osx-64
+            SCALAR: real
+
+          - OS: macos-14
+            TARGET: osx-arm64
+            SCALAR: real
 
           # complex versions
-          - OS: macos-latest
-            BUILD_DIR: osx-64
+          - OS: ubuntu-latest
+            TARGET: linux-64
+            SCALAR: complex
 
-    name: FUNtoFEM Conda Package Deployment (${{ matrix.OS }})
+          - OS: macos-latest
+            TARGET: osx-64
+            SCALAR: complex
+
+          - OS: macos-14
+            TARGET: osx-arm64
+            SCALAR: complex
+
+    name: FUNtoFEM Conda Package Deployment (${{ matrix.TARGET }}, ${{ matrix.SCALAR }})
 
     # Recommended if you intend to make multiple deployments in quick succession.
     # This will kill any currently running CI from previous commits to the same branch
     concurrency:
-      group: ci-${{ github.ref }}-${{ matrix.OS }}
+      group: ci-${{ github.ref }}-${{ matrix.TARGET }}-${{ matrix.SCALAR }}
       cancel-in-progress: true
 
     steps:
@@ -52,10 +70,20 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
       - uses: actions/checkout@v2
       - name: Setup miniconda
+        if: ${{ matrix.OS != 'macos-14' }}
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
           python-version: 3.9
+
+      - name: Setup miniconda (MACOS-14)
+        if: ${{ matrix.OS == 'macos-14' }}
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: "latest"
+          auto-update-conda: true
+          python-version: 3.9
+          architecture: arm64
 
       - name: Build FUNtoFEM package
         run: |
@@ -65,6 +93,5 @@ jobs:
           conda install anaconda-client conda-build conda-verify -q -y;
           conda config --set anaconda_upload no;
           cd ${F2F_DIR}/conda;
-          conda build --no-include-recipe -c conda-forge -c "smdogroup/label/complex" -c smdogroup --output-folder . .;
-          anaconda upload --label main ${{ matrix.BUILD_DIR }}/*real*.tar.bz2 --force;
-          anaconda upload --label complex ${{ matrix.BUILD_DIR }}/*complex*.tar.bz2 --force;
+          conda build --variants "{scalar: ${{ matrix.SCALAR }}}" -c conda-forge -c smdogroup $BUILD_ARGS --output-folder . .;
+          anaconda upload --label $LABEL ${{ matrix.TARGET }}/*.tar.bz2 --force;
