@@ -7,6 +7,7 @@ __all__ = ["Fun3dModel"]
 import pyCAPS, os
 from .fun3d_aim import Fun3dAim
 from .mesh_aim import MeshAim
+from .pointwise_aim import PointwiseAIM
 
 
 class Fun3dModel:
@@ -178,6 +179,14 @@ class Fun3dModel:
             self.fun3d_aim.aim.input["Mesh"].link(
                 self.mesh_aim.volume_aim.aim.output["Volume_Mesh"]
             )
+        return
+
+    def pre_analysis(self):
+        volume_aim = self.mesh_aim.volume_aim
+        if isinstance(volume_aim, PointwiseAIM):
+            volume_aim.run_pointwise()
+
+        self.fun3d_aim.pre_analysis()
         return
 
     @property

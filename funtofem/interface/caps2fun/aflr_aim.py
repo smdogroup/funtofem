@@ -139,10 +139,11 @@ class Aflr4Aim:
 
         return self
 
-    def mesh_sizing(self, fun3d_bc):
+    def mesh_sizing(self, fun3d_bcs: list):
         if self.root_proc:
-            self.aim.input.Mesh_Sizing = {fun3d_bc.name: fun3d_bc.BC_dict}
-
+            self.aim.input.Mesh_Sizing = {
+                fun3d_bc.name: fun3d_bc.BC_dict for fun3d_bc in fun3d_bcs
+            }
         return
 
     def set_surface_mesh(
