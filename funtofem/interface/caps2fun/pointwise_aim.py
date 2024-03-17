@@ -81,6 +81,7 @@ class PointwiseAIM:
         domain_decay=0.5,
         domain_trex_AR_limit=200,
         domain_wall_spacing=0,
+        block_algorithm="AdvancingFront",
         block_boundary_decay=0.5,
         block_collision_buffer=1.0,
         block_max_skew_angle=175,
@@ -116,6 +117,7 @@ class PointwiseAIM:
             # Defined spacing when geometry attributed with PW:WallSpacing $wall (relative to capsMeshLength)
 
             # block level
+            self.aim.input.Block_Algorithm = block_algorithm
             self.aim.input.Block_Boundary_Decay = block_boundary_decay
             self.aim.input.Block_Collision_Buffer = block_collision_buffer
             self.aim.input.Block_Max_Skew_Angle = block_max_skew_angle
