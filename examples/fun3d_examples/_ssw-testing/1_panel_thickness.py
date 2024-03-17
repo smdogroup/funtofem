@@ -146,12 +146,12 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise_turb", steps=1500, coupling_frequency=30, uncoupled_steps=0
+    "cruise_turb", steps=1500, coupling_frequency=30, uncoupled_steps=200
 )
 cruise.adjoint_steps = (
     150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
-cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
+cruise.set_stop_criterion(early_stopping=True, min_forward_steps=200, min_adjoint_steps=20)
 
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
