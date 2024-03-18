@@ -78,6 +78,7 @@ class PointwiseAIM:
         domain_max_layers=0,
         domain_growth_rate=1.3,
         domain_iso_type="TriangleQuad",
+        domain_trex_type="TriangleQuad",
         domain_decay=0.5,
         domain_trex_AR_limit=200,
         domain_wall_spacing=0,
@@ -110,6 +111,7 @@ class PointwiseAIM:
             )
             self.aim.input.Domain_Decay = domain_decay
             self.aim.input.Domain_Iso_Type = domain_iso_type  # "TriangleQuad"
+            self.aim.input.Domain_TRex_Type = domain_trex_type # "TriangleQuad"
 
             self.aim.input.Domain_Wall_Spacing = (
                 domain_wall_spacing  # e.g. 1e-5 if turbulent

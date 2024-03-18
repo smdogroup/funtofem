@@ -62,10 +62,10 @@
 &elasticity_gmres
   elasticity = 2
   preconditioner_iters = 10
-  nsearch = 100 ! num GMRES steps
-  nrestarts = 15 ! leads to 50*15 = 750 grid iterations
-  tol = 1e-22
-  tol_abs = 1e-30
+  nsearch = 200 ! num GMRES steps
+  nrestarts = 4 ! leads to 50*15 = 750 grid iterations
+  tol = 1e-20
+  tol_abs = 1e-25
 /
 &slice_data
   nslices       = 1
