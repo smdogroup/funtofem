@@ -977,7 +977,7 @@ class TacsSteadyInterface(SolverInterface):
         thermal_index=-1,
         override_rotx=False,
         debug=False,
-        add_loads=False,
+        add_loads=True,  # whether it will try to add loads or not
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader

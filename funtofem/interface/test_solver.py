@@ -1056,6 +1056,7 @@ class TestResult:
         # compute forward analysise f(x) and df/dx with adjoint
         driver.solve_forward()
         driver.solve_adjoint()
+        model.evaluate_composite_functions()
         gradients = model.get_function_gradients(all=True)
         m_functions = [func.value.real for func in model.get_functions(all=True)]
 
@@ -1072,6 +1073,7 @@ class TestResult:
             driver.solve_forward()
             if both_adjoint:
                 driver.solve_adjoint()
+            model.evaluate_composite_functions()
             i_functions = [func.value.real for func in model.get_functions(all=True)]
         else:
             i_functions = [None for func in model.get_functions()]
@@ -1083,6 +1085,7 @@ class TestResult:
         driver.solve_forward()
         if both_adjoint:
             driver.solve_adjoint()
+        model.evaluate_composite_functions()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [

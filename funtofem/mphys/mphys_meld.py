@@ -304,9 +304,9 @@ class MeldLoadXfer(om.ExplicitComponent):
             body.meld.transferLoads(f_a, f_s)
 
             for i in range(3):
-                outputs["f_struct"][body.struct_dof_indices[i :: self.struct_ndof]] = (
-                    f_s[i::3]
-                )
+                outputs["f_struct"][
+                    body.struct_dof_indices[i :: self.struct_ndof]
+                ] = f_s[i::3]
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         """

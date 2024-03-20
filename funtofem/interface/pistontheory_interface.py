@@ -540,7 +540,7 @@ class PistonInterface(SolverInterface):
                 + (self.gamma + 1) / 4 * self.M * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
                 + (self.gamma + 1)
                 / 12
-                * self.M**2
+                * self.M ** 2
                 * (1 / self.U_inf * dw_dt + dw_dxi) ** 3
             )
         )
@@ -569,7 +569,7 @@ class PistonInterface(SolverInterface):
                 * (1)
                 + (self.gamma + 1)
                 / 12
-                * self.M**2
+                * self.M ** 2
                 * 3
                 * (1 / self.U_inf * dw_dt + dw_dxi) ** 2
                 * (1)
