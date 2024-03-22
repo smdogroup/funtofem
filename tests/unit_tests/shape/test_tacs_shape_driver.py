@@ -169,8 +169,9 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         # tacs_model.pre_analysis()
 
         # make a funtofem scenario
-        test_scenario = Scenario.steady("test", steps=10).include(Function.mass())
-        test_scenario.include(Function.ksfailure(ks_weight=5.0))
+        test_scenario = Scenario.steady("test", steps=10)
+        Function.ksfailure(ks_weight=5.0).register_to(test_scenario)
+        Function.mass().register_to(test_scenario)
         test_scenario.register_to(f2f_model)
 
         solvers = SolverManager(comm)

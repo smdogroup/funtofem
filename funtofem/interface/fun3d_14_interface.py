@@ -54,8 +54,10 @@ class Fun3d14Interface(SolverInterface):
         coord_test_override=False,
         debug=False,
         external_mesh_morph=False,
-        forward_tolerance=1e-6,
-        adjoint_tolerance=1e-6,
+        forward_min_tolerance=1e-9,
+        forward_stop_tolerance=1e-6,
+        adjoint_min_tolerance=1e-8,
+        adjoint_stop_tolerance=1e-6,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -120,8 +122,11 @@ class Fun3d14Interface(SolverInterface):
         self._adjoint_done = False
         self._adjoint_resid = None
 
-        self.forward_tolerance = forward_tolerance
-        self.adjoint_tolerance = adjoint_tolerance
+        self.forward_tolerance = forward_stop_tolerance
+        self.adjoint_tolerance = adjoint_stop_tolerance
+
+        self.forward_min_tolerance = forward_min_tolerance
+        self.adjoint_min_tolerance = adjoint_min_tolerance
 
         # coordinate derivative testing option
         self._coord_test_override = coord_test_override
@@ -214,6 +219,8 @@ class Fun3d14Interface(SolverInterface):
         flow_dir = os.path.join(self.fun3d_dir, scenario.name, "Flow")
         os.chdir(flow_dir)
 
+        self._forward_done = False
+
         # keep track of last successful step in case FUN3D exits early
         self._last_forward_step = 0
 
@@ -236,6 +243,9 @@ class Fun3d14Interface(SolverInterface):
                 src = self.model.flow.mesh_morph_filepath
                 dest = os.path.join(
                     self.root_dir, flow_dir, self.model.flow.mesh_morph_filename
+                )
+                print(
+                    f"F2F scenario {scenario.name} copying mesh morph file to dest {dest}"
                 )
                 shutil.copy2(src, dest)
 
@@ -319,54 +329,61 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        for function in scenario.functions:
-            if function.adjoint:
-                unsteady = not (scenario.steady)
-                if function.analysis_type != "aerodynamic":
-                    start = 1
-                    stop = 1
+        # check if any aerodynamic functions
+        any_aerodynamic = any(
+            [func.analysis_type == "aerodynamic" for func in scenario.functions]
+        )
+
+        ct = 0
+        for function in scenario.adjoint_functions:
+            ct += 1
+            unsteady = not (scenario.steady)
+            if function.analysis_type != "aerodynamic":
+                start = 1
+                stop = 1
+
+                if ct == 1 and scenario.early_stopping and any_aerodynamic:
+                    raise AssertionError(
+                        "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
+                    )
+            else:
+                start = 1 if function.start is None else function.start
+                if unsteady:
+                    # default aero function to include all time steps for the unsteady case
+                    stop = scenario.steps if function.stop is None else function.stop
                 else:
-                    start = 1 if function.start is None else function.start
-                    if unsteady:
-                        # default aero function to include all time steps for the unsteady case
-                        stop = (
-                            scenario.steps if function.stop is None else function.stop
-                        )
-                    else:
-                        stop = 1 if function.stop is None else function.stop
+                    stop = 1 if function.stop is None else function.stop
 
-                ftype = -1 if function.averaging else 1
+            ftype = -1 if function.averaging else 1
 
-                interface.design_push_composite_func(
-                    function.id,
-                    1,
-                    start,
-                    stop,
-                    1.0,
-                    0.0,
-                    1.0,
-                    function.value,
-                    ftype,
-                    100.0,
-                    -100.0,
-                )
+            interface.design_push_composite_func(
+                function.id,
+                1,
+                start,
+                stop,
+                1.0,
+                0.0,
+                1.0,
+                function.value,
+                ftype,
+                100.0,
+                -100.0,
+            )
 
-                if function.body == -1:
-                    boundary = 0
-                else:
-                    boundary = bodies[function.body].boundary
+            if function.body == -1:
+                boundary = 0
+            else:
+                boundary = bodies[function.body].boundary
 
-                # The funtofem function in FUN3D acts as any adjoint function
-                # that isn't dependent on FUN3D variables
-                name = (
-                    function.name
-                    if function.analysis_type == "aerodynamic"
-                    else "funtofem"
-                )
+            # The funtofem function in FUN3D acts as any adjoint function
+            # that isn't dependent on FUN3D variables
+            name = (
+                function.name if function.analysis_type == "aerodynamic" else "funtofem"
+            )
 
-                interface.design_push_component_func(
-                    function.id, 1, boundary, name, function.value, 1.0, 0.0, 1.0
-                )
+            interface.design_push_component_func(
+                function.id, 1, boundary, name, function.value, 1.0, 0.0, 1.0
+            )
 
         return
 
@@ -449,7 +466,7 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies. Bodies contains unused but necessary rigid motion variables
         """
 
-        for func, function in enumerate(scenario.functions):
+        for ifunc, function in enumerate(scenario.functions):
             if function.adjoint:
                 for var in scenario.get_active_variables():
                     if var.id <= 6:
@@ -457,7 +474,7 @@ class Fun3d14Interface(SolverInterface):
                             function.id, var.id
                         )
                     elif var.name.lower() == "dynamic pressure":
-                        deriv = self.comm.reduce(self.dFdqinf[func])
+                        deriv = self.comm.reduce(self.dFdqinf[ifunc])
 
                     # if abs(deriv) > 1e10:  # for adjoint divergence
                     #    raise RuntimeError(
@@ -484,6 +501,7 @@ class Fun3d14Interface(SolverInterface):
         """
 
         nfunctions = scenario.count_adjoint_functions()
+        adjoint_map = scenario.adjoint_map
         for ibody, body in enumerate(bodies, 1):
             aero_nnodes = body.get_num_aero_nodes()
 
@@ -499,13 +517,14 @@ class Fun3d14Interface(SolverInterface):
                 )
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 for ifunc in range(nfunctions):
-                    aero_shape_term[0::3, ifunc] += (
+                    ifull = adjoint_map[ifunc]
+                    aero_shape_term[0::3, ifull] += (
                         dGdxa0_x[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[1::3, ifunc] += (
+                    aero_shape_term[1::3, ifull] += (
                         dGdxa0_y[:, ifunc] * scenario.flow_dt
                     )
-                    aero_shape_term[2::3, ifunc] += (
+                    aero_shape_term[2::3, ifull] += (
                         dGdxa0_z[:, ifunc] * scenario.flow_dt
                     )
 
@@ -681,8 +700,15 @@ class Fun3d14Interface(SolverInterface):
         self.fun3d_flow.post()
         os.chdir(self.root_dir)
 
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(
+                f"scalar forward resid in post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
+
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.forward_tolerance:
+        if scalar_resid > self.forward_min_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
             )
@@ -711,6 +737,7 @@ class Fun3d14Interface(SolverInterface):
 
         # keep track of last succesful adjoint step
         self._last_adjoint_step = 0
+        self._adjoint_done = False
 
         if self.comm.rank == 0:
             print(
@@ -766,6 +793,9 @@ class Fun3d14Interface(SolverInterface):
             elif self.external_mesh_morph:
                 self.fun3d_adjoint.set_mesh_morph(True)
 
+            # set the funtofem coupling frequency
+            self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
+
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
                 aero_disps = body.get_aero_disps(
@@ -781,10 +811,12 @@ class Fun3d14Interface(SolverInterface):
                     dz = dz if self.complex_mode else dz.astype(np.double)
                     self.fun3d_adjoint.input_deformation(dx, dy, dz, body=ibody)
 
+                # shouldn't we set a time step here for the aerothermal derivatives?
                 aero_temps = body.get_aero_temps(scenario)
                 if body.thermal_transfer is not None:
                     # Nondimensionalize by freestream temperature
                     temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
+                    temps = temps if self.complex_mode else temps.astype(np.double)
                     self.fun3d_adjoint.input_wall_temperature(temps, body=ibody)
 
             self.fun3d_adjoint.initialize_solution()
@@ -854,7 +886,7 @@ class Fun3d14Interface(SolverInterface):
             rstep = step
 
         # update the last successful adjoint step in case FUN3D exits early
-        self._last_adjoint_step = step
+        # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
@@ -954,11 +986,11 @@ class Fun3d14Interface(SolverInterface):
 
                 scale = scenario.T_inf / scenario.flow_dt
 
-                if not self.complex_mode:
-                    lam = lam.astype(np.double)
-
                 for func in range(nfuncs):
                     lam[:, func] = scale * psi_H[:, func] * k_dim[:]
+
+                if not self.complex_mode:
+                    lam = lam.astype(np.double)
 
                 lam = np.asfortranarray(lam)
 
@@ -972,6 +1004,30 @@ class Fun3d14Interface(SolverInterface):
                             np.dot(aero_flux, psi_H[:, func]) / self.thermal_scale
                         )
 
+                    if self._debug:  # and self.comm.rank == 0
+                        print(f"========================================")
+                        print(
+                            f"Inside fun3d_interface:iterate_adjoint after input cqa adjoint, step: {step}"
+                        )
+                        print(f"func: {func}")
+                        if psi_H is not None:
+                            print(
+                                f"norm of real psi_H (heat flux adjoint): {real_norm(psi_H)}"
+                            )
+                            print(
+                                f"norm of imaginary psi_H (heat flux adjoint): {imag_norm(psi_H)}"
+                            )
+                        else:
+                            print(f"psi_H is None")
+                        if lam is not None:
+                            np.set_printoptions(threshold=sys.maxsize)
+                            print(f"norm of real lam (thermal): {real_norm(lam)}")
+                            print(f"norm of imaginary lam (thermal): {imag_norm(lam)}")
+                            print(f"lam = {lam}")
+                        else:
+                            print(f"lam is None")
+                        print(f"========================================\n", flush=True)
+
             # if "rigid" in body.motion_type:
             #     self.fun3d_adjoint.input_rigid_transform(
             #         body.rigid_transform, body=ibody
@@ -981,7 +1037,10 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        self.fun3d_adjoint.iterate(rstep)
+        for i_coupled in range(1, scenario.coupling_frequency + 1):
+            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
+            self.fun3d_adjoint.iterate(adj_step)
+            self._last_adjoint_step = adj_step
 
         for ibody, body in enumerate(bodies, 1):
             # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
@@ -1035,6 +1094,18 @@ class Fun3d14Interface(SolverInterface):
                         * dkdtA[:]
                     )
 
+                    if self._debug:  # and self.comm.rank == 0
+                        print(f"========================================")
+                        print(f"Inside fun3d_interface:iterate_adjoint, step: {step}")
+                        print(f"func: {func}")
+                        print(
+                            f"norm of real psi_T (temps): {real_norm(lam_t[:, func])}"
+                        )
+                        print(
+                            f"norm of imaginary psi_T (temps): {imag_norm(lam_t[:, func])}"
+                        )
+                        print(f"========================================\n", flush=True)
+
             # if "rigid" in body.motion_type:
             #     body.dGdT = (
             #         self.fun3d_adjoint.extract_rigid_adjoint_product(nfuncs)
@@ -1059,7 +1130,9 @@ class Fun3d14Interface(SolverInterface):
         """
 
         # report warning if flow residual too large
-        resid = self.get_adjoint_residual(step=self._last_adjoint_step, all=True)
+        resid = self.get_adjoint_residual(
+            step=self._last_adjoint_step, outer=False, all=True
+        )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
         self._adjoint_done = True
@@ -1069,8 +1142,15 @@ class Fun3d14Interface(SolverInterface):
         self.fun3d_adjoint.post()
         os.chdir(self.root_dir)
 
+        scalar_resid = abs(np.linalg.norm(resid).real)
+        if self.comm.rank == 0:
+            print(
+                f"scalar resid in adjoint post scenario {scenario.name} = {scalar_resid}",
+                flush=True,
+            )
+
         # throw a runtime error if adjoint didn't converge sufficiently
-        if abs(np.linalg.norm(resid).real) > self.adjoint_tolerance:
+        if abs(np.linalg.norm(resid).real) > self.adjoint_min_tolerance:
             raise RuntimeError(
                 f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
             )
@@ -1098,7 +1178,7 @@ class Fun3d14Interface(SolverInterface):
         else:
             return np.linalg.norm(residuals)
 
-    def get_adjoint_residual(self, step=0, all=False):
+    def get_adjoint_residual(self, step=0, outer=True, all=False):
         """
         Returns L2 norm of list of scalar adjoint residuals L2norm([R1,...,R6])
 
@@ -1106,12 +1186,18 @@ class Fun3d14Interface(SolverInterface):
         ----------
         step: int
             the time step number
+        outer : bool
+            whether it corresponds to the outer coupled iteration or the inner flow adjoint iterations
         all: bool
             whether to return a list of all residuals or a scalar
         """
+        if (
+            outer
+        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
+            step = self._last_adjoint_step
+
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)
-            return np.linalg.norm(residuals)
         else:
             residuals = self._adjoint_resid
 
