@@ -256,7 +256,7 @@ class FUNtoFEMDriver(object):
             fail = solver.initialize(scenario, bodies)
             if fail != 0:
                 return fail
-            
+
         # reload funtofem states (want this to be after TACS/struct solvers set size of states in)
         if self.reload_funtofem_states:
             self.model.load_funtofem_states(self.comm)

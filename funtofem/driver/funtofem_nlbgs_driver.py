@@ -59,7 +59,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
-        reload_funtofem_states: bool   
+        reload_funtofem_states: bool
             whether to save and reload funtofem states
         """
 

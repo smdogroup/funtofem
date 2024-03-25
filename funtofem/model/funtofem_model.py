@@ -1012,9 +1012,11 @@ class FUNtoFEMmodel(object):
         all_unsteady = all([not _.steady for _ in self.scenarios])
         if all_unsteady:
             if comm.rank == 0:
-                print(f"Funtofem : warning, you tried to reload the funtofem states, but they were all unsteady.")
+                print(
+                    f"Funtofem : warning, you tried to reload the funtofem states, but they were all unsteady."
+                )
                 return
-            
+
         # make a workdirectory for saving the funtofem states
         work_dir = os.path.join(os.getcwd(), self.name)
         if not os.path.exists(work_dir) and comm.rank == 0:
@@ -1024,28 +1026,36 @@ class FUNtoFEMmodel(object):
         # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
         # i.e. you might have a different number of struct nodes on each proc..
         for iproc in range(comm.size):
-            if comm.rank == iproc: # write out separately for each processor
+            if comm.rank == iproc:  # write out separately for each processor
                 for scenario in self.scenarios:
-                    if not scenario.steady: continue # can only reload steady-state scenarios
+                    if not scenario.steady:
+                        continue  # can only reload steady-state scenarios
                     for body in self.bodies:
                         # number of struct nodes on this processor
                         ns = body.get_num_struct_nodes()
-                        if ns == 0: continue
+                        if ns == 0:
+                            continue
 
                         if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
 
                             # pickle the struct displacements
-                            struct_disps_file = os.path.join(work_dir, f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy")
+                            struct_disps_file = os.path.join(
+                                work_dir,
+                                f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy",
+                            )
                             np.save(struct_disps_file, body.struct_disps[scenario.id])
 
                         if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-                            
+
                             # pickle the struct temperatures
-                            struct_temps_file = os.path.join(work_dir, f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy")
+                            struct_temps_file = os.path.join(
+                                work_dir,
+                                f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy",
+                            )
                             np.save(struct_temps_file, body.struct_temps[scenario.id])
 
         comm.Barrier()
-        
+
         return
 
     def load_funtofem_states(self, comm):
@@ -1054,55 +1064,77 @@ class FUNtoFEMmodel(object):
         all_unsteady = all([not _.steady for _ in self.scenarios])
         if all_unsteady:
             if comm.rank == 0:
-                print(f"Funtofem : warning, you tried to reload the funtofem states, but they were all unsteady.")
+                print(
+                    f"Funtofem : warning, you tried to reload the funtofem states, but they were all unsteady."
+                )
                 return
-            
+
         # make a workdirectory for saving the funtofem states
         work_dir = os.path.join(os.getcwd(), self.name)
         if not os.path.exists(work_dir) and comm.rank == 0:
-            print(f"Funtofem - may be first iteration => no funtofem states to reload as workdir doesn't exist.")
+            print(
+                f"Funtofem - may be first iteration => no funtofem states to reload as workdir doesn't exist."
+            )
 
         # for each scenario, for each body reload the states for the coupling types of that body
         # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
         # i.e. you might have a different number of struct nodes on each proc..
         for iproc in range(comm.size):
-            if comm.rank == iproc: # write out separately for each processor
+            if comm.rank == iproc:  # write out separately for each processor
                 for scenario in self.scenarios:
-                    if not scenario.steady: continue # can only reload steady-state scenarios
+                    if not scenario.steady:
+                        continue  # can only reload steady-state scenarios
                     for body in self.bodies:
                         # number of struct nodes on this processor
                         ns = body.get_num_struct_nodes()
-                        if ns == 0: continue
+                        if ns == 0:
+                            continue
 
                         if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
 
                             # pickle the struct displacements
-                            struct_disps_file = os.path.join(work_dir, f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy")
+                            struct_disps_file = os.path.join(
+                                work_dir,
+                                f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy",
+                            )
                             if os.path.exists(struct_disps_file):
                                 _struct_disps = np.load(struct_disps_file)
-                                if 3*ns == _struct_disps.shape[0]:
+                                if 3 * ns == _struct_disps.shape[0]:
                                     body.struct_disps[scenario.id] = _struct_disps * 1.0
                                 else:
-                                    print(f"Funtofem - didn't reload struct disps on proc {iproc} as size has changed.")
-                                    print(f"\tns prev = {_struct_disps.shape[0]}, ns new = {3*ns}")
+                                    print(
+                                        f"Funtofem - didn't reload struct disps on proc {iproc} as size has changed."
+                                    )
+                                    print(
+                                        f"\tns prev = {_struct_disps.shape[0]}, ns new = {3*ns}"
+                                    )
                             else:
-                                print(f"Funtofem - warning, struct disps file 'scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy' does not exist.")
+                                print(
+                                    f"Funtofem - warning, struct disps file 'scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-disps.npy' does not exist."
+                                )
 
                         if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-                            
+
                             # pickle the struct temperatures
-                            struct_temps_file = os.path.join(work_dir, f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy")
+                            struct_temps_file = os.path.join(
+                                work_dir,
+                                f"scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy",
+                            )
                             if os.path.exists(struct_temps_file):
                                 _struct_temps = np.load(struct_temps_file)
                                 if ns == _struct_temps.shape[0]:
                                     body.struct_temps[scenario.id] = _struct_temps * 1.0
                                 else:
-                                    print(f"Funtofem - didn't reload struct temps on proc {iproc} as size has changed.")
+                                    print(
+                                        f"Funtofem - didn't reload struct temps on proc {iproc} as size has changed."
+                                    )
                             else:
-                                print(f"Funtofem - warning, struct disps file 'scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy' does not exist.")
+                                print(
+                                    f"Funtofem - warning, struct disps file 'scenario-{scenario.name}_body-{body.name}_proc{iproc}_struct-temps.npy' does not exist."
+                                )
 
         comm.Barrier()
-        
+
         return
 
     def print_summary(
