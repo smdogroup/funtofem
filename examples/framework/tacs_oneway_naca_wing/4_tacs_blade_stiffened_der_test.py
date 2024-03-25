@@ -140,9 +140,6 @@ for igroup, comp_group in enumerate(comp_groups):
 tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
-structDV_names = [var.name for var in wing.variables["structural"]]
-structDV_names = sorted(structDV_names)
-
 # build the solver manager, no tacs interface since built for each new shape
 # in the tacs driver
 solvers = SolverManager(comm)
@@ -178,3 +175,4 @@ max_rel_error = TestResult.finite_difference(
 )
 
 print(f"max rel error = {max_rel_error}")
+
