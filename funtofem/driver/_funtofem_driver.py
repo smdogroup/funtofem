@@ -258,6 +258,7 @@ class FUNtoFEMDriver(object):
                 return fail
 
         # reload funtofem states (want this to be after TACS/struct solvers set size of states in)
+        #    do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.load_funtofem_states(self.comm)
         return 0
@@ -276,12 +277,12 @@ class FUNtoFEMDriver(object):
         return 0
 
     def _post_forward(self, scenario, bodies):
-        for solver in self.solvers.solver_list:
-            solver.post(scenario, bodies)
-
-        # save the funtofem states
+        # save the funtofem states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.save_funtofem_states(self.comm)
+
+        for solver in self.solvers.solver_list:
+            solver.post(scenario, bodies)
 
         return
 
