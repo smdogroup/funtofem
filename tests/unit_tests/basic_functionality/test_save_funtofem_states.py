@@ -53,7 +53,7 @@ class TestReloadFuntofemStates(unittest.TestCase):
         print(f"cleared struct temps = {plate.struct_temps[test_scenario.id][:5]}")
 
         # reload the states
-        model.load_funtofem_states(comm)
+        model.load_funtofem_states(comm, test_scenario)
         loaded_struct_disps = plate.struct_disps[test_scenario.id] * 1.0
         print(f"loaded struct disps = {loaded_struct_disps[:5]}")
         loaded_struct_temps = plate.struct_temps[test_scenario.id] * 1.0
