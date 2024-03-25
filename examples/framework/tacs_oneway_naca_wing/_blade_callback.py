@@ -114,19 +114,6 @@ def blade_elemCallBack(structDV_names):
             elif "spar" in compDescript:
                 panelLength = 0.36
 
-        # get the dv index associated with the panel thickness variable
-        # from sorted struct DV names
-        dv_name = compDescript.split(" ")[-1]
-        #print(f"compDescript = {compDescript}")
-        #print(f"TacsComponent dv name = {dv_name}")
-        found = False
-        for dv_ind, _dv_name in enumerate(structDV_names):
-            if dv_name == _dv_name:
-                found = True
-                break
-        if not (found) and len(structDV_names) > 0:
-            raise AssertionError("Struct DV name not found")
-
         # Always use the 0-deg biased layup for the stiffeners
         stiffenerPlyFractions = skinPlyFracs
         numPlies = len(plyAngles)
@@ -145,24 +132,24 @@ def blade_elemCallBack(structDV_names):
         DVScales = []
 
         panelLengthNum = currDVNum
-        # DVScales.append(panelLengthScale)
-        # currDVNum += 1
+        DVScales.append(panelLengthScale)
+        currDVNum += 1
 
         stiffenerPitchNum = currDVNum
-        # DVScales.append(stiffenerPitchScale)
-        # currDVNum += 1
+        DVScales.append(stiffenerPitchScale)
+        currDVNum += 1
 
-        panelThicknessNum = dv_ind
+        panelThicknessNum = currDVNum
         DVScales.append(panelThicknessScale)
-        # currDVNum += 1
+        currDVNum += 1
 
         stiffenerHeightNum = currDVNum
-        # DVScales.append(stiffenerHeightScale)
-        # currDVNum += 1
+        DVScales.append(stiffenerHeightScale)
+        currDVNum += 1
 
         stiffenerThicknessNum = currDVNum
-        # DVScales.append(stiffenerThicknessScale)
-        # currDVNum += 1
+        DVScales.append(stiffenerThicknessScale)
+        currDVNum += 1
 
         # print(f"making blade stiffeners")
         con = constitutive.BladeStiffenedShellConstitutive(

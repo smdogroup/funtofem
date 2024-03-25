@@ -1,4 +1,3 @@
-
 """
 Sean Engelstad, May 2023
 GT SMDO Lab, Dr. Graeme Kennedy
@@ -43,27 +42,51 @@ nOML = int(tacs_aim.get_output_parameter("nOML"))
 
 null_material = caps2tacs.Orthotropic.null().register_to(tacs_model)
 
-init_thickness = 0.08
-for irib in range(1, nribs + 1):
-    name = f"rib{irib}"
-    caps2tacs.CompositeProperty.null(name, null_material).register_to(tacs_model)
-    Variable.structural(name, value=init_thickness).set_bounds(
+# create the design variables by components now
+# since this mirrors the way TACS creates design variables
+component_groups = [f"rib{irib}" for irib in range(1, nribs + 1)]
+component_groups += [f"spar{ispar}" for ispar in range(1, nspars + 1)]
+component_groups += [f"OML{iOML}" for iOML in range(1, nOML + 1)]
+component_groups = sorted(component_groups)
+
+for icomp, comp in enumerate(component_groups):
+    caps2tacs.CompositeProperty.null(comp, null_material).register_to(tacs_model)
+
+    # NOTE : need to make the struct DVs in TACS in the same order as the blade callback
+    # which is done by components and then a local order
+
+    # panel length variable
+    if "rib" in comp:
+        panel_length = 0.38
+    elif "spar" in comp:
+        panel_length = 0.36
+    elif "OML" in comp:
+        panel_length = 0.65
+    Variable.structural(f"{comp}-length", value=panel_length).set_bounds(
+        lower=0.0, scale=1.0
+    ).register_to(wing)
+
+    # stiffener pitch variable
+    Variable.structural(f"{comp}-spitch", value=0.2).set_bounds(
+        lower=0.05, upper=0.5, scale=1.0
+    ).register_to(wing)
+
+    # panel thickness variable, shortened DV name for ESP/CAPS, nastran requirement here
+    panel_thickness = 0.04 * (icomp + 1) / len(component_groups)
+    Variable.structural(f"{comp}-T", value=panel_thickness).set_bounds(
         lower=0.01, upper=0.2, scale=100.0
     ).register_to(wing)
 
-for ispar in range(1, nspars + 1):
-    name = f"spar{ispar}"
-    caps2tacs.CompositeProperty.null(name, null_material).register_to(tacs_model)
-    Variable.structural(name, value=init_thickness).set_bounds(
-        lower=0.01, upper=0.2, scale=100.0
+    # stiffener height
+    Variable.structural(f"{comp}-sheight", value=0.05).set_bounds(
+        lower=0.002, upper=0.1, scale=10.0
     ).register_to(wing)
 
-for iOML in range(1, nOML + 1):
-    name = f"OML{iOML}"
-    caps2tacs.CompositeProperty.null(name, null_material).register_to(tacs_model)
-    Variable.structural(name, value=init_thickness).set_bounds(
-        lower=0.01, upper=0.2, scale=100.0
+    # stiffener thickness
+    Variable.structural(f"{comp}-sthick", value=0.02).set_bounds(
+        lower=0.002, upper=0.1, scale=100.0
     ).register_to(wing)
+
 
 # add constraints and loads
 caps2tacs.PinConstraint("root").register_to(tacs_model)
@@ -92,8 +115,8 @@ adjacency_scale = 10.0
 for irib in range(
     1, nribs
 ):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
-    left_rib = f2f_model.get_variables(names=f"rib{irib}")
-    right_rib = f2f_model.get_variables(names=f"rib{irib+1}")
+    left_rib = f2f_model.get_variables(names=f"rib{irib}-T")
+    right_rib = f2f_model.get_variables(names=f"rib{irib+1}-T")
     # make a composite function for relative diff in rib thicknesses
     adjacency_rib_constr = left_rib - right_rib
     adjacency_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
@@ -101,8 +124,8 @@ for irib in range(
     ).register_to(f2f_model)
 
 for ispar in range(1, nspars):
-    left_spar = f2f_model.get_variables(names=f"spar{ispar}")
-    right_spar = f2f_model.get_variables(names=f"spar{ispar+1}")
+    left_spar = f2f_model.get_variables(names=f"spar{ispar}-T")
+    right_spar = f2f_model.get_variables(names=f"spar{ispar+1}-T")
     # make a composite function for relative diff in spar thicknesses
     adjacency_spar_constr = left_spar - right_spar
     adjacency_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
@@ -110,8 +133,8 @@ for ispar in range(1, nspars):
     ).register_to(f2f_model)
 
 for iOML in range(1, nOML):
-    left_OML = f2f_model.get_variables(names=f"OML{iOML}")
-    right_OML = f2f_model.get_variables(names=f"OML{iOML+1}")
+    left_OML = f2f_model.get_variables(names=f"OML{iOML}-T")
+    right_OML = f2f_model.get_variables(names=f"OML{iOML+1}-T")
     # make a composite function for relative diff in OML thicknesses
     adj_OML_constr = left_OML - right_OML
     adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
@@ -136,9 +159,9 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
     callback=blade_elemCallBack(structDV_names=structDV_names),
-    add_loads=True
+    add_loads=True,
 )
-solvers.flow.copy_struct_mesh()
+solvers.flow.copy_struct_mesh()  # this routine only works on single proc BTW
 null_driver = NullDriver(solvers, model=f2f_model, transfer_settings=None)
 
 # build the tacs oneway driver
@@ -158,3 +181,5 @@ max_rel_error = TestResult.finite_difference(
     tacs_driver,
     "test_blade_tacs.txt",
 )
+
+print(f"max rel error = {max_rel_error}")
