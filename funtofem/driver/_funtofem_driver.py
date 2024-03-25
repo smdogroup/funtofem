@@ -47,6 +47,7 @@ class FUNtoFEMDriver(object):
         transfer_settings=None,
         model=None,
         debug=False,
+        reload_funtofem_states=False,
     ):
         """
         Parameters
@@ -59,6 +60,8 @@ class FUNtoFEMDriver(object):
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
+        reload_funtofem_states: bool
+            whether to save and reload funtofem states
         """
 
         # add the comm manger
@@ -72,6 +75,7 @@ class FUNtoFEMDriver(object):
         if transfer_settings is None:
             transfer_settings = TransferSettings()
         self.transfer_settings = transfer_settings
+        self.reload_funtofem_states = reload_funtofem_states
 
         # communicator
         self.comm = comm_manager.master_comm
@@ -252,6 +256,10 @@ class FUNtoFEMDriver(object):
             fail = solver.initialize(scenario, bodies)
             if fail != 0:
                 return fail
+            
+        # reload funtofem states (want this to be after TACS/struct solvers set size of states in)
+        if self.reload_funtofem_states:
+            self.model.load_funtofem_states(self.comm)
         return 0
 
     def _initialize_adjoint(self, scenario, bodies):
@@ -270,6 +278,12 @@ class FUNtoFEMDriver(object):
     def _post_forward(self, scenario, bodies):
         for solver in self.solvers.solver_list:
             solver.post(scenario, bodies)
+
+        # save the funtofem states
+        if self.reload_funtofem_states:
+            self.model.save_funtofem_states(self.comm)
+
+        return
 
     def _post_adjoint(self, scenario, bodies):
         for solver in self.solvers.solver_list:
