@@ -1021,6 +1021,8 @@ class FUNtoFEMmodel(object):
         if not os.path.exists(work_dir) and comm.rank == 0:
             os.mkdir(work_dir)
 
+        comm.Barrier()
+
         # for each scenario, for each body save the states for the coupling types of that body
         # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
         # i.e. you might have a different number of struct nodes on each proc..
