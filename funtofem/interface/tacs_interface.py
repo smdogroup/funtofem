@@ -693,7 +693,7 @@ class TacsSteadyInterface(SolverInterface):
                 if self.PANEL_LENGTH_CONSTR in func.name:
                     # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
                     func.value = funcs[self.panel_length_name][ct]
-                ct += 1
+                    ct += 1
 
         # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
         self.set_variables(scenario, bodies)
@@ -918,15 +918,26 @@ class TacsSteadyInterface(SolverInterface):
         if self.panel_length_constraint is not None:
             funcSens = {}
             ifunc = 0
-            self.panel_length_constraint.evalConstraintSens(funcSens)
+            self.panel_length_constraint.evalConstraintsSens(funcSens)
+            print(f"funcs Sens = {funcSens}")
             for func in self.model.composite_functions:
                 if self.PANEL_LENGTH_CONSTR in func.name:
-                    # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+
+                    gradient = None
+                    if self.comm.rank == 0: # broadcast derivatives from root proc to other procs
+                        gradient = np.zeros((len(self.struct_variables)))
+                        # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                        for ivar, var in enumerate(self.struct_variables):
+                            gradient[ivar] = funcSens[self.panel_length_name][
+                                "struct"
+                            ].toarray()[ifunc, ivar]
+                    
+                    gradient = self.comm.bcast(gradient, root=0)
                     for ivar, var in enumerate(self.struct_variables):
-                        func.derivatives[var] = funcSens[self.panel_length_name][
-                            "struct"
-                        ][ifunc, ivar]
+                        func.derivatives[var] = gradient[ivar]
+
                     ifunc += 1
+                    
 
         func_grad = []
         if self.tacs_proc:

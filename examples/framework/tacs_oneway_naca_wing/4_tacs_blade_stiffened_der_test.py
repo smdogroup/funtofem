@@ -153,7 +153,7 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
     nprocs=1,
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
-    callback=blade_elemCallBack(structDV_names=structDV_names),
+    callback=blade_elemCallBack,
     add_loads=True,
 )
 solvers.flow.copy_struct_mesh()  # this routine only works on single proc BTW
