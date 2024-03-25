@@ -87,7 +87,6 @@ for icomp, comp in enumerate(component_groups):
         lower=0.002, upper=0.1, scale=100.0
     ).register_to(wing)
 
-
 # add constraints and loads
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 caps2tacs.GridForce("OML", direction=[0, 0, 1.0], magnitude=10).register_to(tacs_model)
@@ -110,36 +109,32 @@ tacs_scenario.register_to(f2f_model)
 
 # make the composite functions for adjacency constraints
 variables = f2f_model.get_variables()
-adj_value = 0.002
+adj_value = 2.5e-3
 adjacency_scale = 10.0
-for irib in range(
-    1, nribs
-):  # not (1, nribs+1) bc we want to do one less since we're doing nribs-1 pairs
-    left_rib = f2f_model.get_variables(names=f"rib{irib}-T")
-    right_rib = f2f_model.get_variables(names=f"rib{irib+1}-T")
-    # make a composite function for relative diff in rib thicknesses
-    adjacency_rib_constr = left_rib - right_rib
-    adjacency_rib_constr.set_name(f"rib{irib}-{irib+1}").optimize(
-        lower=-adj_value, upper=adj_value, scale=1.0, objective=False
-    ).register_to(f2f_model)
 
-for ispar in range(1, nspars):
-    left_spar = f2f_model.get_variables(names=f"spar{ispar}-T")
-    right_spar = f2f_model.get_variables(names=f"spar{ispar+1}-T")
-    # make a composite function for relative diff in spar thicknesses
-    adjacency_spar_constr = left_spar - right_spar
-    adjacency_spar_constr.set_name(f"spar{ispar}-{ispar+1}").optimize(
-        lower=-adj_value, upper=adj_value, scale=1.0, objective=False
-    ).register_to(f2f_model)
+comp_groups = ["spar", "OML"]
+comp_nums = [nspars, nOML]
+adj_types = ["T", "sthick", "sheight"]
+for igroup, comp_group in enumerate(comp_groups):
+    comp_num = comp_nums[igroup]
+    for icomp in range(1, comp_num):
+        for adj_type in adj_types:
+            name = f"{comp_group}{icomp}-{adj_type}"
+            # print(f"name = {name}", flush=True)
+            left_var = f2f_model.get_variables(f"{comp_group}{icomp}-{adj_type}")
+            right_var = f2f_model.get_variables(f"{comp_group}{icomp+1}-{adj_type}")
+            # print(f"left var = {left_var}, right var = {right_var}")
+            adjacency_rib_constr = left_var - right_var
+            adjacency_rib_constr.set_name(f"{comp_group}adj{icomp}").optimize(
+                lower=-adj_value, upper=adj_value, scale=1.0, objective=False
+            ).register_to(f2f_model)
 
-for iOML in range(1, nOML):
-    left_OML = f2f_model.get_variables(names=f"OML{iOML}-T")
-    right_OML = f2f_model.get_variables(names=f"OML{iOML+1}-T")
-    # make a composite function for relative diff in OML thicknesses
-    adj_OML_constr = left_OML - right_OML
-    adj_OML_constr.set_name(f"OML{iOML}-{iOML+1}").optimize(
-        lower=-adj_value, upper=adj_value, scale=1.0, objective=False
-    ).register_to(f2f_model)
+        # also add stiffener - panel adjacency here too
+
+# add panel length composite functions
+# doesn't work on this particular geometry as panels have more than one closed loop
+# for icomp, comp in enumerate(component_groups):
+#    CompositeFunction.external(f"{comp}-{TacsSteadyInterface.PANEL_LENGTH_CONSTR}").optimize(lower=0, upper=0, scale=1.0, objective=False).register_to(f2f_model)
 
 # make the BDF and DAT file for TACS structural analysis
 tacs_aim.setup_aim()

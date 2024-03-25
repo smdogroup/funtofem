@@ -117,6 +117,8 @@ class TacsSteadyInterface(SolverInterface):
     A base class to do coupled steady simulations with TACS
     """
 
+    PANEL_LENGTH_CONSTR = "length"
+
     def __init__(
         self,
         comm,
@@ -130,6 +132,7 @@ class TacsSteadyInterface(SolverInterface):
         Fvec=None,
         nprocs=None,
         debug=False,
+        panel_length_constraint=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -169,6 +172,7 @@ class TacsSteadyInterface(SolverInterface):
 
         self.comm = comm
         self.tacs_comm = tacs_comm
+        self.model = model
         self.nprocs = nprocs
 
         # Flag to output heat flux instead of rotx
@@ -209,6 +213,10 @@ class TacsSteadyInterface(SolverInterface):
 
         # Generate output
         self.gen_output = gen_output
+
+        # create panel length constraints
+        self.panel_length_constraint = panel_length_constraint
+        self.panel_length_name = "PanelLengthCon_PanelLength"
 
         # Debug flag
         self._debug = debug
@@ -676,6 +684,17 @@ class TacsSteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+        # compute the panel length constraint
+        if self.panel_length_constraint is not None:
+            funcs = {}
+            ct = 0
+            self.panel_length_constraint.evalConstraints(funcs)
+            for func in self.model.composite_functions:
+                if self.PANEL_LENGTH_CONSTR in func.name:
+                    # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                    func.value = funcs[self.panel_length_name][ct]
+                ct += 1
+
         # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
         self.set_variables(scenario, bodies)
         if self.tacs_proc:
@@ -895,6 +914,20 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        # compute the panel length constraint
+        if self.panel_length_constraint is not None:
+            funcSens = {}
+            ifunc = 0
+            self.panel_length_constraint.evalConstraintSens(funcSens)
+            for func in self.model.composite_functions:
+                if self.PANEL_LENGTH_CONSTR in func.name:
+                    # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                    for ivar, var in enumerate(self.struct_variables):
+                        func.derivatives[var] = funcSens[self.panel_length_name][
+                            "struct"
+                        ][ifunc, ivar]
+                    ifunc += 1
+
         func_grad = []
         if self.tacs_proc:
             func_list = self.scenario_data[scenario].func_list
@@ -1054,6 +1087,21 @@ class TacsSteadyInterface(SolverInterface):
                 Fvec = addLoadsFromBDF(fea_assembler)
             # Fvec = None
 
+            # make the panel length constraint object
+            has_panel_length_funcs = any(
+                [
+                    cls.PANEL_LENGTH_CONSTR in comp_func.name
+                    for comp_func in model.composite_functions
+                ]
+            )
+            if has_panel_length_funcs:
+                panel_length_constraint = fea_assembler.createPanelLengthConstraint(
+                    "PanelLengthCon"
+                )
+                panel_length_constraint.addConstraint("PanelLength", dvIndex=0)
+            else:
+                panel_length_constraint = None
+
             # Retrieve the assembler from pyTACS fea_assembler object
             assembler = fea_assembler.assembler
 
@@ -1128,6 +1176,7 @@ class TacsSteadyInterface(SolverInterface):
             override_rotx=override_rotx,
             Fvec=Fvec,
             debug=debug,
+            panel_length_constraint=panel_length_constraint,
         )
 
 

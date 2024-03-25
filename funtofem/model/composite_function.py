@@ -68,6 +68,17 @@ class CompositeFunction:
         self.derivatives = {}
         self.df_dgi = None
 
+    @classmethod
+    def external(cls, name, optim=False, plot_name=None):
+        return cls(
+            name=name,
+            eval_hdl=None,
+            functions=[],
+            variables=[],
+            optim=optim,
+            plot_name=plot_name,
+        )
+
     def reset(self):
         """reset the function for a new analysis"""
         self._eval_forward = False
@@ -142,6 +153,9 @@ class CompositeFunction:
         """
         Compute the value of the composite function from the other functions.
         """
+        if self.eval_hdl is None:
+            return  # exit for external functions
+
         save_value = False  # only save value when calling with default funcs
         if funcs is None:
             funcs = self.funcs
@@ -158,6 +172,9 @@ class CompositeFunction:
         """
         Compute derivatives of the composite function for each variable.
         """
+        if self.eval_hdl is None:
+            return  # exit for external functions
+
         if self._eval_deriv:  # exit early if already evaluated
             return
 

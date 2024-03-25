@@ -1616,9 +1616,9 @@ class Body(Base):
             for ind, aero_id in enumerate(self.aero_id):
                 if steady:
                     if self.transfer is not None:
-                        self.aero_loads[scenario_id][
-                            3 * ind : 3 * ind + 3
-                        ] = scenario_entry_dict[aero_id]["load"]
+                        self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = (
+                            scenario_entry_dict[aero_id]["load"]
+                        )
                     if self.thermal_transfer is not None:
                         self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
                             aero_id
@@ -1634,9 +1634,9 @@ class Body(Base):
                     if self.thermal_transfer is not None:
                         # make sure this time index exists in the case of scenarios with different # of time steps
                         if itime < len(self.aero_heat_flux[scenario_id]):
-                            self.aero_heat_flux[scenario_id][itime][
-                                ind
-                            ] = scenario_entry_dict[aero_id]["hflux"]
+                            self.aero_heat_flux[scenario_id][itime][ind] = (
+                                scenario_entry_dict[aero_id]["hflux"]
+                            )
 
         print(f"\tF2F - done distribute loads Time step {itime}")
 
