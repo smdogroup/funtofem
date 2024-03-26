@@ -862,8 +862,6 @@ class TacsSteadyInterface(SolverInterface):
                             :, ifunc
                         ].astype(TACS.dtype)
 
-                print(f"struct disps ajp array = {struct_disps_ajp}")
-
                 # Zero the adjoint right-hand-side conditions at DOF locations
                 # where the boundary conditions are applied. This is consistent with
                 # the forward analysis where the forces/fluxes contributiosn are
@@ -875,8 +873,6 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Extract the structural adjoint array in-place
                 psi_array = psi[ifunc].getArray()
-
-                print(f"psi array = {psi_array}")
 
                 # Set the adjoint-Jacobian products for each body
                 for body in bodies:
@@ -927,20 +923,21 @@ class TacsSteadyInterface(SolverInterface):
                 if self.PANEL_LENGTH_CONSTR in func.name:
 
                     gradient = None
-                    if self.comm.rank == 0: # broadcast derivatives from root proc to other procs
+                    if (
+                        self.comm.rank == 0
+                    ):  # broadcast derivatives from root proc to other procs
                         gradient = np.zeros((len(self.struct_variables)))
                         # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
                         for ivar, var in enumerate(self.struct_variables):
                             gradient[ivar] = funcSens[self.panel_length_name][
                                 "struct"
                             ].toarray()[ifunc, ivar]
-                    
+
                     gradient = self.comm.bcast(gradient, root=0)
                     for ivar, var in enumerate(self.struct_variables):
                         func.derivatives[var] = gradient[ivar]
 
                     ifunc += 1
-                    
 
         func_grad = []
         if self.tacs_proc:

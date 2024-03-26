@@ -76,7 +76,9 @@ VerticalDirection = np.array([0.0, 0.0, 1.0])
 # ==============================================================================
 
 
-def blade_elemCallBack(dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs):
+def blade_elemCallBack(
+    dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs
+):
 
     prop = constitutive.MaterialProperties(
         rho=compositeProperties["rho"],

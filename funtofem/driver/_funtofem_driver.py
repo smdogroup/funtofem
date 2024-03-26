@@ -267,7 +267,7 @@ class FUNtoFEMDriver(object):
             if fail != 0:
                 return fail
         return 0
-    
+
     def _zero_derivatives(self):
         """zero all model derivatives"""
         for func in self.model.get_functions(all=True):

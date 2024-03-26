@@ -175,4 +175,3 @@ max_rel_error = TestResult.finite_difference(
 )
 
 print(f"max rel error = {max_rel_error}")
-
