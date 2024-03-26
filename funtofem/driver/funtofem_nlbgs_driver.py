@@ -43,6 +43,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         transfer_settings=None,
         model=None,
         debug=False,
+        reload_funtofem_states=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -58,6 +59,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
+        reload_funtofem_states: bool
+            whether to save and reload funtofem states
         """
 
         super(FUNtoFEMnlbgs, self).__init__(
@@ -66,6 +69,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             transfer_settings=transfer_settings,
             model=model,
             debug=debug,
+            reload_funtofem_states=reload_funtofem_states,
         )
 
         return
