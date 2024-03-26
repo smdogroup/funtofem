@@ -1,6 +1,7 @@
 __all__ = ["CompositeFunction"]
 
 import numpy as np
+from scipy.sparse import csr_array
 
 
 def unique(vec):
@@ -85,6 +86,17 @@ class CompositeFunction:
         self._eval_deriv = False
         self._done_complex_step = False
         return
+
+    @property
+    def vars_only(self) -> bool:
+        """used for adjacency constraint functions"""
+        return len(self.functions) == 0 and len(self.variables) >= 0
+
+    @property
+    def sparse_gradient(self):
+        """used for adjacency constraints, vars only functions"""
+        np_array = np.array([self.derivatives[var] for var in self.derivatives])
+        return csr_array(np_array, shape=(1, np_array.shape[0]))
 
     def optimize(
         self,
