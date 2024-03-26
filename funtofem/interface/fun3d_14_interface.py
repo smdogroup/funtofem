@@ -665,7 +665,7 @@ class Fun3d14Interface(SolverInterface):
 
                 dTdn_dim = dTdn * scenario.T_inf
 
-                aero_temps = body.get_aero_temps(scenario)
+                aero_temps = body.get_aero_temps(scenario, time_index=step)
                 k_dim = scenario.get_thermal_conduct(aero_temps)
 
                 # actually a heating rate integral(heat_flux) over the area
