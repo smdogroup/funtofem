@@ -151,8 +151,6 @@ class OptimizationManager:
 
         # only if a new design run a complete analysis
         fail = False
-        if self.comm.rank == 0:
-            print(f"print1 sparse var group = {x_dict}")
         if self.sparse:
             if self._x_dict is None:
                 arrays_equal = False
@@ -256,7 +254,6 @@ class OptimizationManager:
         # update the model design variables
         if self.sparse:
             variables = self.model.get_variables()
-            print(f"sparse var group = {self._x_dict}")
             for ivar, val in enumerate(self._x_dict[self.SPARSE_VARS_GROUP]):
                 var = variables[ivar]
                 var.value = float(val)
@@ -303,8 +300,6 @@ class OptimizationManager:
         if self.sparse:
             variables = self.model.get_variables()
             values = np.array([var.value for var in variables])
-            if self.comm.rank == 0:
-                print(f"values in sparse registeration = {values}")
             opt_problem.addVarGroup(
                 self.SPARSE_VARS_GROUP,
                 len(variables),
