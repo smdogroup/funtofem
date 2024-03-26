@@ -1,7 +1,7 @@
 __all__ = ["CompositeFunction"]
 
 import numpy as np
-from scipy.sparse import csr_array
+from scipy.sparse import csr_matrix
 
 
 def unique(vec):
@@ -96,7 +96,7 @@ class CompositeFunction:
     def sparse_gradient(self):
         """used for adjacency constraints, vars only functions"""
         np_array = np.array([self.derivatives[var] for var in self.derivatives])
-        return csr_array(np_array, shape=(1, np_array.shape[0]))
+        return csr_matrix(np_array, shape=(1,np_array.shape[0]))
 
     def optimize(
         self,
