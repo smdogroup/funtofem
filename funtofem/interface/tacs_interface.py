@@ -686,7 +686,7 @@ class TacsSteadyInterface(SolverInterface):
                         func.value = funcs[self.panel_length_name][ct]
                         ct += 1
 
-        # compute the panel length constraint
+            # compute the panel length constraint
             if adjoint:
                 funcSens = {}
                 ifunc = 0
@@ -725,7 +725,7 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        self._eval_panel_length(adjoint=False)        
+        self._eval_panel_length(adjoint=False)
 
         # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
         self.set_variables(scenario, bodies)

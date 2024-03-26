@@ -151,7 +151,8 @@ class OptimizationManager:
 
         # only if a new design run a complete analysis
         fail = False
-        print(f"print1 sparse var group = {x_dict}")
+        if self.comm.rank == 0:
+            print(f"print1 sparse var group = {x_dict}")
         if self.sparse:
             if self._x_dict is None:
                 arrays_equal = False
@@ -280,11 +281,11 @@ class OptimizationManager:
         for func in self.model.get_functions(optim=True):
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
-            if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
-                self._sens[func.full_name][self.SPARSE_VARS_GROUP] = (
-                    func.sparse_gradient.astype(np.double)
-                )
-            elif self.sparse:
+            # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
+            #     self._sens[func.full_name][self.SPARSE_VARS_GROUP] = (
+            #         func.sparse_gradient # .astype(np.double)
+            #     ) # linear constraints define their jacobians up front
+            if self.sparse:
                 self._sens[func.full_name][self.SPARSE_VARS_GROUP] = np.array(
                     [func.derivatives[var].real for var in func.derivatives]
                 )
@@ -302,7 +303,8 @@ class OptimizationManager:
         if self.sparse:
             variables = self.model.get_variables()
             values = np.array([var.value for var in variables])
-            print(f"values in sparse registeration = {values}")
+            if self.comm.rank == 0:
+                print(f"values in sparse registeration = {values}")
             opt_problem.addVarGroup(
                 self.SPARSE_VARS_GROUP,
                 len(variables),
@@ -329,11 +331,20 @@ class OptimizationManager:
                 if isinstance(func, CompositeFunction) and func.vars_only:
                     # TODO : how to account for shape derivatives of panel length constraints..
                     opt_problem.addCon(
-                        func.full_name, lower=func.lower, upper=func.upper, scale=func.scale, linear=True, wrt=[self.SPARSE_VARS_GROUP], jac={self.SPARSE_VARS_GROUP : func.sparse_gradient}
+                        func.full_name,
+                        lower=func.lower,
+                        upper=func.upper,
+                        scale=func.scale,
+                        linear=True,
+                        wrt=[self.SPARSE_VARS_GROUP],
+                        jac={self.SPARSE_VARS_GROUP: func.sparse_gradient},
                     )
                 else:
                     opt_problem.addCon(
-                        func.full_name, lower=func.lower, upper=func.upper, scale=func.scale
+                        func.full_name,
+                        lower=func.lower,
+                        upper=func.upper,
+                        scale=func.scale,
                     )
 
         return
