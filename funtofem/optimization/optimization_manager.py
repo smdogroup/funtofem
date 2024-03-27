@@ -47,6 +47,7 @@ class OptimizationManager:
         hot_start_file=None,
         debug: bool = False,
         sparse: bool = False,
+        write_checkpoints=False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -75,6 +76,7 @@ class OptimizationManager:
         self.hot_start_file = hot_start_file
         self.debug = debug
         self.sparse = sparse
+        self.write_checkpoints = write_checkpoints
 
         # optimization meta data
         self._iteration = 0
@@ -92,7 +94,7 @@ class OptimizationManager:
             if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
             self._checkpoints_folder = os.path.join(self._design_folder, "checkpoints")
-            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0:
+            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0 and self.write_checkpoints:
                 os.mkdir(self._checkpoints_folder)
 
             # make the design file handle
@@ -209,7 +211,8 @@ class OptimizationManager:
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
-                self._design_hdl.write(f"Functions = {self._funcs}\n")
+                plot_funcs = {func.full_name : func.value.real for func in self.model.get_functions(optim=True) if func._plot}
+                self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 
             # only update design file if analysis didn't fail and give nans
@@ -219,23 +222,25 @@ class OptimizationManager:
                 )
             if not (fail):
                 # also write the design to the checkpoints folder
-                dvs_file = os.path.join(
-                    self._checkpoints_folder, f"funtofem{self._iteration}.in"
-                )
-                self.model.write_design_variables_file(self.comm, dvs_file, root=0)
-                func_file = os.path.join(
-                    self._checkpoints_folder, f"funtofem{self._iteration}.out"
-                )
-                self.model.write_functions_file(
-                    self.comm, func_file, full_precision=False, optim=True
-                )
-                # copy the hotstart file to the checkpoints folder
-                if self.hot_start_file is not None and self.comm.rank == 0:
-                    src = self.hot_start_file
-                    dest = os.path.join(
-                        self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                if self.write_checkpoints:
+                    dvs_file = os.path.join(
+                        self._checkpoints_folder, f"funtofem{self._iteration}.in"
                     )
-                    shutil.copy(src, dest)
+                    self.model.write_design_variables_file(self.comm, dvs_file, root=0)
+                    func_file = os.path.join(
+                        self._checkpoints_folder, f"funtofem{self._iteration}.out"
+                    )
+                    self.model.write_functions_file(
+                        self.comm, func_file, full_precision=False, optim=True
+                    )
+                    # copy the hotstart file to the checkpoints folder
+                    if self.hot_start_file is not None and self.comm.rank == 0:
+                        src = self.hot_start_file
+                        dest = os.path.join(
+                            self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                        )
+                        shutil.copy(src, dest)
+
                 self._iteration += 1
 
             # update and plot the current optimization history
