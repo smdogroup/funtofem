@@ -26,7 +26,6 @@ import os, numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import shutil
-from ..model.composite_function import CompositeFunction
 
 
 class OptimizationManager:
