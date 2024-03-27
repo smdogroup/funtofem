@@ -187,6 +187,7 @@ class OptimizationManager:
                         print(
                             f"Warning: func {func_key} = {self._funcs[func_key]} and has a nan"
                         )
+                        print(f"x dict = {self._x_dict}")
                     fail = True
                 # if self.sparse:
                 #     print(f"c_sens = {c_sens}")
