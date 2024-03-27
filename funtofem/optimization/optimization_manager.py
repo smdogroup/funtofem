@@ -401,8 +401,8 @@ class OptimizationManager:
                         constr_bndry = 1.0
                         # take relative errors against constraint boundaries, lower upper
                         yfinal = yvec[-1]
-                        err_lower = 1e5
-                        err_upper = 1e5
+                        err_lower = 1e13
+                        err_upper = 1e13
                         if func.lower is not None:
                             # use abs error since could have div 0
                             err_lower = abs(yfinal - func.lower)
