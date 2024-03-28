@@ -40,7 +40,7 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing1-turb")
+f2f_model = FUNtoFEMmodel("ssw-sizing1")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
@@ -146,12 +146,12 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise", steps=1500, coupling_frequency=30, uncoupled_steps=200
+    "cruise_inviscid", steps=300, coupling_frequency=30, uncoupled_steps=0
 )
 cruise.adjoint_steps = (
-    150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+    100  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
-cruise.set_stop_criterion(early_stopping=True, min_forward_steps=300, min_adjoint_steps=20)
+cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
 
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
@@ -200,8 +200,8 @@ solvers.flow = Fun3d14Interface(
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
     forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=1e-13,
-    adjoint_min_tolerance=1e-10,
+    adjoint_stop_tolerance=4e-16,
+    adjoint_min_tolerance=1e-12,
     debug=global_debug_flag,
 )
 # fun3d_project_name = "ssw-pw1.2"
