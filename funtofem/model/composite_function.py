@@ -2,7 +2,6 @@ __all__ = ["CompositeFunction"]
 
 import numpy as np
 
-# from scipy.sparse import csr_matrix
 
 
 def unique(vec):
