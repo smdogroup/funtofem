@@ -267,12 +267,21 @@ def addLoadsFromBDF(fea_assembler):
             for loadInfo, scale in zip(loadSet, loadScale):
                 # Add any point force or moment cards
                 if loadInfo.type == "FORCE" or loadInfo.type == "MOMENT":
-                    nodeIDs = loadInfo.node_ref.nid
+                    node_ref = loadInfo.node_ref
+                    if node_ref is not None:
+                        nodeIDs = node_ref.nid
+                    else:
+                        nodeIDs = [loadInfo.node]
 
                     loadArray = np.zeros(vpn)
                     if loadInfo.type == "FORCE" and vpn >= 3:
                         F = scale * loadInfo.scaled_vector
-                        loadArray[:3] += loadInfo.cid_ref.transform_vector_to_global(F)
+                        if loadInfo.cid_ref is not None:
+                            loadArray[
+                                :3
+                            ] += loadInfo.cid_ref.transform_vector_to_global(F)
+                        else:
+                            loadArray[:3] += loadInfo.xyz * loadInfo.mag
                     elif loadInfo.type == "MOMENT" and vpn >= 6:
                         M = scale * loadInfo.scaled_vector
                         loadArray[3:6] += loadInfo.cid_ref.transform_vector_to_global(M)

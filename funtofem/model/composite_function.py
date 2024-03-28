@@ -68,12 +68,54 @@ class CompositeFunction:
         self.derivatives = {}
         self.df_dgi = None
 
+    @classmethod
+    def external(cls, name, optim=False, plot_name=None):
+        return cls(
+            name=name,
+            eval_hdl=None,
+            functions=[],
+            variables=[],
+            optim=optim,
+            plot_name=plot_name,
+        )
+
     def reset(self):
         """reset the function for a new analysis"""
         self._eval_forward = False
         self._eval_deriv = False
         self._done_complex_step = False
         return
+
+    @property
+    def vars_only(self) -> bool:
+        """used for adjacency constraint functions"""
+        return len(self.functions) == 0 and len(self.variables) >= 0
+
+    @property
+    def sparse_gradient(self):
+        """used for adjacency constraints, vars only functions"""
+        np_array = np.array([self.derivatives[var] for var in self.derivatives])
+        # return csr_matrix(np_array, shape=(1,np_array.shape[0]))
+        nvars = np_array.shape[0]
+        cols = np.array(
+            [
+                ivar
+                for ivar, var in enumerate(self.derivatives)
+                if self.derivatives[var] != 0.0
+            ]
+        )
+        rows = np.array([0 for _ in range(cols.shape[0])])
+        vals = np.array(
+            [
+                self.derivatives[var]
+                for ivar, var in enumerate(self.derivatives)
+                if self.derivatives[var] != 0.0
+            ]
+        )
+        return {
+            "coo": [rows, cols, vals],
+            "shape": (1, nvars),
+        }
 
     def optimize(
         self,
@@ -142,6 +184,9 @@ class CompositeFunction:
         """
         Compute the value of the composite function from the other functions.
         """
+        if self.eval_hdl is None:
+            return  # exit for external functions
+
         save_value = False  # only save value when calling with default funcs
         if funcs is None:
             funcs = self.funcs
@@ -158,6 +203,9 @@ class CompositeFunction:
         """
         Compute derivatives of the composite function for each variable.
         """
+        if self.eval_hdl is None:
+            return  # exit for external functions
+
         if self._eval_deriv:  # exit early if already evaluated
             return
 

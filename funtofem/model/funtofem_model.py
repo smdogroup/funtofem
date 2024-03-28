@@ -152,8 +152,13 @@ class FUNtoFEMmodel(object):
             for var in struct_variables:
                 # check if matching shell property exists
                 matching_prop = False
+                chunks = var.name.split("-")
+                chunk_thick_var = len(chunks) == 2 and chunks[1] == "T"
                 for prop in self.structural.tacs_aim._properties:
                     if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+                    elif chunk_thick_var and chunks[0] == prop.caps_group:
                         matching_prop = True
                         break
 
@@ -162,10 +167,17 @@ class FUNtoFEMmodel(object):
                     if dv.name == var.name:
                         matching_dv = True
                         break
+                    elif chunk_thick_var and chunks[0] == dv.name:
+                        matching_dv = True
+                        break
 
                 if matching_prop and not (matching_dv):
+                    if len(chunks) == 2:
+                        var_name = chunks[0]
+                    else:
+                        var_name = var.name
                     caps2tacs.ThicknessVariable(
-                        caps_group=var.name,
+                        caps_group=var_name,
                         value=var.value,
                         name=var.name,
                         active=var.active,
@@ -197,6 +209,7 @@ class FUNtoFEMmodel(object):
                     caps2tacs.ShapeVariable(
                         name=var.name, value=var.value, active=var.active
                     ).register_to(self.structural)
+
         return
 
     def _send_flow_variables(self, base):
