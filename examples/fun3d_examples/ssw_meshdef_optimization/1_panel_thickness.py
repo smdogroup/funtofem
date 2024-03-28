@@ -151,7 +151,9 @@ cruise = Scenario.steady(
 cruise.adjoint_steps = (
     150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
 )
-cruise.set_stop_criterion(early_stopping=True, min_forward_steps=300, min_adjoint_steps=20)
+cruise.set_stop_criterion(
+    early_stopping=True, min_forward_steps=300, min_adjoint_steps=20
+)
 
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"

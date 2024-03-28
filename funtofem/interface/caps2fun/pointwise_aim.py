@@ -111,7 +111,7 @@ class PointwiseAIM:
             )
             self.aim.input.Domain_Decay = domain_decay
             self.aim.input.Domain_Iso_Type = domain_iso_type  # "TriangleQuad"
-            self.aim.input.Domain_TRex_Type = domain_trex_type # "TriangleQuad"
+            self.aim.input.Domain_TRex_Type = domain_trex_type  # "TriangleQuad"
 
             self.aim.input.Domain_Wall_Spacing = (
                 domain_wall_spacing  # e.g. 1e-5 if turbulent

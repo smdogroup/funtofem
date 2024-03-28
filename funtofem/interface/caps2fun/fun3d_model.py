@@ -10,6 +10,7 @@ from .mesh_aim import MeshAim
 from .pointwise_aim import PointwiseAIM
 from .aflr_aim import Aflr3Aim
 
+
 class Fun3dModel:
     SURFACE_AIMS = ["egads", "aflr4"]
     VOLUME_AIMS = ["aflr3"]
@@ -168,11 +169,9 @@ class Fun3dModel:
             filename = "aflr3_0.lb8.ugrid"
         elif isinstance(self.mesh_aim.volume_aim, PointwiseAIM):
             filename = "caps.GeomTomesh.lb8.ugrid"
-        
-        self.fun3d_aim.grid_file = os.path.join(
-            self.mesh_aim.analysis_dir, filename
-        )
-        
+
+        self.fun3d_aim.grid_file = os.path.join(self.mesh_aim.analysis_dir, filename)
+
         # also set mapbc file
         self.fun3d_aim.mapbc_file = os.path.join(
             self.fun3d_aim.analysis_dir, "Flow", self.fun3d_aim.project_name + ".mapbc"
