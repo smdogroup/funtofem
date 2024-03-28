@@ -1064,6 +1064,7 @@ class TacsSteadyInterface(SolverInterface):
         assembler = None
         f5 = None
         Fvec = None
+        panel_length_constraint = None
         if world_rank < nprocs:
             # Create the assembler class
             fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
