@@ -3,7 +3,6 @@ __all__ = ["CompositeFunction"]
 import numpy as np
 
 
-
 def unique(vec):
     """make a unique version of list"""
     output = []
