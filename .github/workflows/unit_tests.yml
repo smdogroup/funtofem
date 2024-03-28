@@ -81,6 +81,7 @@ jobs:
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis=5.1.0 -q -y;
+          pip install openmdao==3.30.0
           conda install -c conda-forge petsc=3.19 petsc4py -q -y;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
