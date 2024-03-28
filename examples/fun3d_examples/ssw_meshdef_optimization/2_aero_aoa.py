@@ -224,7 +224,10 @@ transfer_settings = TransferSettings(npts=200)
 
 # Build the FUNtoFEM driver
 f2f_driver = FUNtoFEMnlbgs(
-    solvers=solvers, transfer_settings=transfer_settings, model=f2f_model
+    solvers=solvers,
+    transfer_settings=transfer_settings,
+    model=f2f_model,
+    reload_funtofem_states=True,
 )
 
 # ---------------------------------------------------->

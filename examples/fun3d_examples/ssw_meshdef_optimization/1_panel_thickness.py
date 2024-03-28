@@ -224,6 +224,7 @@ f2f_driver = FUNtoFEMnlbgs(
     transfer_settings=transfer_settings,
     model=f2f_model,
     debug=global_debug_flag,
+    reload_funtofem_states=True,
 )
 
 if test_derivatives:  # test using the finite difference test
