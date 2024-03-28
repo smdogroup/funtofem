@@ -414,7 +414,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             # run the pre analysis to generate a new mesh
             try:
-                self.flow_aim.pre_analysis()
+                self.model.flow.pre_analysis()
+                # self.flow_aim.pre_analysis()
                 local_fail = False
             except:
                 local_fail = True
@@ -642,7 +643,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             start_time = time.time()
 
             # run the pre analysis to generate a new mesh
-            self.flow_aim.pre_analysis()
+            self.model.flow.pre_analysis()
+            # self.flow_aim.pre_analysis()
 
             flow_adjoint_pre_time = (time.time() - start_time) / 60.0
             self._write_timing_data(

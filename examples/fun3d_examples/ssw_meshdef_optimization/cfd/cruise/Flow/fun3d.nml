@@ -10,9 +10,9 @@
   eqn_type = 'compressible'
   viscous_terms = 'turbulent'
 /
-&turbulent_diffusion_models
-  turbulence_model = 'sa-neg'
-/
+!&turbulent_diffusion_models
+!  turbulence_model = 'sa'
+!/
 &reference_physical_properties
   mach_number     = 0.5
   angle_of_attack = 2.0
@@ -24,6 +24,7 @@
   restart_write_freq = 100
   restart_read       = 'on'
   steps              =  5000
+  stopping_tolerance = 1e-18
 /
 &force_moment_integ_properties
   area_reference = 5.0
@@ -60,8 +61,11 @@
 /
 &elasticity_gmres
   elasticity = 2
+  preconditioner_iters = 10
+  nsearch = 200 ! num GMRES steps
+  nrestarts = 4 ! leads to 50*15 = 750 grid iterations
   tol = 1e-20
-  tol_abs = 1e-30
+  tol_abs = 1e-25
 /
 &slice_data
   nslices       = 1

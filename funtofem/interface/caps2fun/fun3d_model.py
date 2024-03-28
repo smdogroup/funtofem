@@ -7,6 +7,8 @@ __all__ = ["Fun3dModel"]
 import pyCAPS, os
 from .fun3d_aim import Fun3dAim
 from .mesh_aim import MeshAim
+from .pointwise_aim import PointwiseAIM
+from .aflr_aim import Aflr3Aim
 
 
 class Fun3dModel:
@@ -132,7 +134,8 @@ class Fun3dModel:
             self.fun3d_aim.aim.input.Proj_Name = self.project_name
         self.fun3d_aim._metadata["project_name"] = self.project_name
         if self.mesh_aim.root_proc:
-            self.mesh_aim.surface_aim.aim.input.Proj_Name = self.project_name
+            if self.mesh_aim.surface_aim is not None:
+                self.mesh_aim.surface_aim.aim.input.Proj_Name = self.project_name
             self.mesh_aim.volume_aim.aim.input.Proj_Name = self.project_name
         return
 
@@ -162,9 +165,13 @@ class Fun3dModel:
         return
 
     def _set_grid_filename(self):
-        self.fun3d_aim.grid_file = os.path.join(
-            self.mesh_aim.analysis_dir, "aflr3_0.lb8.ugrid"
-        )
+        if isinstance(self.mesh_aim.volume_aim, Aflr3Aim):
+            filename = "aflr3_0.lb8.ugrid"
+        elif isinstance(self.mesh_aim.volume_aim, PointwiseAIM):
+            filename = "caps.GeomTomesh.lb8.ugrid"
+
+        self.fun3d_aim.grid_file = os.path.join(self.mesh_aim.analysis_dir, filename)
+
         # also set mapbc file
         self.fun3d_aim.mapbc_file = os.path.join(
             self.fun3d_aim.analysis_dir, "Flow", self.fun3d_aim.project_name + ".mapbc"
@@ -178,6 +185,14 @@ class Fun3dModel:
             self.fun3d_aim.aim.input["Mesh"].link(
                 self.mesh_aim.volume_aim.aim.output["Volume_Mesh"]
             )
+        return
+
+    def pre_analysis(self):
+        volume_aim = self.mesh_aim.volume_aim
+        if isinstance(volume_aim, PointwiseAIM):
+            volume_aim.run_pointwise()
+
+        self.fun3d_aim.pre_analysis()
         return
 
     @property

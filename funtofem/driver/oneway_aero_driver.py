@@ -267,7 +267,7 @@ class OnewayAeroDriver:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            self.flow_aim.pre_analysis()
+            self.model.flow.pre_analysis()
 
             if not (self.is_paired):
                 if (
