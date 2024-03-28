@@ -1,8 +1,8 @@
 """
-2_aero_aoa.py
+3_geom_twist.py
 
-Run a coupled optimization of the angle of attack to minimize lift (L-L_*)^2.
-No shape variables are included in this optimization.
+Run a coupled optimization of the geometric twist at each station.
+No thickness variables here.
 """
 
 from pyoptsparse import SNOPT, Optimization
@@ -20,18 +20,6 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 hot_start = False
 store_history = True
 
-# create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "design-1.txt")
-design_out_file = os.path.join(base_dir, "design", "design-2.txt")
-
-design_folder = os.path.join(base_dir, "design")
-if comm.rank == 0:
-    if not os.path.exists(design_folder):
-        os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-2.hst")
-store_history_file = history_file if store_history else None
-hot_start_file = history_file if hot_start else None
-
 nprocs_tacs = 8
 
 # FUNTOFEM MODEL
@@ -41,11 +29,11 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-aoa")
+f2f_model = FUNtoFEMmodel("ssw-twist")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct2",
+    problem_name="capsStruct3",
     active_procs=[0],
     verbosity=0,
 )
@@ -73,6 +61,57 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
+
+# FUN3D AIM Stuff
+# Set up FUN3D model, AIMs, and turn on the flow view
+# ------------------------------------------------
+fun3d_model = Fun3dModel.build(
+    csm_file=csm_path,
+    comm=comm,
+    project_name="ssw-inviscid",
+    verbosity=0,
+    mesh_morph=True,
+    volume_mesh="aflr3",
+    surface_mesh="egads",
+)
+mesh_aim = fun3d_model.mesh_aim
+fun3d_aim = fun3d_model.fun3d_aim
+fun3d_aim.set_config_parameter("view:flow", 1)
+fun3d_aim.set_config_parameter("view:struct", 0)
+# ------------------------------------------------
+
+global_max = 10
+global_min = 0.1
+
+mesh_aim.surface_aim.set_surface_mesh(
+    edge_pt_min=15,
+    edge_pt_max=20,
+    mesh_elements="Mixed",
+    global_mesh_size=0.5,
+    max_surf_offset=0.01,
+    max_dihedral_angle=15,
+)
+
+case = "inviscid"
+if case == "inviscid":
+    Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
+else:
+    aflr_aim.set_boundary_layer(
+        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
+    )
+    Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
+
+refinement = 1
+
+FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
+
+mesh_aim.saveDictOptions(FluidMeshOptions)
+
+Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
+Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+
+fun3d_model.setup()
+f2f_model.flow = fun3d_model
 
 # ---------------------------------------------------->
 
@@ -127,7 +166,7 @@ for iOML in range(1, nOML + 1):
 for prefix in ["LE", "TE"]:
     name = f"{prefix}spar"
     prop = caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=0.14
+        caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
         lower=0.001,
@@ -136,17 +175,22 @@ for prefix in ["LE", "TE"]:
         active=False,
     ).register_to(wing)
 
+for prefix in range(1, 4 + 1):
+    Variable.shape(f"twist{prefix}", value=1.0).set_bounds(
+        lower=-10.0,
+        upper=10.0,
+        active=True,
+    ).register_to(wing)
+
 # register the wing body to the model
 wing.register_to(f2f_model)
 
 # ---------------------------------------------------->
-tacs_aim.setup_aim()
-# Reload the previous design
-f2f_model.read_design_variables_file(comm, design_in_file)
 
 # INITIAL STRUCTURE MESH, SINCE NO STRUCT SHAPE VARS
 # <----------------------------------------------------
 
+tacs_aim.setup_aim()
 tacs_aim.pre_analysis()
 
 # ---------------------------------------------------->
@@ -155,18 +199,16 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady(
-    "cruise_inviscid", steps=500, coupling_frequency=30, uncoupled_steps=0
-)
-cruise.adjoint_steps = 100
-cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
+cruise = Scenario.steady("cruise_inviscid", steps=300, uncoupled_steps=0)
+cruise.fun3d_project_name = "ssw-inviscid"
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
-mass = Function.mass()
 cl_cruise = Function.lift(body=0)
-aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=4.0, upper=15)
-cruise.include(cl_cruise).include(ksfailure).include(mass)
+aoa_cruise = cruise.get_variable("AOA").set_bounds(
+    lower=-4, value=2.0, upper=15, active=False
+)
+cruise.include(cl_cruise).include(ksfailure)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -191,15 +233,11 @@ cruise.register_to(f2f_model)
 #             lower=-adj_ratio, upper=adj_ratio, scale=1.0, objective=False
 #         ).register_to(f2f_model)
 
+cl_target = 1.2
 
-_wing_area = 5
-_specific_gravity = 9.8
-weight = mass * _specific_gravity
-lift_dim = cl_cruise * q_inf * _wing_area
-
-lift_obj = (lift_dim / weight - 1) ** 2
-lift_obj.set_name(f"LiftObj").optimize(
-    lower=-1e-2, upper=10, scale=1.0, objective=True, plot=True, plot_name="LiftObj"
+cruise_lift = (cl_cruise - cl_target) ** 2
+cruise_lift.set_name(f"LiftObj").optimize(
+    lower=-1e-2, upper=10, scale=1.0, objective=True, plot=True, plot_name="Lift-Obj"
 ).register_to(f2f_model)
 
 # ---------------------------------------------------->
@@ -216,20 +254,18 @@ solvers.flow = Fun3d14Interface(
     forward_min_tolerance=1e-12,
     adjoint_stop_tolerance=4e-16,
     adjoint_min_tolerance=1e-12,
-)
-solvers.structural = TacsSteadyInterface.create_from_bdf(
-    model=f2f_model,
-    comm=comm,
-    nprocs=nprocs_tacs,
-    bdf_file=tacs_aim.root_dat_file,
-    prefix=tacs_aim.root_analysis_dir,
+    auto_coords=False,
 )
 
 transfer_settings = TransferSettings(npts=200)
 
 # Build the FUNtoFEM driver
-f2f_driver = FUNtoFEMnlbgs(
-    solvers=solvers, transfer_settings=transfer_settings, model=f2f_model
+f2f_driver = FuntofemShapeDriver.aero_morph(
+    solvers=solvers,
+    model=f2f_model,
+    transfer_settings=transfer_settings,
+    struct_nprocs=nprocs_tacs,
+    reload_funtofem_states=True,
 )
 
 # ---------------------------------------------------->
@@ -237,9 +273,25 @@ f2f_driver = FUNtoFEMnlbgs(
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------
 
+# create an OptimizationManager object for the pyoptsparse optimization problem
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
+design_out_file = os.path.join(base_dir, "design", "design-3.txt")
+
+
+design_folder = os.path.join(base_dir, "design")
+if comm.rank == 0:
+    if not os.path.exists(design_folder):
+        os.mkdir(design_folder)
+history_file = os.path.join(design_folder, "design-3.hst")
+store_history_file = history_file if store_history else None
+hot_start_file = history_file if hot_start else None
+
+# Reload the previous design
+f2f_model.read_design_variables_file(comm, design_in_file)
+
 if comm.rank == 0:
     f2f_driver.print_summary()
-    f2f_model.print_summary(ignore_rigid=True)
+    f2f_model.print_summary()
 
 manager = OptimizationManager(
     f2f_driver,

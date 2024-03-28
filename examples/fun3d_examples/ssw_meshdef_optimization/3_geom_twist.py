@@ -273,6 +273,7 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
     model=f2f_model,
     transfer_settings=transfer_settings,
     struct_nprocs=nprocs_tacs,
+    reload_funtofem_states=True,
 )
 
 # ---------------------------------------------------->

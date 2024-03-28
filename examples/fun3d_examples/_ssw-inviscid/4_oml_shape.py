@@ -1,16 +1,15 @@
 """
-1_panel_thickness.py
+4_oml_shape.py
 
-Run a coupled optimization of the panel thicknesses of the wing structure.
-No shape variables are included in this optimization.
-This example is finished and converged well in SNOPT
+Run a coupled optimization of the geometric twist at each station and the 
+panel thicknesses.
 """
 
 from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
-import os, time
+import os
 
 comm = MPI.COMM_WORLD
 
@@ -21,17 +20,7 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 hot_start = False
 store_history = True
 
-test_derivatives = False
-
 nprocs_tacs = 8
-
-global_debug_flag = False
-
-# Derivative test stuff
-FILENAME = "complex-step.txt"
-FILEPATH = os.path.join(base_dir, FILENAME)
-
-aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 
 # FUNTOFEM MODEL
 # <----------------------------------------------------
@@ -40,13 +29,13 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing1-turb")
+f2f_model = FUNtoFEMmodel("ssw-4")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct1",
+    problem_name="capsStruct4",
     active_procs=[0],
-    verbosity=1,
+    verbosity=0,
 )
 tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
@@ -73,16 +62,61 @@ for proc in tacs_aim.active_procs:
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
 
+# FUN3D AIM Stuff
+# Set up FUN3D model, AIMs, and turn on the flow view
+# ------------------------------------------------
+fun3d_model = Fun3dModel.build(
+    csm_file=csm_path,
+    comm=comm,
+    project_name="ssw-inviscid",
+    verbosity=0,
+    mesh_morph=True,
+    volume_mesh="aflr3",
+    surface_mesh="egads",
+)
+mesh_aim = fun3d_model.mesh_aim
+fun3d_aim = fun3d_model.fun3d_aim
+fun3d_aim.set_config_parameter("view:flow", 1)
+fun3d_aim.set_config_parameter("view:struct", 0)
+# ------------------------------------------------
+
+global_max = 10
+global_min = 0.1
+
+mesh_aim.surface_aim.set_surface_mesh(
+    edge_pt_min=15,
+    edge_pt_max=20,
+    mesh_elements="Mixed",
+    global_mesh_size=0.5,
+    max_surf_offset=0.01,
+    max_dihedral_angle=15,
+)
+
+case = "inviscid"
+if case == "inviscid":
+    Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
+else:
+    aflr_aim.set_boundary_layer(
+        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
+    )
+    Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
+
+refinement = 1
+
+FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
+
+mesh_aim.saveDictOptions(FluidMeshOptions)
+
+Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
+Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
+
+fun3d_model.setup()
+f2f_model.flow = fun3d_model
 # ---------------------------------------------------->
 
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-# wing = Body.aeroelastic("wing", boundary=3).relaxation(
-#     AitkenRelaxation(
-#         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
-#     )
-# )
 wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
@@ -98,7 +132,10 @@ for irib in range(1, nribs + 1):
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
+        lower=0.001,
+        upper=0.15,
+        scale=100.0,
+        active=False,
     ).register_to(wing)
 
 for ispar in range(1, nspars + 1):
@@ -107,7 +144,10 @@ for ispar in range(1, nspars + 1):
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
+        lower=0.001,
+        upper=0.15,
+        scale=100.0,
+        active=False,
     ).register_to(wing)
 
 for iOML in range(1, nOML + 1):
@@ -116,7 +156,10 @@ for iOML in range(1, nOML + 1):
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
+        lower=0.001,
+        upper=0.15,
+        scale=100.0,
+        active=False,
     ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
@@ -125,7 +168,25 @@ for prefix in ["LE", "TE"]:
         caps_group=name, material=aluminum, membrane_thickness=0.04
     ).register_to(tacs_model)
     Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
+        lower=0.001,
+        upper=0.15,
+        scale=100.0,
+        active=False,
+    ).register_to(wing)
+
+for prefix in range(1, 4 + 1):
+    Variable.shape(f"tc{prefix}", value=0.2).set_bounds(
+        lower=0.05,
+        upper=0.5,
+        scale=10.0,
+        active=True,
+    ).register_to(wing)
+
+for prefix in range(1, 4 + 1):
+    Variable.shape(f"twist{prefix}", value=1.0).set_bounds(
+        lower=-10.0,
+        upper=10.0,
+        active=True,
     ).register_to(wing)
 
 # register the wing body to the model
@@ -145,23 +206,16 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady(
-    "cruise", steps=1500, coupling_frequency=30, uncoupled_steps=200
-)
-cruise.adjoint_steps = (
-    150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
-)
-cruise.set_stop_criterion(
-    early_stopping=True, min_forward_steps=300, min_adjoint_steps=20
-)
-
-mass = Function.mass().optimize(
-    scale=1.0e-4, objective=True, plot=True, plot_name="mass"
-)
+cruise = Scenario.steady("cruise_inviscid", steps=300, uncoupled_steps=0)
+cruise.fun3d_project_name = "ssw-inviscid"
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
-cruise.include(ksfailure).include(mass)
+cl_cruise = Function.lift(body=0)
+aoa_cruise = cruise.get_variable("AOA").set_bounds(
+    lower=-4, value=2.0, upper=15, active=False
+)
+cruise.include(cl_cruise).include(ksfailure)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -172,23 +226,28 @@ cruise.register_to(f2f_model)
 # <----------------------------------------------------
 
 # skin thickness adjacency constraints
-if not test_derivatives:
-    variables = f2f_model.get_variables()
-    section_prefix = ["rib", "OML"]
-    section_nums = [nribs, nOML]
-    for isection, prefix in enumerate(section_prefix):
-        section_num = section_nums[isection]
-        for iconstr in range(1, section_num):
-            left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}")
-            right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}")
-            # adj_constr = (left_var - right_var) / left_var
-            # adj_ratio = 0.15
-            adj_constr = left_var - right_var
-            adj_diff = 0.002
-            adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
-                lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
-            ).register_to(f2f_model)
+variables = f2f_model.get_variables()
+section_prefix = ["rib", "OML"]
+section_nums = [nribs, nOML]
+for isection, prefix in enumerate(section_prefix):
+    section_num = section_nums[isection]
+    for iconstr in range(1, section_num):
+        left_var = f2f_model.get_variables(names=f"{prefix}{iconstr}", all=True)
+        right_var = f2f_model.get_variables(names=f"{prefix}{iconstr+1}", all=True)
+        # adj_constr = (left_var - right_var) / left_var
+        # adj_ratio = 0.15
+        adj_constr = left_var - right_var
+        adj_diff = 0.002
+        adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
+            lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
+        ).register_to(f2f_model)
 
+cl_target = 1.2
+
+cruise_lift = (cl_cruise - cl_target) ** 2
+cruise_lift.set_name(f"LiftObj").optimize(
+    lower=-1e-2, upper=10, scale=1.0, objective=True, plot=True, plot_name="Lift-Obj"
+).register_to(f2f_model)
 
 # ---------------------------------------------------->
 
@@ -202,70 +261,36 @@ solvers.flow = Fun3d14Interface(
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
     forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=1e-13,
-    adjoint_min_tolerance=1e-10,
-    debug=global_debug_flag,
-)
-# fun3d_project_name = "ssw-pw1.2"
-solvers.structural = TacsSteadyInterface.create_from_bdf(
-    model=f2f_model,
-    comm=comm,
-    nprocs=nprocs_tacs,
-    bdf_file=tacs_aim.root_dat_file,
-    prefix=tacs_aim.root_analysis_dir,
-    debug=global_debug_flag,
+    adjoint_stop_tolerance=4e-16,
+    adjoint_min_tolerance=1e-12,
+    auto_coords=False,
 )
 
 transfer_settings = TransferSettings(npts=200)
 
 # Build the FUNtoFEM driver
-f2f_driver = FUNtoFEMnlbgs(
+f2f_driver = FuntofemShapeDriver.aero_morph(
     solvers=solvers,
-    transfer_settings=transfer_settings,
     model=f2f_model,
-    debug=global_debug_flag,
+    transfer_settings=transfer_settings,
+    struct_nprocs=nprocs_tacs,
     reload_funtofem_states=True,
 )
 
-if test_derivatives:  # test using the finite difference test
-    # load the previous design
-    # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-    # f2f_model.read_design_variables_file(comm, design_in_file)
-
-    start_time = time.time()
-
-    # run the finite difference test
-    max_rel_error = TestResult.derivative_test(
-        "fun3d+tacs-ssw1",
-        model=f2f_model,
-        driver=f2f_driver,
-        status_file="1-derivs.txt",
-        complex_mode=False,
-        epsilon=1e-4,
-    )
-
-    end_time = time.time()
-    dt = end_time - start_time
-    if comm.rank == 0:
-        print(f"total time for ssw derivative test is {dt} seconds", flush=True)
-        print(f"max rel error = {max_rel_error}", flush=True)
-
-    # exit before optimization
-    exit()
-
+# ---------------------------------------------------->
 
 # PYOPTSPARSE OPTMIZATION
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-design_out_file = os.path.join(base_dir, "design", "design-1.txt")
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
+design_out_file = os.path.join(base_dir, "design", "design-4.txt")
 
 design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-1.hst")
+history_file = os.path.join(design_folder, "design-4.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
@@ -273,15 +298,14 @@ hot_start_file = history_file if hot_start else None
 f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
-    # f2f_driver.print_summary()
     f2f_model.print_summary()
 
 manager = OptimizationManager(
     f2f_driver,
     design_out_file=design_out_file,
     hot_start=hot_start,
-    hot_start_file=hot_start_file,
     debug=True,
+    hot_start_file=hot_start_file,
 )
 
 # create the pyoptsparse optimization problem
@@ -308,8 +332,6 @@ sol = snoptimizer(
 
 # print final solution
 sol_xdict = sol.xStar
-
-if comm.rank == 0:
-    print(f"Final solution = {sol_xdict}", flush=True)
+print(f"Final solution = {sol_xdict}", flush=True)
 
 # ---------------------------------------------------->

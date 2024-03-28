@@ -1,5 +1,6 @@
 # "Super Simple Wing"
 Testing out fully-coupled aeroelastic optimizations on a simple wing geometry.
+This directory is only meant to run the inviscid cases. Script 1 panel thickness should be panel thickness inviscid.py
 
 ## Flight Conditions
 Here we consider a steady cruise at FL 100 (approximately 3000 meters). 

@@ -1,5 +1,5 @@
 &project
-  project_rootname = 'ssw-inviscid'
+  project_rootname = 'ssw-turb'
 /
 &raw_grid
   grid_format = 'aflr3'
@@ -8,11 +8,11 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'inviscid'
+  viscous_terms = 'turbulent'
 /
-&turbulent_diffusion_models
-  turbulence_model = 'sa-neg'
-/
+!&turbulent_diffusion_models
+!  turbulence_model = 'sa'
+!/
 &reference_physical_properties
   mach_number     = 0.5
   angle_of_attack = 2.0

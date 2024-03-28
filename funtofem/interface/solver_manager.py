@@ -104,6 +104,14 @@ class SolverManager:
         return mlist
 
     @property
+    def forward_residual(self) -> float:
+        return max([abs(solver.get_forward_residual()) for solver in self.solver_list])
+
+    @property
+    def adjoint_residual(self) -> float:
+        return max([abs(solver.get_adjoint_residual()) for solver in self.solver_list])
+
+    @property
     def flow(self):
         return self._flow
 

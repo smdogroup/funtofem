@@ -71,6 +71,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         comm_manager=None,
         struct_nprocs=48,
         forward_flow_post_analysis=False,
+        reload_funtofem_states=False,
     ):
         """
         Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
@@ -83,10 +84,18 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             is_paired=False,
             struct_nprocs=struct_nprocs,
             forward_flow_post_analysis=forward_flow_post_analysis,
+            reload_funtofem_states=reload_funtofem_states,
         )
 
     @classmethod
-    def aero_remesh(cls, solvers, model, remote, forward_flow_post_analysis=False):
+    def aero_remesh(
+        cls,
+        solvers,
+        model,
+        remote,
+        forward_flow_post_analysis=False,
+        reload_funtofem_states=False,
+    ):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_driver.py script:
             this object would be responsible for the fun3d, aflr AIMs and
@@ -98,6 +107,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             remote=remote,
             is_paired=True,
             forward_flow_post_analysis=forward_flow_post_analysis,
+            reload_funtofem_states=reload_funtofem_states,
         )
 
     @classmethod
@@ -110,6 +120,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         struct_nprocs=1,
         auto_run: bool = True,
         forward_flow_post_analysis=False,
+        reload_funtofem_states=False,
     ):
         """
         Build a FuntofemShapeDriver object for the my_funtofem_analysis.py script:
@@ -124,6 +135,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             struct_nprocs=struct_nprocs,
             is_paired=True,
             forward_flow_post_analysis=forward_flow_post_analysis,
+            reload_funtofem_states=reload_funtofem_states,
         )
 
         if auto_run:
@@ -141,6 +153,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         is_paired=False,
         struct_nprocs=48,
         forward_flow_post_analysis=False,
+        reload_funtofem_states=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -163,11 +176,17 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             whether to only do preAnalysis at start of forward and postAnalysis at end of adjoint
             for long optimization iterations (then this would be False). If we want to get analysis function
             values from the forward analysis remote driver this would be True as we want to do both adjoint and flow postAnalysis.
+        reload_funtofem_states: bool
+            reload funtofem states - struct disps, struct temps to save coupled analysis time
         """
 
         # construct super class
         super(FuntofemShapeDriver, self).__init__(
-            solvers, comm_manager, transfer_settings, model
+            solvers,
+            comm_manager,
+            transfer_settings,
+            model,
+            reload_funtofem_states=reload_funtofem_states,
         )
 
         self.remote = remote
@@ -395,7 +414,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             # run the pre analysis to generate a new mesh
             try:
-                self.flow_aim.pre_analysis()
+                self.model.flow.pre_analysis()
+                # self.flow_aim.pre_analysis()
                 local_fail = False
             except:
                 local_fail = True
@@ -623,7 +643,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             start_time = time.time()
 
             # run the pre analysis to generate a new mesh
-            self.flow_aim.pre_analysis()
+            self.model.flow.pre_analysis()
+            # self.flow_aim.pre_analysis()
 
             flow_adjoint_pre_time = (time.time() - start_time) / 60.0
             self._write_timing_data(
