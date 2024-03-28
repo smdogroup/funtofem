@@ -93,7 +93,11 @@ class OptimizationManager:
             if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
             self._checkpoints_folder = os.path.join(self._design_folder, "checkpoints")
-            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0 and self.write_checkpoints:
+            if (
+                not (os.path.exists(self._checkpoints_folder))
+                and self.comm.rank == 0
+                and self.write_checkpoints
+            ):
                 os.mkdir(self._checkpoints_folder)
 
             # make the design file handle
@@ -210,7 +214,11 @@ class OptimizationManager:
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
-                plot_funcs = {func.full_name : func.value.real for func in self.model.get_functions(optim=True) if func._plot}
+                plot_funcs = {
+                    func.full_name: func.value.real
+                    for func in self.model.get_functions(optim=True)
+                    if func._plot
+                }
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 

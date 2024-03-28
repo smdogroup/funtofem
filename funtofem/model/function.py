@@ -262,7 +262,7 @@ class Function(object):
         """
         scenario.include(self)
         return self
-    
+
     @property
     def vars_only(self) -> bool:
         """companion property for composite functions (to prevent circular import issues)"""

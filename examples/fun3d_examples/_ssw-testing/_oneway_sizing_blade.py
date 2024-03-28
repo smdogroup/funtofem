@@ -20,14 +20,15 @@ from tacs import caps2tacs
 import os
 
 parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument('--case', type=int, default=1)
+parent_parser.add_argument("--case", type=int, default=1)
 # case 1 - all vars
 # case 2 - all vars except spar pitch
 # case 3 - just panel thickness
 args = parent_parser.parse_args()
 
 from _blade_callback import *
-assert args.case in [1,2,3]
+
+assert args.case in [1, 2, 3]
 if args.case == 1:
     callback = blade_elemCallBack
 elif args.case == 2:
@@ -55,7 +56,7 @@ tacs_model = caps2tacs.TacsModel.build(
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=2,
     edge_pt_max=20,
-    global_mesh_size=0.3, #0.3
+    global_mesh_size=0.3,  # 0.3
     max_surf_offset=0.2,
     max_dihedral_angle=15,
 ).register_to(
@@ -118,7 +119,7 @@ for icomp, comp in enumerate(component_groups):
         lower=0.002, upper=0.1, scale=100.0
     ).register_to(wing)
 
-    if args.case in [1,2]:
+    if args.case in [1, 2]:
         # stiffener height
         Variable.structural(f"{comp}-sheight", value=0.05).set_bounds(
             lower=0.002, upper=0.1, scale=10.0
@@ -131,7 +132,7 @@ for icomp, comp in enumerate(component_groups):
 
 caps2tacs.PinConstraint("root", dof_constraint=246).register_to(tacs_model)
 caps2tacs.PinConstraint("sob", dof_constraint=13).register_to(tacs_model)
-    
+
 # caps2tacs.PinConstraint("root", dof_constraint=123).register_to(tacs_model)
 
 # register the wing body to the model
@@ -169,14 +170,14 @@ thick_adj = 2.5e-3
 comp_groups = ["spLE", "spTE", "uOML", "lOML"]
 comp_nums = [nOML for i in range(len(comp_groups))]
 adj_types = ["T"]
-if args.case in [1,2]:
+if args.case in [1, 2]:
     adj_types += ["sthick", "sheight"]
 adj_values = [thick_adj, thick_adj, 10e-3]
 for igroup, comp_group in enumerate(comp_groups):
     comp_num = comp_nums[igroup]
     for icomp in range(1, comp_num):
         # no constraints across sob (higher stress there)
-        #if icomp in [3,4]: continue 
+        # if icomp in [3,4]: continue
         for iadj, adj_type in enumerate(adj_types):
             adj_value = adj_values[iadj]
             name = f"{comp_group}{icomp}-{adj_type}"
@@ -196,7 +197,7 @@ for igroup, comp_group in enumerate(comp_groups):
         spitch_var = f2f_model.get_variables(f"{comp_group}{icomp}-spitch")
 
         # stiffener - skin thickness adjacency here
-        if args.case in [1,2]:
+        if args.case in [1, 2]:
             adj_value = thick_adj
             adj_constr = skin_var - sthick_var
             adj_constr.set_name(f"{comp_group}{icomp}-skin_stiff_T").optimize(

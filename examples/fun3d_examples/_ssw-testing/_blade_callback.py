@@ -1,4 +1,8 @@
-__all__ = ["blade_elemCallBack", "blade_elemCallBack_no_spitch", "blade_elemCallback_justPanelThick"]
+__all__ = [
+    "blade_elemCallBack",
+    "blade_elemCallBack_no_spitch",
+    "blade_elemCallback_justPanelThick",
+]
 
 """
 Adapted by Sean Engelstad
@@ -297,6 +301,7 @@ def blade_elemCallBack_no_spitch(
         elem = elements.Quad16Shell(transform, con)
 
     return elem, DVScales
+
 
 def blade_elemCallback_justPanelThick(
     dvNum, compID, compDescript, elemDescripts, specialDVs, **kwargs
