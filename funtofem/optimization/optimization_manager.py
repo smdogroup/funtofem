@@ -336,7 +336,7 @@ class OptimizationManager:
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
-                if isinstance(func, CompositeFunction) and func.vars_only:
+                if func.vars_only:
                     # TODO : how to account for shape derivatives of panel length constraints..
                     opt_problem.addCon(
                         func.full_name,
