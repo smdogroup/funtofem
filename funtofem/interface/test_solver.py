@@ -26,12 +26,146 @@ __all__ = [
     "NullAerodynamicSolver",
     "TestResult",
     "CoordinateDerivativeTester",
+    "design_sweep",
 ]
 
 import numpy as np
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
-import pandas as pd, os
+import importlib
+
+pandas_loader = importlib.util.find_spec("pandas")
+if pandas_loader is not None:
+    import pandas as pd, os
+
+    @classmethod
+    def design_sweep(
+        cls,
+        model,
+        driver,
+        nsweep=10,
+        eps=1e-4,
+        base_folder=None,
+        csv_file_prefix="design-sweep",
+        include_derivatives=True,
+    ):
+        """
+        perform a design sweep on a model and driver to determine the range of function values
+        """
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+
+        # generate random contravariant tensor in input space x(s)
+        if nvariables > 1:
+            dxds = np.random.rand(nvariables)
+        else:
+            dxds = np.array([1.0])
+
+        # store initial variable values
+        orig_vars = [var.value * 1.0 for var in model.get_variables()]
+
+        # perform the design sweep
+        alphas = np.linspace(-eps / 2.0, eps / 2.0, nsweep)
+
+        func_vals_dict = {func.name: [] for func in model.get_functions()}
+        if include_derivatives:
+            adj_derivs_dict = {func.name: [] for func in model.get_functions()}
+            FD_derivs_dict = {func.name: [] for func in model.get_functions()}
+
+        for ialpha, alpha in enumerate(alphas):
+
+            # change the variables
+            for ivar, var in enumerate(model.get_variables()):
+                var.value = orig_vars[ivar] + alpha * dxds[ivar]
+
+            # compute forward analysise f(x) and df/dx with adjoint
+            driver.solve_forward()
+            for func in model.get_functions():
+                func_vals_dict[func.name] += [func.value.real]
+
+            if include_derivatives:
+                driver.solve_adjoint()
+                model.evaluate_composite_functions()
+                gradients = model.get_function_gradients(all=True)
+
+                adjoint_TD = np.zeros((nfunctions))
+                for ifunc, func in enumerate(model.get_functions()):
+                    for ivar in range(nvariables):
+                        adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+                    adj_derivs_dict[func.name] += [adjoint_TD[ifunc]]
+
+            # write out these derivatives to csv files for each function
+            for ifunc, func in enumerate(model.get_functions()):
+                df_dict = {
+                    "alpha": [alphas[ialpha]],
+                    "func-val": func_vals_dict[func.name][ialpha],
+                }
+                if include_derivatives:
+                    df_dict["adjoint"] = adj_derivs_dict[func.name][ialpha]
+                    # df_dict["finite_diff"] = FD_derivs_dict[func.name][ialpha]
+                df = pd.DataFrame(df_dict)
+                filename = csv_file_prefix + f"_{func.name}.csv"
+                if driver.comm.rank == 0:
+                    if base_folder is None:
+                        csv_file = filename
+                    else:
+                        csv_file = os.path.join(base_folder, csv_file)
+                    # print(f"F2F design sweep - append write to file {csv_file}")
+                    df.to_csv(
+                        csv_file, mode="w" if ialpha == 0 else "a", header=ialpha == 0
+                    )
+
+        # then rewrite each one with all the alphas and finite diff derivatives
+        for ialpha, alpha in enumerate(alphas):
+            # update the finite difference dict
+            if include_derivatives:
+                dalpha = alphas[1] - alphas[0]
+                for ifunc, func in enumerate(model.get_functions()):
+                    if ialpha == 0:
+                        # forward difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha + 1]
+                            - func_vals_dict[func.name][ialpha]
+                        )
+                        FD_deriv /= dalpha
+                    elif ialpha == nsweep - 1:
+                        # backward difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha]
+                            - func_vals_dict[func.name][ialpha - 1]
+                        )
+                        FD_deriv /= dalpha
+                    else:
+                        # central difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha + 1]
+                            - func_vals_dict[func.name][ialpha - 1]
+                        )
+                        FD_deriv /= 2.0 * dalpha
+
+                    FD_derivs_dict[func.name] += [FD_deriv]
+
+        for ifunc, func in enumerate(model.get_functions()):
+            df_dict = {
+                "alpha": list(alphas),
+                "func-val": func_vals_dict[func.name],
+            }
+            if include_derivatives:
+                df_dict["adjoint"] = adj_derivs_dict[func.name]
+                df_dict["finite_diff"] = FD_derivs_dict[func.name]
+            df = pd.DataFrame(df_dict)
+            filename = csv_file_prefix + f"_{func.name}.csv"
+            if driver.comm.rank == 0:
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                print(f"F2F design sweep - writing to file {csv_file}")
+                df.to_csv(csv_file, mode="w")
+        return
+
+else:
+    design_sweep = None
 
 
 class TestAerodynamicSolver(SolverInterface):
@@ -1125,132 +1259,6 @@ class TestResult:
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))
         return max_rel_error
-
-    @classmethod
-    def design_sweep(
-        cls,
-        model,
-        driver,
-        nsweep=10,
-        eps=1e-4,
-        base_folder=None,
-        csv_file_prefix="design-sweep",
-        include_derivatives=True,
-    ):
-        """
-        perform a design sweep on a model and driver to determine the range of function values
-        """
-        nfunctions = len(model.get_functions())
-        nvariables = len(model.get_variables())
-
-        # generate random contravariant tensor in input space x(s)
-        if nvariables > 1:
-            dxds = np.random.rand(nvariables)
-        else:
-            dxds = np.array([1.0])
-
-        # store initial variable values
-        orig_vars = [var.value * 1.0 for var in model.get_variables()]
-
-        # perform the design sweep
-        alphas = np.linspace(-eps / 2.0, eps / 2.0, nsweep)
-
-        func_vals_dict = {func.name: [] for func in model.get_functions()}
-        if include_derivatives:
-            adj_derivs_dict = {func.name: [] for func in model.get_functions()}
-            FD_derivs_dict = {func.name: [] for func in model.get_functions()}
-
-        for ialpha, alpha in enumerate(alphas):
-
-            # change the variables
-            for ivar, var in enumerate(model.get_variables()):
-                var.value = orig_vars[ivar] + alpha * dxds[ivar]
-
-            # compute forward analysise f(x) and df/dx with adjoint
-            driver.solve_forward()
-            for func in model.get_functions():
-                func_vals_dict[func.name] += [func.value.real]
-
-            if include_derivatives:
-                driver.solve_adjoint()
-                model.evaluate_composite_functions()
-                gradients = model.get_function_gradients(all=True)
-
-                adjoint_TD = np.zeros((nfunctions))
-                for ifunc, func in enumerate(model.get_functions()):
-                    for ivar in range(nvariables):
-                        adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
-                    adj_derivs_dict[func.name] += [adjoint_TD[ifunc]]
-
-            # write out these derivatives to csv files for each function
-            for ifunc, func in enumerate(model.get_functions()):
-                df_dict = {
-                    "alpha": [alphas[ialpha]],
-                    "func-val": func_vals_dict[func.name][ialpha],
-                }
-                if include_derivatives:
-                    df_dict["adjoint"] = adj_derivs_dict[func.name][ialpha]
-                    # df_dict["finite_diff"] = FD_derivs_dict[func.name][ialpha]
-                df = pd.DataFrame(df_dict)
-                filename = csv_file_prefix + f"_{func.name}.csv"
-                if driver.comm.rank == 0:
-                    if base_folder is None:
-                        csv_file = filename
-                    else:
-                        csv_file = os.path.join(base_folder, csv_file)
-                    # print(f"F2F design sweep - append write to file {csv_file}")
-                    df.to_csv(
-                        csv_file, mode="w" if ialpha == 0 else "a", header=ialpha == 0
-                    )
-
-        # then rewrite each one with all the alphas and finite diff derivatives
-        for ialpha, alpha in enumerate(alphas):
-            # update the finite difference dict
-            if include_derivatives:
-                dalpha = alphas[1] - alphas[0]
-                for ifunc, func in enumerate(model.get_functions()):
-                    if ialpha == 0:
-                        # forward difference
-                        FD_deriv = (
-                            func_vals_dict[func.name][ialpha + 1]
-                            - func_vals_dict[func.name][ialpha]
-                        )
-                        FD_deriv /= dalpha
-                    elif ialpha == nsweep - 1:
-                        # backward difference
-                        FD_deriv = (
-                            func_vals_dict[func.name][ialpha]
-                            - func_vals_dict[func.name][ialpha - 1]
-                        )
-                        FD_deriv /= dalpha
-                    else:
-                        # central difference
-                        FD_deriv = (
-                            func_vals_dict[func.name][ialpha + 1]
-                            - func_vals_dict[func.name][ialpha - 1]
-                        )
-                        FD_deriv /= 2.0 * dalpha
-
-                    FD_derivs_dict[func.name] = [FD_deriv]
-
-        for ifunc, func in enumerate(model.get_functions()):
-            df_dict = {
-                "alpha": list(alphas),
-                "func-val": func_vals_dict[func.name],
-            }
-            if include_derivatives:
-                df_dict["adjoint"] = adj_derivs_dict[func.name]
-                df_dict["finite_diff"] = FD_derivs_dict[func.name]
-            df = pd.DataFrame(df_dict)
-            filename = csv_file_prefix + f"_{func.name}.csv"
-            if driver.comm.rank == 0:
-                if base_folder is None:
-                    csv_file = filename
-                else:
-                    csv_file = os.path.join(base_folder, csv_file)
-                print(f"F2F design sweep - writing to file {csv_file}")
-                df.to_csv(csv_file, mode="w")
-        return
 
     @classmethod
     def derivative_test(
