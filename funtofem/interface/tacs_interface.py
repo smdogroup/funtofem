@@ -674,70 +674,82 @@ class TacsSteadyInterface(SolverInterface):
         return fail
 
     def _eval_panel_length(self, forward=True, adjoint=True):
+        # whether to do the panel length constraint
+        _has_panel_length = None
+        if self.comm.rank == 0:
+            _has_panel_length = self.panel_length_constraint is not None
+        _has_panel_length = self.comm.bcast(_has_panel_length, root=0)
+
+        # print(f"has panel length rank {self.comm.rank} = {_has_panel_length}", flush=True)
+
         # compute the panel length constraint
-        if self.panel_length_constraint is not None:
+        if _has_panel_length:
             if forward:
                 funcs_dict = None
-                if self.comm.rank == 0:
+                # print(f"rank {self.comm.rank} enter forward", flush=True)
+                if self.assembler is not None:
                     funcs = {}
                     funcs_dict = {}
                     ct = 0
                     self.panel_length_constraint.evalConstraints(funcs)
+                    # print(f"inside rank 0 check post eval constraints", flush=True)
                     for func in self.model.composite_functions:
                         if self.PANEL_LENGTH_CONSTR in func.name:
                             # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
                             func.value = funcs[self.panel_length_name][ct]
                             ct += 1
                             funcs_dict[func.full_name] = func.value
+                    # print(f"inside rank 0 check : funcs dict = {funcs_dict}", flush=True)
 
                 # broadcast the funcs dict to other processors
                 funcs_dict = self.comm.bcast(funcs_dict, root=0)
 
+                # print(f"rank {self.comm.rank} : forward funcs dict = {funcs_dict}", flush=True)
+
                 for func in self.model.composite_functions:
-                    func.value = funcs_dict[func.full_name]
+                    if func.full_name in list(funcs_dict.keys()):
+                        func.value = funcs_dict[func.full_name]
 
             # compute the panel length constraint
             if adjoint:
                 grads_dict = None
-                if self.comm.rank == 0:
+                if self.assembler is not None:
                     funcSens = {}
-                    grads_dict = {}
+                    if self.comm.rank == 0:
+                        grads_dict = {}
                     ifunc = 0
                     self.panel_length_constraint.evalConstraintsSens(funcSens)
                     for func in self.model.composite_functions:
-                        if self.PANEL_LENGTH_CONSTR in func.name:
+                        if (
+                            self.PANEL_LENGTH_CONSTR in func.name
+                            and self.comm.rank == 0
+                        ):
 
                             grads_dict[func.full_name] = {}
 
-                            gradient = None
-                            if (
-                                self.comm.rank == 0
-                            ):  # broadcast derivatives from root proc to other procs
-                                gradient = np.zeros((len(self.struct_variables)))
-                                # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
-                                for ivar, var in enumerate(self.struct_variables):
-                                    gradient[ivar] = funcSens[self.panel_length_name][
-                                        "struct"
-                                    ].toarray()[ifunc, ivar]
-
-                            gradient = self.comm.bcast(gradient, root=0)
+                            # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
                             for ivar, var in enumerate(self.struct_variables):
-                                func.derivatives[var] = gradient[ivar]
-
-                                grads_dict[func.full_name][var.full_name] = gradient[
-                                    ivar
-                                ]
+                                func.derivatives[var] = funcSens[
+                                    self.panel_length_name
+                                ]["struct"].toarray()[ifunc, ivar]
+                                grads_dict[func.full_name][var.full_name] = (
+                                    func.derivatives[var]
+                                )
 
                             ifunc += 1
 
                 # broadcast the funcs dict to other processors
                 grads_dict = self.comm.bcast(grads_dict, root=0)
 
+                # print(f"rank {self.comm.rank} : grads dict = {grads_dict}", flush=True)
+
                 for func in self.model.composite_functions:
-                    for ivar, var in enumerate(self.struct_variables):
-                        func.derivatives[var] = grads_dict[func.full_name][
-                            var.full_name
-                        ]
+                    if func.full_name in list(grads_dict.keys()):
+                        for ivar, var in enumerate(self.struct_variables):
+                            func.derivatives[var] = grads_dict[func.full_name][
+                                var.full_name
+                            ]
+                            # print(f"rank {self.comm.rank} : d{func.full_name}/d{var.full_name} = {func.derivatives[var]}", flush=True)
 
     def post(self, scenario, bodies):
         """
