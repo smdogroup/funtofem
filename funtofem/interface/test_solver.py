@@ -1216,7 +1216,7 @@ class TestResult:
                             - func_vals_dict[func.name][ialpha]
                         )
                         FD_deriv /= dalpha
-                    elif alpha == nsweep - 1:
+                    elif ialpha == nsweep - 1:
                         # backward difference
                         FD_deriv = (
                             func_vals_dict[func.name][ialpha]
