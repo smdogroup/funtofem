@@ -38,9 +38,7 @@ pandas_loader = importlib.util.find_spec("pandas")
 if pandas_loader is not None:
     import pandas as pd, os
 
-    @classmethod
     def design_sweep(
-        cls,
         model,
         driver,
         nsweep=10,
