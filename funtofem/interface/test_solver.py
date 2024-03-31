@@ -963,7 +963,6 @@ class TestResult:
         """
         perform a design sweep on a model and driver to determine the range of function values
         """
-        print(f"entering the design sweep", flush=True)
 
         # open up the csv files
         if driver.comm.rank == 0:
