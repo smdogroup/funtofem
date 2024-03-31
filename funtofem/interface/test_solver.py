@@ -31,6 +31,7 @@ __all__ = [
 import numpy as np
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
+import os
 
 
 class TestAerodynamicSolver(SolverInterface):
@@ -962,7 +963,19 @@ class TestResult:
         """
         perform a design sweep on a model and driver to determine the range of function values
         """
-        import pandas as pd, os
+        print(f"entering the design sweep", flush=True)
+
+        # open up the csv files
+        if driver.comm.rank == 0:
+            for ifunc, func in enumerate(model.get_functions()):
+                filename = csv_file_prefix + f"_{func.name}.csv"
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                hdl = open(csv_file, "w")
+                hdl.write(f",alpha,func_val,adjoint\n")
+                hdl.close()
 
         nfunctions = len(model.get_functions())
         nvariables = len(model.get_variables())
@@ -1015,18 +1028,28 @@ class TestResult:
                 if include_derivatives:
                     df_dict["adjoint"] = adj_derivs_dict[func.name][ialpha]
                     # df_dict["finite_diff"] = FD_derivs_dict[func.name][ialpha]
-                df = pd.DataFrame(df_dict)
-                filename = csv_file_prefix + f"_{func.name}.csv"
                 if driver.comm.rank == 0:
+                    filename = csv_file_prefix + f"_{func.name}.csv"
                     if base_folder is None:
                         csv_file = filename
                     else:
                         csv_file = os.path.join(base_folder, csv_file)
-                    # print(f"F2F design sweep - append write to file {csv_file}")
-                    df.to_csv(
-                        csv_file, mode="w" if ialpha == 0 else "a", header=ialpha == 0
+                    hdl = open(csv_file, "a")
+                    hdl.write(
+                        f"{ialpha},{alphas[ialpha]},{func.value.real},{adj_derivs_dict[func.name][ialpha]}\n"
                     )
+                    hdl.close()
 
+        # close the csv file then write it again with FD too
+        if driver.comm.rank == 0:
+            for ifunc, func in enumerate(model.get_functions()):
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                hdl = open(csv_file, "w")
+                hdl.write(f",alpha,func_val,adjoint,FD\n")
+                hdl.close()
         # then rewrite each one with all the alphas and finite diff derivatives
         for ialpha, alpha in enumerate(alphas):
             # update the finite difference dict
@@ -1065,15 +1088,19 @@ class TestResult:
             if include_derivatives:
                 df_dict["adjoint"] = adj_derivs_dict[func.name]
                 df_dict["finite_diff"] = FD_derivs_dict[func.name]
-            df = pd.DataFrame(df_dict)
             filename = csv_file_prefix + f"_{func.name}.csv"
             if driver.comm.rank == 0:
+                filename = csv_file_prefix + f"_{func.name}.csv"
                 if base_folder is None:
                     csv_file = filename
                 else:
                     csv_file = os.path.join(base_folder, csv_file)
-                print(f"F2F design sweep - writing to file {csv_file}")
-                df.to_csv(csv_file, mode="w")
+                hdl = open(csv_file, "a")
+                for ialpha, alpha in enumerate(alphas):
+                    hdl.write(
+                        f",{alphas[ialpha]},{func_vals_dict[func.name][ialpha]},{adj_derivs_dict[func.name][ialpha]},{FD_derivs_dict[func.name][ialpha]}\n"
+                    )
+                hdl.close()
         return
 
     @classmethod
