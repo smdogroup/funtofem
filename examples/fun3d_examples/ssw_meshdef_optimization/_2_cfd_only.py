@@ -45,7 +45,7 @@ wing.register_to(f2f_model)
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=1500, uncoupled_steps=0)
+cruise = Scenario.steady("cruise", steps=1500, uncoupled_steps=1500)
 cl_cruise = Function.lift(body=0)
 aoa_cruise = cruise.get_variable("AOA").set_bounds(lower=-4, value=2.0, upper=15)
 cruise.include(cl_cruise)
