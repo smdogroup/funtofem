@@ -117,6 +117,8 @@ class TacsSteadyInterface(SolverInterface):
     A base class to do coupled steady simulations with TACS
     """
 
+    PANEL_LENGTH_CONSTR = "length"
+
     def __init__(
         self,
         comm,
@@ -130,6 +132,7 @@ class TacsSteadyInterface(SolverInterface):
         Fvec=None,
         nprocs=None,
         debug=False,
+        panel_length_constraint=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -169,6 +172,7 @@ class TacsSteadyInterface(SolverInterface):
 
         self.comm = comm
         self.tacs_comm = tacs_comm
+        self.model = model
         self.nprocs = nprocs
 
         # Flag to output heat flux instead of rotx
@@ -209,6 +213,12 @@ class TacsSteadyInterface(SolverInterface):
 
         # Generate output
         self.gen_output = gen_output
+
+        # create panel length constraints
+        self.panel_length_constraint = panel_length_constraint
+        self.panel_length_name = "PanelLengthCon_PanelLength"
+
+        self._eval_panel_length(forward=True, adjoint=True)
 
         # Debug flag
         self._debug = debug
@@ -663,6 +673,84 @@ class TacsSteadyInterface(SolverInterface):
 
         return fail
 
+    def _eval_panel_length(self, forward=True, adjoint=True):
+        # whether to do the panel length constraint
+        _has_panel_length = None
+        if self.comm.rank == 0:
+            _has_panel_length = self.panel_length_constraint is not None
+        _has_panel_length = self.comm.bcast(_has_panel_length, root=0)
+
+        # print(f"has panel length rank {self.comm.rank} = {_has_panel_length}", flush=True)
+
+        # compute the panel length constraint
+        if _has_panel_length:
+            if forward:
+                funcs_dict = None
+                # print(f"rank {self.comm.rank} enter forward", flush=True)
+                if self.assembler is not None:
+                    funcs = {}
+                    funcs_dict = {}
+                    ct = 0
+                    self.panel_length_constraint.evalConstraints(funcs)
+                    # print(f"inside rank 0 check post eval constraints", flush=True)
+                    for func in self.model.composite_functions:
+                        if self.PANEL_LENGTH_CONSTR in func.name:
+                            # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                            func.value = funcs[self.panel_length_name][ct]
+                            ct += 1
+                            funcs_dict[func.full_name] = func.value
+                    # print(f"inside rank 0 check : funcs dict = {funcs_dict}", flush=True)
+
+                # broadcast the funcs dict to other processors
+                funcs_dict = self.comm.bcast(funcs_dict, root=0)
+
+                # print(f"rank {self.comm.rank} : forward funcs dict = {funcs_dict}", flush=True)
+
+                for func in self.model.composite_functions:
+                    if func.full_name in list(funcs_dict.keys()):
+                        func.value = funcs_dict[func.full_name]
+
+            # compute the panel length constraint
+            if adjoint:
+                grads_dict = None
+                if self.assembler is not None:
+                    funcSens = {}
+                    if self.comm.rank == 0:
+                        grads_dict = {}
+                    ifunc = 0
+                    self.panel_length_constraint.evalConstraintsSens(funcSens)
+                    for func in self.model.composite_functions:
+                        if (
+                            self.PANEL_LENGTH_CONSTR in func.name
+                            and self.comm.rank == 0
+                        ):
+
+                            grads_dict[func.full_name] = {}
+
+                            # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                            for ivar, var in enumerate(self.struct_variables):
+                                func.derivatives[var] = funcSens[
+                                    self.panel_length_name
+                                ]["struct"].toarray()[ifunc, ivar]
+                                grads_dict[func.full_name][var.full_name] = (
+                                    func.derivatives[var]
+                                )
+
+                            ifunc += 1
+
+                # broadcast the funcs dict to other processors
+                grads_dict = self.comm.bcast(grads_dict, root=0)
+
+                # print(f"rank {self.comm.rank} : grads dict = {grads_dict}", flush=True)
+
+                for func in self.model.composite_functions:
+                    if func.full_name in list(grads_dict.keys()):
+                        for ivar, var in enumerate(self.struct_variables):
+                            func.derivatives[var] = grads_dict[func.full_name][
+                                var.full_name
+                            ]
+                            # print(f"rank {self.comm.rank} : d{func.full_name}/d{var.full_name} = {func.derivatives[var]}", flush=True)
+
     def post(self, scenario, bodies):
         """
         This function is called after the analysis is completed
@@ -676,6 +764,9 @@ class TacsSteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+
+        self._eval_panel_length(adjoint=False)
+
         # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
         self.set_variables(scenario, bodies)
         if self.tacs_proc:
@@ -895,6 +986,8 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        self._eval_panel_length(adjoint=True)
+
         func_grad = []
         if self.tacs_proc:
             func_list = self.scenario_data[scenario].func_list
@@ -977,7 +1070,7 @@ class TacsSteadyInterface(SolverInterface):
         thermal_index=-1,
         override_rotx=False,
         debug=False,
-        add_loads=False,
+        add_loads=True,  # whether it will try to add loads or not
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1011,6 +1104,7 @@ class TacsSteadyInterface(SolverInterface):
         assembler = None
         f5 = None
         Fvec = None
+        panel_length_constraint = None
         if world_rank < nprocs:
             # Create the assembler class
             fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
@@ -1053,6 +1147,21 @@ class TacsSteadyInterface(SolverInterface):
             if add_loads:
                 Fvec = addLoadsFromBDF(fea_assembler)
             # Fvec = None
+
+            # make the panel length constraint object
+            has_panel_length_funcs = any(
+                [
+                    cls.PANEL_LENGTH_CONSTR in comp_func.name
+                    for comp_func in model.composite_functions
+                ]
+            )
+            if has_panel_length_funcs:
+                panel_length_constraint = fea_assembler.createPanelLengthConstraint(
+                    "PanelLengthCon"
+                )
+                panel_length_constraint.addConstraint("PanelLength", dvIndex=0)
+            else:
+                panel_length_constraint = None
 
             # Retrieve the assembler from pyTACS fea_assembler object
             assembler = fea_assembler.assembler
@@ -1128,6 +1237,7 @@ class TacsSteadyInterface(SolverInterface):
             override_rotx=override_rotx,
             Fvec=Fvec,
             debug=debug,
+            panel_length_constraint=panel_length_constraint,
         )
 
 

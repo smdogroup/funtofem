@@ -216,6 +216,7 @@ class FUNtoFEMDriver(object):
             quit()
 
         # Zero the derivative values stored in the function
+        self._zero_derivatives()
         for func in functions:
             func.zero_derivatives()
 
@@ -260,7 +261,7 @@ class FUNtoFEMDriver(object):
         # reload funtofem states (want this to be after TACS/struct solvers set size of states in)
         #    do it here so we remain in solver directory
         if self.reload_funtofem_states:
-            self.model.load_funtofem_states(self.comm, scenario)
+            self.model.load_forward_states(self.comm, scenario)
         return 0
 
     def _initialize_adjoint(self, scenario, bodies):
@@ -274,12 +275,22 @@ class FUNtoFEMDriver(object):
             fail = solver.initialize_adjoint(scenario, bodies)
             if fail != 0:
                 return fail
+
+        if self.reload_funtofem_states:
+            self.model.load_adjoint_states(self.comm, scenario)
         return 0
+
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
+        return
 
     def _post_forward(self, scenario, bodies):
         # save the funtofem states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
-            self.model.save_funtofem_states(self.comm, scenario)
+            self.model.save_forward_states(self.comm, scenario)
 
         for solver in self.solvers.solver_list:
             solver.post(scenario, bodies)
@@ -287,6 +298,10 @@ class FUNtoFEMDriver(object):
         return
 
     def _post_adjoint(self, scenario, bodies):
+        # save the funtofem adjoint states, do it here so we remain in solver directory
+        if self.reload_funtofem_states:
+            self.model.save_adjoint_states(self.comm, scenario)
+
         for solver in self.solvers.solver_list:
             solver.post_adjoint(scenario, bodies)
 

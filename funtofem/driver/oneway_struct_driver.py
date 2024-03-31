@@ -613,6 +613,7 @@ class OnewayStructDriver:
         functions = self.model.get_functions()
 
         # Zero the derivative values stored in the function
+        self._zero_derivatives()
         for func in functions:
             func.zero_derivatives()
 
@@ -700,6 +701,13 @@ class OnewayStructDriver:
         )
 
         # end of change shape section
+        return
+
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
         return
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
