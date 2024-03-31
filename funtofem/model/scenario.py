@@ -230,7 +230,7 @@ class Scenario(Base):
         elif not self.steady:
             return None  # defaults to number of steps in unsteady case
         else:  # choose it based on funtofem coupling frequency in steady case
-            return int(np.ceil(self.steps / self.coupling_frequency))
+            return int(np.ceil(self.steps / self.adjoint_coupling_frequency))
 
     @adjoint_steps.setter
     def adjoint_steps(self, new_steps: int):
