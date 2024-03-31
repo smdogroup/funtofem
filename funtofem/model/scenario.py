@@ -50,7 +50,8 @@ class Scenario(Base):
         adjoint_steps=None,
         min_forward_steps=50,
         min_adjoint_steps=None,
-        coupling_frequency=1,
+        forward_coupling_frequency=1,
+        adjoint_coupling_frequency=1,
         early_stopping=False,
         T_ref=300,
         T_inf=300,
@@ -135,7 +136,8 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
-        self.coupling_frequency = coupling_frequency
+        self.forward_coupling_frequency = forward_coupling_frequency
+        self.adjoint_coupling_frequency = adjoint_coupling_frequency
         self.uncoupled_steps = uncoupled_steps
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
@@ -186,14 +188,18 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        coupling_frequency: int = 1,
         uncoupled_steps: int = 0,
+        forward_coupling_frequency: int = 1,
+        adjoint_coupling_frequency: int = 1,
+        adjoint_steps: int = 1,
     ):
         return cls(
             name=name,
             steady=True,
             steps=steps,
-            coupling_frequency=coupling_frequency,
+            forward_coupling_frequency=forward_coupling_frequency,
+            adjoint_steps=adjoint_steps,
+            adjoint_coupling_frequency=adjoint_coupling_frequency,
             uncoupled_steps=uncoupled_steps,
         )
 

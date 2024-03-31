@@ -146,10 +146,12 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise", steps=1500, coupling_frequency=30, uncoupled_steps=200
-)
-cruise.adjoint_steps = (
-    150  # outer coupling iterations, total 5000 flow adjoints, 100 grid adjoints
+    "cruise_turb",
+    steps=30,
+    forward_coupling_frequency=10,  # 300 total fun3d steps
+    adjoint_steps=100,
+    adjoint_coupling_frequency=30,  # 3000 total adjoint steps
+    uncoupled_steps=200,
 )
 cruise.set_stop_criterion(
     early_stopping=True, min_forward_steps=300, min_adjoint_steps=20
