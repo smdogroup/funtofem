@@ -548,6 +548,11 @@ class Fun3d14Interface(SolverInterface):
             the time step number
         """
 
+        if (
+            step == 1 and scenario.steady
+        ):  # ensure no grid deformation analyses performed in this section
+            self.fun3d_flow.set_coupling_frequency(scenario.uncoupled_steps)
+
         # Take a step in FUN3D
         self.comm.Barrier()
         bcont = self.fun3d_flow.iterate()
@@ -557,6 +562,11 @@ class Fun3d14Interface(SolverInterface):
             fail = 1
             os.chdir(self.root_dir)
             return fail
+
+        if (
+            step == scenario.uncoupled_steps and scenario.steady
+        ):  # reset the coupling frequency before the coupled steps
+            self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
 
         return 0
 
