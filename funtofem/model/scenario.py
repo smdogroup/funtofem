@@ -191,7 +191,7 @@ class Scenario(Base):
         uncoupled_steps: int = 0,
         forward_coupling_frequency: int = 1,
         adjoint_coupling_frequency: int = 1,
-        adjoint_steps: int = 1,
+        adjoint_steps: int = None,
     ):
         return cls(
             name=name,
