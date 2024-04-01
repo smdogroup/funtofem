@@ -567,6 +567,7 @@ class Fun3d14Interface(SolverInterface):
             step == scenario.uncoupled_steps and scenario.steady
         ):  # reset the coupling frequency before the coupled steps
             self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
+            self._last_forward_step += 1
 
         return 0
 

@@ -144,7 +144,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                 return fail
 
         # Loop over the NLBGS steps
-        for step in range(scenario.uncoupled_steps + 1, steps + 1):
+        for step in range(1, steps + 1):
             # Transfer displacements and temperatures
             for body in self.model.bodies:
                 body.transfer_disps(scenario)
@@ -198,7 +198,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if scenario.early_stopping and step > scenario.min_forward_steps:
                 all_converged = True
                 for solver in self.solvers.solver_list:
-                    forward_resid = abs(solver.get_forward_residual(step=step))
+                    c_step = step + scenario.uncoupled_steps
+                    forward_resid = abs(solver.get_forward_residual(step=c_step))
                     if self.comm.rank == 0:
                         print(
                             f"f2f scenario {scenario.name}, forward resid = {forward_resid}",

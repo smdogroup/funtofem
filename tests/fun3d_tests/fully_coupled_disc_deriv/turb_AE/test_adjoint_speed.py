@@ -72,8 +72,8 @@ class TestFun3dTacs(unittest.TestCase):
             comm,
             model,
             fun3d_dir="meshes",
-            forward_tolerance=1e-11,
-            adjoint_tolerance=1e-9,
+            forward_stop_tolerance=1e-11,
+            adjoint_stop_tolerance=1e-9,
         )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
