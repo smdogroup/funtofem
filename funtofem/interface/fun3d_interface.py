@@ -223,6 +223,14 @@ class Fun3dInterface(SolverInterface):
                 f"Comm {self.comm.Get_rank()} check at the start of fun3d_interface:initialize."
             )
 
+        # set the funtofem coupling frequency
+        # would need to be implemented in FUN3D forward
+        # self.fun3d_flow.set_coupling_frequency(scenario.coupling_frequency)
+        if scenario.forward_coupling_frequency != 1:
+            raise AssertionError(
+                "FUNtoFEM has not implemented loose forward coupling in FUN3D 13.6"
+            )
+
         # copy the *_body1.dat file for fun3d mesh morphing from the Fun3dAim folder to the scenario folder
         # if mesh morphing is online
         # if external_mesh_morph is True, the user is responsible for moving the mesh morphing data files to each scenario folder
@@ -594,7 +602,8 @@ class Fun3dInterface(SolverInterface):
 
         # Take a step in FUN3D
         self.comm.Barrier()
-        bcont = self.fun3d_flow.iterate()
+        for _ in range(1, scenario.forward_coupling_frequency + 1):
+            bcont = self.fun3d_flow.iterate()
         if bcont == 0:
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
@@ -782,7 +791,7 @@ class Fun3dInterface(SolverInterface):
             # set the funtofem coupling frequency
             # would need to be implemented in FUN3D adjoint
             # self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
-            if scenario.coupling_frequency != 1:
+            if scenario.adjoint_coupling_frequency != 1:
                 raise AssertionError(
                     "FUNtoFEM has not implemented loose adjoint coupling in FUN3D 13.6"
                 )
@@ -974,8 +983,8 @@ class Fun3dInterface(SolverInterface):
 
         # Update the aerodynamic and grid adjoint variables (Note: step starts at 1
         # in FUN3D)
-        for i_coupled in range(1, scenario.coupling_frequency + 1):
-            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
+        for i_coupled in range(1, scenario.adjoint_coupling_frequency + 1):
+            adj_step = scenario.adjoint_coupling_frequency * (rstep - 1) + i_coupled
             self.fun3d_adjoint.iterate(adj_step)
 
         for ibody, body in enumerate(bodies, 1):

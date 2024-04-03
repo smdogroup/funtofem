@@ -209,7 +209,14 @@ tacs_aim.pre_analysis()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
+cruise = Scenario.steady(
+    "cruise_turb",
+    steps=30,
+    forward_coupling_frequency=10,  # 300 total fun3d steps
+    adjoint_steps=100,
+    adjoint_coupling_frequency=30,  # 3000 total adjoint steps
+    uncoupled_steps=200,
+)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )

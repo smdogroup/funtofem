@@ -24,7 +24,7 @@ wing = Body.aeroelastic("wing", boundary=2)
 wing.register_to(f2f_model)
 
 # Make a FUNtoFEM scenario
-cruise = Scenario.steady("cruise", steps=1000)
+cruise = Scenario.steady("cruise", steps=1000, uncoupled_steps=1000)
 cruise.set_stop_criterion(early_stopping=True, min_forward_steps=50)
 Function.lift().register_to(cruise)
 Function.drag().register_to(cruise)

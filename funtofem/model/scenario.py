@@ -50,7 +50,8 @@ class Scenario(Base):
         adjoint_steps=None,
         min_forward_steps=50,
         min_adjoint_steps=None,
-        coupling_frequency=1,
+        forward_coupling_frequency=1,
+        adjoint_coupling_frequency=1,
         early_stopping=False,
         T_ref=300,
         T_inf=300,
@@ -79,12 +80,18 @@ class Scenario(Base):
         fun3d: bool
             whether or not you are using FUN3D. If true, the scenario class will auto-populate 'aerodynamic' required by FUN3D
         steps: int
-            the total number of fun3d time steps to run for the scenario
+            the number of outer coupling steps in the scenario
         uncoupled_steps: int
             the number of fun3d iterations ran before coupled iterations
         adjoint_steps: int
             optional number of adjoint steps when using FUN3D analysis, can have different
             number of forward and adjoint steps in steady-state
+        forward_coupling_frequency: int
+            the number of uncoupled flow iterations per coupled iteration in the forward analysis
+            e.g. with FUN3D the total max number of FUN3D steps is steps * forward_coupling_frequency + uncoupled_steps
+        adjoint_coupling_frequency: int
+            the number of uncoupled flow adjoint iterations per coupled iteration in the adjoint analysis
+            e.g. with FUN3D the total max number of FUN3D adjoint steps is adjoint_steps * adjoint_coupling_frequency
         early_stopping: bool
             whether to activate the early stopping criterion
         min_forward_steps: int
@@ -135,7 +142,8 @@ class Scenario(Base):
         self.functions = []
         self.steady = steady
         self.steps = steps
-        self.coupling_frequency = coupling_frequency
+        self.forward_coupling_frequency = forward_coupling_frequency
+        self.adjoint_coupling_frequency = adjoint_coupling_frequency
         self.uncoupled_steps = uncoupled_steps
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
@@ -186,14 +194,18 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        coupling_frequency: int = 1,
         uncoupled_steps: int = 0,
+        forward_coupling_frequency: int = 1,
+        adjoint_coupling_frequency: int = 1,
+        adjoint_steps: int = None,
     ):
         return cls(
             name=name,
             steady=True,
             steps=steps,
-            coupling_frequency=coupling_frequency,
+            forward_coupling_frequency=forward_coupling_frequency,
+            adjoint_steps=adjoint_steps,
+            adjoint_coupling_frequency=adjoint_coupling_frequency,
             uncoupled_steps=uncoupled_steps,
         )
 
@@ -224,7 +236,7 @@ class Scenario(Base):
         elif not self.steady:
             return None  # defaults to number of steps in unsteady case
         else:  # choose it based on funtofem coupling frequency in steady case
-            return int(np.ceil(self.steps / self.coupling_frequency))
+            return int(np.ceil(self.steps / self.adjoint_coupling_frequency))
 
     @adjoint_steps.setter
     def adjoint_steps(self, new_steps: int):

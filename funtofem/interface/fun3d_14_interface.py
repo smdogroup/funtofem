@@ -287,6 +287,9 @@ class Fun3d14Interface(SolverInterface):
         elif self.external_mesh_morph:
             self.fun3d_flow.set_mesh_morph(True)
 
+        # set the funtofem coupling frequency
+        self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
+
         bcont = self.fun3d_flow.initialize_solution()
         if bcont == 0:
             if self.comm.Get_rank() == 0:
@@ -545,6 +548,11 @@ class Fun3d14Interface(SolverInterface):
             the time step number
         """
 
+        if (
+            step == 1 and scenario.steady
+        ):  # ensure no grid deformation analyses performed in this section
+            self.fun3d_flow.set_coupling_frequency(scenario.uncoupled_steps)
+
         # Take a step in FUN3D
         self.comm.Barrier()
         bcont = self.fun3d_flow.iterate()
@@ -554,6 +562,12 @@ class Fun3d14Interface(SolverInterface):
             fail = 1
             os.chdir(self.root_dir)
             return fail
+
+        if (
+            step == scenario.uncoupled_steps and scenario.steady
+        ):  # reset the coupling frequency before the coupled steps
+            self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
+            self._last_forward_step += 1
 
         return 0
 
@@ -575,9 +589,6 @@ class Fun3d14Interface(SolverInterface):
         step: int
             the time step number
         """
-
-        # update last succesful FUN3D step
-        self._last_forward_step = step
 
         # Deform aerodynamic mesh
         for ibody, body in enumerate(bodies, 1):
@@ -624,7 +635,9 @@ class Fun3d14Interface(SolverInterface):
 
         # Take a step in FUN3D
         self.comm.Barrier()
-        bcont = self.fun3d_flow.iterate()
+        for _ in range(1, scenario.forward_coupling_frequency + 1):
+            bcont = self.fun3d_flow.iterate()
+            self._last_forward_step += 1
         if bcont == 0:
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
@@ -794,7 +807,9 @@ class Fun3d14Interface(SolverInterface):
                 self.fun3d_adjoint.set_mesh_morph(True)
 
             # set the funtofem coupling frequency
-            self.fun3d_adjoint.set_coupling_frequency(scenario.coupling_frequency)
+            self.fun3d_adjoint.set_coupling_frequency(
+                scenario.adjoint_coupling_frequency
+            )
 
             # Deform the aero mesh before finishing FUN3D initialization
             for ibody, body in enumerate(bodies, 1):
@@ -1037,8 +1052,8 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        for i_coupled in range(1, scenario.coupling_frequency + 1):
-            adj_step = scenario.coupling_frequency * (rstep - 1) + i_coupled
+        for i_coupled in range(1, scenario.adjoint_coupling_frequency + 1):
+            adj_step = scenario.adjoint_coupling_frequency * (rstep - 1) + i_coupled
             self.fun3d_adjoint.iterate(adj_step)
             self._last_adjoint_step = adj_step
 
@@ -1156,7 +1171,7 @@ class Fun3d14Interface(SolverInterface):
             )
         return
 
-    def get_forward_residual(self, step=0, all=False):
+    def get_forward_residual(self, step=0, outer=True, all=False):
         """
         Returns L2 norm of scalar residual norms for each flow state
         L2norm([R1,...,R6])
@@ -1165,9 +1180,16 @@ class Fun3d14Interface(SolverInterface):
         ----------
         step: int
             the time step number
+        outer : bool
+            whether it corresponds to the outer coupled iteration or the inner flow iterations
         all: bool
             whether to return a list of all residuals or just a scalar
         """
+        if (
+            outer
+        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
+            step = self._last_forward_step
+
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
         else:

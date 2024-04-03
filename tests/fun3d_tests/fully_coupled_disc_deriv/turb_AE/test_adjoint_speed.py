@@ -49,7 +49,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady(
-            "turbulent_beta", steps=500, coupling_frequency=20, uncoupled_steps=10
+            "turbulent_beta",
+            steps=25,
+            forward_coupling_frequency=20,  # 500 total fun3d steps
+            adjoint_steps=25,
+            adjoint_coupling_frequency=20,
+            uncoupled_steps=10,
         )
         test_scenario.set_stop_criterion(early_stopping=True, min_forward_steps=50)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
@@ -67,8 +72,8 @@ class TestFun3dTacs(unittest.TestCase):
             comm,
             model,
             fun3d_dir="meshes",
-            forward_tolerance=1e-11,
-            adjoint_tolerance=1e-9,
+            forward_stop_tolerance=1e-11,
+            adjoint_stop_tolerance=1e-9,
         )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
