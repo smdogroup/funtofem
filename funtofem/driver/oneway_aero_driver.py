@@ -108,7 +108,14 @@ class OnewayAeroDriver:
         )
 
     @classmethod
-    def analysis(cls, solvers, model, transfer_settings=None, external_shape=False):
+    def analysis(
+        cls,
+        solvers,
+        model,
+        transfer_settings=None,
+        external_shape=False,
+        is_paired=True,
+    ):
         """
         Build an OnewayAeroDriver object for the my_fun3d_analyzer.py script:
             this object would be responsible for running the FUN3D
@@ -119,7 +126,7 @@ class OnewayAeroDriver:
             solvers,
             model,
             transfer_settings=transfer_settings,
-            is_paired=True,
+            is_paired=is_paired,
             external_shape=external_shape,
         )
 
@@ -260,7 +267,7 @@ class OnewayAeroDriver:
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            self.flow_aim.pre_analysis()
+            self.model.flow.pre_analysis()
 
             if not (self.is_paired):
                 if (
@@ -355,6 +362,7 @@ class OnewayAeroDriver:
         functions = self.model.get_functions()
 
         # Zero the derivative values stored in the function
+        self._zero_derivatives()
         for func in functions:
             func.zero_derivatives()
 
@@ -401,6 +409,13 @@ class OnewayAeroDriver:
                 self._get_shape_derivatives(scenario)
         return
 
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
+        return
+
     @property
     def steady(self) -> bool:
         return not (self._unsteady)
@@ -441,7 +456,7 @@ class OnewayAeroDriver:
         # run the forward analysis via iterate
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
-            self.solvers.flow.iterate(scenario, bodies, step=0)
+            self.solvers.flow.iterate(scenario, bodies, step=step)
         self.solvers.flow.post(scenario, bodies)
 
         # get functions to store the function values into the model

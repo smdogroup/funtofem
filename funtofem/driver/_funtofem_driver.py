@@ -47,6 +47,7 @@ class FUNtoFEMDriver(object):
         transfer_settings=None,
         model=None,
         debug=False,
+        reload_funtofem_states=False,
     ):
         """
         Parameters
@@ -59,6 +60,8 @@ class FUNtoFEMDriver(object):
             options of the load and displacement transfer scheme
         model: :class:`~funtofem_model.FUNtoFEMmodel`
             The model containing the design data
+        reload_funtofem_states: bool
+            whether to save and reload funtofem states
         """
 
         # add the comm manger
@@ -72,6 +75,7 @@ class FUNtoFEMDriver(object):
         if transfer_settings is None:
             transfer_settings = TransferSettings()
         self.transfer_settings = transfer_settings
+        self.reload_funtofem_states = reload_funtofem_states
 
         # communicator
         self.comm = comm_manager.master_comm
@@ -212,6 +216,7 @@ class FUNtoFEMDriver(object):
             quit()
 
         # Zero the derivative values stored in the function
+        self._zero_derivatives()
         for func in functions:
             func.zero_derivatives()
 
@@ -252,6 +257,11 @@ class FUNtoFEMDriver(object):
             fail = solver.initialize(scenario, bodies)
             if fail != 0:
                 return fail
+
+        # reload funtofem states (want this to be after TACS/struct solvers set size of states in)
+        #    do it here so we remain in solver directory
+        if self.reload_funtofem_states:
+            self.model.load_forward_states(self.comm, scenario)
         return 0
 
     def _initialize_adjoint(self, scenario, bodies):
@@ -265,13 +275,33 @@ class FUNtoFEMDriver(object):
             fail = solver.initialize_adjoint(scenario, bodies)
             if fail != 0:
                 return fail
+
+        if self.reload_funtofem_states:
+            self.model.load_adjoint_states(self.comm, scenario)
         return 0
 
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
+        return
+
     def _post_forward(self, scenario, bodies):
+        # save the funtofem states, do it here so we remain in solver directory
+        if self.reload_funtofem_states:
+            self.model.save_forward_states(self.comm, scenario)
+
         for solver in self.solvers.solver_list:
             solver.post(scenario, bodies)
 
+        return
+
     def _post_adjoint(self, scenario, bodies):
+        # save the funtofem adjoint states, do it here so we remain in solver directory
+        if self.reload_funtofem_states:
+            self.model.save_adjoint_states(self.comm, scenario)
+
         for solver in self.solvers.solver_list:
             solver.post_adjoint(scenario, bodies)
 

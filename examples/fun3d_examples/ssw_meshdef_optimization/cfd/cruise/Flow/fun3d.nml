@@ -1,0 +1,99 @@
+&project
+  project_rootname = 'ssw-turb'
+/
+&raw_grid
+  grid_format = 'aflr3'
+  data_format = 'default'
+  swap_yz_axes = .false.
+/
+&governing_equations
+  eqn_type = 'compressible'
+  viscous_terms = 'turbulent'
+/
+!&turbulent_diffusion_models
+!  turbulence_model = 'sa'
+!/
+&reference_physical_properties
+  mach_number     = 0.5
+  angle_of_attack = 2.0
+  reynolds_number = 8.77639e6
+  temperature     = 268.338
+  temperature_units = 'Kelvin'
+/
+&code_run_control
+  restart_write_freq = 100
+  restart_read       = 'on'
+  steps              =  5000
+  stopping_tolerance = 1e-18
+/
+&force_moment_integ_properties
+  area_reference = 5.0
+/
+&inviscid_flux_method
+  flux_construction       = 'roe'
+  flux_limiter            = 'hminmod'
+  smooth_limiter_coeff    = 1.0
+  freeze_limiter_iteration = 80
+  first_order_iterations = 50
+/
+&nonlinear_solver_parameters
+  time_accuracy = "steady"
+  time_step_nondim =   1.0
+  subiterations =          0
+  schedule_iteration(1:2) = 1, 200
+  schedule_cfl(1:2) = 2.0, 50.0
+  schedule_cflturb(1:2) = 2.0, 300.0
+  hanim = .true.
+/
+&hanim
+  cfl_increase_factor = 1.2
+  cfl_decrease_factor = 0.7
+/
+&massoud_output
+  funtofem_include_skin_friction = .true.
+  funtofem_restart_grid_adjoint = .true.
+/
+&global
+  moving_grid = .true.
+  boundary_animation_freq = 300
+  volume_animation_freq = 0
+  recompute_turb_dist = .false.
+/
+&elasticity_gmres
+  elasticity = 2
+  preconditioner_iters = 10
+  nsearch = 200 ! num GMRES steps
+  nrestarts = 4 ! leads to 50*15 = 750 grid iterations
+  tol = 1e-20
+  tol_abs = 1e-25
+/
+&slice_data
+  nslices       = 1
+  slice_z(:)    = .true.
+  slice_location(:) = 2.5
+/
+&volume_output_variables
+  export_to = 'tecplot'
+  temperature = .true.
+  x = .true.
+  y = .true.
+  z = .true.
+  primitive_variables = .true.
+  mach = .true.
+  q_criterion = .true.
+/
+&boundary_output_variables
+  number_of_boundaries = 1
+  boundary_list = '3'
+  temperature = .true.
+  x = .true.
+  y = .true.
+  z = .true.
+  primitive_variables = .true.
+  cp = .true.
+  cf_x = .true.
+  cf_y = .true.
+  cf_z = .true.
+  skinfr = .true.
+/
+

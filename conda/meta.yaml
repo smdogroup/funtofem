@@ -27,7 +27,7 @@ source:
 
 build:
   number: {{ build }}
-  skip: true  # [py<=37]
+  skip: true  # [py<=38]
   string: py{{ CONDA_PY }}_{{ scalar }}_h{{ PKG_HASH }}_{{ build }}
   track_features:
     - funtofem_complex  # [scalar == "complex"]
@@ -38,9 +38,12 @@ requirements:
     - make
     - python {{ python }}                    # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
-    - numpy   1.23   # [build_platform != target_platform]
-    - {{ mpi }} # [build_platform != target_platform]
-    - mpi4py # [build_platform != target_platform]
+    - numpy   >=1.25 # [build_platform != target_platform]
+    - openmpi >=4.1.4 # [mpi == "openmpi" and build_platform != target_platform]
+    - mpich  # [mpi == "mpich" and build_platform != target_platform]
+    - openmpi-mpicxx  # [mpi == "openmpi" and build_platform != target_platform]
+    - mpich-mpicxx  # [mpi == "mpich" and build_platform != target_platform]
+    - mpi4py >=3.1.1 # [build_platform != target_platform]
     - cython >=0.29,<3.0 # [build_platform != target_platform]
     - setuptools # [build_platform != target_platform]
     - tacs >=3.4.0 # [build_platform != target_platform]
@@ -48,11 +51,12 @@ requirements:
   host:
     - python {{ python }}
     - pip
-    - numpy   1.23
-    - {{ mpi }}
+    - numpy   >=1.25
+    - openmpi >=4.1.4 # [mpi == "openmpi"]
+    - mpich  # [mpi == "mpich"]
     - libopenblas
     - lapack
-    - mpi4py
+    - mpi4py >=3.1.1
     - cython >=0.29,<3.0
     - tacs >=3.4.0
 
@@ -60,10 +64,11 @@ requirements:
     - python
     - {{ pin_compatible("numpy") }}
     - scipy
-    - {{ mpi }}
+    - openmpi >=4.1.4 # [mpi == "openmpi"]
+    - mpich  # [mpi == "mpich"]
     - libopenblas
     - lapack
-    - mpi4py
+    - mpi4py >=3.1.1
     - tacs >=3.4.0
 
 test:

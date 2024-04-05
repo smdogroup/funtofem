@@ -152,8 +152,13 @@ class FUNtoFEMmodel(object):
             for var in struct_variables:
                 # check if matching shell property exists
                 matching_prop = False
+                chunks = var.name.split("-")
+                chunk_thick_var = len(chunks) == 2 and chunks[1] == "T"
                 for prop in self.structural.tacs_aim._properties:
                     if prop.caps_group == var.name:
+                        matching_prop = True
+                        break
+                    elif chunk_thick_var and chunks[0] == prop.caps_group:
                         matching_prop = True
                         break
 
@@ -162,10 +167,17 @@ class FUNtoFEMmodel(object):
                     if dv.name == var.name:
                         matching_dv = True
                         break
+                    elif chunk_thick_var and chunks[0] == dv.name:
+                        matching_dv = True
+                        break
 
                 if matching_prop and not (matching_dv):
+                    if len(chunks) == 2:
+                        var_name = chunks[0]
+                    else:
+                        var_name = var.name
                     caps2tacs.ThicknessVariable(
-                        caps_group=var.name,
+                        caps_group=var_name,
                         value=var.value,
                         name=var.name,
                         active=var.active,
@@ -194,9 +206,10 @@ class FUNtoFEMmodel(object):
 
                 # create a matching shape variable in caps2tacs
                 if matching_despmtr and not matching_shape_dv:
-                    caps2tacs.ShapeVariable(name=var.name, value=var.value).register_to(
-                        self.structural
-                    )
+                    caps2tacs.ShapeVariable(
+                        name=var.name, value=var.value, active=var.active
+                    ).register_to(self.structural)
+
         return
 
     def _send_flow_variables(self, base):
@@ -280,13 +293,13 @@ class FUNtoFEMmodel(object):
 
         elif isinstance(names, str):
             # get the one variable associated with that name
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name == names:
                     return var
 
         elif isinstance(names, list) and isinstance(names[0], str):
             varlist = []
-            for var in self.get_variables():
+            for var in self.get_variables(all=all):
                 if var.name in names:
                     varlist.append(var)
             return varlist
@@ -414,7 +427,7 @@ class FUNtoFEMmodel(object):
                 composite_func.evaluate_gradient()
         return
 
-    def read_aero_loads(self, comm, filename, root=0):
+    def _read_aero_loads(self, comm, filename, root=0):
         """
         Read the aerodynamic loads file for the OnewayStructDriver.
 
@@ -573,7 +586,20 @@ class FUNtoFEMmodel(object):
                         fp.write(data)
         return
 
-    def write_aero_loads(self, comm, filename, root=0):
+    @classmethod
+    def _get_loads_filename(cls, prefix, itime: int, suffix=".txt", padding=3):
+        """routine to get default padded 0 aero loads filenames"""
+        return prefix + "_" + f"%0{padding}d" % itime + suffix
+
+    def get_loads_files(self, prefix, suffix=".txt"):
+        """get a list of the loads files for this unsteady scenario"""
+        max_steps = max([scenario.steps for scenario in self.scenarios])
+        return [
+            FUNtoFEMmodel._get_loads_filename(prefix, itime=itime, suffix=suffix)
+            for itime in range(max_steps)
+        ]
+
+    def write_aero_loads(self, comm, filename, itime=0, root=0):
         """
         Write the aerodynamic loads file for the OnewayStructDriver.
 
@@ -599,6 +625,8 @@ class FUNtoFEMmodel(object):
             Global communicator across all FUNtoFEM processors
         filename: str
             The name of the file to be generated
+        itime: int
+            The time step of the loads to write  out (irrelevant if steady)
         root: int
             The rank of the processor that will write the file
         """
@@ -630,7 +658,9 @@ class FUNtoFEMmodel(object):
                 data += f"scenario {scenario.id} {scenario.name} \n"
 
             for body in self.bodies:
-                id, hflux, load = body._collect_aero_loads(comm, scenario, root=root)
+                id, hflux, load = body._collect_aero_loads(
+                    comm, scenario, itime=itime, root=root
+                )
 
                 if comm.rank == root:
                     data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
@@ -646,6 +676,24 @@ class FUNtoFEMmodel(object):
                     with open(filename, "w") as fp:
                         fp.write(data)
         return
+
+    def write_unsteady_aero_loads(self, comm, prefix, suffix=".txt", root=0):
+        """
+        Write the aerodynamic loads files for unsteady scenarios for the OnewayStructDriver.
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        prefix: str
+            file prefix
+        root: int
+            The rank of the processor that will write the file
+        """
+        loads_files = self.get_loads_files(prefix, suffix)
+        for itime, load_file in enumerate(loads_files):
+            self.write_aero_loads(comm, load_file, itime=itime, root=root)
+        return loads_files
 
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
@@ -970,6 +1018,271 @@ class FUNtoFEMmodel(object):
     @flow.setter
     def flow(self, flow_model):
         self._flow_model = flow_model
+
+    def save_forward_states(self, comm, scenario):
+        """save all of the funtofem elastic/thermal states for AE, AT, or ATE coupling (to be reloaded)"""
+
+        if not scenario.steady:
+            if comm.rank == 0:
+                print(
+                    f"Funtofem : non-fatal warning, you tried to reload the funtofem states, but scenario {scenario.name} is unsteady."
+                )
+                return
+
+        # make a workdirectory for saving the funtofem states
+        work_dir = os.path.join(os.getcwd(), self.name)
+        if not os.path.exists(work_dir) and comm.rank == 0:
+            os.mkdir(work_dir)
+
+        comm.Barrier()
+
+        # for each scenario, for each body save the states for the coupling types of that body
+        # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
+        # i.e. you might have a different number of struct nodes on each proc..
+        for iproc in range(comm.size):
+            if comm.rank == iproc:  # write out separately for each processor
+                for body in self.bodies:
+                    # number of struct nodes on this processor
+                    ns = body.get_num_struct_nodes()
+                    if ns == 0:
+                        continue
+
+                    if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
+
+                        # pickle the struct displacements
+                        struct_disps_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_uS.npy",
+                        )
+                        np.save(struct_disps_file, body.struct_disps[scenario.id])
+
+                    if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
+
+                        # pickle the struct temperatures
+                        struct_temps_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_tS.npy",
+                        )
+                        np.save(struct_temps_file, body.struct_temps[scenario.id])
+
+        comm.Barrier()
+
+        return
+
+    def load_forward_states(self, comm, scenario):
+        """load all of the funtofem elastic/thermal states for AE, AT, or ATE coupling (to be reloaded)"""
+
+        if not scenario.steady:
+            if comm.rank == 0:
+                print(
+                    f"Funtofem : non-fatal warning, you tried to reload the funtofem states, but scenario {scenario.name} is unsteady."
+                )
+                return
+
+        # make a workdirectory for saving the funtofem states
+        work_dir = os.path.join(os.getcwd(), self.name)
+        if not os.path.exists(work_dir) and comm.rank == 0:
+            print(
+                f"Funtofem - may be first iteration => no funtofem states to reload as workdir doesn't exist."
+            )
+
+        # for each scenario, for each body reload the states for the coupling types of that body
+        # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
+        # i.e. you might have a different number of struct nodes on each proc..
+        for iproc in range(comm.size):
+            if comm.rank == iproc:  # write out separately for each processor
+                for body in self.bodies:
+                    # number of struct nodes on this processor
+                    ns = body.get_num_struct_nodes()
+                    if ns == 0:
+                        continue
+
+                    if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
+
+                        # pickle the struct displacements
+                        struct_disps_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_uS.npy",
+                        )
+                        if os.path.exists(struct_disps_file):
+                            _struct_disps = np.load(struct_disps_file)
+                            if 3 * ns == _struct_disps.shape[0]:
+                                body.struct_disps[scenario.id] = _struct_disps * 1.0
+                            else:
+                                print(
+                                    f"Funtofem - didn't reload struct disps on proc {iproc} as size has changed."
+                                )
+                                print(
+                                    f"\tns prev = {_struct_disps.shape[0]}, ns new = {3*ns}"
+                                )
+                        else:
+                            print(
+                                f"Funtofem - warning, struct disps file '{scenario.name}_body-{body.name}_{iproc}_uS.npy' does not exist."
+                            )
+
+                    if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
+
+                        # pickle the struct temperatures
+                        struct_temps_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_tS.npy",
+                        )
+                        if os.path.exists(struct_temps_file):
+                            _struct_temps = np.load(struct_temps_file)
+                            if ns == _struct_temps.shape[0]:
+                                body.struct_temps[scenario.id] = _struct_temps * 1.0
+                            else:
+                                print(
+                                    f"Funtofem - didn't reload struct temps on proc {iproc} as size has changed."
+                                )
+                        else:
+                            print(
+                                f"Funtofem - warning, struct disps file '{scenario.name}_body-{body.name}_{iproc}_tS.npy' does not exist."
+                            )
+
+        comm.Barrier()
+
+        return
+
+    def save_adjoint_states(self, comm, scenario):
+        """save all of the funtofem elastic/thermal states for AE, AT, or ATE coupling (to be reloaded)"""
+
+        if not scenario.steady:
+            if comm.rank == 0:
+                print(
+                    f"Funtofem : non-fatal warning, you tried to reload the funtofem adjoint states, but scenario {scenario.name} is unsteady."
+                )
+                return
+
+        # make a workdirectory for saving the funtofem states
+        work_dir = os.path.join(os.getcwd(), self.name)
+        if not os.path.exists(work_dir) and comm.rank == 0:
+            os.mkdir(work_dir)
+
+        comm.Barrier()
+
+        nfunc = scenario.count_adjoint_functions()
+
+        # for each scenario, for each body save the states for the coupling types of that body
+        # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
+        # i.e. you might have a different number of struct nodes on each proc..
+        for iproc in range(comm.size):
+            if comm.rank == iproc:  # write out separately for each processor
+                for body in self.bodies:
+                    # number of struct nodes on this processor
+                    ns = body.get_num_struct_nodes()
+                    if ns == 0:
+                        continue
+
+                    if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
+
+                        # pickle the struct displacements
+                        struct_loads_ajp_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_psiS.npy",
+                        )
+                        # note this is saving an array of size (3*ns, nf)
+                        np.save(struct_loads_ajp_file, body.struct_loads_ajp)
+
+                    if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
+
+                        # pickle the struct temperatures
+                        struct_flux_ajp_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_psiQ.npy",
+                        )
+                        # note this is saving an array of size (ns, nf)
+                        np.save(struct_flux_ajp_file, body.struct_flux_ajp)
+
+        comm.Barrier()
+
+        return
+
+    def load_adjoint_states(self, comm, scenario):
+        """load all of the funtofem elastic/thermal states for AE, AT, or ATE coupling (to be reloaded)"""
+
+        if not scenario.steady:
+            if comm.rank == 0:
+                print(
+                    f"Funtofem : non-fatal warning, you tried to reload the funtofem states, but scenario {scenario.name} is unsteady."
+                )
+                return
+
+        # make a workdirectory for saving the funtofem states
+        work_dir = os.path.join(os.getcwd(), self.name)
+        if not os.path.exists(work_dir) and comm.rank == 0:
+            print(
+                f"Funtofem - may be first iteration => no funtofem states to reload as workdir doesn't exist."
+            )
+
+        nfunc = scenario.count_adjoint_functions()
+
+        # for each scenario, for each body reload the states for the coupling types of that body
+        # assumes you have the same proc assignment as before (don't change this arrangement, needs to be deterministic)
+        # i.e. you might have a different number of struct nodes on each proc..
+        for iproc in range(comm.size):
+            if comm.rank == iproc:  # write out separately for each processor
+                for body in self.bodies:
+                    # number of struct nodes on this processor
+                    ns = body.get_num_struct_nodes()
+                    if ns == 0:
+                        continue
+
+                    if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
+
+                        # pickle the struct displacements
+                        struct_loads_ajp_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_psiS.npy",
+                        )
+                        if os.path.exists(struct_loads_ajp_file):
+                            _struct_loads_ajp = np.load(struct_loads_ajp_file)
+                            if (
+                                3 * ns == _struct_loads_ajp.shape[0]
+                                and nfunc == _struct_loads_ajp.shape[1]
+                            ):
+                                body.struct_loads_ajp[:, :] = _struct_loads_ajp * 1.0
+                            else:
+                                print(
+                                    f"Funtofem - didn't reload struct loads ajp on proc {iproc} as size has changed."
+                                )
+                                print(
+                                    f"\tprev shape = {_struct_loads_ajp.shape}, new shape = {(3*ns,nfunc)}"
+                                )
+                        else:
+                            print(
+                                f"Funtofem - warning, struct loads ajp file '{scenario.name}_body-{body.name}_{iproc}_psiS.npy' does not exist."
+                            )
+
+                    if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
+
+                        # pickle the struct temperatures
+                        struct_flux_ajp_file = os.path.join(
+                            work_dir,
+                            f"{scenario.name}_body-{body.name}_{iproc}_psiQ.npy",
+                        )
+                        if os.path.exists(struct_flux_ajp_file):
+                            _struct_flux_ajp = np.load(struct_flux_ajp_file)
+                            if (
+                                ns == _struct_flux_ajp.shape[0]
+                                and nfunc == _struct_flux_ajp.shape[1]
+                            ):
+                                body.struct_flux_ajp[:, :] = _struct_flux_ajp * 1.0
+                            else:
+                                print(
+                                    f"Funtofem - didn't reload struct flux ajp on proc {iproc} as size has changed."
+                                )
+                                print(
+                                    f"\tprev shape = {_struct_flux_ajp.shape}, new shape = {(ns,nfunc)}"
+                                )
+                        else:
+                            print(
+                                f"Funtofem - warning, struct flux ajp file '{scenario.name}_body-{body.name}_{iproc}_psiQ.npy' does not exist."
+                            )
+
+        comm.Barrier()
+
+        return
 
     def print_summary(
         self, print_level=0, print_model_details=True, ignore_rigid=False

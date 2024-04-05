@@ -258,6 +258,86 @@ class OnewayStructDriver:
         )
 
     @classmethod
+    def prime_loads_from_unsteady_files(
+        cls,
+        files: list,
+        solvers,
+        model,
+        nprocs,
+        transfer_settings,
+        external_shape=False,
+        init_transfer=False,
+        timing_file=None,
+    ):
+        """
+        Used to prime aero loads for optimization over tacs analysis with shape change and tacs aim
+        Built from an aero loads file of a previous CFD analysis in FuntofemNlbgs driver (TODO : make uncoupled fluid solver features)
+        The loads file is written from the FUNtoFEM model after a forward analysis of a flow solver
+
+        Parameters
+        ----------
+        filename : str or path to aero loads file
+            the filepath of the aerodynamic loads file from a previous CFD analysis (written from FUNtoFEM model)
+        solvers: :class:`~interface.SolverManager`
+            Solver Interface for CFD such as Fun3dInterface, Su2Interface, or test aero solver
+        model : :class:`~model.FUNtoFEMmodel
+        nprocs: int
+            Number of processes that TACS is running on.
+        transfer_settings: :class:`~transfer_settings.TransferSettings`
+            Settings for transfer of state variables across aero and struct meshes
+        struct_aim: `caps2tacs.TacsAim`
+            Interface object from TACS to ESP/CAPS, wraps the tacsAIM object.
+        external_shape: bool
+            whether the tacs aim shape analysis is performed outside this class
+        timing_file: str or path
+            path to funtofem timing file statistics
+        """
+        comm = solvers.comm
+        world_rank = comm.Get_rank()
+        if world_rank < nprocs:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        tacs_comm = comm.Split(color, world_rank)
+
+        # initialize transfer settings
+        comm_manager = solvers.comm_manager
+
+        for itime, file in enumerate(files):
+            # read in the loads from the file for each time step
+            loads_data = model._read_aero_loads(comm, file)
+
+            # initialize the transfer scheme then distribute aero loads
+            for body in model.bodies:
+                if (
+                    itime == 0
+                ):  # only initialize transfer and scenario data on the first time step after the aero mesh is loaded
+                    body.initialize_transfer(
+                        comm=comm,
+                        struct_comm=tacs_comm,
+                        struct_root=comm_manager.struct_root,
+                        aero_comm=comm_manager.aero_comm,
+                        aero_root=comm_manager.aero_root,
+                        transfer_settings=transfer_settings,
+                    )
+                    for scenario in model.scenarios:
+                        assert not scenario.steady
+                        body.initialize_variables(scenario)
+
+                body._distribute_aero_loads(loads_data, steady=False, itime=itime)
+
+        tacs_driver = cls(
+            solvers,
+            model,
+            nprocs=nprocs,
+            external_shape=external_shape,
+            timing_file=timing_file,
+        )
+        if init_transfer:
+            tacs_driver._transfer_fixed_aero_loads()
+        return tacs_driver
+
+    @classmethod
     def prime_loads_from_file(
         cls,
         filename,
@@ -304,7 +384,7 @@ class OnewayStructDriver:
         comm_manager = solvers.comm_manager
 
         # read in the loads from the file
-        loads_data = model.read_aero_loads(comm, filename)
+        loads_data = model._read_aero_loads(comm, filename)
 
         # initialize the transfer scheme then distribute aero loads
         for body in model.bodies:
@@ -318,7 +398,8 @@ class OnewayStructDriver:
             )
             for scenario in model.scenarios:
                 body.initialize_variables(scenario)
-            body._distribute_aero_loads(loads_data)
+                assert scenario.steady
+            body._distribute_aero_loads(loads_data, steady=True)
 
         tacs_driver = cls(
             solvers,
@@ -418,16 +499,36 @@ class OnewayStructDriver:
                 )
 
                 # initialize new elastic struct vectors
-                if body.transfer is not None:
-                    body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
-                    body.struct_disps[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+                if scenario.steady:
+                    if body.transfer is not None:
+                        body.struct_loads[scenario.id] = np.zeros(3 * ns, dtype=dtype)
+                        body.struct_disps[scenario.id] = np.zeros(3 * ns, dtype=dtype)
 
-                # initialize new struct heat flux
-                if body.thermal_transfer is not None:
-                    body.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=dtype)
-                    body.struct_temps[scenario.id] = (
-                        np.ones(ns, dtype=dtype) * scenario.T_ref
-                    )
+                    # initialize new struct heat flux
+                    if body.thermal_transfer is not None:
+                        body.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=dtype)
+                        body.struct_temps[scenario.id] = (
+                            np.ones(ns, dtype=dtype) * scenario.T_ref
+                        )
+
+                else:  # unsteady
+                    if body.transfer is not None:
+                        body.struct_loads[scenario.id] = [
+                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
+                        body.struct_disps[scenario.id] = [
+                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
+
+                    # initialize new struct heat flux
+                    if body.thermal_transfer is not None:
+                        body.struct_heat_flux[scenario.id] = [
+                            np.zeros(ns, dtype=dtype) for _ in range(scenario.steps)
+                        ]
+                        body.struct_temps[scenario.id] = [
+                            (np.ones(ns, dtype=dtype) * scenario.T_ref)
+                            for _ in range(scenario.steps)
+                        ]
 
                 # transfer disps to prevent seg fault if coming from OnewayAeroDriver
                 body.transfer_disps(scenario)
@@ -512,6 +613,7 @@ class OnewayStructDriver:
         functions = self.model.get_functions()
 
         # Zero the derivative values stored in the function
+        self._zero_derivatives()
         for func in functions:
             func.zero_derivatives()
 
@@ -599,6 +701,13 @@ class OnewayStructDriver:
         )
 
         # end of change shape section
+        return
+
+    def _zero_derivatives(self):
+        """zero all model derivatives"""
+        for func in self.model.get_functions(all=True):
+            for var in self.model.get_variables():
+                func.derivatives[var] = 0.0
         return
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):

@@ -263,6 +263,11 @@ class Function(object):
         scenario.include(self)
         return self
 
+    @property
+    def vars_only(self) -> bool:
+        """companion property for composite functions (to prevent circular import issues)"""
+        return False
+
     @classmethod
     def ksfailure(
         cls,
@@ -283,7 +288,7 @@ class Function(object):
         """
         Class constructor for the Mass function
         """
-        return cls(name="mass", analysis_type="structural")
+        return cls(name="mass", analysis_type="structural", adjoint=False)
 
     @classmethod
     def lift(cls, start: int = None, stop: int = None, body: int = -1):

@@ -7,14 +7,7 @@ scalar:
   - complex
 
 python:
-  - 3.8
   - 3.9
   - 3.10
   - 3.11
-
-target_platform:
-  - osx-64 # [osx]
-  #- osx-arm64 # [osx]
-  - linux-64 # [linux64]
-  #- linux-aarch64 # [linux64]
-  #- linux-ppc64le # [linux64]
+  - 3.12

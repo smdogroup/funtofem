@@ -31,6 +31,7 @@ __all__ = [
 import numpy as np
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
+import os
 
 
 class TestAerodynamicSolver(SolverInterface):
@@ -266,7 +267,7 @@ class TestAerodynamicSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
+        for findex, func in enumerate(scenario.adjoint_functions):
             for vindex, var in enumerate(self.aero_variables):
                 for body in bodies:
                     aero_loads_ajp = body.get_aero_loads_ajp(scenario)
@@ -295,19 +296,20 @@ class TestAerodynamicSolver(SolverInterface):
         if step == 0:
             return
 
-        for findex, func in enumerate(scenario.functions):
+        for ifunc, func in enumerate(scenario.adjoint_functions):
+            ifull = scenario.adjoint_map[ifunc]
             for body in bodies:
                 aero_shape_term = body.get_aero_coordinate_derivatives(scenario)
                 aero_loads_ajp = body.get_aero_loads_ajp(scenario)
                 if aero_loads_ajp is not None:
-                    aero_shape_term[:, findex] += np.dot(
-                        aero_loads_ajp[:, findex], self.scenario_data[scenario.id].b1
+                    aero_shape_term[:, ifull] += np.dot(
+                        aero_loads_ajp[:, ifunc], self.scenario_data[scenario.id].b1
                     )
 
                 aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
                 if aero_flux_ajp is not None:
-                    aero_shape_term[:, findex] += np.dot(
-                        aero_flux_ajp[:, findex], self.scenario_data[scenario.id].b2
+                    aero_shape_term[:, ifull] += np.dot(
+                        aero_flux_ajp[:, ifunc], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -397,7 +399,7 @@ class TestAerodynamicSolver(SolverInterface):
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
             aero_disps_ajp = body.get_aero_disps_ajp(scenario)
             if aero_loads_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     aero_disps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, aero_loads_ajp[:, k]
                     )
@@ -409,7 +411,7 @@ class TestAerodynamicSolver(SolverInterface):
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
             if aero_flux_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     aero_temps_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, aero_flux_ajp[:, k]
                     )
@@ -617,7 +619,7 @@ class TestStructuralSolver(SolverInterface):
         """
 
         # Set the derivatives of the functions for the given scenario
-        for findex, func in enumerate(scenario.functions):
+        for findex, func in enumerate(scenario.adjoint_functions):
             for vindex, var in enumerate(self.struct_variables):
                 for body in bodies:
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
@@ -646,19 +648,21 @@ class TestStructuralSolver(SolverInterface):
         if step == 0:
             return
 
-        for findex, func in enumerate(scenario.functions):
+        adjoint_map = scenario.adjoint_map
+        for ifunc, func in enumerate(scenario.adjoint_functions):
+            ifull = adjoint_map[ifunc]
             for body in bodies:
                 struct_shape_term = body.get_struct_coordinate_derivatives(scenario)
                 struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                 if struct_disps_ajp is not None:
-                    struct_shape_term[:, findex] += np.dot(
-                        struct_disps_ajp[:, findex], self.scenario_data[scenario.id].b1
+                    struct_shape_term[:, ifull] += np.dot(
+                        struct_disps_ajp[:, ifunc], self.scenario_data[scenario.id].b1
                     )
 
                 struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                 if struct_temps_ajp is not None:
-                    struct_shape_term[:, findex] += np.dot(
-                        struct_temps_ajp[:, findex], self.scenario_data[scenario.id].b2
+                    struct_shape_term[:, ifull] += np.dot(
+                        struct_temps_ajp[:, ifunc], self.scenario_data[scenario.id].b2
                     )
 
         return
@@ -759,7 +763,7 @@ class TestStructuralSolver(SolverInterface):
             struct_disps_ajp = body.get_struct_disps_ajp(scenario)
             struct_loads_ajp = body.get_struct_loads_ajp(scenario)
             if struct_disps_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     struct_loads_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac1.T, struct_disps_ajp[:, k]
                     )
@@ -772,7 +776,7 @@ class TestStructuralSolver(SolverInterface):
             struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
 
             if struct_temps_ajp is not None:
-                for k, func in enumerate(scenario.functions):
+                for k, func in enumerate(scenario.adjoint_functions):
                     struct_flux_ajp[:, k] = np.dot(
                         self.scenario_data[scenario.id].Jac2.T, struct_temps_ajp[:, k]
                     )
@@ -952,6 +956,159 @@ class TestResult:
             return (pred - truth) / truth
 
     @classmethod
+    def design_sweep(
+        cls,
+        model,
+        driver,
+        nsweep=10,
+        eps=1e-4,
+        base_folder=None,
+        csv_file_prefix="design-sweep",
+        include_derivatives=True,
+    ):
+        """
+        perform a design sweep on a model and driver to determine the range of function values
+        """
+
+        # open up the csv files
+        if driver.comm.rank == 0:
+            for ifunc, func in enumerate(model.get_functions()):
+                filename = csv_file_prefix + f"_{func.name}.csv"
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                hdl = open(csv_file, "w")
+                hdl.write(f",alpha,func_val,adjoint\n")
+                hdl.close()
+
+        nfunctions = len(model.get_functions())
+        nvariables = len(model.get_variables())
+
+        # generate random contravariant tensor in input space x(s)
+        if nvariables > 1:
+            dxds = np.random.rand(nvariables)
+        else:
+            dxds = np.array([1.0])
+
+        # store initial variable values
+        orig_vars = [var.value * 1.0 for var in model.get_variables()]
+
+        # perform the design sweep
+        alphas = np.linspace(-eps / 2.0, eps / 2.0, nsweep)
+
+        func_vals_dict = {func.name: [] for func in model.get_functions()}
+        if include_derivatives:
+            adj_derivs_dict = {func.name: [] for func in model.get_functions()}
+            FD_derivs_dict = {func.name: [] for func in model.get_functions()}
+
+        for ialpha, alpha in enumerate(alphas):
+
+            # change the variables
+            for ivar, var in enumerate(model.get_variables()):
+                var.value = orig_vars[ivar] + alpha * dxds[ivar]
+
+            # compute forward analysise f(x) and df/dx with adjoint
+            driver.solve_forward()
+            for func in model.get_functions():
+                func_vals_dict[func.name] += [func.value.real]
+
+            if include_derivatives:
+                driver.solve_adjoint()
+                model.evaluate_composite_functions()
+                gradients = model.get_function_gradients(all=True)
+
+                adjoint_TD = np.zeros((nfunctions))
+                for ifunc, func in enumerate(model.get_functions()):
+                    for ivar in range(nvariables):
+                        adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
+                    adj_derivs_dict[func.name] += [adjoint_TD[ifunc]]
+
+            # write out these derivatives to csv files for each function
+            for ifunc, func in enumerate(model.get_functions()):
+                df_dict = {
+                    "alpha": [alphas[ialpha]],
+                    "func-val": func_vals_dict[func.name][ialpha],
+                }
+                if include_derivatives:
+                    df_dict["adjoint"] = adj_derivs_dict[func.name][ialpha]
+                    # df_dict["finite_diff"] = FD_derivs_dict[func.name][ialpha]
+                if driver.comm.rank == 0:
+                    filename = csv_file_prefix + f"_{func.name}.csv"
+                    if base_folder is None:
+                        csv_file = filename
+                    else:
+                        csv_file = os.path.join(base_folder, csv_file)
+                    hdl = open(csv_file, "a")
+                    hdl.write(
+                        f"{ialpha},{alphas[ialpha]},{func.value.real},{adj_derivs_dict[func.name][ialpha]}\n"
+                    )
+                    hdl.close()
+
+        # close the csv file then write it again with FD too
+        if driver.comm.rank == 0:
+            for ifunc, func in enumerate(model.get_functions()):
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                hdl = open(csv_file, "w")
+                hdl.write(f",alpha,func_val,adjoint,FD\n")
+                hdl.close()
+        # then rewrite each one with all the alphas and finite diff derivatives
+        for ialpha, alpha in enumerate(alphas):
+            # update the finite difference dict
+            if include_derivatives:
+                dalpha = alphas[1] - alphas[0]
+                for ifunc, func in enumerate(model.get_functions()):
+                    if ialpha == 0:
+                        # forward difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha + 1]
+                            - func_vals_dict[func.name][ialpha]
+                        )
+                        FD_deriv /= dalpha
+                    elif ialpha == nsweep - 1:
+                        # backward difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha]
+                            - func_vals_dict[func.name][ialpha - 1]
+                        )
+                        FD_deriv /= dalpha
+                    else:
+                        # central difference
+                        FD_deriv = (
+                            func_vals_dict[func.name][ialpha + 1]
+                            - func_vals_dict[func.name][ialpha - 1]
+                        )
+                        FD_deriv /= 2.0 * dalpha
+
+                    FD_derivs_dict[func.name] += [FD_deriv]
+
+        for ifunc, func in enumerate(model.get_functions()):
+            df_dict = {
+                "alpha": list(alphas),
+                "func-val": func_vals_dict[func.name],
+            }
+            if include_derivatives:
+                df_dict["adjoint"] = adj_derivs_dict[func.name]
+                df_dict["finite_diff"] = FD_derivs_dict[func.name]
+            filename = csv_file_prefix + f"_{func.name}.csv"
+            if driver.comm.rank == 0:
+                filename = csv_file_prefix + f"_{func.name}.csv"
+                if base_folder is None:
+                    csv_file = filename
+                else:
+                    csv_file = os.path.join(base_folder, csv_file)
+                hdl = open(csv_file, "a")
+                for ialpha, alpha in enumerate(alphas):
+                    hdl.write(
+                        f",{alphas[ialpha]},{func_vals_dict[func.name][ialpha]},{adj_derivs_dict[func.name][ialpha]},{FD_derivs_dict[func.name][ialpha]}\n"
+                    )
+                hdl.close()
+        return
+
+    @classmethod
     def complex_step(cls, test_name, model, driver, status_file, epsilon=1e-30):
         """
         perform complex step test on a model and driver for multiple functions & variables
@@ -1038,6 +1195,7 @@ class TestResult:
         driver,
         status_file,
         epsilon=1e-5,
+        central_diff=True,
         both_adjoint=False,  # have to call adjoint in both times for certain drivers
     ):
         """
@@ -1056,10 +1214,9 @@ class TestResult:
         # central difference approximation
         variables = model.get_variables()
         # compute forward analysise f(x) and df/dx with adjoint
-        for ivar in range(nvariables):
-            variables[ivar].value += epsilon * dxds[ivar]
         driver.solve_forward()
         driver.solve_adjoint()
+        model.evaluate_composite_functions()
         gradients = model.get_function_gradients(all=True)
         m_functions = [func.value.real for func in model.get_functions(all=True)]
 
@@ -1070,23 +1227,33 @@ class TestResult:
                 adjoint_TD[ifunc] += gradients[ifunc][ivar].real * dxds[ivar]
 
         # compute f(x-h)
-        for ivar in range(nvariables):
-            variables[ivar].value -= epsilon * dxds[ivar]
-        driver.solve_forward()
-        if both_adjoint:
-            driver.solve_adjoint()
-        i_functions = [func.value.real for func in model.get_functions(all=True)]
+        if central_diff:
+            for ivar in range(nvariables):
+                variables[ivar].value -= epsilon * dxds[ivar]
+            driver.solve_forward()
+            if both_adjoint:
+                driver.solve_adjoint()
+            model.evaluate_composite_functions()
+            i_functions = [func.value.real for func in model.get_functions(all=True)]
+        else:
+            i_functions = [None for func in model.get_functions()]
 
         # compute f(x+h)
+        alpha = 2 if central_diff else 1
         for ivar in range(nvariables):
-            variables[ivar].value += 2 * epsilon * dxds[ivar]
+            variables[ivar].value += alpha * epsilon * dxds[ivar]
         driver.solve_forward()
         if both_adjoint:
             driver.solve_adjoint()
+        model.evaluate_composite_functions()
         f_functions = [func.value.real for func in model.get_functions(all=True)]
 
         finite_diff_TD = [
-            (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+            (
+                (f_functions[ifunc] - i_functions[ifunc]) / 2 / epsilon
+                if central_diff
+                else (f_functions[ifunc] - m_functions[ifunc]) / epsilon
+            )
             for ifunc in range(nfunctions)
         ]
 
@@ -1112,7 +1279,7 @@ class TestResult:
             m_funcs=m_functions,
             f_funcs=f_functions,
             epsilon=epsilon,
-            method="finite_diff",
+            method="central_diff" if central_diff else "finite_diff",
         ).write(file_hdl).report()
         abs_rel_error = [abs(_) for _ in rel_error]
         max_rel_error = max(np.array(abs_rel_error))

@@ -35,6 +35,8 @@ class OptimizationManager:
     Performs a gatekeeper feature to prevent double-running the forward analysis
     """
 
+    SPARSE_VARS_GROUP = "vars"
+
     def __init__(
         self,
         driver,
@@ -43,6 +45,8 @@ class OptimizationManager:
         design_out_file=None,
         hot_start_file=None,
         debug: bool = False,
+        sparse: bool = False,
+        write_checkpoints=False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -58,6 +62,10 @@ class OptimizationManager:
             path to the output file for writing design variable histories
         hot_start_file: path or str
             path to the hot start file which we copy and paste into the checkpoints folder from each design. The user can move this back to the main directory to restart from a previous iteration in case the optimization fails at some point.
+        debug : bool
+            print out certain debug statement and bypass the try catch block to see error printouts
+        sparse : bool
+            whether to create variables with a var group and use sparse gradients (typically want to for large # of adjacency constraints)
         """
         # main attributes of the manager
         self.comm = driver.comm
@@ -66,6 +74,8 @@ class OptimizationManager:
         self.design_out_file = design_out_file
         self.hot_start_file = hot_start_file
         self.debug = debug
+        self.sparse = sparse
+        self.write_checkpoints = write_checkpoints
 
         # optimization meta data
         self._iteration = 0
@@ -83,7 +93,11 @@ class OptimizationManager:
             if not (os.path.exists(self._design_folder)) and self.comm.rank == 0:
                 os.mkdir(self._design_folder)
             self._checkpoints_folder = os.path.join(self._design_folder, "checkpoints")
-            if not (os.path.exists(self._checkpoints_folder)) and self.comm.rank == 0:
+            if (
+                not (os.path.exists(self._checkpoints_folder))
+                and self.comm.rank == 0
+                and self.write_checkpoints
+            ):
                 os.mkdir(self._checkpoints_folder)
 
             # make the design file handle
@@ -129,7 +143,10 @@ class OptimizationManager:
             for func in self.model.get_functions(optim=True):
                 self._sens[func.full_name] = {}
                 for var in self.model.get_variables():
-                    self._sens[func.full_name][var.full_name] = 0.0
+                    if self.sparse:
+                        self._sens[func.full_name][self.SPARSE_VARS_GROUP] = None
+                    else:
+                        self._sens[func.full_name][var.full_name] = 0.0
 
     def _gatekeeper(self, x_dict):
         """
@@ -139,10 +156,25 @@ class OptimizationManager:
 
         # only if a new design run a complete analysis
         fail = False
-        if not (x_dict == self._x_dict):
+        if self.sparse:
+            if self._x_dict is None:
+                arrays_equal = False
+            else:
+                arrays_equal = np.array_equal(
+                    x_dict[self.SPARSE_VARS_GROUP], self._x_dict[self.SPARSE_VARS_GROUP]
+                )
+        else:
+            arrays_equal = x_dict == self._x_dict
+        if not arrays_equal:
             # write the new design dict
             if self.comm.rank == 0 and self.write_designs:
-                regular_dict = {key: float(x_dict[key]) for key in x_dict}
+                if self.sparse:  # all vars in same group
+                    regular_dict = {
+                        var.name: float(x_dict[self.SPARSE_VARS_GROUP][ivar])
+                        for ivar, var in enumerate(self.model.get_variables())
+                    }
+                else:
+                    regular_dict = {key: float(x_dict[key]) for key in x_dict}
                 self._design_hdl.write(f"New design = {regular_dict}\n")
                 self._design_hdl.flush()
 
@@ -158,22 +190,36 @@ class OptimizationManager:
                 if np.isnan(self._funcs[func_key]):
                     if self.comm.rank == 0:
                         print(
-                            f"Warning: func {func_key} = {self._funcs[var_key]} and has a nan"
+                            f"Warning: func {func_key} = {self._funcs[func_key]} and has a nan"
                         )
+                        print(f"x dict = {self._x_dict}")
                     fail = True
-                for var_key in c_sens:
-                    if np.isnan(c_sens[var_key]):
-                        if self.comm.rank == 0:
-                            print(
-                                f"Warning: d{func_key}/d{var_key} = {c_sens[var_key]} and has a nan"
-                            )
-                        fail = True
+                # if self.sparse:
+                #     print(f"c_sens = {c_sens}")
+                #     if np.any(np.isnan(c_sens)) and self.comm.rank == 0:
+                #         print(
+                #             f"Warning: c_sens for function {func_key} and has a nan"
+                #         )
+                #         fail = True
+                if not self.sparse:
+                    for var_key in c_sens:
+                        if np.isnan(c_sens[var_key]):
+                            if self.comm.rank == 0:
+                                print(
+                                    f"Warning: d{func_key}/d{var_key} = {c_sens[var_key]} and has a nan"
+                                )
+                            fail = True
                 if fail:
-                    break
+                    return fail
 
             # write the new function values
             if self.comm.rank == 0 and self.write_designs:
-                self._design_hdl.write(f"Functions = {self._funcs}\n")
+                plot_funcs = {
+                    func.full_name: func.value.real
+                    for func in self.model.get_functions(optim=True)
+                    if func._plot
+                }
+                self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 
             # only update design file if analysis didn't fail and give nans
@@ -183,23 +229,25 @@ class OptimizationManager:
                 )
             if not (fail):
                 # also write the design to the checkpoints folder
-                dvs_file = os.path.join(
-                    self._checkpoints_folder, f"funtofem{self._iteration}.in"
-                )
-                self.model.write_design_variables_file(self.comm, dvs_file, root=0)
-                func_file = os.path.join(
-                    self._checkpoints_folder, f"funtofem{self._iteration}.out"
-                )
-                self.model.write_functions_file(
-                    self.comm, func_file, full_precision=False, optim=True
-                )
-                # copy the hotstart file to the checkpoints folder
-                if self.hot_start_file is not None:
-                    src = self.hot_start_file
-                    dest = os.path.join(
-                        self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                if self.write_checkpoints:
+                    dvs_file = os.path.join(
+                        self._checkpoints_folder, f"funtofem{self._iteration}.in"
                     )
-                    shutil.copy(src, dest)
+                    self.model.write_design_variables_file(self.comm, dvs_file, root=0)
+                    func_file = os.path.join(
+                        self._checkpoints_folder, f"funtofem{self._iteration}.out"
+                    )
+                    self.model.write_functions_file(
+                        self.comm, func_file, full_precision=False, optim=True
+                    )
+                    # copy the hotstart file to the checkpoints folder
+                    if self.hot_start_file is not None and self.comm.rank == 0:
+                        src = self.hot_start_file
+                        dest = os.path.join(
+                            self._checkpoints_folder, f"hot_start{self._iteration}.hst"
+                        )
+                        shutil.copy(src, dest)
+
                 self._iteration += 1
 
             # update and plot the current optimization history
@@ -217,11 +265,17 @@ class OptimizationManager:
         """
 
         # update the model design variables
-        for var in self.model.get_variables():
-            for var_key in self._x_dict:
-                if var.full_name == var_key:
-                    # assumes here that only pyoptsparse single variables (no var groups are made)
-                    var.value = float(self._x_dict[var_key])
+        if self.sparse:
+            variables = self.model.get_variables()
+            for ivar, val in enumerate(self._x_dict[self.SPARSE_VARS_GROUP]):
+                var = variables[ivar]
+                var.value = float(val)
+        else:
+            for var in self.model.get_variables():
+                for var_key in self._x_dict:
+                    if var.full_name == var_key:
+                        # assumes here that only pyoptsparse single variables (no var groups are made)
+                        var.value = float(self._x_dict[var_key])
 
         # run forward and adjoint analysis on the driver
         self.driver.solve_forward()
@@ -237,32 +291,69 @@ class OptimizationManager:
         for func in self.model.get_functions(optim=True):
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
-            for var in self.model.get_variables():
-                self._sens[func.full_name][var.full_name] = func.get_gradient_component(
-                    var
-                ).real
+            # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
+            #     self._sens[func.full_name][self.SPARSE_VARS_GROUP] = (
+            #         func.sparse_gradient # .astype(np.double)
+            #     ) # linear constraints define their jacobians up front
+            if self.sparse:
+                self._sens[func.full_name][self.SPARSE_VARS_GROUP] = np.array(
+                    [func.derivatives[var].real for var in func.derivatives]
+                )
+            else:
+                for var in self.model.get_variables():
+                    self._sens[func.full_name][var.full_name] = (
+                        func.get_gradient_component(var).real
+                    )
         return
 
     def register_to_problem(self, opt_problem):
         """
         add funtofem model variables and functions to a pyoptsparse optimization problem
         """
-        for var in self.model.get_variables():
-            opt_problem.addVar(
-                var.full_name,
-                lower=var.lower,
-                upper=var.upper,
-                value=var.value,
-                scale=var.scale,
+        if self.sparse:
+            variables = self.model.get_variables()
+            values = np.array([var.value for var in variables])
+            opt_problem.addVarGroup(
+                self.SPARSE_VARS_GROUP,
+                len(variables),
+                "c",
+                lower=np.array([var.lower for var in variables]),
+                upper=np.array([var.upper for var in variables]),
+                value=np.array([var.value for var in variables]),
+                scale=np.array([var.scale for var in variables]),
             )
+        else:
+            for var in self.model.get_variables():
+                opt_problem.addVar(
+                    var.full_name,
+                    lower=var.lower,
+                    upper=var.upper,
+                    value=var.value,
+                    scale=var.scale,
+                )
 
         for func in self.model.get_functions(optim=True):
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
-                opt_problem.addCon(
-                    func.full_name, lower=func.lower, upper=func.upper, scale=func.scale
-                )
+                if func.vars_only:
+                    # TODO : how to account for shape derivatives of panel length constraints..
+                    opt_problem.addCon(
+                        func.full_name,
+                        lower=func.lower,
+                        upper=func.upper,
+                        scale=func.scale,
+                        linear=True,
+                        wrt=[self.SPARSE_VARS_GROUP],
+                        jac={self.SPARSE_VARS_GROUP: func.sparse_gradient},
+                    )
+                else:
+                    opt_problem.addCon(
+                        func.full_name,
+                        lower=func.lower,
+                        upper=func.upper,
+                        scale=func.scale,
+                    )
 
         return
 
@@ -322,8 +413,8 @@ class OptimizationManager:
                         constr_bndry = 1.0
                         # take relative errors against constraint boundaries, lower upper
                         yfinal = yvec[-1]
-                        err_lower = 1e5
-                        err_upper = 1e5
+                        err_lower = 1e13
+                        err_upper = 1e13
                         if func.lower is not None:
                             # use abs error since could have div 0
                             err_lower = abs(yfinal - func.lower)

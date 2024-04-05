@@ -49,6 +49,7 @@ class TestFuntofemDriverAeroCoordinate(unittest.TestCase):
         scenario = Scenario.steady("test", steps=200)
         Function.ksfailure().register_to(scenario)
         Function.test_aero().register_to(scenario)
+        Function.mass().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver

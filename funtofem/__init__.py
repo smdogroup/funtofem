@@ -35,5 +35,6 @@ from .model import *
 from .optimization import *
 
 mphys_loader = importlib.util.find_spec("mphys")
-if mphys_loader is not None:
+openmdao_loader = importlib.util.find_spec("openmdao")
+if mphys_loader is not None and openmdao_loader is not None:
     from .mphys import *
