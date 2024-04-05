@@ -153,7 +153,7 @@ cruise = Scenario.steady(
     adjoint_coupling_frequency=30,  # 3000 total adjoint steps
     uncoupled_steps=0,
 )
-cruise.set_stop_criterion(early_stopping=True, min_adjoint_steps=20)
+cruise.set_stop_criterion(early_stopping=True, min_forward_steps=10, min_adjoint_steps=20)
 
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
@@ -282,6 +282,7 @@ manager = OptimizationManager(
     hot_start=hot_start,
     hot_start_file=hot_start_file,
     debug=True,
+    sparse=False,
 )
 
 # create the pyoptsparse optimization problem

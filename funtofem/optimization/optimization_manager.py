@@ -160,9 +160,14 @@ class OptimizationManager:
             if self._x_dict is None:
                 arrays_equal = False
             else:
-                arrays_equal = np.array_equal(
-                    x_dict[self.SPARSE_VARS_GROUP], self._x_dict[self.SPARSE_VARS_GROUP]
-                )
+                if self.sparse:
+                    arrays_equal = np.array_equal(
+                        x_dict[self.SPARSE_VARS_GROUP], self._x_dict[self.SPARSE_VARS_GROUP]
+                    )
+                else:
+                    arrays_equal = np.array_equal(
+                        x_dict, self._x_dict
+                    )
         else:
             arrays_equal = x_dict == self._x_dict
         if not arrays_equal:
@@ -336,7 +341,7 @@ class OptimizationManager:
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
-                if func.vars_only:
+                if func.vars_only and self.sparse:
                     # TODO : how to account for shape derivatives of panel length constraints..
                     opt_problem.addCon(
                         func.full_name,
