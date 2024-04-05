@@ -162,12 +162,11 @@ class OptimizationManager:
             else:
                 if self.sparse:
                     arrays_equal = np.array_equal(
-                        x_dict[self.SPARSE_VARS_GROUP], self._x_dict[self.SPARSE_VARS_GROUP]
+                        x_dict[self.SPARSE_VARS_GROUP],
+                        self._x_dict[self.SPARSE_VARS_GROUP],
                     )
                 else:
-                    arrays_equal = np.array_equal(
-                        x_dict, self._x_dict
-                    )
+                    arrays_equal = np.array_equal(x_dict, self._x_dict)
         else:
             arrays_equal = x_dict == self._x_dict
         if not arrays_equal:
