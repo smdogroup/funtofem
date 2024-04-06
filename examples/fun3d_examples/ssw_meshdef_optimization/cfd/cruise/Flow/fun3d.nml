@@ -60,8 +60,8 @@
   recompute_turb_dist = .false.
 /
 &elasticity_gmres
-  elasticity = 2
-  preconditioner_iters = 10
+  elasticity = 1
+  preconditioner_iters = 100
   nsearch = 200 ! num GMRES steps
   nrestarts = 4 ! leads to 50*15 = 750 grid iterations
   tol = 1e-20

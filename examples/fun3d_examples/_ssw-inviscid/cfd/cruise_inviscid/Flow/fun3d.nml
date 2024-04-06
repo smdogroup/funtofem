@@ -19,7 +19,7 @@
 /
 &code_run_control
   restart_write_freq = 100
-  restart_read       = 'on'
+  restart_read       = 'off'
   steps              =  5000
   stopping_tolerance = 1e-18
 /

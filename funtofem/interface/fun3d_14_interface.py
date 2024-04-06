@@ -556,6 +556,7 @@ class Fun3d14Interface(SolverInterface):
         # Take a step in FUN3D
         self.comm.Barrier()
         bcont = self.fun3d_flow.iterate()
+        self._last_forward_step += 1
         if bcont == 0:
             if self.comm.Get_rank() == 0:
                 print("Negative volume returning fail")
@@ -567,7 +568,6 @@ class Fun3d14Interface(SolverInterface):
             step == scenario.uncoupled_steps and scenario.steady
         ):  # reset the coupling frequency before the coupled steps
             self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
-            self._last_forward_step += 1
 
         return 0
 
