@@ -4,7 +4,7 @@ from mpi4py import MPI
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
-csm_path = os.path.join(base_dir, "flow_wing.csm")
+csm_path = os.path.join(base_dir, "meshes", "flow_wing.csm")
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 caps_loader = importlib.util.find_spec("pyCAPS")
