@@ -5,6 +5,7 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 
 from .aflr_aim import *
 from .fun3d_aim import *
+from .handcrafted_mesh_morph import *
 
 if caps_loader is not None:
     from .fun3d_model import *
