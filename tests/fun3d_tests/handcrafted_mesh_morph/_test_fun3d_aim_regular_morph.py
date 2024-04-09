@@ -4,7 +4,7 @@ from mpi4py import MPI
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 comm = MPI.COMM_WORLD
-csm_path = os.path.join(base_dir, "meshes", "flow_wing.csm")
+csm_path = os.path.join(base_dir, "flow_wing.csm")
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 caps_loader = importlib.util.find_spec("pyCAPS")
@@ -19,7 +19,7 @@ class TestFun3dAim(unittest.TestCase):
     def test_pre_analysis(self):
         """just check that it runs without error"""
         fun3d_model = Fun3dModel.build(
-            csm_file=csm_path, comm=comm, project_name="wing_test", root=0
+            csm_file=csm_path, comm=comm, project_name="wing_test", root=0, mesh_morph=True,
         )
         mesh_aim = fun3d_model.mesh_aim
         fun3d_aim = fun3d_model.fun3d_aim
@@ -30,7 +30,6 @@ class TestFun3dAim(unittest.TestCase):
         Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
         fun3d_model.setup()
         fun3d_aim.pre_analysis()
-
 
 
 if __name__ == "__main__":
