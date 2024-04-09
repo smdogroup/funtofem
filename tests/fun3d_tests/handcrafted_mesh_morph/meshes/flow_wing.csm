@@ -1,6 +1,8 @@
 
 despmtr ff 20.0
 despmtr sspan 3.0
+despmtr twist 0.0
+despmtr sweep 2.0
 
 box -ff -ff -ff 2*ff 2*ff 2*ff
     attribute capsGroup $Farfield
@@ -10,10 +12,13 @@ box -ff -ff -ff 2*ff 2*ff 2*ff
     ATTRIBUTE AFLR4_Scale_Factor 10.0
     # ATTRIBUTE capsMeshLength 1.0
 
+set xTip sspan*tand(sweep)
+
 mark
 udprim naca series 2412
 udprim naca series 2412
-translate 0 0 -sspan
+rotatez twist 0 0
+translate xTip 0 -sspan
 loft 0
     attribute capsGroup $wall
     attribute capsMesh $wall
@@ -26,5 +31,7 @@ subtract
 attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM
 attribute capsMeshLength 1.0
 
+rotatex 90 0 0
+
 end
-|||||||||||
+||||||||||||

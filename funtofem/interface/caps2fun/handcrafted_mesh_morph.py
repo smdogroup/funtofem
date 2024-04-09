@@ -1,24 +1,114 @@
 __all__ = ["HandcraftedMeshMorph"]
 
 import numpy as np
-from ...model._base import Base
-from mpi4py import MPI
 from funtofem import TransferScheme
-from ...driver.transfer_settings import TransferSettings
+from mpi4py import MPI
 
 class HandcraftedMeshMorph:
-    def __init__(self, transfer_settings):
+    def __init__(self, comm, model, transfer_settings, nprocs_hc=1):
+        self.comm = comm
+        self.model = model
+        self.nprocs_hc = nprocs_hc
         self.transfer_settings = transfer_settings
 
-    def initialize_transfer(
-        self,
-        comm,
-        struct_comm,
-        struct_root,
-        aero_comm,
-        aero_root,
-        transfer_settings=None,
-    ):
+        # initialize handcrafted aero surf mesh coords
+        self.hc_aero_X = None
+        self.hc_aero_id = None
+        self.hc_nnodes = 0
+        self._get_hc_coords()
+
+        self._first_caps_read = True
+        self.caps_aero_X = None
+        self.caps_aero_id = None
+        self.caps_nnodes = 0
+
+        self.u_caps = None # caps shape change displacement
+        self.u_hc = None # handcrafted mesh shape change displacement
+
+    def _get_hc_coords(self):
+        """get the handcrafted aero surface mesh coords and ids"""
+
+        # just use the first body for now (not fully general but that's ok)
+        first_body = self.model.bodies[0]
+
+        if first_body.aero_X is None or first_body.aero_id is None:
+            print("Funtofem warning : need to build handcrafted mesh morph file after Fun3dInterface which reads aero surf coordinates.")
+            return
+
+        self.hc_aero_X = first_body.aero_X
+        self.hc_aero_id = first_body.aero_id
+        self.hc_nnodes = self.hc_aero_X.shape[0] // 3 # // produces an int
+        return
+    
+    def read_surface_file(self, surface_morph_file, is_caps_mesh=True):
+        # read the file here
+        aero_X = None
+        aero_id = None
+        if self.comm.rank == 0:
+            fp = open(surface_morph_file, "r")
+            lines = fp.readlines()
+            fp.close()
+
+            aero_X = []
+            aero_id = []
+            nnodes = None
+            inode = None
+            # TODO : do we need to read the element connectivity => probably not
+
+            for line in lines:
+                if inode is not None and inode < nnodes:
+                    inode += 1
+                    chunks = line.split(" ")
+                    # add the xyz coords and aero id
+                    aero_X += [float(chunks[0]), float(chunks[1]), float(chunks[2])]
+                    aero_id += [int(chunks[3])]
+
+                if "title" in line or "variables" in line:
+                    continue
+                elif "zone" in line:
+                    chunks = line.split(" ")
+                    for chunk in chunks:
+                        if "i=" in chunk:
+                            nnodes = int(chunk.split("=")[1].split(",")[0])
+                    inode = 0
+
+            # convert to numpy arrays
+            aero_X = np.array(aero_X, dtype=TransferScheme.dtype)
+            aero_id = np.array(aero_id, dtype=TransferScheme.dtype)
+
+        # TODO : distribute these nodes and ids among the nprocs_hc next (if using more than one proc for this)
+
+        self.comm.Barrier()
+
+        if is_caps_mesh:
+            if self._first_caps_read:
+                self._first_caps_read = False
+
+                # copy the aero_X, aero_id
+                self.caps_aero_X = aero_X
+                self.caps_aero_id = aero_id
+                self.caps_nnodes = aero_X.shape[0] // 3
+
+                # initialize the transfer object
+                self.transfer = None
+                self._initialize_transfer()
+            else:
+                nnodes = aero_X.shape[0] // 3
+                assert nnodes == self.caps_nnodes
+
+                # otherwise save shape changing displacements
+                self.u_caps = aero_X - self.caps_aero_X
+        else: # reading an hc mesh with the surface dat file, this feature mostly just for testing
+            # since it can deform the farfield that we don't want to deform..
+
+            # copy the aero_X, aero_id
+            self.hc_aero_X = aero_X
+            self.hc_aero_id = aero_id
+            self.hc_nnodes = aero_X.shape[0] // 3
+
+        return
+
+    def _initialize_transfer(self):
         """
         Initialize the load and displacement and/or thermal transfer scheme for this body
 
@@ -30,129 +120,79 @@ class HandcraftedMeshMorph:
             options for the load and displacement transfer scheme for the bodies
         """
 
-        # If the user did not specify a transfer scheme default to MELD
-        if transfer_settings is None:
-            transfer_settings = TransferSettings()
+        # make a comm for the handcrafted mesh limited to how many procs it uses (default is just 1)
+        world_rank = self.comm.Get_rank()
+        if world_rank < self.nprocs_hc:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        hc_comm = self.comm.Split(color, world_rank)
 
-        # Initialize the transfer and thermal transfer objects to None
-        self.transfer = None
-        self.thermal_transfer = None
+        # Initialize the transfer transfer objects
+        self.transfer = TransferScheme.pyMELD(
+            self.comm,
+            hc_comm,
+            0,
+            self.comm,
+            0,
+            self.transfer_settings.isym,
+            self.transfer_settings.npts,
+            self.transfer_settings.beta,
+        )
 
-        # Verify analysis type is valid
-        self.verify_analysis_type(self.analysis_type)
-
-        elastic_analyses = [_ for _ in Body.ANALYSIS_TYPES if "elastic" in _]
-        thermal_analyses = [_ for _ in Body.ANALYSIS_TYPES if "therm" in _]
-
-        # Set up the transfer schemes based on the type of analysis set for this body
-        if self.analysis_type in elastic_analyses:
-            # Set up the load and displacement transfer schemes
-            if transfer_settings.elastic_scheme == "hermes":
-                self.transfer = HermesTransfer(
-                    self.comm, self.struct_comm, self.aero_comm
-                )
-
-            elif transfer_settings.elastic_scheme == "rbf":
-                basis = TransferScheme.PY_THIN_PLATE_SPLINE
-
-                if "basis function" in transfer_settings.options:
-                    if (
-                        transfer_settings.options["basis function"].lower()
-                        == "thin plate spline"
-                    ):
-                        basis = TransferScheme.PY_THIN_PLATE_SPLINE
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "gaussian"
-                    ):
-                        basis = TransferScheme.PY_GAUSSIAN
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "multiquadric"
-                    ):
-                        basis = TransferScheme.PY_MULTIQUADRIC
-                    elif (
-                        transfer_settings.options["basis function"].lower()
-                        == "inverse multiquadric"
-                    ):
-                        basis = TransferScheme.PY_INVERSE_MULTIQUADRIC
-                    else:
-                        print("Unknown RBF basis function for body number")
-                        quit()
-
-                self.transfer = TransferScheme.pyRBF(
-                    comm, struct_comm, struct_root, aero_comm, aero_root, basis, 1
-                )
-
-            elif transfer_settings.elastic_scheme == "meld":
-                self.transfer = TransferScheme.pyMELD(
-                    comm,
-                    struct_comm,
-                    struct_root,
-                    aero_comm,
-                    aero_root,
-                    transfer_settings.isym,
-                    transfer_settings.npts,
-                    transfer_settings.beta,
-                )
-
-            elif transfer_settings.elastic_scheme == "linearized meld":
-                self.transfer = TransferScheme.pyLinearizedMELD(
-                    comm,
-                    struct_comm,
-                    struct_root,
-                    aero_comm,
-                    aero_root,
-                    transfer_settings.isym,
-                    transfer_settings.npts,
-                    transfer_settings.beta,
-                )
-
-            elif transfer_settings.elastic_scheme == "beam":
-                self.xfer_ndof = transfer_settings.options["ndof"]
-                self.transfer = TransferScheme.pyBeamTransfer(
-                    comm,
-                    struct_comm,
-                    struct_root,
-                    aero_comm,
-                    aero_root,
-                    transfer_settings.options["conn"],
-                    transfer_settings.options["nelems"],
-                    transfer_settings.options["order"],
-                    transfer_settings.options["ndof"],
-                )
-            else:
-                print("Error: Unknown transfer scheme for body")
-                quit()
-
-        # Set up the transfer schemes based on the type of analysis set for this body
-        if self.analysis_type in thermal_analyses:
-            # Set up the thermal transfer schemes
-
-            if transfer_settings.thermal_scheme == "meld":
-                self.thermal_transfer = TransferScheme.pyMELDThermal(
-                    comm,
-                    struct_comm,
-                    struct_root,
-                    aero_comm,
-                    aero_root,
-                    transfer_settings.isym,
-                    transfer_settings.thermal_npts,
-                    transfer_settings.thermal_beta,
-                )
-            else:
-                print("Error: Unknown thermal transfer scheme for body")
-                quit()
+        if self.comm.rank == 0:
+            assert self.hc_aero_X is not None
+            assert self.caps_aero_X is not None
 
         # Set the node locations
-        self.update_transfer()
+        # CAPS mesh treated as structure mesh and HC mesh as aero
+        self.transfer.setStructNodes(self.caps_aero_X)
+        self.transfer.setAeroNodes(self.hc_aero_X)
 
-        # Initialize the load/displacement transfer
-        if self.transfer is not None:
-            self.transfer.initialize()
+        self.transfer.initialize()
 
-        # Initialize the thermal transfer
-        if self.thermal_transfer is not None:
-            self.thermal_transfer.initialize()
+        return
+    
+    def transfer_shape_disps(self):
+        """transfer the shape changing displacements from the CAPS to the handcrafted mesh"""
+        # reset hc aero displacements
+        self.u_hc = np.zeros((3*self.hc_nnodes), dtype=TransferScheme.dtype)
 
+        self.transfer.transferDisps(self.u_caps, self.u_hc)
+
+        print(f"u caps = {self.u_caps}")
+
+        # also transfer the loads since adjoint sensitivities require this (virtual work computation)
+        # but just transfer zero loads since we only care about disp transfer here
+        hc_loads = 0.0 * self.u_hc
+        caps_loads = np.zeros((3*self.caps_nnodes), dtype=TransferScheme.dtype)
+        self.transfer.transferLoads(hc_loads, caps_loads)
+
+        return
+    
+    @property
+    def hc_def_aero_X(self):
+        return self.hc_aero_X + self.u_hc
+
+    def write_surface_file(self, surface_morph_file):
+        """write a surface mesh morphing file for the Handcrafted mesh"""
+        if self.comm.rank == 0:
+            fp = open(surface_morph_file, "w")
+            
+            # first write the headers
+            fp.write("title=""CAPS""\n")
+            fp.write("variables=""x"",""y"",""z"",""id""\n")
+            fp.write("zone t=""Body_1"", i=""" + f"{self.hc_nnodes}"", j=0, f=fepoint, solutiontime=0.000000, strandid=0\n")
+
+            hc_def_aero_X = self.hc_def_aero_X
+
+            # then write each of the nodes
+            for i in range(self.hc_nnodes):
+                xyz = np.real(hc_def_aero_X[3*i:3*i+3])
+                nid = np.real(self.hc_aero_id[i])
+                fp.write(f"{xyz[0]:3.16e} {xyz[1]:3.16e} {xyz[2]:3.16e} {nid}\n")
+
+            fp.close()
+
+        self.comm.Barrier()
         return
