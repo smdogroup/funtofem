@@ -224,8 +224,13 @@ class HandcraftedMeshMorph:
         if surface_morph_file is None:  # use default filepath if not specified
             surface_morph_file = self.hc_mesh_morph_filepath
 
+        # need to collect aero coordinates and ids from all nodes
+        hc_aero_X, hc_aero_ids = self._collect_hc_deformed_coords(root=0)
+
         if self.comm.rank == 0:
             fp = open(surface_morph_file, "w")
+
+            hc_nnodes = hc_aero_ids.shape[0]
 
             # first write the headers
             fp.write("title=" "CAPS" "\n")
@@ -234,16 +239,14 @@ class HandcraftedMeshMorph:
                 "zone t="
                 "Body_1"
                 ", i="
-                "" + f"{self.hc_nnodes}"
+                "" + f"{hc_nnodes}"
                 ", j=0, f=fepoint, solutiontime=0.000000, strandid=0\n"
             )
 
-            hc_def_aero_X = self.hc_def_aero_X
-
             # then write each of the nodes
-            for i in range(self.hc_nnodes):
-                xyz = np.real(hc_def_aero_X[3 * i : 3 * i + 3])
-                nid = np.real(self.hc_aero_id[i])
+            for i in range(hc_nnodes):
+                xyz = np.real(hc_aero_X[3 * i : 3 * i + 3])
+                nid = np.real(hc_aero_ids[i])
                 fp.write(f"{xyz[0]:3.16e} {xyz[1]:3.16e} {xyz[2]:3.16e} {nid}\n")
 
             fp.close()
@@ -266,7 +269,7 @@ class HandcraftedMeshMorph:
             self.transfer.applydDduSTrans(1.0 * aero_shape_term[:, k], temp_xcaps)
             caps_aero_shape_term[:, k] -= temp_xcaps
 
-    def _collect_caps_coordiante_derivatives(self, root=0):
+    def _collect_caps_coordinate_derivatives(self, root=0):
         all_aero_ids = self.comm.gather(self.caps_aero_id, root=0)
 
         # append struct shapes for each scenario
@@ -304,6 +307,37 @@ class HandcraftedMeshMorph:
 
         return aero_shape, aero_ids
 
+    def _collect_hc_deformed_coords(self, root=0):
+        all_aero_ids = self.comm.gather(self.hc_aero_id, root=0)
+        all_aero_X = self.comm.gather(self.hc_aero_X, root=0)
+
+        aero_ids = []
+        aero_X = []
+
+        if self.comm.rank == root:
+            # Discard any entries that are None
+            aero_ids = []
+            for d in all_aero_ids:
+                if d is not None:
+                    aero_ids.append(d)
+
+            aero_X = []
+            for d in all_aero_X:
+                if d is not None:
+                    aero_X.append(d)
+
+            if len(aero_X) > 0:
+                aero_X = np.concatenate(aero_X)
+            else:
+                aero_X = np.zeros((3, 1))
+
+            if len(aero_ids) == 0:
+                aero_ids = np.arange(aero_X.shape[0] // 3, dtype=int)
+            else:
+                aero_ids = np.concatenate(aero_ids)
+
+        return aero_X, aero_ids
+
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
     ):
@@ -335,12 +369,13 @@ class HandcraftedMeshMorph:
 
         funcs = self.model.get_functions()
 
-        deriv, id = self._collect_caps_coordiante_derivatives(root=root)
-        count = len(id)
+        deriv, id = self._collect_caps_coordinate_derivatives(root=root)
 
         if comm.rank == root:
             variables = self.model.get_variables()
             discpline_vars = []
+            count = len(id)
+
             if write_dvs:  # flag for registering dvs that will later get written out
                 for var in variables:
                     # Write the variables whose analysis_type matches the discipline string.

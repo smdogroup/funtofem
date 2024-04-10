@@ -282,11 +282,15 @@ class Fun3dAim:
         return f"{self.project_name}_body1.dat"
 
     @property
-    def mesh_morph_filepath(self):
-        # if self.handcrafted_mesh_morph:
-        #     return self.handcrafted_mesh_morph.hc_mesh_morph_filepath
-        # else:
+    def native_mesh_morph_filepath(self):
         return os.path.join(self.analysis_dir, "Flow", self.mesh_morph_filename)
+
+    @property
+    def mesh_morph_filepath(self):
+        if self.is_handcrafted:
+            return self.handcrafted_mesh_morph.hc_mesh_morph_filepath
+        else:
+            return self.native_mesh_morph_filepath
 
     def pre_analysis(self):
         if self.root_proc:
@@ -295,7 +299,7 @@ class Fun3dAim:
         self.comm.Barrier()
         if self.is_handcrafted:
             self._make_hc_surface_file()
-        if self.root_proc:
+        if self.root_proc and not self.is_handcrafted:
             self._move_grid_files()
         return
 
@@ -339,8 +343,7 @@ class Fun3dAim:
 
     def _make_hc_surface_file(self):
         """make a surface file for the handcrafted surface mesh by shape change displacements from the CAPS mesh"""
-        print(f"F2F HC mesh morph rank {self.comm.rank}- _make_hc_surface_file")
-        self.handcrafted_mesh_morph.read_surface_file(self.mesh_morph_filepath)
+        self.handcrafted_mesh_morph.read_surface_file(self.native_mesh_morph_filepath)
         self.handcrafted_mesh_morph.transfer_shape_disps()
         self.handcrafted_mesh_morph.write_surface_file()
         return

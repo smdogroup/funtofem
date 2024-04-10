@@ -2,9 +2,8 @@ import os, unittest, importlib
 from funtofem.interface import Fun3dModel, Fun3dBC, HandcraftedMeshMorph
 from funtofem.driver import TransferSettings
 from mpi4py import MPI
-import matplotlib.pyplot as plt
 import numpy as np
-import niceplots
+
 
 # Imports from FUNtoFEM
 from funtofem.model import (
