@@ -223,6 +223,11 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
+                forward_res = self.driver.solvers.flow.get_forward_residual()
+                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                self._design_hdl.write(
+                    f"forward resid {forward_res:2.5e}, adjoint resid {adjoint_res:2.5e}"
+                )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 
