@@ -241,8 +241,9 @@ class HandcraftedMeshMorph:
         temp_xcaps = np.zeros((3 * self.caps_nnodes), dtype=TransferScheme.dtype)
 
         for k in range(nfunctions):
-            self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
-            caps_aero_shape_term[:, k] += temp_xcaps
+            #self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
+            self.transfer.applydDduSTrans(1.0 * aero_shape_term[:, k], temp_xcaps)
+            caps_aero_shape_term[:, k] -= temp_xcaps
 
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
