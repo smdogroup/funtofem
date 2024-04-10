@@ -10,6 +10,7 @@ from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
 import os
+import time
 
 comm = MPI.COMM_WORLD
 
