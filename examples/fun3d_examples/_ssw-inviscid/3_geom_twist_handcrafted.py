@@ -207,6 +207,9 @@ cruise = Scenario.steady(
     adjoint_coupling_frequency=30,  # 3000 total adjoint steps
     uncoupled_steps=0,
 )
+cruise.set_stop_criterion(
+    early_stopping=True, min_forward_steps=10, min_adjoint_steps=10
+)
 cruise.fun3d_project_name = "ssw-inviscid"
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
@@ -258,9 +261,9 @@ solvers.flow = Fun3d14Interface(
     f2f_model,
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
-    forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=4e-16,
-    adjoint_min_tolerance=1e-12,
+    forward_min_tolerance=1e-11,
+    adjoint_stop_tolerance=1e-14,
+    adjoint_min_tolerance=1e-11,
 )
 # NOTE : the user needs to have put their handcrafted mesh in the Scenario/Flow directory already
 
@@ -282,6 +285,33 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
     struct_nprocs=nprocs_tacs,
     reload_funtofem_states=True,
 )
+
+test_derivatives = True
+if test_derivatives:  # test using the finite difference test
+    # load the previous design
+    # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
+    # f2f_model.read_design_variables_file(comm, design_in_file)
+
+    start_time = time.time()
+
+    # run the finite difference test
+    max_rel_error = TestResult.derivative_test(
+        "case3 handcrafted derivatives",
+        model=f2f_model,
+        driver=f2f_driver,
+        status_file="1-derivs.txt",
+        complex_mode=False,
+        epsilon=1e-4,
+    )
+
+    end_time = time.time()
+    dt = end_time - start_time
+    if comm.rank == 0:
+        print(f"total time for ssw derivative test is {dt} seconds", flush=True)
+        print(f"max rel error = {max_rel_error}", flush=True)
+
+    # exit before optimization
+    exit()
 
 # ---------------------------------------------------->
 
