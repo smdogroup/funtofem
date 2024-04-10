@@ -101,7 +101,7 @@ class TestFun3dAimHandcraftedMesh(unittest.TestCase):
             model=model,
             transfer_settings=TransferSettings(npts=200, beta=0.5),
         )
-        fun3d_model.handcrafted_mesh_morph = handcrafted_mesh_morph
+        # fun3d_model.handcrafted_mesh_morph = handcrafted_mesh_morph
 
         # copy the coordinates from the fun3d14interface to the handcrafted mesh object
         # read in the initial dat file and store in the

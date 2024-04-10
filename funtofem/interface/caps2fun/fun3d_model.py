@@ -9,7 +9,7 @@ from .fun3d_aim import Fun3dAim
 from .mesh_aim import MeshAim
 from .pointwise_aim import PointwiseAIM
 from .aflr_aim import Aflr3Aim
-from .handcrafted_mesh_morph import HandcraftedMeshMorph
+from .hc_mesh_morph import HandcraftedMeshMorph
 
 
 class Fun3dModel:
@@ -28,8 +28,6 @@ class Fun3dModel:
         self._mesh_aim = mesh_aim
         self._surface_aim = mesh_aim.surface_aim
         self._volume_aim = mesh_aim.volume_aim
-
-        self._handcrafted_mesh_morph = None
 
         self.project_name = project_name
         self.comm = comm
@@ -204,10 +202,8 @@ class Fun3dModel:
 
     @property
     def handcrafted_mesh_morph(self) -> HandcraftedMeshMorph:
-        return self._handcrafted_mesh_morph
-    
-    @handcrafted_mesh_morph.setter
-    def handcrafted_mesh_morph(self, my_hmm:HandcraftedMeshMorph):
-        self._handcrafted_mesh_morph = my_hmm
+        return self.fun3d_aim.handcrafted_mesh_morph
 
-    
+    @handcrafted_mesh_morph.setter
+    def handcrafted_mesh_morph(self, my_hmm: HandcraftedMeshMorph):
+        self.fun3d_aim.handcrafted_mesh_morph = my_hmm

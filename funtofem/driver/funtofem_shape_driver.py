@@ -582,6 +582,22 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
 
             self.comm.Barrier()
 
+            # hack to do shape change with handcrafted mesh with Fun3dAim
+            if self.model.flow is not None and isinstance(self.model.flow, Fun3dModel):
+                if self.flow_aim.is_handcrafted:
+                    hc_obj = self.flow_aim.handcrafted_mesh_morph
+                    hc_obj.compute_caps_coord_derivatives()
+                    # overwrite the previous sens file
+                    hc_obj.write_sensitivity_file(
+                        comm=self.comm,
+                        filename=filepath,
+                        discipline="aerodynamic",
+                        root=self.flow_aim.root,
+                        write_dvs=False,
+                    )
+
+            self.comm.Barrier()
+
         # post analysis for FUN3D mesh morphing
         if self.aero_shape and (
             self.forward_flow_post_analysis or self.flow_aim.mesh_morph
@@ -710,6 +726,24 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     root=0,
                     write_dvs=False,
                 )
+
+                self.comm.Barrier()
+
+                # hack to do shape change with handcrafted mesh with Fun3dAim
+                if self.model.flow is not None and isinstance(
+                    self.model.flow, Fun3dModel
+                ):
+                    if self.flow_aim.is_handcrafted:
+                        hc_obj = self.flow_aim.handcrafted_mesh_morph
+                        hc_obj.compute_caps_coord_derivatives()
+                        # overwrite the previous sens file
+                        hc_obj.write_sensitivity_file(
+                            comm=self.comm,
+                            filename=aero_sensfile,
+                            discipline="aerodynamic",
+                            root=self.flow_aim.root,
+                            write_dvs=False,
+                        )
 
         # mpi barrier before start of post analysis
         self.comm.Barrier()

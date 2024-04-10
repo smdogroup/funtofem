@@ -3,6 +3,8 @@ __all__ = ["HandcraftedMeshMorph"]
 import numpy as np
 from funtofem import TransferScheme
 from mpi4py import MPI
+import os
+
 
 class HandcraftedMeshMorph:
     def __init__(self, comm, model, transfer_settings, nprocs_hc=1):
@@ -15,6 +17,7 @@ class HandcraftedMeshMorph:
         self.hc_aero_X = None
         self.hc_aero_id = None
         self.hc_nnodes = 0
+        self.first_body = self.model.bodies[0]
         self._get_hc_coords()
 
         self._first_caps_read = True
@@ -22,24 +25,44 @@ class HandcraftedMeshMorph:
         self.caps_aero_id = None
         self.caps_nnodes = 0
 
-        self.u_caps = None # caps shape change displacement
-        self.u_hc = None # handcrafted mesh shape change displacement
+        self.u_caps = None  # caps shape change displacement
+        self.u_hc = None  # handcrafted mesh shape change displacement
+
+        self.caps_aero_shape_term = {}
+        for scenario in self.model.scenarios:
+            self.caps_aero_shape_term[scenario.id] = None
+
+        self._flow_dir = None
+
+    @property
+    def flow_dir(self):
+        return self._flow_dir
+
+    @flow_dir.setter
+    def flow_dir(self, new_dir):
+        self._flow_dir = new_dir
+
+    @property
+    def hc_mesh_morph_filepath(self):
+        return os.path.join(self.flow_dir, "hc_surface.dat")
 
     def _get_hc_coords(self):
         """get the handcrafted aero surface mesh coords and ids"""
 
         # just use the first body for now (not fully general but that's ok)
-        first_body = self.model.bodies[0]
+        first_body = self.first_body
 
         if first_body.aero_X is None or first_body.aero_id is None:
-            print("Funtofem warning : need to build handcrafted mesh morph file after Fun3dInterface which reads aero surf coordinates.")
+            print(
+                "Funtofem warning : need to build handcrafted mesh morph file after Fun3dInterface which reads aero surf coordinates."
+            )
             return
 
         self.hc_aero_X = first_body.aero_X
         self.hc_aero_id = first_body.aero_id
-        self.hc_nnodes = self.hc_aero_X.shape[0] // 3 # // produces an int
+        self.hc_nnodes = self.hc_aero_X.shape[0] // 3  # // produces an int
         return
-    
+
     def read_surface_file(self, surface_morph_file, is_caps_mesh=True):
         # read the file here
         aero_X = None
@@ -92,13 +115,16 @@ class HandcraftedMeshMorph:
                 # initialize the transfer object
                 self.transfer = None
                 self._initialize_transfer()
+
+                # initial zero displacements
+                self.u_caps = self.caps_aero_X * 0.0
             else:
                 nnodes = aero_X.shape[0] // 3
                 assert nnodes == self.caps_nnodes
 
                 # otherwise save shape changing displacements
                 self.u_caps = aero_X - self.caps_aero_X
-        else: # reading an hc mesh with the surface dat file, this feature mostly just for testing
+        else:  # reading an hc mesh with the surface dat file, this feature mostly just for testing
             # since it can deform the farfield that we don't want to deform..
 
             # copy the aero_X, aero_id
@@ -152,11 +178,11 @@ class HandcraftedMeshMorph:
         self.transfer.initialize()
 
         return
-    
+
     def transfer_shape_disps(self):
         """transfer the shape changing displacements from the CAPS to the handcrafted mesh"""
         # reset hc aero displacements
-        self.u_hc = np.zeros((3*self.hc_nnodes), dtype=TransferScheme.dtype)
+        self.u_hc = np.zeros((3 * self.hc_nnodes), dtype=TransferScheme.dtype)
 
         self.transfer.transferDisps(self.u_caps, self.u_hc)
 
@@ -165,34 +191,142 @@ class HandcraftedMeshMorph:
         # also transfer the loads since adjoint sensitivities require this (virtual work computation)
         # but just transfer zero loads since we only care about disp transfer here
         hc_loads = 0.0 * self.u_hc
-        caps_loads = np.zeros((3*self.caps_nnodes), dtype=TransferScheme.dtype)
+        caps_loads = np.zeros((3 * self.caps_nnodes), dtype=TransferScheme.dtype)
         self.transfer.transferLoads(hc_loads, caps_loads)
 
         return
-    
+
     @property
     def hc_def_aero_X(self):
         return self.hc_aero_X + self.u_hc
 
-    def write_surface_file(self, surface_morph_file):
+    def write_surface_file(self, surface_morph_file=None):
         """write a surface mesh morphing file for the Handcrafted mesh"""
+        if surface_morph_file is None:  # use default filepath if not specified
+            surface_morph_file = self.hc_mesh_morph_filepath
+
         if self.comm.rank == 0:
             fp = open(surface_morph_file, "w")
-            
+
             # first write the headers
-            fp.write("title=""CAPS""\n")
-            fp.write("variables=""x"",""y"",""z"",""id""\n")
-            fp.write("zone t=""Body_1"", i=""" + f"{self.hc_nnodes}"", j=0, f=fepoint, solutiontime=0.000000, strandid=0\n")
+            fp.write("title=" "CAPS" "\n")
+            fp.write("variables=" "x" "," "y" "," "z" "," "id" "\n")
+            fp.write(
+                "zone t="
+                "Body_1"
+                ", i="
+                "" + f"{self.hc_nnodes}"
+                ", j=0, f=fepoint, solutiontime=0.000000, strandid=0\n"
+            )
 
             hc_def_aero_X = self.hc_def_aero_X
 
             # then write each of the nodes
             for i in range(self.hc_nnodes):
-                xyz = np.real(hc_def_aero_X[3*i:3*i+3])
+                xyz = np.real(hc_def_aero_X[3 * i : 3 * i + 3])
                 nid = np.real(self.hc_aero_id[i])
                 fp.write(f"{xyz[0]:3.16e} {xyz[1]:3.16e} {xyz[2]:3.16e} {nid}\n")
 
             fp.close()
 
         self.comm.Barrier()
+        return
+
+    def compute_caps_coord_derivatives(self, scenario):
+        """transfer the aero coordinate derivatives from the handcrafted mesh back to the native CAPS mesh"""
+        nfunctions = scenario.count_adjoint_functions()
+        aero_shape_term = self.first_body.get_aero_coordinate_derivatives(scenario)
+        self.caps_aero_shape_term[scenario.id] = np.zeros(
+            (3 * self.caps_nnodes, nfunctions), dtype=TransferScheme.dtype
+        )
+        caps_aero_shape_term = self.caps_aero_shape_term[scenario.id]
+        temp_xcaps = np.zeros((3 * self.caps_nnodes), dtype=TransferScheme.dtype)
+
+        for k in range(nfunctions):
+            self.transfer.applydDdxS0(aero_shape_term, temp_xcaps)
+            caps_aero_shape_term[:, k] += temp_xcaps
+
+    def write_sensitivity_file(
+        self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
+    ):
+        """
+        Write the sensitivity file.
+
+        This file contains the following information:
+
+        Number of functionals
+
+        Functional name
+        Number of surface nodes
+        for node in surface_nodes:
+            node, dfdx, dfdy, dfdz
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        discipline: str
+            The name of the discipline sensitivity data to be written
+        root: int
+            The rank of the processor that will write the file
+        write_dvs: bool
+            whether to write the design variables for this discipline
+        """
+
+        funcs = self.model.get_functions()
+
+        count = 0
+        id = self.caps_aero_id
+        deriv = []
+        for scenario in self.model.scenarios:
+            deriv += [self.caps_aero_shape_term[scenario.id]]
+        deriv = np.concatenate(deriv, axis=1)
+
+        if comm.rank == root:
+            variables = self.model.get_variables()
+            discpline_vars = []
+            if write_dvs:  # flag for registering dvs that will later get written out
+                for var in variables:
+                    # Write the variables whose analysis_type matches the discipline string.
+                    if discipline == var.analysis_type and var.active:
+                        discpline_vars.append(var)
+
+            # Write out the number of sets of discpline variables
+            num_dvs = len(discpline_vars)
+
+            # Write out the number of functionals and number of design variables
+            data = "{} {}\n".format(len(funcs), num_dvs)
+
+            for n, func in enumerate(funcs):
+                # Print the function name
+                data += "{}\n".format(func.full_name)
+
+                # Print the function value
+                data += "{}\n".format(func.value.real)
+
+                # Print the number of coordinates
+                data += "{}\n".format(count)
+
+                for i in range(len(id)):
+                    data += "{} {} {} {}\n".format(
+                        int(id[i]),
+                        deriv[3 * i, n].real,
+                        deriv[3 * i + 1, n].real,
+                        deriv[3 * i + 2, n].real,
+                    )
+
+                for var in discpline_vars:
+                    deriv = func.get_gradient_component(var)
+                    deriv = deriv.real
+
+                    # Write the variable name and derivative value
+                    data += var.name + "\n"
+                    data += "1\n"
+                    data += str(deriv) + "\n"
+
+            with open(filename, "w") as fp:
+                fp.write(data)
+
         return
