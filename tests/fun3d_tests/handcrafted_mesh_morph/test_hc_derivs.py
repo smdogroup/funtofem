@@ -44,7 +44,10 @@ if has_fun3d:
 )
 class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
     def test_adjoint_process(self):
-        """do a finite difference test of the adjoint process with central difference"""
+        """
+        do a finite difference test of the adjoint process with central difference
+        NOTE : this test works in serial and MPI
+        """
 
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("wing")
@@ -138,6 +141,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
 
         hc_obj.compute_caps_coord_derivatives(test_scenario)
         # overwrite the previous sens file
+        print("write sens file 1")
         hc_obj.write_sensitivity_file(
             comm=comm,
             filename=fun3d_aim.sens_file_path,
@@ -268,6 +272,9 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
 
         fd_deriv -= aero_func.value / 2.0 / h
         fd_deriv = np.real(fd_deriv)
+
+        adj_deriv = comm.bcast(adj_deriv, root=0)
+        fd_deriv = comm.bcast(fd_deriv, root=0)
 
         # compare the adjoint and finite difference derivative
         rel_err = (adj_deriv - fd_deriv) / fd_deriv

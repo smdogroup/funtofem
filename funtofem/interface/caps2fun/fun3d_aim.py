@@ -292,8 +292,10 @@ class Fun3dAim:
         if self.root_proc:
             self.apply_shape_variables()
             self.aim.preAnalysis()
-            if self.is_handcrafted:
-                self._make_hc_surface_file()
+        self.comm.Barrier()
+        if self.is_handcrafted:
+            self._make_hc_surface_file()
+        if self.root_proc:
             self._move_grid_files()
         return
 
@@ -337,6 +339,7 @@ class Fun3dAim:
 
     def _make_hc_surface_file(self):
         """make a surface file for the handcrafted surface mesh by shape change displacements from the CAPS mesh"""
+        print(f"F2F HC mesh morph rank {self.comm.rank}- _make_hc_surface_file")
         self.handcrafted_mesh_morph.read_surface_file(self.mesh_morph_filepath)
         self.handcrafted_mesh_morph.transfer_shape_disps()
         self.handcrafted_mesh_morph.write_surface_file()

@@ -25,6 +25,9 @@ class HandcraftedMeshMorph:
         self.caps_aero_id = None
         self.caps_nnodes = 0
 
+        # TODO : can maybe extend this later to use more than this many procs, but not yet
+        assert nprocs_hc == 1
+
         self.u_caps = None  # caps shape change displacement
         self.u_hc = None  # handcrafted mesh shape change displacement
 
@@ -97,7 +100,11 @@ class HandcraftedMeshMorph:
 
             # convert to numpy arrays
             aero_X = np.array(aero_X, dtype=TransferScheme.dtype)
-            aero_id = np.array(aero_id, dtype=TransferScheme.dtype)
+            aero_id = np.array(aero_id, dtype=int)
+        else:
+            aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
+            aero_id = np.zeros((0,), dtype=int)
+
 
         # TODO : distribute these nodes and ids among the nprocs_hc next (if using more than one proc for this)
 
@@ -108,9 +115,16 @@ class HandcraftedMeshMorph:
                 self._first_caps_read = False
 
                 # copy the aero_X, aero_id
-                self.caps_aero_X = aero_X
-                self.caps_aero_id = aero_id
-                self.caps_nnodes = aero_X.shape[0] // 3
+                # TODO : distribute these arrays across multiple procs if need be
+                if self.comm.rank == 0:
+                    self.caps_aero_X = aero_X
+                    self.caps_aero_id = aero_id
+                    self.caps_nnodes = aero_X.shape[0] // 3
+                else:
+                    self.caps_nnodes = 0
+                    self.caps_aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
+                    self.caps_aero_id = np.zeros((self.caps_nnodes,), dtype=int)
+
 
                 # initialize the transfer object
                 self.transfer = None
@@ -119,8 +133,9 @@ class HandcraftedMeshMorph:
                 # initial zero displacements
                 self.u_caps = self.caps_aero_X * 0.0
             else:
-                nnodes = aero_X.shape[0] // 3
-                assert nnodes == self.caps_nnodes
+                if self.comm.rank == 0:
+                    nnodes = aero_X.shape[0] // 3
+                    assert nnodes == self.caps_nnodes
 
                 # otherwise save shape changing displacements
                 self.u_caps = aero_X - self.caps_aero_X
@@ -128,9 +143,14 @@ class HandcraftedMeshMorph:
             # since it can deform the farfield that we don't want to deform..
 
             # copy the aero_X, aero_id
-            self.hc_aero_X = aero_X
-            self.hc_aero_id = aero_id
-            self.hc_nnodes = aero_X.shape[0] // 3
+            if self.comm.rank == 0:
+                self.hc_aero_X = aero_X
+                self.hc_aero_id = aero_id
+                self.hc_nnodes = aero_X.shape[0] // 3
+            else:
+                self.hc_nnodes = 0
+                self.hc_aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
+                self.hc_aero_id = np.zeros((self.hc_nnodes,), dtype=int)
 
         return
 
@@ -153,13 +173,15 @@ class HandcraftedMeshMorph:
         else:
             color = MPI.UNDEFINED
         hc_comm = self.comm.Split(color, world_rank)
+        self.hc_comm = hc_comm
+        self.caps_comm = hc_comm # both on one proc comms for meld
 
         # Initialize the transfer transfer objects
         self.transfer = TransferScheme.pyMELD(
             self.comm,
             hc_comm,
             0,
-            self.comm,
+            hc_comm,
             0,
             self.transfer_settings.isym,
             self.transfer_settings.npts,
@@ -184,7 +206,9 @@ class HandcraftedMeshMorph:
         # reset hc aero displacements
         self.u_hc = np.zeros((3 * self.hc_nnodes), dtype=TransferScheme.dtype)
 
+        print("F2F HC mesh morph - before transfer disps")
         self.transfer.transferDisps(self.u_caps, self.u_hc)
+        print("F2F HC mesh morph - after transfer disps")
 
         # also transfer the loads since adjoint sensitivities require this (virtual work computation)
         # but just transfer zero loads since we only care about disp transfer here
@@ -245,6 +269,44 @@ class HandcraftedMeshMorph:
             self.transfer.applydDduSTrans(1.0 * aero_shape_term[:, k], temp_xcaps)
             caps_aero_shape_term[:, k] -= temp_xcaps
 
+    def _collect_caps_coordiante_derivatives(self, root=0):
+        all_aero_ids = self.comm.gather(self.caps_aero_id, root=0)
+
+        # append struct shapes for each scenario
+        full_aero_shape_term = []
+        for scenario in self.model.scenarios:
+            full_aero_shape_term.append(self.caps_aero_shape_term[scenario.id])
+        full_aero_shape_term = np.concatenate(full_aero_shape_term, axis=1)
+
+        all_aero_shape = self.comm.gather(full_aero_shape_term, root=root)
+
+        aero_ids = []
+        aero_shape = []
+
+        if self.comm.rank == root:
+            # Discard any entries that are None
+            aero_ids = []
+            for d in all_aero_ids:
+                if d is not None:
+                    aero_ids.append(d)
+
+            aero_shape = []
+            for d in all_aero_shape:
+                if d is not None:
+                    aero_shape.append(d)
+
+            if len(aero_shape) > 0:
+                aero_shape = np.concatenate(aero_shape)
+            else:
+                aero_shape = np.zeros((3, 1))
+
+            if len(aero_ids) == 0:
+                aero_ids = np.arange(aero_shape.shape[0] // 3, dtype=int)
+            else:
+                aero_ids = np.concatenate(aero_ids)
+
+        return aero_shape, aero_ids
+
     def write_sensitivity_file(
         self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
     ):
@@ -276,13 +338,8 @@ class HandcraftedMeshMorph:
 
         funcs = self.model.get_functions()
 
-        count = 0
-        id = self.caps_aero_id
+        deriv, id = self._collect_caps_coordiante_derivatives(root=root)
         count = len(id)
-        deriv = []
-        for scenario in self.model.scenarios:
-            deriv += [self.caps_aero_shape_term[scenario.id]]
-        deriv = np.concatenate(deriv, axis=1)
 
         if comm.rank == root:
             variables = self.model.get_variables()
@@ -309,7 +366,7 @@ class HandcraftedMeshMorph:
                 # Print the number of coordinates
                 data += "{}\n".format(count)
 
-                for i in range(len(id)):
+                for i in range(count):
                     data += "{} {} {} {}\n".format(
                         int(id[i]),
                         deriv[3 * i, n].real,
