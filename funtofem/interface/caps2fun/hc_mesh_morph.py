@@ -268,6 +268,7 @@ class HandcraftedMeshMorph:
             # self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
             self.transfer.applydDduSTrans(1.0 * aero_shape_term[:, k], temp_xcaps)
             caps_aero_shape_term[:, k] -= temp_xcaps
+            # caps_aero_shape_term[:, k] += temp_xcaps
 
     def _collect_caps_coordinate_derivatives(self, root=0):
         all_aero_ids = self.comm.gather(self.caps_aero_id, root=0)

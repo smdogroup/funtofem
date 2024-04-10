@@ -272,7 +272,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fd_deriv -= aero_func.value / 2.0 / h
         fd_deriv = np.real(fd_deriv)
 
-        adj_deriv = comm.bcast(adj_deriv, root=0)
+        adj_deriv = comm.bcast(adj_deriv, root=0) #-1.0 *
         fd_deriv = comm.bcast(fd_deriv, root=0)
 
         # compare the adjoint and finite difference derivative

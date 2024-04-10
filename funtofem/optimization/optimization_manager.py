@@ -230,7 +230,7 @@ class OptimizationManager:
                 adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
                 adjoint_steps = self.driver.solvers.flow._last_adjoint_step
                 self._design_hdl.write(
-                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps"
+                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps\n"
                 )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
