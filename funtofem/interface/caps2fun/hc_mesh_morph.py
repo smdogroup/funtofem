@@ -7,18 +7,20 @@ import os
 
 
 class HandcraftedMeshMorph:
-    def __init__(self, comm, model, transfer_settings, nprocs_hc=1):
+    def __init__(self, comm, model, transfer_settings, nprocs_hc=1, auto_coords=True):
         self.comm = comm
         self.model = model
         self.nprocs_hc = nprocs_hc
         self.transfer_settings = transfer_settings
+        self.auto_coords = auto_coords
 
         # initialize handcrafted aero surf mesh coords
         self.hc_aero_X = None
         self.hc_aero_id = None
         self.hc_nnodes = 0
         self.first_body = self.model.bodies[0]
-        self._get_hc_coords()
+        if auto_coords:
+            self._get_hc_coords()
 
         self._first_caps_read = True
         self.caps_aero_X = None
@@ -105,7 +107,6 @@ class HandcraftedMeshMorph:
             aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
             aero_id = np.zeros((0,), dtype=int)
 
-
         # TODO : distribute these nodes and ids among the nprocs_hc next (if using more than one proc for this)
 
         self.comm.Barrier()
@@ -124,7 +125,6 @@ class HandcraftedMeshMorph:
                     self.caps_nnodes = 0
                     self.caps_aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
                     self.caps_aero_id = np.zeros((self.caps_nnodes,), dtype=int)
-
 
                 # initialize the transfer object
                 self.transfer = None
@@ -172,16 +172,15 @@ class HandcraftedMeshMorph:
             color = 1
         else:
             color = MPI.UNDEFINED
-        hc_comm = self.comm.Split(color, world_rank)
-        self.hc_comm = hc_comm
-        self.caps_comm = hc_comm # both on one proc comms for meld
+        caps_comm = self.comm.Split(color, world_rank)
+        # self.hc_comm = hc_comm # both on one proc comms for meld
 
         # Initialize the transfer transfer objects
         self.transfer = TransferScheme.pyMELD(
             self.comm,
-            hc_comm,
+            caps_comm,  # caps comm limited to root proc
             0,
-            hc_comm,
+            self.comm,  # use regular comm for aero handcrafted mesh
             0,
             self.transfer_settings.isym,
             self.transfer_settings.npts,
@@ -265,7 +264,7 @@ class HandcraftedMeshMorph:
         temp_xcaps = np.zeros((3 * self.caps_nnodes), dtype=TransferScheme.dtype)
 
         for k in range(nfunctions):
-            #self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
+            # self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
             self.transfer.applydDduSTrans(1.0 * aero_shape_term[:, k], temp_xcaps)
             caps_aero_shape_term[:, k] -= temp_xcaps
 

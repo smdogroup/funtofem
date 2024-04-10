@@ -479,6 +479,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         self.model.scenarios[0], self.model.bodies
                     )
 
+                    # initialize handcrafted mesh coorrdinates
+                    if self.model.flow is not None and isinstance(
+                        self.model.flow, Fun3dModel
+                    ):
+                        if self.flow_aim.is_handcrafted:
+                            self.flow_aim.handcrafted_mesh_morph._get_hc_coords()
+
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()
                     self._first_forward = False
