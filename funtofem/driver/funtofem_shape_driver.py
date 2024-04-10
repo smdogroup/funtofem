@@ -413,12 +413,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 self.flow_aim.set_design_sensitivity(False, include_file=False)
 
             # run the pre analysis to generate a new mesh
-            try:
-                self.model.flow.pre_analysis()
-                # self.flow_aim.pre_analysis()
-                local_fail = False
-            except:
-                local_fail = True
+            # try:
+            self.model.flow.pre_analysis()
+            # self.flow_aim.pre_analysis()
+            local_fail = False
+            # except:
+            #    local_fail = True
             if local_fail:
                 raise RuntimeError("F2F shape driver aero preAnalysis failed..")
 
@@ -474,17 +474,12 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 if self.uses_fun3d:
                     self.comm.Barrier()
 
-                    assert not (self.solvers.flow.auto_coords)
-                    self.solvers.flow._initialize_body_nodes(
-                        self.model.scenarios[0], self.model.bodies
-                    )
-
-                    # initialize handcrafted mesh coorrdinates
-                    if self.model.flow is not None and isinstance(
-                        self.model.flow, Fun3dModel
-                    ):
-                        if self.flow_aim.is_handcrafted:
-                            self.flow_aim.handcrafted_mesh_morph._get_hc_coords()
+                    # some cases where we don't need to do that now (with Handcrafted mesh morphing => too many subcases lol)
+                    # assert not (self.solvers.flow.auto_coords)
+                    if not self.solvers.flow.auto_coords:
+                        self.solvers.flow._initialize_body_nodes(
+                            self.model.scenarios[0], self.model.bodies
+                        )
 
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()

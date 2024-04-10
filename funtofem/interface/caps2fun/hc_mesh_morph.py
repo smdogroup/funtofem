@@ -205,9 +205,7 @@ class HandcraftedMeshMorph:
         # reset hc aero displacements
         self.u_hc = np.zeros((3 * self.hc_nnodes), dtype=TransferScheme.dtype)
 
-        print("F2F HC mesh morph - before transfer disps")
         self.transfer.transferDisps(self.u_caps, self.u_hc)
-        print("F2F HC mesh morph - after transfer disps")
 
         # also transfer the loads since adjoint sensitivities require this (virtual work computation)
         # but just transfer zero loads since we only care about disp transfer here

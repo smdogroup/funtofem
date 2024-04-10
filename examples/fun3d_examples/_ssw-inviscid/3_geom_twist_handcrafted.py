@@ -262,11 +262,12 @@ solvers.flow = Fun3d14Interface(
     adjoint_stop_tolerance=4e-16,
     adjoint_min_tolerance=1e-12,
 )
+# NOTE : the user needs to have put their handcrafted mesh in the Scenario/Flow directory already
 
 # create handcrafted mesh morph object after FUN3D is built
 handcrafted_mesh_morph = HandcraftedMeshMorph(
     comm=comm,
-    model=model,
+    model=f2f_model,
     transfer_settings=TransferSettings(npts=200, beta=0.5),
 )
 fun3d_model.handcrafted_mesh_morph = handcrafted_mesh_morph
