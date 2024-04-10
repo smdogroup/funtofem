@@ -110,30 +110,33 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         handcrafted_mesh_morph.read_surface_file(_hc_morph_file, is_caps_mesh=False)
 
         # compute an HC mesh test vector
-        test_vec_hc = np.random.rand(3 * wing.aero_nnodes).astype(TransferScheme.dtype)
+        hc_obj = handcrafted_mesh_morph
+        test_vec_hc = np.random.rand(3 * hc_obj.hc_nnodes).astype(TransferScheme.dtype)
 
         # start of FD test
         # ------------------------------------
         h = 1e-5
         fd_deriv = None
         adj_deriv = None
+        funcs = {}
 
-        # first compute f(x) and df/dx
-
-        # change the shape
+        # first compoute f(0) mesh and then do twisting
+        fun3d_aim.set_design_sensitivity(False, include_file=False)
         fun3d_aim.pre_analysis()
 
+        wing.initialize_aero_nodes(
+            handcrafted_mesh_morph.hc_aero_X, handcrafted_mesh_morph.hc_aero_id
+        )
         wing.initialize_variables(test_scenario)
         wing.initialize_adjoint_variables(test_scenario)
 
         # compute the aero test functional
-        hc_obj = handcrafted_mesh_morph
         aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
 
-        hc_aero_shape_term = wing.aero_shape_term[test_scenario.id]
+        hc_aero_shape_term = wing.get_aero_coordinate_derivatives(test_scenario)
         hc_aero_shape_term[:, 0] = test_vec_hc
 
-        hc_obj.compute_caps_coord_derivatives()
+        hc_obj.compute_caps_coord_derivatives(test_scenario)
         # overwrite the previous sens file
         hc_obj.write_sensitivity_file(
             comm=comm,
@@ -142,14 +145,56 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
             root=fun3d_aim.root,
             write_dvs=False,
         )
+        # complete the unlink forward analysis
         fun3d_aim.post_analysis(None)
         fun3d_aim.unlink()
+
+        # first compute f(x) and df/dx
+
+        # change the shape
+        twist.value += 2.0  # change it for the derivative
+        fun3d_aim.set_design_sensitivity(False, include_file=False)
+        fun3d_aim.pre_analysis()
+
+        # compute the aero test functional
+        aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        funcs["mid"] = aero_func.value
+
+        hc_aero_shape_term = wing.get_aero_coordinate_derivatives(test_scenario)
+        hc_aero_shape_term[:, 0] = test_vec_hc
+
+        hc_obj.compute_caps_coord_derivatives(test_scenario)
+        # overwrite the previous sens file
+        hc_obj.write_sensitivity_file(
+            comm=comm,
+            filename=fun3d_aim.sens_file_path,
+            discipline="aerodynamic",
+            root=fun3d_aim.root,
+            write_dvs=False,
+        )
+        # complete the unlink forward analysis
+        fun3d_aim.post_analysis(None)
+        fun3d_aim.unlink()
+
+        # do the adjoint analysis
+        fun3d_aim.set_design_sensitivity(True, include_file=True)
+        fun3d_aim.pre_analysis()
+        hc_obj.write_sensitivity_file(
+            comm=comm,
+            filename=fun3d_aim.sens_file_path,
+            discipline="aerodynamic",
+            root=fun3d_aim.root,
+            write_dvs=False,
+        )
+        fun3d_aim.post_analysis(None)
 
         # compute the adjoint derivative
         derivative = None
         if comm.rank == 0:
             direct_flow_aim = fun3d_aim.aim
-            derivative = direct_flow_aim.dynout[aero_func.full_name].deriv(twist)
+            derivative = direct_flow_aim.dynout[aero_func.full_name].deriv(
+                twist.full_name
+            )
         derivative = comm.bcast(derivative, root=0)
         adj_deriv = np.real(derivative)
 
@@ -159,9 +204,24 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
 
         # compute the aero test functional
         aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        funcs["final"] = aero_func.value
 
-        hc_obj.compute_caps_coord_derivatives()
+        hc_obj.compute_caps_coord_derivatives(test_scenario)
         # overwrite the previous sens file
+        hc_obj.write_sensitivity_file(
+            comm=comm,
+            filename=fun3d_aim.sens_file_path,
+            discipline="aerodynamic",
+            root=fun3d_aim.root,
+            write_dvs=False,
+        )
+        # complete the unlink forward analysis
+        fun3d_aim.post_analysis(None)
+        fun3d_aim.unlink()
+
+        # do the adjoint analysis
+        fun3d_aim.set_design_sensitivity(True, include_file=True)
+        fun3d_aim.pre_analysis()
         hc_obj.write_sensitivity_file(
             comm=comm,
             filename=fun3d_aim.sens_file_path,
@@ -171,7 +231,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         )
         fun3d_aim.post_analysis(None)
 
-        fd_deriv += aero_func.value / 2.0 / h
+        fd_deriv = aero_func.value / 2.0 / h
 
         # compute f(x-h)
         twist.value -= 2 * h
@@ -179,9 +239,24 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
 
         # compute the aero test functional
         aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        funcs["initial"] = aero_func.value
 
-        hc_obj.compute_caps_coord_derivatives()
+        hc_obj.compute_caps_coord_derivatives(test_scenario)
         # overwrite the previous sens file
+        hc_obj.write_sensitivity_file(
+            comm=comm,
+            filename=fun3d_aim.sens_file_path,
+            discipline="aerodynamic",
+            root=fun3d_aim.root,
+            write_dvs=False,
+        )
+        # complete the unlink forward analysis
+        fun3d_aim.post_analysis(None)
+        fun3d_aim.unlink()
+
+        # do the adjoint analysis
+        fun3d_aim.set_design_sensitivity(True, include_file=True)
+        fun3d_aim.pre_analysis()
         hc_obj.write_sensitivity_file(
             comm=comm,
             filename=fun3d_aim.sens_file_path,
@@ -201,6 +276,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
             print(f"fd deriv  = {fd_deriv}")
             print(f"adj deriv = {adj_deriv}")
             print(f"rel err = {rel_err}")
+            print(f"\tfuncs = {funcs}")
 
         assert abs(rel_err) < 1e-4
 

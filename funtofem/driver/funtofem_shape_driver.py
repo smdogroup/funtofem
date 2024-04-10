@@ -586,7 +586,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             if self.model.flow is not None and isinstance(self.model.flow, Fun3dModel):
                 if self.flow_aim.is_handcrafted:
                     hc_obj = self.flow_aim.handcrafted_mesh_morph
-                    hc_obj.compute_caps_coord_derivatives()
+                    for scenario in self.model.scenarios:
+                        hc_obj.compute_caps_coord_derivatives(scenario)
                     # overwrite the previous sens file
                     hc_obj.write_sensitivity_file(
                         comm=self.comm,
@@ -735,7 +736,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 ):
                     if self.flow_aim.is_handcrafted:
                         hc_obj = self.flow_aim.handcrafted_mesh_morph
-                        hc_obj.compute_caps_coord_derivatives()
+                        for scenario in self.model.scenarios:
+                            hc_obj.compute_caps_coord_derivatives(scenario)
                         # overwrite the previous sens file
                         hc_obj.write_sensitivity_file(
                             comm=self.comm,

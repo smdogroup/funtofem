@@ -186,8 +186,6 @@ class HandcraftedMeshMorph:
 
         self.transfer.transferDisps(self.u_caps, self.u_hc)
 
-        print(f"u caps = {self.u_caps}")
-
         # also transfer the loads since adjoint sensitivities require this (virtual work computation)
         # but just transfer zero loads since we only care about disp transfer here
         hc_loads = 0.0 * self.u_hc
@@ -243,7 +241,7 @@ class HandcraftedMeshMorph:
         temp_xcaps = np.zeros((3 * self.caps_nnodes), dtype=TransferScheme.dtype)
 
         for k in range(nfunctions):
-            self.transfer.applydDdxS0(aero_shape_term, temp_xcaps)
+            self.transfer.applydDdxS0(1.0 * aero_shape_term[:, k], temp_xcaps)
             caps_aero_shape_term[:, k] += temp_xcaps
 
     def write_sensitivity_file(
@@ -279,6 +277,7 @@ class HandcraftedMeshMorph:
 
         count = 0
         id = self.caps_aero_id
+        count = len(id)
         deriv = []
         for scenario in self.model.scenarios:
             deriv += [self.caps_aero_shape_term[scenario.id]]
