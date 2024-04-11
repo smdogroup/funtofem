@@ -243,6 +243,8 @@ class HandcraftedMeshMorph:
 
         self.transfer.transferDisps(self.u_caps, self.u_hc)
 
+        print(f"rank {self.comm.rank} u_hc = {self.u_hc} avg {np.mean(self.u_hc)}")
+
         # also transfer the loads since adjoint sensitivities require this (virtual work computation)
         # but just transfer zero loads since we only care about disp transfer here
         hc_loads = 0.0 * self.u_hc
