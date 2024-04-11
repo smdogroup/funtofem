@@ -153,6 +153,42 @@ class HandcraftedMeshMorph:
                 self.hc_aero_id = np.zeros((self.hc_nnodes,), dtype=int)
 
         return
+    
+    def _distribute_hc_test_mesh(self, root=0):
+        """distribute a handcrafted test mesh (only for unittesting) across all processors like FUN3D is"""
+        size = self.comm.Get_size()
+        if self.comm.rank == root:
+            aero_X = self.hc_aero_X
+            aero_id = self.hc_aero_id
+
+            print(f"orig hc nnodes = {self.hc_nnodes}")
+
+            X_list = []
+            id_list = []
+            for irank in range(size):
+                xvals = aero_X[0::3]
+                yvals = aero_X[1::3]
+                zvals = aero_X[2::3]
+                loc_xvals = xvals[irank::size]
+                loc_yvals = yvals[irank::size]
+                loc_zvals = zvals[irank::size]
+                loc_aero_X = []
+                for i in range(loc_xvals.shape[0]):
+                    loc_aero_X += [loc_xvals[i], loc_yvals[i], loc_zvals[i]]
+                loc_aero_X = np.array(loc_aero_X, dtype=TransferScheme.dtype)
+                X_list += [loc_aero_X]
+                id_list += [aero_id[irank::size]]
+            
+        else:
+            X_list = None
+            id_list = None
+        
+        self.hc_aero_X = self.comm.scatter(X_list, root=root)
+        self.hc_aero_id = self.comm.scatter(id_list, root=root)
+        self.hc_nnodes = self.hc_aero_id.shape[0]
+
+        print(f"rank {self.comm.rank} nnodes = {self.hc_nnodes}")
+        return
 
     def _initialize_transfer(self):
         """

@@ -110,6 +110,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         # read in the initial dat file and store in the
         _hc_morph_file = os.path.join(meshes_dir, "hc_mesh.dat")
         handcrafted_mesh_morph.read_surface_file(_hc_morph_file, is_caps_mesh=False)
+        handcrafted_mesh_morph._distribute_hc_test_mesh(root=0)
 
         # compute an HC mesh test vector
         hc_obj = handcrafted_mesh_morph
@@ -133,7 +134,11 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         wing.initialize_adjoint_variables(test_scenario)
 
         # compute the aero test functional
-        aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        mydot = np.dot(test_vec_hc, hc_obj.u_hc)
+        all_dot_products = comm.gather(mydot, root=0)
+        func_value = np.sum(np.array(all_dot_products))
+
+        aero_func.value = comm.bcast(func_value, root=0)
 
         hc_aero_shape_term = wing.get_aero_coordinate_derivatives(test_scenario)
         hc_aero_shape_term[:, 0] = test_vec_hc
@@ -160,7 +165,11 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # compute the aero test functional
-        aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        mydot = np.dot(test_vec_hc, hc_obj.u_hc)
+        all_dot_products = comm.gather(mydot, root=0)
+        func_value = np.sum(np.array(all_dot_products))
+
+        aero_func.value = comm.bcast(func_value, root=0)
         funcs["mid"] = aero_func.value
 
         hc_aero_shape_term = wing.get_aero_coordinate_derivatives(test_scenario)
@@ -206,7 +215,11 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # compute the aero test functional
-        aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        mydot = np.dot(test_vec_hc, hc_obj.u_hc)
+        all_dot_products = comm.gather(mydot, root=0)
+        func_value = np.sum(np.array(all_dot_products))
+
+        aero_func.value = comm.bcast(func_value, root=0)
         funcs["final"] = aero_func.value
 
         hc_obj.compute_caps_coord_derivatives(test_scenario)
@@ -241,7 +254,11 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # compute the aero test functional
-        aero_func.value = np.dot(test_vec_hc, hc_obj.u_hc)
+        mydot = np.dot(test_vec_hc, hc_obj.u_hc)
+        all_dot_products = comm.gather(mydot, root=0)
+        func_value = np.sum(np.array(all_dot_products))
+
+        aero_func.value = comm.bcast(func_value, root=0)
         funcs["initial"] = aero_func.value
 
         hc_obj.compute_caps_coord_derivatives(test_scenario)
