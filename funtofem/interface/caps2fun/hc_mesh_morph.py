@@ -345,7 +345,7 @@ class HandcraftedMeshMorph:
 
     def _collect_hc_deformed_coords(self, root=0):
         all_aero_ids = self.comm.gather(self.hc_aero_id, root=0)
-        all_aero_X = self.comm.gather(self.hc_aero_X, root=0)
+        all_aero_X = self.comm.gather(self.hc_def_aero_X, root=0)
 
         aero_ids = []
         aero_X = []
