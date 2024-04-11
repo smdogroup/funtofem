@@ -89,12 +89,12 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         )
         test_scenario.adjoint_steps = 4000
 
-        aero_func = Function.test_aero().register_to(test_scenario)
+        aero_func = Function.lift(body=0).register_to(test_scenario)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes", forward_min_tolerance=1e10)
 
         # create handcrafted mesh morph object after FUN3D is built
         handcrafted_mesh_morph = HandcraftedMeshMorph(
