@@ -26,6 +26,7 @@ class HandcraftedMeshMorph:
         self.caps_aero_X = None
         self.caps_aero_id = None
         self.caps_nnodes = 0
+        self.orig_caps_aero_X = None
 
         # TODO : can maybe extend this later to use more than this many procs, but not yet
         assert nprocs_hc == 1
@@ -126,6 +127,8 @@ class HandcraftedMeshMorph:
                     self.caps_aero_X = np.zeros((0,), dtype=TransferScheme.dtype)
                     self.caps_aero_id = np.zeros((self.caps_nnodes,), dtype=int)
 
+                self.orig_caps_aero_X = self.caps_aero_X * 1.0
+
                 # initialize the transfer object
                 self.transfer = None
                 self._initialize_transfer()
@@ -138,7 +141,7 @@ class HandcraftedMeshMorph:
                     assert nnodes == self.caps_nnodes
 
                 # otherwise save shape changing displacements
-                self.u_caps = aero_X - self.caps_aero_X
+                self.u_caps = aero_X - self.orig_caps_aero_X
         else:  # reading an hc mesh with the surface dat file, this feature mostly just for testing
             # since it can deform the farfield that we don't want to deform..
 
