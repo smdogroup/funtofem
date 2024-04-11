@@ -94,9 +94,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14Interface(
-            comm, model, fun3d_dir="meshes"
-        )
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
 
         # create handcrafted mesh morph object after FUN3D is built
         handcrafted_mesh_morph = HandcraftedMeshMorph(
@@ -129,6 +127,8 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         wing.initialize_adjoint_variables(test_scenario)
 
         # update the aero_X coordinates in FUN3D
+        solvers.flow.set_variables(test_scenario, [wing])
+        solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
         solvers.flow.post(test_scenario, [wing])
 
@@ -165,6 +165,8 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # update the aero_X coordinates in FUN3D
+        solvers.flow.set_variables(test_scenario, [wing])
+        solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
         solvers.flow.post(test_scenario, [wing])
 
@@ -219,6 +221,8 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # update the aero_X coordinates in FUN3D
+        solvers.flow.set_variables(test_scenario, [wing])
+        solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
         solvers.flow.post(test_scenario, [wing])
 

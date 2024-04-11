@@ -724,7 +724,6 @@ class TacsSteadyInterface(SolverInterface):
                             self.PANEL_LENGTH_CONSTR in func.name
                             and self.comm.rank == 0
                         ):
-
                             grads_dict[func.full_name] = {}
 
                             # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"

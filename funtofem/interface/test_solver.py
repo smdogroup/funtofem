@@ -997,7 +997,6 @@ class TestResult:
             FD_derivs_dict = {func.name: [] for func in model.get_functions()}
 
         for ialpha, alpha in enumerate(alphas):
-
             # change the variables
             for ivar, var in enumerate(model.get_variables()):
                 var.value = orig_vars[ivar] + alpha * dxds[ivar]
