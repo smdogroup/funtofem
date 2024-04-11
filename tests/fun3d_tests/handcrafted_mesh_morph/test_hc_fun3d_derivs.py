@@ -54,7 +54,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_model = Fun3dModel.build(
             csm_file=csm_path,
             comm=comm,
-            project_name="wing_test",
+            project_name="flow_wing",
             root=0,
             mesh_morph=True,
         )
@@ -83,7 +83,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         # )
         wing.register_to(model)
         test_scenario = (
-            Scenario.steady("euler", steps=5000)
+            Scenario.steady("turbulent", steps=5000)
             .set_temperature(T_ref=300.0, T_inf=300.0)
             .fun3d_project(fun3d_aim.project_name)
         )
