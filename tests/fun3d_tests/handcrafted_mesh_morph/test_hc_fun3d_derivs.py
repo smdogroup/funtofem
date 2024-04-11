@@ -130,6 +130,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.set_variables(test_scenario, [wing])
         solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
+        solvers.flow.iterate(test_scenario, [wing], step=0)
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
@@ -168,6 +169,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.set_variables(test_scenario, [wing])
         solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
+        solvers.flow.iterate(test_scenario, [wing], step=0)
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
@@ -224,6 +226,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.set_variables(test_scenario, [wing])
         solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
+        solvers.flow.iterate(test_scenario, [wing], step=0)
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
@@ -266,7 +269,10 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.pre_analysis()
 
         # update the aero_X coordinates in FUN3D
+        solvers.flow.set_variables(test_scenario, [wing])
+        solvers.flow.set_functions(test_scenario, [wing])
         solvers.flow.initialize(test_scenario, [wing])
+        solvers.flow.iterate(test_scenario, [wing], step=0)
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
