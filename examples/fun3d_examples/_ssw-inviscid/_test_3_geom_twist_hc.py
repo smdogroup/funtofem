@@ -288,8 +288,8 @@ f2f_driver = FuntofemShapeDriver.aero_morph(
     reload_funtofem_states=True,
 )
 
-test_derivatives = True
-if test_derivatives:  # test using the finite difference test
+#test_derivatives = True
+#if test_derivatives:  # test using the finite difference test
     # load the previous design
     # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
     # f2f_model.read_design_variables_file(comm, design_in_file)
