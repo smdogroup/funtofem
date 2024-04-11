@@ -120,9 +120,6 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         fun3d_aim.set_design_sensitivity(False, include_file=False)
         fun3d_aim.pre_analysis()
 
-        wing.initialize_aero_nodes(
-            handcrafted_mesh_morph.hc_aero_X, handcrafted_mesh_morph.hc_aero_id
-        )
         wing.initialize_variables(test_scenario)
         wing.initialize_adjoint_variables(test_scenario)
 
@@ -134,6 +131,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
+        print(f"Place 1, rank {self.comm.rank} aero_X = {wing.aero_X}")
         mydot = np.dot(test_vec_hc, wing.aero_X)
         all_dot_products = comm.gather(mydot, root=0)
         func_value = np.sum(np.array(all_dot_products))
@@ -173,6 +171,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
+        print(f"Place 2, rank {self.comm.rank} aero_X = {wing.aero_X}")
         mydot = np.dot(test_vec_hc, wing.aero_X)
         all_dot_products = comm.gather(mydot, root=0)
         func_value = np.sum(np.array(all_dot_products))
@@ -230,6 +229,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
+        print(f"Place 3, rank {self.comm.rank} aero_X = {wing.aero_X}")
         mydot = np.dot(test_vec_hc, wing.aero_X)
         all_dot_products = comm.gather(mydot, root=0)
         func_value = np.sum(np.array(all_dot_products))
@@ -276,6 +276,7 @@ class TestFun3dAimHandcraftedMeshDerivatives(unittest.TestCase):
         solvers.flow.post(test_scenario, [wing])
 
         # compute the aero test functional by summing x_A0^T * test_vec across all procs
+        print(f"Place 4, rank {self.comm.rank} aero_X = {wing.aero_X}")
         mydot = np.dot(test_vec_hc, wing.aero_X)
         all_dot_products = comm.gather(mydot, root=0)
         func_value = np.sum(np.array(all_dot_products))
