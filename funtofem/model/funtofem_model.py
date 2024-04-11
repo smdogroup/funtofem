@@ -1048,7 +1048,6 @@ class FUNtoFEMmodel(object):
                         continue
 
                     if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
-
                         # pickle the struct displacements
                         struct_disps_file = os.path.join(
                             work_dir,
@@ -1057,7 +1056,6 @@ class FUNtoFEMmodel(object):
                         np.save(struct_disps_file, body.struct_disps[scenario.id])
 
                     if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-
                         # pickle the struct temperatures
                         struct_temps_file = os.path.join(
                             work_dir,
@@ -1098,7 +1096,6 @@ class FUNtoFEMmodel(object):
                         continue
 
                     if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
-
                         # pickle the struct displacements
                         struct_disps_file = os.path.join(
                             work_dir,
@@ -1121,7 +1118,6 @@ class FUNtoFEMmodel(object):
                             )
 
                     if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-
                         # pickle the struct temperatures
                         struct_temps_file = os.path.join(
                             work_dir,
@@ -1175,7 +1171,6 @@ class FUNtoFEMmodel(object):
                         continue
 
                     if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
-
                         # pickle the struct displacements
                         struct_loads_ajp_file = os.path.join(
                             work_dir,
@@ -1185,7 +1180,6 @@ class FUNtoFEMmodel(object):
                         np.save(struct_loads_ajp_file, body.struct_loads_ajp)
 
                     if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-
                         # pickle the struct temperatures
                         struct_flux_ajp_file = os.path.join(
                             work_dir,
@@ -1229,7 +1223,6 @@ class FUNtoFEMmodel(object):
                         continue
 
                     if body.analysis_type in ["aeroelastic", "aerothermoelastic"]:
-
                         # pickle the struct displacements
                         struct_loads_ajp_file = os.path.join(
                             work_dir,
@@ -1255,7 +1248,6 @@ class FUNtoFEMmodel(object):
                             )
 
                     if body.analysis_type in ["aerothermal", "aerothermoelastic"]:
-
                         # pickle the struct temperatures
                         struct_flux_ajp_file = os.path.join(
                             work_dir,
