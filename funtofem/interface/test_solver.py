@@ -1252,9 +1252,9 @@ class TestResult:
             for ifunc in range(nfunctions)
         ]
 
-        print("F2F test_solver check :")
-        print(f"\tfunc names {len(func_names)} = {func_names}")
-        print(f"\ti_funcs {len(i_functions)} = {i_functions}")
+        #print("F2F test_solver check :")
+        #print(f"\tfunc names {len(func_names)} = {func_names}")
+        #print(f"\ti_funcs {len(i_functions)} = {i_functions}")
 
         # make test results object and write to file
         file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None

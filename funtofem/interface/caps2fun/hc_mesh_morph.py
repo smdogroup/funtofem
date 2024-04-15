@@ -244,6 +244,9 @@ class HandcraftedMeshMorph:
         # reset hc aero displacements
         self.u_hc = np.zeros((3 * self.hc_nnodes), dtype=TransferScheme.dtype)
 
+        max_u_caps = np.max(np.abs(self.u_caps)) if self.caps_nnodes > 0 else None
+        print(f"rank {self.comm.rank} u_caps = {self.u_caps} max {max_u_caps}")
+
         self.transfer.transferDisps(self.u_caps, self.u_hc)
 
         print(f"rank {self.comm.rank} u_hc = {self.u_hc} avg {np.mean(self.u_hc)}")
