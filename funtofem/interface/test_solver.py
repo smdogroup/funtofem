@@ -897,17 +897,11 @@ class TestResult:
                 for ifunc in range(self.nfuncs):
                     file_hdl.write(f"\tFunction {self.func_names[ifunc]}\n")
                     if self.i_funcs is not None:
-                        if self.f_funcs is not None:  # if both defined write this
-                            file_hdl.write(
-                                f"\t\tinitial value = {self.i_funcs[ifunc]}\n"
-                            )
-                            if self.m_funcs is not None:
-                                file_hdl.write(
-                                    f"\t\tmid value = {self.m_funcs[ifunc]}\n"
-                                )
-                            file_hdl.write(f"\t\tfinal value = {self.f_funcs[ifunc]}\n")
-                        else:
-                            file_hdl.write(f"\t\tvalue = {self.i_funcs[ifunc]}\n")
+                        file_hdl.write(f"\t\tf(x-p*h) = {self.i_funcs[ifunc]}\n")
+                    if self.m_funcs is not None:
+                        file_hdl.write(f"\t\tf(x) = {self.m_funcs[ifunc]}\n")
+                    if self.f_funcs is not None:  # if both defined write this
+                        file_hdl.write(f"\t\tf(x+p*h) = {self.f_funcs[ifunc]}\n")
                     file_hdl.write(f"\t\t{self.method} TD = {self.complex_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tAdjoint TD = {self.adjoint_TD[ifunc]}\n")
                     file_hdl.write(f"\t\tRelative error = {self.rel_error[ifunc]}\n")
@@ -997,7 +991,6 @@ class TestResult:
             FD_derivs_dict = {func.name: [] for func in model.get_functions()}
 
         for ialpha, alpha in enumerate(alphas):
-
             # change the variables
             for ivar, var in enumerate(model.get_variables()):
                 var.value = orig_vars[ivar] + alpha * dxds[ivar]
@@ -1230,7 +1223,7 @@ class TestResult:
             model.evaluate_composite_functions()
             i_functions = [func.value.real for func in model.get_functions(all=True)]
         else:
-            i_functions = [None for func in model.get_functions()]
+            i_functions = None
 
         # compute f(x+h)
         alpha = 2 if central_diff else 1
@@ -1258,6 +1251,10 @@ class TestResult:
             ).real
             for ifunc in range(nfunctions)
         ]
+
+        #print("F2F test_solver check :")
+        #print(f"\tfunc names {len(func_names)} = {func_names}")
+        #print(f"\ti_funcs {len(i_functions)} = {i_functions}")
 
         # make test results object and write to file
         file_hdl = open(status_file, "a") if driver.comm.rank == 0 else None

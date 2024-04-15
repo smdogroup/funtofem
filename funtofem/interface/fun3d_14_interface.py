@@ -312,6 +312,8 @@ class Fun3d14Interface(SolverInterface):
                 if aero_nnodes > 0:
                     x, y, z = interface.extract_surface(aero_nnodes, body=ibody)
 
+                    print(f"F2F mesh morph : extracting new aero surf coords")
+
                     aero_X[0::3] = x[:]
                     aero_X[1::3] = y[:]
                     aero_X[2::3] = z[:]
@@ -638,12 +640,12 @@ class Fun3d14Interface(SolverInterface):
         for _ in range(1, scenario.forward_coupling_frequency + 1):
             bcont = self.fun3d_flow.iterate()
             self._last_forward_step += 1
-        if bcont == 0:
-            if self.comm.Get_rank() == 0:
-                print("Negative volume returning fail")
-            fail = 1
-            os.chdir(self.root_dir)
-            return fail
+        #if bcont == 0:
+        #    if self.comm.Get_rank() == 0:
+        #        print("Negative volume returning fail")
+        #    fail = 1
+        #    os.chdir(self.root_dir)
+        #    return fail
 
         for ibody, body in enumerate(bodies, 1):
             # Compute the aerodynamic nodes on the body

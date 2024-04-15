@@ -179,7 +179,9 @@ class OptimizationManager:
                     }
                 else:
                     regular_dict = {key: float(x_dict[key]) for key in x_dict}
-                self._design_hdl.write(f"New design = {regular_dict}\n")
+                self._design_hdl.write(
+                    f"Design #{self._iteration+1} = {regular_dict}\n"
+                )
                 self._design_hdl.flush()
 
             # change the design
@@ -223,6 +225,13 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
+                forward_res = self.driver.solvers.flow.get_forward_residual()
+                forward_steps = self.driver.solvers.flow._last_forward_step
+                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                self._design_hdl.write(
+                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps\n"
+                )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 

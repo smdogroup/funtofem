@@ -1,6 +1,7 @@
 __all__ = ["Fun3dAim", "Fun3dBC"]
 
 import os, shutil
+from .hc_mesh_morph import HandcraftedMeshMorph
 
 
 class Fun3dBC:
@@ -118,6 +119,18 @@ class Fun3dAim:
             self._metadata["project_name"] = self.aim.input.Proj_Name
             self._metadata["analysis_dir"] = self.aim.analysisDir
         self._metadata = self.comm.bcast(self._metadata, root=root)
+
+        # handcrafted mesh object
+        self._handcrafted_mesh_morph = None
+
+    @property
+    def handcrafted_mesh_morph(self) -> HandcraftedMeshMorph:
+        return self._handcrafted_mesh_morph
+
+    @handcrafted_mesh_morph.setter
+    def handcrafted_mesh_morph(self, new_obj: HandcraftedMeshMorph):
+        new_obj.flow_dir = os.path.join(self.analysis_dir, "Flow")
+        self._handcrafted_mesh_morph = new_obj
 
     @property
     def root_proc(self):
@@ -269,13 +282,24 @@ class Fun3dAim:
         return f"{self.project_name}_body1.dat"
 
     @property
-    def mesh_morph_filepath(self):
+    def native_mesh_morph_filepath(self):
         return os.path.join(self.analysis_dir, "Flow", self.mesh_morph_filename)
+
+    @property
+    def mesh_morph_filepath(self):
+        if self.is_handcrafted:
+            return self.handcrafted_mesh_morph.hc_mesh_morph_filepath
+        else:
+            return self.native_mesh_morph_filepath
 
     def pre_analysis(self):
         if self.root_proc:
             self.apply_shape_variables()
             self.aim.preAnalysis()
+        self.comm.Barrier()
+        if self.is_handcrafted:
+            self._make_hc_surface_file()
+        if self.root_proc and not self.is_handcrafted:
             self._move_grid_files()
         return
 
@@ -284,7 +308,6 @@ class Fun3dAim:
             # move sens files if need be from fun3d dir to fun3d workdir
             if sens_file_src is not None:
                 self._move_sens_files(src=sens_file_src)
-
             self.aim.postAnalysis()
         self.comm.Barrier()
         return
@@ -317,3 +340,14 @@ class Fun3dAim:
     @property
     def adjoint_directory(self):
         return os.path.join(self.analysis_dir, "Adjoint")
+
+    def _make_hc_surface_file(self):
+        """make a surface file for the handcrafted surface mesh by shape change displacements from the CAPS mesh"""
+        self.handcrafted_mesh_morph.read_surface_file(self.native_mesh_morph_filepath)
+        self.handcrafted_mesh_morph.transfer_shape_disps()
+        self.handcrafted_mesh_morph.write_surface_file()
+        return
+
+    @property
+    def is_handcrafted(self) -> bool:
+        return self.handcrafted_mesh_morph is not None
