@@ -534,6 +534,14 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
+    def initialize_forward_tight_coupling(self):
+        self._forward_coupling_frequency = 1
+        return
+
+    def initialize_adjoint_tight_coupling(self):
+        self._adjoint_coupling_frequency = 1
+        return
+
     def uncoupled_iterate(self, scenario, bodies, step):
         """
         Flow solver uncoupled iterations for aerothermal and aerothermoelastic analysis to

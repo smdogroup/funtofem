@@ -200,7 +200,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False
-                if scenario.early_stopping and step > scenario.min_forward_steps:
+                # only exit early in the loose coupling phase
+                if (
+                    scenario.early_stopping
+                    and step > scenario.min_forward_steps
+                    and i == 0
+                ):
                     all_converged = True
                     for solver in self.solvers.solver_list:
                         forward_resid = abs(solver.get_forward_residual(step=step))
@@ -295,7 +300,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False
-                if scenario.early_stopping and step > scenario.min_adjoint_steps:
+                # only exit early in the loose coupling phase
+                if (
+                    scenario.early_stopping
+                    and step > scenario.min_adjoint_steps
+                    and i == 0
+                ):
                     all_converged = True  # assume all converged until proven otherwise (then when one isn't exit for loop)
                     for isolver, solver in enumerate(self.solvers.solver_list):
                         adjoint_resid = abs(solver.get_adjoint_residual(step=step))
