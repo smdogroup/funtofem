@@ -7,7 +7,7 @@ Copyright (C) 2015 Georgia Tech Research Corporation.
 Additional copyright (C) 2015 Kevin Jacobson, Jan Kiviaho and Graeme Kennedy.
 All rights reserved.
 
-FUNtoFEM is licensed under Fhe Apache License, Version 2.0 (the "License");
+FUNtoFEM is licensed under the Apache License, Version 2.0 (the "License");
 you may not use this software except in compliance with the License.
 You may obtain a copy of the License at
 
