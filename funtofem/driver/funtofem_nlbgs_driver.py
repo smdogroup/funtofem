@@ -203,9 +203,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if scenario.early_stopping and step > scenario.min_forward_steps:
                 all_converged = True
                 for solver in self.solvers.solver_list:
-                    forward_resid = abs(
-                        solver.get_forward_residual(step=step, outer=True)
-                    )
+                    forward_resid = abs(solver.get_forward_residual(step=step))
                     if self.comm.rank == 0:
                         print(
                             f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
