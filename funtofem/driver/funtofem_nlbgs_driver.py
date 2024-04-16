@@ -72,10 +72,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             reload_funtofem_states=reload_funtofem_states,
         )
 
-        # additional coupled steps attributes
-        self._addit_forward_steps = None
-        self._addit_adjoint_steps = None
-
         return
 
     @property
@@ -121,18 +117,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         assert scenario.steady
         fail = 0
-        self._addit_forward_steps = 0
 
-        # Determine if we're using the scenario's number of steps or the argument
-        if steps is None:
-            if self.model:
-                steps = scenario.steps
-            else:
-                if self.comm.Get_rank() == 0:
-                    print(
-                        "No number of steps given for the coupled problem. Using default (1000)"
-                    )
-                steps = 1000
+        # # Determine if we're using the scenario's number of steps or the argument
+        # if steps is None:
+        #     steps = scenario.steps
 
         # flow uncoupled steps (mainly for aerothermal and aerothermoelastic analysis)
         for step in range(1, scenario.uncoupled_steps + 1):
@@ -148,86 +136,96 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     print("Flow solver returned fail flag")
                 return fail
 
-        # Loop over the NLBGS steps
-        for step in range(1, steps + 1):
-            # Transfer displacements and temperatures
-            for body in self.model.bodies:
-                body.transfer_disps(scenario)
-                body.transfer_temps(scenario)
+        # Loop over the NLBGS steps in a loose coupling phase then tight coupling phase
+        for i, nlbgs_steps in enumerate(
+            [scenario.steps, scenario.post_tight_forward_steps]
+        ):
+            if i == 1:
+                self.solvers.flow.initialize_forward_tight_coupling()
 
-            # Take a step in the flow solver
-            fail = self.solvers.flow.iterate(scenario, self.model.bodies, step)
+            for step in range(1, nlbgs_steps + 1):
+                # Transfer displacements and temperatures
+                for body in self.model.bodies:
+                    body.transfer_disps(scenario)
+                    body.transfer_temps(scenario)
 
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Flow solver returned fail flag")
-                return fail
+                # Take a step in the flow solver
+                fail = self.solvers.flow.iterate(scenario, self.model.bodies, step)
 
-            # Transfer the loads and heat flux
-            for body in self.model.bodies:
-                body.transfer_loads(scenario)
-                body.transfer_heat_flux(scenario)
+                fail = self.comm.allreduce(fail)
+                if fail != 0:
+                    if self.comm.Get_rank() == 0:
+                        print("Flow solver returned fail flag")
+                    return fail
 
-                if self._debug:
-                    struct_loads = body.get_struct_loads(scenario)
-                    aero_loads = body.get_aero_loads(scenario)
-                    print(f"========================================")
-                    print(f"Inside nlbgs driver, step: {step}")
-                    if struct_loads is not None:
-                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
-                        print(
-                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
-                        )
-                    print(f"aero_loads: {aero_loads}")
-                    if aero_loads is not None:
-                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
-                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
-                    print(f"========================================\n", flush=True)
+                # Transfer the loads and heat flux
+                for body in self.model.bodies:
+                    body.transfer_loads(scenario)
+                    body.transfer_heat_flux(scenario)
 
-            # Take a step in the FEM model
-            fail = self.solvers.structural.iterate(scenario, self.model.bodies, step)
+                    if self._debug:
+                        struct_loads = body.get_struct_loads(scenario)
+                        aero_loads = body.get_aero_loads(scenario)
+                        print(f"========================================")
+                        print(f"Inside nlbgs driver, step: {step}")
+                        if struct_loads is not None:
+                            print(
+                                f"norm of real struct_loads: {real_norm(struct_loads)}"
+                            )
+                            print(
+                                f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
+                            )
+                        print(f"aero_loads: {aero_loads}")
+                        if aero_loads is not None:
+                            print(f"norm of real aero_loads: {real_norm(aero_loads)}")
+                            print(
+                                f"norm of imaginary aero_loads: {imag_norm(aero_loads)}"
+                            )
+                        print(f"========================================\n", flush=True)
 
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Structural solver returned fail flag")
-                return fail
+                # Take a step in the FEM model
+                fail = self.solvers.structural.iterate(
+                    scenario, self.model.bodies, step
+                )
 
-            # Under-relaxation for solver stability
-            for body in self.model.bodies:
-                body.aitken_relax(self.comm, scenario)
+                fail = self.comm.allreduce(fail)
+                if fail != 0:
+                    if self.comm.Get_rank() == 0:
+                        print("Structural solver returned fail flag")
+                    return fail
 
-            # check for early stopping criterion, exit if meets criterion
-            exit_early = False
-            if scenario.early_stopping and step > scenario.min_forward_steps:
-                all_converged = True
-                for solver in self.solvers.solver_list:
-                    forward_resid = abs(solver.get_forward_residual(step=step))
-                    if self.comm.rank == 0:
-                        print(
-                            f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
-                            flush=True,
-                        )
-                    forward_tol = solver.forward_tolerance
-                    if forward_resid > forward_tol:
-                        all_converged = False
-                        break
+                # Under-relaxation for solver stability
+                for body in self.model.bodies:
+                    body.aitken_relax(self.comm, scenario)
 
-                if all_converged:
-                    self._addit_forward_steps += 1
-                    if self._addit_forward_steps > scenario.additional_forward_steps:
+                # check for early stopping criterion, exit if meets criterion
+                exit_early = False
+                if scenario.early_stopping and step > scenario.min_forward_steps:
+                    all_converged = True
+                    for solver in self.solvers.solver_list:
+                        forward_resid = abs(solver.get_forward_residual(step=step))
+                        if self.comm.rank == 0:
+                            print(
+                                f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
+                                flush=True,
+                            )
+                        forward_tol = solver.forward_tolerance
+                        if forward_resid > forward_tol:
+                            all_converged = False
+                            break
+
+                    if all_converged:
                         exit_early = True
-                    if exit_early and self.comm.rank == 0:
-                        print(
-                            f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
-                        )
-                        print(
-                            f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
-                            flush=True,
-                        )
-            if exit_early:
-                break
+                        if exit_early and self.comm.rank == 0:
+                            print(
+                                f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
+                            )
+                            print(
+                                f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
+                                flush=True,
+                            )
+                if exit_early:
+                    break
 
         return fail
 
@@ -244,13 +242,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         assert scenario.steady
         fail = 0
-        self._addit_adjoint_steps = 0
-
-        # how many steps to take for the block Gauss Seidel
-        if scenario.adjoint_steps is None:
-            steps = scenario.steps
-        else:
-            steps = scenario.adjoint_steps
 
         # Load the current state
         for body in self.model.bodies:
@@ -260,73 +251,83 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         # Initialize the adjoint variables
         self._initialize_adjoint_variables(scenario, self.model.bodies)
 
-        # loop over the adjoint NLBGS solver
-        for step in range(1, steps + 1):
-            # Get force and heat flux terms for the flow solver
-            for body in self.model.bodies:
-                body.transfer_loads_adjoint(scenario)
-                body.transfer_heat_flux_adjoint(scenario)
+        # loop over the adjoint NLBGS solver in a loose coupling phase
+        for i, nlbgs_steps in enumerate(
+            [scenario.adjoint_steps, scenario.post_tight_adjoint_steps]
+        ):
+            if i == 1:
+                self.solvers.flow.initialize_adjoint_tight_coupling()
+            for step in range(1, nlbgs_steps + 1):
+                # Get force and heat flux terms for the flow solver
+                for body in self.model.bodies:
+                    body.transfer_loads_adjoint(scenario)
+                    body.transfer_heat_flux_adjoint(scenario)
 
-            # Iterate over the aerodynamic adjoint
-            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
+                # Iterate over the aerodynamic adjoint
+                fail = self.solvers.flow.iterate_adjoint(
+                    scenario, self.model.bodies, step
+                )
 
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Flow solver returned fail flag")
-                return fail
+                fail = self.comm.allreduce(fail)
+                if fail != 0:
+                    if self.comm.Get_rank() == 0:
+                        print("Flow solver returned fail flag")
+                    return fail
 
-            # Get the structural adjoint rhs
-            for body in self.model.bodies:
-                body.transfer_disps_adjoint(scenario)
-                body.transfer_temps_adjoint(scenario)
+                # Get the structural adjoint rhs
+                for body in self.model.bodies:
+                    body.transfer_disps_adjoint(scenario)
+                    body.transfer_temps_adjoint(scenario)
 
-            # take a step in the structural adjoint
-            fail = self.solvers.structural.iterate_adjoint(
-                scenario, self.model.bodies, step
-            )
+                # take a step in the structural adjoint
+                fail = self.solvers.structural.iterate_adjoint(
+                    scenario, self.model.bodies, step
+                )
 
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Structural solver returned fail flag")
-                return fail
+                fail = self.comm.allreduce(fail)
+                if fail != 0:
+                    if self.comm.Get_rank() == 0:
+                        print("Structural solver returned fail flag")
+                    return fail
 
-            for body in self.model.bodies:
-                body.aitken_adjoint_relax(self.comm, scenario)
+                for body in self.model.bodies:
+                    body.aitken_adjoint_relax(self.comm, scenario)
 
-            # check for early stopping criterion, exit if meets criterion
-            exit_early = False
-            if scenario.early_stopping and step > scenario.min_adjoint_steps:
-                all_converged = True  # assume all converged until proven otherwise (then when one isn't exit for loop)
-                for isolver, solver in enumerate(self.solvers.solver_list):
-                    adjoint_resid = abs(solver.get_adjoint_residual(step=step))
-                    adjoint_tol = solver.adjoint_tolerance
-                    if self.comm.rank == 0:
-                        print(
-                            f"f2f scenario {scenario.name}, adjoint resid = {adjoint_resid}",
-                            flush=True,
-                        )
+                # check for early stopping criterion, exit if meets criterion
+                exit_early = False
+                if scenario.early_stopping and step > scenario.min_adjoint_steps:
+                    all_converged = True  # assume all converged until proven otherwise (then when one isn't exit for loop)
+                    for isolver, solver in enumerate(self.solvers.solver_list):
+                        adjoint_resid = abs(solver.get_adjoint_residual(step=step))
+                        adjoint_tol = solver.adjoint_tolerance
+                        if self.comm.rank == 0:
+                            print(
+                                f"f2f scenario {scenario.name}, adjoint resid = {adjoint_resid}",
+                                flush=True,
+                            )
 
-                    if adjoint_resid > adjoint_tol:
-                        all_converged = False
+                        if adjoint_resid > adjoint_tol:
+                            all_converged = False
 
-                if all_converged:
-                    self._addit_adjoint_steps += 1
-                    if self._addit_adjoint_steps >= scenario.additional_adjoint_steps:
+                    if all_converged:
                         exit_early = True
-                    if exit_early and self.comm.rank == 0:
-                        print(
-                            f"F2F Steady Adjoint analysis of scenario {scenario.name}"
-                        )
-                        print(
-                            f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
-                            flush=True,
-                        )
+                        if exit_early and self.comm.rank == 0:
+                            print(
+                                f"F2F Steady Adjoint analysis of scenario {scenario.name}"
+                            )
+                            print(
+                                f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
+                                flush=True,
+                            )
 
-            if exit_early:
-                break
+                if exit_early:
+                    break
 
+        # are we then extracting coordinate derivatives at correct time step (doesn't actually use time step for steady case here)
+        steps = (
+            scenario.adjoint_steps * scenario.adjoint_coupling_frequency
+            + scenario.post_tight_adjoint_steps
+        )
         self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
         return 0
 

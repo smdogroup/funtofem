@@ -628,6 +628,12 @@ class SolverInterface(object):
         """get the scalar total adjoint residual for this discipline interface"""
         return 0.0
 
+    def initialize_forward_tight_coupling(self):
+        pass
+
+    def initialize_adjoint_tight_coupling(self):
+        pass
+
     def test_adjoint(
         self,
         solver_type,

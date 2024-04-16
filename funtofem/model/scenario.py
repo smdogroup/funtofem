@@ -53,8 +53,8 @@ class Scenario(Base):
         forward_coupling_frequency=1,
         adjoint_coupling_frequency=1,
         early_stopping=False,
-        additional_forward_steps=0,
-        additional_adjoint_steps=0,
+        post_tight_forward_steps=0,
+        post_tight_adjoint_steps=0,
         T_ref=300,
         T_inf=300,
         qinf=1.0,
@@ -102,10 +102,10 @@ class Scenario(Base):
             but you can in special circumstances)
         min_adjoint_steps: int
             (optional) minimum number of adjoint steps required before early stopping criterion is applied
-        additional_forward_steps: int
-            (optional) number of additional forward coupled steps taken after solver tolerance is nominally met
-        additional_adjoint_steps: int
-            (optional) number of additional adjoint coupled steps taken after solver tolerance is nominally met
+        post_tight_forward_steps: int
+            (optional) number of additional tightly coupled forward steps at the end of the solve
+        post_tight_adjoint_steps: int
+            (optional) number of additional tightly coupled adjoint steps at the end of the solve
         T_ref: double
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
@@ -151,8 +151,9 @@ class Scenario(Base):
         self.forward_coupling_frequency = forward_coupling_frequency
         self.adjoint_coupling_frequency = adjoint_coupling_frequency
         self.uncoupled_steps = uncoupled_steps
-        self.additional_forward_steps = additional_forward_steps
-        self.additional_adjoint_steps = additional_adjoint_steps
+        self.post_tight_forward_steps = post_tight_forward_steps
+        self.post_tight_adjoint_steps = post_tight_adjoint_steps
+
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
 
@@ -387,8 +388,8 @@ class Scenario(Base):
         early_stopping: bool = True,
         min_forward_steps=None,
         min_adjoint_steps=None,
-        additional_forward_steps=None,
-        additional_adjoint_steps=None,
+        post_tight_forward_steps=None,
+        post_tight_adjoint_steps=None,
     ):
         """
         turn on the early stopping criterion, note you probably don't need
@@ -403,20 +404,20 @@ class Scenario(Base):
             (optional) - the minimum number of steps for engaging the early stop criterion for forward analysis
         min_adjoint_steps: int
             (optional) - the minimum number of steps for engaging the early stopping criterion for adjoint analysis
-        additional_forward_steps: int
-            (optional) number of additional forward coupled steps taken after solver tolerance is nominally met
-        additional_adjoint_steps: int
-            (optional) number of additional adjoint coupled steps taken after solver tolerance is nominally met
+        post_tight_forward_steps: int
+            (optional) number of additional tightly coupled forward steps at the end of the solve
+        post_tight_adjoint_steps: int
+            (optional) number of additional tightly coupled adjoint steps at the end of the solve
         """
         self.early_stopping = early_stopping
         if min_forward_steps is not None:
             self.min_forward_steps = min_forward_steps
         if min_adjoint_steps is not None:
             self.min_adjoint_steps = min_adjoint_steps
-        if additional_forward_steps is not None:
-            self.additional_forward_steps = additional_forward_steps
-        if additional_adjoint_steps is not None:
-            self.additional_adjoint_steps = additional_adjoint_steps
+        if post_tight_forward_steps is not None:
+            self.post_tight_forward_steps = post_tight_forward_steps
+        if post_tight_adjoint_steps is not None:
+            self.post_tight_adjoint_steps = post_tight_adjoint_steps
         return self
 
     def set_flow_ref_vals(self, qinf: float = 1.0, flow_dt: float = 1.0):
