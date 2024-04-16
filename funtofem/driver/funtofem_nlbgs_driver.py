@@ -73,8 +73,8 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         )
 
         # additional coupled steps attributes
-        self._addit_forward_steps = 0
-        self._addit_adjoint_steps = 0
+        self._addit_forward_steps = None
+        self._addit_adjoint_steps = None
 
         return
 
@@ -121,6 +121,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         assert scenario.steady
         fail = 0
+        self._addit_forward_steps = 0
 
         # Determine if we're using the scenario's number of steps or the argument
         if steps is None:
@@ -245,6 +246,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         assert scenario.steady
         fail = 0
+        self._addit_adjoint_steps = 0
 
         # how many steps to take for the block Gauss Seidel
         if scenario.adjoint_steps is None:
