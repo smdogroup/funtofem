@@ -536,10 +536,12 @@ class Fun3d14Interface(SolverInterface):
 
     def initialize_forward_tight_coupling(self):
         self._forward_coupling_frequency = 1
+        self.fun3d_flow.set_coupling_frequency(self._forward_coupling_frequency)
         return
 
     def initialize_adjoint_tight_coupling(self):
         self._adjoint_coupling_frequency = 1
+        self.fun3d_adjoint.set_coupling_frequency(self._adjoint_coupling_frequency)
         return
 
     def uncoupled_iterate(self, scenario, bodies, step):
@@ -644,7 +646,7 @@ class Fun3d14Interface(SolverInterface):
 
         # Take a step in FUN3D
         self.comm.Barrier()
-        for _ in range(1, scenario.forward_coupling_frequency + 1):
+        for _ in range(1, self._forward_coupling_frequency + 1):
             bcont = self.fun3d_flow.iterate()
             self._last_forward_step += 1
         if bcont == 0:
@@ -886,6 +888,9 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
+    def get_last_adjoint_step(self):
+        return self._last_adjoint_step
+
     def iterate_adjoint(self, scenario, bodies, step):
         """
         Adjoint iteration of FUN3D.
@@ -1062,8 +1067,8 @@ class Fun3d14Interface(SolverInterface):
         # in FUN3D)
         if self.comm.rank == 0:
             print(f"iterate fun3d adjoint step {rstep}", flush=True)
-        for i_coupled in range(1, scenario.adjoint_coupling_frequency + 1):
-            adj_step = scenario.adjoint_coupling_frequency * (rstep - 1) + i_coupled
+        for i_coupled in range(1, self._adjoint_coupling_frequency + 1):
+            adj_step = self._adjoint_coupling_frequency * (rstep - 1) + i_coupled
             self.fun3d_adjoint.iterate(adj_step)
             self._last_adjoint_step = adj_step
 

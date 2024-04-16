@@ -260,9 +260,13 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         for i, nlbgs_steps in enumerate(
             [scenario.adjoint_steps, scenario.post_tight_adjoint_steps]
         ):
-            if i == 1:
+            if i == 0:  # loose coupling phase
+                start = 1
+            else:  # tight coupling phase
                 self.solvers.flow.initialize_adjoint_tight_coupling()
-            for step in range(1, nlbgs_steps + 1):
+                start = self.solvers.flow.get_last_adjoint_step()
+
+            for step in range(start, nlbgs_steps + start):
                 # Get force and heat flux terms for the flow solver
                 for body in self.model.bodies:
                     body.transfer_loads_adjoint(scenario)

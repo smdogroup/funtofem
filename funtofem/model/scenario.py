@@ -207,6 +207,8 @@ class Scenario(Base):
         forward_coupling_frequency: int = 1,
         adjoint_coupling_frequency: int = 1,
         adjoint_steps: int = None,
+        post_tight_forward_steps=0,
+        post_tight_adjoint_steps=0,
     ):
         return cls(
             name=name,
@@ -216,6 +218,8 @@ class Scenario(Base):
             adjoint_steps=adjoint_steps,
             adjoint_coupling_frequency=adjoint_coupling_frequency,
             uncoupled_steps=uncoupled_steps,
+            post_tight_forward_steps=post_tight_forward_steps,
+            post_tight_adjoint_steps=post_tight_adjoint_steps,
         )
 
     @classmethod
