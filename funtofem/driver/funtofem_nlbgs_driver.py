@@ -72,6 +72,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             reload_funtofem_states=reload_funtofem_states,
         )
 
+        # additional coupled steps attributes
+        self._addit_forward_steps = 0
+        self._addit_adjoint_steps = 0
+
         return
 
     @property
@@ -211,7 +215,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         break
 
                 if all_converged:
-                    if self.comm.rank == 0:
+                    self._addit_forward_steps += 1
+                    if self._addit_forward_steps > scenario.additional_forward_steps:
+                        exit_early = True
+                    if exit_early and self.comm.rank == 0:
                         print(
                             f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
                         )
@@ -219,8 +226,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                             f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
                             flush=True,
                         )
-                    exit_early = True
-                    break
             if exit_early:
                 break
 
@@ -301,7 +306,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         all_converged = False
 
                 if all_converged:
-                    if self.comm.rank == 0:
+                    self._addit_adjoint_steps += 1
+                    if self._addit_adjoint_steps >= scenario.additional_adjoint_steps:
+                        exit_early = True
+                    if exit_early and self.comm.rank == 0:
                         print(
                             f"F2F Steady Adjoint analysis of scenario {scenario.name}"
                         )
@@ -309,8 +317,6 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                             f"\texited early at step {step} with tolerance {adjoint_resid} < {adjoint_tol}",
                             flush=True,
                         )
-                    exit_early = True
-                    break
 
             if exit_early:
                 break

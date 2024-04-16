@@ -223,6 +223,7 @@ class Fun3d14Interface(SolverInterface):
 
         # keep track of last successful step in case FUN3D exits early
         self._last_forward_step = 0
+        self._forward_coupling_frequency = scenario.forward_coupling_frequency
 
         if self.comm.rank == 0:
             print(
@@ -703,7 +704,7 @@ class Fun3d14Interface(SolverInterface):
 
         # report warning if flow residual too large
         resid = self.get_forward_residual(
-            step=self._last_forward_step, all=True
+            step=self._last_forward_step, all=True, outer=True
         )  # step=scenario.steps
         if self.comm.rank == 0:
             print(f"Forward residuals = {resid}")
@@ -750,6 +751,7 @@ class Fun3d14Interface(SolverInterface):
 
         # keep track of last succesful adjoint step
         self._last_adjoint_step = 0
+        self._adjoint_coupling_frequency = scenario.adjoint_coupling_frequency
         self._adjoint_done = False
 
         if self.comm.rank == 0:
@@ -1146,7 +1148,7 @@ class Fun3d14Interface(SolverInterface):
 
         # report warning if flow residual too large
         resid = self.get_adjoint_residual(
-            step=self._last_adjoint_step, outer=False, all=True
+            step=self._last_adjoint_step, outer=True, all=True
         )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
@@ -1185,10 +1187,14 @@ class Fun3d14Interface(SolverInterface):
         all: bool
             whether to return a list of all residuals or just a scalar
         """
-        if (
-            outer
-        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
-            step = self._last_forward_step
+        if outer:
+            resids = []  # get max residual since last coupling step
+            for icoupled in range(self._forward_coupling_frequency):
+                resid = self.get_forward_residual(
+                    self._last_forward_step - icoupled, outer=False
+                )
+                resids += [resid]
+            return np.max(np.abs(resids))
 
         if not self._forward_done:
             residuals = self.fun3d_flow.get_flow_rms_residual(step)
@@ -1213,10 +1219,16 @@ class Fun3d14Interface(SolverInterface):
         all: bool
             whether to return a list of all residuals or a scalar
         """
-        if (
-            outer
-        ):  # just overwrite to the saved last adjoint step since we don't have the scenario data
-            step = self._last_adjoint_step
+        if outer:
+            # get max residual since last coupling step
+            # especially since flow residual disturbance from new coupling step doesn't take effect immediately
+            resids = []
+            for icoupled in range(self._adjoint_coupling_frequency):
+                resid = self.get_forward_residual(
+                    self._last_adjoint_step - icoupled, outer=False
+                )
+                resids += [resid]
+            return np.max(np.abs(resids))
 
         if not self._adjoint_done:
             residuals = self.fun3d_adjoint.get_flow_rms_residual(step)

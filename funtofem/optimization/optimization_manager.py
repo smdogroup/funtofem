@@ -195,13 +195,13 @@ class OptimizationManager:
 
             _total_time = time.time() - _start_time
             time_units = None
-            if _total_time < 60: # < 1 min
+            if _total_time < 60:  # < 1 min
                 pass
                 time_units = "sec"
-            elif _total_time < 3600: # < 60 min
+            elif _total_time < 3600:  # < 60 min
                 _total_time /= 60.0
                 time_units = "min"
-            else: # hours
+            else:  # hours
                 _total_time /= 3600.0
                 time_units = "hrs"
 
