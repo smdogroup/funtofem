@@ -1224,7 +1224,7 @@ class Fun3d14Interface(SolverInterface):
             # especially since flow residual disturbance from new coupling step doesn't take effect immediately
             resids = []
             for icoupled in range(self._adjoint_coupling_frequency):
-                resid = self.get_forward_residual(
+                resid = self.get_adjoint_residual(
                     self._last_adjoint_step - icoupled, outer=False
                 )
                 resids += [resid]
