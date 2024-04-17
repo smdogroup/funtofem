@@ -442,7 +442,7 @@ class TestAerodynamicSolver(SolverInterface):
 
 
 class TestStructuralSolver(SolverInterface):
-    def __init__(self, comm, model, elastic_k=1.0, thermal_k=1.0):
+    def __init__(self, comm, model, elastic_k=1.0, thermal_k=1.0, default_mesh=True):
         """
         A test solver that provides the functionality that FUNtoFEM expects from
         a structural solver.
@@ -546,13 +546,19 @@ class TestStructuralSolver(SolverInterface):
         for scenario in model.scenarios:
             self.scenario_data[scenario.id] = ScenarioData(self.npts, self.struct_dvs)
 
-        # Set random initial node locations
-        self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
+        if default_mesh:
+            # Set random initial node locations
+            self.struct_X = np.random.rand(3 * self.npts).astype(TransferScheme.dtype)
 
-        # Initialize the coordinates of the structural mesh
-        struct_id = np.arange(1, self.npts + 1)
-        for body in model.bodies:
-            body.initialize_struct_nodes(self.struct_X, struct_id)
+            # Initialize the coordinates of the structural mesh
+            struct_id = np.arange(1, self.npts + 1)
+            for body in model.bodies:
+                body.initialize_struct_nodes(self.struct_X, struct_id)
+
+        else:
+            for body in model.bodies:
+                # Make TACS Interface first to initialize struct mesh into bodies
+                self.struct_X = body.struct_X.copy()
 
         return
 
