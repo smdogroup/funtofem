@@ -276,15 +276,20 @@ class TacsSteadyInterface(SolverInterface):
         self.ext_force = None
         self.update = None
 
-        # Aitken vector
-        self.prev_update = None
-        self.theta = None
-        self.prev_theta = None
+        # Aitken relaxation variables -- primal
         self.use_aitken = use_aitken
         self.aitken_min = 0.25
         self.aitken_max = 2.0
+        self.theta_init = 1.0
+        self.theta = None
+        self.prev_theta = None
+        self.prev_update = None
         self.delta_update = None
         self.update_temp = None
+
+        # Aitken relaxation variables -- adjoint
+        self.theta_adj = None
+        self.prev_theta_adj = None
 
         # Matrix, preconditioner and solver method
         self.mat = None
@@ -310,8 +315,8 @@ class TacsSteadyInterface(SolverInterface):
             # Create Aitken vector
             if self.use_aitken:
                 self.prev_update = self.assembler.createVec()
-                self.theta = 1.0
-                self.prev_theta = 1.0
+                self.theta = self.theta_init
+                self.prev_theta = self.theta_init
                 self.delta_update = self.assembler.createVec()
                 self.update_temp = self.assembler.createVec()
 
@@ -686,6 +691,9 @@ class TacsSteadyInterface(SolverInterface):
 
             # Solve for the update
             self.gmres.solve(self.res, self.update)
+            
+            if self.comm.rank == 0:
+                print(f"TACS iterate step: {step}", flush=True)
 
             # Apply Aitken relaxation
             if self.use_aitken and step >= 2:
@@ -702,7 +710,8 @@ class TacsSteadyInterface(SolverInterface):
                 # only update theta if vector has changed more than tolerance
                 if np.real(den) > 1e-13:
                     theta = prev_theta * (1 - num / den)
-                    print(f"Theta unbounded: {theta}", flush=True)
+                    if self.comm.rank == 0:
+                        print(f"Theta unbounded: {theta}", flush=True)
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
@@ -873,6 +882,12 @@ class TacsSteadyInterface(SolverInterface):
         """
 
         if self.tacs_proc:
+            # Initialize Aitken adjoint variables.
+            # There is an Aitken relaxation parameter for each function.
+            nf = len(self.scenario_data[scenario].func_list)
+            self.theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
+            self.prev_theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
+
             # Set the solution data for this scenario
             u = self.scenario_data[scenario].u
             self.assembler.setVariables(u)
@@ -964,11 +979,21 @@ class TacsSteadyInterface(SolverInterface):
             func_tags = self.scenario_data[scenario].func_tags
             dfdu = self.scenario_data[scenario].dfdu
             psi = self.scenario_data[scenario].psi  # psi = psi_S the structual adjoint
+            
+            psi_temp = self.scenario_data[scenario].psi
 
             for ifunc in range(len(func_list)):
                 # Check if the function requires an adjoint computation or not
                 if func_tags[ifunc] == -1:
                     continue
+
+                # Aitken adjoint setup
+                if self.use_aitken:
+                    aitken_max = self.aitken_max
+                    aitken_min = self.aitken_min
+
+                    theta_adj = self.theta_adj[ifunc]
+                    prev_theta_adj = self.prev_theta_adj[ifunc]
 
                 # Copy values into the right-hand-side
                 # res = - df/duS^{T}
