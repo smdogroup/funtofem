@@ -726,6 +726,8 @@ class TacsSteadyInterface(SolverInterface):
                     theta = prev_theta * (1 - num / den)
                     if self.comm.rank == 0:
                         print(f"Theta unbounded: {theta}", flush=True)
+                else:
+                    print(f"Aitken relaxation: update vector did not change enough to compute relaxation.")
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
@@ -1065,9 +1067,14 @@ class TacsSteadyInterface(SolverInterface):
                         num = delta_update_adj[ifunc].dot(update_adj[ifunc])
                         den = delta_update_adj[ifunc].norm() ** 2.0
                         
+                        if self.comm.rank == 0:
+                            print(f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}", flush=True)
+                            print(f"num: {num}", flush=True)
+                            print(f"den: {den}", flush=True)
+                        
                         # Only update theta if vector has changed more than tolerance
                         if np.real(den) > 1e-13:
-                            theta_adj[ifunc] = prev_theta_adj[ifunc] * (1 - num / den)
+                            theta_adj[ifunc] = prev_theta_adj[ifunc] * (1.0 - num / den)
                             if self.comm.rank == 0:
                                 print(f"Theta adjoint unbounded: {theta_adj[ifunc]}", flush=True)
                         
