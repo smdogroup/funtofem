@@ -1127,9 +1127,10 @@ class TacsSteadyInterface(SolverInterface):
                 # Extract the structural adjoint array in-place
                 psi_array = psi[ifunc].getArray()
 
-                # Store psi and update_adj as previous for next iteration
-                prev_psi[ifunc].copyValues(psi[ifunc])
-                prev_update_adj[ifunc].copyValues(update_adj[ifunc])
+                if self.use_aitken:
+                    # Store psi and update_adj as previous for next iteration
+                    prev_psi[ifunc].copyValues(psi[ifunc])
+                    prev_update_adj[ifunc].copyValues(update_adj[ifunc])
 
                 # Set the adjoint-Jacobian products for each body
                 for body in bodies:
