@@ -699,7 +699,7 @@ class TacsSteadyInterface(SolverInterface):
                 if np.real(den) > 1e-13:
                     theta = prev_theta * (1 - num / den)
 
-                theta = max(aitken_min, min(aitken_max, theta))
+                theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
                 self.update.scale(theta)
 
