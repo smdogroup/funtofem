@@ -371,6 +371,11 @@ class TacsSteadyInterface(SolverInterface):
             self.dfdu = []
             self.psi = []
 
+            # Aitken previous psi
+            self.prev_psi = []
+            self.prev_update_adj = []
+            self.update_adj = []
+
             if self.assembler is not None:
                 # Store the solution variables
                 self.u = self.assembler.createVec()
@@ -381,6 +386,11 @@ class TacsSteadyInterface(SolverInterface):
                     self.dfdXpts.append(self.assembler.createNodeVec())
                     self.dfdu.append(self.assembler.createVec())
                     self.psi.append(self.assembler.createVec())
+
+                    # Aitken previous adjoint
+                    self.prev_psi.append(self.assembler.createVec())
+                    self.prev_update_adj.append(self.assembler.createVec())
+                    self.update_adj.append(self.assembler.createVec())
 
             return
 
@@ -691,7 +701,7 @@ class TacsSteadyInterface(SolverInterface):
 
             # Solve for the update
             self.gmres.solve(self.res, self.update)
-            
+
             if self.comm.rank == 0:
                 print(f"TACS iterate step: {step}", flush=True)
 
@@ -979,8 +989,14 @@ class TacsSteadyInterface(SolverInterface):
             func_tags = self.scenario_data[scenario].func_tags
             dfdu = self.scenario_data[scenario].dfdu
             psi = self.scenario_data[scenario].psi  # psi = psi_S the structual adjoint
+
+            prev_psi = self.scenario_data[scenario].prev_psi
+            prev_update_adj = self.scenario_data[scenario].prev_update_adj
+            update_adj = self.scenario_data[scenario].update_adj
             
-            psi_temp = self.scenario_data[scenario].psi
+            if self.comm.rank == 0:
+                print(f"TACS adjoint iterate step: {step}", flush=True)
+            
 
             for ifunc in range(len(func_list)):
                 # Check if the function requires an adjoint computation or not
@@ -1023,7 +1039,7 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Zero the adjoint right-hand-side conditions at DOF locations
                 # where the boundary conditions are applied. This is consistent with
-                # the forward analysis where the forces/fluxes contributiosn are
+                # the forward analysis where the forces/fluxes contributions are
                 # zeroed at Dirichlet DOF locations.
                 self.assembler.applyBCs(self.res)
 
@@ -1032,6 +1048,8 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Extract the structural adjoint array in-place
                 psi_array = psi[ifunc].getArray()
+                
+                prev_psi[ifunc].copyValues(psi[ifunc])
 
                 # Set the adjoint-Jacobian products for each body
                 for body in bodies:
