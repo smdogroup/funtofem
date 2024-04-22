@@ -48,6 +48,7 @@ class TacsInterface:
         struct_options={},
         thermal_index=-1,
         debug=False,
+        use_aitken=False,
     ):
         """
         Class method to create either a TacsSteadyInterface or TacsUnsteadyInterface instance using the pytacs BDF loader
@@ -92,6 +93,7 @@ class TacsInterface:
                 struct_options=struct_options,
                 thermal_index=thermal_index,
                 debug=debug,
+                use_aitken=use_aitken,
             )
         elif all(unsteady_list):
             # create a TACS steady interface
@@ -105,6 +107,7 @@ class TacsInterface:
                 struct_options=struct_options,
                 thermal_index=thermal_index,
                 debug=debug,
+                use_aitken=use_aitken,
             )
         else:
             raise AssertionError(
@@ -1111,6 +1114,7 @@ class TacsSteadyInterface(SolverInterface):
         override_rotx=False,
         debug=False,
         add_loads=True,  # whether it will try to add loads or not
+        use_aitken=False,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1278,6 +1282,7 @@ class TacsSteadyInterface(SolverInterface):
             Fvec=Fvec,
             debug=debug,
             panel_length_constraint=panel_length_constraint,
+            use_aitken=use_aitken,
         )
 
 
