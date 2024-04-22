@@ -110,7 +110,6 @@ class TacsInterface:
                 struct_options=struct_options,
                 thermal_index=thermal_index,
                 debug=debug,
-                relaxation_scheme=relaxation_scheme,
             )
         else:
             raise AssertionError(
