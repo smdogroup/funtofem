@@ -1251,7 +1251,7 @@ class TacsSteadyInterface(SolverInterface):
         override_rotx=False,
         debug=False,
         add_loads=True,  # whether it will try to add loads or not
-        use_aitken=False,
+        relaxation_scheme: AitkenRelaxationTacs = None,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1272,6 +1272,8 @@ class TacsSteadyInterface(SolverInterface):
             The element callback function for pyTACS
         struct_options: dictionary
             The options passed to pyTACS
+        relaxation_scheme: Relaxation Scheme Object
+            Object to store relaxation scheme settings. If None, then no relaxation is used.
         """
 
         # Split the communicator
@@ -1419,7 +1421,7 @@ class TacsSteadyInterface(SolverInterface):
             Fvec=Fvec,
             debug=debug,
             panel_length_constraint=panel_length_constraint,
-            use_aitken=use_aitken,
+            relaxation_scheme=relaxation_scheme,
         )
 
 
