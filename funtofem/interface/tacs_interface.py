@@ -1078,11 +1078,11 @@ class TacsSteadyInterface(SolverInterface):
                             if self.comm.rank == 0:
                                 print(f"Theta adjoint unbounded: {theta_adj[ifunc]}", flush=True)
                         
-                        theta = max(aitken_min, min(aitken_max, np.real(theta)))
+                        theta_adj[ifunc] = max(aitken_min, min(aitken_max, np.real(theta_adj[ifunc])))
                         
                         # Use psi_temp variable to store scaled update
                         psi_temp[ifunc].copyValues(update_adj[ifunc])
-                        psi_temp[ifunc].scale(theta)
+                        psi_temp[ifunc].scale(theta_adj[ifunc])
                         
                         psi[ifunc].copyValues(prev_psi[ifunc])
                         psi[ifunc].axpy(1, psi_temp[ifunc])
