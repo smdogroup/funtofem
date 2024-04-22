@@ -635,10 +635,10 @@ class TacsSteadyInterface(SolverInterface):
                 self.prev_update.copyValues(self.update)
                 aitken_min = self.aitken_min
                 aitken_max = self.aitken_max
-                
+
                 theta = self.theta
                 prev_theta = self.prev_theta
-            
+
             # Compute the residual from tacs self.res = K*u - f_internal
             self.assembler.assembleRes(self.res)
 
@@ -682,24 +682,25 @@ class TacsSteadyInterface(SolverInterface):
 
             # Solve for the update
             self.gmres.solve(self.res, self.update)
-            
+
             # Apply Aitken relaxation
             if self.use_aitken and step >= 2:
                 self.update_temp.copyValues(self.update)
                 print(f"update_temp: {self.update_temp}")
                 print(f"prev_update: {self.prev_update}")
                 print(f"delta-update before: {self.delta_update}")
-                self.delta_update = self.update_temp.axpy(-1, self.prev_update)
+                self.delta_update.copyValues(self.update_temp)
+                self.delta_update.axpy(-1, self.prev_update)
                 print(f"delta-update: {self.delta_update}")
                 num = self.delta_update.dot(self.update_temp)
                 den = self.delta_update.norm() ** 2.0
-                
+
                 # only update theta if vector has changed more than tolerance
                 if den > 1e-13:
                     theta = prev_theta * (1 - num / den)
-                
+
                 theta = max(aitken_min, min(aitken_max, theta))
-                
+
                 self.update.scale(theta)
 
             # Apply the update to the solution vector and reset the boundary condition
