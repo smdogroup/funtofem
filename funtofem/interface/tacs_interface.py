@@ -279,6 +279,7 @@ class TacsSteadyInterface(SolverInterface):
         self.use_aitken = use_aitken
         self.aitken_min = 0.25
         self.aitken_max = 2.0
+        self.delta_update = None
 
         # Matrix, preconditioner and solver method
         self.mat = None
@@ -306,6 +307,7 @@ class TacsSteadyInterface(SolverInterface):
                 self.prev_update = self.assembler.createVec()
                 self.theta = 1.0
                 self.prev_theta = 1.0
+                self.delta_update = self.assembler.createVec()
 
             # Allocate the nodal vector
             self.struct_X = assembler.createNodeVec()
@@ -631,6 +633,7 @@ class TacsSteadyInterface(SolverInterface):
                 self.prev_update.copyValues(self.update)
                 aitken_min = self.aitken_min
                 aitken_max = self.aitken_max
+                delta_update = self.delta_update
                 
                 theta = self.theta
                 prev_theta = self.prev_theta
@@ -685,7 +688,10 @@ class TacsSteadyInterface(SolverInterface):
                 delta_update = update_temp.axpy(-1, self.prev_update)
                 num = delta_update.dot(update_temp)
                 den = delta_update.norm() ** 2.0
-                theta = prev_theta * (1 - num / den)
+                
+                # only update theta if vector has changed more than tolerance
+                if den > 1e-13:
+                    theta = prev_theta * (1 - num / den)
                 
                 theta = max(aitken_min, min(aitken_max, theta))
                 
