@@ -702,7 +702,7 @@ class TacsSteadyInterface(SolverInterface):
                 # only update theta if vector has changed more than tolerance
                 if np.real(den) > 1e-13:
                     theta = prev_theta * (1 - num / den)
-                    print(f"Theta unbounded: {theta}")
+                    print(f"Theta unbounded: {theta}", flush=True)
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
