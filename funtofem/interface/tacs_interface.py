@@ -49,7 +49,7 @@ class TacsInterface:
         struct_options={},
         thermal_index=-1,
         debug=False,
-        relaxation_scheme : AitkenRelaxationTacs=None,
+        relaxation_scheme: AitkenRelaxationTacs = None,
     ):
         """
         Class method to create either a TacsSteadyInterface or TacsUnsteadyInterface instance using the pytacs BDF loader
@@ -137,7 +137,7 @@ class TacsSteadyInterface(SolverInterface):
         override_rotx=False,
         Fvec=None,
         nprocs=None,
-        relaxation_scheme : AitkenRelaxationTacs=None,
+        relaxation_scheme: AitkenRelaxationTacs = None,
         debug=False,
         panel_length_constraint=None,
     ):
@@ -253,7 +253,7 @@ class TacsSteadyInterface(SolverInterface):
         gmres=None,
         struct_id=None,
         thermal_index=0,
-        relaxation_scheme : AitkenRelaxationTacs = None,
+        relaxation_scheme: AitkenRelaxationTacs = None,
     ):
         """
         Initialize the variables required for analysis and
@@ -730,11 +730,11 @@ class TacsSteadyInterface(SolverInterface):
             if self.use_aitken and step >= 2:
                 # Store update into temp variable
                 self.update_temp.copyValues(self.update)
-                
+
                 # Calculate change in the updates
                 self.delta_update.copyValues(self.update_temp)
                 self.delta_update.axpy(-1, self.prev_update)
-                
+
                 num = self.delta_update.dot(self.update_temp)
                 den = self.delta_update.norm() ** 2.0
 
@@ -746,7 +746,9 @@ class TacsSteadyInterface(SolverInterface):
                 else:
                     theta = self.theta_init
                     if self.comm.rank == 0 and self.aitken_debug:
-                        print(f"Aitken relaxation: update vector did not change enough to compute relaxation.")
+                        print(
+                            f"Aitken relaxation: update vector did not change enough to compute relaxation."
+                        )
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
@@ -1088,7 +1090,10 @@ class TacsSteadyInterface(SolverInterface):
                         den = delta_update_adj[ifunc].norm() ** 2.0
 
                         if self.comm.rank == 0 and self.aitken_debug_more:
-                            print(f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}", flush=True)
+                            print(
+                                f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}",
+                                flush=True,
+                            )
                             print(f"num: {num}", flush=True)
                             print(f"den: {den}", flush=True)
 
@@ -1096,11 +1101,16 @@ class TacsSteadyInterface(SolverInterface):
                         if np.real(den) > self.aitken_tol:
                             theta_adj[ifunc] = prev_theta_adj[ifunc] * (1.0 - num / den)
                             if self.comm.rank == 0 and self.aitken_debug:
-                                print(f"Theta adjoint unbounded, ifunc {ifunc}: {theta_adj[ifunc]}", flush=True)
+                                print(
+                                    f"Theta adjoint unbounded, ifunc {ifunc}: {theta_adj[ifunc]}",
+                                    flush=True,
+                                )
                         else:
                             theta_adj[ifunc] = self.theta_init
 
-                        theta_adj[ifunc] = max(aitken_min, min(aitken_max, np.real(theta_adj[ifunc])))
+                        theta_adj[ifunc] = max(
+                            aitken_min, min(aitken_max, np.real(theta_adj[ifunc]))
+                        )
 
                         # Use psi_temp variable to store scaled update
                         psi_temp[ifunc].copyValues(update_adj[ifunc])
