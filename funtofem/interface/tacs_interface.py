@@ -375,6 +375,8 @@ class TacsSteadyInterface(SolverInterface):
             self.prev_psi = []
             self.prev_update_adj = []
             self.update_adj = []
+            self.delta_update_adj = []
+            self.psi_temp = []
 
             if self.assembler is not None:
                 # Store the solution variables
@@ -391,6 +393,8 @@ class TacsSteadyInterface(SolverInterface):
                     self.prev_psi.append(self.assembler.createVec())
                     self.prev_update_adj.append(self.assembler.createVec())
                     self.update_adj.append(self.assembler.createVec())
+                    self.delta_update_adj.append(self.assembler.createVec())
+                    self.psi_temp.append(self.assembler.createVec())
 
             return
 
@@ -990,26 +994,22 @@ class TacsSteadyInterface(SolverInterface):
             dfdu = self.scenario_data[scenario].dfdu
             psi = self.scenario_data[scenario].psi  # psi = psi_S the structual adjoint
 
-            prev_psi = self.scenario_data[scenario].prev_psi
-            prev_update_adj = self.scenario_data[scenario].prev_update_adj
-            update_adj = self.scenario_data[scenario].update_adj
-            
+            if self.use_aitken:
+                aitken_max = self.aitken_max
+                aitken_min = self.aitken_min
+                prev_psi = self.scenario_data[scenario].prev_psi
+                psi_temp = self.scenario_data[scenario].psi_temp
+                prev_update_adj = self.scenario_data[scenario].prev_update_adj
+                update_adj = self.scenario_data[scenario].update_adj
+                delta_update_adj = self.scenario_data[scenario].delta_update_adj
+
             if self.comm.rank == 0:
                 print(f"TACS adjoint iterate step: {step}", flush=True)
-            
 
             for ifunc in range(len(func_list)):
                 # Check if the function requires an adjoint computation or not
                 if func_tags[ifunc] == -1:
                     continue
-
-                # Aitken adjoint setup
-                if self.use_aitken:
-                    aitken_max = self.aitken_max
-                    aitken_min = self.aitken_min
-
-                    theta_adj = self.theta_adj[ifunc]
-                    prev_theta_adj = self.prev_theta_adj[ifunc]
 
                 # Copy values into the right-hand-side
                 # res = - df/duS^{T}
@@ -1045,11 +1045,48 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Solve structural adjoint equation
                 self.gmres.solve(self.res, psi[ifunc])
+                
+                # Aitken adjoint step
+                if self.use_aitken:
+                    psi_temp[ifunc].copyValues(psi[ifunc])
+                    theta_adj = self.theta_adj[ifunc]
+                    prev_theta_adj = self.prev_theta_adj[ifunc]
+
+                    if step >= 2:
+                        # Calculate adjoint update value
+                        update_adj[ifunc].copyValues(psi_temp[ifunc])
+                        update_adj[ifunc].axpy(-1, prev_psi[ifunc])
+                    
+                    if step >= 3:
+                        # Perform Aitken relaxation
+                        delta_update_adj[ifunc].copyValues(update_adj[ifunc])
+                        delta_update_adj[ifunc].axpy(-1, prev_update_adj[ifunc])
+                        
+                        num = delta_update_adj[ifunc].dot(update_adj[ifunc])
+                        den = delta_update_adj[ifunc].norm() ** 2.0
+                        
+                        # Only update theta if vector has changed more than tolerance
+                        if np.real(den) > 1e-13:
+                            theta_adj[ifunc] = prev_theta_adj[ifunc] * (1 - num / den)
+                            if self.comm.rank == 0:
+                                print(f"Theta adjoint unbounded: {theta_adj[ifunc]}", flush=True)
+                        
+                        theta = max(aitken_min, min(aitken_max, np.real(theta)))
+                        
+                        # Use psi_temp variable to store scaled update
+                        psi_temp[ifunc].copyValues(update_adj[ifunc])
+                        psi_temp[ifunc].scale(theta)
+                        
+                        psi[ifunc].copyValues(prev_psi[ifunc])
+                        psi[ifunc].axpy(1, psi_temp[ifunc])
+                        
 
                 # Extract the structural adjoint array in-place
                 psi_array = psi[ifunc].getArray()
-                
+
+                # Store psi and update_adj as previous for next iteration
                 prev_psi[ifunc].copyValues(psi[ifunc])
+                prev_update_adj[ifunc].copyValues(update_adj[ifunc])
 
                 # Set the adjoint-Jacobian products for each body
                 for body in bodies:
