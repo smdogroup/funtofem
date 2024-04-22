@@ -633,7 +633,6 @@ class TacsSteadyInterface(SolverInterface):
                 self.prev_update.copyValues(self.update)
                 aitken_min = self.aitken_min
                 aitken_max = self.aitken_max
-                delta_update = self.delta_update
                 
                 theta = self.theta
                 prev_theta = self.prev_theta
@@ -687,9 +686,10 @@ class TacsSteadyInterface(SolverInterface):
                 update_temp = self.update
                 print(f"update_temp: {update_temp}")
                 print(f"prev_update: {self.prev_update}")
-                delta_update = update_temp.axpy(-1, self.prev_update)
-                num = delta_update.dot(update_temp)
-                den = delta_update.norm() ** 2.0
+                self.delta_update = update_temp.axpy(-1, self.prev_update)
+                print(f"delta-update: {self.delta_update}")
+                num = self.delta_update.dot(update_temp)
+                den = self.delta_update.norm() ** 2.0
                 
                 # only update theta if vector has changed more than tolerance
                 if den > 1e-13:
