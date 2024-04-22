@@ -208,7 +208,11 @@ class TacsSteadyInterface(SolverInterface):
 
         # Set the assembler object - if it exists or not
         self._initialize_variables(
-            model, assembler, thermal_index=thermal_index, struct_id=struct_id, use_aitken=use_aitken,
+            model,
+            assembler,
+            thermal_index=thermal_index,
+            struct_id=struct_id,
+            use_aitken=use_aitken,
         )
 
         if self.assembler is not None:
@@ -273,7 +277,7 @@ class TacsSteadyInterface(SolverInterface):
         self.update = None
 
         # Aitken vector
-        self.prev_update  = None
+        self.prev_update = None
         self.theta = None
         self.prev_theta = None
         self.use_aitken = use_aitken
