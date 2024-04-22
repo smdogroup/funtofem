@@ -43,7 +43,7 @@ class AitkenRelaxationTacs:
         self.aitken_tol = aitken_tol
         self.aitken_debug = debug
         self.aitken_debug_more = debug_more
-        
+
         self.write_history_flag = False
         self.history_file = history_file
 
