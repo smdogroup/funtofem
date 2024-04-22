@@ -20,6 +20,7 @@ class AitkenRelaxationTacs:
         aitken_tol=1e-13,
         debug=False,
         debug_more=False,
+        history_file=None,
     ):
         """
         Construct an Aitken relaxation setting object.
@@ -42,5 +43,11 @@ class AitkenRelaxationTacs:
         self.aitken_tol = aitken_tol
         self.aitken_debug = debug
         self.aitken_debug_more = debug_more
+        
+        self.write_history_flag = False
+        self.history_file = history_file
+
+        if self.history_file is not None:
+            self.write_history_flag = True
 
         return

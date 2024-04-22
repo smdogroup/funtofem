@@ -751,6 +751,11 @@ class TacsSteadyInterface(SolverInterface):
                         )
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
+                
+                if self.relaxation_scheme.write_history_flag and self.comm.rank == 0:
+                    self._aitken_hdl = open(self.relaxation_scheme.history_file, "w")
+                    self._aitken_hdl.write(f"Step: {step}, theta: {theta}")
+                    self._aitken_hdl.flush()
 
                 self.update.scale(theta)
 
