@@ -629,7 +629,7 @@ class TacsSteadyInterface(SolverInterface):
 
         if self.tacs_proc:
             # Store previous update for Aitken relaxation
-            if self.use_aitken:
+            if self.use_aitken and step > 0:
                 self.prev_update.copyValues(self.update)
                 aitken_min = self.aitken_min
                 aitken_max = self.aitken_max
@@ -685,6 +685,8 @@ class TacsSteadyInterface(SolverInterface):
             # Apply Aitken relaxation
             if self.use_aitken and step >= 2:
                 update_temp = self.update
+                print(f"update_temp: {update_temp}")
+                print(f"prev_update: {self.prev_update}")
                 delta_update = update_temp.axpy(-1, self.prev_update)
                 num = delta_update.dot(update_temp)
                 den = delta_update.norm() ** 2.0
