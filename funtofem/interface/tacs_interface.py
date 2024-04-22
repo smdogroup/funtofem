@@ -29,6 +29,7 @@ from ._solver_interface import SolverInterface
 import os, numpy as np
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 from .utils.general_utils import real_norm, imag_norm
+from .utils.relaxation_utils import AitkenRelaxationTacs
 
 
 class TacsInterface:
@@ -48,7 +49,7 @@ class TacsInterface:
         struct_options={},
         thermal_index=-1,
         debug=False,
-        use_aitken=False,
+        relaxation_scheme : AitkenRelaxationTacs=None,
     ):
         """
         Class method to create either a TacsSteadyInterface or TacsUnsteadyInterface instance using the pytacs BDF loader
@@ -74,6 +75,8 @@ class TacsInterface:
             The options passed to pyTACS
         thermal_index: int
             index for thermal index
+        relaxation_scheme: Relaxation Scheme Object
+            Object to store relaxation scheme settings. If None, then no relaxation is used.
         """
 
         # check whether each scenario is all steady or all unsteady
@@ -93,7 +96,7 @@ class TacsInterface:
                 struct_options=struct_options,
                 thermal_index=thermal_index,
                 debug=debug,
-                use_aitken=use_aitken,
+                relaxation_scheme=relaxation_scheme,
             )
         elif all(unsteady_list):
             # create a TACS steady interface
@@ -107,7 +110,7 @@ class TacsInterface:
                 struct_options=struct_options,
                 thermal_index=thermal_index,
                 debug=debug,
-                use_aitken=use_aitken,
+                relaxation_scheme=relaxation_scheme,
             )
         else:
             raise AssertionError(
@@ -134,7 +137,7 @@ class TacsSteadyInterface(SolverInterface):
         override_rotx=False,
         Fvec=None,
         nprocs=None,
-        use_aitken=False,
+        relaxation_scheme : AitkenRelaxationTacs=None,
         debug=False,
         panel_length_constraint=None,
     ):
@@ -185,7 +188,8 @@ class TacsSteadyInterface(SolverInterface):
         self.override_rotx = override_rotx
 
         # Set Aitken relaxation flag
-        self.use_aitken = use_aitken
+        self.relaxation_scheme = relaxation_scheme
+        self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
 
         # const load in TACS, separate and added onto from coupled loading
         self.has_const_load = Fvec is not None
@@ -212,7 +216,7 @@ class TacsSteadyInterface(SolverInterface):
             assembler,
             thermal_index=thermal_index,
             struct_id=struct_id,
-            use_aitken=use_aitken,
+            relaxation_scheme=relaxation_scheme,
         )
 
         if self.assembler is not None:
@@ -249,7 +253,7 @@ class TacsSteadyInterface(SolverInterface):
         gmres=None,
         struct_id=None,
         thermal_index=0,
-        use_aitken=False,
+        relaxation_scheme : AitkenRelaxationTacs = None,
     ):
         """
         Initialize the variables required for analysis and
@@ -276,11 +280,16 @@ class TacsSteadyInterface(SolverInterface):
         self.ext_force = None
         self.update = None
 
-        # Aitken relaxation variables -- primal
-        self.use_aitken = use_aitken
+        # Aitken relaxation variables -- settings
+        self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
         self.aitken_min = 0.25
         self.aitken_max = 2.0
         self.theta_init = 1.0
+        self.aitken_tol = 1e-13
+        self.aitken_debug = False
+        self.aitken_debug_more = False
+
+        # Aitken relaxation variables -- primal
         self.theta = None
         self.prev_theta = None
         self.prev_update = None
@@ -312,11 +321,19 @@ class TacsSteadyInterface(SolverInterface):
             self.ext_force = self.assembler.createVec()
             self.update = self.assembler.createVec()
 
-            # Create Aitken vector
+            # Create Aitken variables
             if self.use_aitken:
-                self.prev_update = self.assembler.createVec()
+                # Update Aitken setting parameters from relaxation_scheme object
+                self.aitken_min = relaxation_scheme.theta_min
+                self.aitken_max = relaxation_scheme.theta_max
+                self.theta_init = relaxation_scheme.theta_init
+                self.aitken_tol = relaxation_scheme.aitken_tol
+                self.aitken_debug = relaxation_scheme.aitken_debug
+                self.aitken_debug_more = relaxation_scheme.aitken_debug_more
+
                 self.theta = self.theta_init
                 self.prev_theta = self.theta_init
+                self.prev_update = self.assembler.createVec()
                 self.delta_update = self.assembler.createVec()
                 self.update_temp = self.assembler.createVec()
 
@@ -706,28 +723,30 @@ class TacsSteadyInterface(SolverInterface):
             # Solve for the update
             self.gmres.solve(self.res, self.update)
 
-            if self.comm.rank == 0:
+            if self.comm.rank == 0 and self.aitken_debug:
                 print(f"TACS iterate step: {step}", flush=True)
 
             # Apply Aitken relaxation
             if self.use_aitken and step >= 2:
+                # Store update into temp variable
                 self.update_temp.copyValues(self.update)
-                # print(f"update_temp: {self.update_temp}")
-                # print(f"prev_update: {self.prev_update}")
-                # print(f"delta-update before: {self.delta_update}")
+                
+                # Calculate change in the updates
                 self.delta_update.copyValues(self.update_temp)
                 self.delta_update.axpy(-1, self.prev_update)
-                # print(f"delta-update: {self.delta_update}")
+                
                 num = self.delta_update.dot(self.update_temp)
                 den = self.delta_update.norm() ** 2.0
 
                 # only update theta if vector has changed more than tolerance
-                if np.real(den) > 1e-13:
+                if np.real(den) > self.aitken_tol:
                     theta = prev_theta * (1 - num / den)
-                    if self.comm.rank == 0:
+                    if self.comm.rank == 0 and self.aitken_debug:
                         print(f"Theta unbounded: {theta}", flush=True)
-                elif self.comm.rank == 0:
-                    print(f"Aitken relaxation: update vector did not change enough to compute relaxation.")
+                else:
+                    theta = self.theta_init
+                    if self.comm.rank == 0 and self.aitken_debug:
+                        print(f"Aitken relaxation: update vector did not change enough to compute relaxation.")
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
@@ -996,6 +1015,7 @@ class TacsSteadyInterface(SolverInterface):
             dfdu = self.scenario_data[scenario].dfdu
             psi = self.scenario_data[scenario].psi  # psi = psi_S the structual adjoint
 
+            # Set up Aitken variables and parameters locally
             if self.use_aitken:
                 aitken_max = self.aitken_max
                 aitken_min = self.aitken_min
@@ -1005,7 +1025,7 @@ class TacsSteadyInterface(SolverInterface):
                 update_adj = self.scenario_data[scenario].update_adj
                 delta_update_adj = self.scenario_data[scenario].delta_update_adj
 
-            if self.comm.rank == 0:
+            if self.comm.rank == 0 and self.aitken_debug:
                 print(f"TACS adjoint iterate step: {step}", flush=True)
 
             for ifunc in range(len(func_list)):
@@ -1047,7 +1067,7 @@ class TacsSteadyInterface(SolverInterface):
 
                 # Solve structural adjoint equation
                 self.gmres.solve(self.res, psi[ifunc])
-                
+
                 # Aitken adjoint step
                 if self.use_aitken:
                     psi_temp[ifunc].copyValues(psi[ifunc])
@@ -1058,35 +1078,36 @@ class TacsSteadyInterface(SolverInterface):
                         # Calculate adjoint update value
                         update_adj[ifunc].copyValues(psi_temp[ifunc])
                         update_adj[ifunc].axpy(-1, prev_psi[ifunc])
-                    
+
                     if step >= 3:
                         # Perform Aitken relaxation
                         delta_update_adj[ifunc].copyValues(update_adj[ifunc])
                         delta_update_adj[ifunc].axpy(-1, prev_update_adj[ifunc])
-                        
+
                         num = delta_update_adj[ifunc].dot(update_adj[ifunc])
                         den = delta_update_adj[ifunc].norm() ** 2.0
-                        
-                        if False: #self.comm.rank == 0:
+
+                        if self.comm.rank == 0 and self.aitken_debug_more:
                             print(f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}", flush=True)
                             print(f"num: {num}", flush=True)
                             print(f"den: {den}", flush=True)
-                        
+
                         # Only update theta if vector has changed more than tolerance
-                        if np.real(den) > 1e-13:
+                        if np.real(den) > self.aitken_tol:
                             theta_adj[ifunc] = prev_theta_adj[ifunc] * (1.0 - num / den)
-                            if self.comm.rank == 0:
+                            if self.comm.rank == 0 and self.aitken_debug:
                                 print(f"Theta adjoint unbounded, ifunc {ifunc}: {theta_adj[ifunc]}", flush=True)
-                        
+                        else:
+                            theta_adj[ifunc] = self.theta_init
+
                         theta_adj[ifunc] = max(aitken_min, min(aitken_max, np.real(theta_adj[ifunc])))
-                        
+
                         # Use psi_temp variable to store scaled update
                         psi_temp[ifunc].copyValues(update_adj[ifunc])
                         psi_temp[ifunc].scale(theta_adj[ifunc])
-                        
+
                         psi[ifunc].copyValues(prev_psi[ifunc])
                         psi[ifunc].axpy(1, psi_temp[ifunc])
-                        
 
                 # Extract the structural adjoint array in-place
                 psi_array = psi[ifunc].getArray()
