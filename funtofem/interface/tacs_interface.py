@@ -1067,7 +1067,7 @@ class TacsSteadyInterface(SolverInterface):
                         num = delta_update_adj[ifunc].dot(update_adj[ifunc])
                         den = delta_update_adj[ifunc].norm() ** 2.0
                         
-                        if True: #self.comm.rank == 0:
+                        if False: #self.comm.rank == 0:
                             print(f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}", flush=True)
                             print(f"num: {num}", flush=True)
                             print(f"den: {den}", flush=True)
@@ -1076,7 +1076,7 @@ class TacsSteadyInterface(SolverInterface):
                         if np.real(den) > 1e-13:
                             theta_adj[ifunc] = prev_theta_adj[ifunc] * (1.0 - num / den)
                             if self.comm.rank == 0:
-                                print(f"Theta adjoint unbounded: {theta_adj[ifunc]}", flush=True)
+                                print(f"Theta adjoint unbounded, ifunc {ifunc}: {theta_adj[ifunc]}", flush=True)
                         
                         theta_adj[ifunc] = max(aitken_min, min(aitken_max, np.real(theta_adj[ifunc])))
                         
