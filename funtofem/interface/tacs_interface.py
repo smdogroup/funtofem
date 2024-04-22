@@ -277,6 +277,8 @@ class TacsSteadyInterface(SolverInterface):
         self.theta = None
         self.prev_theta = None
         self.use_aitken = use_aitken
+        self.aitken_min = 0.25
+        self.aitken_max = 2.0
 
         # Matrix, preconditioner and solver method
         self.mat = None
