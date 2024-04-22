@@ -686,6 +686,7 @@ class TacsSteadyInterface(SolverInterface):
                 update_temp = self.update
                 print(f"update_temp: {update_temp}")
                 print(f"prev_update: {self.prev_update}")
+                print(f"update_temp: {update_temp}")
                 self.delta_update = update_temp.axpy(-1, self.prev_update)
                 print(f"delta-update: {self.delta_update}")
                 num = self.delta_update.dot(update_temp)
