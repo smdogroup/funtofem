@@ -686,18 +686,19 @@ class TacsSteadyInterface(SolverInterface):
             # Apply Aitken relaxation
             if self.use_aitken and step >= 2:
                 self.update_temp.copyValues(self.update)
-                print(f"update_temp: {self.update_temp}")
-                print(f"prev_update: {self.prev_update}")
-                print(f"delta-update before: {self.delta_update}")
+                # print(f"update_temp: {self.update_temp}")
+                # print(f"prev_update: {self.prev_update}")
+                # print(f"delta-update before: {self.delta_update}")
                 self.delta_update.copyValues(self.update_temp)
                 self.delta_update.axpy(-1, self.prev_update)
-                print(f"delta-update: {self.delta_update}")
+                # print(f"delta-update: {self.delta_update}")
                 num = self.delta_update.dot(self.update_temp)
                 den = self.delta_update.norm() ** 2.0
 
                 # only update theta if vector has changed more than tolerance
                 if np.real(den) > 1e-13:
                     theta = prev_theta * (1 - num / den)
+                    print(f"Theta unbounded: {theta}")
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
