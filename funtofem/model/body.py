@@ -1419,7 +1419,7 @@ class Body(Base):
         """
         Perform Aitken relaxation for the displacements set in the
         """
-        
+
         pass
 
         # If Aitken relaxation is turned off, skip this
