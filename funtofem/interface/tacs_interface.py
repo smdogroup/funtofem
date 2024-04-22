@@ -726,7 +726,7 @@ class TacsSteadyInterface(SolverInterface):
                     theta = prev_theta * (1 - num / den)
                     if self.comm.rank == 0:
                         print(f"Theta unbounded: {theta}", flush=True)
-                else:
+                elif self.comm.rank == 0:
                     print(f"Aitken relaxation: update vector did not change enough to compute relaxation.")
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
