@@ -21,7 +21,7 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 hot_start = False
 store_history = True
 
-test_derivatives = False
+test_derivatives = True
 
 nprocs_tacs = 8
 
@@ -78,12 +78,12 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-# wing = Body.aeroelastic("wing", boundary=3).relaxation(
-#     AitkenRelaxation(
-#         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
-#     )
-# )
-wing = Body.aeroelastic("wing", boundary=2)
+wing = Body.aeroelastic("wing", boundary=2).relaxation(
+    AitkenRelaxation(
+        theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
+    )
+)
+# wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -142,7 +142,7 @@ tacs_aim.pre_analysis()
 # ---------------------------------------------------->
 
 # SCENARIOS
-# <----------------------------------------------------
+#  <----------------------------------------------------
 
 # make a funtofem scenario
 cruise = Scenario.steady(
@@ -158,16 +158,18 @@ cruise.set_stop_criterion(
     early_stopping=True,
     min_forward_steps=30,
     min_adjoint_steps=20,
-    post_tight_forward_steps=100,
-    post_tight_adjoint_steps=100,
+    post_tight_forward_steps=0, #100
+    post_tight_adjoint_steps=0, #100
 )
 
-Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
-    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
-).register_to(cruise)
-Function.mass().optimize(
+mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
-).register_to(cruise)
+)
+lift = Function.lift().optimize(scale=1.0, objective=False, plot=True, plot_name="lift")
+ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
+    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
+)
+cruise.include(lift).include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -207,9 +209,9 @@ solvers.flow = Fun3d14Interface(
     f2f_model,
     fun3d_dir="cfd",
     forward_stop_tolerance=1e-15,
-    forward_min_tolerance=1e-12,
-    adjoint_stop_tolerance=4e-16,
-    adjoint_min_tolerance=1e-12,
+    forward_min_tolerance=1e-10,
+    adjoint_stop_tolerance=1e-13,
+    adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
 # fun3d_project_name = "ssw-pw1.2"
@@ -230,7 +232,7 @@ f2f_driver = FUNtoFEMnlbgs(
     transfer_settings=transfer_settings,
     model=f2f_model,
     debug=global_debug_flag,
-    reload_funtofem_states=True,
+    reload_funtofem_states=False,
 )
 
 if test_derivatives:  # test using the finite difference test

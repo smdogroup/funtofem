@@ -26,6 +26,7 @@ import os, numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import shutil
+import time
 
 
 class OptimizationManager:
@@ -179,14 +180,30 @@ class OptimizationManager:
                     }
                 else:
                     regular_dict = {key: float(x_dict[key]) for key in x_dict}
-                self._design_hdl.write(f"New design = {regular_dict}\n")
+                self._design_hdl.write(
+                    f"Design #{self._iteration+1} = {regular_dict}\n"
+                )
                 self._design_hdl.flush()
 
             # change the design
             self._x_dict = x_dict
 
+            _start_time = time.time()
+
             # run a complete analysis - both forward and adjoint
             self._run_complete_analysis()
+
+            _total_time = time.time() - _start_time
+            time_units = None
+            if _total_time < 60:  # < 1 min
+                pass
+                time_units = "sec"
+            elif _total_time < 3600:  # < 60 min
+                _total_time /= 60.0
+                time_units = "min"
+            else:  # hours
+                _total_time /= 3600.0
+                time_units = "hrs"
 
             # check for nans in any of the function values values
             for func_key in self._funcs:
@@ -223,6 +240,13 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
+                forward_res = self.driver.solvers.flow.get_forward_residual()
+                forward_steps = self.driver.solvers.flow._last_forward_step
+                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                self._design_hdl.write(
+                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
+                )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 

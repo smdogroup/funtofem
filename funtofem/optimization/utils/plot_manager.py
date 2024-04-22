@@ -28,9 +28,9 @@ class PlotManager:
 
         hist_dict_list = []
         for line in lines:
-            if "New design" in line:
+            if "Design #" in line:
                 hist_dict = {}
-            if "New design" in line or "Functions" in line:
+            if "Design #" in line or "Functions" in line:
                 after_lbrace = line.split("{")[1]
                 before_rbrace = after_lbrace.split("}")[0]
                 chunks = before_rbrace.split(",")
