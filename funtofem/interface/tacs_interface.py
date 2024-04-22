@@ -1051,8 +1051,8 @@ class TacsSteadyInterface(SolverInterface):
                 # Aitken adjoint step
                 if self.use_aitken:
                     psi_temp[ifunc].copyValues(psi[ifunc])
-                    theta_adj = self.theta_adj[ifunc]
-                    prev_theta_adj = self.prev_theta_adj[ifunc]
+                    theta_adj = self.theta_adj
+                    prev_theta_adj = self.prev_theta_adj
 
                     if step >= 2:
                         # Calculate adjoint update value
@@ -1067,7 +1067,7 @@ class TacsSteadyInterface(SolverInterface):
                         num = delta_update_adj[ifunc].dot(update_adj[ifunc])
                         den = delta_update_adj[ifunc].norm() ** 2.0
                         
-                        if self.comm.rank == 0:
+                        if True: #self.comm.rank == 0:
                             print(f"prev_theta_adj[ifunc]: {prev_theta_adj[ifunc]}", flush=True)
                             print(f"num: {num}", flush=True)
                             print(f"den: {den}", flush=True)
