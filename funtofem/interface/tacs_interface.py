@@ -682,6 +682,8 @@ class TacsSteadyInterface(SolverInterface):
                 den = delta_update.norm() ** 2.0
                 theta = prev_theta * (1 - num / den)
                 
+                theta = max(aitken_min, min(aitken_max, theta))
+                
                 self.update.scale(theta)
 
             # Apply the update to the solution vector and reset the boundary condition
