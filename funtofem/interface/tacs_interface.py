@@ -927,10 +927,11 @@ class TacsSteadyInterface(SolverInterface):
 
         if self.tacs_proc:
             # Initialize Aitken adjoint variables.
-            # There is an Aitken relaxation parameter for each function.
-            nf = len(self.scenario_data[scenario].func_list)
-            self.theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
-            self.prev_theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
+            if self.use_aitken:
+                # There is an Aitken relaxation parameter for each function.
+                nf = len(self.scenario_data[scenario].func_list)
+                self.theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
+                self.prev_theta_adj = np.ones((nf), dtype=TACS.dtype) * self.theta_init
 
             # Set the solution data for this scenario
             u = self.scenario_data[scenario].u
