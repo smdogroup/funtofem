@@ -281,10 +281,10 @@ class TacsSteadyInterface(SolverInterface):
 
         # Aitken relaxation variables -- settings
         self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
-        self.aitken_min = 0.25
-        self.aitken_max = 2.0
-        self.theta_init = 1.0
-        self.aitken_tol = 1e-13
+        self.aitken_min = None
+        self.aitken_max = None
+        self.theta_init = None
+        self.aitken_tol = None
         self.aitken_debug = False
         self.aitken_debug_more = False
 
@@ -726,28 +726,30 @@ class TacsSteadyInterface(SolverInterface):
                 print(f"TACS iterate step: {step}", flush=True)
 
             # Apply Aitken relaxation
-            if self.use_aitken and step >= 2:
-                # Store update into temp variable
-                self.update_temp.copyValues(self.update)
+            if self.use_aitken:
+                theta = self.theta_init
+                if step >= 2:
+                    # Store update into temp variable
+                    self.update_temp.copyValues(self.update)
 
-                # Calculate change in the updates
-                self.delta_update.copyValues(self.update_temp)
-                self.delta_update.axpy(-1, self.prev_update)
+                    # Calculate change in the updates
+                    self.delta_update.copyValues(self.update_temp)
+                    self.delta_update.axpy(-1, self.prev_update)
 
-                num = self.delta_update.dot(self.update_temp)
-                den = self.delta_update.norm() ** 2.0
+                    num = self.delta_update.dot(self.update_temp)
+                    den = self.delta_update.norm() ** 2.0
 
-                # only update theta if vector has changed more than tolerance
-                if np.real(den) > self.aitken_tol:
-                    theta = prev_theta * (1 - num / den)
-                    if self.comm.rank == 0 and self.aitken_debug:
-                        print(f"Theta unbounded: {theta}", flush=True)
-                else:
-                    theta = self.theta_init
-                    if self.comm.rank == 0 and self.aitken_debug:
-                        print(
-                            f"Aitken relaxation: update vector did not change enough to compute relaxation."
-                        )
+                    # only update theta if vector has changed more than tolerance
+                    if np.real(den) > self.aitken_tol:
+                        theta = prev_theta * (1 - num / den)
+                        if self.comm.rank == 0 and self.aitken_debug:
+                            print(f"Theta unbounded: {theta}", flush=True)
+                    else:
+                        theta = self.theta_init
+                        if self.comm.rank == 0 and self.aitken_debug:
+                            print(
+                                f"Aitken relaxation: update vector did not change enough to compute relaxation."
+                            )
 
                 theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
@@ -755,6 +757,7 @@ class TacsSteadyInterface(SolverInterface):
                     self._aitken_hdl = open(self.relaxation_scheme.history_file, "a")
                     self._aitken_hdl.write(f"Step: {step}, theta: {theta}\n")
                     self._aitken_hdl.flush()
+                    self._aitken_hdl.close()
 
                 self.update.scale(theta)
 
