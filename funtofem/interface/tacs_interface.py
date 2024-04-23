@@ -745,7 +745,8 @@ class TacsSteadyInterface(SolverInterface):
                         if self.comm.rank == 0 and self.aitken_debug:
                             print(f"Theta unbounded: {theta}", flush=True)
                     else:
-                        theta = self.theta_init
+                        # If not updating, then reset to theta = 1.0 to effectively turn off relaxation
+                        theta = 1.0
                         if self.comm.rank == 0 and self.aitken_debug:
                             print(
                                 f"Aitken relaxation: update vector did not change enough to compute relaxation."
@@ -1114,7 +1115,8 @@ class TacsSteadyInterface(SolverInterface):
                                     flush=True,
                                 )
                         else:
-                            theta_adj[ifunc] = self.theta_init
+                            # If den is too small, then reset theta to 1.0 to turn off relaxation
+                            theta_adj[ifunc] = 1.0
 
                         theta_adj[ifunc] = max(
                             aitken_min, min(aitken_max, np.real(theta_adj[ifunc]))
