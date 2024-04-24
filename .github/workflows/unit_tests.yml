@@ -70,20 +70,19 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Install TACS
         run: |
           git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
           export TACS_DIR=/home/runner/work/tacs;
-          conda install zlib=1.2.11;
-          conda install -c anaconda openmpi -q -y;
-          conda install gxx_linux-64=9.3.0 -q -y;
+          conda install -c conda-forge sysroot_linux-64=2.17 -q -y;
+          conda install -c conda-forge openmpi openmpi-mpicxx -q -y;
           conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
-          conda install -c conda-forge metis -q -y;
-          conda install -c conda-forge petsc=3.12 petsc4py -q -y;
-          pip install cython;
+          conda install -c conda-forge metis=5.1.0 -q -y;
+          pip install openmdao==3.30.0
+          conda install -c conda-forge petsc=3.19 petsc4py -q -y;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} TACS_DIR=$TACS_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
@@ -113,10 +112,10 @@ jobs:
           cd $F2F_DIR;
           mkdir extern
           cd $F2F_DIR/extern/
-          wget https://acdl.mit.edu/ESP/PreBuilts/ESP123-linux-x86_64.tgz
-          tar -xvf ESP123-linux-x86_64.tgz
-          export ESP_ROOT=${F2F_DIR}/extern/ESP123/EngSketchPad
-          export CASROOT=${F2F_DIR}/extern/ESP123/OpenCASCADE-7.7.0
+          wget https://acdl.mit.edu/ESP/PreBuilts/ESP124-linux-x86_64.tgz
+          tar -xvf ESP124-linux-x86_64.tgz
+          export ESP_ROOT=${F2F_DIR}/extern/ESP124/EngSketchPad
+          export CASROOT=${F2F_DIR}/extern/ESP124/OpenCASCADE-7.7.0
           export CASARCH=
           export PATH=$PATH:$CASROOT/bin
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASROOT/lib
@@ -125,7 +124,7 @@ jobs:
           source $ESP_ROOT/../ESPenv.sh
           cd ./src/CAPS/aim
           make
-          cd $F2F_DIR/extern/ESP123/
+          cd $F2F_DIR/extern/ESP124/
           # remove all ESP/CAPS unit test files with recursive delete
           find . -name "test*" -type f -delete
           cd $F2F_DIR
@@ -136,7 +135,7 @@ jobs:
           echo "Running Tests";
           echo "=============================================================";
           if [[ ${{ matrix.NAME }} == 'Real' ]]; then
-            source ${F2F_DIR}/extern/ESP123/ESPenv.sh
+            source ${F2F_DIR}/extern/ESP124/ESPenv.sh
           fi
           testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
 

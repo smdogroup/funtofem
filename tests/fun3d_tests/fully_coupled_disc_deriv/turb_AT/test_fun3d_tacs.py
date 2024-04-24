@@ -1,3 +1,7 @@
+"""
+Unittest for FUN3D 13.6 complex-step check
+"""
+
 import numpy as np, unittest, importlib, os
 from mpi4py import MPI
 
@@ -41,7 +45,7 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.temperature().register_to(test_scenario)
@@ -54,10 +58,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(
+            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
         transfer_settings = TransferSettings(
@@ -89,7 +95,7 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, preconditioner_steps=10)
+        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.temperature().register_to(test_scenario)
@@ -100,10 +106,12 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3dInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3dInterface(
+            comm, model, fun3d_project_name="miniMesh", fun3d_dir="meshes"
+        )
 
         solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, output_dir=output_dir
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
         transfer_settings = TransferSettings(

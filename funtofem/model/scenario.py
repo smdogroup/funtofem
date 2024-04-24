@@ -25,7 +25,7 @@ __all__ = ["Scenario"]
 from ._base import Base
 from .variable import Variable
 from .function import Function
-
+import numpy as np
 import importlib
 
 tacs_loader = importlib.util.find_spec("tacs")
@@ -36,6 +36,8 @@ if tacs_loader is not None:
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
 
+    UNCOUPLED_STEP_BUFFER = 10
+
     def __init__(
         self,
         name,
@@ -44,14 +46,23 @@ class Scenario(Base):
         steady=True,
         fun3d=True,
         steps=1000,
-        preconditioner_steps=0,
+        uncoupled_steps=0,
         adjoint_steps=None,
+        min_forward_steps=50,
+        min_adjoint_steps=None,
+        forward_coupling_frequency=1,
+        adjoint_coupling_frequency=1,
+        early_stopping=False,
+        post_tight_forward_steps=0,
+        post_tight_adjoint_steps=0,
+        post_forward_coupling_freq=1,
+        post_adjoint_coupling_freq=1,
         T_ref=300,
         T_inf=300,
         qinf=1.0,
         flow_dt=1.0,
         tacs_integration_settings=None,
-        fun3d_project_name="funtofem_CAPS",
+        fun3d_project_name=None,
         suther1=1.458205e-6,
         suther2=110.3333,
         gamma=1.4,
@@ -73,12 +84,30 @@ class Scenario(Base):
         fun3d: bool
             whether or not you are using FUN3D. If true, the scenario class will auto-populate 'aerodynamic' required by FUN3D
         steps: int
-            the total number of fun3d time steps to run for the scenario
-        preconditioner_steps: int
-            the number of fun3d iterations ran before coupled iterations for preconditioning
+            the number of outer coupling steps in the scenario
+        uncoupled_steps: int
+            the number of fun3d iterations ran before coupled iterations
         adjoint_steps: int
             optional number of adjoint steps when using FUN3D analysis, can have different
             number of forward and adjoint steps in steady-state
+        forward_coupling_frequency: int
+            the number of uncoupled flow iterations per coupled iteration in the forward analysis
+            e.g. with FUN3D the total max number of FUN3D steps is steps * forward_coupling_frequency + uncoupled_steps
+        adjoint_coupling_frequency: int
+            the number of uncoupled flow adjoint iterations per coupled iteration in the adjoint analysis
+            e.g. with FUN3D the total max number of FUN3D adjoint steps is adjoint_steps * adjoint_coupling_frequency
+        early_stopping: bool
+            whether to activate the early stopping criterion
+        min_forward_steps: int
+            (optional) minimum number of steps required before early stopping can happen. Note
+            this is set to the # of uncoupled steps if not provided (hence you probably don't need to set this
+            but you can in special circumstances)
+        min_adjoint_steps: int
+            (optional) minimum number of adjoint steps required before early stopping criterion is applied
+        post_tight_forward_steps: int
+            (optional) number of additional tightly coupled forward steps at the end of the solve
+        post_tight_adjoint_steps: int
+            (optional) number of additional tightly coupled adjoint steps at the end of the solve
         T_ref: double
             Structural reference temperature (i.e., unperturbed temperature of structure) in Kelvin.
         T_inf: double
@@ -115,13 +144,20 @@ class Scenario(Base):
         self.id = id
         self.group = group
         self.group_master = False
-        self.adjoint_steps = adjoint_steps
+        self._adjoint_steps = adjoint_steps
         self.variables = {}
 
         self.functions = []
         self.steady = steady
         self.steps = steps
-        self.preconditioner_steps = preconditioner_steps
+        self.forward_coupling_frequency = forward_coupling_frequency
+        self.adjoint_coupling_frequency = adjoint_coupling_frequency
+        self.uncoupled_steps = uncoupled_steps
+        self.post_tight_forward_steps = post_tight_forward_steps
+        self.post_tight_adjoint_steps = post_tight_adjoint_steps
+        self.post_forward_coupling_freq = post_forward_coupling_freq
+        self.post_adjoint_coupling_freq = post_adjoint_coupling_freq
+
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
 
@@ -135,6 +171,17 @@ class Scenario(Base):
         self.gamma = gamma
         self.R_specific = R_specific
         self.Pr = Pr
+
+        # early stopping criterion
+        self.min_forward_steps = (
+            min_forward_steps
+            if min_forward_steps is not None
+            else uncoupled_steps + self.UNCOUPLED_STEP_BUFFER
+        )
+        self.min_adjoint_steps = (
+            min_adjoint_steps if min_adjoint_steps is not None else 0
+        )
+        self.early_stopping = early_stopping
 
         # Heat capacity at constant pressure
         cp = self.R_specific * self.gamma / (self.gamma - 1)
@@ -156,12 +203,27 @@ class Scenario(Base):
             self.add_variable("aerodynamic", zrate)
 
     @classmethod
-    def steady(cls, name: str, steps: int, preconditioner_steps: int = 0):
+    def steady(
+        cls,
+        name: str,
+        steps: int,
+        uncoupled_steps: int = 0,
+        forward_coupling_frequency: int = 1,
+        adjoint_coupling_frequency: int = 1,
+        adjoint_steps: int = None,
+        post_tight_forward_steps=0,
+        post_tight_adjoint_steps=0,
+    ):
         return cls(
             name=name,
             steady=True,
             steps=steps,
-            preconditioner_steps=preconditioner_steps,
+            forward_coupling_frequency=forward_coupling_frequency,
+            adjoint_steps=adjoint_steps,
+            adjoint_coupling_frequency=adjoint_coupling_frequency,
+            uncoupled_steps=uncoupled_steps,
+            post_tight_forward_steps=post_tight_forward_steps,
+            post_tight_adjoint_steps=post_tight_adjoint_steps,
         )
 
     @classmethod
@@ -169,7 +231,7 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        preconditioner_steps: int = 0,
+        uncoupled_steps: int = 0,
         tacs_integration_settings=None,
     ):
         return cls(
@@ -177,8 +239,26 @@ class Scenario(Base):
             steady=False,
             steps=steps,
             tacs_integration_settings=tacs_integration_settings,
-            preconditioner_steps=preconditioner_steps,
+            uncoupled_steps=uncoupled_steps,
         )
+
+    @property
+    def adjoint_steps(self) -> int:
+        """
+        in the steady case it's best to choose the
+        adjoint steps based on the funtofem coupling frequency
+        """
+        if self._adjoint_steps is not None and self.steady:
+            return self._adjoint_steps
+        elif not self.steady:
+            return None  # defaults to number of steps in unsteady case
+        else:  # choose it based on funtofem coupling frequency in steady case
+            return int(np.ceil(self.steps / self.adjoint_coupling_frequency))
+
+    @adjoint_steps.setter
+    def adjoint_steps(self, new_steps: int):
+        assert self.steady
+        self._adjoint_steps = new_steps
 
     def add_function(self, function):
         """
@@ -207,6 +287,27 @@ class Scenario(Base):
         # return the object for method cascading
         return self
 
+    @property
+    def adjoint_functions(self) -> list:
+        """return a list of the adjoint functions only"""
+        return [func for func in self.functions if func.adjoint]
+
+    @property
+    def adjoint_map(self) -> dict:
+        """return an int map from adjoint function index to full function list index"""
+        adj_dict = {}
+        adj_ct = 0
+        for ifunc, func in enumerate(self.functions):
+            if func.adjoint:
+                adj_dict[adj_ct] = ifunc
+                adj_ct += 1
+        return adj_dict
+
+    @property
+    def reverse_adjoint_map(self) -> dict:
+        """return an int map from full function index to adjoint function index"""
+        return {key: self.adjoint_map[key] for key in self.adjoint_map}
+
     def count_functions(self):
         """
         Returns the number of functions in this scenario
@@ -231,19 +332,6 @@ class Scenario(Base):
         """
         is_adjoint = lambda func: func.adjoint
         return len(list(filter(is_adjoint, self.functions)))
-
-    def get_variable(self, varname, set_active=True) -> Variable:
-        """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
-        var = None
-        for discipline in self.variables:
-            discipline_vars = self.variables[discipline]
-            for var in discipline_vars:
-                if var.name == varname:
-                    if set_active:
-                        var.active = True
-                    return var
-        if var is None:
-            raise AssertionError(f"Can't find variable from scenario {self.name}")
 
     def add_variable(self, vartype, var: Variable):
         """
@@ -301,6 +389,49 @@ class Scenario(Base):
         """
         self.T_ref = T_ref
         self.T_inf = T_inf
+        return self
+
+    def set_stop_criterion(
+        self,
+        early_stopping: bool = True,
+        min_forward_steps=None,
+        min_adjoint_steps=None,
+        post_tight_forward_steps=None,
+        post_tight_adjoint_steps=None,
+        post_forward_coupling_freq=None,
+        post_adjoint_coupling_freq=None,
+    ):
+        """
+        turn on the early stopping criterion, note you probably don't need
+        to set the min steps (as it defaults to the # of uncoupled steps)
+        The stopping tolerances are set in each discipline interface
+
+        Parameters
+        ----------
+        early_stopping: bool
+            whether to perform early stopping criterion
+        min_forward_steps: int
+            (optional) - the minimum number of steps for engaging the early stop criterion for forward analysis
+        min_adjoint_steps: int
+            (optional) - the minimum number of steps for engaging the early stopping criterion for adjoint analysis
+        post_tight_forward_steps: int
+            (optional) number of additional tightly coupled forward steps at the end of the solve
+        post_tight_adjoint_steps: int
+            (optional) number of additional tightly coupled adjoint steps at the end of the solve
+        """
+        self.early_stopping = early_stopping
+        if min_forward_steps is not None:
+            self.min_forward_steps = min_forward_steps
+        if min_adjoint_steps is not None:
+            self.min_adjoint_steps = min_adjoint_steps
+        if post_tight_forward_steps is not None:
+            self.post_tight_forward_steps = post_tight_forward_steps
+        if post_tight_adjoint_steps is not None:
+            self.post_tight_adjoint_steps = post_tight_adjoint_steps
+        if post_forward_coupling_freq is not None:
+            self.post_forward_coupling_freq = post_forward_coupling_freq
+        if post_adjoint_coupling_freq is not None:
+            self.post_adjoint_coupling_freq = post_adjoint_coupling_freq
         return self
 
     def set_flow_ref_vals(self, qinf: float = 1.0, flow_dt: float = 1.0):

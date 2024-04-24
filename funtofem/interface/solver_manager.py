@@ -41,6 +41,18 @@ class CommManager:
             self.aero_comm = master_comm
         self.aero_root = aero_root
 
+    def __str__(self):
+        line0 = f"CommManager"
+        line1 = f"  Master comm: {self.master_comm}"
+        line2 = f"  Aero comm: {self.aero_comm}"
+        line3 = f"    Aero root: {self.aero_root}"
+        line4 = f"  Struct comm: {self.struct_comm}"
+        line5 = f"    Struct root: {self.struct_root}"
+
+        output = (line0, line1, line2, line3, line4, line5)
+
+        return "\n".join(output)
+
 
 class SolverManager:
     def __init__(self, comm, use_flow: bool = True, use_struct: bool = True):
@@ -92,6 +104,14 @@ class SolverManager:
         return mlist
 
     @property
+    def forward_residual(self) -> float:
+        return max([abs(solver.get_forward_residual()) for solver in self.solver_list])
+
+    @property
+    def adjoint_residual(self) -> float:
+        return max([abs(solver.get_adjoint_residual()) for solver in self.solver_list])
+
+    @property
     def flow(self):
         return self._flow
 
@@ -110,6 +130,7 @@ class SolverManager:
         """
         switch fun3d flow to complex
         """
+        print(f"inside make flow complex", flush=True)
         self.flow = Fun3dInterface.copy_complex_interface(self.flow)
         return self
 

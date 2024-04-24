@@ -5,6 +5,7 @@ import os
 class Remote:
     def __init__(
         self,
+        comm,
         analysis_file,
         main_dir,
         output_name="f2f_analysis",
@@ -32,16 +33,19 @@ class Remote:
         struct_name: str
             name of struct mesh / struct sens files (not full path just prefix)
         """
+        self.comm = comm
         self.analysis_file = analysis_file
         self.main_dir = main_dir
         self.nprocs = nprocs
         self.output_name = output_name
         self.aero_name = aero_name
         self.struct_name = struct_name
+        self._remote_dir = self.remote_dir(comm, main_dir)
 
     @classmethod
-    def paths(cls, main_dir, aero_name="fun3d", struct_name="struct"):
+    def paths(cls, comm, main_dir, aero_name="fun3d", struct_name="tacs"):
         return cls(
+            comm=comm,
             analysis_file=None,
             main_dir=main_dir,
             aero_name=aero_name,
@@ -49,33 +53,48 @@ class Remote:
         )
 
     @classmethod
+    def remote_dir(cls, comm, main_dir):
+        _remote_dir = os.path.join(main_dir, "remote")
+        if comm.rank == 0 and not (os.path.exists(_remote_dir)):
+            os.mkdir(_remote_dir)
+        return _remote_dir
+
+    @classmethod
     def fun3d_path(cls, main_dir, filename):
         return os.path.join(main_dir, filename)
 
     @property
     def struct_sens_file(self):
-        return os.path.join(self.main_dir, f"{self.struct_name}.sens")
+        return os.path.join(self._remote_dir, f"{self.struct_name}.sens")
 
     @property
     def aero_sens_file(self):
-        return os.path.join(self.main_dir, f"{self.aero_name}.sens")
+        return os.path.join(self._remote_dir, f"{self.aero_name}.sens")
 
     @property
     def output_file(self):
-        return os.path.join(self.main_dir, f"{self.output_name}.txt")
+        return os.path.join(self._remote_dir, f"{self.output_name}.txt")
 
     @property
     def bdf_file(self):
-        return os.path.join(self.main_dir, f"{self.struct_name}.bdf")
+        return os.path.join(self._remote_dir, f"{self.struct_name}.bdf")
 
     @property
     def dat_file(self):
-        return os.path.join(self.main_dir, f"{self.struct_name}.dat")
+        return os.path.join(self._remote_dir, f"{self.struct_name}.dat")
 
     @property
     def design_file(self):
-        return os.path.join(self.main_dir, "funtofem.in")
+        return os.path.join(self._remote_dir, "funtofem.in")
+
+    @property
+    def _functions_file(self):
+        return os.path.join(self._remote_dir, "_funtofem.out")
 
     @property
     def functions_file(self):
-        return os.path.join(self.main_dir, "funtofem.out")
+        return os.path.join(self._remote_dir, "funtofem.out")
+
+    @property
+    def timing_file(self):
+        return os.path.join(self._remote_dir, "timing.txt")

@@ -101,6 +101,10 @@ class TacsOutputGeneratorUnsteady:
             self.f5.writeToFile(filepath)
         return
 
+    def _deallocate(self):
+        self.f5.__dealloc__()
+        return
+
 
 class TacsUnsteadyInterface(SolverInterface):
     """
@@ -124,6 +128,9 @@ class TacsUnsteadyInterface(SolverInterface):
         self.tacs_comm = tacs_comm
         self.nprocs = nprocs
 
+        # setup forward and adjoint tolerances
+        super().__init__()
+
         # Debug flag
         self._debug = debug
         if self.comm.rank != 0:
@@ -143,6 +150,7 @@ class TacsUnsteadyInterface(SolverInterface):
         self._coord_deriv_override = False
 
         # initialize variables
+        self.model = model
         self._initialize_variables(
             model, assembler, thermal_index=thermal_index, struct_id=struct_id
         )
@@ -325,8 +333,13 @@ class TacsUnsteadyInterface(SolverInterface):
                     ksweight = 50.0
                     if func.options is not None and "ksweight" in func.options:
                         ksweight = func.options["ksweight"]
+                    safetyFactor = 1.0
+                    if func.options is not None and "safetyFactor" in func.options:
+                        safetyFactor = func.options["safetyFactor"]
                     func_list.append(
-                        functions.KSFailure(self.assembler, ksWeight=ksweight)
+                        functions.KSFailure(
+                            self.assembler, ksWeight=ksweight, safetyFactor=safetyFactor
+                        )
                     )
                     func_tag.append(1)
 
@@ -579,6 +592,8 @@ class TacsUnsteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
+        # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
+        self.set_variables(scenario, bodies)
         if self.tacs_proc:
             # Save the solution vector
             self.scenario_data[scenario.id].u.copyValues(self.ans)
@@ -689,15 +704,19 @@ class TacsUnsteadyInterface(SolverInterface):
 
             psi = self.scenario_data[scenario.id].psi
 
+            reverse_adj_map = scenario.reverse_adjoint_map
+
             # iterate over each function
             for ifunc in range(len(func_list)):
-                # get the solution data for this function
-                rhs_func = self.struct_rhs_vec[ifunc].getArray()
-                rhs_func[:] = 0.0  # reset it to zero
-
                 # if not an adjoint function, move onto next function
                 if func_tags[ifunc] == -1:
                     continue
+
+                iadjoint = reverse_adj_map[ifunc]
+
+                # get the solution data for this function
+                rhs_func = self.struct_rhs_vec[ifunc].getArray()
+                rhs_func[:] = 0.0  # reset it to zero
 
                 ndof = self.assembler.getVarsPerNode()
                 # add struct_disps, struct_flux ajps to the res_adjoint or
@@ -706,14 +725,14 @@ class TacsUnsteadyInterface(SolverInterface):
                     struct_disps_ajp = body.get_struct_disps_ajp(scenario)
                     if struct_disps_ajp is not None:
                         for i in range(3):
-                            rhs_func[i::ndof] -= struct_disps_ajp[i::3, ifunc].astype(
-                                TACS.dtype
-                            )
+                            rhs_func[i::ndof] -= struct_disps_ajp[
+                                i::3, iadjoint
+                            ].astype(TACS.dtype)
 
                     struct_temps_ajp = body.get_struct_temps_ajp(scenario)
                     if struct_temps_ajp is not None:
                         rhs_func[self.thermal_index :: ndof] -= struct_temps_ajp[
-                            :, ifunc
+                            :, iadjoint
                         ].astype(TACS.dtype)
 
             # iterate the integrator solver, outside of function loop
@@ -723,9 +742,14 @@ class TacsUnsteadyInterface(SolverInterface):
 
             # function loop to extract struct load, heat flux adjoints for each func
             for ifunc in range(len(func_list)):
+                if func_tags[ifunc] == -1:
+                    continue
+
                 # get the struct load, flux sensitivities out of integrator
                 psi = self.integrator[scenario.id].getAdjoint(step, ifunc)
                 psi_array = psi.getArray()
+
+                iadjoint = reverse_adj_map[ifunc]
 
                 # pass sensitivities back to each body for loads, heat flux
                 for body in bodies:
@@ -733,14 +757,14 @@ class TacsUnsteadyInterface(SolverInterface):
                     struct_loads_ajp = body.get_struct_loads_ajp(scenario)
                     if struct_loads_ajp is not None:
                         for i in range(3):
-                            struct_loads_ajp[i::3, ifunc] = -psi_array[i::ndof].astype(
-                                body.dtype
-                            )
+                            struct_loads_ajp[i::3, iadjoint] = -psi_array[
+                                i::ndof
+                            ].astype(body.dtype)
 
                     # pass on struct flux adjoint product
                     struct_flux_ajp = body.get_struct_heat_flux_ajp(scenario)
                     if struct_flux_ajp is not None:
-                        struct_flux_ajp[:, ifunc] = -psi_array[
+                        struct_flux_ajp[:, iadjoint] = -psi_array[
                             self.thermal_index :: ndof
                         ].astype(body.dtype)
 

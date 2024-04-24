@@ -1,4 +1,4 @@
-[![Build, unit tests, and docs](https://github.com/smdogroup/funtofem/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/smdogroup/tacs/actions/workflows/unit_tests.yml)
+[![Build, unit tests, and docs](https://github.com/smdogroup/funtofem/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/smdogroup/funtofem/actions/workflows/unit_tests.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -15,7 +15,7 @@ For those intending to be users of funtofem and not developers, the easiest way 
 Conda packages of funtofem are available for the Linux and Mac OS from our smdogroup channel. The user should first open a terminal and create
 a conda environment, such as `F2F`, and then install funtofem as follows with conda install.
 ```
-conda create -n F2F python=3.8
+conda create -n F2F python=3.9
 conda activate F2F
 conda install -c conda-forge -c smdogroup funtofem
 ```

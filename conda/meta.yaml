@@ -27,60 +27,48 @@ source:
 
 build:
   number: {{ build }}
-  skip: true  # [py<=36]
+  skip: true  # [py<=38]
   string: py{{ CONDA_PY }}_{{ scalar }}_h{{ PKG_HASH }}_{{ build }}
   track_features:
     - funtofem_complex  # [scalar == "complex"]
 
 requirements:
   build:
-    - python {{ python }}
-    - numpy   1.18   # [py==38]
-    - numpy   1.19   # [py==39]
-    - numpy   1.22   # [py==310]
-    - numpy   1.23   # [py==311]
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
-    - {{ compiler('cxx') }}
-    - libopenblas
-    - lapack
+    - {{compiler('cxx')}}
     - make
-    - mpi4py
-    - cython >=0.29,<3.0
-    - setuptools
-    - tacs >=3.4.0
+    - python {{ python }}                    # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - numpy   >=1.25 # [build_platform != target_platform]
+    - openmpi >=4.1.4 # [mpi == "openmpi" and build_platform != target_platform]
+    - mpich  # [mpi == "mpich" and build_platform != target_platform]
+    - openmpi-mpicxx  # [mpi == "openmpi" and build_platform != target_platform]
+    - mpich-mpicxx  # [mpi == "mpich" and build_platform != target_platform]
+    - mpi4py >=3.1.1 # [build_platform != target_platform]
+    - cython >=0.29,<3.0 # [build_platform != target_platform]
+    - setuptools # [build_platform != target_platform]
+    - tacs >=3.4.0 # [build_platform != target_platform]
 
   host:
     - python {{ python }}
     - pip
-    - numpy   1.18   # [py==38]
-    - numpy   1.19   # [py==39]
-    - numpy   1.22   # [py==310]
-    - numpy   1.23   # [py==311]
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
+    - numpy   >=1.25
+    - openmpi >=4.1.4 # [mpi == "openmpi"]
+    - mpich  # [mpi == "mpich"]
     - libopenblas
     - lapack
-    - mpi4py
+    - mpi4py >=3.1.1
     - cython >=0.29,<3.0
-    - setuptools
     - tacs >=3.4.0
 
   run:
     - python
-    - numpy >=1.18.5,<2.0.a0   # [py==38]
-    - numpy >=1.19.5,<2.0.a0   # [py==39]
-    - numpy >=1.22.0,<2.0.a0   # [py==310]
-    - numpy >=1.23.0,<2.0.a0   # [py==311]
+    - {{ pin_compatible("numpy") }}
     - scipy
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
+    - openmpi >=4.1.4 # [mpi == "openmpi"]
+    - mpich  # [mpi == "mpich"]
     - libopenblas
     - lapack
-    - mpi4py
+    - mpi4py >=3.1.1
     - tacs >=3.4.0
 
 test:

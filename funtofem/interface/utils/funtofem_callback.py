@@ -1,7 +1,7 @@
 __all__ = ["f2f_callback", "addLoadsFromBDF"]
 
 import numpy as np
-from tacs import constitutive, elements
+from tacs import constitutive, elements, TACS
 from mpi4py import MPI
 
 
@@ -47,6 +47,17 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
         else:
             t = propInfo.t
             dv_ind = -1
+
+        # Create a dictionary to sort all elements by property number
+        elemDict = {}
+        for elementID in fea_assembler.bdfInfo.elements:
+            element = fea_assembler.bdfInfo.elements[elementID]
+            propertyID = element.pid
+            if propertyID not in elemDict:
+                elemDict[propertyID] = {}
+                elemDict[propertyID]["elements"] = []
+                elemDict[propertyID]["dvs"] = {}
+            elemDict[propertyID]["elements"].append(element)
 
         # Callback function to return appropriate tacs MaterialProperties object
         # For a pynastran mat card
@@ -157,8 +168,48 @@ def f2f_callback(fea_assembler, structDV_names, structDV_dict, include_thermal=F
             for matInfo in propInfo.mids_ref:
                 mat.append(matCallBack(matInfo))
 
-        # make the shell constitutive object for that material, thickness, and dv_ind (for thickness DVs)
-        con = constitutive.IsoShellConstitutive(mat, t=t, tNum=dv_ind)
+        if propInfo.type == "PSHELL":
+            # make the shell constitutive object for that material, thickness, and dv_ind (for thickness DVs)
+            con = constitutive.IsoShellConstitutive(mat, t=t, tNum=dv_ind)
+
+        elif propInfo.type == "PCOMP":
+            numPlies = propInfo.nplies
+            plyThicknesses = []
+            plyAngles = []
+            plyMats = []
+
+            if propInfo.lam == "SYM":
+                plyIndices = list(range(numPlies // 2))
+                plyIndices.extend(plyIndices[::-1])
+            else:
+                plyIndices = range(numPlies)
+
+            for ply_i in plyIndices:
+                plyThicknesses.append(propInfo.thicknesses[ply_i])
+                plyMat = constitutive.OrthotropicPly(plyThicknesses[ply_i], mat[ply_i])
+                plyMats.append(plyMat)
+                plyAngles.append(np.deg2rad(propInfo.thetas[ply_i]))
+
+            # Convert thickness/angles to appropriate numpy array
+            plyThicknesses = np.array(plyThicknesses, dtype=TACS.dtype)
+            plyAngles = np.array(plyAngles, dtype=TACS.dtype)
+
+            # Get the total laminate thickness
+            lamThickness = propInfo.Thickness()
+            # Get the offset distance from the ref plane to the midplane
+            tOffset = -(propInfo.z0 / lamThickness + 0.5)
+
+            plyFractions = plyThicknesses / lamThickness
+            # have to use SmearedCompositeShellConstitutive since the other constitutive class for Composites in TACS
+            # is not differentiable
+            con = constitutive.SmearedCompositeShellConstitutive(
+                plyMats,
+                lamThickness,
+                plyAngles,
+                plyFractions,
+                t_offset=tOffset,
+                thickness_dv_num=dv_ind,
+            )
 
         # add elements to FEA (assumes all elements are thermal shells by default for aerothermoelastic analysis)
         elemList = []
@@ -216,12 +267,21 @@ def addLoadsFromBDF(fea_assembler):
             for loadInfo, scale in zip(loadSet, loadScale):
                 # Add any point force or moment cards
                 if loadInfo.type == "FORCE" or loadInfo.type == "MOMENT":
-                    nodeIDs = loadInfo.node_ref.nid
+                    node_ref = loadInfo.node_ref
+                    if node_ref is not None:
+                        nodeIDs = node_ref.nid
+                    else:
+                        nodeIDs = [loadInfo.node]
 
                     loadArray = np.zeros(vpn)
                     if loadInfo.type == "FORCE" and vpn >= 3:
                         F = scale * loadInfo.scaled_vector
-                        loadArray[:3] += loadInfo.cid_ref.transform_vector_to_global(F)
+                        if loadInfo.cid_ref is not None:
+                            loadArray[
+                                :3
+                            ] += loadInfo.cid_ref.transform_vector_to_global(F)
+                        else:
+                            loadArray[:3] += loadInfo.xyz * loadInfo.mag
                     elif loadInfo.type == "MOMENT" and vpn >= 6:
                         M = scale * loadInfo.scaled_vector
                         loadArray[3:6] += loadInfo.cid_ref.transform_vector_to_global(M)

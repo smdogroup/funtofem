@@ -78,6 +78,7 @@ optional_dependencies = {
     "testing": ["testflo>=1.4.7"],
     "docs": ["sphinx"],
     "mphys": ["mphys>=1.1.0", "openmdao>=3.25.0"],
+    "plots": ["niceplots"],
 }
 
 # Add an optional dependency that concatenates all others
@@ -91,12 +92,13 @@ optional_dependencies["all"] = sorted(
 
 setup(
     name="funtofem",
-    version="0.3.3",
+    version="0.3.7",
     description="Aerothermoelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
+    python_requires=">=3.9.0",
     extras_require=optional_dependencies,
-    install_requires=["numpy", "mpi4py>=3.1.1"],
+    install_requires=["numpy<2.0.0", "mpi4py>=3.1.1"],
     packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )

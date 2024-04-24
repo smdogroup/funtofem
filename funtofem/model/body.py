@@ -43,6 +43,8 @@ class AitkenRelaxation:
         theta_therm_init=0.125,
         theta_min=0.01,
         theta_max=1.0,
+        debug=False,
+        history_file=None,
     ):
         """
         Construct an aitken relaxation setting object
@@ -61,6 +63,13 @@ class AitkenRelaxation:
         self.theta_therm_init = theta_therm_init
         self.theta_min = theta_min
         self.theta_max = theta_max
+        self.debug = debug
+        self.history_file = history_file
+        self.write_history = False
+        if self.history_file is not None:
+            self.write_history = True
+
+        return
 
 
 class SimpleRelaxation:
@@ -75,12 +84,16 @@ class SimpleRelaxation:
         tenth_steps: int = 50,
         min_learning_rate: float = 1.0e-4,
         min_learning_rate_t: float = 1.0e-4,
+        debug=False,
     ):
         self.theta = theta_init
         self.theta_t = theta_therm_init
         self.decay_rate = np.power(0.1, 1.0 / tenth_steps)
         self.min_learning_rate = min_learning_rate
         self.min_learning_rate_t = min_learning_rate_t
+        self.debug = debug
+
+        return
 
     def relax_displacement(self):
         """
@@ -582,6 +595,17 @@ class Body(Base):
         if self.thermal_transfer is not None:
             self.thermal_transfer.initialize()
 
+        if self.use_aitken_accel and comm.rank == 0:
+            if self.relaxation_scheme.write_history:
+                self._aitken_hdl = open(self.relaxation_scheme.history_file, "w")
+
+                self._aitken_hdl.write(
+                    "Writing aitken relaxation history file for forward evaluation...\n"
+                )
+                self._aitken_hdl.write("Calc_theta, bounded_theta\n")
+
+                self._aitken_hdl.flush()
+
         return
 
     def update_transfer(self):
@@ -712,13 +736,14 @@ class Body(Base):
 
         # Count up the number of functions for this scenario
         nf = scenario.count_adjoint_functions()
+        nf_all = scenario.count_functions()
         self.aitken_init = True
 
         # Allocate the adjoint variables and internal body variables required
         ns = 3 * self.struct_nnodes
         na = 3 * self.aero_nnodes
-        self.aero_shape_term[scenario.id] = np.zeros((na, nf), dtype=self.dtype)
-        self.struct_shape_term[scenario.id] = np.zeros((ns, nf), dtype=self.dtype)
+        self.aero_shape_term[scenario.id] = np.zeros((na, nf_all), dtype=self.dtype)
+        self.struct_shape_term[scenario.id] = np.zeros((ns, nf_all), dtype=self.dtype)
 
         if self.transfer is not None:
             ns = 3 * self.struct_nnodes
@@ -1412,6 +1437,12 @@ class Body(Base):
                 np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
             )
 
+            # Update default parameters
+            self.theta_init = self.relaxation_scheme.theta_init
+            self.theta_therm_init = self.relaxation_scheme.theta_therm_init
+            self.theta_min = self.relaxation_scheme.theta_min
+            self.theta_max = self.relaxation_scheme.theta_max
+
             self.aitken_is_initialized = True
 
         if self.transfer is not None:
@@ -1422,16 +1453,32 @@ class Body(Base):
                 norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
                 norm2 = comm.allreduce(norm2)
 
+                if comm.rank == 0 and self.relaxation_scheme.debug:
+                    print(f"Aitken norm2: {norm2}", flush=True)
+
                 # Only update theta if the displacements changed
                 if norm2 > tol:
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
-                    self.theta *= 1.0 - value / norm2
+                    self.theta += (self.theta - 1) * value / norm2
+
+                    if self.relaxation_scheme.write_history and comm.rank == 0:
+                        self._aitken_hdl.write(f"{self.theta.real}")
+
+                    if self.relaxation_scheme.debug and comm.rank == 0:
+                        print(f"Calculated theta: {self.theta}", flush=True)
 
                     self.theta = np.max(
                         (np.min((self.theta, self.theta_max)), self.theta_min)
                     )
+
+                    if comm.rank == 0 and self.relaxation_scheme.debug:
+                        print(f"Max theta: {self.theta_max}")
+                        print(f"Min theta: {self.theta_min}", flush=True)
+                else:
+                    if self.relaxation_scheme.write_history and comm.rank == 0:
+                        self._aitken_hdl.write(f"NUL")
 
                 # handle the min/max for complex step
                 if type(self.theta) == np.complex128 or type(self.theta) == complex:
@@ -1443,6 +1490,13 @@ class Body(Base):
 
                 # call the scheme to drop the learning rate for the next iteration
                 self.relaxation_scheme.relax_displacement()
+
+            if self.relaxation_scheme.debug and comm.rank == 0:
+                print(f"Bounded theta: {self.theta}", flush=True)
+
+            if self.relaxation_scheme.write_history and comm.rank == 0:
+                self._aitken_hdl.write(f", {self.theta.real}\n")
+                self._aitken_hdl.flush()
 
             # perform the aitken update for displacement transfer
             self.aitken_vec += self.theta * up
@@ -1462,7 +1516,7 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
-                    self.theta_t *= 1.0 - value / norm2
+                    self.theta_t += (self.theta_t - 1) * value / norm2
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
@@ -1491,7 +1545,7 @@ class Body(Base):
             return
 
         # exit early to not perform aitken adjoint relax
-        return
+        # return
 
         # number of nodes and functions
         ns = self.struct_nnodes
@@ -1502,6 +1556,10 @@ class Body(Base):
             # self.theta_adj = self.theta_init
             # self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             # self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
+            self.theta_adj = np.ones((nf), dtype=self.dtype) * self.theta_init
+
+            self.prev_adj_update = np.zeros((3*ns, nf), dtype=self.dtype)
+            self.aitken_adj_vec = np.zeros((3*ns, nf), dtype=self.dtype)
 
             # Aitken data for the temperatures
             self.theta_adj_t = np.ones((nf), dtype=self.dtype) * self.theta_init
@@ -1511,6 +1569,40 @@ class Body(Base):
 
             self.aitken_adj_is_initialized = True
 
+        # Elastic adjoint transfer
+        struct_disps_ajp = self.get_struct_disps_ajp(scenario)
+        if self.transfer is not None:
+            for ifunc in range(nf):
+                up = struct_disps_ajp[:, ifunc] - self.aitken_adj_vec[:, ifunc]
+
+                if self.use_aitken_accel:
+                    norm2 = np.linalg.norm(up - self.prev_adj_update[:, ifunc]) ** 2.0
+                    norm2 = comm.allreduce(norm2)
+
+                    # Only update theta if the displacements changed
+                    if norm2 > tol:
+                        # Compute the tentative theta value
+                        value = (up - self.prev_adj_update[:, ifunc]).dot(up)
+                        value = comm.allreduce(value.real)
+                        # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        self.theta_adj[ifunc] += (
+                            (self.theta_adj[ifunc] - 1) * value / norm2
+                        )
+
+                        self.theta_adj[ifunc] = np.max(
+                            (
+                                np.min((self.theta_adj[ifunc], self.theta_max)),
+                                self.theta_min,
+                            )
+                        )
+
+                    if (
+                        type(self.theta_adj[ifunc]) == np.complex128
+                        or type(self.theta_adj[ifunc]) == complex
+                    ):
+                        self.theta_adj[ifunc] = self.theta_adj[ifunc].real + 0.0j
+
+        # Thermal adjoint transfer
         struct_flux_ajp = self.get_struct_heat_flux_ajp(scenario)
         if self.thermal_transfer is not None:
             for ifunc in range(nf):
@@ -1526,7 +1618,10 @@ class Body(Base):
                         # Compute the tentative theta value
                         value = (up - self.prev_adj_update_t[:, ifunc]).dot(up)
                         value = comm.allreduce(value.real)
-                        self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
+                        self.theta_adj_t[ifunc] += (
+                            (self.theta_adj_t[ifunc] - 1) * value / norm2
+                        )
 
                         self.theta_adj_t[ifunc] = np.max(
                             (
@@ -1594,22 +1689,50 @@ class Body(Base):
 
         return
 
-    def _distribute_aero_loads(self, data):
+    def _distribute_aero_loads(self, data, steady: bool = True, itime: int = 0):
         """
         distribute the aero loads and heat flux from a loads file
         """
+        print(f"F2F - starting to distribute loads Time Step {itime}")
+
         for scenario_id in data:
             scenario_data = data[scenario_id]
+
+            # create a dict for this entry
+            scenario_entry_dict = {}
             for entry in scenario_data:
-                for ind, aero_id in enumerate(self.aero_id):
-                    if entry["aeroID"] == aero_id and entry["bodyName"] == self.name:
-                        if self.transfer is not None:
-                            self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = entry[
-                                "load"
-                            ]
-                        if self.thermal_transfer is not None:
-                            self.aero_heat_flux[scenario_id][ind] = entry["hflux"]
-                        break
+                if entry["bodyName"] == self.name:
+                    scenario_entry_dict[entry["aeroID"]] = {
+                        "load": entry["load"],
+                        "hflux": entry["hflux"],
+                    }
+
+            for ind, aero_id in enumerate(self.aero_id):
+                if steady:
+                    if self.transfer is not None:
+                        self.aero_loads[scenario_id][3 * ind : 3 * ind + 3] = (
+                            scenario_entry_dict[aero_id]["load"]
+                        )
+                    if self.thermal_transfer is not None:
+                        self.aero_heat_flux[scenario_id][ind] = scenario_entry_dict[
+                            aero_id
+                        ]["hflux"]
+
+                else:  # unsteady
+                    if self.transfer is not None:
+                        # make sure this time index exists in the case of scenarios with different # of time steps
+                        if itime < len(self.aero_loads[scenario_id]):
+                            self.aero_loads[scenario_id][itime][
+                                3 * ind : 3 * ind + 3
+                            ] = scenario_entry_dict[aero_id]["load"]
+                    if self.thermal_transfer is not None:
+                        # make sure this time index exists in the case of scenarios with different # of time steps
+                        if itime < len(self.aero_heat_flux[scenario_id]):
+                            self.aero_heat_flux[scenario_id][itime][ind] = (
+                                scenario_entry_dict[aero_id]["hflux"]
+                            )
+
+        print(f"\tF2F - done distribute loads Time step {itime}")
 
     def _collect_aero_mesh(self, comm, root=0):
         """
@@ -1645,18 +1768,30 @@ class Body(Base):
 
         return aero_ids, aero_X
 
-    def _collect_aero_loads(self, comm, scenario, root=0):
+    def _collect_aero_loads(self, comm, scenario, itime: int = 0, root=0):
         """
         gather the aerodynamic load and heat flux from each MPI processor onto the root
         Then return the global aero ids, heat fluxes, and loads, which are later written to a file
         """
+        if itime >= scenario.steps:
+            return [], [], []
         all_aero_ids = comm.gather(self.aero_id, root=root)
         if self.transfer is not None:
-            all_aero_loads = comm.gather(self.aero_loads[scenario.id], root=root)
+            _loads = (
+                self.aero_loads[scenario.id]
+                if scenario.steady
+                else self.aero_loads[scenario.id][itime]
+            )
+            all_aero_loads = comm.gather(_loads, root=root)
         else:
             all_aero_loads = []
         if self.thermal_transfer is not None:
-            all_aero_hflux = comm.gather(self.aero_heat_flux[scenario.id], root=root)
+            _hflux = (
+                self.aero_heat_flux[scenario.id]
+                if scenario.steady
+                else self.aero_heat_flux[scenario.id][itime]
+            )
+            all_aero_hflux = comm.gather(_hflux, root=root)
         else:
             all_aero_hflux = []
 
@@ -1889,7 +2024,8 @@ class Body(Base):
         return
 
     def __str__(self):
-        line1 = f"Body (<ID> <Name>): {self.id} {self.name}"
+        line0 = f"Body (<ID> <Name>): {self.id} {self.name}"
+        line1 = f"    Analysis type: {self.analysis_type}"
         line2 = f"    Boundary: {self.boundary}"
         line3 = f"    Coupling Group: {self.group}"
         line4 = f"    Motion type: {self.motion_type}"
@@ -1897,7 +2033,7 @@ class Body(Base):
         line6 = f"    Relaxation scheme: {type(self.relaxation_scheme)}"
         line7 = f"    Shape parameterization: {type(self.shape)}"
 
-        output = (line1, line2, line3, line4, line5, line6, line7)
+        output = (line0, line1, line2, line3, line4, line5, line6, line7)
 
         return "\n".join(output)
 
