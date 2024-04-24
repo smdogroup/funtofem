@@ -22,6 +22,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
     from .fun3d_grid_interface import *
     from .fun3d_14_therm_interface import *
+    from .fun3d_AE_interface import *
 
 from .test_utils import *
 from .remote import *
