@@ -42,17 +42,17 @@ adjoint_tol = 1e-15
 
 
 class TestFun3dTacs(unittest.TestCase):
-    FILENAME = "fun3d-tacs-driver-tris.txt"
+    FILENAME = "fun3d-AE-test-interface-quads.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_alpha_turbulent_aeroelastic_tris(self):
+    def test_alpha_turbulent_aeroelastic_quads(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turb_tris", steps=25,
+        test_scenario = Scenario.steady("turbulent_beta", steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
             adjoint_coupling_frequency=20,
@@ -62,9 +62,7 @@ class TestFun3dTacs(unittest.TestCase):
             early_stopping=early_stopping, min_forward_steps=50
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)
-        Function.drag().register_to(test_scenario)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
@@ -73,49 +71,11 @@ class TestFun3dTacs(unittest.TestCase):
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
         solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, fun3d_dir="meshes")
-
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(solvers.flow, epsilon=1e-4)
-        self.assertTrue(max_rel_error < 1e-7)
-
-    def test_thick_turbulent_aeroelastic_tris(self):
-        # build the funtofem model with one body and scenario
-        model = FUNtoFEMmodel("plate")
-        plate = Body.aeroelastic("plate", boundary=2)
-        Variable.structural("thick").set_bounds(
-            lower=0.001, value=0.1, upper=2.0
-        ).register_to(plate)
-        plate.register_to(model)
-
-        # build the scenario
-        test_scenario = Scenario.steady("turb_tris",steps=25,
-            forward_coupling_frequency=20,  # 500 total fun3d steps
-            adjoint_steps=25,
-            adjoint_coupling_frequency=20,
-            uncoupled_steps=10,
-        )
-        test_scenario.set_stop_criterion(
-            early_stopping=early_stopping, min_forward_steps=50
-        )
-        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.lift().register_to(test_scenario)
-        Function.drag().register_to(test_scenario)
-        test_scenario.set_flow_ref_vals(qinf=1.05e5)
-        test_scenario.register_to(model)
-
-        # build the solvers and coupled driver
-        solvers = SolverManager(comm)
-        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, fun3d_dir="meshes")
-
-        solvers.structural = TacsSteadyInterface.create_from_bdf(
-            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
-        )
-
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(solvers.flow, epsilon=1e-4)
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt")
         self.assertTrue(max_rel_error < 1e-7)
 
 

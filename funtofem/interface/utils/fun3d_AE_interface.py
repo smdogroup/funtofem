@@ -325,7 +325,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             comm=fun3d_ae_interface.comm,
             method="complex step",
         ).write(hdl)
-        return rel_error
+        return abs(rel_error)
 
     @classmethod
     def finite_diff_test(
@@ -418,7 +418,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             comm=fun3d_ae_interface.comm,
             method="complex step",
         ).write(hdl)
-        return rel_error
+        return abs(rel_error)
 
 
     @classmethod
@@ -753,7 +753,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             comm=fun3d_ae_interface.comm,
             method="complex step",
         ).write(hdl)
-        return rel_error
+        return abs(rel_error)
 
     @classmethod
     def finite_diff_test(
@@ -848,7 +848,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             comm=fun3d_ae_interface.comm,
             method="complex step",
         ).write(hdl)
-        return rel_error
+        return abs(rel_error)
 
 
     @classmethod
