@@ -222,6 +222,9 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
     debug=global_debug_flag,
+    relaxation_scheme=AitkenRelaxationTacs(
+        theta_init=1.0, theta_min=0.25, theta_max=2.0
+    ),
 )
 
 transfer_settings = TransferSettings(npts=200)
@@ -243,12 +246,12 @@ if test_derivatives:  # test using the finite difference test
     start_time = time.time()
 
     # run the finite difference test
-    max_rel_error = TestResult.derivative_test(
+    max_rel_error = TestResult.finite_difference(
         "fun3d+tacs-ssw1",
         model=f2f_model,
         driver=f2f_driver,
         status_file="1-derivs.txt",
-        complex_mode=False,
+        central_diff=False,
         epsilon=1e-4,
     )
 

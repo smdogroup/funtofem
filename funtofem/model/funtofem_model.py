@@ -1031,7 +1031,7 @@ class FUNtoFEMmodel(object):
 
         # make a workdirectory for saving the funtofem states
         work_dir = os.path.join(os.getcwd(), self.name)
-        if not os.path.exists(work_dir) and comm.rank == 0:
+        if comm.rank == 0 and not os.path.exists(work_dir):
             os.mkdir(work_dir)
 
         comm.Barrier()

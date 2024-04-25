@@ -1420,6 +1420,8 @@ class Body(Base):
         Perform Aitken relaxation for the displacements set in the
         """
 
+        pass
+
         # If Aitken relaxation is turned off, skip this
         if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
@@ -1540,6 +1542,7 @@ class Body(Base):
         return
 
     def aitken_adjoint_relax(self, comm, scenario, tol=1e-16):
+        pass
         # If Aitken relaxation is turned off, skip this
         if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
