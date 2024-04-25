@@ -137,6 +137,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                 # iterate which skips force and just does grid deformation (don't use thermal coupling here)
                 self.comm.Barrier()
                 self.fun3d_flow.iterate()
+            self._last_forward_step = step+1
 
             for ibody, body in enumerate(self.model.bodies, 1):
                 # Compute the aerodynamic nodes on the body
@@ -206,9 +207,10 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                     )
 
             for step in range(scenario.adjoint_steps):
-
                 self.comm.Barrier()
                 self.fun3d_adjoint.iterate(step+1)
+
+            self._last_adjoint_step = step+1
 
             for ibody, body in enumerate(self.model.bodies, 1):
                 # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
@@ -301,10 +303,15 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
 
         rel_error = (adj_product - cmplx_product) / cmplx_product
 
-        print(f"Fun3d 13 Interface AE ajp test")
-        print(f"\tadj product = {adj_product}")
-        print(f"\tcmplx product = {cmplx_product}")
-        print(f"\trel error = {rel_error}")
+        adj_product = adj_product.real
+        cmplx_product = cmplx_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcmplx product = {cmplx_product}")
+            print(f"\trel error = {rel_error}")
 
         # run the complex step test
         func_name = model.get_functions()[0].name
@@ -340,7 +347,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             ua[2::3] += 0.01
 
             ua0 = ua * 1.0
-            lamL = -aero_loads_ajp
+            lamL = aero_loads_ajp
 
             # set lamL to a random value
             lamL[:, :] = np.random.rand((3 * na), nf)[:, :]
@@ -371,14 +378,14 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             aero_disps = body.get_aero_disps(scenario)
             aero_disps[:] = ua0[:] + duads[:] * epsilon
         fun3d_ae_interface.solve_forward()
-        f_loads = body.get_aero_loads(scenario)
+        f_loads = body.get_aero_loads(scenario) * 1.0
 
         if na != 0:
             # forward analysis loads(ua-dua/ds*h)
             aero_disps = body.get_aero_disps(scenario)
             aero_disps[:] = ua0[:] - duads[:] * epsilon
         fun3d_ae_interface.solve_forward()
-        i_loads = body.get_aero_loads(scenario)
+        i_loads = body.get_aero_loads(scenario) * 1.0
 
         if na != 0:
             fd_product = np.dot((f_loads - i_loads) / 2.0 / epsilon, lamL[:, 0])
@@ -389,10 +396,15 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
 
         rel_error = (adj_product - fd_product) / fd_product
 
-        print(f"Fun3d 13 Interface AE ajp test")
-        print(f"\tadj product = {adj_product}")
-        print(f"\tcentral diff product = {fd_product}")
-        print(f"\trel error = {rel_error}")
+        adj_product = adj_product.real
+        fd_product = fd_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcentral diff product = {fd_product}")
+            print(f"\trel error = {rel_error}")
 
         # run the complex step test
         func_name = model.get_functions()[0].name
@@ -544,6 +556,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                 # iterate which skips force and just does grid deformation (don't use thermal coupling here)
                 self.fun3d_flow.iterate()
 
+            self._last_forward_step = step+1
+
             for ibody, body in enumerate(self.model.bodies, 1):
                 # Compute the aerodynamic nodes on the body
                 aero_loads = body.get_aero_loads(scenario)
@@ -623,6 +637,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             self.comm.Barrier()
             for step in range(scenario.adjoint_steps * scenario.adjoint_coupling_frequency):
                 self.fun3d_adjoint.iterate(step+1)
+            
+            self._last_adjoint_step = step+1
 
             for ibody, body in enumerate(self.model.bodies, 1):
                 # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
@@ -715,10 +731,15 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         rel_error = (adj_product - cmplx_product) / cmplx_product
 
-        print(f"Fun3d 13 Interface AE ajp test")
-        print(f"\tadj product = {adj_product}")
-        print(f"\tcmplx product = {cmplx_product}")
-        print(f"\trel error = {rel_error}")
+        adj_product = adj_product.real
+        cmplx_product = cmplx_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcmplx product = {cmplx_product}")
+            print(f"\trel error = {rel_error}")
 
         # run the complex step test
         func_name = model.get_functions()[0].name
@@ -754,7 +775,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             ua[2::3] += 0.01
 
             ua0 = ua * 1.0
-            lamL = -aero_loads_ajp
+            lamL = aero_loads_ajp
 
             # set lamL to a random value
             lamL[:, :] = np.random.rand((3 * na), nf)[:, :]
@@ -785,14 +806,16 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             aero_disps = body.get_aero_disps(scenario)
             aero_disps[:] = ua0[:] + duads[:] * epsilon
         fun3d_ae_interface.solve_forward()
-        f_loads = body.get_aero_loads(scenario)
+        f_loads = body.get_aero_loads(scenario) * 1.0
 
         if na != 0:
             # forward analysis loads(ua-dua/ds*h)
             aero_disps = body.get_aero_disps(scenario)
             aero_disps[:] = ua0[:] - duads[:] * epsilon
         fun3d_ae_interface.solve_forward()
-        i_loads = body.get_aero_loads(scenario)
+        i_loads = body.get_aero_loads(scenario) * 1.0
+
+
 
         if na != 0:
             fd_product = np.dot((f_loads - i_loads) / 2.0 / epsilon, lamL[:, 0])
@@ -803,10 +826,15 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         rel_error = (adj_product - fd_product) / fd_product
 
-        print(f"Fun3d 13 Interface AE ajp test")
-        print(f"\tadj product = {adj_product}")
-        print(f"\tcentral diff product = {fd_product}")
-        print(f"\trel error = {rel_error}")
+        adj_product = adj_product.real
+        fd_product = fd_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcentral diff product = {fd_product}")
+            print(f"\trel error = {rel_error}")
 
         # run the complex step test
         func_name = model.get_functions()[0].name

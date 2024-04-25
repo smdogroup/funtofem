@@ -151,7 +151,7 @@ cruise = Scenario.steady(
     uncoupled_steps=200,
     steps=50,
     forward_coupling_frequency=10,  # 500 total fun3d steps
-    adjoint_steps=50,
+    adjoint_steps=100,
     adjoint_coupling_frequency=10,  # 3000 total adjoint steps
 )
 
