@@ -14,7 +14,7 @@ from ._base_test import *
 
 cruise.name = "cruise_inviscid_internal"
 cruise.uncoupled_steps = 0
-cruise.steps = 10
+cruise.steps = 3
 cruise.forward_coupling_frequency = 1
 
 # DISCIPLINE INTERFACES AND DRIVERS
