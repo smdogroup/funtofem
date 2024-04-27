@@ -27,7 +27,7 @@ solvers.flow = Fun3d14GridInterface(
     fun3d_dir="cfd",
 )
 
-max_rel_error = Fun3d14GridInterface.finite_diff_test_flow_states(
+max_rel_error = Fun3d14GridInterface.finite_diff_test(
     solvers.flow, epsilon=1e-4, filename="results/grid_deformation.txt"
 )
 if comm.rank == 0:
