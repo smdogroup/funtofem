@@ -20,12 +20,11 @@ solvers.flow = Fun3d14AeroelasticTestInterface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
+    test_flow_states=True,
 )
 
 max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
-    solvers.flow, 
-    epsilon=1e-4,
-    filename="results/flow_states.txt"
+    solvers.flow, epsilon=1e-4, filename="results/flow_states.txt"
 )
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")

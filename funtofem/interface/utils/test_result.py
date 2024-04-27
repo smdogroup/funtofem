@@ -6,6 +6,7 @@ __all__ = [
 import numpy as np
 import os
 
+
 class TestResult:
     def __init__(
         self,

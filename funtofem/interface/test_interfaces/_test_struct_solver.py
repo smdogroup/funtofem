@@ -1,6 +1,4 @@
-__all__ = [
-    "TestStructuralSolver"
-]
+__all__ = ["TestStructuralSolver"]
 
 import numpy as np
 from funtofem import TransferScheme

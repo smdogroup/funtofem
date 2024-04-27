@@ -437,6 +437,7 @@ class TestAerodynamicSolver(SolverInterface):
     def post_adjoint(self, scenario, bodies):
         pass
 
+
 class NullAerodynamicSolver(SolverInterface):
     def __init__(self, comm, model, auto_copy=False):
         """

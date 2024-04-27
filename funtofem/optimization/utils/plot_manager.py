@@ -75,7 +75,7 @@ class PlotManager:
         self.hist_dict_list = hist_dict_list
         self.functions = []  # funtofem functions objects
         self.constr_dicts = []
-        self.absolute_value = [] # absolute value functions
+        self.absolute_value = []  # absolute value functions
 
     def include(self, func):
         self.functions += [func]

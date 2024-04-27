@@ -171,6 +171,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 2e-3)
 
+
 if __name__ == "__main__":
     # open and close the file to reset it
     if comm.rank == 0:

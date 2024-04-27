@@ -52,7 +52,9 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turb_tris", steps=25,
+        test_scenario = Scenario.steady(
+            "turb_tris",
+            steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
             adjoint_coupling_frequency=20,
@@ -108,7 +110,9 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turb_tris",steps=25,
+        test_scenario = Scenario.steady(
+            "turb_tris",
+            steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
             adjoint_coupling_frequency=20,

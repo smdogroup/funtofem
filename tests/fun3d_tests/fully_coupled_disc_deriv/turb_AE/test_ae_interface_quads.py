@@ -52,7 +52,9 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent_beta", steps=25,
+        test_scenario = Scenario.steady(
+            "turbulent_beta",
+            steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
             adjoint_coupling_frequency=20,
@@ -75,7 +77,9 @@ class TestFun3dTacs(unittest.TestCase):
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt")
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(
+            solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt"
+        )
         self.assertTrue(max_rel_error < 1e-7)
 
 

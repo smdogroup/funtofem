@@ -72,7 +72,6 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # <----------------------------------------------------
 
 wing = Body.aeroelastic("wing", boundary=2)
-# wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -147,8 +146,8 @@ cruise.set_stop_criterion(
     early_stopping=True,
     min_forward_steps=30,
     min_adjoint_steps=20,
-    post_tight_forward_steps=0, #100
-    post_tight_adjoint_steps=0, #100
+    post_tight_forward_steps=0,  # 100
+    post_tight_adjoint_steps=0,  # 100
 )
 
 mass = Function.mass().optimize(

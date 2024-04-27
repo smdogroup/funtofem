@@ -22,9 +22,7 @@ solvers.flow = Fun3d14AeroelasticTestInterface(
 )
 
 max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
-    solvers.flow, 
-    epsilon=1e-4,
-    filename="results/aero_loads.txt"
+    solvers.flow, epsilon=1e-4, filename="results/aero_loads.txt"
 )
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")

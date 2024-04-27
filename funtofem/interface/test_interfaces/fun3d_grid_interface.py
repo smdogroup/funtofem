@@ -589,7 +589,11 @@ class Fun3d14GridInterface(Fun3dInterface):
 
     @classmethod
     def finite_diff_test(
-        cls, fun3d_grid_interface, filename="fun3d_14_grid_deformation.txt", scale=0.001, epsilon=1e-4
+        cls,
+        fun3d_grid_interface,
+        filename="fun3d_14_grid_deformation.txt",
+        scale=0.001,
+        epsilon=1e-4,
     ):
         assert isinstance(fun3d_grid_interface, cls)
         # get the dimensions of surf and volume grid from first interface

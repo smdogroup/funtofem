@@ -79,11 +79,11 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # <----------------------------------------------------
 
 wing = Body.aeroelastic("wing", boundary=2)
-#wing.relaxation(
+# wing.relaxation(
 #    AitkenRelaxation(
 #        theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
 #    )
-#)
+# )
 # wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
@@ -172,7 +172,7 @@ lift = Function.lift().optimize(scale=1.0, objective=False, plot=True, plot_name
 # ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
 #     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 # )
-cruise.include(lift)#.include(ksfailure).include(mass)
+cruise.include(lift)  # .include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -222,6 +222,8 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
     debug=global_debug_flag,
 )
 
-max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(solvers.flow, epsilon=1e-4)
+max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(
+    solvers.flow, epsilon=1e-4
+)
 if com.rank == 0:
     print(f"max rel error = {max_rel_error}")
