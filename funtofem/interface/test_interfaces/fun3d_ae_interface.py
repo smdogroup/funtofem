@@ -668,6 +668,104 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                 scenario, self.model.bodies
             )
         return
+    
+    @classmethod
+    def finite_diff_test_flow_states(
+        cls, fun3d_ae_interface, epsilon=1e-4, filename="fun3d_AE_adjoint.txt"
+    ):
+        """test the vector function of aero loads: fA(uA) from the displacements and the associated adjoints"""
+
+        assert isinstance(fun3d_ae_interface, cls)
+        model = fun3d_ae_interface.model
+        body = model.bodies[0]
+        scenario = model.scenarios[0]
+        na = body.get_num_aero_nodes()
+        nvol = body.get_
+        nf = scenario.count_adjoint_functions()
+
+        duads = np.random.rand(3 * na)
+        aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+        print(na)
+        if na != 0:
+            ua = body.get_aero_disps(scenario)
+            # deform the whole mesh up by +0.01 in the z direction
+            ua[2::3] += 0.01
+
+            ua0 = ua * 1.0
+            lamL = aero_loads_ajp
+
+            # set lamL to a random value
+            lamL[:, :] = np.random.rand((3 * na), nf)[:, :]
+
+        dtype = TransferScheme.dtype
+        adj_product = None
+        fd_product = None
+
+        # forward analysis loads(disps)
+        fun3d_ae_interface.solve_forward()
+
+        # adjoint analysis on loads(disps), input load adjoint
+        fun3d_ae_interface.solve_adjoint()
+        lamD = body.get_aero_disps_ajp(scenario)
+
+        if na != 0:
+            adj_product = np.dot(lamD[:, 0], duads)
+        else:
+            adj_product = 0.0
+
+        # then sum across all processes
+        adj_product = fun3d_ae_interface.comm.allreduce(adj_product)
+
+        # start FD computation
+
+        if na != 0:
+            # forward analysis loads(ua+dua/ds*h)
+            aero_disps = body.get_aero_disps(scenario)
+            aero_disps[:] = ua0[:] + duads[:] * epsilon
+        fun3d_ae_interface.solve_forward()
+        f_loads = body.get_aero_loads(scenario) * 1.0
+
+        if na != 0:
+            # forward analysis loads(ua-dua/ds*h)
+            aero_disps = body.get_aero_disps(scenario)
+            aero_disps[:] = ua0[:] - duads[:] * epsilon
+        fun3d_ae_interface.solve_forward()
+        i_loads = body.get_aero_loads(scenario) * 1.0
+
+
+
+        if na != 0:
+            fd_product = np.dot((f_loads - i_loads) / 2.0 / epsilon, lamL[:, 0])
+        else:
+            fd_product = 0.0
+
+        fd_product = fun3d_ae_interface.comm.allreduce(fd_product)
+
+        rel_error = (adj_product - fd_product) / fd_product
+
+        adj_product = adj_product.real
+        fd_product = fd_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 14 Interface AE ajp test")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcentral diff product = {fd_product}")
+            print(f"\trel error = {rel_error}")
+
+        # run the complex step test
+        func_name = model.get_functions()[0].name
+        hdl = open(filename, "w")
+        TestResult(
+            name="fun3d_ae_test",
+            func_names=[func_name],
+            complex_TD=[fd_product],
+            adjoint_TD=[adj_product],
+            rel_error=[rel_error],
+            comm=fun3d_ae_interface.comm,
+            method="finite diff",
+        ).write(hdl)
+        return abs(rel_error)
 
     @classmethod
     def finite_diff_test_aero_loads(

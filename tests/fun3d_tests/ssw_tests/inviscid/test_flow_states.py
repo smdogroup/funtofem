@@ -11,6 +11,7 @@ import os, time
 from ._base_test import *
 
 # ---------------------------------------------------->
+cruise.name = "cruise_inviscid_flow"
 
 # DISCIPLINE INTERFACES AND DRIVERS
 # <----------------------------------------------------
