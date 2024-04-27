@@ -26,12 +26,6 @@ nprocs_tacs = 8
 
 global_debug_flag = False
 
-# Derivative test stuff
-FILENAME = "complex-step.txt"
-FILEPATH = os.path.join(base_dir, FILENAME)
-
-aitken_file = os.path.join(base_dir, "aitken-hist.txt")
-
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
@@ -77,11 +71,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=2).relaxation(
-    AitkenRelaxation(
-        theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
-    )
-)
+wing = Body.aeroelastic("wing", boundary=2)
 # wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
