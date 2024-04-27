@@ -26,7 +26,7 @@ import numpy as np
 import sys
 
 from funtofem import TransferScheme
-from ._solver_interface import SolverInterface
+from .._solver_interface import SolverInterface
 
 
 class PistonInterface(SolverInterface):

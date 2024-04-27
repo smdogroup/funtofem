@@ -26,7 +26,7 @@ import numpy as np
 import os, sys, importlib
 from funtofem import TransferScheme
 from ..fun3d_interface import Fun3dInterface
-from funtofem.interface.test_solver import TestResult
+from ..utils.test_result import TestResult
 
 
 class Fun3dGridInterface(Fun3dInterface):

@@ -25,7 +25,7 @@ __all__ = ["Fun3dThermalInterface"]
 import numpy as np
 from funtofem import TransferScheme
 from ..fun3d_14_interface import Fun3d14Interface
-from funtofem.interface.test_solver import TestResult
+from ..utils.test_result import TestResult
 
 
 class Fun3dThermalInterface(Fun3d14Interface):
