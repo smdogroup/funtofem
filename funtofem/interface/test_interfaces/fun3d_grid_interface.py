@@ -26,6 +26,7 @@ import numpy as np
 import os, sys, importlib
 from funtofem import TransferScheme
 from ..fun3d_interface import Fun3dInterface
+from ..fun3d_14_interface import Fun3d14Interface
 from ..utils.test_result import TestResult
 
 
