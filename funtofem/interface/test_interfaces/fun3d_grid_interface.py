@@ -416,6 +416,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
 
         # state variables related to grid deformation
         for body in self.model.bodies:
+            print(f"initialize transfer on rank {self.comm.rank}", flush=True)
             # initialize transfer schemes for the body classes so the elastic variables will be there
             body.initialize_transfer(
                 self.comm,
@@ -426,6 +427,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 transfer_settings=None,
             )
 
+            print(f"initialize variables, last part of __init__ on rank {self.comm.rank}", flush=True)
             for scenario in self.model.scenarios:
                 body.initialize_variables(
                     scenario
