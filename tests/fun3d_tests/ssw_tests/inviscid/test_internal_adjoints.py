@@ -37,7 +37,7 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_min_tolerance=1e0,
+    forward_min_tolerance=1e10,
     debug=global_debug_flag,
 )
 

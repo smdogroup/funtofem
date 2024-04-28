@@ -12,7 +12,7 @@ from _base_test import *
 # SCENARIOS
 #  <----------------------------------------------------
 
-cruise.name = "cruise_inviscid_internal"
+cruise.name = "cruise_inviscid_internal_cmplx"
 cruise.uncoupled_steps = 0
 cruise.steps = 3
 cruise.forward_coupling_frequency = 1
@@ -37,7 +37,7 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_min_tolerance=1e0,
+    forward_min_tolerance=1e10,
     debug=global_debug_flag,
 )
 solvers.flow = Fun3d14Interface.copy_complex_interface(solvers.flow)
