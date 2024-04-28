@@ -372,11 +372,10 @@ class Fun3d14GridInterface(Fun3d14Interface):
         self,
         comm,
         model,
-        complex_mode=False,
-        flow_dt=1.0,
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
+        complex_mode=False,
     ):
         """
         The instantiation of the FUN3D Grid interface class will populate the model with the aerodynamic surface
@@ -406,13 +405,13 @@ class Fun3d14GridInterface(Fun3d14Interface):
             comm=comm,
             model=model,
             complex_mode=complex_mode,
-            flow_dt=flow_dt,
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
         )
 
         # get the number of grid volume coordinates
+        print(f"extract num volume nodes on rank {self.comm.rank}", flush=True)
         self.nvol = self.fun3d_flow.extract_num_volume_nodes()
 
         # state variables related to grid deformation
@@ -431,6 +430,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 body.initialize_variables(
                     scenario
                 )  # need to initialize variables so that we can write data for the tests (before solve_forward)
+                body.initialize_adjoint_variables(scenario)
                 assert scenario.steady
                 body._aero_volume_coords = {}
                 body._grid_volume_ajp = {}
@@ -441,14 +441,19 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 body._grid_volume_ajp[scenario.id] = np.zeros(
                     (3 * self.nvol, nf), dtype=TransferScheme.dtype
                 )  # 1 func for now
+        print(f"done with __init__ on rank {self.comm.rank}")
         return
 
     def solve_forward(self):
         """forward grid deformation analysis of FUN3D"""
+        print(f"F2F: solve_forward on rank {self.comm.rank}")
         for scenario in self.model.scenarios:
             # pre analysis setup
+            print(f"set variables on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).set_variables(scenario, self.model.bodies)
+            print(f"set functions on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).set_functions(scenario, self.model.bodies)
+            print(f"initialize on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).initialize(scenario, self.model.bodies)
 
             """forward analysis starts here"""
@@ -464,12 +469,15 @@ class Fun3d14GridInterface(Fun3d14Interface):
                     dx = dx if self.complex_mode else dx.astype(np.double)
                     dy = dy if self.complex_mode else dy.astype(np.double)
                     dz = dz if self.complex_mode else dz.astype(np.double)
+                    print(f"input deformation on rank {self.comm.rank}")
                     self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # iterate which skips force and just does grid deformation (don't use thermal coupling here)
+            print(f"iterate on rank {self.comm.rank}")
             self.fun3d_flow.iterate()
 
             # receive the deformation in the volume
+            print(f"extract grid coordinates on rank {self.comm.rank}")
             gridx, gridy, gridz = self.fun3d_flow.extract_grid_coordinates()
             grid_coords = body._aero_volume_coords[scenario.id]
             grid_coords[0::3] = gridx[:]
@@ -477,17 +485,20 @@ class Fun3d14GridInterface(Fun3d14Interface):
             grid_coords[2::3] = gridz[:]
 
             # post analysis in fun3d interface
+            print(f"post() on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).post(scenario, self.model.bodies)
         return
 
     def solve_adjoint(self):
         """adjoint grid deformation analysis in FUN3D"""
+        print(f"F2F: solve_adjoint on rank {self.comm.rank}")
         for scenario in self.model.scenarios:
             # pre analysis setup
+            print(f"adjoint set variables on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).set_variables(scenario, self.model.bodies)
+            print(f"adjoint set functions on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).set_functions(scenario, self.model.bodies)
-            for body in self.model.bodies:
-                body.initialize_adjoint_variables(scenario)
+            print(f"adjoint initialize on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).initialize_adjoint(
                 scenario, self.model.bodies
             )
@@ -517,11 +528,14 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 lam_y = np.asfortranarray(lam_y)
                 lam_z = np.asfortranarray(lam_z)
 
+                print(f"adjoint input grid volume adjoint on rank {self.comm.rank}")
+
                 self.fun3d_adjoint.input_grid_volume_adjoint(
                     lam_x, lam_y, lam_z, n=self.nvol, nfunctions=1
                 )
 
             # run the adjoint analysis
+            print(f"adjoint iterate on rank {self.comm.rank}")
             self.fun3d_adjoint.iterate(1)
 
             # extract the surface aero displacements adjoint
@@ -530,6 +544,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 aero_disps_ajp = body.get_aero_disps_ajp(scenario)
                 aero_nnodes = body.get_num_aero_nodes()
                 if aero_disps_ajp is not None and aero_nnodes > 0:
+                    print(f"adjoint extract grid adjoint product on rank {self.comm.rank}")
                     (
                         lam_x,
                         lam_y,
@@ -544,6 +559,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                         aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
 
             # call post adjoint
+            print(f"adjoint post() on rank {self.comm.rank}")
             super(Fun3d14GridInterface, self).post_adjoint(scenario, self.model.bodies)
         return
 
