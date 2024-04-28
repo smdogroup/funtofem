@@ -824,8 +824,29 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         scenario = model.scenarios[0]
         na = body.get_num_aero_nodes()
         nf = scenario.count_adjoint_functions()
+        comm = fun3d_ae_interface.comm
 
-        duads = np.random.rand(3 * na)
+        # gather the list of na and sum of na
+        global_na = comm.reduce(na, root=0)
+        na_list = comm.gather(na, root=0)
+        # randomize the vectors on root proc and scatter them
+        # so serial and MPI are equivalent
+        if comm.rank == 0:
+            glob_duads = np.random.rand(3*global_na)
+            glob_lamL = np.random.rand(3*global_na,nf)
+            duads_proc_list = []
+            lamL_proc_list = []
+            start = 0
+            for rank,_na in enumerate(na_list):
+                duads_proc_list += [glob_duads[3*start:3*(start+_na)]]
+                lamL_proc_list += [glob_lamL[3*start:3*(start+_na), :]]
+                start += _na
+        else:
+            duads_proc_list = None
+            lamL_proc_list = None
+        duads = comm.scatter(duads_proc_list, root=0)
+        lamL = comm.scatter(lamL_proc_list, root=0)
+
         aero_loads_ajp = body.get_aero_loads_ajp(scenario)
         print(na)
         if na != 0:
@@ -834,10 +855,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             ua[2::3] += 0.01
 
             ua0 = ua * 1.0
-            lamL = aero_loads_ajp
-
-            # set lamL to a random value
-            lamL[:, :] = np.random.rand((3 * na), nf)[:, :]
+            aero_loads_ajp[:,:] = lamL[:,:] * 1.0
 
         dtype = TransferScheme.dtype
         adj_product = None
