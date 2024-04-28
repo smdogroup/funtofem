@@ -401,7 +401,7 @@ class Fun3d14GridInterface(Fun3dInterface):
         """
 
         # construct the super class Fun3dInterface
-        super(Fun3dGridInterface, self).__init__(
+        super(Fun3d14GridInterface, self).__init__(
             comm=comm,
             model=model,
             complex_mode=complex_mode,
@@ -446,9 +446,9 @@ class Fun3d14GridInterface(Fun3dInterface):
         """forward grid deformation analysis of FUN3D"""
         for scenario in self.model.scenarios:
             # pre analysis setup
-            super(Fun3dGridInterface, self).set_variables(scenario, self.model.bodies)
-            super(Fun3dGridInterface, self).set_functions(scenario, self.model.bodies)
-            super(Fun3dGridInterface, self).initialize(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).set_variables(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).set_functions(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).initialize(scenario, self.model.bodies)
 
             """forward analysis starts here"""
             # first input the deformation on the surface
@@ -476,18 +476,18 @@ class Fun3d14GridInterface(Fun3dInterface):
             grid_coords[2::3] = gridz[:]
 
             # post analysis in fun3d interface
-            super(Fun3dGridInterface, self).post(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).post(scenario, self.model.bodies)
         return
 
     def solve_adjoint(self):
         """adjoint grid deformation analysis in FUN3D"""
         for scenario in self.model.scenarios:
             # pre analysis setup
-            super(Fun3dGridInterface, self).set_variables(scenario, self.model.bodies)
-            super(Fun3dGridInterface, self).set_functions(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).set_variables(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).set_functions(scenario, self.model.bodies)
             for body in self.model.bodies:
                 body.initialize_adjoint_variables(scenario)
-            super(Fun3dGridInterface, self).initialize_adjoint(
+            super(Fun3d14GridInterface, self).initialize_adjoint(
                 scenario, self.model.bodies
             )
 
@@ -543,7 +543,7 @@ class Fun3d14GridInterface(Fun3dInterface):
                         aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
 
             # call post adjoint
-            super(Fun3dGridInterface, self).post_adjoint(scenario, self.model.bodies)
+            super(Fun3d14GridInterface, self).post_adjoint(scenario, self.model.bodies)
         return
 
     def input_aero_disps(self, array, body=None, scenario=None):
