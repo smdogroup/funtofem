@@ -28,7 +28,7 @@ solvers.flow = Fun3d14GridInterface(
 )
 
 max_rel_error = Fun3d14GridInterface.finite_diff_test(
-    solvers.flow, epsilon=1e-4, filename="results/grid_deformation.txt"
+    solvers.flow, epsilon=1e-4, filename="results/cmplx_grid_deformation.txt"
 )
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")
