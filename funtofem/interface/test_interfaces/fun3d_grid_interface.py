@@ -355,7 +355,7 @@ class Fun3dGridInterface(Fun3dInterface):
         )
 
 
-class Fun3d14GridInterface(Fun3dInterface):
+class Fun3d14GridInterface(Fun3d14Interface):
     """
     FUN3D Grid Deformation interface for unit testing of FUN3D grid deformation.
     Uses namelist argument funtofem_grid_test=.true. in the namelist under massoud
