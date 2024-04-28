@@ -8,7 +8,7 @@ from mpi4py import MPI
 import os, time
 
 # import from the base test
-from ._base_test import *
+from _base_test import *
 
 # ---------------------------------------------------->
 

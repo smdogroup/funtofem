@@ -376,6 +376,8 @@ class Fun3d14GridInterface(Fun3d14Interface):
         forward_options=None,
         adjoint_options=None,
         complex_mode=False,
+        forward_min_tolerance=1e10,
+        adjoint_min_tolerance=1e10,
     ):
         """
         The instantiation of the FUN3D Grid interface class will populate the model with the aerodynamic surface
@@ -408,15 +410,17 @@ class Fun3d14GridInterface(Fun3d14Interface):
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
+            forward_min_tolerance=forward_min_tolerance,
+            adjoint_min_tolerance=adjoint_min_tolerance
         )
 
         # get the number of grid volume coordinates
-        print(f"extract num volume nodes on rank {self.comm.rank}", flush=True)
+        #print(f"extract num volume nodes on rank {self.comm.rank}", flush=True)
         self.nvol = self.fun3d_flow.extract_num_volume_nodes()
 
         # state variables related to grid deformation
         for body in self.model.bodies:
-            print(f"initialize transfer on rank {self.comm.rank}", flush=True)
+            #print(f"initialize transfer on rank {self.comm.rank}", flush=True)
             # initialize transfer schemes for the body classes so the elastic variables will be there
             body.initialize_transfer(
                 self.comm,
@@ -427,7 +431,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 transfer_settings=None,
             )
 
-            print(f"initialize variables, last part of __init__ on rank {self.comm.rank}", flush=True)
+            #print(f"initialize variables, last part of __init__ on rank {self.comm.rank}", flush=True)
             for scenario in self.model.scenarios:
                 body.initialize_variables(
                     scenario
@@ -443,7 +447,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 body._grid_volume_ajp[scenario.id] = np.zeros(
                     (3 * self.nvol, nf), dtype=TransferScheme.dtype
                 )  # 1 func for now
-        print(f"done with __init__ on rank {self.comm.rank}")
+        #print(f"done with __init__ on rank {self.comm.rank}")
         return
 
     def solve_forward(self):
@@ -533,7 +537,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 print(f"adjoint input grid volume adjoint on rank {self.comm.rank}")
 
                 self.fun3d_adjoint.input_grid_volume_adjoint(
-                    lam_x, lam_y, lam_z, n=self.nvol, nfunctions=1
+                    lam_x, lam_y, lam_z
                 )
 
             # run the adjoint analysis
@@ -649,13 +653,13 @@ class Fun3d14GridInterface(Fun3d14Interface):
         pert_disps = rand_disps + p * h
         fun3d_grid_interface.input_aero_disps(array=pert_disps)
         fun3d_grid_interface.solve_forward()
-        R_xG_output = fun3d_grid_interface.extract_grid_coordinates()
+        R_xG_output = fun3d_grid_interface.extract_grid_coordinates() * 1.0
 
         # compute f(x-ph)
         pert_disps = rand_disps - p * h
         fun3d_grid_interface.input_aero_disps(array=pert_disps)
         fun3d_grid_interface.solve_forward()
-        L_xG_output = fun3d_grid_interface.extract_grid_coordinates()
+        L_xG_output = fun3d_grid_interface.extract_grid_coordinates() * 1.0
 
         dxGds = (R_xG_output - L_xG_output) / 2.0 / h
         if nsurf > 0 and nvol > 0:
