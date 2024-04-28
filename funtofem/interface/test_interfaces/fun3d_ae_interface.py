@@ -829,6 +829,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         # gather the list of na and sum of na
         global_na = comm.reduce(na, root=0)
         na_list = comm.gather(na, root=0)
+        print(f"global na = {global_na}")
+        print(f"na list = {na_list}")
         # randomize the vectors on root proc and scatter them
         # so serial and MPI are equivalent
         if comm.rank == 0:
@@ -845,7 +847,9 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             duads_proc_list = None
             lamL_proc_list = None
         duads = comm.scatter(duads_proc_list, root=0)
+        print(f"duads on rank {comm.rank} = {duads}")
         lamL = comm.scatter(lamL_proc_list, root=0)
+        print(f"lamL on rank {comm.rank} = {duads}")
 
         aero_loads_ajp = body.get_aero_loads_ajp(scenario)
         print(na)
@@ -873,6 +877,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         else:
             adj_product = 0.0
 
+        print(f"adj product on rank {comm.rank} = {adj_product}")
+
         # then sum across all processes
         adj_product = fun3d_ae_interface.comm.allreduce(adj_product)
 
@@ -896,6 +902,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             fd_product = np.dot((f_loads - i_loads) / 2.0 / epsilon, lamL[:, 0])
         else:
             fd_product = 0.0
+
+        print(f"fd product on rank {comm.rank} = {adj_product}")
 
         fd_product = fun3d_ae_interface.comm.allreduce(fd_product)
 
