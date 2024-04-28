@@ -689,3 +689,99 @@ class Fun3d14GridInterface(Fun3d14Interface):
             comm=fun3d_grid_interface.comm,
         ).write(hdl)
         return rel_error
+    
+    @classmethod
+    def make_complex_interface(cls, fun3d_grid_interface):
+        """
+        copy used for derivative testing
+        """
+
+        # unload and reload fun3d Flow, Adjoint as complex versions
+        os.environ["CMPLX_MODE"] = "1"
+        importlib.reload(sys.modules["fun3d.interface"])
+
+        return cls(
+            comm=fun3d_grid_interface.comm,
+            model=fun3d_grid_interface.model,
+            complex_mode=True,
+            fun3d_dir=fun3d_grid_interface.fun3d_dir,
+        )
+    
+    @classmethod
+    def complex_step_test(
+        cls,
+        fun3d_grid_interface,
+        filename="fun3d_14_grid_deformation.txt",
+        scale=0.001,
+        epsilon=1e-30,
+    ):
+        assert isinstance(fun3d_grid_interface, cls)
+        # get the dimensions of surf and volume grid from first interface
+        nsurf = fun3d_grid_interface.model.bodies[0].get_num_aero_nodes()
+        nvol = fun3d_grid_interface.nvol
+
+        # random real aero disps (not for perturbations)
+        rand_disps = scale * np.random.rand(3 * nsurf)
+        # random contravariant duA/ds test vector
+        p = np.random.rand(3 * nsurf)
+        # random covariant dL/dxG test vector
+        q = scale * np.random.rand(3 * nvol)
+
+        # build a real interface and do the adjoint method
+        fun3d_grid_interface.input_aero_disps(array=rand_disps)
+        fun3d_grid_interface.solve_forward()
+        fun3d_grid_interface.input_volume_grid_adjoint(array=q)
+        fun3d_grid_interface.solve_adjoint()
+        surface_grid_ajp = fun3d_grid_interface.extract_surface_grid_adjoint()[:, 0]
+
+        if nsurf > 0 and nvol > 0:
+            local_adjoint_TD = np.zeros(1)
+            local_adjoint_TD[0] = np.sum(p * surface_grid_ajp)
+        else:
+            local_adjoint_TD = np.zeros(1)
+        # add across all procs
+        comm = fun3d_grid_interface.comm
+        adjoint_TD = np.zeros(1)
+        comm.Reduce(local_adjoint_TD, adjoint_TD, root=0)
+        adjoint_TD = comm.bcast(adjoint_TD, root=0)
+
+        # compute f(x+ph*1j)
+        fun3d_grid_interface = cls.make_complex_interface(fun3d_grid_interface)
+        h = epsilon * 1.0
+        pert_disps = rand_disps + p * h * 1j
+        fun3d_grid_interface.input_aero_disps(array=pert_disps)
+        fun3d_grid_interface.solve_forward()
+        xG_output = fun3d_grid_interface.extract_grid_coordinates()
+
+        dxGds = np.imag(xG_output) / h
+        if nsurf > 0 and nvol > 0:
+            local_FD_TD = np.zeros(1)
+            local_FD_TD[0] = np.sum(q * dxGds)
+        else:
+            local_FD_TD = np.zeros(1)
+        FD_TD = np.zeros(1)
+
+        # add across all procs
+        comm.Reduce(local_FD_TD, FD_TD, root=0)
+        FD_TD = comm.bcast(FD_TD, root=0)
+
+        rel_error = (adjoint_TD[0] - FD_TD[0]) / FD_TD[0]
+
+        # report test result
+        if comm.rank == 0:
+            print(f"Adjoint TD = {adjoint_TD}")
+            print(f"Finite diff step TD = {FD_TD}")
+            print(f"rel error = {rel_error}")
+
+        # run the complex step test
+        func_name = fun3d_grid_interface.model.get_functions()[0].name
+        hdl = open(filename, "w")
+        TestResult(
+            name="fun3d_grid_deformation",
+            func_names=[func_name],
+            complex_TD=[FD_TD],
+            adjoint_TD=[adjoint_TD],
+            rel_error=[rel_error],
+            comm=fun3d_grid_interface.comm,
+        ).write(hdl)
+        return rel_error

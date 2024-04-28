@@ -947,12 +947,12 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         return cls(
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
+            complex_mode=True,
             fun3d_dir=fun3d_interface.fun3d_dir,
-            auto_coords=fun3d_interface.auto_coords,
         )
 
     @classmethod
-    def complex_step_test(
+    def complex_step_test_aero_loads(
         cls, fun3d_ae_interface, epsilon=1e-30, filename="fun3d_AE_adjoint.txt"
     ):
         assert isinstance(fun3d_ae_interface, cls)
@@ -1018,7 +1018,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         rel_error = rel_error.real
 
         if fun3d_ae_interface.comm.rank == 0:
-            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"Fun3d 14.0.2 Interface AE ajp test")
             print(f"\tadj product = {adj_product}")
             print(f"\tcmplx product = {cmplx_product}")
             print(f"\trel error = {rel_error}")
