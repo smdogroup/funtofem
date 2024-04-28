@@ -406,7 +406,6 @@ class Fun3d14GridInterface(Fun3d14Interface):
             comm=comm,
             model=model,
             complex_mode=complex_mode,
-            flow_dt=flow_dt,
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
