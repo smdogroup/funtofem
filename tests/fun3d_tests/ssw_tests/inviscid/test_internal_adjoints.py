@@ -7,7 +7,7 @@ can run internally on the fun3d_flow object only. NOTE : also need to run this t
 from funtofem import *
 from mpi4py import MPI
 import os, time
-from ._base_test import *
+from _base_test import *
 
 # SCENARIOS
 #  <----------------------------------------------------

@@ -8,7 +8,7 @@ from mpi4py import MPI
 import os, time
 
 # import the base test interface
-from ._base_test import *
+from _base_test import *
 
 # ---------------------------------------------------->
 cruise.name = "cruise_inviscid_flow"

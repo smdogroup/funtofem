@@ -682,7 +682,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                     lamq5 = np.asfortranarray(lamq5)
 
                     self.fun3d_adjoint.input_flow_adjoint(
-                        lamq1, lamq2, lamq3, lamq4, lamq5, body=ibody
+                        lamq1, lamq2, lamq3, lamq4, lamq5
                     )
 
             self.comm.Barrier()
