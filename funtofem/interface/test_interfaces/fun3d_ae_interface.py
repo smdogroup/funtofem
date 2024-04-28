@@ -849,7 +849,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         duads = comm.scatter(duads_proc_list, root=0)
         print(f"duads on rank {comm.rank} = {duads}")
         lamL = comm.scatter(lamL_proc_list, root=0)
-        print(f"lamL on rank {comm.rank} = {duads}")
+        print(f"lamL on rank {comm.rank} = {lamL}")
 
         aero_loads_ajp = body.get_aero_loads_ajp(scenario)
         print(na)
@@ -903,7 +903,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         else:
             fd_product = 0.0
 
-        print(f"fd product on rank {comm.rank} = {adj_product}")
+        print(f"fd product on rank {comm.rank} = {fd_product}")
 
         fd_product = fun3d_ae_interface.comm.allreduce(fd_product)
 
