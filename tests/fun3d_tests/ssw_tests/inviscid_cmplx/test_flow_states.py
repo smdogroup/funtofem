@@ -24,7 +24,7 @@ solvers.flow = Fun3d14AeroelasticTestInterface(
 )
 
 max_rel_error = Fun3d14AeroelasticTestInterface.complex_step_test_flow_states(
-    solvers.flow, epsilon=1e-4, filename="results/cmplx_flow_states.txt"
+    solvers.flow, epsilon=1e-30, filename="results/cmplx_flow_states.txt"
 )
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")

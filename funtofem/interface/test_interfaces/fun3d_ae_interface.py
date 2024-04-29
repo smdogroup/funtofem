@@ -662,11 +662,12 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                 # set the flow state adjoint in
                 if self.test_flow_states:
                     dtype = TransferScheme.dtype
-                    lamq1 = body._flow_ajp[0::5, :]
-                    lamq2 = body._flow_ajp[1::5, :]
-                    lamq3 = body._flow_ajp[2::5, :]
-                    lamq4 = body._flow_ajp[3::5, :]
-                    lamq5 = body._flow_ajp[4::5, :]
+                    flow_ajp = body._flow_ajp[scenario.id] * 1.0
+                    lamq1 = flow_ajp[0::5, :]
+                    lamq2 = flow_ajp[1::5, :]
+                    lamq3 = flow_ajp[2::5, :]
+                    lamq4 = flow_ajp[3::5, :]
+                    lamq5 = flow_ajp[4::5, :]
 
                     if not self.complex_mode:
                         lamq1 = lamq1.astype(np.double)
@@ -731,7 +732,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         body = model.bodies[0]
         scenario = model.scenarios[0]
         na = body.get_num_aero_nodes()
-        nvol = body.get_num_vol_nodes
+        nvol = fun3d_ae_interface.nvol
         nf = scenario.count_adjoint_functions()
 
         dtype = TransferScheme.dtype
@@ -965,7 +966,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         body = model.bodies[0]
         scenario = model.scenarios[0]
         na = body.get_num_aero_nodes()
-        nvol = body.get_num_vol_nodes
+        nvol = fun3d_ae_interface.nvol
         nf = scenario.count_adjoint_functions()
 
         dtype = TransferScheme.dtype

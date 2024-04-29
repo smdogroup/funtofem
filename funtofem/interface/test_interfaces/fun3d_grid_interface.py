@@ -475,7 +475,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                     dx = dx if self.complex_mode else dx.astype(np.double)
                     dy = dy if self.complex_mode else dy.astype(np.double)
                     dz = dz if self.complex_mode else dz.astype(np.double)
-                    print(f"input deformation on rank {self.comm.rank}")
+                    print(f"input deformation complex_mode {self.complex_mode} on rank {self.comm.rank}")
                     self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # iterate which skips force and just does grid deformation (don't use thermal coupling here)

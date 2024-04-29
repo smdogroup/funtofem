@@ -9,13 +9,13 @@ from mpi4py import MPI
 import os, time
 
 # import the base test interface
-from ._base_test import *
+from _base_test import *
 
 # ---------------------------------------------------->
 
 cruise.name = "cruise_inviscid_grid"
 cruise.uncoupled_steps = 0
-cruise.steps = 10
+cruise.steps = 2
 cruise.forward_coupling_frequency = 1
 
 # DISCIPLINE INTERFACES AND DRIVERS
@@ -27,8 +27,8 @@ solvers.flow = Fun3d14GridInterface(
     fun3d_dir="cfd",
 )
 
-max_rel_error = Fun3d14GridInterface.finite_diff_test(
-    solvers.flow, epsilon=1e-4, filename="results/cmplx_grid_deformation.txt"
+max_rel_error = Fun3d14GridInterface.complex_step_test(
+    solvers.flow, epsilon=1e-30, filename="results/cmplx_grid_deformation.txt"
 )
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")
