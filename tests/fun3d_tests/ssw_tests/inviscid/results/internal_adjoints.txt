@@ -1,0 +1,19 @@
+ F2F internal adjoint test: elastic= T , thermal= F
+ dfdq FUNtoFEM Adjoint implementation   4.167390307096230E-002
+ dfdq FUNtoFEM Complex step product     4.167390314069053E-002
+ dfdq FUNtoFEM rel error               -1.673186765347997E-009
+ dfdq FUNtoFEM Adjoint implementation  -0.163918647775706     
+ dfdq FUNtoFEM Complex step product    -0.163918647769606     
+ dfdq FUNtoFEM rel error                3.721211509073316E-011
+ dfdq FUNtoFEM Adjoint implementation  -3.224247970980941E-004
+ dfdq FUNtoFEM Complex step product    -3.224247830075910E-004
+ dfdq FUNtoFEM rel error                4.370167497190792E-008
+ dfdq FUNtoFEM Adjoint implementation   3.828649833049987E-003
+ dfdq FUNtoFEM Complex step product     3.828649832939846E-003
+ dfdq FUNtoFEM rel error                2.876771222846875E-011
+ dfdq FUNtoFEM Adjoint implementation   0.321510516412902     
+ dfdq FUNtoFEM Complex step product     0.321510516412218     
+ dfdq FUNtoFEM rel error                2.128347056462603E-012
+ dFdx FUNtoFEM Adjoint implementation  -6.700369425960417E-017
+ dFdx FUNtoFEM Complex step product     0.000000000000000E+000
+ dFdx FUNtoFEM relative error                        -Infinity

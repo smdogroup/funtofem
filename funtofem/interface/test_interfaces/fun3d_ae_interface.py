@@ -232,7 +232,95 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
         return
 
     @classmethod
-    def complex_step_test(
+    def complex_step_test_flow_states(
+        cls,
+        fun3d_ae_interface,
+        epsilon=1e-30,
+        filename="fun3d_AE_adjoint.txt",
+    ):
+        """test the vector function of aero loads: fA(uA) from the displacements and the associated adjoints"""
+
+        assert isinstance(fun3d_ae_interface, cls)
+        model = fun3d_ae_interface.model
+        body = model.bodies[0]
+        scenario = model.scenarios[0]
+        na = body.get_num_aero_nodes()
+        nvol = fun3d_ae_interface.nvol
+        nf = scenario.count_adjoint_functions()
+
+        dtype = TransferScheme.dtype
+
+        duads = np.random.rand(3 * na).astype(dtype)
+        flow_ajp = np.random.rand(5 * nvol, nf).astype(dtype)
+        body._flow_ajp[scenario.id] = flow_ajp * 1.0
+
+        if na != 0:
+            ua = body.get_aero_disps(scenario)
+            # deform the whole mesh up by +0.01 in the z direction
+            ua[2::3] += 0.01
+            ua0 = ua * 1.0
+
+        adj_product = None
+        fd_product = None
+
+        # forward analysis loads(disps)
+        fun3d_ae_interface.solve_forward()
+
+        # adjoint analysis on loads(disps), input load adjoint
+        fun3d_ae_interface.solve_adjoint()
+        lamD = body.get_aero_disps_ajp(scenario)
+
+        if na != 0:
+            adj_product = np.dot(lamD[:, 0], duads)
+        else:
+            adj_product = 0.0
+
+        # then sum across all processes
+        adj_product = fun3d_ae_interface.comm.allreduce(adj_product)
+
+        # start FD computation
+        if na != 0:
+            # forward analysis loads(ua+dua/ds*h)
+            aero_disps = body.get_aero_disps(scenario)
+            aero_disps[:] = ua0[:] + duads[:] * epsilon * 1j
+        fun3d_ae_interface.solve_forward()
+        f_flow = body._aero_flow_states[scenario.id] * 1.0
+
+        if na != 0:
+            cmplx_product = np.dot(np.imag(f_flow) / epsilon, flow_ajp[:, 0])
+        else:
+            cmplx_product = 0.0
+
+        cmplx_product = fun3d_ae_interface.comm.allreduce(cmplx_product)
+
+        rel_error = (adj_product - cmplx_product) / cmplx_product
+
+        adj_product = adj_product.real
+        cmplx_product = cmplx_product.real
+        rel_error = rel_error.real
+
+        if fun3d_ae_interface.comm.rank == 0:
+            print(f"Fun3d 14 Interface AE ajp test on flow states")
+            print(f"\tadj product = {adj_product}")
+            print(f"\tcomplex step product = {cmplx_product}")
+            print(f"\trel error = {rel_error}")
+
+        # run the complex step test
+        func_name = model.get_functions()[0].name
+        hdl = open(filename, "w")
+        TestResult(
+            name="fun3d_flow_state_test",
+            func_names=[func_name],
+            complex_TD=[cmplx_product],
+            adjoint_TD=[adj_product],
+            rel_error=[rel_error],
+            comm=fun3d_ae_interface.comm,
+            method="finite diff",
+        ).write(hdl)
+        return abs(rel_error)
+
+    @classmethod
+    def complex_step_test_aero_loads(
         cls, fun3d_ae_interface, epsilon=1e-30, filename="fun3d_AE_adjoint.txt"
     ):
         assert isinstance(fun3d_ae_interface, cls)
@@ -298,7 +386,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
         rel_error = rel_error.real
 
         if fun3d_ae_interface.comm.rank == 0:
-            print(f"Fun3d 13 Interface AE ajp test")
+            print(f"Fun3d 13.6 Interface AE ajp test")
             print(f"\tadj product = {adj_product}")
             print(f"\tcmplx product = {cmplx_product}")
             print(f"\trel error = {rel_error}")
@@ -316,6 +404,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             method="complex step",
         ).write(hdl)
         return abs(rel_error)
+
 
     @classmethod
     def finite_diff_test(
@@ -801,16 +890,19 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         # run the complex step test
         func_name = model.get_functions()[0].name
-        hdl = open(filename, "w")
-        TestResult(
-            name="fun3d_flow_state_test",
-            func_names=[func_name],
-            complex_TD=[fd_product],
-            adjoint_TD=[adj_product],
-            rel_error=[rel_error],
-            comm=fun3d_ae_interface.comm,
-            method="finite diff",
-        ).write(hdl)
+        # run the complex step test
+        func_name = model.get_functions()[0].name
+        if fun3d_ae_interface.comm.rank == 0:
+            hdl = open(filename, "w")
+            TestResult(
+                name="fun3d_ae_test_flow_states",
+                func_names=[func_name],
+                complex_TD=[fd_product],
+                adjoint_TD=[adj_product],
+                rel_error=[rel_error],
+                comm=fun3d_ae_interface.comm,
+                method="finite diff",
+            ).write(hdl)
         return abs(rel_error)
 
     @classmethod
@@ -830,8 +922,6 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         # gather the list of na and sum of na
         global_na = comm.reduce(na, root=0)
         na_list = comm.gather(na, root=0)
-        print(f"global na = {global_na}")
-        print(f"na list = {na_list}")
         # randomize the vectors on root proc and scatter them
         # so serial and MPI are equivalent
         if comm.rank == 0:
@@ -848,9 +938,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             duads_proc_list = None
             lamL_proc_list = None
         duads = comm.scatter(duads_proc_list, root=0)
-        print(f"duads on rank {comm.rank} = {duads}")
         lamL = comm.scatter(lamL_proc_list, root=0)
-        print(f"lamL on rank {comm.rank} = {lamL}")
 
         aero_loads_ajp = body.get_aero_loads_ajp(scenario)
         print(na)
@@ -878,8 +966,6 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         else:
             adj_product = 0.0
 
-        print(f"adj product on rank {comm.rank} = {adj_product}")
-
         # then sum across all processes
         adj_product = fun3d_ae_interface.comm.allreduce(adj_product)
 
@@ -904,8 +990,6 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         else:
             fd_product = 0.0
 
-        print(f"fd product on rank {comm.rank} = {fd_product}")
-
         fd_product = fun3d_ae_interface.comm.allreduce(fd_product)
 
         rel_error = (adj_product - fd_product) / fd_product
@@ -922,16 +1006,17 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         # run the complex step test
         func_name = model.get_functions()[0].name
-        hdl = open(filename, "w")
-        TestResult(
-            name="fun3d_ae_test",
-            func_names=[func_name],
-            complex_TD=[fd_product],
-            adjoint_TD=[adj_product],
-            rel_error=[rel_error],
-            comm=fun3d_ae_interface.comm,
-            method="finite diff",
-        ).write(hdl)
+        if fun3d_ae_interface.comm.rank == 0:
+            hdl = open(filename, "w")
+            TestResult(
+                name="fun3d_ae_test_aero_loads",
+                func_names=[func_name],
+                complex_TD=[fd_product],
+                adjoint_TD=[adj_product],
+                rel_error=[rel_error],
+                comm=fun3d_ae_interface.comm,
+                method="finite diff",
+            ).write(hdl)
         return abs(rel_error)
 
     @classmethod

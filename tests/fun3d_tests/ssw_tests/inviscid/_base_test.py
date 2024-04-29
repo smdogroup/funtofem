@@ -157,6 +157,7 @@ lift = Function.lift().optimize(scale=1.0, objective=False, plot=True, plot_name
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 )
+aoa = cruise.get_variable("AOA").set_bounds(value=2.0)
 cruise.include(lift).include(ksfailure).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
