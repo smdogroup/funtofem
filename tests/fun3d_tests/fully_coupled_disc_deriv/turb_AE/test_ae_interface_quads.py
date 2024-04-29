@@ -77,7 +77,7 @@ class TestFun3dTacs(unittest.TestCase):
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test(
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads(
             solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt"
         )
         self.assertTrue(max_rel_error < 1e-7)
