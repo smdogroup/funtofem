@@ -20,7 +20,7 @@ interface twist3 in 1
 interface twist4 in 1
 
 interface sharpTE in 1
-interface ff in 20.0
+interface ff in 5.0
 
 # Make the symmetry cut box
 box -2*ff -2*ff 0 4*ff 4*ff -4*ff
@@ -51,8 +51,8 @@ select face
 
 subtract
 
-restore sym_cut_box
-intersect
+#restore sym_cut_box
+#intersect
 
 select edge $tagComp1 $leEdge
    attribute capsMesh $leEdgeMesh
@@ -63,18 +63,18 @@ select edge $tagComp1 $teEdge
 select edge $tagComp $tipEdge
    attribute capsMesh $tipEdgeMesh
 
-select face $capsGroup $*
-select not
-   attribute capsGroup $SymmetryY
-   attribute capsMesh $SymmetryY
-   attribute AFLR4_CMP_ID 2
-   attribute AFLR_GBC $BL_INT_UG3_GBC
+#select face $capsGroup $*
+#select not
+#   attribute capsGroup $SymmetryY
+ #  attribute capsMesh $SymmetryY
+  # attribute AFLR4_CMP_ID 2
+   #attribute AFLR_GBC $BL_INT_UG3_GBC
 
-udprim editAttr filename <<
-   EDGE ADJ2FACE capsGroup=wing
-   AND ADJ2FACE capsGroup=SymmetryY
-   SET capsMesh=rootEdgeMesh
->>
+#udprim editAttr filename <<
+#   EDGE ADJ2FACE capsGroup=wing
+#   AND ADJ2FACE capsGroup=SymmetryY
+#   SET capsMesh=rootEdgeMesh
+#>>
 
 select body
    attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM;egadsTessAIM

@@ -50,6 +50,7 @@
   funtofem_include_skin_friction = .true.
   funtofem_restart_grid_forward = .false.
   funtofem_restart_grid_adjoint = .true.
+  funtofem_adjoint_scale = 1e0
 /
 &global
   moving_grid = .true.
@@ -59,7 +60,7 @@
 /
 &elasticity_gmres
   elasticity = 2
-  preconditioner_iters = 10
+  preconditioner_iters = 100
   nsearch = 100 ! num GMRES steps
   nrestarts = 15 ! leads to 50*15 = 750 grid iterations
   tol = 1e-22
@@ -82,7 +83,7 @@
 /
 &boundary_output_variables
   number_of_boundaries = 1
-  boundary_list = '3'
+  boundary_list = '2'
   temperature = .true.
   x = .true.
   y = .true.

@@ -50,6 +50,7 @@
   funtofem_flow_test = .true.
   funtofem_include_skin_friction = .true.
   funtofem_restart_grid_forward = .false.
+  funtofem_adjoint_scale = 1
   funtofem_restart_grid_adjoint = .true.
 /
 &global
@@ -83,7 +84,7 @@
 /
 &boundary_output_variables
   number_of_boundaries = 1
-  boundary_list = '3'
+  boundary_list = '2'
   temperature = .true.
   x = .true.
   y = .true.

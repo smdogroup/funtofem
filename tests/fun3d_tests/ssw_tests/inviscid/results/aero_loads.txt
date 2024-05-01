@@ -1,5 +1,0 @@
-Test: fun3d_ae_test_aero_loads
-	Function cl
-		finite diff TD = 16243.952553584175
-		Adjoint TD = 8258.708849833825
-		Relative error = -0.49158255525613637

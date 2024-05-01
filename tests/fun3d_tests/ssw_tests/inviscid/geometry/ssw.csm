@@ -12,7 +12,7 @@ cfgpmtr nspars 2
 ## DESIGN PARAMETERS
 # ---------------------------------
 # General wing and airfoil parameters
-despmtr ff 20.0         # Farfield distance
+despmtr ff 8.0         # Farfield distance
 despmtr sspan 5.0       # Semispan
 despmtr camber 0.02     # Maximum camber
 despmtr xCamber 0.4     # Location of maximum camber

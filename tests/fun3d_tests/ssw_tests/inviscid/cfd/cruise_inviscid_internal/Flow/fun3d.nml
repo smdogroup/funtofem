@@ -51,6 +51,7 @@
   funtofem_test_epsilon = 1e-4
   funtofem_include_skin_friction = .true.
   funtofem_restart_grid_forward = .false.
+  funtofem_adjoint_scale = 1
   funtofem_restart_grid_adjoint = .true.
 /
 &global
