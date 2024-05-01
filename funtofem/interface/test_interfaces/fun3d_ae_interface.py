@@ -628,7 +628,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                 scenario, self.model.bodies
             )
 
-            self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
+            self.fun3d_flow.set_coupling_frequency(scenario.steps * scenario.forward_coupling_frequency
+                + scenario.uncoupled_steps)
 
             """forward analysis starts here"""
             # first input the deformation on the surface
@@ -708,7 +709,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
             nfuncs = scenario.count_adjoint_functions()
 
             self.fun3d_adjoint.set_coupling_frequency(
-                scenario.adjoint_coupling_frequency
+                scenario.adjoint_steps * scenario.adjoint_coupling_frequency
             )
 
             for ibody, body in enumerate(self.model.bodies, 1):
@@ -811,7 +812,6 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         cls,
         fun3d_ae_interface,
         epsilon=1e-4,
-        scale=1e-3,
         filename="fun3d_AE_adjoint.txt",
     ):
         """test the vector function of aero loads: fA(uA) from the displacements and the associated adjoints"""
@@ -823,11 +823,16 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         na = body.get_num_aero_nodes()
         nvol = fun3d_ae_interface.nvol
         nf = scenario.count_adjoint_functions()
+        comm = fun3d_ae_interface.comm
 
         dtype = TransferScheme.dtype
 
         duads = np.random.rand(3 * na).astype(dtype)
-        flow_ajp = np.random.rand(5 * nvol, nf).astype(dtype)
+        if comm.rank == 0:
+            flow_ajp = np.random.rand(5 * nvol, nf).astype(dtype)
+        else:
+            flow_ajp = None
+        flow_ajp = comm.bcast(flow_ajp, root=0)
         body._flow_ajp[scenario.id] = flow_ajp * 1.0
 
         if na != 0:

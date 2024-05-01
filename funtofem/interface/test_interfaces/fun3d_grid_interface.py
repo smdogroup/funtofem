@@ -198,6 +198,11 @@ class Fun3dGridInterface(Fun3dInterface):
                         aero_nnodes, nf, body=ibody
                     )
 
+                    # convert to C contiguous array
+                    # lam_x = lam_x.reshaape(order='F')
+                    # lam_y = lam_y.reshaape(order='F')
+                    # lam_z = lam_z.reshaape(order='F')
+
                     for func in range(nf):
                         aero_disps_ajp[0::3, func] = lam_x[:, func]
                         aero_disps_ajp[1::3, func] = lam_y[:, func]
@@ -471,10 +476,10 @@ class Fun3d14GridInterface(Fun3d14Interface):
                     dx = dx if self.complex_mode else dx.astype(np.double)
                     dy = dy if self.complex_mode else dy.astype(np.double)
                     dz = dz if self.complex_mode else dz.astype(np.double)
-                    print(f"input deformation complex_mode {self.complex_mode} on rank {self.comm.rank}")
-                    print(f"dx = {dx}")
-                    print(f"dy = {dy}")
-                    print(f"dz = {dz}")
+                    #print(f"input deformation complex_mode {self.complex_mode} on rank {self.comm.rank}")
+                    #print(f"dx = {dx}")
+                    #print(f"dy = {dy}")
+                    #print(f"dz = {dz}")
                     self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
             # iterate which skips force and just does grid deformation (don't use thermal coupling here)
@@ -604,8 +609,14 @@ class Fun3d14GridInterface(Fun3d14Interface):
         cls,
         fun3d_grid_interface,
         filename="fun3d_14_grid_deformation.txt",
-        scale=0.001,
+        forward_scale=0.001,
+        adjoint_scale=0.001,
+        ua0_scale=1e0,
+        all_ones_forward=False,
+        all_ones_adjoint=False,
         epsilon=1e-4,
+        forward_index=None,
+        adjoint_index=None,
     ):
         assert isinstance(fun3d_grid_interface, cls)
         # get the dimensions of surf and volume grid from first interface
@@ -613,11 +624,23 @@ class Fun3d14GridInterface(Fun3d14Interface):
         nvol = fun3d_grid_interface.nvol
 
         # random real aero disps (not for perturbations)
-        rand_disps = scale * np.random.rand(3 * nsurf)
+        rand_disps = ua0_scale * np.random.rand(3 * nsurf)
         # random contravariant duA/ds test vector
-        p = np.random.rand(3 * nsurf)
+        if forward_index is None:
+            p = np.random.rand(3 * nsurf)
+        else:
+            p = np.zeros(3 * nsurf)
+            p[forward_index] = forward_scale
+        if all_ones_forward:
+            p[:] = forward_scale
         # random covariant dL/dxG test vector
-        q = scale * np.random.rand(3 * nvol)
+        if adjoint_index is None:
+            q = adjoint_scale * np.random.rand(3 * nvol)
+        else:
+            q = np.zeros(3 * nvol)
+            q[adjoint_index] = adjoint_scale
+        if all_ones_adjoint:
+            q[:] = adjoint_scale
 
         # build a real interface and do the adjoint method
         fun3d_grid_interface.input_aero_disps(array=rand_disps)
