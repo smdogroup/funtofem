@@ -8,7 +8,7 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'turbulent'
+  viscous_terms = 'inviscid'
 /
 &reference_physical_properties
   mach_number     = 0.3
@@ -76,7 +76,7 @@
   funtofem_include_skin_friction = .true.
   funtofem_internal_adjoint_test = .false.
   funtofem_test_epsilon = 1.e-4
-  funtofem_grid_test = .false.
+  funtofem_flow_test = .true.
   funtofem_restart_grid_forward = .false.
-  funtofem_restart_grid_adjoint = .false.
+  funtofem_restart_grid_adjoint = .true.
 /

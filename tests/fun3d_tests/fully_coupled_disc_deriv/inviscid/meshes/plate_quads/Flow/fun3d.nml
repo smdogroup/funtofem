@@ -8,7 +8,7 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'turbulent'
+  viscous_terms = 'inviscid'
 /
 &reference_physical_properties
   mach_number     = 0.3
@@ -35,12 +35,7 @@
   schedule_iteration(1:2) = 1,200
   schedule_cfl(1:2) = 1.0, 100.0
   schedule_cflturb(1:2) = 5.0,50.0
-  hanim = .false.
 /
-&hanim
-  cfl_increase_factor = 1.2
-  cfl_decrease_factor = 0.7
-/ 
 &elasticity_gmres
   elasticity = 2
   tol = 1.e-20
@@ -74,9 +69,5 @@
 /
 &massoud_output
   funtofem_include_skin_friction = .true.
-  funtofem_internal_adjoint_test = .false.
-  funtofem_test_epsilon = 1.e-4
-  funtofem_grid_test = .false.
-  funtofem_restart_grid_forward = .false.
-  funtofem_restart_grid_adjoint = .false.
+  funtofem_flow_test = .true.
 /

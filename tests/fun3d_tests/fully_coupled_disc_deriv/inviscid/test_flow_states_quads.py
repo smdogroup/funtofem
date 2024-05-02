@@ -42,7 +42,7 @@ adjoint_tol = 1e-15
 
 
 class TestFun3dTacs(unittest.TestCase):
-    FILENAME = "fun3d-AE-test-interface-quads.txt"
+    FILENAME = "flow_states.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_alpha_turbulent_aeroelastic_quads(self):
@@ -53,7 +53,7 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady(
-            "turbulent_beta",
+            "plate_flow",
             steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
@@ -64,7 +64,8 @@ class TestFun3dTacs(unittest.TestCase):
             early_stopping=early_stopping, min_forward_steps=50
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.lift().register_to(test_scenario)
+        #Function.lift().register_to(test_scenario)
+        Function.ksfailure().register_to(test_scenario)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
@@ -72,13 +73,13 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, fun3d_dir="meshes")
+        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, test_flow_states=True, fun3d_dir="meshes")
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads(
-            solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt"
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
+            solvers.flow, epsilon=1e-4, filename=self.FILEPATH
         )
         self.assertTrue(max_rel_error < 1e-7)
 
