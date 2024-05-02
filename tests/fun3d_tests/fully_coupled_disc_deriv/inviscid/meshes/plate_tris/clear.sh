@@ -1,0 +1,9 @@
+rm Flow/*.dat*
+rm Flow/*.flow
+rm Flow/*.forces*
+rm Flow/*.grid_info
+rm Adjoint/*getgrad
+rm Adjoint/*.tx*
+rm Adjoint/*.dat
+rm Adjoint/*.adjoint
+rm Adjoint/*.grid_info
