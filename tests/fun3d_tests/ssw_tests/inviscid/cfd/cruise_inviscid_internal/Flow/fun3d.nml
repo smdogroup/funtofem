@@ -85,7 +85,7 @@
 /
 &boundary_output_variables
   number_of_boundaries = 1
-  boundary_list = '3'
+  boundary_list = '2'
   temperature = .true.
   x = .true.
   y = .true.

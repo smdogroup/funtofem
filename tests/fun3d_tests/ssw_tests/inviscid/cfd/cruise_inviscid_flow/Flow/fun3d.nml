@@ -31,15 +31,15 @@
   flux_limiter            = 'hminmod'
   smooth_limiter_coeff    = 1.0
   freeze_limiter_iteration = 80
-  first_order_iterations = 50
+  first_order_iterations = 0
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
   time_step_nondim =   1.0
   subiterations =          0
   schedule_iteration(1:2) = 1, 200
-  schedule_cfl(1:2) = 2.0, 50.0
-  schedule_cflturb(1:2) = 2.0, 300.0
+  schedule_cfl(1:2) = 2.0, 300.0
+  schedule_cflturb(1:2) = 2.0, 50.0
   hanim = .false.
 /
 &hanim

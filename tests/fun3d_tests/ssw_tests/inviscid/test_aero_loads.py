@@ -20,7 +20,7 @@ cruise.adjoint_steps = 500
 # not the function values itself are used.
 cruise.functions = []
 ksfailure = Function.ksfailure().register_to(cruise)
-ksfailure.body = 0
+# ksfailure.body = 0
 
 # DISCIPLINE INTERFACES AND DRIVERS
 # <----------------------------------------------------
