@@ -32,14 +32,12 @@ import importlib, os, sys
 
 class Fun3dAeroelasticTestInterface(Fun3dInterface):
     """
-    FUN3D Thermal interface for unit testing of FUN3D aerothermal code
+    FUN3D AE interface for unit testing of FUN3D aeroelastic code
 
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
 
-    Intended use: run one forward + adjoint analysis with a FUNtoFEM nlbgs driver
-    separately also creating a Fun3d14Interface. Then keep those states saved in the body class
-    then we can compute the finite difference here about those states.
+    Intended use: tests for aero_loads and flow_states.
     """
 
     def __init__(
