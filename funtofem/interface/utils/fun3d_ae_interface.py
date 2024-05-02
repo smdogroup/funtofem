@@ -133,7 +133,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                         dx = np.asfortranarray(aero_disps[0::3])
                         dy = np.asfortranarray(aero_disps[1::3])
                         dz = np.asfortranarray(aero_disps[2::3])
-                        
+
                         dx = dx if self.complex_mode else dx.astype(np.double)
                         dy = dy if self.complex_mode else dy.astype(np.double)
                         dz = dz if self.complex_mode else dz.astype(np.double)
@@ -149,7 +149,9 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                     aero_loads = body.get_aero_loads(scenario)
                     aero_nnodes = body.get_num_aero_nodes()
                     if aero_loads is not None and aero_nnodes > 0:
-                        fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
+                        fx, fy, fz = self.fun3d_flow.extract_forces(
+                            aero_nnodes, body=ibody
+                        )
 
                         # Set the dimensional values of the forces
                         aero_loads[0::3] = scenario.qinf * fx[:]
@@ -181,7 +183,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             # self.fun3d_adjoint.set_coupling_frequency(scenario.adjoint_coupling_frequency)
 
             nfuncs = scenario.count_adjoint_functions()
-            
+
             for step in range(scenario.adjoint_steps):
                 for ibody, body in enumerate(self.model.bodies, 1):
                     # Get the adjoint Jacobian product for the aerodynamic loads
@@ -211,7 +213,6 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                             lam_x, lam_y, lam_z, body=ibody
                         )
 
-
                 self.comm.Barrier()
                 self.fun3d_adjoint.iterate(step + 1)
 
@@ -230,9 +231,15 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
                         )
 
                         for func in range(nfuncs):
-                            aero_disps_ajp[0::3, func] = lam_x[:, func] * scenario.flow_dt
-                            aero_disps_ajp[1::3, func] = lam_y[:, func] * scenario.flow_dt
-                            aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
+                            aero_disps_ajp[0::3, func] = (
+                                lam_x[:, func] * scenario.flow_dt
+                            )
+                            aero_disps_ajp[1::3, func] = (
+                                lam_y[:, func] * scenario.flow_dt
+                            )
+                            aero_disps_ajp[2::3, func] = (
+                                lam_z[:, func] * scenario.flow_dt
+                            )
 
             # call post adjoint
             super(Fun3dAeroelasticTestInterface, self).post_adjoint(
