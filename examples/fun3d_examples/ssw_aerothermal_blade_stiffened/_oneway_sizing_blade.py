@@ -21,6 +21,7 @@ import os
 
 parent_parser = argparse.ArgumentParser(add_help=False)
 parent_parser.add_argument("--case", type=int, default=1)
+parent_parser.add_argument("--procs", type=int, default=4)
 # case 1 - all vars
 # case 2 - all vars except spar pitch
 # case 3 - just panel thickness
@@ -33,8 +34,8 @@ if args.case == 1:
     callback = blade_elemCallBack
 elif args.case == 2:
     callback = blade_elemCallBack_no_spitch
-elif args.case == 3:
-    callback = blade_elemCallback_justPanelThick
+# elif args.case == 3:
+#     callback = blade_elemCallback_justPanelThick
 
 
 comm = MPI.COMM_WORLD
@@ -45,7 +46,7 @@ csm_path = os.path.join(base_dir, "geometry", "gbm.csm")
 # F2F MODEL and SHAPE MODELS
 # ----------------------------------------
 
-f2f_model = FUNtoFEMmodel("ssw-sizing")
+f2f_model = FUNtoFEMmodel("gbm-sizing")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
@@ -55,8 +56,8 @@ tacs_model = caps2tacs.TacsModel.build(
 )
 tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
     edge_pt_min=2,
-    edge_pt_max=20,
-    global_mesh_size=0.3,  # 0.3
+    edge_pt_max=50,
+    global_mesh_size=0.03,  # 0.3
     max_surf_offset=0.2,
     max_dihedral_angle=15,
 ).register_to(
@@ -68,18 +69,29 @@ tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
 
+egads_aim = tacs_model.mesh_aim
+
+if comm.rank == 0:
+    aim = egads_aim.aim
+    aim.input.Mesh_Sizing = {
+        "chord": {"numEdgePoints": 20},
+        "span": {"numEdgePoints": 10},
+        "vert": {"numEdgePoints": 10},
+    }
+
+
 # add tacs constraints in
-caps2tacs.PinConstraint("root").register_to(tacs_model)
+caps2tacs.PinConstraint("root", dof_constraint=246).register_to(tacs_model)
+caps2tacs.PinConstraint("sob", dof_constraint=13).register_to(tacs_model)
 
 # BODIES AND STRUCT DVs
 # -------------------------------------------------
 
-wing = Body.aeroelastic("wing", boundary=3)
+wing = Body.aeroelastic("wing", boundary=2)
 # aerothermoelastic
 
 # setup the material and shell properties
 nribs = int(tacs_model.get_config_parameter("nribs"))
-nspars = int(tacs_model.get_config_parameter("nspars"))
 nOML = nribs - 1
 null_material = caps2tacs.Orthotropic.null().register_to(tacs_model)
 
@@ -236,7 +248,7 @@ solvers = SolverManager(comm)
 solvers.structural = TacsSteadyInterface.create_from_bdf(
     model=f2f_model,
     comm=comm,
-    nprocs=4,
+    nprocs=args.procs,
     bdf_file=tacs_aim.root_dat_file,
     prefix=tacs_aim.root_analysis_dir,
     callback=callback,
@@ -285,7 +297,7 @@ tacs_driver = OnewayStructDriver.prime_loads_from_file(
     filename=aero_loads_file,
     solvers=solvers,
     model=f2f_model,
-    nprocs=4,
+    nprocs=args.procs,
     transfer_settings=transfer_settings,
 )
 
@@ -321,7 +333,7 @@ if test_derivatives:  # test using the finite difference test
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
 # design_in_file = os.path.join(base_dir, "design", "sizing.txt")
-design_out_file = os.path.join(base_dir, "design", "sizing-blade.txt")
+design_out_file = os.path.join(base_dir, "design", "sizing.txt")
 
 design_folder = os.path.join(base_dir, "design")
 if not os.path.exists(design_folder) and comm.rank == 0:
@@ -344,18 +356,34 @@ manager = OptimizationManager(
 )
 
 # create the pyoptsparse optimization problem
-opt_problem = Optimization("ssw-sizing", manager.eval_functions)
+opt_problem = Optimization("gbm-sizing", manager.eval_functions)
 
 # add funtofem model variables to pyoptsparse
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
 snoptimizer = SNOPT(
-    # options={
-    #     "Verify level": 0,
-    #     "Function precision": 1e-6,
-    #     "Major Optimality tol": 1e-4,
-    # }
+    options={
+        "Print frequency": 1000,
+        "Summary frequency": 10000000,
+        "Major feasibility tolerance": 1e-6,
+        "Major optimality tolerance": 1e-6,
+        "Verify level": 0,
+        "Major iterations limit": 1000,
+        "Minor iterations limit": 150000000,
+        "Iterations limit": 100000000,
+        "Major step limit": 5e-2,
+        "Nonderivative linesearch": None,
+        "Linesearch tolerance": 0.9,
+        "Difference interval": 1e-6,
+        "Function precision": 1e-10,
+        "New superbasics limit": 2000,
+        "Penalty parameter": 1,
+        "Scale option": 1,
+        "Hessian updates": 40,
+        "Print file": os.path.join("SNOPT_print.out"),
+        "Summary file": os.path.join("SNOPT_summary.out"),
+    }
 )
 
 sol = snoptimizer(
