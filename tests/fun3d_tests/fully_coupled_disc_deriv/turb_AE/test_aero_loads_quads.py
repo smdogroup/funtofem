@@ -61,10 +61,11 @@ class TestFun3dTacs(unittest.TestCase):
             uncoupled_steps=10,
         )
         test_scenario.set_stop_criterion(
-            early_stopping=early_stopping, min_forward_steps=50
+            early_stopping=early_stopping, min_forward_steps=20, min_adjoint_steps=20
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        Function.lift().register_to(test_scenario)
+        #Function.lift().register_to(test_scenario)
+        Function.ksfailure().register_to(test_scenario)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
@@ -78,7 +79,7 @@ class TestFun3dTacs(unittest.TestCase):
         )
 
         max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads(
-            solvers.flow, epsilon=1e-4, filename="fun3d_AE_adjoint.txt"
+            solvers.flow, epsilon=1e-4, filename="results/aero_loads.txt"
         )
         self.assertTrue(max_rel_error < 1e-7)
 
