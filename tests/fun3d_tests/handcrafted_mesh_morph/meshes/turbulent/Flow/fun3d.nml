@@ -1,0 +1,29 @@
+&project
+  project_rootname = 'funtofem_CAPS'
+/
+&raw_grid
+  grid_format = 'aflr3'
+  data_format = 'default'
+  swap_yz_axes = .false.
+/
+&governing_equations
+  eqn_type = 'compressible'
+  viscous_terms = 'turbulent'
+/
+&reference_physical_properties
+  mach_number     = 0.5
+  angle_of_attack = 2.0
+  reynolds_number = 1.0e6
+/
+&code_run_control
+  restart_write_freq = 1
+  restart_read       = 'off'
+  steps              =  10000
+/
+&global
+  recompute_turb_dist = .false.
+  moving_grid = .true.
+/
+&massoud_output
+  funtofem_include_skin_friction = .true.
+/

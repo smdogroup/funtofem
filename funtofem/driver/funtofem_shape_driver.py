@@ -479,6 +479,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         self.model.scenarios[0], self.model.bodies
                     )
 
+                    # initialize handcrafted mesh coorrdinates
+                    if self.model.flow is not None and isinstance(
+                        self.model.flow, Fun3dModel
+                    ):
+                        if self.flow_aim.is_handcrafted:
+                            self.flow_aim.handcrafted_mesh_morph._get_hc_coords()
+
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()
                     self._first_forward = False
@@ -579,6 +586,23 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 root=self.flow_aim.root,
                 write_dvs=False,
             )
+
+            self.comm.Barrier()
+
+            # hack to do shape change with handcrafted mesh with Fun3dAim
+            if self.model.flow is not None and isinstance(self.model.flow, Fun3dModel):
+                if self.flow_aim.is_handcrafted:
+                    hc_obj = self.flow_aim.handcrafted_mesh_morph
+                    for scenario in self.model.scenarios:
+                        hc_obj.compute_caps_coord_derivatives(scenario)
+                    # overwrite the previous sens file
+                    hc_obj.write_sensitivity_file(
+                        comm=self.comm,
+                        filename=filepath,
+                        discipline="aerodynamic",
+                        root=self.flow_aim.root,
+                        write_dvs=False,
+                    )
 
             self.comm.Barrier()
 
@@ -710,6 +734,25 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     root=0,
                     write_dvs=False,
                 )
+
+                self.comm.Barrier()
+
+                # hack to do shape change with handcrafted mesh with Fun3dAim
+                if self.model.flow is not None and isinstance(
+                    self.model.flow, Fun3dModel
+                ):
+                    if self.flow_aim.is_handcrafted:
+                        hc_obj = self.flow_aim.handcrafted_mesh_morph
+                        for scenario in self.model.scenarios:
+                            hc_obj.compute_caps_coord_derivatives(scenario)
+                        # overwrite the previous sens file
+                        hc_obj.write_sensitivity_file(
+                            comm=self.comm,
+                            filename=aero_sensfile,
+                            discipline="aerodynamic",
+                            root=self.flow_aim.root,
+                            write_dvs=False,
+                        )
 
         # mpi barrier before start of post analysis
         self.comm.Barrier()
