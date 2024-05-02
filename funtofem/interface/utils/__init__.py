@@ -17,12 +17,7 @@ tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:
     from .funtofem_callback import *
 
-# FUN3D grid deformation interface, with python package "fun3d"
-fun3d_loader = importlib.util.find_spec("fun3d")
-if fun3d_loader is not None:
-    from .fun3d_grid_interface import *
-    from .fun3d_14_therm_interface import *
-
+from .test_result import *
 from .test_utils import *
 from .remote import *
 

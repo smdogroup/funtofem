@@ -57,8 +57,7 @@ if tacs_loader is not None:
     from .tacs_interface_unsteady import *
 
 # test interfaces
-from .pistontheory_interface import *
-from .test_solver import *
+from .test_interfaces import *
 
 # import any interface utilities
 # -------------------------------
