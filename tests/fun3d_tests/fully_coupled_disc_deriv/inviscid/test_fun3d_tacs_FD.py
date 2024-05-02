@@ -129,6 +129,54 @@ class TestFun3dTacs(unittest.TestCase):
         )
         self.assertTrue(max_rel_error < 1e-7)
 
+    def test_turbulent_aeroelastic_quads_allvars(self):
+        # build the funtofem model with one body and scenario
+        model = FUNtoFEMmodel("plate")
+        plate = Body.aeroelastic("plate", boundary=2)
+        Variable.structural("thick").set_bounds(
+            lower=0.001, value=0.1, upper=2.0
+        ).register_to(plate)
+        plate.register_to(model)
+
+        # build the scenario
+        test_scenario = Scenario.steady("plate_quads", steps=500, uncoupled_steps=10)
+        test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
+        Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
+        aoa = test_scenario.get_variable("AOA", set_active=True)
+        aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
+        test_scenario.set_flow_ref_vals(qinf=1.05e5)
+        test_scenario.register_to(model)
+
+        # build the solvers and coupled driver
+        solvers = SolverManager(comm)
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
+
+        solvers.structural = TacsSteadyInterface.create_from_bdf(
+            model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
+        )
+
+        transfer_settings = TransferSettings(
+            elastic_scheme="meld",
+            npts=50,
+        )
+        driver = FUNtoFEMnlbgs(
+            solvers,
+            transfer_settings=transfer_settings,
+            model=model,
+        )
+
+        # run the complex step test on the model and driver
+        # max_rel_error = TestResult.complex_step(
+        max_rel_error = TestResult.finite_difference(
+            "fun3d+tacs-turbulent-quads-aeroelastic-allvars",
+            model,
+            driver,
+            TestFun3dTacs.FILEPATH,
+        )
+        self.assertTrue(max_rel_error < 1e-7)
+
 
 if __name__ == "__main__":
     # open and close the file to reset it
