@@ -27,7 +27,7 @@ results_folder, _ = make_test_directories(comm, base_dir)
 
 @unittest.skipIf(not has_fun3d, "skipping fun3d test without fun3d")
 class TestFun3dGridDeformation(unittest.TestCase):
-    FILENAME = "fun3d_grid_deform_test.txt"
+    FILENAME = "grid_deformation_quads.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_fun3d_grid_deformation(self):
@@ -37,7 +37,7 @@ class TestFun3dGridDeformation(unittest.TestCase):
         plate = Body.aeroelastic("plate", boundary=2) #.relaxation(AitkenRelaxation())
         Variable.structural("fake").register_to(plate)
         plate.register_to(model)
-        test_scenario = Scenario.steady("plate_grid", steps=2)
+        test_scenario = Scenario.steady("plate_grid_quads", steps=2)
         test_scenario.include(Function.ksfailure())
         test_scenario.register_to(model)
 

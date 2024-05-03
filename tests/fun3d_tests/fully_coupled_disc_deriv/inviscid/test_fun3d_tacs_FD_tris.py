@@ -26,7 +26,7 @@ from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 fun3d_loader = importlib.util.find_spec("fun3d")
 has_fun3d = fun3d_loader is not None
 if has_fun3d:
-    from funtofem.interface import Fun3d14AeroelasticTestInterface
+    from funtofem.interface import Fun3d14Interface
 
 np.random.seed(1234567)
 comm = MPI.COMM_WORLD
@@ -42,44 +42,64 @@ adjoint_tol = 1e-15
 
 
 class TestFun3dTacs(unittest.TestCase):
-    FILENAME = "flow_states_quads.txt"
+    FILENAME = "fun3d-tacs-driver-tris.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_alpha_turbulent_aeroelastic_quads(self):
+    def test_allvars_inviscid_aeroelastic_tris(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
+        Variable.structural("thick").set_bounds(
+            lower=0.001, value=0.1, upper=2.0
+        ).register_to(plate)
         plate.register_to(model)
 
         # build the scenario
         test_scenario = Scenario.steady(
-            "plate_flow_quads",
+            "plate_tris",
             steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
             adjoint_steps=25,
             adjoint_coupling_frequency=20,
             uncoupled_steps=10,
         )
+        aoa = test_scenario.get_variable("AOA").set_bounds(value=10.0)
         test_scenario.set_stop_criterion(
-            early_stopping=early_stopping, min_forward_steps=50
+            early_stopping=False, min_forward_steps=50, min_adjoint_steps=25
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        #Function.lift().register_to(test_scenario)
+        #Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        Function.lift().register_to(test_scenario)
+        Function.drag().register_to(test_scenario)
         Function.ksfailure().register_to(test_scenario)
-        aoa = test_scenario.get_variable("AOA", set_active=True)
-        aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
         test_scenario.set_flow_ref_vals(qinf=1.05e5)
         test_scenario.register_to(model)
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, test_flow_states=True, fun3d_dir="meshes")
+        solvers.flow = Fun3d14Interface(comm, model, fun3d_dir="meshes")
+
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
-            solvers.flow, epsilon=1e-4, filename=self.FILEPATH
+        transfer_settings = TransferSettings(
+            elastic_scheme="meld",
+            npts=50,
+        )
+        driver = FUNtoFEMnlbgs(
+            solvers,
+            transfer_settings=transfer_settings,
+            model=model,
+        )
+
+        # run the complex step test on the model and driver
+        # max_rel_error = TestResult.complex_step
+        max_rel_error = TestResult.finite_difference(
+            "fun3d+tacs-inviscid-tris-aeroelastic-allvars",
+            model,
+            driver,
+            TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 

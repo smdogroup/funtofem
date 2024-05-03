@@ -1,7 +1,6 @@
 """
-Test the vector function xG(uA) and its associated adjoints, namely the grid deformation of volume nodes x_G
+Test the vector function q(uA) and its associated adjoints, namely the flow states
 from the aero disps on a converged flow of the SSW inviscid mesh.
-NOTE : should probably just test this on one proc (since don't need converged flow, just mesh def for this.)
 """
 
 from funtofem import *
@@ -12,29 +11,32 @@ import os, time
 from _base_test import *
 
 # ---------------------------------------------------->
-
-cruise.name = "cruise_inviscid_grid"
-cruise.uncoupled_steps = 0
-cruise.steps = 10
+cruise.name = "cruise_inviscid_flow"
+cruise.steps = 2
 cruise.forward_coupling_frequency = 1
+cruise.adjoint_coupling_frequency = 1
+cruise.adjoint_steps = 2
 
 # don't want to use aerodynamic functions in this test since it adds extra function terms to the RHS, when only the aero loads
 # not the function values itself are used.
 cruise.functions = []
-Function.ksfailure().register_to(cruise)
+ksfailure = Function.ksfailure().register_to(cruise)
+# ksfailure.body = 0
 
 # DISCIPLINE INTERFACES AND DRIVERS
 # <----------------------------------------------------
 
-solvers.flow = Fun3d14GridInterface(
+solvers.flow = Fun3d14AeroelasticTestInterface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
+    test_flow_states=True,
 )
+solvers.flow.forward_min_tolerance = 1e10
+solvers.flow.adjoint_min_tolerance = 1e10
 
-max_rel_error = Fun3d14GridInterface.finite_diff_test(
-    solvers.flow, epsilon=1e-4, filename="results/grid_deformation.txt",
-    all_ones_forward=False, all_ones_adjoint=False, adjoint_scale=1e0, ua0_scale=1e-3, forward_scale=0,
-) # adjoint_scale = 1e3 works, 1e-3 bad error originally
+max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
+    solvers.flow, epsilon=1e-4, filename="results/flow_states.txt"
+)
 if comm.rank == 0:
     print(f"max rel error = {max_rel_error}")

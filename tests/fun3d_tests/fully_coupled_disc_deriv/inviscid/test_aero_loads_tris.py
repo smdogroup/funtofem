@@ -42,7 +42,7 @@ adjoint_tol = 1e-15
 
 
 class TestFun3dTacs(unittest.TestCase):
-    FILENAME = "flow_states_quads.txt"
+    FILENAME = "aero_loads_tris.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_alpha_turbulent_aeroelastic_quads(self):
@@ -53,15 +53,15 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the scenario
         test_scenario = Scenario.steady(
-            "plate_flow_quads",
+            "plate_tris",
             steps=25,
             forward_coupling_frequency=20,  # 500 total fun3d steps
-            adjoint_steps=25,
+            adjoint_steps=50,
             adjoint_coupling_frequency=20,
             uncoupled_steps=10,
         )
         test_scenario.set_stop_criterion(
-            early_stopping=early_stopping, min_forward_steps=50
+            early_stopping=early_stopping, min_forward_steps=20, min_adjoint_steps=20
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         #Function.lift().register_to(test_scenario)
@@ -73,13 +73,16 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, test_flow_states=True, fun3d_dir="meshes")
+        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, fun3d_dir="meshes")
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_flow_states(
-            solvers.flow, epsilon=1e-4, filename=self.FILEPATH
+        #max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads_serial(
+        #    solvers.flow, epsilon=1e-4, filename=self.FILEPATH, ua_index=[_ for _ in range(12,15)]
+        #)
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads(
+             solvers.flow, epsilon=1e-4, filename=self.FILEPATH
         )
         self.assertTrue(max_rel_error < 1e-7)
 
