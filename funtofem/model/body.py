@@ -1778,10 +1778,10 @@ class Body(Base):
                         "load": entry["load"],
                         "hflux": entry["hflux"],
                     }
-                    
+
             if self.struct_id is None:
                 return
-            
+
             for ind, struct_id in enumerate(self.struct_id):
                 if include_elastic:
                     self._fixed_struct_loads[scenario_id][3 * ind : 3 * ind + 3] = (
