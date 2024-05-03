@@ -12,10 +12,10 @@ from _base_test import *
 
 # ---------------------------------------------------->
 cruise.name = "cruise_inviscid_flow"
-cruise.steps = 200
-cruise.forward_coupling_frequency = 1
-cruise.adjoint_coupling_frequency = 1
-cruise.adjoint_steps = 500
+cruise.steps = 20
+cruise.forward_coupling_frequency = 10
+cruise.adjoint_coupling_frequency = 25
+cruise.adjoint_steps = 20
 
 # don't want to use aerodynamic functions in this test since it adds extra function terms to the RHS, when only the aero loads
 # not the function values itself are used.

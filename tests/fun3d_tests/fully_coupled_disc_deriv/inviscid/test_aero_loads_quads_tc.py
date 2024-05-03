@@ -54,10 +54,10 @@ class TestFun3dTacs(unittest.TestCase):
         # build the scenario
         test_scenario = Scenario.steady(
             "plate_quads",
-            steps=25,
-            forward_coupling_frequency=20,  # 500 total fun3d steps
-            adjoint_steps=50,
-            adjoint_coupling_frequency=20,
+            steps=500,
+            forward_coupling_frequency=1,  # 500 total fun3d steps
+            adjoint_steps=1000,
+            adjoint_coupling_frequency=1,
             uncoupled_steps=10,
         )
         test_scenario.set_stop_criterion(

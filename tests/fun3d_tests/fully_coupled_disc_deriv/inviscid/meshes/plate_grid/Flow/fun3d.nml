@@ -24,9 +24,9 @@
   freeze_limiter_iteration = 100
 /
 &code_run_control
-  restart_write_freq = 1000
+  restart_write_freq = 500
   restart_read       = 'off'
-  steps              =  1000
+  steps              =  500
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
@@ -35,7 +35,12 @@
   schedule_iteration(1:2) = 1,200
   schedule_cfl(1:2) = 1.0, 100.0
   schedule_cflturb(1:2) = 5.0,50.0
+  hanim = .false.
 /
+&hanim
+  cfl_increase_factor = 1.2
+  cfl_decrease_factor = 0.7
+/ 
 &elasticity_gmres
   elasticity = 2
   tol = 1.e-20
@@ -43,8 +48,8 @@
 /
 &global
   moving_grid = .true.
-  boundary_animation_freq = -1
-  volume_animation_freq = -1
+  boundary_animation_freq = 1000
+  volume_animation_freq = 1000
   recompute_turb_dist = .false.
 /
 &slice_data
@@ -69,5 +74,9 @@
 /
 &massoud_output
   funtofem_include_skin_friction = .true.
-  funtofem_flow_test = .false.
+  funtofem_internal_adjoint_test = .false.
+  funtofem_test_epsilon = 1.e-4
+  funtofem_grid_test = .true.
+  funtofem_restart_grid_forward = .false.
+  funtofem_restart_grid_adjoint = .true.
 /
