@@ -32,14 +32,12 @@ import importlib, os, sys
 
 class Fun3dAeroelasticTestInterface(Fun3dInterface):
     """
-    FUN3D Thermal interface for unit testing of FUN3D aerothermal code
+    FUN3D AE interface for unit testing of FUN3D aeroelastic code
 
     FUN3D's FUNtoFEM coupling interface requires no additional configure flags to compile.
     To tell FUN3D that a body's motion should be driven by FUNtoFEM, set *motion_driver(i)='funtofem'*.
 
-    Intended use: run one forward + adjoint analysis with a FUNtoFEM nlbgs driver
-    separately also creating a Fun3d14Interface. Then keep those states saved in the body class
-    then we can compute the finite difference here about those states.
+    Intended use: tests for aero_loads and flow_states.
     """
 
     def __init__(
@@ -50,6 +48,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
         fun3d_dir=None,
         forward_options=None,
         adjoint_options=None,
+        complex_mode=False,
     ):
         """
         The instantiation of the FUN3D Grid interface class will populate the model with the aerodynamic surface
@@ -79,9 +78,12 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             fun3d_dir=fun3d_dir,
             forward_options=forward_options,
             adjoint_options=adjoint_options,
+            forward_tolerance=1e1,
+            adjoint_tolerance=1e4,
         )
 
         self.comm.Barrier()
+        self.complex_mode = complex_mode
 
         # state variables related to grid deformation
         for body in self.model.bodies:
@@ -121,33 +123,40 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             # self.fun3d_flow.set_coupling_frequency(scenario.forward_coupling_frequency)
 
             """forward analysis starts here"""
-            # first input the deformation on the surface
-            for ibody, body in enumerate(self.model.bodies, 1):
-                aero_disps = body.get_aero_disps(scenario, add_dxa0=False)
-                aero_nnodes = body.get_num_aero_nodes()
-                deform = "deform" in body.motion_type
-                if deform and aero_disps is not None and aero_nnodes > 0:
-                    dx = np.asfortranarray(aero_disps[0::3])
-                    dy = np.asfortranarray(aero_disps[1::3])
-                    dz = np.asfortranarray(aero_disps[2::3])
-                    self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
             for step in range(scenario.steps):
+                # first input the deformation on the surface
+                for ibody, body in enumerate(self.model.bodies, 1):
+                    aero_disps = body.get_aero_disps(scenario, add_dxa0=False)
+                    aero_nnodes = body.get_num_aero_nodes()
+                    deform = "deform" in body.motion_type
+                    if deform and aero_disps is not None and aero_nnodes > 0:
+                        dx = np.asfortranarray(aero_disps[0::3])
+                        dy = np.asfortranarray(aero_disps[1::3])
+                        dz = np.asfortranarray(aero_disps[2::3])
+
+                        dx = dx if self.complex_mode else dx.astype(np.double)
+                        dy = dy if self.complex_mode else dy.astype(np.double)
+                        dz = dz if self.complex_mode else dz.astype(np.double)
+                        self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
+
                 # iterate which skips force and just does grid deformation (don't use thermal coupling here)
                 self.comm.Barrier()
                 self.fun3d_flow.iterate()
-            self._last_forward_step = step + 1
+                self._last_forward_step = step + 1
 
-            for ibody, body in enumerate(self.model.bodies, 1):
-                # Compute the aerodynamic nodes on the body
-                aero_loads = body.get_aero_loads(scenario)
-                aero_nnodes = body.get_num_aero_nodes()
-                if aero_loads is not None and aero_nnodes > 0:
-                    fx, fy, fz = self.fun3d_flow.extract_forces(aero_nnodes, body=ibody)
+                for ibody, body in enumerate(self.model.bodies, 1):
+                    # Compute the aerodynamic nodes on the body
+                    aero_loads = body.get_aero_loads(scenario)
+                    aero_nnodes = body.get_num_aero_nodes()
+                    if aero_loads is not None and aero_nnodes > 0:
+                        fx, fy, fz = self.fun3d_flow.extract_forces(
+                            aero_nnodes, body=ibody
+                        )
 
-                    # Set the dimensional values of the forces
-                    aero_loads[0::3] = scenario.qinf * fx[:]
-                    aero_loads[1::3] = scenario.qinf * fy[:]
-                    aero_loads[2::3] = scenario.qinf * fz[:]
+                        # Set the dimensional values of the forces
+                        aero_loads[0::3] = scenario.qinf * fx[:]
+                        aero_loads[1::3] = scenario.qinf * fy[:]
+                        aero_loads[2::3] = scenario.qinf * fz[:]
 
             # post analysis in fun3d interface
             super(Fun3dAeroelasticTestInterface, self).post(scenario, self.model.bodies)
@@ -174,56 +183,63 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             # self.fun3d_adjoint.set_coupling_frequency(scenario.adjoint_coupling_frequency)
 
             nfuncs = scenario.count_adjoint_functions()
-            for ibody, body in enumerate(self.model.bodies, 1):
-                # Get the adjoint Jacobian product for the aerodynamic loads
-                aero_loads_ajp = body.get_aero_loads_ajp(scenario)
-                aero_nnodes = body.get_num_aero_nodes()
-                if aero_loads_ajp is not None and aero_nnodes > 0:
-                    # aero_nnodes = body.get_num_aero_nodes()
-                    psi_F = -aero_loads_ajp
-
-                    dtype = TransferScheme.dtype
-                    lam_x = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                    lam_y = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-                    lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
-
-                    for func in range(nfuncs):
-                        lam_x[:, func] = (
-                            scenario.qinf * psi_F[0::3, func] / scenario.flow_dt
-                        )
-                        lam_y[:, func] = (
-                            scenario.qinf * psi_F[1::3, func] / scenario.flow_dt
-                        )
-                        lam_z[:, func] = (
-                            scenario.qinf * psi_F[2::3, func] / scenario.flow_dt
-                        )
-
-                    self.fun3d_adjoint.input_force_adjoint(
-                        lam_x, lam_y, lam_z, body=ibody
-                    )
 
             for step in range(scenario.adjoint_steps):
+                for ibody, body in enumerate(self.model.bodies, 1):
+                    # Get the adjoint Jacobian product for the aerodynamic loads
+                    aero_loads_ajp = body.get_aero_loads_ajp(scenario)
+                    aero_nnodes = body.get_num_aero_nodes()
+                    if aero_loads_ajp is not None and aero_nnodes > 0:
+                        # aero_nnodes = body.get_num_aero_nodes()
+                        psi_F = -aero_loads_ajp
+
+                        dtype = TransferScheme.dtype
+                        lam_x = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
+                        lam_y = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
+                        lam_z = np.zeros((aero_nnodes, nfuncs), dtype=dtype)
+
+                        for func in range(nfuncs):
+                            lam_x[:, func] = (
+                                scenario.qinf * psi_F[0::3, func] / scenario.flow_dt
+                            )
+                            lam_y[:, func] = (
+                                scenario.qinf * psi_F[1::3, func] / scenario.flow_dt
+                            )
+                            lam_z[:, func] = (
+                                scenario.qinf * psi_F[2::3, func] / scenario.flow_dt
+                            )
+
+                        self.fun3d_adjoint.input_force_adjoint(
+                            lam_x, lam_y, lam_z, body=ibody
+                        )
+
                 self.comm.Barrier()
                 self.fun3d_adjoint.iterate(step + 1)
 
-            self._last_adjoint_step = step + 1
+                self._last_adjoint_step = step + 1
 
-            for ibody, body in enumerate(self.model.bodies, 1):
-                # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
-                aero_disps_ajp = body.get_aero_disps_ajp(scenario)
-                aero_nnodes = body.get_num_aero_nodes()
-                # aero_nnodes = body.aero_nnodes
-                if aero_disps_ajp is not None and aero_nnodes > 0:
-                    lam_x, lam_y, lam_z = (
-                        self.fun3d_adjoint.extract_grid_adjoint_product(
-                            aero_nnodes, nfuncs, body=ibody
+                for ibody, body in enumerate(self.model.bodies, 1):
+                    # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
+                    aero_disps_ajp = body.get_aero_disps_ajp(scenario)
+                    aero_nnodes = body.get_num_aero_nodes()
+
+                    if aero_disps_ajp is not None and aero_nnodes > 0:
+                        lam_x, lam_y, lam_z = (
+                            self.fun3d_adjoint.extract_grid_adjoint_product(
+                                aero_nnodes, nfuncs, body=ibody
+                            )
                         )
-                    )
 
-                    for func in range(nfuncs):
-                        aero_disps_ajp[0::3, func] = lam_x[:, func] * scenario.flow_dt
-                        aero_disps_ajp[1::3, func] = lam_y[:, func] * scenario.flow_dt
-                        aero_disps_ajp[2::3, func] = lam_z[:, func] * scenario.flow_dt
+                        for func in range(nfuncs):
+                            aero_disps_ajp[0::3, func] = (
+                                lam_x[:, func] * scenario.flow_dt
+                            )
+                            aero_disps_ajp[1::3, func] = (
+                                lam_y[:, func] * scenario.flow_dt
+                            )
+                            aero_disps_ajp[2::3, func] = (
+                                lam_z[:, func] * scenario.flow_dt
+                            )
 
             # call post adjoint
             super(Fun3dAeroelasticTestInterface, self).post_adjoint(
@@ -329,8 +345,29 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
         scenario = model.scenarios[0]
         na = body.get_num_aero_nodes()
         nf = scenario.count_adjoint_functions()
+        comm = fun3d_ae_interface.comm
 
-        duads = np.random.rand(3 * na)
+        # gather the list of na and sum of na
+        global_na = comm.reduce(na, root=0)
+        na_list = comm.gather(na, root=0)
+        # randomize the vectors on root proc and scatter them
+        # so serial and MPI are equivalent
+        if comm.rank == 0:
+            glob_duads = np.random.rand(3 * global_na)
+            glob_lamL = np.random.rand(3 * global_na, nf)
+            duads_proc_list = []
+            lamL_proc_list = []
+            start = 0
+            for rank, _na in enumerate(na_list):
+                duads_proc_list += [glob_duads[3 * start : 3 * (start + _na)]]
+                lamL_proc_list += [glob_lamL[3 * start : 3 * (start + _na), :]]
+                start += _na
+        else:
+            duads_proc_list = None
+            lamL_proc_list = None
+        duads = comm.scatter(duads_proc_list, root=0)
+        lamL = comm.scatter(lamL_proc_list, root=0)
+
         aero_loads_ajp = body.get_aero_loads_ajp(scenario)
         print(na)
         if na != 0:
@@ -339,10 +376,7 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             ua[2::3] += 0.01
 
             ua0 = ua * 1.0
-            lamL = -aero_loads_ajp
-
-            # set lamL to a random value
-            lamL[:, :] = np.random.rand((3 * na), nf)[:, :]
+            aero_loads_ajp[:, :] = lamL[:, :] * 1.0
 
         dtype = TransferScheme.dtype
         adj_product = None
@@ -404,7 +438,6 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             method="complex step",
         ).write(hdl)
         return abs(rel_error)
-
 
     @classmethod
     def finite_diff_test(
@@ -514,9 +547,8 @@ class Fun3dAeroelasticTestInterface(Fun3dInterface):
             comm=fun3d_interface.comm,
             model=fun3d_interface.model,
             fun3d_dir=fun3d_interface.fun3d_dir,
-            auto_coords=fun3d_interface.auto_coords,
-            coord_test_override=fun3d_interface._coord_test_override,
             fun3d_project_name=fun3d_interface.fun3d_project_name,
+            complex_mode=True,
         )
 
 
@@ -943,10 +975,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         # run the complex step test
         func_name = model.get_functions()[0].name
-        # run the complex step test
-        func_name = model.get_functions()[0].name
         if fun3d_ae_interface.comm.rank == 0:
-            hdl = open(filename, "w")
+            hdl = open(filename, "a")
             TestResult(
                 name="fun3d_ae_test_flow_states",
                 func_names=[func_name],
@@ -1045,7 +1075,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         # run the complex step test
         func_name = model.get_functions()[0].name
         if fun3d_ae_interface.comm.rank == 0:
-            hdl = open(filename, "w")
+            hdl = open(filename, "a")
             TestResult(
                 name="fun3d_ae_test_aero_module",
                 func_names=[func_name],
@@ -1256,7 +1286,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         # run the complex step test
         func_name = model.get_functions()[0].name
         if fun3d_ae_interface.comm.rank == 0:
-            hdl = open(filename, "w")
+            hdl = open(filename, "a")
             TestResult(
                 name="fun3d_ae_test_aero_loads",
                 func_names=[func_name],
@@ -1362,7 +1392,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         # run the complex step test
         func_name = model.get_functions()[0].name
-        hdl = open(filename, "w")
+        hdl = open(filename, "a")
         TestResult(
             name="fun3d_flow_state_test",
             func_names=[func_name],
@@ -1448,7 +1478,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
         # run the complex step test
         func_name = model.get_functions()[0].name
-        hdl = open(filename, "w")
+        hdl = open(filename, "a")
         TestResult(
             name="fun3d_ae_test",
             func_names=[func_name],
