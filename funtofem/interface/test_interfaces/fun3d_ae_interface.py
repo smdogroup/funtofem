@@ -651,10 +651,12 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                     )  # 1 func for now
 
                 if self.test_aero_module:
+                    body._grid_coords = {}
                     body._grid_coords[scenario.id] = np.zeros(
                         (3 * self.nvol), dtype=TransferScheme.dtype
                     )
                     nf = scenario.count_adjoint_functions()
+                    body._grid_ajp = {}
                     body._grid_ajp[scenario.id] = np.zeros(
                         (3 * self.nvol, nf), dtype=TransferScheme.dtype
                     )
@@ -695,7 +697,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                         self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
                 if self.test_aero_module:  # test q(xG)
-                    x0, y0, z0 = self.fun3d_flow.extract_grid_coords(self.nvol)
+                    x0, y0, z0 = self.fun3d_flow.extract_grid_coordinates()
 
                     grid_coords = body._grid_coords[scenario.id]
                     x = np.asfortranarray(grid_coords[0::3]) + x0
@@ -809,9 +811,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                         )
 
                     if self.test_aero_module:  # test q(xG)
-                        x0, y0, z0 = self.fun3d_adjoint.extract_grid_coordinates(
-                            self.nvol
-                        )
+                        x0, y0, z0 = self.fun3d_adjoint.extract_grid_coordinates()
 
                         grid_coords = body._grid_coords[scenario.id]
                         x = np.asfortranarray(grid_coords[0::3]) + x0
