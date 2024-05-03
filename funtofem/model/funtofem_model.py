@@ -600,7 +600,7 @@ class FUNtoFEMmodel(object):
             loads_data[scenario.id] = scenario_data
 
         loads_data = comm.bcast(loads_data, root=root)
-            
+
         return loads_data
 
     def write_struct_loads(self, comm, filename, root=0):
