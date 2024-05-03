@@ -492,7 +492,7 @@ class FUNtoFEMmodel(object):
                     elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
-                            "aeroID": entries[0],
+                            "aeroID": int(entries[0]),
                             "load": entries[1:4],
                             "hflux": entries[4],
                         }
@@ -591,7 +591,7 @@ class FUNtoFEMmodel(object):
                     elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
-                            "structID": entries[0],
+                            "structID": int(entries[0]),
                             "load": entries[1:4],
                             "hflux": entries[4],
                         }
