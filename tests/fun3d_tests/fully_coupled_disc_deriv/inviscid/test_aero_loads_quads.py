@@ -42,7 +42,7 @@ adjoint_tol = 1e-15
 
 
 class TestFun3dTacs(unittest.TestCase):
-    FILENAME = "aero_loads.txt"
+    FILENAME = "aero_loads_quads.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
     def test_alpha_turbulent_aeroelastic_quads(self):
@@ -78,8 +78,11 @@ class TestFun3dTacs(unittest.TestCase):
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )
 
-        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads_serial(
-            solvers.flow, epsilon=1e-4, filename=self.FILEPATH, ua_index=[_ for _ in range(12,15)]
+        #max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads_serial(
+        #    solvers.flow, epsilon=1e-4, filename=self.FILEPATH, ua_index=[_ for _ in range(12,15)]
+        #)
+        max_rel_error = Fun3d14AeroelasticTestInterface.finite_diff_test_aero_loads(
+             solvers.flow, epsilon=1e-4, filename=self.FILEPATH
         )
         self.assertTrue(max_rel_error < 1e-7)
 
