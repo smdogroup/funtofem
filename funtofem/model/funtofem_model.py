@@ -445,7 +445,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------
@@ -532,6 +532,77 @@ class FUNtoFEMmodel(object):
         # return the loads data
         return loads_data
 
+    def _read_struct_loads(self, comm, filename, root=0):
+        """
+        Read the structural loads file from file.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id xload yload zload hflux
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        loads_data = None
+
+        if comm.rank == root:
+            scenario_data = None
+            loads_data = {}
+
+            with open(filename, "r") as fp:
+                for line in fp.readlines():
+                    entries = line.strip().split(" ")
+                    # print("==> entries: ", entries)
+                    if len(entries) == 2:
+                        assert int(entries[1]) == len(self.scenarios)
+                        assert int(entries[0]) == len(self.bodies)
+
+                    elif len(entries) == 3 and entries[0] == "scenario":
+                        matching_scenario = False
+                        for scenario in self.scenarios:
+                            if str(scenario.name).strip() == str(entries[2]).strip():
+                                matching_scenario = True
+                                break
+                        assert matching_scenario
+                        if scenario_data is not None:
+                            loads_data[scenario.id] = scenario_data
+                        scenario_data = []
+                    elif len(entries) == 4 and entries[0] == "body":
+                        body_name = entries[2]
+
+                    elif len(entries) == 5:
+                        entry = {
+                            "bodyName": body_name,
+                            "structID": entries[0],
+                            "load": entries[1:4],
+                            "hflux": entries[4],
+                        }
+                        scenario_data.append(entry)
+
+            loads_data[scenario.id] = scenario_data
+
+        loads_data = comm.bcast(loads_data, root=root)
+            
+        return loads_data
+
     def write_struct_loads(self, comm, filename, root=0):
         """
         Write the struct loads file for the OnewayStructDriver.
@@ -545,7 +616,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------
@@ -572,7 +643,7 @@ class FUNtoFEMmodel(object):
                 id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
 
                 if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    data += f"body {body.id} {body.name} {body.struct_nnodes} \n"
                     for i in range(len(id)):
                         data += "{} {} {} {} {} \n".format(
                             int(id[i]),
@@ -617,7 +688,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------

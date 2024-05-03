@@ -246,6 +246,9 @@ class Body(Base):
         self.struct_heat_flux = {}
         self.struct_shape_term = {}
 
+        self._fixed_struct_loads = {}
+        self._fixed_struct_heat_flux = {}
+
         self.rigid_transform = {}
         self.aero_disps = {}
         self.aero_loads = {}
@@ -1736,6 +1739,59 @@ class Body(Base):
                             )
 
         print(f"\tF2F - done distribute loads Time step {itime}")
+
+        return
+
+    def _distribute_struct_loads(
+        self, data, include_elastic=True, include_thermal=True
+    ):
+        """
+        Distribute the struct loads and heat flux from a loads file.
+
+        NOTE: Currently only works for steady state.
+
+        Parameters
+        ----------
+        data: dict
+            loads_data read in from model._read_struct_loads()
+        include_elastic: bool
+            include fixed struct loads
+        include_thermal: bool
+            include fixed struct heat flux
+        """
+        print(f"F2F - starting to distribute struct loads.")
+
+        for scenario_id in data:
+            # Initialize fixed struct loads and heat flux
+            ns = self.struct_nnodes
+
+            self._fixed_struct_loads[scenario_id] = np.zeros(3 * ns, dtype=self.dtype)
+            self._fixed_struct_heat_flux[scenario_id] = np.zeros(ns, dtype=self.dtype)
+
+            scenario_data = data[scenario_id]
+
+            # create a dict for this entry
+            scenario_entry_dict = {}
+            for entry in scenario_data:
+                if entry["bodyName"] == self.name:
+                    scenario_entry_dict[entry["structID"]] = {
+                        "load": entry["load"],
+                        "hflux": entry["hflux"],
+                    }
+
+            for ind, struct_id in enumerate(self.struct_id):
+                if include_elastic:
+                    self._fixed_struct_loads[scenario_id][3 * ind : 3 * ind + 3] = (
+                        scenario_entry_dict[struct_id]["load"]
+                    )
+                if include_thermal:
+                    self._fixed_struct_heat_flux[scenario_id][ind] = (
+                        scenario_entry_dict[struct_id]["hflux"]
+                    )
+
+        print(f"\tF2F - done distribute struct loads.")
+
+        return
 
     def _collect_aero_mesh(self, comm, root=0):
         """
