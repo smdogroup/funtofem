@@ -573,7 +573,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         adjoint_options=None,
         complex_mode=False,
         test_flow_states=False,
-        test_aero_block=False,
+        test_aero_module=False,
     ):
         """
         The instantiation of the FUN3D Grid interface class will populate the model with the aerodynamic surface
@@ -608,8 +608,8 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
         self.comm.Barrier()
         # get the number of grid volume coordinates
         self.test_flow_states = test_flow_states
-        self.test_aero_block = test_aero_block
-        if test_flow_states or test_aero_block:
+        self.test_aero_module = test_aero_module
+        if test_flow_states or test_aero_module:
             self.nvol = self.fun3d_flow.extract_num_volume_nodes()
             self.nflow = 5  # if inviscid, else 6 if turb
         else:
@@ -650,7 +650,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                         (self.nflow * self.nvol, nf), dtype=TransferScheme.dtype
                     )  # 1 func for now
 
-                if self.test_aero_block:
+                if self.test_aero_module:
                     body._grid_coords[scenario.id] = np.zeros(
                         (3 * self.nvol), dtype=TransferScheme.dtype
                     )
@@ -694,7 +694,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
                         self.fun3d_flow.input_deformation(dx, dy, dz, body=ibody)
 
-                if self.test_aero_block:  # test q(xG)
+                if self.test_aero_module:  # test q(xG)
                     x0, y0, z0 = self.fun3d_flow.extract_grid_coords(self.nvol)
 
                     grid_coords = body._grid_coords[scenario.id]
@@ -808,7 +808,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                             lam_x, lam_y, lam_z, body=ibody
                         )
 
-                    if self.test_aero_block:  # test q(xG)
+                    if self.test_aero_module:  # test q(xG)
                         x0, y0, z0 = self.fun3d_adjoint.extract_grid_coordinates(
                             self.nvol
                         )
@@ -822,7 +822,7 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                         self.fun3d_adjoint.input_aero_test_grid_coords(x, y, z)
 
                     # set the flow state adjoint in
-                    if self.test_flow_states or self.test_aero_block:
+                    if self.test_flow_states or self.test_aero_module:
                         dtype = TransferScheme.dtype
                         flow_ajp = body._flow_ajp[scenario.id] * 1.0
                         lamq1 = flow_ajp[0::5, :]
