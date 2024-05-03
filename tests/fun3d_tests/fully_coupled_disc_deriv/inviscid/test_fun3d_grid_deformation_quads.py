@@ -34,7 +34,7 @@ class TestFun3dGridDeformation(unittest.TestCase):
         # build a funtofem model with one body and scenario
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
-        plate = Body.aeroelastic("plate", boundary=2) #.relaxation(AitkenRelaxation())
+        plate = Body.aeroelastic("plate", boundary=2)  # .relaxation(AitkenRelaxation())
         Variable.structural("fake").register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.steady("plate_grid_quads", steps=2)
@@ -42,8 +42,17 @@ class TestFun3dGridDeformation(unittest.TestCase):
         test_scenario.register_to(model)
 
         # build a FUN3D Grid deformation interface and perform the test on it from the class
-        grid_interface = Fun3d14GridInterface(comm, model, fun3d_dir="meshes", complex_mode=False, forward_min_tolerance=1e10, adjoint_min_tolerance=1e10)
-        rel_error = Fun3d14GridInterface.finite_diff_test(grid_interface, self.FILEPATH, forward_scale=1e-3, ua0_scale=1e-6, adjoint_scale=1e-3)
+        grid_interface = Fun3d14GridInterface(
+            comm,
+            model,
+            fun3d_dir="meshes",
+            complex_mode=False,
+            forward_min_tolerance=1e10,
+            adjoint_min_tolerance=1e10,
+        )
+        rel_error = Fun3d14GridInterface.finite_diff_test(
+            grid_interface, self.FILEPATH, ua0_scale=1e-6, adjoint_scale=1e-3
+        )
         rtol = 1e-9
 
         self.assertTrue(abs(rel_error) < rtol)

@@ -64,7 +64,7 @@ class TestFun3dTacs(unittest.TestCase):
             early_stopping=early_stopping, min_forward_steps=50
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        #Function.lift().register_to(test_scenario)
+        # Function.lift().register_to(test_scenario)
         Function.ksfailure().register_to(test_scenario)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
@@ -73,7 +73,9 @@ class TestFun3dTacs(unittest.TestCase):
 
         # build the solvers and coupled driver
         solvers = SolverManager(comm)
-        solvers.flow = Fun3d14AeroelasticTestInterface(comm, model, test_flow_states=True, fun3d_dir="meshes")
+        solvers.flow = Fun3d14AeroelasticTestInterface(
+            comm, model, test_flow_states=True, fun3d_dir="meshes"
+        )
         solvers.structural = TacsSteadyInterface.create_from_bdf(
             model, comm, nprocs=1, bdf_file=bdf_filename, prefix=output_dir
         )

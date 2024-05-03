@@ -68,7 +68,7 @@ class TestFun3dTacs(unittest.TestCase):
             early_stopping=False, min_forward_steps=50, min_adjoint_steps=25
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
-        #Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
+        # Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)
         Function.drag().register_to(test_scenario)
         Function.ksfailure().register_to(test_scenario)

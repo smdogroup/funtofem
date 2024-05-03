@@ -531,7 +531,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
             forward_options=forward_options,
             adjoint_options=adjoint_options,
             forward_min_tolerance=forward_min_tolerance,
-            adjoint_min_tolerance=adjoint_min_tolerance
+            adjoint_min_tolerance=adjoint_min_tolerance,
         )
 
         # get the number of grid volume coordinates
@@ -638,9 +638,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
                 lam_y = np.asfortranarray(lam_y)
                 lam_z = np.asfortranarray(lam_z)
 
-                self.fun3d_adjoint.input_grid_volume_adjoint(
-                    lam_x, lam_y, lam_z
-                )
+                self.fun3d_adjoint.input_grid_volume_adjoint(lam_x, lam_y, lam_z)
 
             # run the adjoint analysis
             self.fun3d_adjoint.iterate(1)
@@ -810,7 +808,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
             comm=fun3d_grid_interface.comm,
         ).write(hdl)
         return rel_error
-    
+
     @classmethod
     def make_complex_interface(cls, fun3d_grid_interface):
         """
@@ -827,7 +825,7 @@ class Fun3d14GridInterface(Fun3d14Interface):
             complex_mode=True,
             fun3d_dir=fun3d_grid_interface.fun3d_dir,
         )
-    
+
     @classmethod
     def complex_step_test(
         cls,
