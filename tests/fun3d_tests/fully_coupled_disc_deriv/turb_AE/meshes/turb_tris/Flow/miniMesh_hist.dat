@@ -1,3 +1,0 @@
-TITLE="fun3d_case_title"
-VARIABLES="Iteration" "R_1" "R_2" "R_3" "R_4" "R_5" "R_6" "C_L" "C_D" "C_M_x" "C_M_y" "C_M_z" "Wall Time" "C_x" "C_y" "C_z" "C_Lp" "C_Dp" "C_Lv" "C_Dv" "C_M_xp" "C_M_yp" "C_M_zp" "C_M_xv" "C_M_yv" "C_M_zv" "C_xp" "C_yp" "C_zp" "C_xv" "C_yv" "C_zv"
-ZONE  I=0 F=POINT

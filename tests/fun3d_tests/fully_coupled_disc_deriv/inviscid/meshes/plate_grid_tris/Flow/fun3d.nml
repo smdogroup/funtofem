@@ -24,9 +24,9 @@
   freeze_limiter_iteration = 100
 /
 &code_run_control
-  restart_write_freq = 500
+  restart_write_freq = 1000
   restart_read       = 'off'
-  steps              =  500
+  steps              =  1000
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
@@ -73,6 +73,6 @@
   z = .true.
 /
 &massoud_output
-  funtofem_flow_test = .true.
-  funtofem_restart_grid_adjoint = .true.
+ funtofem_grid_test = .true.
+ funtofem_restart_grid_adjoint = .true.
 /

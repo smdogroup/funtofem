@@ -73,10 +73,5 @@
   z = .true.
 /
 &massoud_output
-  funtofem_include_skin_friction = .true.
-  funtofem_internal_adjoint_test = .false.
-  funtofem_test_epsilon = 1.e-4
-  funtofem_grid_test = .false.
-  funtofem_restart_grid_forward = .false.
-  funtofem_restart_grid_adjoint = .false.
+ funtofem_restart_grid_adjoint = .true.
 /

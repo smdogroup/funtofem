@@ -67,7 +67,3 @@
   y = .true.
   z = .true.
 /
-&massoud_output
-  funtofem_include_skin_friction = .true.
-  funtofem_flow_test = .false.
-/
