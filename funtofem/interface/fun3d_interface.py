@@ -688,8 +688,9 @@ class Fun3dInterface(SolverInterface):
             last_line = lines[-1]
             chunks = last_line.split("  ")
 
-            print(f"last_line = {last_line}")
-            print(f"chunks = {chunks}")
+            if self._debug:
+                print(f"last_line = {last_line}")
+                print(f"chunks = {chunks}")
 
             # read the first 5 or 6 residuals, just 5 for now in the hack
             resids = [abs(float(_)) for _ in chunks[1:6]]
