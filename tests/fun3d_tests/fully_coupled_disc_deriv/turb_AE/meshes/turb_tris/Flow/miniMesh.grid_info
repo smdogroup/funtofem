@@ -1,0 +1,47 @@
+Global Grid Info
+----------------
+ 
+   number of tet cells : 415
+ 
+   number of nodes     : 129
+ 
+   number of edges     : 639
+ 
+   number of boundaries: 2
+ 
+   boundary info for boundary1
+     boundary condition         : farfield_riem (5000)
+     number of tria faces       : 160
+     number of quad faces       : 0
+     number of nodes            : 89
+ 
+   boundary info for boundary2
+     boundary condition         : viscous_solid (4000)
+     number of tria faces       : 32
+     number of quad faces       : 0
+     number of nodes            : 25
+ 
+ 
+Info for Grid Partition 1
+---------------------------
+ 
+   number of tet level 1  cells : 415
+ 
+   number of     level 0  nodes : 129
+   number of     level 1  nodes : 0
+ 
+   number of     level 0  edges : 639
+   number of     level 01 edges : 639
+ 
+   boundary info for boundary 1
+     boundary condition         : farfield_riem (5000)
+     number of tria faces       : 160
+     number of quad faces       : 0
+     number of nodes            : 89
+ 
+   boundary info for boundary 2
+     boundary condition         : viscous_solid (4000)
+     number of tria faces       : 32
+     number of quad faces       : 0
+     number of nodes            : 25
+ 

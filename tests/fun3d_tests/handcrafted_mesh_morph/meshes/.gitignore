@@ -1,0 +1,5 @@
+**/*.flow
+**/*.forces
+**/*.grid_info
+*.jrnl
+*.png
