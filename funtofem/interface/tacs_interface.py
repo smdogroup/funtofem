@@ -139,6 +139,7 @@ class TacsSteadyInterface(SolverInterface):
         relaxation_scheme: AitkenRelaxationTacs = None,
         debug=False,
         panel_length_constraint=None,
+        struct_loads_file=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -176,6 +177,8 @@ class TacsSteadyInterface(SolverInterface):
             argument mainly for hidden use by drivers (matches tacs_comm)
         use_aitken: boolean
             Whether to use Aitken relaxation.
+        struct_loads_file: str
+            File name of the struct_loads_file to be used as a constant load to the structure.
         """
 
         self.comm = comm
@@ -189,6 +192,8 @@ class TacsSteadyInterface(SolverInterface):
         # Set Aitken relaxation flag
         self.relaxation_scheme = relaxation_scheme
         self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
+
+        self.struct_loads_file = struct_loads_file
 
         # const load in TACS, separate and added onto from coupled loading
         self.has_const_load = Fvec is not None
@@ -226,6 +231,15 @@ class TacsSteadyInterface(SolverInterface):
             struct_X = self.struct_X.getArray()
             for body in model.bodies:
                 body.initialize_struct_nodes(struct_X, struct_id=struct_id)
+
+        # Read in fixed loads from file
+        if self.struct_loads_file is not None:
+            loads_data = model._read_struct_loads(comm, self.struct_loads_file)
+
+            for body in model.bodies:
+                body._distribute_struct_loads(
+                    loads_data, include_elastic=True, include_thermal=False
+                )
 
         # Generate output
         self.gen_output = gen_output
@@ -707,6 +721,17 @@ class TacsSteadyInterface(SolverInterface):
                     ext_force_array[self.thermal_index :: ndof] += struct_flux[
                         :
                     ].astype(TACS.dtype)
+
+                if self.struct_loads_file is not None:
+                    fixed_struct_loads = body._fixed_struct_loads[scenario.id]
+                    fixed_struct_heat_flux = body._fixed_struct_heat_flux[scenario.id]
+                    for i in range(3):
+                        ext_force_array[i::ndof] += fixed_struct_loads[i::3].astype(
+                            TACS.dtype
+                        )
+                    ext_force_array[
+                        self.thermal_index :: ndof
+                    ] += fixed_struct_heat_flux[:].astype(TACS.dtype)
 
             # add in optional constant load
             if self.has_const_load:
@@ -1263,6 +1288,7 @@ class TacsSteadyInterface(SolverInterface):
         debug=False,
         add_loads=True,  # whether it will try to add loads or not
         relaxation_scheme: AitkenRelaxationTacs = None,
+        struct_loads_file=None,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1285,6 +1311,8 @@ class TacsSteadyInterface(SolverInterface):
             The options passed to pyTACS
         relaxation_scheme: Relaxation Scheme Object
             Object to store relaxation scheme settings. If None, then no relaxation is used.
+        struct_loads_file: str
+            File name of the struct_loads_file to be used as a constant load to the structure.
         """
 
         # Split the communicator
@@ -1433,6 +1461,7 @@ class TacsSteadyInterface(SolverInterface):
             debug=debug,
             panel_length_constraint=panel_length_constraint,
             relaxation_scheme=relaxation_scheme,
+            struct_loads_file=struct_loads_file,
         )
 
 
