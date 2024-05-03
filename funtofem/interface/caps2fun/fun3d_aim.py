@@ -283,9 +283,6 @@ class Fun3dAim:
 
     @property
     def mesh_morph_filepath(self):
-        # if self.handcrafted_mesh_morph:
-        #     return self.handcrafted_mesh_morph.hc_mesh_morph_filepath
-        # else:
         return os.path.join(self.analysis_dir, "Flow", self.mesh_morph_filename)
 
     def pre_analysis(self):
