@@ -38,14 +38,14 @@ class TestFun3dTacs(unittest.TestCase):
     FILENAME = "fun3d-tacs-driver.txt"
     FILEPATH = os.path.join(results_folder, FILENAME)
 
-    def test_alpha_turbulent_aeroelastic(self):
+    def test_alpha_turbulent_aeroelastic_quads(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
+        test_scenario = Scenario.steady("turb_quads", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)
@@ -76,14 +76,14 @@ class TestFun3dTacs(unittest.TestCase):
         # run the complex step test on the model and driver
         # max_rel_error = TestResult.complex_step(
         max_rel_error = TestResult.finite_difference(
-            "fun3d+tacs-turbulent-aeroelastic-flow",
+            "fun3d+tacs-turbulent-quads-aeroelastic-flow",
             model,
             driver,
             TestFun3dTacs.FILEPATH,
         )
         self.assertTrue(max_rel_error < 1e-7)
 
-    def test_thick_turbulent_aeroelastic(self):
+    def test_thick_turbulent_aeroelastic_quads(self):
         # build the funtofem model with one body and scenario
         model = FUNtoFEMmodel("plate")
         plate = Body.aeroelastic("plate", boundary=2)
@@ -93,7 +93,7 @@ class TestFun3dTacs(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        test_scenario = Scenario.steady("turbulent", steps=500, uncoupled_steps=10)
+        test_scenario = Scenario.steady("turb_quads", steps=500, uncoupled_steps=10)
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
         Function.lift().register_to(test_scenario)
@@ -122,7 +122,7 @@ class TestFun3dTacs(unittest.TestCase):
         # run the complex step test on the model and driver
         # max_rel_error = TestResult.complex_step
         max_rel_error = TestResult.finite_difference(
-            "fun3d+tacs-turbulent-aeroelastic-structural",
+            "fun3d+tacs-turbulent-quads-aeroelastic-structural",
             model,
             driver,
             TestFun3dTacs.FILEPATH,

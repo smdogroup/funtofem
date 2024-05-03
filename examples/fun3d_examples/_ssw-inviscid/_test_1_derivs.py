@@ -158,8 +158,8 @@ cruise.set_stop_criterion(
     early_stopping=True,
     min_forward_steps=30,
     min_adjoint_steps=20,
-    post_tight_forward_steps=0, #100
-    post_tight_adjoint_steps=0, #100
+    post_tight_forward_steps=0,  # 100
+    post_tight_adjoint_steps=0,  # 100
 )
 
 mass = Function.mass().optimize(
