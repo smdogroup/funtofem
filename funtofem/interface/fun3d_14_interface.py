@@ -534,13 +534,13 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def initialize_forward_tight_coupling(self):
-        self._forward_coupling_frequency = 1
+    def initialize_forward_tight_coupling(self, scenario):
+        self._forward_coupling_frequency = scenario.post_forward_coupling_freq
         self.fun3d_flow.set_coupling_frequency(self._forward_coupling_frequency)
         return
 
-    def initialize_adjoint_tight_coupling(self):
-        self._adjoint_coupling_frequency = 1
+    def initialize_adjoint_tight_coupling(self, scenario):
+        self._adjoint_coupling_frequency = scenario.post_adjoint_coupling_freq
         self.fun3d_adjoint.set_coupling_frequency(self._adjoint_coupling_frequency)
         return
 

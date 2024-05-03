@@ -78,12 +78,12 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-# wing = Body.aeroelastic("wing", boundary=3).relaxation(
-#     AitkenRelaxation(
-#         theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
-#     )
-# )
-wing = Body.aeroelastic("wing", boundary=2)
+wing = Body.aeroelastic("wing", boundary=2).relaxation(
+    AitkenRelaxation(
+        theta_init=0.6, theta_max=0.95, history_file=aitken_file, debug=True
+    )
+)
+# wing = Body.aeroelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -158,8 +158,8 @@ cruise.set_stop_criterion(
     early_stopping=True,
     min_forward_steps=30,
     min_adjoint_steps=20,
-    post_tight_forward_steps=100,
-    post_tight_adjoint_steps=100,
+    post_tight_forward_steps=0,  # 100
+    post_tight_adjoint_steps=0,  # 100
 )
 
 mass = Function.mass().optimize(

@@ -28,9 +28,9 @@ class PlotManager:
 
         hist_dict_list = []
         for line in lines:
-            if "New design" in line:
+            if "Design #" in line:
                 hist_dict = {}
-            if "New design" in line or "Functions" in line:
+            if "Design #" in line or "Functions" in line:
                 after_lbrace = line.split("{")[1]
                 before_rbrace = after_lbrace.split("}")[0]
                 chunks = before_rbrace.split(",")
@@ -75,6 +75,7 @@ class PlotManager:
         self.hist_dict_list = hist_dict_list
         self.functions = []  # funtofem functions objects
         self.constr_dicts = []
+        self.absolute_value = []  # absolute value functions
 
     def include(self, func):
         self.functions += [func]
@@ -84,6 +85,8 @@ class PlotManager:
 
     def get_hist_array(self, func):
         array = np.array([hist_dict[func.name] for hist_dict in self.hist_dict_list])
+        if func.name in self.absolute_value or func.plot_name in self.absolute_value:
+            array = np.abs(array)
         return array * func.scale
 
     def get_constr_array(self, func):
@@ -111,6 +114,9 @@ class PlotManager:
                 "value": value,
             }
         ]
+
+    def add_absolute_value(self, name):
+        self.absolute_value = [name]
 
     def get_r_string(self, omag):
         assert isinstance(omag, int)
@@ -167,7 +173,7 @@ class PlotManager:
             for ifunc, func in enumerate(self.functions):
                 if self.valid_function(func):
                     if show_scales:
-                        omag = int(np.floor(np.log(func.scale) / np.log(10)))
+                        omag = int(np.floor(np.log10(func.scale)))
                         label = func.plot_name + self.get_r_string(omag)
                     else:
                         label = func.plot_name

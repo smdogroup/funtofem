@@ -1564,8 +1564,8 @@ class Body(Base):
             # self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             self.theta_adj = np.ones((nf), dtype=self.dtype) * self.theta_init
 
-            self.prev_adj_update = np.zeros((ns, nf), dtype=self.dtype)
-            self.aitken_adj_vec = np.zeros((ns, nf), dtype=self.dtype)
+            self.prev_adj_update = np.zeros((3 * ns, nf), dtype=self.dtype)
+            self.aitken_adj_vec = np.zeros((3 * ns, nf), dtype=self.dtype)
 
             # Aitken data for the temperatures
             self.theta_adj_t = np.ones((nf), dtype=self.dtype) * self.theta_init
