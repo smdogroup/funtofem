@@ -486,13 +486,13 @@ class FUNtoFEMmodel(object):
                         body_name = entries[2]
                         mesh_data[body_name] = {"aeroID": [], "aeroX": []}
                     elif len(entries) == 4 and entries[0] != "body":
-                        mesh_data[body_name]["aeroID"] += [entries[0]]
+                        mesh_data[body_name]["aeroID"] += [int(entries[0])]
                         mesh_data[body_name]["aeroX"] += entries[1:4]
 
                     elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
-                            "aeroID": entries[0],
+                            "aeroID": int(entries[0]),
                             "load": entries[1:4],
                             "hflux": entries[4],
                         }
@@ -591,7 +591,7 @@ class FUNtoFEMmodel(object):
                     elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
-                            "structID": entries[0],
+                            "structID": int(entries[0]),
                             "load": entries[1:4],
                             "hflux": entries[4],
                         }
