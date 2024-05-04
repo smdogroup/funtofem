@@ -19,9 +19,9 @@ solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
     fun3d_dir="cfd",
-    forward_stop_tolerance=1e-15,
+    forward_stop_tolerance=5e-16,
     forward_min_tolerance=1e-10,
-    adjoint_stop_tolerance=1e-13,
+    adjoint_stop_tolerance=1e-15,
     adjoint_min_tolerance=1e-8,
     debug=global_debug_flag,
 )
