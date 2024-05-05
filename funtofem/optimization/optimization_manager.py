@@ -240,10 +240,16 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
-                forward_res = self.driver.solvers.flow.get_forward_residual()
-                forward_steps = self.driver.solvers.flow._last_forward_step
-                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
-                adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                if self.driver.solvers.flow is not None:
+                    forward_res = self.driver.solvers.flow.get_forward_residual()
+                    forward_steps = self.driver.solvers.flow._last_forward_step
+                    adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                    adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                else:
+                    forward_res = 0.0
+                    forward_steps = 1
+                    adjoint_res = 0.0
+                    adjoint_steps = 1
                 self._design_hdl.write(
                     f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
                 )
