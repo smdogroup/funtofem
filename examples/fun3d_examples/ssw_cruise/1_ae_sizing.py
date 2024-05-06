@@ -21,7 +21,7 @@ csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
 hot_start = False
 store_history = True
 
-test_derivatives = True
+test_derivatives = False
 
 nprocs_tacs = 8
 
