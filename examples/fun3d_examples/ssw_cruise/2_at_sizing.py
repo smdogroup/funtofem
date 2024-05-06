@@ -36,7 +36,8 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
-T_inf = 268.338  # Freestream temperature
+T_inf = 500.0
+T_ref = 268.338  # struct ref temp
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
@@ -141,7 +142,7 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise",
+    "cruise_hot",
     steps=300,
     forward_coupling_frequency=10,  # 300 total fun3d steps
     adjoint_steps=100,
@@ -162,7 +163,7 @@ ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
 ).register_to(cruise)
 temperature = Function.temperature().register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
-cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
+cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
 
