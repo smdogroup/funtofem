@@ -134,13 +134,12 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
-mass = Function.mass().optimize(
-    scale=1.0e-4, objective=True, plot=True, plot_name="mass"
-)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
-)
-cruise.include(mass).include(ksfailure)
+).register_to(cruise)
+mass = Function.mass().optimize(
+    scale=1.0e-4, objective=True, plot=True, plot_name="mass"
+).register_to(cruise)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)
@@ -177,7 +176,7 @@ solvers.structural = TacsSteadyInterface.create_from_bdf(
 
 # read in aero loads
 aero_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "uncoupled_loads.txt")
-f2f_model.read_aero_loads(comm, aero_loads_file)
+f2f_model._read_aero_loads(comm, aero_loads_file)
 
 transfer_settings = TransferSettings(npts=200)
 

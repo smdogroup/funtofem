@@ -189,14 +189,14 @@ load_factor.set_name("steady_flight").optimize(
 takeoff_WR = 0.97
 climb_WR = 0.985
 land_WR = 0.995
-range = 12800 # km
-range *= 1e3 # m
+_range = 12800 # km
+_range *= 1e3 # m
 tsfc = 3.9e-5  # kg/N/s, Rolls Royce Olympus 593 engine
 _mach_cruise = 0.5
 _ainf_cruise = 295  # m/s, @ 60 kft
 _vinf_cruise = _mach_cruise * _ainf_cruise
 cruise_WR = CompositeFunction.exp(
-    -range * tsfc / _vinf_cruise * cdrag / clift
+    -_range * tsfc / _vinf_cruise * cdrag / clift
 )
 fuel_WR = 1.06 * (1 - takeoff_WR * climb_WR * land_WR * cruise_WR)
 togw = LGW / (1 - fuel_WR)
