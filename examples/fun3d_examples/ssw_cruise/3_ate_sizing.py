@@ -11,17 +11,22 @@ from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
 import os, time
+import argparse
+
+parent_parser = argparse.ArgumentParser(add_help=False)
+parent_parser.add_argument("--hotstart", type=bool, default=False)
+parent_parser.add_argument("--testderiv", type=bool, default=False)
+args = parent_parser.parse_args()
+
+# options
+hot_start = args.hotstart
+store_history = True
+test_derivatives = args.testderiv
 
 comm = MPI.COMM_WORLD
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "geometry", "ssw.csm")
-
-# Optimization options
-hot_start = False
-store_history = True
-
-test_derivatives = False
 
 nprocs_tacs = 8
 
@@ -397,9 +402,12 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(
     options={
-        "Verify level": 0,
+        "Verify level": -1 if hot_start else 0,
+        "Major "
         "Function precision": 1e-6,
-        "Major Optimality tol": 1e-6,
+        "Major step limit": 5e-2,
+        "Nonderivative linesearch": None,
+        "Major Optimality tol": 1e-4,
     }
 )
 
