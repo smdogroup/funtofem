@@ -43,7 +43,7 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # Freestream quantities -- see README
 T_inf = 500.0
 T_ref = 268.338  # struct ref temp
-q_inf = 1.21945e4  # Dynamic pressure
+q_inf = 5.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
 f2f_model = FUNtoFEMmodel("ssw-sizing2")
@@ -184,9 +184,8 @@ cruise.register_to(f2f_model)
 # ----------------------------
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
-clift *= 14.0  # 0.095 => 1.33 approx
+clift *= 2.5  # 0.095 => 1.33 approx
 mass_wingbox = 308  # kg
-q_inf = 1.21945e4
 # flying wing, glider structure
 mass_payload = 100  # kg
 mass_frame = 0  # kg
