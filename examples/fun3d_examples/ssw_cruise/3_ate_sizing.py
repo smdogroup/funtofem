@@ -40,11 +40,11 @@ T_inf = 268.338  # Freestream temperature
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing1")
+f2f_model = FUNtoFEMmodel("ssw-sizing3")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct1",
+    problem_name="capsStruct3",
     active_procs=[0],
     verbosity=1,
 )
@@ -77,7 +77,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
-wing = Body.aerothermal("wing", boundary=2)
+wing = Body.aerothermoelastic("wing", boundary=2)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -159,6 +159,7 @@ cdrag = Function.drag(body=0).register_to(cruise)
 ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
     scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
 ).register_to(cruise)
+temperature = Function.temperature().register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -204,6 +205,67 @@ togw.set_name("togw").optimize(  # kg
     scale=1.0e-5, objective=True, plot=True, plot_name="togw"
 ).register_to(f2f_model)
 
+# Buckling constraints
+# --------------------
+
+# define material properties here (assuming metal / isotropic)
+E = aluminum._E1
+Tref = T_inf
+nu = aluminum._nu12
+alpha = aluminum._alpha1  # CTE (coeff thermal expansion)
+
+# plate dimensions
+a = 5.0 / (nribs + 1)  # 1-direction length
+b = 1.0 / (nspars + 1)  # 2-direction width
+
+# for each skin panel set up a buckling constraint
+for iOML in range(1, nOML + 1):
+    # get the associated skin thickness variable
+    thick = wing.get_variable(f"OML{iOML}")
+
+    # compute thermal stress and in-plane loads assuming plate is pinned
+    # on all sides so no axial contraction (constrained)
+    dT = temperature - Tref
+    sigma_11 = (
+        alpha * dT * E / (1 - nu)
+    )  # compressive thermal stress here (+ is compressive)
+    N11 = sigma_11 * thick
+
+    # compute some laminate plate properties (despite metal and non-laminate)
+    Q11 = E / (1 - nu**2)
+    Q22 = Q11
+    Q12 = nu * Q11
+    G12 = E / 2.0 / (1 + nu)
+    Q66 = G12
+    I = thick**3 / 12.0
+    D11 = Q11 * I
+    D22 = Q22 * I
+    D12 = Q12 * I
+    D66 = G12 * I
+
+    # compute important non-dimensional parameters
+    rho_0 = a / b
+    # xi normally defined with D but only one-ply metal so simplify with floats only (not CompositeFunctions)
+    xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
+
+    # then you can assume m1 close to rho_0 the plate aspect ratio
+    m1 = int(rho_0)
+
+    # compute the critical in-plane load for an unstiffened panel in axial loading
+    Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
+    N11_cr = (
+        np.pi**2
+        * Dgeom_avg
+        / b**2
+        * ( m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
+    )
+
+    # compute the buckling failure criterion
+    safety_factor = 1.5
+    mu_thermal_buckle = N11 / N11_cr * safety_factor
+    mu_thermal_buckle.set_name(f"therm_buckle_{iOML}").optimize(
+        upper=1.0, scale=1e0, objective=False, plot=True
+    ).register_to(f2f_model)
 
 # skin thickness adjacency constraints
 # ------------------------------------
@@ -271,10 +333,10 @@ if test_derivatives:  # test using the finite difference test
 
     # run the finite difference test
     max_rel_error = TestResult.derivative_test(
-        "fun3d+tacs-ssw1",
+        "fun3d+tacs-ssw3",
         model=f2f_model,
         driver=f2f_driver,
-        status_file="1-derivs.txt",
+        status_file="3-derivs.txt",
         complex_mode=False,
         epsilon=1e-4,
     )
@@ -293,14 +355,14 @@ if test_derivatives:  # test using the finite difference test
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-design_out_file = os.path.join(base_dir, "design", "design-2.txt")
+design_in_file = os.path.join(base_dir, "design", "design-2.txt")
+design_out_file = os.path.join(base_dir, "design", "design-3.txt")
 
 design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-2.hst")
+history_file = os.path.join(design_folder, "design-3.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
@@ -348,5 +410,3 @@ if comm.rank == 0:
     print(f"Final solution = {sol_xdict}", flush=True)
 
 # ---------------------------------------------------->
-struct_loads_file = os.path.join(os.getcwd(), "cfd", "loads", "coupled_struct_loads.txt")
-f2f_model.write_struct_loads(comm, struct_loads_file)
