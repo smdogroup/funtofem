@@ -55,8 +55,8 @@
 /
 &global
   moving_grid = .true.
-  boundary_animation_freq = -1
-  volume_animation_freq = -1
+  boundary_animation_freq = 1000
+  volume_animation_freq = 1000
   recompute_turb_dist = .false.
 /
 &elasticity_gmres

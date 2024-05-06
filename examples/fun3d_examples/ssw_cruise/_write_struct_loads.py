@@ -6,22 +6,11 @@ No shape variables are included in this optimization.
 This example is finished and converged well in SNOPT
 """
 
-from pyoptsparse import SNOPT, Optimization
 from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
 import os, time
-import argparse
-
-parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument('--hotstart', default=False, action=argparse.BooleanOptionalAction)
-parent_parser.add_argument('--testderiv', default=False, action=argparse.BooleanOptionalAction)
-args = parent_parser.parse_args()
-
 # options
-hot_start = args.hotstart
-store_history = True
-test_derivatives = args.testderiv
 
 comm = MPI.COMM_WORLD
 
@@ -216,6 +205,7 @@ togw.set_name("togw").optimize(  # kg
 
 # skin thickness adjacency constraints
 # ------------------------------------
+test_derivatives = False
 if not test_derivatives:
     variables = f2f_model.get_variables()
     section_prefix = ["rib", "OML"]
@@ -271,92 +261,15 @@ f2f_driver = FUNtoFEMnlbgs(
     reload_funtofem_states=False,
 )
 
-if test_derivatives:  # test using the finite difference test
-    # load the previous design
-    # design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-    # f2f_model.read_design_variables_file(comm, design_in_file)
 
-    start_time = time.time()
-
-    # run the finite difference test
-    max_rel_error = TestResult.derivative_test(
-        "fun3d+tacs-ssw1",
-        model=f2f_model,
-        driver=f2f_driver,
-        status_file="1-derivs.txt",
-        complex_mode=False,
-        epsilon=1e-4,
-    )
-
-    end_time = time.time()
-    dt = end_time - start_time
-    if comm.rank == 0:
-        print(f"total time for ssw derivative test is {dt} seconds", flush=True)
-        print(f"max rel error = {max_rel_error}", flush=True)
-
-    # exit before optimization
-    exit()
-
-
-# PYOPTSPARSE OPTMIZATION
+# WRITE STRUCT LOADS FILE
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "sizing-oneway.txt")
-design_out_file = os.path.join(base_dir, "design", "design-1.txt")
-
-design_folder = os.path.join(base_dir, "design")
-if comm.rank == 0:
-    if not os.path.exists(design_folder):
-        os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-1.hst")
-store_history_file = history_file if store_history else None
-hot_start_file = history_file if hot_start else None
-
-# Reload the previous design
+design_in_file = os.path.join(base_dir, "design", "design-1.txt")
 f2f_model.read_design_variables_file(comm, design_in_file)
 
-if comm.rank == 0:
-    # f2f_driver.print_summary()
-    f2f_model.print_summary()
-
-manager = OptimizationManager(
-    f2f_driver,
-    design_out_file=design_out_file,
-    hot_start=hot_start,
-    hot_start_file=hot_start_file,
-    debug=True,
-)
-
-# create the pyoptsparse optimization problem
-opt_problem = Optimization("sswOpt", manager.eval_functions)
-
-# add funtofem model variables to pyoptsparse
-manager.register_to_problem(opt_problem)
-
-# run an SNOPT optimization
-snoptimizer = SNOPT(
-    options={
-        "Verify level": 0, #-1 if hot_start else 0
-        "Function precision": 1e-6,
-        "Major step limit": 5e-2,
-        "Nonderivative linesearch": None,
-        "Major Optimality tol": 1e-4,
-    }
-)
-
-sol = snoptimizer(
-    opt_problem,
-    sens=manager.eval_gradients,
-    storeHistory=store_history_file,
-    hotStart=hot_start_file,
-)
-
-# print final solution
-sol_xdict = sol.xStar
-
-if comm.rank == 0:
-    print(f"Final solution = {sol_xdict}", flush=True)
+f2f_driver.solve_forward()
 
 # ---------------------------------------------------->
 struct_loads_file = os.path.join(

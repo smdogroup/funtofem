@@ -14,8 +14,8 @@ import os, time
 import argparse
 
 parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument("--hotstart", type=bool, default=False)
-parent_parser.add_argument("--testderiv", type=bool, default=False)
+parent_parser.add_argument('--hotstart', default=False, action=argparse.BooleanOptionalAction)
+parent_parser.add_argument('--testderiv', default=False, action=argparse.BooleanOptionalAction)
 args = parent_parser.parse_args()
 
 # options
@@ -159,7 +159,8 @@ cruise.set_stop_criterion(
 )
 
 aoa = cruise.get_variable("AOA", set_active=True)
-aoa.set_bounds(lower=0.0, value=2.0, upper=4.0, scale=10)
+# aoa var not read in since scenario changes from cruise to cruise_hot so user-specified here
+aoa.set_bounds(lower=0.0, value=2.207, upper=4.0, scale=10)
 
 clift = Function.lift(body=0).register_to(cruise)
 cdrag = Function.drag(body=0).register_to(cruise)
@@ -169,6 +170,7 @@ ksfailure = (
     .register_to(cruise)
 )
 temperature = Function.temperature().register_to(cruise)
+temperature.optimize(scale=1e-2, objective=False, upper=500, plot_name="temp")
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -401,7 +403,7 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(
     options={
-        "Verify level": -1 if hot_start else 0,
+        "Verify level": 0, #-1 if hot_start else 0
         "Function precision": 1e-6,
         "Major step limit": 5e-2,
         "Nonderivative linesearch": None,
