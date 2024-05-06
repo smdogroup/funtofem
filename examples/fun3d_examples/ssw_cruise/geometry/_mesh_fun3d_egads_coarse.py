@@ -53,5 +53,3 @@ Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
 
 fun3d_model.setup()
 fun3d_aim.pre_analysis()
-
-

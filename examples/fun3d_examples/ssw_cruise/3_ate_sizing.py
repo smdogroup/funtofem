@@ -42,7 +42,7 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # <----------------------------------------------------
 # Freestream quantities -- see README
 T_ref = 268.338  # struct ref temp
-T_inf = 500 # K
+T_inf = 500  # K
 q_inf = 1.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
@@ -163,9 +163,11 @@ aoa.set_bounds(lower=0.0, value=2.0, upper=4.0, scale=10)
 
 clift = Function.lift(body=0).register_to(cruise)
 cdrag = Function.drag(body=0).register_to(cruise)
-ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
-    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
-).register_to(cruise)
+ksfailure = (
+    Function.ksfailure(ks_weight=10.0, safety_factor=1.5)
+    .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
+    .register_to(cruise)
+)
 temperature = Function.temperature().register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
@@ -179,11 +181,11 @@ cruise.register_to(f2f_model)
 
 # steady flight constraint L=W
 # at end of cruise (fix later)
-# ---------------------------- 
+# ----------------------------
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
-clift *= 14.0 # 0.095 => 1.33 approx
-mass_wingbox = 308 # kg
+clift *= 14.0  # 0.095 => 1.33 approx
+mass_wingbox = 308  # kg
 q_inf = 1.21945e4
 # flying wing, glider structure
 mass_payload = 100  # kg
@@ -191,7 +193,7 @@ mass_frame = 0  # kg
 mass_fuel_res = 2e3  # kg
 LGM = mass_payload + mass_frame + mass_fuel_res + 2 * mass_wingbox
 LGW = 9.81 * LGM  # kg => N
-dim_lift = clift * 2 * q_inf 
+dim_lift = clift * 2 * q_inf
 load_factor = dim_lift - 1.0 * LGW
 load_factor.set_name("steady_flight").optimize(
     lower=0.0, upper=0.0, scale=1e-3, objective=False, plot=True
@@ -202,15 +204,13 @@ load_factor.set_name("steady_flight").optimize(
 takeoff_WR = 0.97
 climb_WR = 0.985
 land_WR = 0.995
-_range = 12800 # km
-_range *= 1e3 # m
+_range = 12800  # km
+_range *= 1e3  # m
 tsfc = 3.9e-5  # kg/N/s, Rolls Royce Olympus 593 engine
 _mach_cruise = 0.5
 _ainf_cruise = 295  # m/s, @ 60 kft
 _vinf_cruise = _mach_cruise * _ainf_cruise
-cruise_WR = CompositeFunction.exp(
-    -_range * tsfc / _vinf_cruise * cdrag / clift
-)
+cruise_WR = CompositeFunction.exp(-_range * tsfc / _vinf_cruise * cdrag / clift)
 fuel_WR = 1.06 * (1 - takeoff_WR * climb_WR * land_WR * cruise_WR)
 togw = LGW / (1 - fuel_WR)
 togw.set_name("togw").optimize(  # kg
@@ -266,10 +266,7 @@ for iOML in range(1, nOML + 1):
     # compute the critical in-plane load for an unstiffened panel in axial loading
     Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
     N11_cr = (
-        np.pi**2
-        * Dgeom_avg
-        / b**2
-        * ( m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
+        np.pi**2 * Dgeom_avg / b**2 * (m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
     )
 
     # compute the buckling failure criterion
@@ -403,8 +400,7 @@ manager.register_to_problem(opt_problem)
 snoptimizer = SNOPT(
     options={
         "Verify level": -1 if hot_start else 0,
-        "Major "
-        "Function precision": 1e-6,
+        "Major " "Function precision": 1e-6,
         "Major step limit": 5e-2,
         "Nonderivative linesearch": None,
         "Major Optimality tol": 1e-4,

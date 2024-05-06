@@ -134,12 +134,16 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady("cruise", steps=300, uncoupled_steps=0)
-ksfailure = Function.ksfailure(ks_weight=10.0, safety_factor=1.5).optimize(
-    scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise"
-).register_to(cruise)
-mass = Function.mass().optimize(
-    scale=1.0e-4, objective=True, plot=True, plot_name="mass"
-).register_to(cruise)
+ksfailure = (
+    Function.ksfailure(ks_weight=10.0, safety_factor=1.5)
+    .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
+    .register_to(cruise)
+)
+mass = (
+    Function.mass()
+    .optimize(scale=1.0e-4, objective=True, plot=True, plot_name="mass")
+    .register_to(cruise)
+)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
 cruise.register_to(f2f_model)

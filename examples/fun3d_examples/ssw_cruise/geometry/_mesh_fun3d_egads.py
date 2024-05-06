@@ -34,7 +34,7 @@ fun3d_aim.set_config_parameter("view:struct", 0)
 
 mesh_aim.surface_aim.set_surface_mesh(
     edge_pt_min=10,
-    edge_pt_max=12, # Farfield edges are being controlled by edge_pt_max for some reason
+    edge_pt_max=12,  # Farfield edges are being controlled by edge_pt_max for some reason
     mesh_elements="Mixed",
     global_mesh_size=1.0,
     max_surf_offset=0.01,
@@ -71,7 +71,7 @@ mesh_aim.surface_aim.aim.input.Mesh_Sizing = {
     "tipMesh": {"tessParams": [0.02, 0.01, 20.0]},
 }
 
-# Can coarsen up by changing tipMesh 1st tessParams a 
+# Can coarsen up by changing tipMesh 1st tessParams a
 # bit, or by changing num_pts_up/num_pts_bot/num_pts_y
 
 if case == "inviscid":
