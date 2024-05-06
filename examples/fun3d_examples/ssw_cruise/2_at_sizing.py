@@ -77,7 +77,7 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
-wing = Body.aerothermal("wing", boundary=2)
+wing = Body.aerothermal("wing", boundary=1)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
@@ -140,7 +140,7 @@ tacs_aim.pre_analysis()
 
 # make a funtofem scenario
 cruise = Scenario.steady(
-    "cruise_turb",
+    "cruise",
     steps=300,
     forward_coupling_frequency=10,  # 300 total fun3d steps
     adjoint_steps=100,

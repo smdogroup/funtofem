@@ -7,13 +7,9 @@ comm = MPI.COMM_WORLD
 
 # Set whether to build an inviscid or viscous mesh
 # ------------------------------------------------
-case = "inviscid"
-# case = "turbulent"
+# setting up for laminar flow with no BL (very coarse mesh for quick demo)
+project_name = "ssw-turb"
 
-if case == "inviscid":
-    project_name = "ssw-inviscid"
-else:  # turbulent
-    project_name = "ssw-turb"
 # ------------------------------------------------
 
 # Set up FUN3D model, AIMs, and turn on the flow view
@@ -41,13 +37,10 @@ mesh_aim.surface_aim.set_surface_mesh(
     max_dihedral_angle=15,
 )
 
-if case == "inviscid":
-    Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
-else:
-    mesh_aim.volume_aim.set_boundary_layer(
-        initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
-    )
-    Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
+mesh_aim.volume_aim.set_boundary_layer(
+    initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
+)
+Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
 
 refinement = 1
 
@@ -61,9 +54,4 @@ Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
 fun3d_model.setup()
 fun3d_aim.pre_analysis()
 
-# if comm.rank == 0:
-#     mesh_aim.surface_aim.aim.runAnalysis()
-#     mesh_aim.surface_aim.aim.geometry.view()
-# exit()
 
-# fun3d_aim.pre_analysis()
