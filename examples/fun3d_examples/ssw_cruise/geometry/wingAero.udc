@@ -39,14 +39,14 @@ box -ff -ff -ff 2*ff 2*ff 2*ff
    attribute capsGroup $Farfield
    attribute capsMesh $Farfield
    attribute AFLR_GBC $FARFIELD_UG3_GBC
-   attribute AFLR4_CMP_ID 1
+   attribute AFLR4_CMP_ID 2
    attribute AFLR4_Scale_Factor 20.0
 
 restore wingSolid
 select face
    attribute capsGroup $wing
    attribute capsMesh $wingMesh
-   attribute AFLR4_CMP_ID 3
+   attribute AFLR4_CMP_ID 1
    attribute AFLR4_Edge_Refinement_Weight 0.1
    attribute AFLR_GBC $-STD_UG3_GBC
 
@@ -56,8 +56,8 @@ select face 4
 
 subtract
 
-restore sym_cut_box
-intersect
+#restore sym_cut_box
+#intersect
 
 select edge $tagComp1 $leEdge
    attribute capsMesh $leEdgeMesh
@@ -68,18 +68,18 @@ select edge $tagComp1 $teEdge
 select edge $tagComp $tipEdge
    attribute capsMesh $tipEdgeMesh
 
-select face $capsGroup $*
-select not
-   attribute capsGroup $SymmetryY
-   attribute capsMesh $SymmetryY
-   attribute AFLR4_CMP_ID 2
-   attribute AFLR_GBC $BL_INT_UG3_GBC
+#select face $capsGroup $*
+#select not
+#   attribute capsGroup $SymmetryY
+#   attribute capsMesh $SymmetryY
+#   attribute AFLR4_CMP_ID 2
+#   attribute AFLR_GBC $BL_INT_UG3_GBC
 
-udprim editAttr filename <<
-   EDGE ADJ2FACE capsGroup=wing
-   AND ADJ2FACE capsGroup=SymmetryY
-   SET capsMesh=rootEdgeMesh
->>
+#udprim editAttr filename <<
+#   EDGE ADJ2FACE capsGroup=wing
+#   AND ADJ2FACE capsGroup=SymmetryY
+#   SET capsMesh=rootEdgeMesh
+#>>
 
 rotatex 90 0 0
 rotatez -aoa 0 0
