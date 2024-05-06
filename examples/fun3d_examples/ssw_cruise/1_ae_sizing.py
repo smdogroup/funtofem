@@ -14,8 +14,8 @@ import os, time
 import argparse
 
 parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument("--hotstart", type=bool, default=False)
-parent_parser.add_argument("--testderiv", type=bool, default=False)
+parent_parser.add_argument('--hotstart', default=False, action=argparse.BooleanOptionalAction)
+parent_parser.add_argument('--testderiv', default=False, action=argparse.BooleanOptionalAction)
 args = parent_parser.parse_args()
 
 # options

@@ -11,9 +11,6 @@ from mpi4py import MPI
 from tacs import caps2tacs
 import os, time
 # options
-hot_start = args.hotstart
-store_history = True
-test_derivatives = args.testderiv
 
 comm = MPI.COMM_WORLD
 
@@ -208,6 +205,7 @@ togw.set_name("togw").optimize(  # kg
 
 # skin thickness adjacency constraints
 # ------------------------------------
+test_derivatives = False
 if not test_derivatives:
     variables = f2f_model.get_variables()
     section_prefix = ["rib", "OML"]
