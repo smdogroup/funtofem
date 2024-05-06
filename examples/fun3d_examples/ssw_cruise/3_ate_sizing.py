@@ -72,6 +72,7 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
+caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
 
 # ---------------------------------------------------->
 

@@ -51,11 +51,9 @@ exit()
 titanium_alloy = caps2tacs.Isotropic.titanium_alloy().register_to(tacs_model)
 
 tacs_aim = tacs_model.tacs_aim
-tacs_aim.set_config_parameter("mode:flow", 0)
-tacs_aim.set_config_parameter("mode:struct", 1)
 nribs = int(tacs_model.get_config_parameter("nribs"))
 nspars = int(tacs_model.get_config_parameter("nspars"))
-nOML = int(tacs_aim.get_output_parameter("wingStruct:nOML"))
+nOML = nribs - 1
 
 for irib in range(1, nribs + 1):
     caps2tacs.ThicknessVariable(
@@ -85,11 +83,11 @@ tacs_model.setup(include_aim=True)
 tacs_model.pre_analysis()
 
 # # print out the mesh empty soln (to view mesh)
-tacs_model.createTACSProbs(addFunctions=True)
-SPs = tacs_model.SPs
-for caseID in SPs:
-    SPs[caseID].writeSolution(
-        baseName="tacs_output",
-        outputDir=tacs_aim.analysis_dir,
-        number=0,
-    )
+# tacs_model.createTACSProbs(addFunctions=True)
+# SPs = tacs_model.SPs
+# for caseID in SPs:
+#     SPs[caseID].writeSolution(
+#         baseName="tacs_output",
+#         outputDir=tacs_aim.analysis_dir,
+#         number=0,
+#     )

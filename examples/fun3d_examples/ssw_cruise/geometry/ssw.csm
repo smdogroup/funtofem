@@ -1,7 +1,7 @@
 # Super Simple Wing geometry script
 
-cfgpmtr view:flow 0
-cfgpmtr view:struct 1
+cfgpmtr view:flow 1
+cfgpmtr view:struct 0
 
 cfgpmtr midplane 0 # 0 is off, 1 is upper, 2 is lower
 cfgpmtr chopMode 2 # 0 is off, 1 is LE, 2 is middle, 3 is TE
@@ -12,7 +12,7 @@ cfgpmtr nspars 2
 ## DESIGN PARAMETERS
 # ---------------------------------
 # General wing and airfoil parameters
-despmtr ff 20.0         # Farfield distance
+despmtr ff 100.0         # Farfield distance
 despmtr sspan 5.0       # Semispan
 despmtr camber 0.02     # Maximum camber
 despmtr xCamber 0.4     # Location of maximum camber
@@ -34,6 +34,8 @@ despmtr twist4 0.0
 # Internal structure parameters
 despmtr LEchop 0.05
 despmtr TEchop 0.05
+
+cfgpmtr thermal 1
 # ---------------------------------
 
 ifthen view:struct EQ 1
@@ -42,7 +44,7 @@ ifthen view:struct EQ 1
     udparg $/wingStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
     udparg $/wingStruct chord chord sspan sspan camber camber xCamber xCamber
     udparg $/wingStruct LEchop LEchop TEchop TEchop 
-    udparg $/wingStruct chopMode chopMode
+    udparg $/wingStruct chopMode chopMode thermal thermal
     udparg $/wingStruct nribs nribs nspars nspars
     udparg $/wingStruct aoa aoa
     udprim $/wingStruct midplane midplane

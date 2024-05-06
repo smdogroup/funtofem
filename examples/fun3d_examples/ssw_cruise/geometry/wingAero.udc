@@ -21,6 +21,7 @@ interface twist4 in 1
 
 interface sharpTE in 1
 interface ff in 20.0
+interface mirrored in 0
 
 # Make the symmetry cut box
 box -2*ff -2*ff 0 4*ff 4*ff -4*ff
@@ -39,7 +40,7 @@ box -ff -ff -ff 2*ff 2*ff 2*ff
    attribute capsMesh $Farfield
    attribute AFLR_GBC $FARFIELD_UG3_GBC
    attribute AFLR4_CMP_ID 1
-   attribute AFLR4_Scale_Factor 10.0
+   attribute AFLR4_Scale_Factor 20.0
 
 restore wingSolid
 select face
@@ -48,6 +49,10 @@ select face
    attribute AFLR4_CMP_ID 3
    attribute AFLR4_Edge_Refinement_Weight 0.1
    attribute AFLR_GBC $-STD_UG3_GBC
+
+select face 4
+   attribute capsTag $tip
+   attribute capsMesh $tipMesh
 
 subtract
 
@@ -76,12 +81,31 @@ udprim editAttr filename <<
    SET capsMesh=rootEdgeMesh
 >>
 
+rotatex 90 0 0
+rotatez -aoa 0 0
+
+ifthen mirrored EQ 1
+   store halfWing
+   restore halfWing
+
+   mirror 0 1 0
+   restore halfWing
+   union
+endif
+
+udprim editAttr filename <<
+   EDGE ADJ2FACE capsGroup=wing
+   SET capsGroup=wing
+
+   EDGE ADJ2FACE capsGroup=Farfield
+   SET capsGroup=Farfield
+>>
+
 select body
    attribute capsAIM $fun3dAIM;aflr4AIM;aflr3AIM;egadsTessAIM
    attribute capsMeshLength 1.0
 
-rotatex 90 0 0
-rotatez -aoa 0 0
+
 
 end
-|||||||
+||||||||

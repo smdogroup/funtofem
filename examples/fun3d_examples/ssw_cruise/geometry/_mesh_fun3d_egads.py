@@ -7,9 +7,13 @@ comm = MPI.COMM_WORLD
 
 # Set whether to build an inviscid or viscous mesh
 # ------------------------------------------------
-# setting up for laminar flow with no BL (very coarse mesh for quick demo)
-project_name = "ssw-turb"
+# case = "inviscid"
+case = "turbulent"
 
+if case == "inviscid":
+    project_name = "ssw-inviscid"
+else:  # turbulent
+    project_name = "ssw-turb"
 # ------------------------------------------------
 
 # Set up FUN3D model, AIMs, and turn on the flow view
@@ -29,18 +33,54 @@ fun3d_aim.set_config_parameter("view:struct", 0)
 # ------------------------------------------------
 
 mesh_aim.surface_aim.set_surface_mesh(
-    edge_pt_min=15,
-    edge_pt_max=20,
+    edge_pt_min=10,
+    edge_pt_max=12, # Farfield edges are being controlled by edge_pt_max for some reason
     mesh_elements="Mixed",
-    global_mesh_size=0.5,
+    global_mesh_size=1.0,
     max_surf_offset=0.01,
     max_dihedral_angle=15,
 )
 
-mesh_aim.volume_aim.set_boundary_layer(
-    initial_spacing=0.001, max_layers=35, thickness=0.01, use_quads=True
-)
-Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
+le_dx = 0.005
+te_dx = 0.010
+tip_dy = 0.5
+num_pts_up = 40
+num_pts_bot = 40
+num_pts_y = 60
+mesh_aim.surface_aim.aim.input.Mesh_Sizing = {
+    "teEdgeMesh": {
+        "numEdgePoints": num_pts_y,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0, tip_dy],
+    },
+    "leEdgeMesh": {
+        "numEdgePoints": num_pts_y,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [0, tip_dy],
+    },
+    "tipEdgeMesh": {
+        "numEdgePoints": num_pts_bot,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [le_dx, te_dx],
+    },
+    "rootEdgeMesh": {
+        "numEdgePoints": num_pts_bot,
+        "edgeDistribution": "Tanh",
+        "initialNodeSpacing": [le_dx, te_dx],
+    },
+    "tipMesh": {"tessParams": [0.02, 0.01, 20.0]},
+}
+
+# Can coarsen up by changing tipMesh 1st tessParams a 
+# bit, or by changing num_pts_up/num_pts_bot/num_pts_y
+
+if case == "inviscid":
+    Fun3dBC.inviscid(caps_group="wing").register_to(fun3d_model)
+else:
+    mesh_aim.volume_aim.set_boundary_layer(
+        initial_spacing=5e-5, max_layers=55, thickness=0.1, use_quads=True
+    )
+    Fun3dBC.viscous(caps_group="wing", wall_spacing=1).register_to(fun3d_model)
 
 refinement = 1
 
@@ -48,10 +88,15 @@ FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
 
 mesh_aim.saveDictOptions(FluidMeshOptions)
 
-Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
+# Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
 Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
 
 fun3d_model.setup()
 fun3d_aim.pre_analysis()
 
+# if comm.rank == 0:
+#     mesh_aim.surface_aim.aim.runAnalysis()
+#     mesh_aim.surface_aim.aim.geometry.view()
+# exit()
 
+# fun3d_aim.pre_analysis()

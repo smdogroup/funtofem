@@ -27,6 +27,9 @@ interface TEchop in 1
 interface midplane in 0 #0 is off, 1 is upper, 2 is lower
 interface chopMode in 2 #0 is off, 1 is LE, 2 is middle, 3 is TE
 
+interface thermal in 1
+interface mirrored in 0
+
 interface nribs in 7
 interface nspars in 2
 
@@ -45,187 +48,45 @@ set zmax zmargin
 set nOML nribs-1
 
 # Make the full wing solid
-udparg $/wingSolid tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
-udparg $/wingSolid twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
-udparg $/wingSolid chord chord sspan sspan camber camber xCamber xCamber
-udparg $/wingSolid LEchop LEchop TEchop TEchop 
-udparg $/wingSolid chopMode chopMode
-udprim $/wingSolid midplane midplane
-store wingSolid
+udparg $/fullStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/fullStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/fullStruct chord chord sspan sspan camber camber xCamber xCamber
+udparg $/fullStruct LEchop LEchop TEchop TEchop 
+udparg $/fullStruct chopMode chopMode
+udprim $/fullStruct midplane midplane
 
-# Make the spars
-patbeg ispar nspars
-   set fr ispar/(nspars+1)
-   set x_spar chord*fr
+select edge
+   attribute tagMidplane $none
 
-   box x_spar ymin zmin 0.0 (ymax-ymin) (zmax-zmin)
-   restore wingSolid
-   intersect
-   
-   select face
-      attribute capsMesh $spar
-      attribute tagComp $spar
-      attribute capsGroup !$spar+ispar
-patend
+udparg $/midPlane tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/midPlane twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/midPlane chord chord sspan sspan camber camber xCamber xCamber
+udparg $/midPlane LEchop LEchop TEchop TEchop 
+udparg $/midPlane chopMode chopMode
+udprim $/midPlane midplane 1
 
-# Make the ribs
-patbeg irib nribs
-   set fr (irib-1)/(nribs-1)
-   set z_rib -sspan*fr
+subtract
 
-   box xmin ymin z_rib (xmax-xmin) (ymax-ymin) 0.0
-   restore wingSolid
-   intersect
-   
-   select face
-    attribute capsMesh $rib
-    attribute tagComp $rib
-    attribute capsGroup !$rib+irib
-   
-   # Union each rib to the existing spars / internal structure
-   ifthen irib EQ 1
-      patbeg ispar nspars
-         union
-      patend
-   else
-      union
-   endif
-patend
+select edge $tagMidplane $none
+select not
+   attribute capsConstraint $midplane
 
-store internalStruct
+rotatex 90 0 0
+rotatez -aoa 0 0
 
-restore wingSolid
-extract 0
-restore internalStruct
+store halfWing
+restore halfWing
 
-union
+ifthen mirrored EQ 1
+   mirror 0 1 0
 
-select face $tagComp1 $rearFace
-   attribute capsMesh $spar
-   attribute tagComp $spar
-   attribute capsGroup $TEspar
-
-select face $tagComp1 $frontFace
-   attribute capsMesh $spar
-   attribute tagComp $spar
-   attribute capsGroup $LEspar
-
-select face $tagComp1 $wingUpper
-   attribute tagComp $OML
-   attribute tagComp2 $OMLtop
-
-select face $tagComp1 $wingLower
-   attribute tagComp $OML
-   attribute tagComp2 $OMLbot
-
-# ATTRIBUTES
-# -------------------
-select face $capsGroup $*
-   attribute has_group $yes
-select face $capsGroup $*
-   select not
-   attribute has_group $no
-
-# first just label the Outer Mold Line (OML) + LE spaces
-# station crossing and triangle faces will be dealt with later
-udprim editAttr filename <<
-   patbeg iOML nribs-1
-      # OML faces
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$rib+(iOML+1)
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-   patend
->>
-
-# loop back through for faces crossing a turn in structure
-# as well as triangle faces touching LE 
-udprim editAttr filename <<
-   patbeg iOML nribs-1        
-      # faces on inboard side of station crossing
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2EDGE tagComp=station
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$OML+(iOML-1)
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-      SET stationFace=inboard
-      
-      # faces on outboard side of station crossing
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2EDGE tagComp=station
-      AND ADJ2FACE stationFace=inboard
-      AND ADJ2FACE capsGroup=!$OML+iOML
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-      
-      # triangle faces near LE that don't touch both ribs
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2FACE capsGroup=LEspar
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$OML+iOML
-      AND ADJ2FACE capsGroup=!$OML+(iOML-1)
-      SET capsGroup=!$OML+(iOML)
-      SET has_group=yes
-   patend
->>
-
-
-# Add root constraint to wing
-# -----------------------------
-select face $capsGroup $rib1
-   attribute capsConstraint $root
-
-# assign capsMesh attributes to edges and fix root constraint
-udprim editAttr filename <<
-   EDGE ADJ2FACE capsConstraint=root
-   SET capsConstraint=root
-   
-   NODE ADJ2EDGE capsConstraint=root
-   SET capsConstraint=root
-
-   FACE HAS tagComp=rib
-   AND ADJ2FACE tagComp=LE
-   SET capsMesh=LEribFace
-
-   FACE HAS tagComp=rib
-   AND ADJ2FACE tagComp=TE
-   SET capsMesh=TEribFace
-
-   EDGE ADJ2FACE capsMesh=LEribFace
-   SET capsMesh=LEribEdge
-
-   EDGE ADJ2FACE capsMesh=TEribFace
-   SET capsMesh=TEribEdge
-
-   EDGE ADJ2FACE tagComp=rib
-   AND ADJ2FACE tagComp=spar
-   SET capsMesh=vert
-
-   EDGE ADJ2FACE tagComp=rib
-   AND ADJ2FACE tagComp=OML
-   SET capsMesh=chord
-
-   EDGE ADJ2FACE tagComp=spar
-   AND ADJ2FACE tagComp=OML
-   SET capsMesh=span
->>
-
-# Add load attribute to OML
-select face $tagComp $OML
-   attribute capsLoad $OML
+   restore halfWing
+   union
+endif
 
 # Add AIM attribute to specify the analyses to use
 select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
-rotatex 90 0 0
-rotatez -aoa 0 0
-
 end
-|||||||||||||||
+|||||||||||||||||||||||||||
