@@ -401,7 +401,7 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(
     options={
-        "Verify level": -1 if hot_start else 0,
+        "Verify level": 0, #-1 if hot_start else 0
         "Function precision": 1e-6,
         "Major step limit": 5e-2,
         "Nonderivative linesearch": None,
