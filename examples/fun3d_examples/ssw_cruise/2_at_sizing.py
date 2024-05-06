@@ -41,8 +41,9 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
-T_inf = 500.0
+T_inf = 550.0 # K, freestream temp
 T_ref = 268.338  # struct ref temp
+temp_BC = 150 # K, gauge temperature
 q_inf = 5.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
@@ -78,7 +79,7 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
-caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
+caps2tacs.TemperatureConstraint("midplane", temperature=temp_BC).register_to(tacs_model)
 
 # ---------------------------------------------------->
 
@@ -169,8 +170,7 @@ ksfailure = (
     .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
     .register_to(cruise)
 )
-temperature = Function.temperature().register_to(cruise)
-temperature.optimize(scale=1e-2, objective=False, upper=500, plot_name="temp")
+temp_gauge_area = Function.temperature().optimize(scale=1e-2, objective=False, upper=500, plot=True, plot_name="temp").register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -223,13 +223,16 @@ togw.set_name("togw").optimize(  # kg
 
 # define material properties here (assuming metal / isotropic)
 E = aluminum._E1
-Tref = T_inf
+Tref = T_ref
 nu = aluminum._nu12
 alpha = aluminum._alpha1  # CTE (coeff thermal expansion)
 
 # plate dimensions
 a = 5.0 / (nribs + 1)  # 1-direction length
 b = 1.0 / (nspars + 1)  # 2-direction width
+
+wing_area = 10
+temp_gauge = temp_gauge_area / wing_area
 
 # for each skin panel set up a buckling constraint
 for iOML in range(1, nOML + 1):
@@ -238,9 +241,8 @@ for iOML in range(1, nOML + 1):
 
     # compute thermal stress and in-plane loads assuming plate is pinned
     # on all sides so no axial contraction (constrained)
-    dT = temperature - Tref
     sigma_11 = (
-        alpha * dT * E / (1 - nu)
+        alpha * temp_gauge * E / (1 - nu)
     )  # compressive thermal stress here (+ is compressive)
     N11 = sigma_11 * thick
 

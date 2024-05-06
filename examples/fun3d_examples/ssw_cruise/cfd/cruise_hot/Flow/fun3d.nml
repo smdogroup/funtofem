@@ -17,7 +17,7 @@
   mach_number     = 0.5
   angle_of_attack = 2.0
   reynolds_number = 8.77639e6
-  temperature     = 500.0
+  temperature     = 550.0
   temperature_units = 'Kelvin'
 /
 &code_run_control
@@ -55,8 +55,8 @@
 /
 &global
   moving_grid = .true.
-  boundary_animation_freq = -1
-  volume_animation_freq = -1
+  boundary_animation_freq = 1000
+  volume_animation_freq = 1000
   recompute_turb_dist = .false.
 /
 &elasticity_gmres
