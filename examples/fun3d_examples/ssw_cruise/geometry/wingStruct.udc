@@ -13,6 +13,8 @@ interface camber in 0.0
 interface xCamber in 0.4
 interface aoa in 0.0
 
+interface exploded in 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
+
 # Geometric twist parameters
 interface twist1 in 1
 interface twist2 in 1
@@ -26,7 +28,6 @@ interface TEchop in 1
 
 interface midplane in 0 #0 is off, 1 is upper, 2 is lower
 interface chopMode in 2 #0 is off, 1 is LE, 2 is middle, 3 is TE
-
 interface thermal in 1
 interface mirrored in 0
 
@@ -52,24 +53,26 @@ udparg $/fullStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
 udparg $/fullStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
 udparg $/fullStruct chord chord sspan sspan camber camber xCamber xCamber
 udparg $/fullStruct LEchop LEchop TEchop TEchop 
-udparg $/fullStruct chopMode chopMode
+udparg $/fullStruct chopMode chopMode exploded exploded
 udprim $/fullStruct midplane midplane
 
-select edge
-   attribute tagMidplane $none
+ifthen thermal EQ 1
+   select edge
+      attribute tagMidplane $none
 
-udparg $/midPlane tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
-udparg $/midPlane twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
-udparg $/midPlane chord chord sspan sspan camber camber xCamber xCamber
-udparg $/midPlane LEchop LEchop TEchop TEchop 
-udparg $/midPlane chopMode chopMode
-udprim $/midPlane midplane 1
+   udparg $/midPlane tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+   udparg $/midPlane twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+   udparg $/midPlane chord chord sspan sspan camber camber xCamber xCamber
+   udparg $/midPlane LEchop LEchop TEchop TEchop 
+   udparg $/midPlane chopMode chopMode
+   udprim $/midPlane midplane 1
 
-subtract
+   subtract
 
-select edge $tagMidplane $none
-select not
-   attribute capsConstraint $midplane
+   select edge $tagMidplane $none
+   select not
+      attribute capsConstraint $midplane
+endif
 
 rotatex 90 0 0
 rotatez -aoa 0 0
@@ -89,4 +92,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||

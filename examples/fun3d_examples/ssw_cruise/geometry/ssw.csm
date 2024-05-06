@@ -1,9 +1,9 @@
 # Super Simple Wing geometry script
 
-cfgpmtr view:flow 1
-cfgpmtr view:struct 0
+cfgpmtr view:flow 0
+cfgpmtr view:struct 1
 
-cfgpmtr midplane 0 # 0 is off, 1 is upper, 2 is lower
+cfgpmtr exploded 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
 cfgpmtr chopMode 2 # 0 is off, 1 is LE, 2 is middle, 3 is TE
 
 cfgpmtr nribs 7
@@ -46,8 +46,8 @@ ifthen view:struct EQ 1
     udparg $/wingStruct LEchop LEchop TEchop TEchop 
     udparg $/wingStruct chopMode chopMode thermal thermal
     udparg $/wingStruct nribs nribs nspars nspars
-    udparg $/wingStruct aoa aoa
-    udprim $/wingStruct midplane midplane
+    udparg $/wingStruct exploded exploded
+    udprim $/wingStruct aoa aoa
 endif
 
 ifthen view:flow EQ 1
@@ -60,4 +60,4 @@ ifthen view:flow EQ 1
 endif
 
 end
-||
+||||||
