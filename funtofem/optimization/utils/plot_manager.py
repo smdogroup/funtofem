@@ -162,6 +162,7 @@ class PlotManager:
         yscale_log=False,
         xmargin: int = 0.02,
         ymargin: int = 0.02,
+        colors=None
     ):
         if plot_name is None:
             plot_name = "f2f-history"
@@ -169,7 +170,8 @@ class PlotManager:
         with plt.style.context(niceplots.get_style(niceplots_style)):
             fig, ax = plt.subplots()
             plt.margins(x=xmargin, y=ymargin)
-            colors = niceplots.get_colors_list(niceplots_style)
+            if colors is None:
+                colors = niceplots.get_colors_list(niceplots_style)
             for ifunc, func in enumerate(self.functions):
                 if self.valid_function(func):
                     if show_scales:

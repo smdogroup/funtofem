@@ -6,6 +6,8 @@ interface tc2 in 1
 interface tc3 in 1
 interface tc4 in 1
 
+interface exploded in 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
+
 # Rectangular wing, no sweep
 interface chord in 1
 interface sspan in 5.0
@@ -222,10 +224,29 @@ udprim editAttr filename <<
 select face $tagComp $OML
    attribute capsLoad $OML
 
+# make exploded view
+# 0 is off
+ifthen exploded EQ 1 # uOML
+   select face $tagComp1 $wingUpper
+   extract @sellist
+elseif exploded EQ 2 # int-struct
+   select face $tagComp $rib
+   select add $tagComp $spar
+   extract @sellist
+elseif exploded EQ 3 #lOML
+   select face $tagComp1 $wingLower
+   extract @sellist
+endif
+ifthen exploded EQ 0
+   set a 1.0
+else
+   select face
+   attribute capsConstraint $dummy
+endif
 
 # Add AIM attribute to specify the analyses to use
 select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||
+|||||||||||||||||||||
