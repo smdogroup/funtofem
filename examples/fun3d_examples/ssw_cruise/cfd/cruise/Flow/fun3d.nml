@@ -8,7 +8,7 @@
 /
 &governing_equations
   eqn_type = 'compressible'
-  viscous_terms = 'turbulent'
+  viscous_terms = 'laminar'
 /
 &turbulent_diffusion_models
   turbulence_model = 'sa'
@@ -21,7 +21,7 @@
   temperature_units = 'Kelvin'
 /
 &code_run_control
-  restart_write_freq = 1000
+  restart_write_freq = 100
   restart_read       = 'off'
   steps              =  10000
   stopping_tolerance = 1e-18
@@ -34,7 +34,7 @@
   flux_limiter            = 'none'
   smooth_limiter_coeff    = 1.0
   freeze_limiter_iteration = 0
-  first_order_iterations = 50
+  first_order_iterations = 00
 /
 &nonlinear_solver_parameters
   time_accuracy = "steady"
@@ -60,9 +60,9 @@
   recompute_turb_dist = .false.
 /
 &elasticity_gmres
-  elasticity = 1
+  elasticity = 2
   preconditioner_iters = 100
-  nsearch = 200 ! num GMRES steps
+  nsearch = 100 ! num GMRES steps
   ileft = 0
   nrestarts = 4 ! leads to 50*15 = 750 grid iterations
   tol = 1e-15
@@ -84,8 +84,8 @@
   q_criterion = .true.
 /
 &boundary_output_variables
-  number_of_boundaries = 1
-  boundary_list = '3'
+  number_of_boundaries = 2
+  boundary_list = '1-2'
   temperature = .true.
   x = .true.
   y = .true.
