@@ -15,12 +15,16 @@ interface camber in 0.0
 interface xCamber in 0.4
 interface aoa in 0.0
 
+interface spar_a1 in 1.0
+interface spar_a2 in 0.0
+
 # Geometric twist parameters
 interface twist1 in 1
 interface twist2 in 1
 interface twist3 in 1
 interface twist4 in 1
 
+interface allOMLDVs in 0
 interface sharpTE in 1
 
 interface LEchop in 1
@@ -35,6 +39,8 @@ interface nribs in 7
 interface nspars in 2
 
 interface nOML out 0
+
+set spar_a3 1.0-spar_a1-spar_a2
 
 set xmargin 5.0
 set ymargin 5.0
@@ -60,7 +66,8 @@ store wingSolid
 # Make the spars
 patbeg ispar nspars
    set fr ispar/(nspars+1)
-   set x_spar chord*fr
+   set fr2 fr*(spar_a1+fr*(spar_a2+spar_a3*fr))
+   set x_spar chord*fr2
 
    box x_spar ymin zmin 0.0 (ymax-ymin) (zmax-zmin)
    restore wingSolid
@@ -130,54 +137,49 @@ select face $capsGroup $*
    select not
    attribute has_group $no
 
-# first just label the Outer Mold Line (OML) + LE spaces
-# station crossing and triangle faces will be dealt with later
-udprim editAttr filename <<
-   patbeg iOML nribs-1
-      # OML faces
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$rib+(iOML+1)
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-   patend
->>
+
 
 # loop back through for faces crossing a turn in structure
 # as well as triangle faces touching LE 
-udprim editAttr filename <<
-   patbeg iOML nribs-1        
-      # faces on inboard side of station crossing
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2EDGE tagComp=station
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$OML+(iOML-1)
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-      SET stationFace=inboard
-      
-      # faces on outboard side of station crossing
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2EDGE tagComp=station
-      AND ADJ2FACE stationFace=inboard
-      AND ADJ2FACE capsGroup=!$OML+iOML
-      SET capsGroup=!$OML+iOML
-      SET has_group=yes
-      
-      # triangle faces near LE that don't touch both ribs
-      FACE HAS has_group=no
-      AND HAS tagComp=OML
-      AND ADJ2FACE capsGroup=LEspar
-      AND ADJ2FACE capsGroup=!$rib+iOML
-      AND ADJ2FACE capsGroup=!$OML+iOML
-      AND ADJ2FACE capsGroup=!$OML+(iOML-1)
-      SET capsGroup=!$OML+(iOML)
-      SET has_group=yes
-   patend
->>
+ifthen allOMLDVs EQ 0
+# first just label the Outer Mold Line (OML) + LE spaces
+# station crossing and triangle faces will be dealt with later
+   udprim editAttr filename <<
+      patbeg iOML nribs-1
+         # OML faces
+         FACE HAS has_group=no
+         AND HAS tagComp=OML
+         AND ADJ2FACE capsGroup=!$rib+iOML
+         AND ADJ2FACE capsGroup=!$rib+(iOML+1)
+         SET capsGroup=!$OML+iOML
+         SET has_group=yes
+      patend
+   >>
+else # allOMLDVs EQ 1
+   # first just label the Outer Mold Line (OML) + LE spaces
+   # station crossing and triangle faces will be dealt with later
+   udprim editAttr filename <<
+      patbeg iOML nribs-1
+         # lOML faces
+         FACE HAS has_group=no
+         AND HAS tagComp=OML
+         AND ADJ2FACE capsGroup=!$rib+iOML
+         AND ADJ2FACE capsGroup=!$rib+(iOML+1)
+         AND ADJ2FACE capsGroup=LEspar
+         SET capsGroup=!$lOML+iOML
+         SET has_group=yes
+         
+         # rOML faces
+         FACE HAS has_group=no
+         AND HAS tagComp=OML
+         AND ADJ2FACE capsGroup=!$rib+iOML
+         AND ADJ2FACE capsGroup=!$rib+(iOML+1)
+         AND ADJ2FACE capsGroup=TEspar
+         SET capsGroup=!$rOML+iOML
+         SET has_group=yes
+      patend
+   >>
+endif
 
 
 # Add root constraint to wing
@@ -249,4 +251,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||
+|||||||||||||||||||||||||

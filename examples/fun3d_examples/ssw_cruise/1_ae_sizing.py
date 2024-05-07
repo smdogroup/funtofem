@@ -65,6 +65,7 @@ f2f_model.structural = tacs_model
 tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
+tacs_aim.set_config_parameter("allOMLDVs", 0)
 
 for proc in tacs_aim.active_procs:
     if comm.rank == proc:

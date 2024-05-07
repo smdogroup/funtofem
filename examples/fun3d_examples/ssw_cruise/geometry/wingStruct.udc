@@ -13,7 +13,11 @@ interface camber in 0.0
 interface xCamber in 0.4
 interface aoa in 0.0
 
+interface allOMLDVs in 0
 interface exploded in 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
+
+interface spar_a1 in 1.0
+interface spar_a2 in 0.0
 
 # Geometric twist parameters
 interface twist1 in 1
@@ -54,6 +58,8 @@ udparg $/fullStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
 udparg $/fullStruct chord chord sspan sspan camber camber xCamber xCamber
 udparg $/fullStruct LEchop LEchop TEchop TEchop 
 udparg $/fullStruct chopMode chopMode exploded exploded
+udparg $/fullStruct nspars nspars allOMLDVs allOMLDVs
+udparg $/fullStruct spar_a1 spar_a1 spar_a2 spar_a2
 udprim $/fullStruct midplane midplane
 
 ifthen thermal EQ 1
@@ -92,4 +98,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||
