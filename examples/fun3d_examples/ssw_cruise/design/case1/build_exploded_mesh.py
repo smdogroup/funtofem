@@ -4,7 +4,7 @@ Sean P. Engelstad, Georgia Tech 2024
 build the exploded meshes for the structural analysis for paraview
 """
 
-nprocs = 3 #3
+nprocs = 3  # 3
 
 # import openmdao.api as om
 from funtofem import *
@@ -128,4 +128,3 @@ tacs_aim.setup_aim()
 f2f_model.read_design_variables_file(comm, "design-1.txt")
 
 tacs_aim.pre_analysis()
-

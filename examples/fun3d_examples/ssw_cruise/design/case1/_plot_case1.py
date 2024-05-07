@@ -17,9 +17,9 @@ Function.plot("ksfailure").optimize(scale=1.0, plot_name="ksfailure").register_t
     plotter
 )
 plotter.add_constraint(value=1.0, name="ks-constr")
-Function.plot("steady-flight").optimize(scale=1.0e-3, plot_name="steady-flight").register_to(
-    plotter
-)
+Function.plot("steady-flight").optimize(
+    scale=1.0e-3, plot_name="steady-flight"
+).register_to(plotter)
 plotter.add_absolute_value("steady-flight")
 
 # three color schemes from color scheme website https://coolors.co/palettes/popular/3%20colors
@@ -37,7 +37,7 @@ colors11 = ["#1d2f6f", "#8390fa", "#fac748"]
 six_colors = ["#264653", "#287271", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"]
 
 plt.figure("case1")
-for ifunc,func in enumerate(plotter.functions):
+for ifunc, func in enumerate(plotter.functions):
     plt.plot(
         plotter.iterations,
         plotter.get_hist_array(func),
@@ -76,7 +76,7 @@ for line in lines:
     if _start:
         chunks = line.split(" ")
         nempty_chunks = [_ for _ in chunks if len(_) > 0]
-        if len(nempty_chunks) < 5: # skip blank lines
+        if len(nempty_chunks) < 5:  # skip blank lines
             continue
         else:
             try:
@@ -90,13 +90,13 @@ for line in lines:
         if "(" in feas:
             feas = feas[1:-1]
         feasibility += [float(feas)]
-        optim = nempty_chunks[_start_idx+1]
+        optim = nempty_chunks[_start_idx + 1]
         if "(" in optim:
             optim = optim[1:-1]
         optimality += [float(optim)]
-        merit = nempty_chunks[_start_idx+2]
+        merit = nempty_chunks[_start_idx + 2]
         meritFunc += [float(merit)]
-        #print(nempty_chunks)
+        # print(nempty_chunks)
     if "Itns" in line:
         _start = True
     if "SNOPTC EXIT" in line:
