@@ -247,7 +247,7 @@ temp_gauge = temp_gauge_area / wing_area
 for iprefix, prefix in enumerate(["lOML", "rOML"]):
     # panel width of this panel
     b = blist[iprefix]
-    
+
     for iOML in range(1, nOML + 1):
         # get the associated skin thickness variable
         thick = wing.get_variable(prefix + str(iOML))
@@ -293,13 +293,12 @@ for iprefix, prefix in enumerate(["lOML", "rOML"]):
         ).register_to(f2f_model)
 
 
-exit()
 # skin thickness adjacency constraints
 # ------------------------------------
 if not test_derivatives:
     variables = f2f_model.get_variables()
     section_prefix = ["rib", "lOML", "rOML"]
-    section_nums = [nribs, nOML]
+    section_nums = [nribs, nOML, nOML]
     for isection, prefix in enumerate(section_prefix):
         section_num = section_nums[isection]
         for iconstr in range(1, section_num):
