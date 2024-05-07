@@ -1,9 +1,6 @@
 """
-1_panel_thickness.py
-
-Run a coupled optimization of the panel thicknesses of the wing structure.
-No shape variables are included in this optimization.
-This example is finished and converged well in SNOPT
+2 - aerothermal two-way coupled sizing of a simple wing in laminar flow with thermal buckling constraints
+Sean Engelstad, GT SMDO Lab
 """
 
 from pyoptsparse import SNOPT, Optimization
@@ -325,7 +322,7 @@ if not test_derivatives:
             # adj_constr = (left_var - right_var) / left_var
             # adj_ratio = 0.15
             adj_constr = left_var - right_var
-            adj_diff = 0.002
+            adj_diff = 0.004
             adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
                 lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
             ).register_to(f2f_model)
@@ -439,7 +436,7 @@ snoptimizer = SNOPT(
     options={
         "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
-        # "Major step limit": 1e0,
+        "Major step limit": 1e-1,
         "Nonderivative linesearch": None,
         "Major Optimality tol": 1e-4,
     }

@@ -1,9 +1,6 @@
 """
-1_panel_thickness.py
-
-Run a coupled optimization of the panel thicknesses of the wing structure.
-No shape variables are included in this optimization.
-This example is finished and converged well in SNOPT
+1 - aeroelastic two-way coupled sizing of a simple wing in laminar flow
+Sean Engelstad, GT SMDO Lab
 """
 
 from pyoptsparse import SNOPT, Optimization

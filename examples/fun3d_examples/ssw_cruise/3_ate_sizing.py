@@ -1,9 +1,6 @@
 """
-1_panel_thickness.py
-
-Run a coupled optimization of the panel thicknesses of the wing structure.
-No shape variables are included in this optimization.
-This example is finished and converged well in SNOPT
+2 - aerothermoelastic two-way coupled sizing of a simple wing in laminar flow with thermal buckling constraints
+Sean Engelstad, GT SMDO Lab
 """
 
 from pyoptsparse import SNOPT, Optimization
@@ -52,11 +49,11 @@ temp_BC = 300 - T_ref  # K, gauge temperature
 q_inf = 2.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing3")
+f2f_model = FUNtoFEMmodel("ssw-sizing2")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct3",
+    problem_name="capsStruct2",
     active_procs=[0],
     verbosity=1,
 )
@@ -79,13 +76,14 @@ for proc in tacs_aim.active_procs:
             # "vert": {"numEdgePoints": 4},
         }
 
-tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
 tacs_aim.set_config_parameter("nspars", 1)  # need only one spar here
 tacs_aim.set_config_parameter("thermal", 1)
+rib_a1 = 0.6
 spar_a1 = 0.6
 tacs_aim.set_design_parameter("spar_a1", spar_a1)
+tacs_aim.set_design_parameter("rib_a1", rib_a1)
 tacs_aim.set_config_parameter("allOMLDVs", 1)
 
 # add tacs constraints in
@@ -252,12 +250,20 @@ blist = [b1, b2]
 wing_area = 10
 temp_gauge = temp_gauge_area / wing_area
 
+rib_spaces = np.linspace(0.0, 1.0, nribs+1)
+rib_a2 = 0.0
+rib_a3 = 1.0 - rib_a1 - rib_a2
+mod_rib_spaces = rib_a1 * rib_spaces + rib_a2 * rib_spaces**2 + rib_a3 * rib_spaces**3
+
 # for each skin panel set up a buckling constraint
 for iprefix, prefix in enumerate(["lOML", "rOML"]):
     # panel width of this panel
     b = blist[iprefix]
-
     for iOML in range(1, nOML + 1):
+        # panel length computed using eta'(eta) panel spacing formula
+        rib_space = mod_rib_spaces[iOML+1] - mod_rib_spaces[iOML]
+        a = rib_space * 5.0 # 5.0 is sspan
+
         # get the associated skin thickness variable
         thick = wing.get_variable(prefix + str(iOML))
 
@@ -316,7 +322,7 @@ if not test_derivatives:
             # adj_constr = (left_var - right_var) / left_var
             # adj_ratio = 0.15
             adj_constr = left_var - right_var
-            adj_diff = 0.002
+            adj_diff = 0.004
             adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
                 lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
             ).register_to(f2f_model)
@@ -368,10 +374,10 @@ if test_derivatives:  # test using the finite difference test
 
     # run the finite difference test
     max_rel_error = TestResult.derivative_test(
-        "fun3d+tacs-ssw2",
+        "fun3d+tacs-ssw3",
         model=f2f_model,
         driver=f2f_driver,
-        status_file="2-derivs.txt",
+        status_file="3-derivs.txt",
         complex_mode=False,
         epsilon=1e-4,
     )
@@ -396,13 +402,13 @@ design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-2.hst")
+history_file = os.path.join(design_folder, "design-3.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-design_in_file = os.path.join(base_dir, "design", "design-2.txt")
-f2f_model.read_design_variables_file(comm, design_in_file)
+# design_in_file = os.path.join(base_dir, "design", "design-1.txt")
+# f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
     # f2f_driver.print_summary()
@@ -427,7 +433,7 @@ snoptimizer = SNOPT(
     options={
         "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
-        "Major step limit": 5e-2,
+        "Major step limit": 1e-1,
         "Nonderivative linesearch": None,
         "Major Optimality tol": 1e-4,
     }
