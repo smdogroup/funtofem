@@ -256,56 +256,55 @@ rib_a3 = 1.0 - rib_a1 - rib_a2
 mod_rib_spaces = rib_a1 * rib_spaces + rib_a2 * rib_spaces**2 + rib_a3 * rib_spaces**3
 
 # for each skin panel set up a buckling constraint
-for iprefix, prefix in enumerate(["lOML", "rOML"]):
-    # panel width of this panel
-    b = blist[iprefix]
-    for iOML in range(1, nOML + 1):
-        # panel length computed using eta'(eta) panel spacing formula
-        rib_space = mod_rib_spaces[iOML+1] - mod_rib_spaces[iOML]
-        a = rib_space * 5.0 # 5.0 is sspan
+# panel width of this panel
+b = b2
+for iOML in range(1, nOML + 1):
+    # panel length computed using eta'(eta) panel spacing formula
+    rib_space = mod_rib_spaces[iOML+1] - mod_rib_spaces[iOML]
+    a = rib_space * 5.0 # 5.0 is sspan
 
-        # get the associated skin thickness variable
-        thick = wing.get_variable(prefix + str(iOML))
+    # get the associated skin thickness variable
+    thick = wing.get_variable(f"rOML{iOML}")
 
-        # compute thermal stress and in-plane loads assuming plate is pinned
-        # on all sides so no axial contraction (constrained)
-        sigma_11 = (
-            alpha * temp_gauge * E / (1 - nu)
-        )  # compressive thermal stress here (+ is compressive)
-        N11 = sigma_11 * thick
+    # compute thermal stress and in-plane loads assuming plate is pinned
+    # on all sides so no axial contraction (constrained)
+    sigma_11 = (
+        alpha * temp_gauge * E / (1 - nu)
+    )  # compressive thermal stress here (+ is compressive)
+    N11 = sigma_11 * thick
 
-        # compute some laminate plate properties (despite metal and non-laminate)
-        Q11 = E / (1 - nu**2)
-        Q22 = Q11
-        Q12 = nu * Q11
-        G12 = E / 2.0 / (1 + nu)
-        Q66 = G12
-        I = thick**3 / 12.0
-        D11 = Q11 * I
-        D22 = Q22 * I
-        D12 = Q12 * I
-        D66 = G12 * I
+    # compute some laminate plate properties (despite metal and non-laminate)
+    Q11 = E / (1 - nu**2)
+    Q22 = Q11
+    Q12 = nu * Q11
+    G12 = E / 2.0 / (1 + nu)
+    Q66 = G12
+    I = thick**3 / 12.0
+    D11 = Q11 * I
+    D22 = Q22 * I
+    D12 = Q12 * I
+    D66 = G12 * I
 
-        # compute important non-dimensional parameters
-        rho_0 = a / b
-        # xi normally defined with D but only one-ply metal so simplify with floats only (not CompositeFunctions)
-        xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
+    # compute important non-dimensional parameters
+    rho_0 = a / b
+    # xi normally defined with D but only one-ply metal so simplify with floats only (not CompositeFunctions)
+    xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
 
-        # then you can assume m1 close to rho_0 the plate aspect ratio
-        m1 = np.max([int(rho_0), 1.0])
+    # then you can assume m1 close to rho_0 the plate aspect ratio
+    m1 = np.max([int(rho_0), 1.0])
 
-        # compute the critical in-plane load for an unstiffened panel in axial loading
-        Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
-        N11_cr = (
-            np.pi**2 * Dgeom_avg / b**2 * (m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
-        )
+    # compute the critical in-plane load for an unstiffened panel in axial loading
+    Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
+    N11_cr = (
+        np.pi**2 * Dgeom_avg / b**2 * (m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
+    )
 
-        # compute the buckling failure criterion
-        safety_factor = 3.0
-        mu_thermal_buckle = N11 / N11_cr * safety_factor
-        mu_thermal_buckle.set_name(f"therm_buckle_{prefix}{iOML}").optimize(
-            upper=1.0, scale=1e0, objective=False, plot=True
-        ).register_to(f2f_model)
+    # compute the buckling failure criterion
+    safety_factor = 3.0
+    mu_thermal_buckle = N11 / N11_cr * safety_factor
+    mu_thermal_buckle.set_name(f"therm_buckle_rOML{iOML}").optimize(
+        upper=1.0, scale=1e0, objective=False, plot=True
+    ).register_to(f2f_model)
 
 
 # skin thickness adjacency constraints
@@ -322,7 +321,7 @@ if not test_derivatives:
             # adj_constr = (left_var - right_var) / left_var
             # adj_ratio = 0.15
             adj_constr = left_var - right_var
-            adj_diff = 0.004
+            adj_diff = 0.002
             adj_constr.set_name(f"{prefix}{iconstr}-{iconstr+1}").optimize(
                 lower=-adj_diff, upper=adj_diff, scale=1.0, objective=False
             ).register_to(f2f_model)
