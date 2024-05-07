@@ -47,7 +47,7 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # Freestream quantities -- see README
 T_inf = 550.0  # K, freestream temp
 T_ref = 268.338  # struct ref temp
-temp_BC = 350 - T_ref  # K, gauge temperature
+temp_BC = 300 - T_ref  # K, gauge temperature
 # lower the dynamic pressure, since some inc due to temp
 q_inf = 2.21945e4  # Dynamic pressure
 
@@ -70,9 +70,6 @@ tacs_model.mesh_aim.set_mesh(
 f2f_model.structural = tacs_model
 
 tacs_aim = tacs_model.tacs_aim
-tacs_aim.set_config_parameter("view:flow", 0)
-tacs_aim.set_config_parameter("view:struct", 1)
-
 for proc in tacs_aim.active_procs:
     if comm.rank == proc:
         aim = tacs_model.mesh_aim.aim
@@ -82,7 +79,6 @@ for proc in tacs_aim.active_procs:
             # "vert": {"numEdgePoints": 4},
         }
 
-tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
 tacs_aim.set_config_parameter("nspars", 1)  # need only one spar here
@@ -298,7 +294,7 @@ for iprefix, prefix in enumerate(["lOML", "rOML"]):
         )
 
         # compute the buckling failure criterion
-        safety_factor = 1.5
+        safety_factor = 3.0
         mu_thermal_buckle = N11 / N11_cr * safety_factor
         mu_thermal_buckle.set_name(f"therm_buckle_{prefix}{iOML}").optimize(
             upper=1.0, scale=1e0, objective=False, plot=True
@@ -419,7 +415,7 @@ manager = OptimizationManager(
     design_out_file=design_out_file,
     hot_start=hot_start,
     hot_start_file=hot_start_file,
-    debug=True,
+    debug=False,
 )
 
 # create the pyoptsparse optimization problem
