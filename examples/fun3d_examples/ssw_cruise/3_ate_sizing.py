@@ -41,16 +41,18 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
+T_inf = 550.0 # K, freestream temp
 T_ref = 268.338  # struct ref temp
-T_inf = 500  # K
-q_inf = 5.21945e4  # Dynamic pressure
+temp_BC = 350 - T_ref # K, gauge temperature
+# lower the dynamic pressure, since some inc due to temp
+q_inf = 2.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
 f2f_model = FUNtoFEMmodel("ssw-sizing3")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct3",
+    problem_name="capsStruct2",
     active_procs=[0],
     verbosity=1,
 )
@@ -66,6 +68,11 @@ f2f_model.structural = tacs_model
 tacs_aim = tacs_model.tacs_aim
 tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
+tacs_aim.set_config_parameter("nspars", 1) # need only one spar here
+tacs_aim.set_config_parameter("thermal", 1)
+spar_a1 = 0.6
+tacs_aim.set_design_parameter("spar_a1", spar_a1)
+tacs_aim.set_config_parameter("allOMLDVs", 1)
 
 for proc in tacs_aim.active_procs:
     if comm.rank == proc:
@@ -78,7 +85,7 @@ for proc in tacs_aim.active_procs:
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
-caps2tacs.TemperatureConstraint("midplane").register_to(tacs_model)
+caps2tacs.TemperatureConstraint("midplane", temperature=temp_BC).register_to(tacs_model)
 
 # ---------------------------------------------------->
 
@@ -111,14 +118,15 @@ for ispar in range(1, nspars + 1):
         lower=0.001, upper=0.15, scale=100.0
     ).register_to(wing)
 
-for iOML in range(1, nOML + 1):
-    name = f"OML{iOML}"
-    prop = caps2tacs.ShellProperty(
-        caps_group=name, material=aluminum, membrane_thickness=0.04
-    ).register_to(tacs_model)
-    Variable.structural(name, value=0.01).set_bounds(
-        lower=0.001, upper=0.15, scale=100.0
-    ).register_to(wing)
+for prefix in ["lOML", "rOML"]:
+    for iOML in range(1, nOML + 1):
+        name = prefix + str(iOML)
+        prop = caps2tacs.ShellProperty(
+            caps_group=name, material=aluminum, membrane_thickness=0.04
+        ).register_to(tacs_model)
+        Variable.structural(name, value=0.01).set_bounds(
+            lower=0.001, upper=0.15, scale=100.0
+        ).register_to(wing)
 
 for prefix in ["LE", "TE"]:
     name = f"{prefix}spar"
@@ -159,7 +167,8 @@ cruise.set_stop_criterion(
 )
 
 aoa = cruise.get_variable("AOA", set_active=True)
-aoa.set_bounds(lower=0.0, value=2.0, upper=4.0, scale=10)
+# aoa var not read in since scenario changes from cruise to cruise_hot so user-specified here
+aoa.set_bounds(lower=0.0, value=2.207, upper=4.0, scale=1)
 
 clift = Function.lift(body=0).register_to(cruise)
 cdrag = Function.drag(body=0).register_to(cruise)
@@ -168,7 +177,7 @@ ksfailure = (
     .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
     .register_to(cruise)
 )
-temperature = Function.temperature().register_to(cruise)
+temp_gauge_area = Function.temperature().optimize(scale=1e-2, objective=False, upper=1e10, plot=True, plot_name="temp").register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -185,13 +194,10 @@ cruise.register_to(f2f_model)
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
 clift *= 2.5  # 0.095 => 1.33 approx
-mass_wingbox = 308  # kg
-q_inf = 1.21945e4
-# flying wing, glider structure
+# flying wing
 mass_payload = 100  # kg
-mass_frame = 0  # kg
-mass_fuel_res = 2e3  # kg
-LGM = mass_payload + mass_frame + mass_fuel_res + 2 * mass_wingbox
+mass_frame = 2e3  # kg, mostly flying wing
+LGM = mass_payload + mass_frame + 2 * mass_wingbox
 LGW = 9.81 * LGM  # kg => N
 dim_lift = clift * 2 * q_inf
 load_factor = dim_lift - 1.0 * LGW
@@ -222,66 +228,77 @@ togw.set_name("togw").optimize(  # kg
 
 # define material properties here (assuming metal / isotropic)
 E = aluminum._E1
-Tref = T_inf
+Tref = T_ref
 nu = aluminum._nu12
 alpha = aluminum._alpha1  # CTE (coeff thermal expansion)
 
 # plate dimensions
 a = 5.0 / (nribs + 1)  # 1-direction length
-b = 1.0 / (nspars + 1)  # 2-direction width
+# two internal panels
+chord = 1.0
+b1 = chord * 0.5 * spar_a1
+b2 = chord - b1
+blist = [b1, b2]
+
+wing_area = 10
+temp_gauge = temp_gauge_area / wing_area
 
 # for each skin panel set up a buckling constraint
-for iOML in range(1, nOML + 1):
-    # get the associated skin thickness variable
-    thick = wing.get_variable(f"OML{iOML}")
+for iprefix, prefix in enumerate(["lOML", "rOML"]):
+    # panel width of this panel
+    b = blist[iprefix]
 
-    # compute thermal stress and in-plane loads assuming plate is pinned
-    # on all sides so no axial contraction (constrained)
-    dT = temperature - Tref
-    sigma_11 = (
-        alpha * dT * E / (1 - nu)
-    )  # compressive thermal stress here (+ is compressive)
-    N11 = sigma_11 * thick
+    for iOML in range(1, nOML + 1):
+        # get the associated skin thickness variable
+        thick = wing.get_variable(prefix + str(iOML))
 
-    # compute some laminate plate properties (despite metal and non-laminate)
-    Q11 = E / (1 - nu**2)
-    Q22 = Q11
-    Q12 = nu * Q11
-    G12 = E / 2.0 / (1 + nu)
-    Q66 = G12
-    I = thick**3 / 12.0
-    D11 = Q11 * I
-    D22 = Q22 * I
-    D12 = Q12 * I
-    D66 = G12 * I
+        # compute thermal stress and in-plane loads assuming plate is pinned
+        # on all sides so no axial contraction (constrained)
+        sigma_11 = (
+            alpha * temp_gauge * E / (1 - nu)
+        )  # compressive thermal stress here (+ is compressive)
+        N11 = sigma_11 * thick
 
-    # compute important non-dimensional parameters
-    rho_0 = a / b
-    # xi normally defined with D but only one-ply metal so simplify with floats only (not CompositeFunctions)
-    xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
+        # compute some laminate plate properties (despite metal and non-laminate)
+        Q11 = E / (1 - nu**2)
+        Q22 = Q11
+        Q12 = nu * Q11
+        G12 = E / 2.0 / (1 + nu)
+        Q66 = G12
+        I = thick**3 / 12.0
+        D11 = Q11 * I
+        D22 = Q22 * I
+        D12 = Q12 * I
+        D66 = G12 * I
 
-    # then you can assume m1 close to rho_0 the plate aspect ratio
-    m1 = int(rho_0)
+        # compute important non-dimensional parameters
+        rho_0 = a / b
+        # xi normally defined with D but only one-ply metal so simplify with floats only (not CompositeFunctions)
+        xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
 
-    # compute the critical in-plane load for an unstiffened panel in axial loading
-    Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
-    N11_cr = (
-        np.pi**2 * Dgeom_avg / b**2 * (m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
-    )
+        # then you can assume m1 close to rho_0 the plate aspect ratio
+        m1 = np.max([int(rho_0), 1.0])
 
-    # compute the buckling failure criterion
-    safety_factor = 1.5
-    mu_thermal_buckle = N11 / N11_cr * safety_factor
-    mu_thermal_buckle.set_name(f"therm_buckle_{iOML}").optimize(
-        upper=1.0, scale=1e0, objective=False, plot=True
-    ).register_to(f2f_model)
+        # compute the critical in-plane load for an unstiffened panel in axial loading
+        Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
+        N11_cr = (
+            np.pi**2 * Dgeom_avg / b**2 * (m1**2 / rho_0**2 + rho_0**2 / m1**2 + 2 * xi)
+        )
+
+        # compute the buckling failure criterion
+        safety_factor = 1.5
+        mu_thermal_buckle = N11 / N11_cr * safety_factor
+        mu_thermal_buckle.set_name(f"therm_buckle_{prefix}{iOML}").optimize(
+            upper=1.0, scale=1e0, objective=False, plot=True
+        ).register_to(f2f_model)
+
 
 # skin thickness adjacency constraints
 # ------------------------------------
 if not test_derivatives:
     variables = f2f_model.get_variables()
-    section_prefix = ["rib", "OML"]
-    section_nums = [nribs, nOML]
+    section_prefix = ["rib", "lOML", "rOML"]
+    section_nums = [nribs, nOML, nOML]
     for isection, prefix in enumerate(section_prefix):
         section_num = section_nums[isection]
         for iconstr in range(1, section_num):
@@ -342,10 +359,10 @@ if test_derivatives:  # test using the finite difference test
 
     # run the finite difference test
     max_rel_error = TestResult.derivative_test(
-        "fun3d+tacs-ssw3",
+        "fun3d+tacs-ssw2",
         model=f2f_model,
         driver=f2f_driver,
-        status_file="3-derivs.txt",
+        status_file="2-derivs.txt",
         complex_mode=False,
         epsilon=1e-4,
     )
@@ -364,7 +381,6 @@ if test_derivatives:  # test using the finite difference test
 # <----------------------------------------------------
 
 # create an OptimizationManager object for the pyoptsparse optimization problem
-design_in_file = os.path.join(base_dir, "design", "design-2.txt")
 design_out_file = os.path.join(base_dir, "design", "design-3.txt")
 
 design_folder = os.path.join(base_dir, "design")
@@ -376,7 +392,8 @@ store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-f2f_model.read_design_variables_file(comm, design_in_file)
+# design_in_file = os.path.join(base_dir, "design", "design-1.txt")
+# f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
     # f2f_driver.print_summary()

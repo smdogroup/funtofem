@@ -183,12 +183,10 @@ cruise.register_to(f2f_model)
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
 clift *= 2.5  # 0.095 => 1.33 approx
-mass_wingbox = 308  # kg
 # flying wing, glider structure
 mass_payload = 100  # kg
-mass_frame = 0  # kg
-mass_fuel_res = 2e3  # kg
-LGM = mass_payload + mass_frame + mass_fuel_res + 2 * mass_wingbox
+mass_frame = 2e3  # kg, mostly flying wing
+LGM = mass_payload + mass_frame + 2 * mass_wingbox
 LGW = 9.81 * LGM  # kg => N
 dim_lift = clift * 2 * q_inf
 load_factor = dim_lift - 1.0 * LGW

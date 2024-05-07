@@ -43,7 +43,8 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # Freestream quantities -- see README
 T_inf = 550.0 # K, freestream temp
 T_ref = 268.338  # struct ref temp
-temp_BC = 400 - T_ref # K, gauge temperature
+temp_BC = 350 - T_ref # K, gauge temperature
+# lower the dynamic pressure, since some inc due to temp
 q_inf = 2.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
@@ -167,7 +168,7 @@ cruise.set_stop_criterion(
 
 aoa = cruise.get_variable("AOA", set_active=True)
 # aoa var not read in since scenario changes from cruise to cruise_hot so user-specified here
-aoa.set_bounds(lower=0.0, value=2.207, upper=4.0, scale=10)
+aoa.set_bounds(lower=0.0, value=2.207, upper=4.0, scale=1)
 
 clift = Function.lift(body=0).register_to(cruise)
 cdrag = Function.drag(body=0).register_to(cruise)
@@ -176,7 +177,7 @@ ksfailure = (
     .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
     .register_to(cruise)
 )
-temp_gauge_area = Function.temperature().optimize(scale=1e-2, objective=False, upper=500, plot=True, plot_name="temp").register_to(cruise)
+temp_gauge_area = Function.temperature().optimize(scale=1e-2, objective=False, upper=1e10, plot=True, plot_name="temp").register_to(cruise)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -193,10 +194,9 @@ cruise.register_to(f2f_model)
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
 clift *= 2.5  # 0.095 => 1.33 approx
-mass_wingbox = 308  # kg
 # flying wing
 mass_payload = 100  # kg
-mass_frame = 500  # kg, mostly flying wing
+mass_frame = 2e3  # kg, mostly flying wing
 LGM = mass_payload + mass_frame + 2 * mass_wingbox
 LGW = 9.81 * LGM  # kg => N
 dim_lift = clift * 2 * q_inf
@@ -210,7 +210,7 @@ load_factor.set_name("steady_flight").optimize(
 takeoff_WR = 0.97
 climb_WR = 0.985
 land_WR = 0.995
-_range = 1280  # km
+_range = 12800  # km
 _range *= 1e3  # m
 tsfc = 3.9e-5  # kg/N/s, Rolls Royce Olympus 593 engine
 _mach_cruise = 0.5
