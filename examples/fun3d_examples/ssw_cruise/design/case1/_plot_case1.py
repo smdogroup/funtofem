@@ -36,15 +36,31 @@ colors10 = ["#49beaa", "#456990", "#ef767a"]
 colors11 = ["#1d2f6f", "#8390fa", "#fac748"]
 six_colors = ["#264653", "#287271", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"]
 
-plotter(
-    plot_name="case1-sizing-hist.png",
-    legend_frac=0.9,
-    yaxis_name="function values",
-    color_offset=0,
-    niceplots_style="doumont-light",
-    colors=colors2, #colors2
-    yscale_log=False,
-)
+plt.figure("case1")
+for ifunc,func in enumerate(plotter.functions):
+    plt.plot(
+        plotter.iterations,
+        plotter.get_hist_array(func),
+        linewidth=2,
+        color=colors11[ifunc],
+        label=func.plot_name,
+    )
+# plot the ksfailure constraint
+grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(plotter.constr_dicts)))
+for icon, constr_dict in enumerate(plotter.constr_dicts):
+    name = constr_dict["name"]
+    value = constr_dict["value"]
+    plt.plot(
+        plotter.iterations,
+        np.array([value for _ in plotter.iterations]),
+        linestyle="dashed",
+        linewidth=2,
+        color=grey_colors[icon],
+        label=name,
+    )
+plt.legend()
+plt.xlabel("Iterations")
+plt.ylabel("Function Values")
 
 # read the SNOPT history file and plot it
 hdl = open("ssw1-SNOPT.out", "r")
