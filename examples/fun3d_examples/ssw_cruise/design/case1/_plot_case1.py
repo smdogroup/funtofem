@@ -13,13 +13,20 @@ plotter = PlotManager.from_hist_file(
 
 # MAKE EACH PLOT FOR A DIFFERENT MODE
 Function.plot("togw").optimize(scale=0.2e-4, plot_name="TOGW").register_to(plotter)
-Function.plot("ksfailure").optimize(scale=1.0, plot_name="ksfailure").register_to(
+Function.plot("ksfailure").optimize(scale=1.0, plot_name="KSfailure").register_to(
     plotter
 )
 plotter.add_constraint(value=1.0, name="ks-constr")
+<<<<<<< HEAD
 Function.plot("steady-flight").optimize(
     scale=1.0e-3, plot_name="steady-flight"
 ).register_to(plotter)
+=======
+plotter.add_constraint(value=0.0, name="steady-flight")
+Function.plot("steady-flight").optimize(scale=1.0e-3, plot_name="Steady-Flight").register_to(
+    plotter
+)
+>>>>>>> cb3b406c52c9c4ea84be7fc81c77eb11b7d2df46
 plotter.add_absolute_value("steady-flight")
 
 # three color schemes from color scheme website https://coolors.co/palettes/popular/3%20colors
@@ -36,16 +43,9 @@ colors10 = ["#49beaa", "#456990", "#ef767a"]
 colors11 = ["#1d2f6f", "#8390fa", "#fac748"]
 six_colors = ["#264653", "#287271", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"]
 
-plt.figure("case1")
-for ifunc, func in enumerate(plotter.functions):
-    plt.plot(
-        plotter.iterations,
-        plotter.get_hist_array(func),
-        linewidth=2,
-        color=colors11[ifunc],
-        label=func.plot_name,
-    )
-# plot the ksfailure constraint
+plt.figure("case1", figsize=(8,6))
+plt.style.use(niceplots.get_style())
+# plot the constraints
 grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(plotter.constr_dicts)))
 for icon, constr_dict in enumerate(plotter.constr_dicts):
     name = constr_dict["name"]
@@ -56,11 +56,22 @@ for icon, constr_dict in enumerate(plotter.constr_dicts):
         linestyle="dashed",
         linewidth=2,
         color=grey_colors[icon],
-        label=name,
     )
+for ifunc,func in enumerate(plotter.functions):
+    plt.plot(
+        plotter.iterations,
+        plotter.get_hist_array(func),
+        linewidth=2,
+        color=colors11[ifunc],
+        label=func.plot_name,
+    )
+plt.margins(x=0.02, y=0.02)
+plt.text(x=15, y=0.8, s="ks-constr")
 plt.legend()
 plt.xlabel("Iterations")
 plt.ylabel("Function Values")
+plt.savefig("case1-opt-history.png", dpi=400)
+plt.close("case1")
 
 # read the SNOPT history file and plot it
 hdl = open("ssw1-SNOPT.out", "r")
