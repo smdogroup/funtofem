@@ -247,6 +247,7 @@ temp_gauge = temp_gauge_area / wing_area
 for iprefix, prefix in enumerate(["lOML", "rOML"]):
     # panel width of this panel
     b = blist[iprefix]
+    
     for iOML in range(1, nOML + 1):
         # get the associated skin thickness variable
         thick = wing.get_variable(prefix + str(iOML))
@@ -276,7 +277,7 @@ for iprefix, prefix in enumerate(["lOML", "rOML"]):
         xi = (Q12 + 2 * Q66) / (Q11 * Q22) ** 0.5
 
         # then you can assume m1 close to rho_0 the plate aspect ratio
-        m1 = int(rho_0)
+        m1 = np.max([int(rho_0), 1.0])
 
         # compute the critical in-plane load for an unstiffened panel in axial loading
         Dgeom_avg = D11  # would be sqrt(D11 * D22) but isotropic these are equal
@@ -291,6 +292,8 @@ for iprefix, prefix in enumerate(["lOML", "rOML"]):
             upper=1.0, scale=1e0, objective=False, plot=True
         ).register_to(f2f_model)
 
+
+exit()
 # skin thickness adjacency constraints
 # ------------------------------------
 if not test_derivatives:
