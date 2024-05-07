@@ -83,8 +83,10 @@ tacs_aim.set_config_parameter("view:flow", 0)
 tacs_aim.set_config_parameter("view:struct", 1)
 tacs_aim.set_config_parameter("nspars", 1)  # need only one spar here
 tacs_aim.set_config_parameter("thermal", 1)
+rib_a1 = 0.6
 spar_a1 = 0.6
 tacs_aim.set_design_parameter("spar_a1", spar_a1)
+tacs_aim.set_design_parameter("rib_a1", rib_a1)
 tacs_aim.set_config_parameter("allOMLDVs", 1)
 
 # add tacs constraints in
@@ -251,12 +253,20 @@ blist = [b1, b2]
 wing_area = 10
 temp_gauge = temp_gauge_area / wing_area
 
+rib_spaces = np.linspace(0.0, 1.0, nribs+1)
+rib_a2 = 0.0
+rib_a3 = 1.0 - rib_a1 - rib_a2
+mod_rib_spaces = rib_a1 * rib_spaces + rib_a2 * rib_spaces**2 + rib_a3 * rib_spaces**3
+
 # for each skin panel set up a buckling constraint
 for iprefix, prefix in enumerate(["lOML", "rOML"]):
     # panel width of this panel
     b = blist[iprefix]
-
     for iOML in range(1, nOML + 1):
+        # panel length computed using eta'(eta) panel spacing formula
+        rib_space = mod_rib_spaces[iOML+1] - mod_rib_spaces[iOML]
+        a = rib_space * 5.0 # 5.0 is sspan
+
         # get the associated skin thickness variable
         thick = wing.get_variable(prefix + str(iOML))
 

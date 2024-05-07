@@ -32,6 +32,10 @@ despmtr twist2 0.0
 despmtr twist3 0.0
 despmtr twist4 0.0
 
+# rib shape
+despmtr rib_a1 1.0
+despmtr rib_a2 0.0
+
 # spar shape
 despmtr spar_a1 1.0
 despmtr spar_a2 0.0
@@ -53,6 +57,7 @@ ifthen view:struct EQ 1
     udparg $/wingStruct nribs nribs nspars nspars
     udparg $/wingStruct exploded exploded allOMLDVs allOMLDVs
     udparg $/wingStruct spar_a1 spar_a1 spar_a2 spar_a2
+    udparg $/wingStruct rib_a1 rib_a1 rib_a2 rib_a2
     udprim $/wingStruct aoa aoa
 endif
 
@@ -66,4 +71,4 @@ ifthen view:flow EQ 1
 endif
 
 end
-|||||||||
+||||||||||

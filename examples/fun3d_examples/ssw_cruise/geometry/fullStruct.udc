@@ -15,6 +15,9 @@ interface camber in 0.0
 interface xCamber in 0.4
 interface aoa in 0.0
 
+interface rib_a1 in 1.0
+interface rib_a2 in 0.0
+
 interface spar_a1 in 1.0
 interface spar_a2 in 0.0
 
@@ -40,6 +43,7 @@ interface nspars in 2
 
 interface nOML out 0
 
+set rib_a3 1.0-rib_a1-rib_a2
 set spar_a3 1.0-spar_a1-spar_a2
 
 set xmargin 5.0
@@ -82,7 +86,8 @@ patend
 # Make the ribs
 patbeg irib nribs
    set fr (irib-1)/(nribs-1)
-   set z_rib -sspan*fr
+   set fr2 fr*(rib_a1+fr*(rib_a2+rib_a3*fr))
+   set z_rib -sspan*fr2
 
    box xmin ymin z_rib (xmax-xmin) (ymax-ymin) 0.0
    restore wingSolid
@@ -251,4 +256,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||||||
+|||||||||||||||||||||||||||

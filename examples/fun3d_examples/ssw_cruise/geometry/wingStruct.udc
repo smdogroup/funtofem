@@ -16,6 +16,9 @@ interface aoa in 0.0
 interface allOMLDVs in 0
 interface exploded in 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
 
+interface rib_a1 in 1.0
+interface rib_a2 in 0.0
+
 interface spar_a1 in 1.0
 interface spar_a2 in 0.0
 
@@ -59,6 +62,7 @@ udparg $/fullStruct chord chord sspan sspan camber camber xCamber xCamber
 udparg $/fullStruct LEchop LEchop TEchop TEchop 
 udparg $/fullStruct chopMode chopMode exploded exploded
 udparg $/fullStruct nspars nspars allOMLDVs allOMLDVs
+udparg $/fullStruct rib_a1 rib_a1 rib_a2 rib_a2
 udparg $/fullStruct spar_a1 spar_a1 spar_a2 spar_a2
 udprim $/fullStruct midplane midplane
 
@@ -86,13 +90,15 @@ rotatez -aoa 0 0
 store halfWing
 restore halfWing
 
-select face $tagComp $OML
-attribute _color $green
-attribute _bcolor $green
+ifthen exploded EQ 0
+   select face $tagComp $OML
+   attribute _color $green
+   attribute _bcolor $green
 
-select face $tagComp $rib
-attribute _color $red
-attribute _bcolor $red
+   select face $tagComp $rib
+   attribute _color $red
+   attribute _bcolor $red
+endif
 
 ifthen mirrored EQ 1
    mirror 0 1 0
@@ -106,4 +112,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||
