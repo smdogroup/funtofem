@@ -227,7 +227,7 @@ opt_problem = Optimization("sswOpt", manager.eval_functions)
 manager.register_to_problem(opt_problem)
 
 # run an SNOPT optimization
-snoptimizer = SNOPT(options={"Verify level": 3})
+snoptimizer = SNOPT(options={"Verify level": 0})
 
 sol = snoptimizer(
     opt_problem,

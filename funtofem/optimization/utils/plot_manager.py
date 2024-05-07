@@ -77,6 +77,13 @@ class PlotManager:
         self.constr_dicts = []
         self.absolute_value = []  # absolute value functions
 
+    def get_function(self, name):
+        _func = None
+        for func in self.functions:
+            if func.name == name or func.plot_name == name:
+                return func
+        return _func
+
     def include(self, func):
         self.functions += [func]
 

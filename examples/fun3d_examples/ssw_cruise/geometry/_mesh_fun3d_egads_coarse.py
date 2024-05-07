@@ -48,7 +48,7 @@ FluidMeshOptions = {"egadsTessAIM": {}, "aflr3AIM": {}}
 
 mesh_aim.saveDictOptions(FluidMeshOptions)
 
-#Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
+# Fun3dBC.SymmetryY(caps_group="SymmetryY").register_to(fun3d_model)
 Fun3dBC.Farfield(caps_group="Farfield").register_to(fun3d_model)
 
 fun3d_model.setup()

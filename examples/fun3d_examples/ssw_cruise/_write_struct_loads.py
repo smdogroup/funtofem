@@ -10,6 +10,7 @@ from funtofem import *
 from mpi4py import MPI
 from tacs import caps2tacs
 import os, time
+
 # options
 
 comm = MPI.COMM_WORLD
@@ -44,8 +45,8 @@ tacs_model = caps2tacs.TacsModel.build(
 )
 tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
-    edge_pt_max=20,
-    global_mesh_size=0.3,
+    edge_pt_max=50,
+    global_mesh_size=0.02,
     max_surf_offset=0.2,
     max_dihedral_angle=15,
 ).register_to(tacs_model)
@@ -60,8 +61,8 @@ for proc in tacs_aim.active_procs:
         aim = tacs_model.mesh_aim.aim
         aim.input.Mesh_Sizing = {
             "chord": {"numEdgePoints": 20},
-            "span": {"numEdgePoints": 8},
-            "vert": {"numEdgePoints": 4},
+            "span": {"numEdgePoints": 10},
+            # "vert": {"numEdgePoints": 4},
         }
 
 # add tacs constraints in
@@ -272,6 +273,8 @@ f2f_model.read_design_variables_file(comm, design_in_file)
 f2f_driver.solve_forward()
 
 # ---------------------------------------------------->
+# change the scenario name to match the hot scenario case:
+cruise.name = "cruise_hot"
 struct_loads_file = os.path.join(
     os.getcwd(), "cfd", "loads", "coupled_struct_loads.txt"
 )

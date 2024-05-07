@@ -14,8 +14,12 @@ import os, time
 import argparse
 
 parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument('--hotstart', default=False, action=argparse.BooleanOptionalAction)
-parent_parser.add_argument('--testderiv', default=False, action=argparse.BooleanOptionalAction)
+parent_parser.add_argument(
+    "--hotstart", default=False, action=argparse.BooleanOptionalAction
+)
+parent_parser.add_argument(
+    "--testderiv", default=False, action=argparse.BooleanOptionalAction
+)
 args = parent_parser.parse_args()
 
 # options
@@ -41,9 +45,9 @@ aitken_file = os.path.join(base_dir, "aitken-hist.txt")
 # FUNTOFEM MODEL
 # <----------------------------------------------------
 # Freestream quantities -- see README
-T_inf = 550.0 # K, freestream temp
+T_inf = 550.0  # K, freestream temp
 T_ref = 268.338  # struct ref temp
-temp_BC = 350 - T_ref # K, gauge temperature
+temp_BC = 300 - T_ref  # K, gauge temperature
 # lower the dynamic pressure, since some inc due to temp
 q_inf = 2.21945e4  # Dynamic pressure
 
@@ -52,36 +56,37 @@ f2f_model = FUNtoFEMmodel("ssw-sizing3")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
-    problem_name="capsStruct2",
+    problem_name="capsStruct3",
     active_procs=[0],
     verbosity=1,
 )
 tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
-    edge_pt_max=20,
-    global_mesh_size=0.3,
+    edge_pt_max=50,
+    global_mesh_size=0.02,
     max_surf_offset=0.2,
     max_dihedral_angle=15,
 ).register_to(tacs_model)
 f2f_model.structural = tacs_model
 
 tacs_aim = tacs_model.tacs_aim
-tacs_aim.set_config_parameter("view:flow", 0)
-tacs_aim.set_config_parameter("view:struct", 1)
-tacs_aim.set_config_parameter("nspars", 1) # need only one spar here
-tacs_aim.set_config_parameter("thermal", 1)
-spar_a1 = 0.6
-tacs_aim.set_design_parameter("spar_a1", spar_a1)
-tacs_aim.set_config_parameter("allOMLDVs", 1)
-
 for proc in tacs_aim.active_procs:
     if comm.rank == proc:
         aim = tacs_model.mesh_aim.aim
         aim.input.Mesh_Sizing = {
             "chord": {"numEdgePoints": 20},
-            "span": {"numEdgePoints": 8},
-            "vert": {"numEdgePoints": 4},
+            "span": {"numEdgePoints": 10},
+            # "vert": {"numEdgePoints": 4},
         }
+
+tacs_aim = tacs_model.tacs_aim
+tacs_aim.set_config_parameter("view:flow", 0)
+tacs_aim.set_config_parameter("view:struct", 1)
+tacs_aim.set_config_parameter("nspars", 1)  # need only one spar here
+tacs_aim.set_config_parameter("thermal", 1)
+spar_a1 = 0.6
+tacs_aim.set_design_parameter("spar_a1", spar_a1)
+tacs_aim.set_config_parameter("allOMLDVs", 1)
 
 # add tacs constraints in
 caps2tacs.PinConstraint("root").register_to(tacs_model)
@@ -163,12 +168,12 @@ cruise = Scenario.steady(
     uncoupled_steps=200,
 )
 cruise.set_stop_criterion(
-    early_stopping=True, min_forward_steps=100, min_adjoint_steps=20
+    early_stopping=True, min_forward_steps=100, min_adjoint_steps=int(1000 / 30)
 )
 
 aoa = cruise.get_variable("AOA", set_active=True)
 # aoa var not read in since scenario changes from cruise to cruise_hot so user-specified here
-aoa.set_bounds(lower=0.0, value=2.207, upper=4.0, scale=1)
+aoa.set_bounds(lower=0.0, value=2.0, upper=3.0, scale=10)
 
 clift = Function.lift(body=0).register_to(cruise)
 cdrag = Function.drag(body=0).register_to(cruise)
@@ -177,7 +182,11 @@ ksfailure = (
     .optimize(scale=1.0, upper=1.0, objective=False, plot=True, plot_name="ks-cruise")
     .register_to(cruise)
 )
-temp_gauge_area = Function.temperature().optimize(scale=1e-2, objective=False, upper=1e10, plot=True, plot_name="temp").register_to(cruise)
+temp_gauge_area = (
+    Function.temperature()
+    .optimize(scale=1e-2, objective=False, upper=1e10, plot=True, plot_name="temp")
+    .register_to(cruise)
+)
 mass_wingbox = Function.mass().register_to(cruise)
 cruise.set_temperature(T_ref=T_ref, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
@@ -193,10 +202,10 @@ cruise.register_to(f2f_model)
 # ----------------------------
 # improved lift coeff with a better airfoil
 # adjusted with a multiplier (will shape optimize for this later)
-clift *= 2.5  # 0.095 => 1.33 approx
+clift *= 4.5  # 0.095 => 1.33 approx
 # flying wing
 mass_payload = 100  # kg
-mass_frame = 2e3  # kg, mostly flying wing
+mass_frame = 600  # kg, mostly flying wing
 LGM = mass_payload + mass_frame + 2 * mass_wingbox
 LGW = 9.81 * LGM  # kg => N
 dim_lift = clift * 2 * q_inf
@@ -286,7 +295,7 @@ for iprefix, prefix in enumerate(["lOML", "rOML"]):
         )
 
         # compute the buckling failure criterion
-        safety_factor = 1.5
+        safety_factor = 3.0
         mu_thermal_buckle = N11 / N11_cr * safety_factor
         mu_thermal_buckle.set_name(f"therm_buckle_{prefix}{iOML}").optimize(
             upper=1.0, scale=1e0, objective=False, plot=True
@@ -387,13 +396,13 @@ design_folder = os.path.join(base_dir, "design")
 if comm.rank == 0:
     if not os.path.exists(design_folder):
         os.mkdir(design_folder)
-history_file = os.path.join(design_folder, "design-3.hst")
+history_file = os.path.join(design_folder, "design-2.hst")
 store_history_file = history_file if store_history else None
 hot_start_file = history_file if hot_start else None
 
 # Reload the previous design
-# design_in_file = os.path.join(base_dir, "design", "design-1.txt")
-# f2f_model.read_design_variables_file(comm, design_in_file)
+design_in_file = os.path.join(base_dir, "design", "design-2.txt")
+f2f_model.read_design_variables_file(comm, design_in_file)
 
 if comm.rank == 0:
     # f2f_driver.print_summary()
@@ -404,7 +413,7 @@ manager = OptimizationManager(
     design_out_file=design_out_file,
     hot_start=hot_start,
     hot_start_file=hot_start_file,
-    debug=True,
+    debug=False,
 )
 
 # create the pyoptsparse optimization problem
@@ -416,7 +425,7 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(
     options={
-        "Verify level": 0, #-1 if hot_start else 0
+        "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
         "Major step limit": 5e-2,
         "Nonderivative linesearch": None,

@@ -14,8 +14,12 @@ import os, time
 import argparse
 
 parent_parser = argparse.ArgumentParser(add_help=False)
-parent_parser.add_argument('--hotstart', default=False, action=argparse.BooleanOptionalAction)
-parent_parser.add_argument('--testderiv', default=False, action=argparse.BooleanOptionalAction)
+parent_parser.add_argument(
+    "--hotstart", default=False, action=argparse.BooleanOptionalAction
+)
+parent_parser.add_argument(
+    "--testderiv", default=False, action=argparse.BooleanOptionalAction
+)
 args = parent_parser.parse_args()
 
 # options
@@ -336,7 +340,7 @@ manager.register_to_problem(opt_problem)
 # run an SNOPT optimization
 snoptimizer = SNOPT(
     options={
-        "Verify level": 0, #-1 if hot_start else 0
+        "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
         "Major step limit": 5e-2,
         "Nonderivative linesearch": None,

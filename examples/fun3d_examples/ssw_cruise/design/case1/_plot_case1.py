@@ -16,9 +16,7 @@ togw = Function.plot("togw").optimize(scale=1.0e-3).register_to(plotter)
 ksfailure = Function.plot("ksfailure").optimize(scale=1.0).register_to(
     plotter
 )
-steady_flight = Function.plot("steady-flight").optimize(scale=1.0e-3).register_to(
-    plotter
-)
+steady_flight = Function.plot("steady-flight").optimize(scale=1.0e-3).register_to(plotter)
 plotter.add_absolute_value("steady-flight")
 
 # three color schemes from color scheme website https://coolors.co/palettes/popular/3%20colors
@@ -85,7 +83,7 @@ for line in lines:
     if _start:
         chunks = line.split(" ")
         nempty_chunks = [_ for _ in chunks if len(_) > 0]
-        if len(nempty_chunks) < 5: # skip blank lines
+        if len(nempty_chunks) < 5:  # skip blank lines
             continue
         else:
             try:
@@ -99,13 +97,13 @@ for line in lines:
         if "(" in feas:
             feas = feas[1:-1]
         feasibility += [float(feas)]
-        optim = nempty_chunks[_start_idx+1]
+        optim = nempty_chunks[_start_idx + 1]
         if "(" in optim:
             optim = optim[1:-1]
         optimality += [float(optim)]
-        merit = nempty_chunks[_start_idx+2]
+        merit = nempty_chunks[_start_idx + 2]
         meritFunc += [float(merit)]
-        #print(nempty_chunks)
+        # print(nempty_chunks)
     if "Itns" in line:
         _start = True
     if "SNOPTC EXIT" in line:
@@ -132,4 +130,11 @@ ax2.tick_params(axis='y', labelcolor=my_colors[1])
 ax2.set_yscale("log")
 
 plt.legend()
+<<<<<<< HEAD
 plt.savefig("case1-SNOPT.png", dpi=400)
+=======
+plt.yscale("log")
+plt.xlabel("Major Iterations")
+plt.ylabel("Optimizer Metric")
+plt.savefig("case1-SNOPT.png", dpi=400)
+>>>>>>> fca21904d3036d6842adb6492d9c33959b6f6b5a
