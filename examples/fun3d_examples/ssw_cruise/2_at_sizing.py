@@ -244,7 +244,7 @@ wing_area = 10
 temp_gauge = temp_gauge_area / wing_area
 
 # for each skin panel set up a buckling constraint
-for iprefix, prefix in ["lOML", "rOML"]:
+for iprefix, prefix in enumerate(["lOML", "rOML"]):
     # panel width of this panel
     b = blist[iprefix]
     for iOML in range(1, nOML + 1):
