@@ -86,6 +86,14 @@ rotatez -aoa 0 0
 store halfWing
 restore halfWing
 
+select face $tagComp $OML
+attribute _color $green
+attribute _bcolor $green
+
+select face $tagComp $rib
+attribute _color $red
+attribute _bcolor $red
+
 ifthen mirrored EQ 1
    mirror 0 1 0
 
@@ -98,4 +106,4 @@ select body
    attribute capsAIM $egadsTessAIM;tacsAIM
 
 end
-|||||||||||||||||||||||||||||||||||
+|||||||||||||||||||||||||||||||||||||||

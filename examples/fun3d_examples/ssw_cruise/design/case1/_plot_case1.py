@@ -12,21 +12,11 @@ plotter = PlotManager.from_hist_file(
 )
 
 # MAKE EACH PLOT FOR A DIFFERENT MODE
-Function.plot("togw").optimize(scale=0.2e-4, plot_name="TOGW").register_to(plotter)
-Function.plot("ksfailure").optimize(scale=1.0, plot_name="KSfailure").register_to(
+togw = Function.plot("togw").optimize(scale=1.0e-3).register_to(plotter)
+ksfailure = Function.plot("ksfailure").optimize(scale=1.0).register_to(
     plotter
 )
-plotter.add_constraint(value=1.0, name="ks-constr")
-<<<<<<< HEAD
-Function.plot("steady-flight").optimize(
-    scale=1.0e-3, plot_name="steady-flight"
-).register_to(plotter)
-=======
-plotter.add_constraint(value=0.0, name="steady-flight")
-Function.plot("steady-flight").optimize(scale=1.0e-3, plot_name="Steady-Flight").register_to(
-    plotter
-)
->>>>>>> cb3b406c52c9c4ea84be7fc81c77eb11b7d2df46
+steady_flight = Function.plot("steady-flight").optimize(scale=1.0e-3).register_to(plotter)
 plotter.add_absolute_value("steady-flight")
 
 # three color schemes from color scheme website https://coolors.co/palettes/popular/3%20colors
@@ -43,33 +33,39 @@ colors10 = ["#49beaa", "#456990", "#ef767a"]
 colors11 = ["#1d2f6f", "#8390fa", "#fac748"]
 six_colors = ["#264653", "#287271", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"]
 
-plt.figure("case1", figsize=(8,6))
+plt.figure("case1")
 plt.style.use(niceplots.get_style())
+fig, ax1 = plt.subplots(figsize=(8,6))
+# my_colors = niceplots.get_colors_list() #colors11
+my_colors = colors3 #colors3, colors5
+grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, 2))
+plt.margins(x=0.05, y=0.05)
+ax1.set_xlabel('Iterations')
+ax1.set_ylabel('TOGW (kN)', color=my_colors[0])
+ax1.tick_params(axis='y', labelcolor=my_colors[0])
+ax1.plot(plotter.iterations, plotter.get_hist_array(togw), "o-", color=my_colors[0], label="TOGW")
+
+ax2 = ax1.twinx()
+
+niter = len(plotter.iterations)
+ax2.plot(plotter.iterations, np.ones((niter,)), color=grey_colors[0], linestyle="dashed")
+ax2.plot(plotter.iterations, np.zeros((niter,)), color=grey_colors[1], linestyle="dashed")
+ax2.plot(plotter.iterations, plotter.get_hist_array(ksfailure), "o-", color=my_colors[1], label="KSfailure")
+ax2.plot(plotter.iterations, plotter.get_hist_array(steady_flight), "o-", color=my_colors[2], label="L=W")
+ax2.set_ylabel("Constraint Values", color='k')
+ax2.tick_params(axis='y', labelcolor='k')
+ax2.set_yscale("log")
+ax2.set_ylim(1e-6, 1e2)
+plt.text(x=15, y=1.2, s="ks-constr", color=grey_colors[0])
+
+# legend_frac = 0.8
+# box = ax2.get_position()
+# ax2.set_position([box.x0, box.y0, box.width * legend_frac, box.height])
+# ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+
 # plot the constraints
-grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, len(plotter.constr_dicts)))
-for icon, constr_dict in enumerate(plotter.constr_dicts):
-    name = constr_dict["name"]
-    value = constr_dict["value"]
-    plt.plot(
-        plotter.iterations,
-        np.array([value for _ in plotter.iterations]),
-        linestyle="dashed",
-        linewidth=2,
-        color=grey_colors[icon],
-    )
-for ifunc,func in enumerate(plotter.functions):
-    plt.plot(
-        plotter.iterations,
-        plotter.get_hist_array(func),
-        linewidth=2,
-        color=colors11[ifunc],
-        label=func.plot_name,
-    )
 plt.margins(x=0.02, y=0.02)
-plt.text(x=15, y=0.8, s="ks-constr")
 plt.legend()
-plt.xlabel("Iterations")
-plt.ylabel("Function Values")
 plt.savefig("case1-opt-history.png", dpi=400)
 plt.close("case1")
 
@@ -115,16 +111,30 @@ for line in lines:
 
 iterations = [_ for _ in range(len(feasibility))]
 
+plt.figure("case2")
 plt.style.use(niceplots.get_style())
-plt.figure("case1-pyoptsparse")
-my_colors = colors11
+fig, ax1 = plt.subplots(figsize=(8,6))
+my_colors = colors3
 plt.margins(x=0.05, y=0.05)
-plt.plot(iterations, meritFunc, "o-", color=my_colors[0], label="meritFunc")
-plt.plot(iterations, optimality, "o-", color=my_colors[1], label="optimality")
-plt.plot(iterations, feasibility, "o-", color=my_colors[2], label="feasibility")
+ax1.set_xlabel('Major Iterations')
+ax1.set_ylabel('Merit Function', color=my_colors[0])
+ax1.plot(iterations, meritFunc, "o-", color=my_colors[0], label="meritFunc")
+ax1.tick_params(axis='y', labelcolor=my_colors[0])
+
+ax2 = ax1.twinx()
+
+ax2.plot(iterations, optimality, "o-", color=my_colors[1], label="optimality")
+ax2.plot(iterations, feasibility, "o-", color=my_colors[2], label="feasibility")
+ax2.set_ylabel("Feasibility/Optimality", color=my_colors[1])
+ax2.tick_params(axis='y', labelcolor=my_colors[1])
+ax2.set_yscale("log")
 
 plt.legend()
+<<<<<<< HEAD
+plt.savefig("case1-SNOPT.png", dpi=400)
+=======
 plt.yscale("log")
 plt.xlabel("Major Iterations")
 plt.ylabel("Optimizer Metric")
 plt.savefig("case1-SNOPT.png", dpi=400)
+>>>>>>> fca21904d3036d6842adb6492d9c33959b6f6b5a
