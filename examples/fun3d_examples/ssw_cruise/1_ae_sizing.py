@@ -340,7 +340,7 @@ snoptimizer = SNOPT(
         "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
         "Major step limit": 5e-2,
-        "Nonderivative linesearch": None,
+        "Nonderivative linesearch": True,
         "Major Optimality tol": 1e-4,
     }
 )

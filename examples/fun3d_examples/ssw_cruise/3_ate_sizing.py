@@ -250,7 +250,7 @@ blist = [b1, b2]
 wing_area = 10
 temp_gauge = temp_gauge_area / wing_area
 
-rib_spaces = np.linspace(0.0, 1.0, nribs+1)
+rib_spaces = np.linspace(0.0, 1.0, nribs + 1)
 rib_a2 = 0.0
 rib_a3 = 1.0 - rib_a1 - rib_a2
 mod_rib_spaces = rib_a1 * rib_spaces + rib_a2 * rib_spaces**2 + rib_a3 * rib_spaces**3
@@ -260,8 +260,8 @@ mod_rib_spaces = rib_a1 * rib_spaces + rib_a2 * rib_spaces**2 + rib_a3 * rib_spa
 b = b2
 for iOML in range(1, nOML + 1):
     # panel length computed using eta'(eta) panel spacing formula
-    rib_space = mod_rib_spaces[iOML+1] - mod_rib_spaces[iOML]
-    a = rib_space * 5.0 # 5.0 is sspan
+    rib_space = mod_rib_spaces[iOML + 1] - mod_rib_spaces[iOML]
+    a = rib_space * 5.0  # 5.0 is sspan
 
     # get the associated skin thickness variable
     thick = wing.get_variable(f"rOML{iOML}")
@@ -432,8 +432,8 @@ snoptimizer = SNOPT(
     options={
         "Verify level": 0,  # -1 if hot_start else 0
         "Function precision": 1e-6,
-        "Major step limit": 1e-1,
-        "Nonderivative linesearch": None,
+        # "Major step limit": 1e-1,
+        "Nonderivative linesearch": True,
         "Major Optimality tol": 1e-4,
     }
 )
