@@ -1,13 +1,14 @@
 from funtofem import *
 import matplotlib.pyplot as plt, niceplots
+import numpy as np
 
 # 1 : plot 1_sizing_opt_local.py results
 # ---------------------------------------------------------------------------
 scenario_name = "cruise"
 plotter = PlotManager.from_hist_file(
-    "ssw-sizing1_design.txt",
-    accepted_names=["cruise-ksfailure", "steady_flight", "togw"],
-    plot_names=["ksfailure", "steady-flight", "togw"],
+    "ssw-sizing2_design.txt",
+    accepted_names=["cruise_hot-ksfailure", "steady_flight", "togw"] + [f"therm_buckle_rOML{iOML}" for iOML in range(1,7)],
+    plot_names=["ksfailure", "steady-flight", "togw"] + [f"mu{iOML}" for iOML in range(1,7)],
     ignore_other_names=True,
 )
 
@@ -18,6 +19,8 @@ ksfailure = Function.plot("ksfailure").optimize(scale=1.0).register_to(
 )
 steady_flight = Function.plot("steady-flight").optimize(scale=1.0e-3).register_to(plotter)
 plotter.add_absolute_value("steady-flight")
+for iOML in range(1,7):
+    Function.plot(f"mu{iOML}").register_to(plotter)
 
 # three color schemes from color scheme website https://coolors.co/palettes/popular/3%20colors
 colors1 = ["#2b2d42", "#8d99ae", "#edf2f4"]
@@ -33,11 +36,14 @@ colors10 = ["#49beaa", "#456990", "#ef767a"]
 colors11 = ["#1d2f6f", "#8390fa", "#fac748"]
 six_colors = ["#264653", "#287271", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"]
 
-plt.figure("case1")
+four_colors1 = ["#053363", "#053363", "#40b0bf", "#fcb735"]
+
+plt.figure("case2")
 plt.style.use(niceplots.get_style())
 fig, ax1 = plt.subplots(figsize=(8,6))
 # my_colors = niceplots.get_colors_list() #colors11
 my_colors = colors3 #colors3, colors5
+#my_colors = four_colors1
 grey_colors = plt.cm.Greys(np.linspace(1.0, 0.5, 2))
 plt.margins(x=0.05, y=0.05)
 ax1.set_xlabel('Iterations')
@@ -52,6 +58,10 @@ ax2.plot(plotter.iterations, np.ones((niter,)), color=grey_colors[0], linestyle=
 ax2.plot(plotter.iterations, np.zeros((niter,)), color=grey_colors[1], linestyle="dashed")
 ax2.plot(plotter.iterations, plotter.get_hist_array(ksfailure), "o-", color=my_colors[1], label="KSfailure")
 ax2.plot(plotter.iterations, plotter.get_hist_array(steady_flight), "o-", color=my_colors[2], label="L=W")
+green_colors = plt.cm.Greens(np.linspace(0.8, 0.1, 6))
+for iOML in range(1, 7):
+    func = plotter.get_function(f"mu{iOML}")
+    ax2.plot(plotter.iterations, plotter.get_hist_array(func), color=green_colors[iOML-1], label="therm_buckle" if iOML ==  4 else None)
 ax2.set_ylabel("Constraint Values", color='k')
 ax2.tick_params(axis='y', labelcolor='k')
 ax2.set_yscale("log")
@@ -66,11 +76,11 @@ plt.text(x=15, y=1.2, s="ks-constr", color=grey_colors[0])
 # plot the constraints
 plt.margins(x=0.02, y=0.02)
 plt.legend()
-plt.savefig("case1-opt-history.png", dpi=400)
-plt.close("case1")
+plt.savefig("case2-opt-history.png", dpi=400)
+plt.close("case2")
 
 # read the SNOPT history file and plot it
-hdl = open("ssw1-SNOPT.out", "r")
+hdl = open("SNOPT_print.out", "r")
 lines = hdl.readlines()
 hdl.close()
 
@@ -130,11 +140,4 @@ ax2.tick_params(axis='y', labelcolor=my_colors[1])
 ax2.set_yscale("log")
 
 plt.legend()
-<<<<<<< HEAD
-plt.savefig("case1-SNOPT.png", dpi=400)
-=======
-plt.yscale("log")
-plt.xlabel("Major Iterations")
-plt.ylabel("Optimizer Metric")
-plt.savefig("case1-SNOPT.png", dpi=400)
->>>>>>> fca21904d3036d6842adb6492d9c33959b6f6b5a
+plt.savefig("case2-SNOPT.png", dpi=400)
