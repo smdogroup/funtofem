@@ -49,7 +49,7 @@ temp_BC = 300 - T_ref  # K, gauge temperature
 q_inf = 2.21945e4  # Dynamic pressure
 
 # Construct the FUNtoFEM model
-f2f_model = FUNtoFEMmodel("ssw-sizing2")
+f2f_model = FUNtoFEMmodel("ssw-sizing3")
 tacs_model = caps2tacs.TacsModel.build(
     csm_file=csm_path,
     comm=comm,
