@@ -30,7 +30,7 @@
   flux_construction       = 'roe'
   flux_limiter            = 'hminmod'
   smooth_limiter_coeff    = 1.0
-  freeze_limiter_iteration = 80
+  freeze_limiter_iteration = 0
   first_order_iterations = 0
 /
 &nonlinear_solver_parameters

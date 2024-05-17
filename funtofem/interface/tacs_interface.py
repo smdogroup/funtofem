@@ -29,7 +29,7 @@ from ._solver_interface import SolverInterface
 import os, numpy as np
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 from .utils.general_utils import real_norm, imag_norm
-from .utils.relaxation_utils import AitkenRelaxationTacs
+from .utils.relaxation_utils import AitkenRelaxationTacs, UnderRelaxationTacs
 
 
 class TacsInterface:
@@ -192,6 +192,8 @@ class TacsSteadyInterface(SolverInterface):
         # Set Aitken relaxation flag
         self.relaxation_scheme = relaxation_scheme
         self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
+        self.use_simple_relax = isinstance(relaxation_scheme, UnderRelaxationTacs)
+        self.use_relax = self.use_aitken or self.use_simple_relax
 
         self.struct_loads_file = struct_loads_file
 
@@ -344,6 +346,7 @@ class TacsSteadyInterface(SolverInterface):
                 self.aitken_debug = relaxation_scheme.aitken_debug
                 self.aitken_debug_more = relaxation_scheme.aitken_debug_more
 
+            if self.use_relax: # any relaxation
                 self.theta = self.theta_init
                 self.prev_theta = self.theta_init
                 self.prev_update = self.assembler.createVec()
@@ -684,8 +687,10 @@ class TacsSteadyInterface(SolverInterface):
 
         if self.tacs_proc:
             # Store previous update for Aitken relaxation
-            if self.use_aitken and step > 0:
+            if self.use_relax and step > 0:
                 self.prev_update.copyValues(self.update)
+                
+            if self.use_aitken:
                 aitken_min = self.aitken_min
                 aitken_max = self.aitken_max
 
@@ -751,40 +756,44 @@ class TacsSteadyInterface(SolverInterface):
                 print(f"TACS iterate step: {step}", flush=True)
 
             # Apply Aitken relaxation
-            if self.use_aitken:
-                theta = self.theta_init
-                if step >= 2:
-                    # Store update into temp variable
-                    self.update_temp.copyValues(self.update)
+            if self.use_relax:
+                if self.use_aitken:
+                    theta = self.theta_init
+                    if step >= 2:
+                        # Store update into temp variable
+                        self.update_temp.copyValues(self.update)
 
-                    # Calculate change in the updates
-                    self.delta_update.copyValues(self.update_temp)
-                    self.delta_update.axpy(-1, self.prev_update)
+                        # Calculate change in the updates
+                        self.delta_update.copyValues(self.update_temp)
+                        self.delta_update.axpy(-1, self.prev_update)
 
-                    num = self.delta_update.dot(self.update_temp)
-                    den = self.delta_update.norm() ** 2.0
+                        num = self.delta_update.dot(self.update_temp)
+                        den = self.delta_update.norm() ** 2.0
 
-                    # only update theta if vector has changed more than tolerance
-                    if np.real(den) > self.aitken_tol:
-                        theta = prev_theta * (1 - num / den)
-                        if self.comm.rank == 0 and self.aitken_debug:
-                            print(f"Theta unbounded: {theta}", flush=True)
-                    else:
-                        # If not updating, then reset to theta = 1.0 to effectively turn off relaxation
-                        theta = 1.0
-                        if self.comm.rank == 0 and self.aitken_debug:
-                            print(
-                                f"Aitken relaxation: update vector did not change enough to compute relaxation."
-                            )
+                        # only update theta if vector has changed more than tolerance
+                        if np.real(den) > self.aitken_tol:
+                            theta = prev_theta * (1 - num / den)
+                            if self.comm.rank == 0 and self.aitken_debug:
+                                print(f"Theta unbounded: {theta}", flush=True)
+                        else:
+                            # If not updating, then reset to theta = 1.0 to effectively turn off relaxation
+                            theta = 1.0
+                            if self.comm.rank == 0 and self.aitken_debug:
+                                print(
+                                    f"Aitken relaxation: update vector did not change enough to compute relaxation."
+                                )
 
-                theta = max(aitken_min, min(aitken_max, np.real(theta)))
+                    theta = max(aitken_min, min(aitken_max, np.real(theta)))
 
-                if self.relaxation_scheme.write_history_flag and self.comm.rank == 0:
-                    self._aitken_hdl = open(self.relaxation_scheme.history_file, "a")
-                    self._aitken_hdl.write(f"Step: {step}, theta: {theta}\n")
-                    self._aitken_hdl.flush()
-                    self._aitken_hdl.close()
+                    if self.relaxation_scheme.write_history_flag and self.comm.rank == 0:
+                        self._aitken_hdl = open(self.relaxation_scheme.history_file, "a")
+                        self._aitken_hdl.write(f"Step: {step}, theta: {theta}\n")
+                        self._aitken_hdl.flush()
+                        self._aitken_hdl.close()
 
+                if self.use_simple_relax:
+                    theta = self.relaxation_scheme.theta_forward
+                    
                 self.update.scale(theta)
 
             # Apply the update to the solution vector and reset the boundary condition

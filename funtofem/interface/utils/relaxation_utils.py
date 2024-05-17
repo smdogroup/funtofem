@@ -4,7 +4,7 @@
 # Previously, relaxations schemes were located in body.
 # -------------------------------------------------
 
-__all__ = ["AitkenRelaxationTacs"]
+__all__ = ["AitkenRelaxationTacs", "UnderRelaxationTacs"]
 
 
 class AitkenRelaxationTacs:
@@ -51,3 +51,8 @@ class AitkenRelaxationTacs:
             self.write_history_flag = True
 
         return
+    
+class UnderRelaxationTacs:
+    def __init__(self, theta_forward=1.0, theta_adjoint=1.0):
+        self.theta_forward = theta_forward
+        self.theta_adjoint = theta_adjoint

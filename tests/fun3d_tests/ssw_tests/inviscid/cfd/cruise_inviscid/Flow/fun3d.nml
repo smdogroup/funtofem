@@ -30,7 +30,7 @@
   flux_construction       = 'roe'
   flux_limiter            = 'hminmod'
   smooth_limiter_coeff    = 1.0
-  freeze_limiter_iteration = 80
+  freeze_limiter_iteration = 0
   first_order_iterations = 50
 /
 &nonlinear_solver_parameters
@@ -47,10 +47,9 @@
   cfl_decrease_factor = 0.7
 /
 &massoud_output
-  funtofem_include_skin_friction = .true.
+  funtofem_include_skin_friction = .false.
   funtofem_restart_grid_forward = .false.
   funtofem_restart_grid_adjoint = .true.
-  funtofem_adjoint_scale = 1e0
 /
 &global
   moving_grid = .true.

@@ -1,0 +1,94 @@
+# Create wing solid component (outer mold line without ribs/spars/etc.)
+
+# Thickness parameters (thickness/chord)
+interface tc1 in 0
+interface tc2 in 0
+interface tc3 in 0
+interface tc4 in 0
+
+# Rectangular wing, no sweep
+interface chord in 1
+interface sspan in 5.0
+interface camber in 0.0
+interface xCamber in 0.4
+
+# Geometric twist parameters
+interface twist1 in 1
+interface twist2 in 1
+interface twist3 in 1
+interface twist4 in 1
+
+interface sharpTE in 1
+
+interface LEchop in 1
+interface TEchop in 1
+
+interface midplane in 1 #0 is off, 1 is upper, 2 is lower
+interface chopMode in 1 #0 is off, 1 is LE, 2 is middle, 3 is TE
+
+set ext_dy 0.0
+ifthen midplane EQ 0
+   set ext_dy 0.0
+elseif midplane EQ 1
+   set ext_dy 20.0
+elseif midplane EQ 2
+   set ext_dy -20.0
+endif
+
+set z1 0
+set z2 sspan/3
+set z3 2*sspan/3
+set z4 sspan
+
+# Build the wing solid
+# ----------------------
+mark
+
+# Station 1 (root)
+# ----------------------
+udprim naca camber camber maxloc xCamber thickness 0.0 sharpte sharpTE
+scale chord
+
+rotatez -twist1 0 0
+translate 0 0 -z1
+
+# Station 2
+# ----------------------
+udprim naca camber camber maxloc xCamber thickness 0.0 sharpte sharpTE
+scale chord
+
+rotatez -twist2 0 0
+translate 0 0 -z2
+
+# Station 3
+# ----------------------
+udprim naca camber camber maxloc xCamber thickness 0.0 sharpte sharpTE
+scale chord
+
+rotatez -twist3 0 0
+translate 0 0 -z3
+
+
+# Station 4 (tip)
+# ----------------------
+udprim naca camber camber maxloc xCamber thickness 0.0 sharpte sharpTE
+scale chord
+
+rotatez -twist4 0 0
+translate 0 0 -z4
+   
+# Rule all of the sections together
+#rule 0
+blend
+
+ifthen midplane EQ 1
+   select face
+   attribute thermal $upper
+elseif midplane EQ 2
+   select face
+   attribute thermal $lower
+endif
+
+
+end
+|||||||||||||||||

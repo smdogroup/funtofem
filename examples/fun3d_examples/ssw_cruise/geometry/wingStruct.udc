@@ -1,0 +1,115 @@
+# Generate wing structural component
+
+# Thickness parameters (thickness/chord)
+interface tc1 in 1
+interface tc2 in 1
+interface tc3 in 1
+interface tc4 in 1
+
+# Rectangular wing, no sweep
+interface chord in 1
+interface sspan in 5.0
+interface camber in 0.0
+interface xCamber in 0.4
+interface aoa in 0.0
+
+interface allOMLDVs in 0
+interface exploded in 0 # 0 is off, 1 is uOML, 2 is int-struct, 3 is lOML
+
+interface rib_a1 in 1.0
+interface rib_a2 in 0.0
+
+interface spar_a1 in 1.0
+interface spar_a2 in 0.0
+
+# Geometric twist parameters
+interface twist1 in 1
+interface twist2 in 1
+interface twist3 in 1
+interface twist4 in 1
+
+interface sharpTE in 1
+
+interface LEchop in 1
+interface TEchop in 1
+
+interface midplane in 0 #0 is off, 1 is upper, 2 is lower
+interface chopMode in 2 #0 is off, 1 is LE, 2 is middle, 3 is TE
+interface thermal in 1
+interface mirrored in 0
+
+interface nribs in 7
+interface nspars in 2
+
+interface nOML out 0
+
+set xmargin 5.0
+set ymargin 5.0
+set zmargin 5.0
+set xmin -xmargin
+set xmax chord+xmargin
+set ymin -ymargin
+set ymax ymargin
+set zmin -sspan-zmargin
+set zmax zmargin
+
+set nOML nribs-1
+
+# Make the full wing solid
+udparg $/fullStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/fullStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/fullStruct chord chord sspan sspan camber camber xCamber xCamber
+udparg $/fullStruct LEchop LEchop TEchop TEchop 
+udparg $/fullStruct chopMode chopMode exploded exploded
+udparg $/fullStruct nspars nspars allOMLDVs allOMLDVs
+udparg $/fullStruct rib_a1 rib_a1 rib_a2 rib_a2
+udparg $/fullStruct spar_a1 spar_a1 spar_a2 spar_a2
+udprim $/fullStruct midplane midplane
+
+ifthen thermal EQ 1
+   select edge
+      attribute tagMidplane $none
+
+   udparg $/midPlane tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+   udparg $/midPlane twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+   udparg $/midPlane chord chord sspan sspan camber camber xCamber xCamber
+   udparg $/midPlane LEchop LEchop TEchop TEchop 
+   udparg $/midPlane chopMode chopMode
+   udprim $/midPlane midplane 1
+
+   subtract
+
+   select edge $tagMidplane $none
+   select not
+      attribute capsConstraint $midplane
+endif
+
+rotatex 90 0 0
+rotatez -aoa 0 0
+
+store halfWing
+restore halfWing
+
+ifthen exploded EQ 0
+   select face $tagComp $OML
+   attribute _color $green
+   attribute _bcolor $green
+
+   select face $tagComp $rib
+   attribute _color $red
+   attribute _bcolor $red
+endif
+
+ifthen mirrored EQ 1
+   mirror 0 1 0
+
+   restore halfWing
+   union
+endif
+
+# Add AIM attribute to specify the analyses to use
+select body
+   attribute capsAIM $egadsTessAIM;tacsAIM
+
+end
+|||||||||||||||||||||||||||||||||||||||||

@@ -703,8 +703,9 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                     x = np.asfortranarray(grid_coords[0::3]) + x0
                     y = np.asfortranarray(grid_coords[1::3]) + y0
                     z = np.asfortranarray(grid_coords[2::3]) + z0
-                    for _ in [x, y, z]:
-                        _ = _ if self.complex_mode else _.astype(np.double)
+                    x = x if self.complex_mode else x.astype(np.double)
+                    y = y if self.complex_mode else y.astype(np.double)
+                    z = z if self.complex_mode else z.astype(np.double)
                     self.fun3d_flow.input_aero_test_grid_coords(x, y, z)
 
                 self.comm.Barrier()
@@ -817,8 +818,9 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
                         x = np.asfortranarray(grid_coords[0::3]) + x0
                         y = np.asfortranarray(grid_coords[1::3]) + y0
                         z = np.asfortranarray(grid_coords[2::3]) + z0
-                        for _ in [x, y, z]:
-                            _ = _ if self.complex_mode else _.astype(np.double)
+                        x = x if self.complex_mode else x.astype(np.double)
+                        y = y if self.complex_mode else y.astype(np.double)
+                        z = z if self.complex_mode else z.astype(np.double)
                         self.fun3d_adjoint.input_aero_test_grid_coords(x, y, z)
 
                     # set the flow state adjoint in
@@ -880,9 +882,10 @@ class Fun3d14AeroelasticTestInterface(Fun3d14Interface):
 
                 for ibody, body in enumerate(self.model.bodies, 1):
                     # Extract aero_disps_ajp = dG/du_A^T psi_G from FUN3D
-                    aero_volume_ajp = body._grid_ajp[scenario.id]
                     nvol = self.nvol
-                    if nvol > 0:
+                    if self.test_aero_module:
+                        aero_volume_ajp = body._grid_ajp[scenario.id]
+                    if self.test_aero_module and nvol > 0:
                         lam_x, lam_y, lam_z = (
                             self.fun3d_adjoint.extract_grid_volume_adjoint(
                                 aero_nnodes, nfuncs
