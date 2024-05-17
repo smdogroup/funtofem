@@ -8,12 +8,14 @@ from mphys import Builder, MPhysVariables
 """ builder and components to wrap meld thermal to transfert temperature and
 heat transfer rate between the convective and conductive analysis."""
 
-x_thermal0 = MPhysVariables.Thermal.Mesh.COORDINATES
-x_aero_surface0 = MPhysVariables.Aerodynamics.Surface.COORDINATES_INITIAL
-T_thermal = MPhysVariables.Thermal.TEMPERATURE
-T_aero = MPhysVariables.Aerodynamics.Surface.TEMPERATURE
-q_aero = MPhysVariables.Aerodynamics.Surface.HEAT_FLOW
-q_thermal = MPhysVariables.Thermal.HeatFlow.AERODYNAMIC
+# Set MPhys variable names
+X_THERMAL0 = MPhysVariables.Thermal.Mesh.COORDINATES
+X_AERO_SURFACE0 = MPhysVariables.Aerodynamics.Surface.COORDINATES_INITIAL
+T_THERMAL = MPhysVariables.Thermal.TEMPERATURE
+T_AERO = MPhysVariables.Aerodynamics.Surface.TEMPERATURE
+Q_AERO = MPhysVariables.Aerodynamics.Surface.HEAT_FLOW
+Q_THERMAL = MPhysVariables.Thermal.HeatFlow.AERODYNAMIC
+
 
 class MeldTempXfer(om.ExplicitComponent):
     """
@@ -47,14 +49,14 @@ class MeldTempXfer(om.ExplicitComponent):
 
         # initialization inputs
         self.add_input(
-            x_thermal0,
+            X_THERMAL0,
             distributed=True,
             shape_by_conn=True,
             desc="initial thermal node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            x_aero_surface0,
+            X_AERO_SURFACE0,
             distributed=True,
             shape_by_conn=True,
             desc="initial aerodynamic surface node coordinates",
@@ -62,7 +64,7 @@ class MeldTempXfer(om.ExplicitComponent):
         )
         # inputs
         self.add_input(
-            T_thermal,
+            T_THERMAL,
             distributed=True,
             shape_by_conn=True,
             desc="thermalive node displacements",
@@ -72,7 +74,7 @@ class MeldTempXfer(om.ExplicitComponent):
         # outputs
 
         self.add_output(
-            T_aero,
+            T_AERO,
             shape_by_conn=True,
             distributed=True,
             desc="aero surface temperatures",
@@ -82,12 +84,8 @@ class MeldTempXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         if not self.meld_initialized:
-            x_t0 = np.array(
-                inputs[x_thermal0], dtype=TransferScheme.dtype
-            )
-            x_a0 = np.array(
-                inputs[x_aero_surface0], dtype=TransferScheme.dtype
-            )
+            x_t0 = np.array(inputs[X_THERMAL0], dtype=TransferScheme.dtype)
+            x_a0 = np.array(inputs[X_AERO_SURFACE0], dtype=TransferScheme.dtype)
 
             self.meldThermal.setStructNodes(x_t0)
             self.meldThermal.setAeroNodes(x_a0)
@@ -95,11 +93,11 @@ class MeldTempXfer(om.ExplicitComponent):
             self.meldThermal.initialize()
             self.meld_initialized = True
 
-        T_t = np.array(inputs[T_thermal], dtype=TransferScheme.dtype)
-        T_a = np.array(outputs[T_aero], dtype=TransferScheme.dtype)
+        T_t = np.array(inputs[T_THERMAL], dtype=TransferScheme.dtype)
+        T_a = np.array(outputs[T_AERO], dtype=TransferScheme.dtype)
 
         self.meldThermal.transferTemp(T_t, T_a)
-        outputs[T_aero] = T_a
+        outputs[T_AERO] = T_a
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         """
@@ -112,46 +110,42 @@ class MeldTempXfer(om.ExplicitComponent):
 
         meld = self.meldThermal
         if mode == "fwd":
-            if T_aero in d_outputs:
-                if T_thermal in d_inputs:
-                    d_T_thermal = np.array(
-                        d_inputs[T_thermal], dtype=TransferScheme.dtype
+            if T_AERO in d_outputs:
+                if T_THERMAL in d_inputs:
+                    d_T_THERMAL = np.array(
+                        d_inputs[T_THERMAL], dtype=TransferScheme.dtype
                     )
 
-                    prod = np.zeros(
-                        d_outputs[T_aero].size, dtype=TransferScheme.dtype
-                    )
+                    prod = np.zeros(d_outputs[T_AERO].size, dtype=TransferScheme.dtype)
 
-                    meld.applydTdtS(d_T_thermal, prod)
-                    d_outputs[T_aero] += np.array(prod, dtype=float)
+                    meld.applydTdtS(d_T_THERMAL, prod)
+                    d_outputs[T_AERO] += np.array(prod, dtype=float)
 
-                if x_aero_surface0 in d_inputs:
+                if X_AERO_SURFACE0 in d_inputs:
                     if self.check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
-                if x_thermal0 in d_inputs:
+                if X_THERMAL0 in d_inputs:
                     if self.check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
         if mode == "rev":
-            if T_aero in d_outputs:
-                dT_aero = np.array(
-                    d_outputs[T_aero], dtype=TransferScheme.dtype
-                )
-                if T_thermal in d_inputs:
-                    # dT_aero/dT_thermal^T * psi = - dD/dT_thermal^T psi
+            if T_AERO in d_outputs:
+                dT_AERO = np.array(d_outputs[T_AERO], dtype=TransferScheme.dtype)
+                if T_THERMAL in d_inputs:
+                    # dT_AERO/dT_THERMAL^T * psi = - dD/dT_THERMAL^T psi
 
                     prod = np.zeros(
-                        d_inputs[T_thermal].size, dtype=TransferScheme.dtype
+                        d_inputs[T_THERMAL].size, dtype=TransferScheme.dtype
                     )
 
-                    meld.applydTdtSTrans(dT_aero, prod)
+                    meld.applydTdtSTrans(dT_AERO, prod)
 
-                    d_inputs[T_thermal] -= np.array(prod, dtype=np.float64)
+                    d_inputs[T_THERMAL] -= np.array(prod, dtype=np.float64)
 
 
 class MeldHeatXfer(om.ExplicitComponent):
@@ -186,14 +180,14 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         # initialization inputs
         self.add_input(
-            x_thermal0,
+            X_THERMAL0,
             distributed=True,
             shape_by_conn=True,
             desc="initial thermal node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            x_aero_surface0,
+            X_AERO_SURFACE0,
             distributed=True,
             shape_by_conn=True,
             desc="initial aerodynamic surface node coordinates",
@@ -202,7 +196,7 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         # inputs
         self.add_input(
-            q_aero,
+            Q_AERO,
             distributed=True,
             shape_by_conn=True,
             desc="initial aero heat transfer rate",
@@ -211,7 +205,7 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         # outputs
         self.add_output(
-            q_thermal,
+            Q_THERMAL,
             distributed=True,
             shape_by_conn=True,
             desc="heat transfer rate on the thermalion mesh at the interface",
@@ -222,12 +216,8 @@ class MeldHeatXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         if not self.meld_initialized:
-            x_t0 = np.array(
-                inputs[x_thermal0], dtype=TransferScheme.dtype
-            )
-            x_a0 = np.array(
-                inputs[x_aero_surface0], dtype=TransferScheme.dtype
-            )
+            x_t0 = np.array(inputs[X_THERMAL0], dtype=TransferScheme.dtype)
+            x_a0 = np.array(inputs[X_AERO_SURFACE0], dtype=TransferScheme.dtype)
 
             self.meldThermal.setStructNodes(x_t0)
             self.meldThermal.setAeroNodes(x_a0)
@@ -235,10 +225,10 @@ class MeldHeatXfer(om.ExplicitComponent):
             self.meldThermal.initialize()
             self.meld_initialized = True
 
-        heaT_aero = np.array(inputs[q_aero], dtype=TransferScheme.dtype)
-        heaT_thermal = np.array(outputs[q_thermal], dtype=TransferScheme.dtype)
-        self.meldThermal.transferFlux(heaT_aero, heaT_thermal)
-        outputs[q_thermal] = heaT_thermal
+        heaT_AERO = np.array(inputs[Q_AERO], dtype=TransferScheme.dtype)
+        heaT_THERMAL = np.array(outputs[Q_THERMAL], dtype=TransferScheme.dtype)
+        self.meldThermal.transferFlux(heaT_AERO, heaT_THERMAL)
+        outputs[Q_THERMAL] = heaT_THERMAL
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         """
@@ -251,44 +241,38 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         meld = self.meldThermal
         if mode == "fwd":
-            if q_thermal in d_outputs:
-                if q_aero in d_inputs:
-                    d_q_aero = np.array(
-                        d_inputs[q_aero], dtype=TransferScheme.dtype
-                    )
+            if Q_THERMAL in d_outputs:
+                if Q_AERO in d_inputs:
+                    d_Q_AERO = np.array(d_inputs[Q_AERO], dtype=TransferScheme.dtype)
 
                     prod = np.zeros(
-                        d_outputs[q_thermal].size, dtype=TransferScheme.dtype
+                        d_outputs[Q_THERMAL].size, dtype=TransferScheme.dtype
                     )
 
-                    meld.applydQdqA(d_q_aero, prod)
-                    d_outputs[q_thermal] += np.array(prod, dtype=np.float64)
+                    meld.applydQdqA(d_Q_AERO, prod)
+                    d_outputs[Q_THERMAL] += np.array(prod, dtype=np.float64)
 
-                if x_aero_surface0 in d_inputs:
+                if X_AERO_SURFACE0 in d_inputs:
                     if self.check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
-                if x_thermal0 in d_inputs:
+                if X_THERMAL0 in d_inputs:
                     if self.check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
         if mode == "rev":
-            if q_thermal in d_outputs:
-                dq_thermal = np.array(
-                    d_outputs[q_thermal], dtype=TransferScheme.dtype
-                )
-                if q_aero in d_inputs:
-                    prod = np.zeros(
-                        d_inputs[q_aero].size, dtype=TransferScheme.dtype
-                    )
+            if Q_THERMAL in d_outputs:
+                dQ_THERMAL = np.array(d_outputs[Q_THERMAL], dtype=TransferScheme.dtype)
+                if Q_AERO in d_inputs:
+                    prod = np.zeros(d_inputs[Q_AERO].size, dtype=TransferScheme.dtype)
 
-                    meld.applydQdqATrans(dq_thermal, prod)
+                    meld.applydQdqATrans(dQ_THERMAL, prod)
 
-                    d_inputs[q_aero] -= np.array(prod, dtype=np.float64)
+                    d_inputs[Q_AERO] -= np.array(prod, dtype=np.float64)
 
 
 class MeldThermalBuilder(Builder):
