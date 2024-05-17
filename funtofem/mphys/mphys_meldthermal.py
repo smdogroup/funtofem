@@ -243,13 +243,13 @@ class MeldHeatXfer(om.ExplicitComponent):
         if mode == "fwd":
             if Q_THERMAL in d_outputs:
                 if Q_AERO in d_inputs:
-                    d_Q_AERO = np.array(d_inputs[Q_AERO], dtype=TransferScheme.dtype)
+                    d_q_aero = np.array(d_inputs[Q_AERO], dtype=TransferScheme.dtype)
 
                     prod = np.zeros(
                         d_outputs[Q_THERMAL].size, dtype=TransferScheme.dtype
                     )
 
-                    meld.applydQdqA(d_Q_AERO, prod)
+                    meld.applydQdqA(d_q_aero, prod)
                     d_outputs[Q_THERMAL] += np.array(prod, dtype=np.float64)
 
                 if X_AERO_SURFACE0 in d_inputs:
@@ -266,11 +266,11 @@ class MeldHeatXfer(om.ExplicitComponent):
 
         if mode == "rev":
             if Q_THERMAL in d_outputs:
-                dQ_THERMAL = np.array(d_outputs[Q_THERMAL], dtype=TransferScheme.dtype)
+                dq_thermal = np.array(d_outputs[Q_THERMAL], dtype=TransferScheme.dtype)
                 if Q_AERO in d_inputs:
                     prod = np.zeros(d_inputs[Q_AERO].size, dtype=TransferScheme.dtype)
 
-                    meld.applydQdqATrans(dQ_THERMAL, prod)
+                    meld.applydQdqATrans(dq_thermal, prod)
 
                     d_inputs[Q_AERO] -= np.array(prod, dtype=np.float64)
 
