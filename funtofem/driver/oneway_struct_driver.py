@@ -490,8 +490,11 @@ class OnewayStructDriver:
                     transfer_settings=self.transfer_settings,
                 )
 
+            num_steps = 1
+
             # zero the initial struct loads and struct flux for each scenario
             for scenario in self.model.scenarios:
+
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 body.struct_shape_term[scenario.id] = np.zeros(
@@ -512,32 +515,37 @@ class OnewayStructDriver:
                         )
 
                 else:  # unsteady
+                    num_steps = scenario.steps + 1
+
                     if body.transfer is not None:
                         body.struct_loads[scenario.id] = [
-                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                            np.zeros(3 * ns, dtype=dtype)
+                            for _ in range(scenario.steps + 1)
                         ]
                         body.struct_disps[scenario.id] = [
-                            np.zeros(3 * ns, dtype=dtype) for _ in range(scenario.steps)
+                            np.zeros(3 * ns, dtype=dtype)
+                            for _ in range(scenario.steps + 1)
                         ]
 
                     # initialize new struct heat flux
                     if body.thermal_transfer is not None:
                         body.struct_heat_flux[scenario.id] = [
-                            np.zeros(ns, dtype=dtype) for _ in range(scenario.steps)
+                            np.zeros(ns, dtype=dtype) for _ in range(scenario.steps + 1)
                         ]
                         body.struct_temps[scenario.id] = [
                             (np.ones(ns, dtype=dtype) * scenario.T_ref)
-                            for _ in range(scenario.steps)
+                            for _ in range(scenario.steps + 1)
                         ]
 
-                # transfer disps to prevent seg fault if coming from OnewayAeroDriver
-                body.transfer_disps(scenario)
-                body.transfer_temps(scenario)
+                for step in range(num_steps):
+                    # transfer disps to prevent seg fault if coming from OnewayAeroDriver
+                    body.transfer_disps(scenario, time_index=step)
+                    body.transfer_temps(scenario, time_index=step)
 
-                # transfer the loads and heat flux from fixed aero loads to
-                # the mesh for the new structural shape
-                body.transfer_loads(scenario)
-                body.transfer_heat_flux(scenario)
+                    # transfer the loads and heat flux from fixed aero loads to
+                    # the mesh for the new structural shape
+                    body.transfer_loads(scenario, time_index=step)
+                    body.transfer_heat_flux(scenario, time_index=step)
         return
 
     def solve_forward(self):
