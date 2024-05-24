@@ -1,0 +1,5 @@
+debug_getgrad
+*.grid_info
+ssw-sizing1
+*.dat
+*.adjoint
