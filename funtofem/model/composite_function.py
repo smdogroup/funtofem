@@ -94,7 +94,7 @@ class CompositeFunction:
     @property
     def sparse_gradient(self):
         """used for adjacency constraints, vars only functions"""
-        np_array = np.array([self.derivatives[var] for var in self.derivatives])
+        np_array = np.array([self.derivatives[var] for var in self.derivatives if not(var.state)])
         # return csr_matrix(np_array, shape=(1,np_array.shape[0]))
         nvars = np_array.shape[0]
         cols = np.array(
