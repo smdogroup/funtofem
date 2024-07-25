@@ -580,12 +580,13 @@ class TacsSteadyInterface(SolverInterface):
         # Evaluate the list of the functions of interest
         feval = None
         if self.tacs_proc:
-            print(f"evalFunctions", flush=True)
+            #print(f"evalFunctions", flush=True)
             feval = self.assembler.evalFunctions(self.scenario_data[scenario].func_list)
-            print(f"\tDone with evalFunctions", flush=True)
+            #print(f"\tDone with evalFunctions", flush=True)
 
         # Broacast the list across all processors - not just structural procs
         feval = self.comm.bcast(feval, root=0)
+        #print(f"feval = {feval}", flush=True)
 
         # Set the function values on all processors
         for i, func in enumerate(scenario.functions):
@@ -608,14 +609,14 @@ class TacsSteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        print(f"get function gradients start", flush=True)
+        #print(f"get function gradients start", flush=True)
         func_grad = self.scenario_data[scenario].func_grad
 
         for ifunc, func in enumerate(scenario.functions):
             for i, var in enumerate(self.struct_variables):
                 # func.set_gradient_component(var, func_grad[ifunc][i])
                 func.add_gradient_component(var, func_grad[ifunc][i])
-        print(f"\tdoneget function gradients start", flush=True)
+        #print(f"\tdoneget function gradients start", flush=True)
 
         return
 
@@ -760,9 +761,9 @@ class TacsSteadyInterface(SolverInterface):
             self.res.axpy(-1.0, self.ext_force)
 
             # Solve for the update
-            print(f"solve linear static analysis", flush=True)
+            #print(f"solve linear static analysis", flush=True)
             self.gmres.solve(self.res, self.update)
-            print(f"\tsolved linear static analysis", flush=True)
+            #print(f"\tsolved linear static analysis", flush=True)
 
             if self.comm.rank == 0 and self.aitken_debug:
                 print(f"TACS iterate step: {step}", flush=True)
@@ -829,7 +830,7 @@ class TacsSteadyInterface(SolverInterface):
                         + scenario.T_ref
                     )
 
-        print(f"done with iterate", flush=True)
+        #print(f"done with iterate", flush=True)
 
         return fail
 
@@ -1041,9 +1042,9 @@ class TacsSteadyInterface(SolverInterface):
                 self.assembler.applyBCs(self.res)
 
                 # Solve structural adjoint equation
-                print(f"linear adjoint solve", flush=True)
+                #print(f"linear adjoint solve", flush=True)
                 self.gmres.solve(self.res, psi[ifunc])
-                print(f"\tdone withlinear adjoint solve", flush=True)
+                #print(f"\tdone withlinear adjoint solve", flush=True)
 
                 # Aitken adjoint step
                 if self.use_aitken:
@@ -1122,7 +1123,7 @@ class TacsSteadyInterface(SolverInterface):
                             self.thermal_index :: ndof
                         ].astype(body.dtype)
 
-        print(f"done with iterate adjoint", flush=True)
+        #print(f"done with iterate adjoint", flush=True)
 
         return fail
 
@@ -1145,7 +1146,7 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        print(f"begin post adjoint", flush=True)
+        #print(f"begin post adjoint", flush=True)
 
         func_grad = []
         if self.tacs_proc:
@@ -1172,7 +1173,7 @@ class TacsSteadyInterface(SolverInterface):
         # Broadcast the gradients to all processors
         self.scenario_data[scenario].func_grad = self.comm.bcast(func_grad, root=0)
 
-        print(f"\tdone with post adjoint", flush=True)
+        #print(f"\tdone with post adjoint", flush=True)
 
         return
 
