@@ -580,12 +580,13 @@ class TacsSteadyInterface(SolverInterface):
         # Evaluate the list of the functions of interest
         feval = None
         if self.tacs_proc:
-            print(f"evalFunctions", flush=True)
+            #print(f"evalFunctions", flush=True)
             feval = self.assembler.evalFunctions(self.scenario_data[scenario].func_list)
-            print(f"\tDone with evalFunctions", flush=True)
+            #print(f"\tDone with evalFunctions", flush=True)
 
         # Broacast the list across all processors - not just structural procs
         feval = self.comm.bcast(feval, root=0)
+        #print(f"feval = {feval}", flush=True)
 
         # Set the function values on all processors
         for i, func in enumerate(scenario.functions):
@@ -608,14 +609,14 @@ class TacsSteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        print(f"get function gradients start", flush=True)
+        #print(f"get function gradients start", flush=True)
         func_grad = self.scenario_data[scenario].func_grad
 
         for ifunc, func in enumerate(scenario.functions):
             for i, var in enumerate(self.struct_variables):
                 # func.set_gradient_component(var, func_grad[ifunc][i])
                 func.add_gradient_component(var, func_grad[ifunc][i])
-        print(f"\tdoneget function gradients start", flush=True)
+        #print(f"\tdoneget function gradients start", flush=True)
 
         return
 
