@@ -320,6 +320,7 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
+            if func.vars_only and self.sparse: continue # for linear gradients just shown up front
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
             # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
