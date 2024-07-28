@@ -46,7 +46,7 @@ class OptimizationManager:
         design_out_file=None,
         hot_start_file=None,
         debug: bool = False,
-        sparse: bool = False,
+        sparse: bool = True,
         write_checkpoints=False,
     ):
         """
