@@ -48,6 +48,7 @@ class OptimizationManager:
         debug: bool = False,
         sparse: bool = True,
         write_checkpoints=False,
+        plot_hist=True,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -77,6 +78,7 @@ class OptimizationManager:
         self.debug = debug
         self.sparse = sparse
         self.write_checkpoints = write_checkpoints
+        self.plot_hist = plot_hist
 
         # optimization meta data
         self._iteration = 0
@@ -285,7 +287,7 @@ class OptimizationManager:
                     if not func._plot:
                         continue
                     self._func_history[func.plot_name] += [func.value.real]
-                self._plot_history()
+                if self.plot_hist: self._plot_history()
         return fail
 
     def _run_complete_analysis(self):
