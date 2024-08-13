@@ -287,7 +287,8 @@ class OptimizationManager:
                     if not func._plot:
                         continue
                     self._func_history[func.plot_name] += [func.value.real]
-                if self.plot_hist: self._plot_history()
+                if self.plot_hist:
+                    self._plot_history()
         return fail
 
     def _run_complete_analysis(self):
@@ -320,7 +321,8 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
-            if func.vars_only and self.sparse: continue # for linear gradients just shown up front
+            if func.vars_only and self.sparse:
+                continue  # for linear gradients just shown up front
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
             # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
@@ -339,6 +341,24 @@ class OptimizationManager:
                     self._sens[func.full_name][var.full_name] = (
                         func.get_gradient_component(var).real
                     )
+        return
+
+    def register_sparse_constraint(self, opt_problem, comp_func):
+        """
+        register adjacency composite functions as sparse constraints
+        need composite function to be vars_only type
+        """
+        assert comp_func.vars_only  # the composite function
+        variables = [var for var in comp_func.derivatives]
+        opt_problem.addCon(
+            comp_func.full_name,
+            lower=comp_func.lower,
+            upper=comp_func.upper,
+            scale=comp_func.scale,
+            linear=True,
+            wrt=[self.SPARSE_VARS_GROUP],
+            jac={self.SPARSE_VARS_GROUP: comp_func.sparse_gradient},
+        )
         return
 
     def register_to_problem(self, opt_problem):
@@ -366,7 +386,7 @@ class OptimizationManager:
                     scale=var.scale,
                 )
 
-        for func in self.model.get_functions(optim=True):
+        for func in self.model.get_functions(optim=True, include_vars_only=True):
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
@@ -381,6 +401,8 @@ class OptimizationManager:
                         wrt=[self.SPARSE_VARS_GROUP],
                         jac={self.SPARSE_VARS_GROUP: func.sparse_gradient},
                     )
+                    # print(f"func sparse_gradient = {func.sparse_gradient}")
+                    # exit()
                 else:
                     opt_problem.addCon(
                         func.full_name,
@@ -388,6 +410,10 @@ class OptimizationManager:
                         upper=func.upper,
                         scale=func.scale,
                     )
+
+        # now remove all vars_only composite functions from the model
+        # if self.sparse:
+        #     self.model.clear_vars_only_composite_functions()
 
         return
 
