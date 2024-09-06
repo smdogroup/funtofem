@@ -135,7 +135,7 @@ jobs:
           echo "Running Tests";
           echo "=============================================================";
           if [[ ${{ matrix.NAME }} == 'Real' ]]; then
-            source ${F2F_DIR}/extern/ESP124/ESPenv.sh
+            source ${F2F_DIR}/extern/ESP126/ESPenv.sh
           fi
           testflo ${GITHUB_WORKSPACE}/tests/unit_tests/;
 
