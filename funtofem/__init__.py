@@ -37,4 +37,9 @@ from .optimization import *
 mphys_loader = importlib.util.find_spec("mphys")
 openmdao_loader = importlib.util.find_spec("openmdao")
 if mphys_loader is not None and openmdao_loader is not None:
-    from .mphys import *
+    try:  # sometimes openmdao import fails on unittests
+        from .mphys import *
+    except:
+        print(
+            "Mphys module couldn't be built despite available openmdao and mphys packages."
+        )
