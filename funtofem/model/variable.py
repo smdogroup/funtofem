@@ -50,7 +50,6 @@ class Variable(object):
         active=True,
         coupled=False,
         id=0,
-        state=False,
     ):
         """
         Variable object for FUNtoFEM
@@ -71,8 +70,6 @@ class Variable(object):
             whether or not the design variable is coupled
         id: int
             id number of the design variable
-        state: bool
-            whether this variable is used as a state variable (for TACS only right now)
 
         Examples
         --------
@@ -85,7 +82,6 @@ class Variable(object):
         self.upper = upper
         self.active = active
         self.coupled = coupled
-        self.state = state
         self.id = id
         self.scale = scale
         self.analysis_type = analysis_type
@@ -100,7 +96,6 @@ class Variable(object):
         scale=None,
         active=None,
         coupled=None,
-        state=None,
     ):
         """
         Update the one or more of the attributes of the design variable
@@ -119,8 +114,6 @@ class Variable(object):
             whether or not the design variable is active
         coupled: bool
             whether or not the design variable is coupled
-        state: bool
-            whether this variable is used as a state variable (for TACS only right now)
         """
 
         if value is not None:
@@ -135,8 +128,6 @@ class Variable(object):
             self.active = active
         if coupled is not None:
             self.coupled = coupled
-        if state is not None:
-            self.state = state
 
         # return the object for method cascading
         return self

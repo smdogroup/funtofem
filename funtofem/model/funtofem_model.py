@@ -255,7 +255,7 @@ class FUNtoFEMmodel(object):
             self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
-    def get_variables(self, names=None, all=False, optim=False):
+    def get_variables(self, names=None, all=False):
         """
         Get all the coupled and uncoupled variable objects for the entire model.
         Coupled variables only appear once.
@@ -271,9 +271,6 @@ class FUNtoFEMmodel(object):
         -------
         var_list: list of variable objects
         """
-
-        if optim:  # return all active and non-state variables
-            return [var for var in self.get_variables() if not (var.state)]
 
         if names is None:
             dv = []

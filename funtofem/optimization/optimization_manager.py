@@ -133,7 +133,7 @@ class OptimizationManager:
 
             # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
             for func in self.model.get_functions():
-                for var in self.model.get_variables(optim=True):
+                for var in self.model.get_variables():
                     func.derivatives[var] = 0.0
 
             # initialize funcs, sens in case of failure on first design iteration of hot start
@@ -143,7 +143,7 @@ class OptimizationManager:
             self._sens = {}
             for func in self.model.get_functions(optim=True):
                 self._sens[func.full_name] = {}
-                for var in self.model.get_variables(optim=True):
+                for var in self.model.get_variables():
                     if self.sparse:
                         self._sens[func.full_name][self.SPARSE_VARS_GROUP] = None
                     else:
@@ -176,7 +176,7 @@ class OptimizationManager:
                 if self.sparse:  # all vars in same group
                     regular_dict = {
                         var.name: float(x_dict[self.SPARSE_VARS_GROUP][ivar])
-                        for ivar, var in enumerate(self.model.get_variables(optim=True))
+                        for ivar, var in enumerate(self.model.get_variables())
                     }
                 else:
                     regular_dict = {key: float(x_dict[key]) for key in x_dict}
@@ -240,14 +240,13 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
-                if self.driver.solvers.flow is not None:
-                    forward_res = self.driver.solvers.flow.get_forward_residual()
-                    forward_steps = self.driver.solvers.flow._last_forward_step
-                    adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
-                    adjoint_steps = self.driver.solvers.flow._last_adjoint_step
-                    self._design_hdl.write(
-                        f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
-                    )
+                forward_res = self.driver.solvers.flow.get_forward_residual()
+                forward_steps = self.driver.solvers.flow._last_forward_step
+                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                self._design_hdl.write(
+                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
+                )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 
@@ -285,7 +284,7 @@ class OptimizationManager:
                     if not func._plot:
                         continue
                     self._func_history[func.plot_name] += [func.value.real]
-                #self._plot_history()
+                self._plot_history()
         return fail
 
     def _run_complete_analysis(self):
@@ -295,12 +294,12 @@ class OptimizationManager:
 
         # update the model design variables
         if self.sparse:
-            variables = self.model.get_variables(optim=True)
+            variables = self.model.get_variables()
             for ivar, val in enumerate(self._x_dict[self.SPARSE_VARS_GROUP]):
                 var = variables[ivar]
                 var.value = float(val)
         else:
-            for var in self.model.get_variables(optim=True):
+            for var in self.model.get_variables():
                 for var_key in self._x_dict:
                     if var.full_name == var_key:
                         # assumes here that only pyoptsparse single variables (no var groups are made)
@@ -318,8 +317,6 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
-            if func.vars_only and self.sparse:
-                continue
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
             # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
@@ -328,13 +325,10 @@ class OptimizationManager:
             #     ) # linear constraints define their jacobians up front
             if self.sparse:
                 self._sens[func.full_name][self.SPARSE_VARS_GROUP] = np.array(
-                    [
-                        func.derivatives[var].real
-                        for var in self.model.get_variables(optim=True)
-                    ]
+                    [func.derivatives[var].real for var in func.derivatives]
                 )
             else:
-                for var in self.model.get_variables(optim=True):
+                for var in self.model.get_variables():
                     self._sens[func.full_name][var.full_name] = (
                         func.get_gradient_component(var).real
                     )
@@ -345,7 +339,8 @@ class OptimizationManager:
         add funtofem model variables and functions to a pyoptsparse optimization problem
         """
         if self.sparse:
-            variables = self.model.get_variables(optim=True)
+            variables = self.model.get_variables()
+            values = np.array([var.value for var in variables])
             opt_problem.addVarGroup(
                 self.SPARSE_VARS_GROUP,
                 len(variables),
@@ -356,7 +351,7 @@ class OptimizationManager:
                 scale=np.array([var.scale for var in variables]),
             )
         else:
-            for var in self.model.get_variables(optim=True):
+            for var in self.model.get_variables():
                 opt_problem.addVar(
                     var.full_name,
                     lower=var.lower,
