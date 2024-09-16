@@ -24,6 +24,7 @@ __all__ = ["FUNtoFEMDriver"]
 
 import numpy as np
 from mpi4py import MPI
+from typing import TYPE_CHECKING
 from funtofem import TransferScheme
 from .transfer_settings import TransferSettings
 
@@ -31,6 +32,9 @@ try:
     from .hermes_transfer import HermesTransfer
 except:
     pass
+
+if TYPE_CHECKING:
+    from ..interface.solver_manager import SolverManager, CommManager
 
 np.set_printoptions(precision=15)
 
@@ -42,9 +46,9 @@ class FUNtoFEMDriver(object):
 
     def __init__(
         self,
-        solvers,
-        comm_manager=None,
-        transfer_settings=None,
+        solvers: SolverManager,
+        comm_manager: CommManager = None,
+        transfer_settings: TransferSettings = None,
         model=None,
         debug=False,
         reload_funtofem_states=False,
