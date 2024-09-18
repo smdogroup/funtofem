@@ -22,9 +22,10 @@
 
 __all__ = ["FUNtoFEMDriver"]
 
+from __future__ import annotations
+
 import numpy as np
 from mpi4py import MPI
-from __future__ import annotations
 from typing import TYPE_CHECKING
 from funtofem import TransferScheme
 from .transfer_settings import TransferSettings
