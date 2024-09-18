@@ -20,9 +20,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["FUNtoFEMDriver"]
-
 from __future__ import annotations
+
+__all__ = ["FUNtoFEMDriver"]
 
 import numpy as np
 from mpi4py import MPI
