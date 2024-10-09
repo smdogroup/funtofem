@@ -11,7 +11,7 @@ if tacs_loader is not None:
 
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
-    from .fun3d_interface import Fun3dInterface
+    from .fun3d_14_interface import Fun3d14Interface
 
 from .radiation_interface import RadiationInterface
 
@@ -105,7 +105,7 @@ class SolverManager:
         if fun3d_loader is None or self.flow is None:
             return False
         else:
-            return isinstance(self.flow, Fun3dInterface)
+            return isinstance(self.flow, Fun3d14Interface)
 
     @property
     def uses_radiation(self) -> bool:
@@ -148,7 +148,7 @@ class SolverManager:
         """
         switch fun3d flow to real
         """
-        self.flow = Fun3dInterface.copy_real_interface(self.flow)
+        self.flow = Fun3d14Interface.copy_real_interface(self.flow)
         return self
 
     def make_flow_complex(self):
@@ -156,7 +156,7 @@ class SolverManager:
         switch fun3d flow to complex
         """
         print(f"inside make flow complex", flush=True)
-        self.flow = Fun3dInterface.copy_complex_interface(self.flow)
+        self.flow = Fun3d14Interface.copy_complex_interface(self.flow)
         return self
 
     @property

@@ -291,6 +291,8 @@ class TestResult:
 
         # solve the adjoint
         if driver.solvers.uses_fun3d:
+            if driver.comm.rank == 0:
+                print("Check before real primal adjoint for 'uses fun3d': True")
             driver.solvers.make_flow_real()
         driver.solve_forward()
         driver.solve_adjoint()
@@ -305,7 +307,9 @@ class TestResult:
 
         # perform complex step method
         print(f"uses fun3d = {driver.solvers.uses_fun3d}", flush=True)
-        if driver.solvers.uses_fun3d:
+        if (
+            driver.solvers.uses_fun3d
+        ):  # NOTE: This is likely preventing make_flow_complex()
             print(f"make flow complex call", flush=True)
             driver.solvers.make_flow_complex()
         variables = model.get_variables()
