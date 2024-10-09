@@ -46,8 +46,9 @@ class OptimizationManager:
         design_out_file=None,
         hot_start_file=None,
         debug: bool = False,
-        sparse: bool = False,
+        sparse: bool = True,
         write_checkpoints=False,
+        plot_hist=True,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -77,6 +78,7 @@ class OptimizationManager:
         self.debug = debug
         self.sparse = sparse
         self.write_checkpoints = write_checkpoints
+        self.plot_hist = plot_hist
 
         # optimization meta data
         self._iteration = 0
@@ -133,7 +135,7 @@ class OptimizationManager:
 
             # add all variables (for off-scenario variables to derivatives dict for each function) to analysis functions
             for func in self.model.get_functions():
-                for var in self.model.get_variables():
+                for var in self.model.get_variables(optim=True):
                     func.derivatives[var] = 0.0
 
             # initialize funcs, sens in case of failure on first design iteration of hot start
@@ -143,7 +145,7 @@ class OptimizationManager:
             self._sens = {}
             for func in self.model.get_functions(optim=True):
                 self._sens[func.full_name] = {}
-                for var in self.model.get_variables():
+                for var in self.model.get_variables(optim=True):
                     if self.sparse:
                         self._sens[func.full_name][self.SPARSE_VARS_GROUP] = None
                     else:
@@ -176,7 +178,7 @@ class OptimizationManager:
                 if self.sparse:  # all vars in same group
                     regular_dict = {
                         var.name: float(x_dict[self.SPARSE_VARS_GROUP][ivar])
-                        for ivar, var in enumerate(self.model.get_variables())
+                        for ivar, var in enumerate(self.model.get_variables(optim=True))
                     }
                 else:
                     regular_dict = {key: float(x_dict[key]) for key in x_dict}
@@ -240,13 +242,14 @@ class OptimizationManager:
                     for func in self.model.get_functions(optim=True)
                     if func._plot
                 }
-                forward_res = self.driver.solvers.flow.get_forward_residual()
-                forward_steps = self.driver.solvers.flow._last_forward_step
-                adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
-                adjoint_steps = self.driver.solvers.flow._last_adjoint_step
-                self._design_hdl.write(
-                    f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
-                )
+                if self.driver.solvers.flow is not None:
+                    forward_res = self.driver.solvers.flow.get_forward_residual()
+                    forward_steps = self.driver.solvers.flow._last_forward_step
+                    adjoint_res = self.driver.solvers.flow.get_adjoint_residual()
+                    adjoint_steps = self.driver.solvers.flow._last_adjoint_step
+                    self._design_hdl.write(
+                        f"Forward resid {forward_res:2.5e} in {forward_steps} steps, Adjoint resid {adjoint_res:2.5e} in {adjoint_steps} steps and {_total_time:.4f} {time_units}\n"
+                    )
                 self._design_hdl.write(f"Functions = {plot_funcs}\n")
                 self._design_hdl.flush()
 
@@ -284,7 +287,8 @@ class OptimizationManager:
                     if not func._plot:
                         continue
                     self._func_history[func.plot_name] += [func.value.real]
-                self._plot_history()
+                if self.plot_hist:
+                    self._plot_history()
         return fail
 
     def _run_complete_analysis(self):
@@ -294,12 +298,12 @@ class OptimizationManager:
 
         # update the model design variables
         if self.sparse:
-            variables = self.model.get_variables()
+            variables = self.model.get_variables(optim=True)
             for ivar, val in enumerate(self._x_dict[self.SPARSE_VARS_GROUP]):
                 var = variables[ivar]
                 var.value = float(val)
         else:
-            for var in self.model.get_variables():
+            for var in self.model.get_variables(optim=True):
                 for var_key in self._x_dict:
                     if var.full_name == var_key:
                         # assumes here that only pyoptsparse single variables (no var groups are made)
@@ -317,6 +321,8 @@ class OptimizationManager:
         self._sens = {}
         # get only functions with optim=True, set with func.optimize() method (can method cascade it)
         for func in self.model.get_functions(optim=True):
+            if func.vars_only and self.sparse:
+                continue  # for linear gradients just shown up front
             self._funcs[func.full_name] = func.value.real
             self._sens[func.full_name] = {}
             # if self.sparse and isinstance(func, CompositeFunction) and func.vars_only:
@@ -325,13 +331,34 @@ class OptimizationManager:
             #     ) # linear constraints define their jacobians up front
             if self.sparse:
                 self._sens[func.full_name][self.SPARSE_VARS_GROUP] = np.array(
-                    [func.derivatives[var].real for var in func.derivatives]
+                    [
+                        func.derivatives[var].real
+                        for var in self.model.get_variables(optim=True)
+                    ]
                 )
             else:
-                for var in self.model.get_variables():
+                for var in self.model.get_variables(optim=True):
                     self._sens[func.full_name][var.full_name] = (
                         func.get_gradient_component(var).real
                     )
+        return
+
+    def register_sparse_constraint(self, opt_problem, comp_func):
+        """
+        register adjacency composite functions as sparse constraints
+        need composite function to be vars_only type
+        """
+        assert comp_func.vars_only  # the composite function
+        variables = [var for var in comp_func.derivatives]
+        opt_problem.addCon(
+            comp_func.full_name,
+            lower=comp_func.lower,
+            upper=comp_func.upper,
+            scale=comp_func.scale,
+            linear=True,
+            wrt=[self.SPARSE_VARS_GROUP],
+            jac={self.SPARSE_VARS_GROUP: comp_func.sparse_gradient},
+        )
         return
 
     def register_to_problem(self, opt_problem):
@@ -339,8 +366,7 @@ class OptimizationManager:
         add funtofem model variables and functions to a pyoptsparse optimization problem
         """
         if self.sparse:
-            variables = self.model.get_variables()
-            values = np.array([var.value for var in variables])
+            variables = self.model.get_variables(optim=True)
             opt_problem.addVarGroup(
                 self.SPARSE_VARS_GROUP,
                 len(variables),
@@ -351,7 +377,7 @@ class OptimizationManager:
                 scale=np.array([var.scale for var in variables]),
             )
         else:
-            for var in self.model.get_variables():
+            for var in self.model.get_variables(optim=True):
                 opt_problem.addVar(
                     var.full_name,
                     lower=var.lower,
@@ -360,7 +386,7 @@ class OptimizationManager:
                     scale=var.scale,
                 )
 
-        for func in self.model.get_functions(optim=True):
+        for func in self.model.get_functions(optim=True, include_vars_only=True):
             if func._objective:
                 opt_problem.addObj(func.full_name, scale=func.scale)
             else:
@@ -375,6 +401,8 @@ class OptimizationManager:
                         wrt=[self.SPARSE_VARS_GROUP],
                         jac={self.SPARSE_VARS_GROUP: func.sparse_gradient},
                     )
+                    # print(f"func sparse_gradient = {func.sparse_gradient}")
+                    # exit()
                 else:
                     opt_problem.addCon(
                         func.full_name,
@@ -382,6 +410,10 @@ class OptimizationManager:
                         upper=func.upper,
                         scale=func.scale,
                     )
+
+        # now remove all vars_only composite functions from the model
+        # if self.sparse:
+        #     self.model.clear_vars_only_composite_functions()
 
         return
 
