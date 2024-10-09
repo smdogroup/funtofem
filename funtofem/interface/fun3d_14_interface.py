@@ -734,7 +734,7 @@ class Fun3d14Interface(SolverInterface):
         # throw a runtime error if adjoint didn't converge sufficiently
         if scalar_resid > self.forward_min_tolerance:
             raise RuntimeError(
-                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
+                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_min_tolerance:.2e}, is too large..."
             )
         return
 
@@ -1416,6 +1416,12 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            forward_options=fun3d_interface.forward_options,
+            adjoint_options=fun3d_interface.adjoint_options,
+            forward_min_tolerance=fun3d_interface.forward_min_tolerance,
+            forward_stop_tolerance=fun3d_interface.forward_tolerance,
+            adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
+            adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )
 
     @classmethod
@@ -1437,4 +1443,10 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            forward_options=fun3d_interface.forward_options,
+            adjoint_options=fun3d_interface.adjoint_options,
+            forward_min_tolerance=fun3d_interface.forward_min_tolerance,
+            forward_stop_tolerance=fun3d_interface.forward_tolerance,
+            adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
+            adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )

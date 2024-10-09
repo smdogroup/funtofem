@@ -209,15 +209,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     all_converged = True
                     for solver in self.solvers.solver_list:
                         forward_resid = abs(solver.get_forward_residual(step=step))
-                        if self.comm.rank == 0:
-                            print(
-                                f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
-                                flush=True,
-                            )
-                        forward_tol = solver.forward_tolerance
-                        if forward_resid > forward_tol:
-                            all_converged = False
-                            break
+                        if forward_resid != 0.0:
+                            if self.comm.rank == 0:
+                                print(
+                                    f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
+                                    flush=True,
+                                )
+                            forward_tol = solver.forward_tolerance
+                            if forward_resid > forward_tol:
+                                all_converged = False
+                                break
 
                     if all_converged:
                         exit_early = True

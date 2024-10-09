@@ -191,7 +191,7 @@ jobs:
           cd html;
           zip -r ../f2f-docs.zip .;
       - name: Upload docs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: f2f-docs
           path: docs/f2f-docs.zip
