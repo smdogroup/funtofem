@@ -20,7 +20,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TacsInterface", "TacsSteadyInterface"]
+__all__ = [
+    "TacsInterface",
+    "TacsSteadyInterface",
+    "TacsPanelDimensions",
+    "TacsOutputGenerator",
+]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions
@@ -516,13 +521,17 @@ class TacsSteadyInterface(SolverInterface):
             The bodies in the model
         """
 
-        # compute panel length and width (checks if we need to inside the object)
-        self.tacs_panel_dimensions.compute_panel_length(
-            self.assembler, self.struct_variables, self.LENGTH_CONSTR, self.LENGTH_VAR
-        )
-        self.tacs_panel_dimensions.compute_panel_width(
-            self.assembler, self.struct_variables, self.WIDTH_CONSTR, self.WIDTH_VAR
-        )
+        if self.tacs_panel_dimensions is not None:
+            # compute panel length and width (checks if we need to inside the object)
+            self.tacs_panel_dimensions.compute_panel_length(
+                self.assembler,
+                self.struct_variables,
+                self.LENGTH_CONSTR,
+                self.LENGTH_VAR,
+            )
+            self.tacs_panel_dimensions.compute_panel_width(
+                self.assembler, self.struct_variables, self.WIDTH_CONSTR, self.WIDTH_VAR
+            )
 
         # write F2F variable values into TACS
         if self.tacs_proc:
@@ -541,7 +550,8 @@ class TacsSteadyInterface(SolverInterface):
             self.assembler.setDesignVars(xvec)
 
             # also copy to the constraints local vectors
-            self.tacs_panel_dimensions.setDesignVars(xvec)
+            if self.tacs_panel_dimensions is not None:
+                self.tacs_panel_dimensions.setDesignVars(xvec)
 
         return
 
@@ -1322,7 +1332,7 @@ class TacsSteadyInterface(SolverInterface):
                 Fvec = addLoadsFromBDF(fea_assembler)
             # Fvec = None
 
-            if panel_length_dv_index is not None:
+            if panel_length_dv_index is not None and tacs_panel_dimensions is not None:
                 tacs_panel_dimensions.panel_length_constr = (
                     fea_assembler.createPanelLengthConstraint("PanelLengthCon")
                 )
@@ -1330,7 +1340,7 @@ class TacsSteadyInterface(SolverInterface):
                     cls.LENGTH_CONSTR,
                     dvIndex=tacs_panel_dimensions.panel_length_dv_index,
                 )
-            if panel_width_dv_index is not None:
+            if panel_width_dv_index is not None and tacs_panel_dimensions is not None:
                 tacs_panel_dimensions.panel_width_constr = (
                     fea_assembler.createPanelWidthConstraint("PanelWidthCon")
                 )
@@ -1345,7 +1355,10 @@ class TacsSteadyInterface(SolverInterface):
             f5 = fea_assembler.outputViewer
 
         # Create the output generator
-        gen_output = TacsOutputGenerator(prefix, f5=f5)
+        if prefix is None:
+            gen_output = None
+        else:
+            gen_output = TacsOutputGenerator(prefix, f5=f5)
 
         # get struct ids for coordinate derivatives and .sens file
         struct_id = None
