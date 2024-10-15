@@ -68,6 +68,14 @@ class CompositeFunction:
         self.derivatives = {}
         self.df_dgi = None
 
+    @property
+    def optim_derivatives(self):
+        optim_derivs = {
+            var: self.derivatives[var] for var in self.derivatives if not (var.state)
+        }
+        # print(f"optim derivatives = {optim_derivs}")
+        return optim_derivs
+
     @classmethod
     def external(cls, name, optim=False, plot_name=None):
         return cls(
@@ -94,13 +102,14 @@ class CompositeFunction:
     @property
     def sparse_gradient(self):
         """used for adjacency constraints, vars only functions"""
-        np_array = np.array([self.derivatives[var] for var in self.derivatives])
+        self.evaluate_gradient()
+        np_array = np.array([self.derivatives[var] for var in self.optim_derivatives])
         # return csr_matrix(np_array, shape=(1,np_array.shape[0]))
         nvars = np_array.shape[0]
         cols = np.array(
             [
                 ivar
-                for ivar, var in enumerate(self.derivatives)
+                for ivar, var in enumerate(self.optim_derivatives)
                 if self.derivatives[var] != 0.0
             ]
         )
@@ -108,7 +117,7 @@ class CompositeFunction:
         vals = np.array(
             [
                 self.derivatives[var]
-                for ivar, var in enumerate(self.derivatives)
+                for ivar, var in enumerate(self.optim_derivatives)
                 if self.derivatives[var] != 0.0
             ]
         )
@@ -146,6 +155,11 @@ class CompositeFunction:
             return self._plot_name
         else:
             return self.full_name
+
+    def setup_sparse_gradient(self, f2f_model):
+        """setup the sparse gradient for adjacency functions"""
+        self.setup_derivative_dict(f2f_model.get_variables(optim=True))
+        return self
 
     def setup_derivative_dict(self, variables):
         for var in variables:
