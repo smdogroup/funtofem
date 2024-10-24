@@ -457,7 +457,7 @@ class OnewayAeroDriver:
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.solvers.flow.iterate(scenario, bodies, step=step)
-        self.solvers.flow.post(scenario, bodies)
+        self.solvers.flow.post(scenario, bodies, coupled_residuals=False)
 
         # get functions to store the function values into the model
         self.solvers.flow.get_functions(scenario, bodies)
@@ -472,7 +472,7 @@ class OnewayAeroDriver:
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.solvers.flow.iterate(scenario, bodies, step=step)
-        self.solvers.flow.post(scenario, bodies)
+        self.solvers.flow.post(scenario, bodies, coupled_residuals=False)
 
         # get functions to store the function values into the model
         self.solvers.flow.get_functions(scenario, bodies)
@@ -498,7 +498,7 @@ class OnewayAeroDriver:
         for step in range(1, steps + 2):
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
-        self.solvers.flow.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)
@@ -520,7 +520,7 @@ class OnewayAeroDriver:
             step = scenario.steps + 1 - rstep
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
-        self.solvers.flow.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)
