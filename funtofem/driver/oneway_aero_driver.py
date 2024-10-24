@@ -54,7 +54,7 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Construct the FUNtoFEMmodel
     - Construct the bodies and scenarios
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
-    - Construct the Fun3dInterface
+    - Construct the Fun3d14Interface
     - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
     - Construct the a fun3d oneway driver with class method OnewayAeroDriver.analysis
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
@@ -75,7 +75,7 @@ import importlib.util
 # 1) FUN3D
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3dInterface, Fun3dModel
+    from funtofem.interface import Fun3d14Interface, Fun3dModel
 
 # 2) TBD
 # -----------------------------------------------------
@@ -200,7 +200,7 @@ class OnewayAeroDriver:
         self._flow_solver_type = None
         if model.flow is None:
             if fun3d_loader is not None:
-                if isinstance(solvers.flow, Fun3dInterface):
+                if isinstance(solvers.flow, Fun3d14Interface):
                     self._flow_solver_type = "fun3d"
             # TBD on new types
         else:  # check with shape change
