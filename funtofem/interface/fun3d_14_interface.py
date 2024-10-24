@@ -697,7 +697,7 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
-    def post(self, scenario, bodies):
+    def post(self, scenario, bodies, coupled_residuals=True):
         """
         Calls FUN3D post to save history files, deallocate memory etc.
         Then moves back to the problem's root directory
@@ -708,13 +708,15 @@ class Fun3d14Interface(SolverInterface):
             The scenario
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies.
-        first_pass: bool
-            Set to true during instantiation
+        coupled_residuals: bool
+            Whether FUN3D is coupled or oneway. If coupled, then the residual
+            check is performed over the maximum of the flow residuals since
+            the last coupled iteration.
         """
 
         # report warning if flow residual too large
         resid = self.get_forward_residual(
-            step=self._last_forward_step, all=True, outer=True
+            step=self._last_forward_step, all=True, outer=coupled_residuals
         )  # step=scenario.steps
         if self.comm.rank == 0:
             print(f"Forward residuals = {resid}")
@@ -1146,7 +1148,7 @@ class Fun3d14Interface(SolverInterface):
             print(f"complete f2f adjoint iteration step {rstep}", flush=True)
         return fail
 
-    def post_adjoint(self, scenario, bodies):
+    def post_adjoint(self, scenario, bodies, coupled_residuals=True):
         """
         Calls post fo the adjoint solver in FUN3D.
         Then moves back to the problem's root directory
@@ -1157,11 +1159,15 @@ class Fun3d14Interface(SolverInterface):
             The scenario
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies.
+        coupled_residuals: bool
+            Whether FUN3D is coupled or oneway. If coupled, then the residual
+            check is performed over the maximum of the flow residuals since
+            the last coupled iteration.
         """
 
         # report warning if flow residual too large
         resid = self.get_adjoint_residual(
-            step=self._last_adjoint_step, outer=True, all=True
+            step=self._last_adjoint_step, outer=coupled_residuals, all=True
         )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
