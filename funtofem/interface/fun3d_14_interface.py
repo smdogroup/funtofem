@@ -888,6 +888,11 @@ class Fun3d14Interface(SolverInterface):
         self.dFdqinf = np.zeros(len(scenario.functions), dtype=TransferScheme.dtype)
         self.dHdq = np.zeros(len(scenario.functions), dtype=TransferScheme.dtype)
 
+        # set the store_Full_stencil if specified
+        if self.adjoint_options is not None:
+            if "store_full_stencil" in self.adjoint_options and self.adjoint_options["store_full_stencil"]:
+               interface.set_adjoint_stencil() # custom routine to set store_full_stencil in fun3d
+
         return 0
 
     def get_last_adjoint_step(self):
