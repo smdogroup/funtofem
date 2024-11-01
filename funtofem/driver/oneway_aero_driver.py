@@ -180,18 +180,6 @@ class OnewayAeroDriver:
                     "The mesh morphing does not require a remote driver! Make this driver regularly!"
                 )
 
-        if not self.is_remote:
-            if self.model.flow is not None:
-                if not self.is_paired and not self.model.flow.mesh_morph:
-                    raise AssertionError(
-                        "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
-                    )
-
-            if self.change_shape and self.root_proc:
-                print(
-                    f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
-                )
-
         # check for unsteady problems
         self._unsteady = any([not scenario.steady for scenario in model.scenarios])
 
@@ -209,6 +197,18 @@ class OnewayAeroDriver:
                     self._flow_solver_type = "fun3d"
                     self.flow_aim = model.flow.fun3d_aim
             # TBD on new types
+
+        if not self.is_remote:
+            if self.model.flow is not None:
+                if not self.is_paired and not self.model.flow.mesh_morph:
+                    raise AssertionError(
+                        "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
+                    )
+
+            if self.change_shape and self.root_proc:
+                print(
+                    f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
+                )
 
         self.transfer_settings = (
             transfer_settings if transfer_settings is not None else TransferSettings()
