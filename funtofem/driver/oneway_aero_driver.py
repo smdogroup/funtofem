@@ -311,9 +311,6 @@ class OnewayAeroDriver:
             # run the FUN3D forward analysis with no shape change
             if self.steady:
                 for scenario in self.model.scenarios:
-                    print(
-                        "I'm in oneway_aero_driver right before call to _solve_steady_forward."
-                    )
                     self._solve_steady_forward(scenario, self.model.bodies)
 
             if self.unsteady:
