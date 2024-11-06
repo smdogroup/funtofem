@@ -176,7 +176,7 @@ class TestAerodynamicSolver(SolverInterface):
                 )
 
                 # Aero heat flux = Jac2 * aero_temps + b2 * aero_X + c2 * aero_dvs + omega2 * dt
-                self.Jac2 = 0.1 * (np.random.rand(self.npts, self.npts) - 0.5*0)
+                self.Jac2 = 0.1 * (np.random.rand(self.npts, self.npts) - 0.5)
                 self.b2 = 0.1 * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
                 self.c2 = 0.01 * (np.random.rand(self.npts, len(self.aero_dvs)) - 0.5)
 

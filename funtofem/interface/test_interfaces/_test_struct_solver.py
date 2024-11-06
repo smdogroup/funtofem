@@ -84,17 +84,17 @@ class TestStructuralSolver(SolverInterface):
 
                 # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * time
                 self.Jac2 = (
-                    0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) + 0.5)
+                    0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
                 )
                 self.b2 = (
                     0.1
                     * thermal_scale
-                    * (np.random.rand(self.npts, 3 * self.npts) - 0.5*0)
+                    * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
                 )
                 self.c2 = (
-                    0.5
+                    0.01
                     * thermal_scale
-                    * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5*0)
+                    * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
                 )
 
                 # Data for output functional values
