@@ -495,9 +495,13 @@ class OnewayAeroDriver:
         # initialize, run, and do post adjoint
         self.solvers.flow.initialize_adjoint(scenario, bodies)
         # one extra call to match step 0 call (see fully coupled driver)
-        for step in range(1, steps + 2):
+        for step in range(1, steps + 1):
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
-        self._extract_coordinate_derivatives(scenario, bodies, step=0)
+
+        # get the current step to extract derivatives
+        istep = scenario.adjoint_steps * scenario.adjoint_coupling_frequency
+
+        self._extract_coordinate_derivatives(scenario, bodies, step=istep)
         self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
