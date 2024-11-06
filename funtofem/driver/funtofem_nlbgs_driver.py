@@ -289,6 +289,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         print("Flow solver returned fail flag")
                     return fail
 
+                # Add contribution from thermal radiation
+                if scenario.thermal_rad:
+                    self.solvers.thermal_rad.iterate_adjoint(
+                        scenario, self.model.bodies, step
+                    )
+
                 # Get the structural adjoint rhs
                 for body in self.model.bodies:
                     body.transfer_disps_adjoint(scenario)
