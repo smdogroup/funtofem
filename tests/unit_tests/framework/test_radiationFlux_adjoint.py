@@ -23,9 +23,9 @@ class CoupledRadiationTest(unittest.TestCase):
 
         # Create a structural variable
         for i in range(5):
-            thickness = np.random.rand()
+            thickness = np.random.rand() * 200
             svar = Variable(
-                "thickness %d" % (i), value=thickness, lower=0.01, upper=0.1
+                "thickness %d" % (i), value=thickness, lower=0.01, upper=10.0
             )
             plate.add_variable("structural", svar)
 
@@ -44,7 +44,7 @@ class CoupledRadiationTest(unittest.TestCase):
         temp = Function("temperature", analysis_type="structural")
         steady.add_function(temp)
         steady.set_temperature(T_ref=200, T_inf=300)
-        steady.set_therm_rad_vals()
+        steady.set_therm_rad_vals(emis=0.8)
 
         # Add the steady-state scenario
         model.add_scenario(steady)
@@ -64,46 +64,9 @@ class CoupledRadiationTest(unittest.TestCase):
             solvers, transfer_settings=transfer_settings, model=model
         )
 
+        model.print_summary()
+
         return model, driver
-
-    # def test_model_derivatives(self):
-    #     model, driver = self._setup_model_and_driver()
-
-    #     # Check whether to use the complex-step method or now
-    #     complex_step = False
-    #     epsilon = 1e-6
-    #     rtol = 1e-6
-    #     if TransferScheme.dtype == complex:
-    #         complex_step = True
-    #         epsilon = 1e-30
-    #         rtol = 1e-9
-
-    #     # Manual test of the disciplinary solvers
-    #     scenario = model.scenarios[0]
-    #     bodies = model.bodies
-    #     solvers = driver.solvers
-
-    #     fail = solvers.flow.test_adjoint(
-    #         "flow",
-    #         scenario,
-    #         bodies,
-    #         epsilon=epsilon,
-    #         complex_step=complex_step,
-    #         rtol=rtol,
-    #     )
-    #     assert fail == False
-
-    #     solvers.structural.test_adjoint(
-    #         "structural",
-    #         scenario,
-    #         bodies,
-    #         epsilon=epsilon,
-    #         complex_step=complex_step,
-    #         rtol=rtol,
-    #     )
-    #     assert fail == False
-
-    #     return
 
     def test_coupled_derivatives(self):
         model, driver = self._setup_model_and_driver()
@@ -119,7 +82,7 @@ class CoupledRadiationTest(unittest.TestCase):
 
         # Solve the forward analysis
         driver.solve_forward()
-        driver.solve_adjoint()
+        # driver.solve_adjoint()
 
         # Get the functions
         functions = model.get_functions()
@@ -133,6 +96,8 @@ class CoupledRadiationTest(unittest.TestCase):
         # Solve the adjoint and get the function gradients
         driver.solve_adjoint()
         grads = model.get_function_gradients()
+
+        print(f"Gradients: {grads[0][:]}")
 
         # Set the new variable values
         if complex_step:
@@ -156,7 +121,7 @@ class CoupledRadiationTest(unittest.TestCase):
             pass_ = False
             if driver.comm.rank == 0:
                 pass_ = abs(rel_error) < rtol
-                print("Approximate gradient  = ", deriv.real)
+                print("Approx. gradient (CS) = ", deriv.real)
                 print("Adjoint gradient      = ", grads[0][0].real)
                 print("Relative error        = ", rel_error.real)
                 print("Pass flag             = ", pass_)
@@ -170,7 +135,7 @@ class CoupledRadiationTest(unittest.TestCase):
             pass_ = False
             if driver.comm.rank == 0:
                 pass_ = abs(rel_error) < rtol
-                print("Approximate gradient  = ", deriv)
+                print("Approx. gradient (FD) = ", deriv)
                 print("Adjoint gradient      = ", grads[0][0])
                 print("Relative error        = ", rel_error)
                 print("Pass flag             = ", pass_)

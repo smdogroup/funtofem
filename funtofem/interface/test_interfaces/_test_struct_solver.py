@@ -92,7 +92,7 @@ class TestStructuralSolver(SolverInterface):
                     * (np.random.rand(self.npts, 3 * self.npts) - 0.5*0)
                 )
                 self.c2 = (
-                    0.01
+                    0.5
                     * thermal_scale
                     * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5*0)
                 )

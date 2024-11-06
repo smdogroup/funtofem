@@ -43,7 +43,7 @@ class RadiationInterface(SolverInterface):
 
     """
 
-    def __init__(self, comm, model, conv_hist=False, complex_mode=False):
+    def __init__(self, comm, model, conv_hist=False, complex_mode=False, debug=False):
         """
         The instantiation of the thermal radiation interface class will populate the model
         with the aerodynamic surface mesh, body.aero_X and body.aero_nnodes.
@@ -60,6 +60,9 @@ class RadiationInterface(SolverInterface):
         self.comm = comm
         self.conv_hist = conv_hist
         self.complex_mode = complex_mode
+        self.debug = debug
+
+        self.sigma_sb = 5.670374419e-8
 
         # setup forward and adjoint tolerances
         super().__init__()
@@ -206,16 +209,15 @@ class RadiationInterface(SolverInterface):
                 f.write("{0:03d} ".format(step))
 
         for ibody, body in enumerate(bodies, 1):
-            aero_X = body.get_aero_nodes()
-            aero_id = body.get_aero_node_ids()
             aero_nnodes = body.get_num_aero_nodes()
 
             aero_temps = body.get_aero_temps(scenario, time_index=step)
-            print(f"aero_temps: {aero_temps}")
-            heat_rad = self.calc_heat_flux(aero_temps, scenario)
-
             heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
-            heat_flux += heat_rad
+
+            if aero_temps is not None and aero_nnodes > 0:
+                heat_rad = self.calc_heat_flux(aero_temps, scenario)
+
+                heat_flux += heat_rad
 
         return 0
 
@@ -255,17 +257,16 @@ class RadiationInterface(SolverInterface):
 
         nfuncs = scenario.count_adjoint_functions()
         for ibody, body in enumerate(bodies, 1):
-            # Get the adjoint-Jacobian product for the heat flux
+            # Get the adjoint-Jacobian product for the aero temperature
             aero_flux_ajp = body.get_aero_heat_flux_ajp(scenario)
             aero_nnodes = body.get_num_aero_nodes()
-            aero_flux = body.get_aero_heat_flux(scenario, time_index=step)
             aero_temps = body.get_aero_temps(scenario, time_index=step)
 
             aero_temps_ajp = body.get_aero_temps_ajp(scenario)
 
-            if aero_flux_ajp is not None and aero_nnodes > 0:
-                # Solve the aero heat flux computation adjoint
-                # dR/dhA^{T} * psi_R = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
+            if aero_temps_ajp is not None and aero_nnodes > 0:
+                # Add contribution to aero_temps_ajp from radiation
+                # dR/dhR^{T} * psi_R = dA_dhA^{T} * psi_A = - dQ/dhA^{T} * psi_Q = - aero_flux_ajp
                 psi_R = aero_flux_ajp
 
                 rad_heat_deriv = self.calc_heat_flux_deriv(aero_temps, scenario)
@@ -276,13 +277,11 @@ class RadiationInterface(SolverInterface):
                 for func in range(nfuncs):
                     lam[:, func] = psi_R[:, func] * rad_heat_deriv[:]
 
-                if not self.complex_mode:
-                    lam = lam.astype(np.double)
-
-                for func in range(nfuncs):
-                    print(f"aero_flux_ajp: {aero_flux_ajp[:, func]}")
-                    print(f"lam: {lam[:, func]}")
-                    aero_flux_ajp[:, func] += lam[:, func]
+                for ifunc in range(nfuncs):
+                    if self.debug and self.comm.rank == 0:
+                        print(f"aero_temps_ajp: {aero_temps_ajp[:, func]}")
+                        print(f"lam: {lam[:, func]}")
+                    aero_temps_ajp[:, ifunc] += lam[:, ifunc]
 
         return
 
@@ -313,11 +312,10 @@ class RadiationInterface(SolverInterface):
             F_v = scenario.F_v
             T_v = scenario.T_v
 
-        sigma_sb = 5.670374419e-8
         rad_heat = np.zeros_like(temps, dtype=TransferScheme.dtype)
 
         for indx, temp_i in enumerate(temps):
-            rad_heat[indx] = -sigma_sb * emis * F_v * (temp_i**4 - T_v**4)
+            rad_heat[indx] = -self.sigma_sb * emis * F_v * (temp_i**4 - T_v**4)
 
         return rad_heat
 
@@ -331,16 +329,13 @@ class RadiationInterface(SolverInterface):
         if scenario is None:
             emis = 0.8
             F_v = 1.0
-            T_v = 0.0
         else:
             emis = scenario.emis
             F_v = scenario.F_v
-            T_v = scenario.T_v
 
-        sigma_sb = 5.670374419e-8
         rad_heat_deriv = np.zeros_like(temps, dtype=TransferScheme.dtype)
 
         for indx, temp_i in enumerate(temps):
-            rad_heat_deriv[indx] = -4 * sigma_sb * emis * F_v * temp_i**3
+            rad_heat_deriv[indx] = -4 * self.sigma_sb * emis * F_v * temp_i**3
 
         return rad_heat_deriv
