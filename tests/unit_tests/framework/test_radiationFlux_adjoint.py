@@ -53,7 +53,7 @@ class CoupledRadiationTest(unittest.TestCase):
         comm = MPI.COMM_WORLD
         solvers = SolverManager(comm)
         solvers.flow = TestAerodynamicSolver(comm, model)
-        solvers.structural = TestStructuralSolver(comm, model)
+        solvers.structural = TestStructuralSolver(comm, model, hot_temps=True)
         solvers.thermal_rad = RadiationInterface(comm, model)
 
         # L&D transfer options

@@ -7,7 +7,15 @@ import os
 
 
 class TestStructuralSolver(SolverInterface):
-    def __init__(self, comm, model, elastic_k=1.0, thermal_k=1.0, default_mesh=True):
+    def __init__(
+        self,
+        comm,
+        model,
+        elastic_k=1.0,
+        thermal_k=1.0,
+        default_mesh=True,
+        hot_temps=False,
+    ):
         """
         A test solver that provides the functionality that FUNtoFEM expects from
         a structural solver.
@@ -31,6 +39,8 @@ class TestStructuralSolver(SolverInterface):
         self.comm = comm
         self.npts = 25
         np.random.seed(54321)
+
+        self.hot_temps = hot_temps
 
         # setup forward and adjoint tolerances
         super().__init__()
@@ -58,9 +68,10 @@ class TestStructuralSolver(SolverInterface):
 
         # scenario data for the multi scenario case
         class ScenarioData:
-            def __init__(self, npts, struct_dvs):
+            def __init__(self, npts, struct_dvs, hot_temps=False):
                 self.npts = npts
                 self.struct_dvs = struct_dvs
+                self.hot_temps = hot_temps
 
                 # choose time step
                 self.dt = 0.01
@@ -82,20 +93,37 @@ class TestStructuralSolver(SolverInterface):
                     * (np.random.rand(3 * self.npts, len(self.struct_dvs)) - 0.5)
                 )
 
-                # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * time
-                self.Jac2 = (
-                    0.05 * thermal_scale * (np.random.rand(self.npts, self.npts) - 0.5)
-                )
-                self.b2 = (
-                    0.1
-                    * thermal_scale
-                    * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
-                )
-                self.c2 = (
-                    0.01
-                    * thermal_scale
-                    * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
-                )
+                if not self.hot_temps:
+                    # Struct temps = Jac2 * struct_flux + b2 * struct_X + c2 * struct_dvs + omega2 * time
+                    self.Jac2 = (
+                        0.05
+                        * thermal_scale
+                        * (np.random.rand(self.npts, self.npts) - 0.5)
+                    )
+                    self.b2 = (
+                        0.1
+                        * thermal_scale
+                        * (np.random.rand(self.npts, 3 * self.npts) - 0.5)
+                    )
+                    self.c2 = (
+                        0.01
+                        * thermal_scale
+                        * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5)
+                    )
+                elif self.hot_temps:
+                    self.Jac2 = (
+                        0.05
+                        * thermal_scale
+                        * (np.random.rand(self.npts, self.npts) + 0.5)
+                    )
+                    self.b2 = (
+                        0.1 * thermal_scale * (np.random.rand(self.npts, 3 * self.npts))
+                    )
+                    self.c2 = (
+                        0.5
+                        * thermal_scale
+                        * (np.random.rand(self.npts, len(self.struct_dvs)) - 0.5 * 0)
+                    )
 
                 # Data for output functional values
                 self.func_coefs1 = np.random.rand(3 * self.npts)
@@ -109,7 +137,9 @@ class TestStructuralSolver(SolverInterface):
         # create scenario data for each scenario
         self.scenario_data = {}
         for scenario in model.scenarios:
-            self.scenario_data[scenario.id] = ScenarioData(self.npts, self.struct_dvs)
+            self.scenario_data[scenario.id] = ScenarioData(
+                self.npts, self.struct_dvs, self.hot_temps
+            )
 
         if default_mesh:
             # Set random initial node locations
