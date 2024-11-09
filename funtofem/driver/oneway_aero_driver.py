@@ -74,8 +74,11 @@ import importlib.util
 # ---------------------------------------------------
 # 1) FUN3D
 fun3d_loader = importlib.util.find_spec("fun3d")
+caps_loader = importlib.util.find_spec("pyCAPS")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3d14Interface, Fun3dModel
+    from funtofem.interface import Fun3d14Interface
+    if caps_loader is not None:
+        from funtofem.interface import Fun3dModel
 
 # 2) TBD
 # -----------------------------------------------------
@@ -204,7 +207,7 @@ class OnewayAeroDriver:
                     self._flow_solver_type = "fun3d"
             # TBD on new types
         else:  # check with shape change
-            if fun3d_loader is not None:
+            if fun3d_loader is not None and caps_loader is not None:
                 if isinstance(model.flow, Fun3dModel):
                     self._flow_solver_type = "fun3d"
                     self.flow_aim = model.flow.fun3d_aim

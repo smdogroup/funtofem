@@ -12,6 +12,9 @@ from ._test_drivers import *
 from .funtofem_nlbgs_driver import *
 from .funtofem_nlbgs_fsi_subiters_driver import *
 from .transfer_settings import *
-from .funtofem_shape_driver import *
+import importlib
+caps_loader = importlib.util.find_spec("pyCAPS")
+if caps_loader is not None:
+    from .funtofem_shape_driver import *
 from .oneway_struct_driver import *
 from .oneway_aero_driver import *

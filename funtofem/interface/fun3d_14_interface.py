@@ -157,6 +157,8 @@ class Fun3d14Interface(SolverInterface):
             options = {}
         else:
             options = self.forward_options
+        if "store_full_stencil" in options and options["store_full_stencil"]:
+            interface.set_adjoint_stencil()
         self.fun3d_flow.setOptions(kwargs=options)
 
         self.fun3d_flow.initialize_data()
@@ -791,6 +793,8 @@ class Fun3d14Interface(SolverInterface):
                 options = self.adjoint_options
 
             self.fun3d_adjoint.initialize_project(comm=self.comm)
+            if "store_full_stencil" in options and options["store_full_stencil"]:
+                interface.set_adjoint_stencil()
             self.fun3d_adjoint.setOptions(kwargs=options)
             self.fun3d_adjoint.initialize_data()
             interface.design_initialize()
@@ -889,9 +893,9 @@ class Fun3d14Interface(SolverInterface):
         self.dHdq = np.zeros(len(scenario.functions), dtype=TransferScheme.dtype)
 
         # set the store_Full_stencil if specified
-        if self.adjoint_options is not None:
-            if "store_full_stencil" in self.adjoint_options and self.adjoint_options["store_full_stencil"]:
-               interface.set_adjoint_stencil() # custom routine to set store_full_stencil in fun3d
+        #if self.adjoint_options is not None:
+        #    if "store_full_stencil" in self.adjoint_options and self.adjoint_options["store_full_stencil"]:
+        #       interface.set_adjoint_stencil() # custom routine to set store_full_stencil in fun3d
 
         return 0
 
