@@ -70,6 +70,11 @@ class FUNtoFEMDriver(object):
             whether to save and reload funtofem states
         """
 
+        # assert at least one coupled scenario
+        if model is not None: # only case where model is None is fakeModel?
+            any_coupled = any([scenario.coupled for scenario in model.scenarios])
+            assert any_coupled
+
         # add the comm manger
         if comm_manager is not None:
             comm_manager = comm_manager
@@ -168,6 +173,10 @@ class FUNtoFEMDriver(object):
 
         # loop over the forward problem for the different scenarios
         for scenario in self.model.scenarios:
+
+            # skip scenario if it's not coupled
+            if not(scenario.coupled): continue
+
             # tell the solvers what the variable values and functions are for this scenario
             if not self.fakemodel:
                 self._distribute_variables(scenario, self.model.bodies)
@@ -228,6 +237,10 @@ class FUNtoFEMDriver(object):
 
         # Set the functions into the solvers
         for scenario in self.model.scenarios:
+
+            # skip scenario if it's not coupled
+            if not(scenario.coupled): continue
+
             # tell the solvers what the variable values and functions are for this scenario
             self._distribute_variables(scenario, self.model.bodies)
             self._distribute_functions(scenario, self.model.bodies)

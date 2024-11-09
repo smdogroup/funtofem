@@ -18,3 +18,6 @@ if caps_loader is not None:
     from .funtofem_shape_driver import *
 from .oneway_struct_driver import *
 from .oneway_aero_driver import *
+
+# import all the custom or special drivers
+from .custom import *

@@ -102,6 +102,11 @@ class OnewayStructDriver:
         self.struct_interface = solvers.structural
         self.struct_aim = None
 
+        # assert at least one uncoupled scenario
+        self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
+        any_uncoupled = any([not(scenario.coupled) for scenario in model.scenarios])
+        assert any_uncoupled
+
         # figure out which discipline solver we are using
         self._struct_solver_type = None
         if model.structural is None:
@@ -145,7 +150,7 @@ class OnewayStructDriver:
                 # initializing transfer schemes is the responsibility of drivers with aerodynamic analysis since they come first
                 body.update_transfer()
 
-                for scenario in self.model.scenarios:
+                for scenario in self.uncoupled_scenarios:
                     # perform disps transfer first to prevent seg fault
                     body.transfer_disps(scenario)
                     body.transfer_temps(scenario)
@@ -491,7 +496,7 @@ class OnewayStructDriver:
                 )
 
             # zero the initial struct loads and struct flux for each scenario
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 body.struct_shape_term[scenario.id] = np.zeros(
@@ -586,11 +591,11 @@ class OnewayStructDriver:
         _start_forward_analysis = time.time()
 
         if self.steady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_steady_forward(scenario, self.model.bodies)
 
         if self.unsteady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_unsteady_forward(scenario, self.model.bodies)
 
         dt_forward = (time.time() - _start_forward_analysis) / 60.0
@@ -619,11 +624,11 @@ class OnewayStructDriver:
             func.zero_derivatives()
 
         if self.steady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_steady_adjoint(scenario, self.model.bodies)
 
         if self.unsteady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
         dt_adjoint = (time.time() - _start_adjoint) / 60.0
@@ -683,7 +688,7 @@ class OnewayStructDriver:
             self.comm.Barrier()
 
             # store the shape variables in the function gradients
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._get_shape_derivatives(scenario)
 
         dt_derivatives = (time.time() - _start_derivatives) / 60.0
@@ -897,7 +902,7 @@ class OnewayStructDriver:
             self.struct_interface.update.zeroEntries()
 
             # zero any scenario data
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 # zero state data
                 u = self.struct_interface.scenario_data[scenario].u
                 u.zeroEntries()
@@ -906,7 +911,7 @@ class OnewayStructDriver:
     def _zero_adjoint_data(self):
         if self.struct_interface.tacs_proc:
             # zero adjoint variable
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 psi = self.struct_interface.scenario_data[scenario].psi
                 for vec in psi:
                     vec.zeroEntries()
