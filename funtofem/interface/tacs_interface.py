@@ -626,6 +626,7 @@ class TacsSteadyInterface(SolverInterface):
             for i, var in enumerate(self.struct_variables):
                 # func.set_gradient_component(var, func_grad[ifunc][i])
                 func.add_gradient_component(var, func_grad[ifunc][i])
+
         # print(f"\tdoneget function gradients start", flush=True)
 
         return
@@ -901,6 +902,9 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
+        # this is kind of like updateAssemblerVars
+        self.set_variables(scenario, bodies)
+
         if self.tacs_proc:
             # Initialize Aitken adjoint variables.
             if self.use_aitken:
@@ -911,6 +915,7 @@ class TacsSteadyInterface(SolverInterface):
 
             # Set the solution data for this scenario
             u = self.scenario_data[scenario].u
+            self.assembler.setBCs(u)
             self.assembler.setVariables(u)
 
             # Assemble the transpose of the Jacobian matrix for the adjoint
@@ -930,7 +935,7 @@ class TacsSteadyInterface(SolverInterface):
             # require their evaluation to store internal data before the sensitivities
             # can be computed.
             func_list = self.scenario_data[scenario].func_list
-            self.assembler.evalFunctions(func_list)
+            feval = self.assembler.evalFunctions(func_list)
 
             # Zero the vectors in the sensitivity list
             dfdu = self.scenario_data[scenario].dfdu
@@ -1132,6 +1137,11 @@ class TacsSteadyInterface(SolverInterface):
                         struct_flux_ajp[:, ifunc] = -psi_array[
                             self.thermal_index :: ndof
                         ].astype(body.dtype)
+
+                # if ifunc == 1:
+                #     print(f"func {scenario.functions[1].full_name}, struct loads ajp = {struct_loads_ajp}")
+                #     print(f"any nan ? : {np.any(np.isnan(struct_loads_ajp))}")
+                #     exit(0)
 
         # print(f"done with iterate adjoint", flush=True)
 

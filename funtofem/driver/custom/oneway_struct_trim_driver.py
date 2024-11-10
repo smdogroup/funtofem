@@ -52,14 +52,14 @@ class OnewayStructTrimDriver(OnewayStructDriver):
 
         self.initial_trim_dict = initial_trim_dict
 
-        # save initial aero loads vectors for each scenario
-        self._orig_aero_loads = {}
+        # save initial struct loads vectors for each scenario
+        self._orig_struct_loads = {}
         self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
         for scenario in self.uncoupled_scenarios:
-            self._orig_aero_loads[scenario.name] = {}
+            self._orig_struct_loads[scenario.name] = {}
             for body in model.bodies:
-                aero_loads = body.aero_loads[scenario.id]
-                self._orig_aero_loads[scenario.name][body.name] = aero_loads * 1.0
+                struct_loads = body.struct_loads[scenario.id]
+                self._orig_struct_loads[scenario.name][body.name] = struct_loads * 1.0
 
     @classmethod
     def prime_loads_from_file(
@@ -126,8 +126,8 @@ class OnewayStructTrimDriver(OnewayStructDriver):
             orig_AOA = self.initial_trim_dict[scenario.name]['AOA']
             new_AOA = scenario.get_variable('AOA').value.real
             for body in self.model.bodies:
-                orig_aero_loads = self._orig_aero_loads[scenario.name][body.name]
-                body.aero_loads[scenario.id] = orig_aero_loads * new_AOA / orig_AOA
+                orig_struct_loads = self._orig_struct_loads[scenario.name][body.name]
+                body.struct_loads[scenario.id][:] = (orig_struct_loads * new_AOA / orig_AOA)[:]
 
         # now do super class solve_forward which will include
         # transferring fixed aero loads to the new struct loads and then linear static solve
@@ -152,23 +152,58 @@ class OnewayStructTrimDriver(OnewayStructDriver):
         # so doesn't matter really
         super(OnewayStructTrimDriver,self).solve_adjoint()
 
-        # now compute updated lift derivative values
-        # assuming aero => struct load transfer is done
-        for scenario in self.uncoupled_scenarios:
-            orig_AOA = self.initial_trim_dict[scenario.name]['AOA']
-            aoa_var = scenario.get_variable('AOA')
+    def _solve_steady_adjoint(self, scenario, bodies):
+        super()._solve_steady_adjoint(scenario, bodies)
 
-            for ifunc, func in enumerate(scenario.functions):
-                if func.name == 'cl':
-                    AOA_deriv = 0.0
+        # get additional derivative terms for custom
+        self._get_custom_derivatives(scenario)
 
-                    for body in self.model.bodies:
-                        orig_aero_loads = self._orig_aero_loads[scenario.name][body.name]
-                        aero_loads_ajp = body.aero_loads_ajp[:,ifunc]
+    def _solve_unsteady_adjoint(self, scenario, bodies):
+        super()._solve_unsteady_adjoint(scenario, bodies)
 
-                        AOA_deriv += np.dot(aero_loads_ajp, orig_aero_loads / orig_AOA)
-                    
-                    func.derivatives[aoa_var] = AOA_deriv
+        # get additional derivative terms for custom
+        self._get_custom_derivatives(scenario)
 
-        # now we're done!
-                    
+    def _get_custom_derivatives(self, scenario):
+        """get custom trim derivatives, this is used in the """
+
+        orig_cl = self.initial_trim_dict[scenario.name]['cl']
+        orig_AOA = self.initial_trim_dict[scenario.name]['AOA']
+        aoa_var = scenario.get_variable('AOA')
+
+        # since mass not adjoint function only iterate over these guys
+        adjoint_functions = [func for func in scenario.functions if func.adjoint]
+        for ifunc,func in enumerate(adjoint_functions):
+            if func.name == 'cl':
+                func.derivatives[aoa_var] = orig_cl / orig_AOA 
+                continue
+
+            # account for changing loads terms in AOA
+            AOA_deriv = 0.0
+            for body in self.model.bodies:
+                struct_loads_ajp = body.get_struct_loads_ajp(scenario)
+                func_fs_ajp = struct_loads_ajp[:,ifunc]
+                orig_struct_loads = self._orig_struct_loads[scenario.name][body.name]
+                free_struct_loads = orig_struct_loads * 1.0
+
+                # this didn't change anything
+                # # temp - try to zero BCs at ext force locations?
+                # structural = self.solvers.structural
+                # assembler = structural.assembler
+                # ext_force = structural.ext_force
+                # ext_force_array = ext_force.getArray()
+                # ndof = assembler.getVarsPerNode()
+                # for i in range(3): 
+                #     # set only 0,1,2 into ext_force, then we will apply BCs to zero out dirichlet BCs
+                #     ext_force_array[i::ndof] = free_struct_loads[i::3]
+                # assembler.setBCs(ext_force) # zero out forces at dirichlet BCs (since have no effect on structure)
+                # for i in range(3):
+                #     free_struct_loads[i::3] = ext_force_array[i::ndof]         
+
+                AOA_deriv += np.dot(func_fs_ajp, free_struct_loads / orig_AOA)
+            
+            # add across all processors then reduce
+            global_derivative = self.comm.reduce(AOA_deriv, op=MPI.SUM, root=0)
+            global_derivative = self.comm.bcast(global_derivative)
+
+            func.derivatives[aoa_var] = global_derivative
