@@ -615,13 +615,8 @@ class OnewayStructDriver:
         # timing data
         _start_adjoint = time.time()
 
-        # run the adjoint structural analysis
-        functions = self.model.get_functions()
-
         # Zero the derivative values stored in the function
         self._zero_derivatives()
-        for func in functions:
-            func.zero_derivatives()
 
         # zero adjoint data
         if self.uses_tacs:
