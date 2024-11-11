@@ -35,7 +35,7 @@ class MultiDriver:
     def _zero_derivatives(self):
         """zero all model derivatives"""
         # TODO : only zero derivatives in coupled scenarios when using
-        model = self.driver_list[0]
+        model = self.driver_list[0].model
         for func in model.get_functions(all=True):
             for var in self.model.get_variables():
                 func.derivatives[var] = 0.0
