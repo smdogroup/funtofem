@@ -14,6 +14,13 @@ class MultiDriver:
         """
         self.driver_list = driver_list
 
+        # copy comm and solvers from the first driver
+        # since these are used in optimizationManager
+        first_driver = self.driver_list[0]
+        self.comm = first_driver.comm
+        self.solvers = first_driver.solvers
+        self.model = first_driver.model
+
     def solve_forward(self):
         driver_list = self.driver_list
         for driver in driver_list:
