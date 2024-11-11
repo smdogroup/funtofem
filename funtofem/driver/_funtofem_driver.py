@@ -175,10 +175,7 @@ class FUNtoFEMDriver(object):
             body.update_shape(complex_run)
 
         # loop over the forward problem for the different scenarios
-        for scenario in self.model.scenarios:
-
-            # skip scenario if it's not coupled
-            if not(scenario.coupled): continue
+        for scenario in self.coupled_scenarios:
 
             # tell the solvers what the variable values and functions are for this scenario
             if not self.fakemodel:
@@ -235,14 +232,9 @@ class FUNtoFEMDriver(object):
 
         # Zero the derivative values stored in the function
         self._zero_derivatives()
-        for func in functions:
-            func.zero_derivatives()
 
         # Set the functions into the solvers
-        for scenario in self.model.scenarios:
-
-            # skip scenario if it's not coupled
-            if not(scenario.coupled): continue
+        for scenario in self.coupled_scenarios:
 
             # tell the solvers what the variable values and functions are for this scenario
             self._distribute_variables(scenario, self.model.bodies)
