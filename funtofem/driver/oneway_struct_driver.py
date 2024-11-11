@@ -706,9 +706,10 @@ class OnewayStructDriver:
 
     def _zero_derivatives(self):
         """zero all model derivatives"""
-        for func in self.model.get_functions(all=True):
-            for var in self.model.get_variables():
-                func.derivatives[var] = 0.0
+        for scenario in self.uncoupled_scenarios:
+            for func in scenario.functions:
+                for var in self.model.get_variables():
+                    func.derivatives[var] = 0.0
         return
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):

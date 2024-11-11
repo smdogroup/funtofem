@@ -71,9 +71,12 @@ class FUNtoFEMDriver(object):
         """
 
         # assert at least one coupled scenario
+        self.coupled_scenarios = []
         if model is not None: # only case where model is None is fakeModel?
             any_coupled = any([scenario.coupled for scenario in model.scenarios])
             assert any_coupled
+
+            self.coupled_scenarios = [scenario for scenario in model.scenarios if scenario.coupled]
 
         # add the comm manger
         if comm_manager is not None:
@@ -301,9 +304,11 @@ class FUNtoFEMDriver(object):
 
     def _zero_derivatives(self):
         """zero all model derivatives"""
-        for func in self.model.get_functions(all=True):
-            for var in self.model.get_variables():
-                func.derivatives[var] = 0.0
+        # TODO : only zero derivatives in coupled scenarios when using
+        for scenario in self.coupled_scenarios: # no need to zero composite functions, they are exactly diff later with no += effects
+            for func in scenario.functions:
+                for var in self.model.get_variables():
+                    func.derivatives[var] = 0.0
         return
 
     def _post_forward(self, scenario, bodies):
