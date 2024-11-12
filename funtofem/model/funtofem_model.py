@@ -1479,7 +1479,7 @@ class FUNtoFEMmodel(object):
         return
 
     def print_summary(
-        self, print_level=0, print_model_details=True, ignore_rigid=False
+        self, comm=None, print_level=0, print_model_details=True, ignore_rigid=False
     ):
         """
         Print out a summary of the assembled model for inspection
@@ -1489,53 +1489,62 @@ class FUNtoFEMmodel(object):
         print_level: int
             how much detail to print in the summary. Print level < 0 does not print all the variables
         """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
 
-        print("==========================================================")
-        print("||                FUNtoFEM Model Summary                ||")
-        print("==========================================================")
-        print(self)
+        if print_here:
+            print("==========================================================")
+            print("||                FUNtoFEM Model Summary                ||")
+            print("==========================================================")
+            print(self)
 
-        if print_model_details:
-            self._print_functions()
-            self._print_variables()
+            if print_model_details:
+                self._print_functions()
+                self._print_variables()
 
-        print("\n------------------")
-        print("| Bodies Summary |")
-        print("------------------")
-        for body in self.bodies:
-            print(body)
-            for vartype in body.variables:
-                print("\n    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(body.variables[vartype]),
-                )
-                if (vartype == "rigid_motion") and ignore_rigid:
-                    print("      Ignoring rigid_motion vartype list.")
-                else:
+            print("\n------------------")
+            print("| Bodies Summary |")
+            print("------------------")
+            for body in self.bodies:
+                print(body)
+                for vartype in body.variables:
+                    print("\n    Variable type:", vartype)
+                    print(
+                        "      Number of",
+                        vartype,
+                        "variables:",
+                        len(body.variables[vartype]),
+                    )
+                    if (vartype == "rigid_motion") and ignore_rigid:
+                        print("      Ignoring rigid_motion vartype list.")
+                    else:
+                        if print_level >= 0:
+                            body._print_variables(vartype)
+
+            print(" ")
+            print("--------------------")
+            print("| Scenario Summary |")
+            print("--------------------")
+            for scenario in self.scenarios:
+                print(scenario)
+                scenario._print_functions()
+
+                for vartype in scenario.variables:
+                    print("    Variable type:", vartype)
+                    print(
+                        "      Number of",
+                        vartype,
+                        "variables:",
+                        len(scenario.variables[vartype]),
+                    )
                     if print_level >= 0:
-                        body._print_variables(vartype)
+                        scenario._print_variables(vartype)
 
-        print(" ")
-        print("--------------------")
-        print("| Scenario Summary |")
-        print("--------------------")
-        for scenario in self.scenarios:
-            print(scenario)
-            scenario._print_functions()
-
-            for vartype in scenario.variables:
-                print("    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(scenario.variables[vartype]),
-                )
-                if print_level >= 0:
-                    scenario._print_variables(vartype)
+        if comm is not None:
+            comm.Barrier()
 
         return
 
