@@ -20,6 +20,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 __all__ = [
     "TacsInterface",
     "TacsSteadyInterface",
@@ -35,6 +37,12 @@ import os, numpy as np
 from .tacs_interface_unsteady import TacsUnsteadyInterface
 from .utils.general_utils import real_norm, imag_norm
 from .utils.relaxation_utils import AitkenRelaxationTacs
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..model.body import Body
+    from ..model.scenario import Scenario
 
 
 class TacsInterface:
@@ -627,6 +635,16 @@ class TacsSteadyInterface(SolverInterface):
                 # func.set_gradient_component(var, func_grad[ifunc][i])
                 func.add_gradient_component(var, func_grad[ifunc][i])
         # print(f"\tdoneget function gradients start", flush=True)
+
+        if self.tacs_panel_dimensions is not None:
+            for body in bodies:  # will not work for multiple bodies
+                self.tacs_panel_dimensions._compute_panel_dimension_xpt_sens(
+                    scenario,
+                    body,
+                    self.struct_variables,
+                    self.LENGTH_VAR,
+                    self.WIDTH_VAR,
+                )
 
         return
 
@@ -1729,94 +1747,52 @@ class TacsPanelDimensions:
         if self.panel_width_constr is not None:
             self.panel_width_constr.setDesignVars(xvec)
 
-    def _compute_panel_dimension_xpt_sens(self, scenario):
+    def _compute_panel_dimension_xpt_sens(
+        self,
+        scenario: Scenario,
+        body: Body,
+        struct_vars,
+        length_base_name,
+        width_base_name,
+    ):
         """
         compute panel length and width coordinate derivatives
         for stiffened panel constitutive objects and write into the f2f variables
         """
+        struct_xpts_sens = body.struct_shape_term[scenario.id]
 
-        # TBD - haven't written this yet
-        # need to multiply the panel length, width DV values by the xpt sens of the constraints
-        # then add to the struct xpt sens for each function in F2F
-        func_grad = self.scenario_data[scenario].func_grad
+        # Add shape sensitivities for length state
+        if self.panel_length_constr is not None:
+            if self.assembler is not None:
+                funcSens = {}
+                self.panel_length_constraint.evalConstraintsSens(funcSens)
+                # if self.comm.rank == 0:
+                for ifunc, func in enumerate(scenario.functions):
+                    length_comp_ct = 0
+                    first_key = [_ for _ in funcSens][0]
+                    for ivar, var in enumerate(struct_vars):
+                        if length_base_name in var.name:
+                            struct_xpts_sens[ifunc, :] += (
+                                func.derivatives[var]
+                                * funcSens[first_key][length_comp_ct]["struct"]
+                            )
+                            length_comp_ct += 1
 
-        for ifunc, func in enumerate(scenario.functions):
-            for i, var in enumerate(self.struct_variables):
-                pass
+        # Add shape sensitivities for width state
+        if self.panel_width_constr is not None:
+            if self.assembler is not None:
+                funcSens = {}
+                self.panel_width_constraint.evalConstraintsSens(funcSens)
+                # if self.comm.rank == 0:
+                for ifunc, func in enumerate(scenario.functions):
+                    width_comp_ct = 0
+                    first_key = [_ for _ in funcSens][0]
+                    for ivar, var in enumerate(struct_vars):
+                        if width_base_name in var.name:
+                            struct_xpts_sens[ifunc, :] += (
+                                func.derivatives[var]
+                                * funcSens[first_key][width_comp_ct]["struct"]
+                            )
+                            width_comp_ct += 1
 
-        # end of prototype
-
-        grads_dict = None
-        if self.assembler is not None:
-            funcSens = {}
-            if self.comm.rank == 0:
-                grads_dict = {}
-            ifunc = 0
-            self.panel_length_constraint.evalConstraintsSens(funcSens)
-            for func in self.model.composite_functions:
-                if self.PANEL_LENGTH_CONSTR in func.name and self.comm.rank == 0:
-
-                    grads_dict[func.full_name] = {}
-
-                    # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
-                    for ivar, var in enumerate(self.struct_variables):
-                        func.derivatives[var] = funcSens[self.panel_length_name][
-                            "struct"
-                        ].toarray()[ifunc, ivar]
-                        grads_dict[func.full_name][var.full_name] = func.derivatives[
-                            var
-                        ]
-
-                    ifunc += 1
-
-        # broadcast the funcs dict to other processors
-        grads_dict = self.comm.bcast(grads_dict, root=0)
-
-        for func in self.model.composite_functions:
-            if func.full_name in list(grads_dict.keys()):
-                for ivar, var in enumerate(self.struct_variables):
-                    func.derivatives[var] = grads_dict[func.full_name][var.full_name]
-
-        # # compute the panel length values
-        # # -----------------------------------------
-        # if self.panel_length_dv_index:
-        #     length_funcs = None
-        #     if self.assembler is not None:
-
-        #         # get the panel length from the TACS constraint object
-        #         length_funcs = {}
-        #         self.panel_length_constr.evalConstraints(length_funcs)
-
-        #     # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
-        #     length_funcs = self.comm.bcast(length_funcs, root=0)
-
-        #     # update the panel length and width dimensions into the F2F variables
-        #     # these will later be set into the TACS constitutive objects in the self.set_variables() call
-        #     length_comp_ct = 0
-        #     for var in self.struct_variables:
-        #         if self.LENGTH_VAR in var.name:
-        #             var.value = length_funcs[self.LENGTH_CONSTR][length_comp_ct]
-        #             length_comp_ct += 1
-
-        # # compute the panel width values
-        # # -----------------------------------------
-        # if self.panel_length_dv_index:
-        #     width_funcs = None
-        #     if self.assembler is not None:
-
-        #         # get the panel width from the TACS constraint object
-        #         width_funcs = {}
-        #         self.panel_width_constr.evalConstraints(width_funcs)
-
-        #     # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
-        #     width_funcs = self.comm.bcast(width_funcs, root=0)
-
-        #     # update the panel length and width dimensions into the F2F variables
-        #     # these will later be set into the TACS constitutive objects in the self.set_variables() call
-        #     width_comp_ct = 0
-        #     for var in self.struct_variables:
-        #         if self.WIDTH_VAR in var.name:
-        #             var.value = width_funcs[self.WIDTH_CONSTR][width_comp_ct]
-        #             width_comp_ct += 1
-
-        #     return
+        return
