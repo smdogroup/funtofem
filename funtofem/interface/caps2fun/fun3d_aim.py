@@ -353,11 +353,10 @@ class Fun3dAim:
             print("==========================================================")
             print("||                  FUN3D AIM Summary                   ||")
             print("==========================================================")
-            
+
             self._print_file_locs(self)
-            
+
         return
-    
+
     def _print_file_locs(self):
         return
-        
