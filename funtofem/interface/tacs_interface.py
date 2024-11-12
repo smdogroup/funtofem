@@ -1430,6 +1430,213 @@ class TacsSteadyInterface(SolverInterface):
             tacs_panel_dimensions=tacs_panel_dimensions,
         )
 
+    @classmethod
+    def create_from_bdf_inertial(
+        cls,
+        model,
+        comm,
+        nprocs,
+        bdf_file,
+        prefix="",
+        callback=None,
+        struct_options={},
+        thermal_index=-1,
+        override_rotx=False,
+        debug=False,
+        add_loads=True,  # whether it will try to add loads or not
+        relaxation_scheme: AitkenRelaxationTacs = None,
+        struct_loads_file=None,
+        panel_length_dv_index=0,
+        panel_width_dv_index=5,
+    ):
+        """
+        Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
+
+        Parameters
+        ----------
+        model: :class:`FUNtoFEMmodel`
+            The model class associated with the problem
+        comm: MPI.comm
+            MPI communicator (typically MPI_COMM_WORLD)
+        bdf_file: str
+            The BDF file name
+        prefix: str
+            Output prefix for .f5 files generated from TACS
+        struct_DVs: List
+            list of struct DV values for the built-in funtofem callback method
+        callback: function
+            The element callback function for pyTACS
+        struct_options: dictionary
+            The options passed to pyTACS
+        relaxation_scheme: Relaxation Scheme Object
+            Object to store relaxation scheme settings. If None, then no relaxation is used.
+        struct_loads_file: str
+            File name of the struct_loads_file to be used as a constant load to the structure.
+        """
+
+        # Split the communicator
+        world_rank = comm.Get_rank()
+        if world_rank < nprocs:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        tacs_comm = comm.Split(color, world_rank)
+
+        assembler = None
+        f5 = None
+        Fvec = None
+        tacs_panel_dimensions: TacsPanelDimensions = TacsPanelDimensions(
+            comm=comm,
+            panel_length_dv_index=panel_length_dv_index,
+            panel_width_dv_index=panel_width_dv_index,
+        )
+        if world_rank < nprocs:
+            # Create the assembler class
+            fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
+
+            """
+            Automatically adds structural variables from the BDF / DAT file into TACS
+            as long as you have added them with the same name in the DAT file.
+
+            Uses a custom funtofem callback to create thermoelastic shells which are unavailable
+            in pytacs default callback. And creates the DVs in the correct order in TACS based on DVPREL cards.
+            """
+
+            # get dict of struct DVs from the bodies and structural variables
+            # only supports thickness DVs for the structure currently
+            structDV_dict = {}
+            variables = model.get_variables()
+            structDV_names = []
+
+            # Get the structural variables from the global list of variables.
+            struct_variables = []
+            for var in variables:
+                if var.analysis_type == "structural":
+                    struct_variables.append(var)
+                    structDV_dict[var.name.lower()] = var.value
+                    structDV_names.append(var.name.lower())
+
+            # use the default funtofem callback if none is provided
+            if callback is None:
+                include_thermal = any(
+                    ["therm" in body.analysis_type for body in model.bodies]
+                )
+                callback = f2f_callback(
+                    fea_assembler, structDV_names, structDV_dict, include_thermal
+                )
+
+            # Set up constitutive objects and elements in pyTACS
+            fea_assembler.initialize(callback)
+
+            ## Add stuff for inertial loads through auxilary elements
+            SP = fea_assembler.createStaticProblem("struct-benchmark")
+            SP.addInertialLoad([0.0, 0.0, -9.81])
+            SP._updateAssemblerVars()  # this writes auxElems into assembler
+
+            # get any constant loads for static case
+            if add_loads:
+                Fvec = addLoadsFromBDF(fea_assembler)
+            # Fvec = None
+
+            if panel_length_dv_index is not None and tacs_panel_dimensions is not None:
+                tacs_panel_dimensions.panel_length_constr = (
+                    fea_assembler.createPanelLengthConstraint("PanelLengthCon")
+                )
+                tacs_panel_dimensions.panel_length_constr.addConstraint(
+                    cls.LENGTH_CONSTR,
+                    dvIndex=tacs_panel_dimensions.panel_length_dv_index,
+                )
+            if panel_width_dv_index is not None and tacs_panel_dimensions is not None:
+                tacs_panel_dimensions.panel_width_constr = (
+                    fea_assembler.createPanelWidthConstraint("PanelWidthCon")
+                )
+                tacs_panel_dimensions.panel_width_constr.addConstraint(
+                    cls.WIDTH_CONSTR, dvIndex=tacs_panel_dimensions.panel_width_dv_index
+                )
+
+            # Retrieve the assembler from pyTACS fea_assembler object
+            # assembler = fea_assembler.assembler
+            assembler = SP.assembler
+
+            # Set the output file creator
+            f5 = fea_assembler.outputViewer
+
+        # Create the output generator
+        if prefix is None:
+            gen_output = None
+        else:
+            gen_output = TacsOutputGenerator(prefix, f5=f5)
+
+        # get struct ids for coordinate derivatives and .sens file
+        struct_id = None
+        if assembler is not None:
+            # get list of local node IDs with global size, with -1 for nodes not owned by this proc
+            num_nodes = fea_assembler.meshLoader.bdfInfo.nnodes
+            bdfNodes = range(num_nodes)
+            local_tacs_ids = fea_assembler.meshLoader.getLocalNodeIDsFromGlobal(
+                bdfNodes, nastranOrdering=False
+            )
+
+            """
+            the local_tacs_ids list maps nastran nodes to tacs indices with:
+                local_tacs_ids[nastran_node-1] = local_tacs_id
+            Only a subset of all tacs ids are owned by each processor
+                note: tacs_ids in [0, #local_tacs_ids], #local_tacs_ids <= nnodes
+                for nastran nodes not on this processor, local_tacs_id[nastran_node-1] = -1
+
+            The next lines of code invert this map to the list 'struct_id' with:
+                struct_id[local_tacs_id] = nastran_node
+
+            This is then later used by funtofem_model.write_sensitivity_file method to write
+            ESP/CAPS nastran_CAPS.sens files for the tacsAIM to compute shape derivatives
+            """
+
+            # get number of non -1 tacs ids, total number of actual tacs_ids
+            n_tacs_ids = len([tacs_id for tacs_id in local_tacs_ids if tacs_id != -1])
+
+            # reverse the tacs id to nastran ids map since we want tacs_id => nastran_id - 1
+            nastran_ids = np.zeros((n_tacs_ids), dtype=np.int64)
+            for nastran_id_m1, tacs_id in enumerate(local_tacs_ids):
+                if tacs_id != -1:
+                    nastran_ids[tacs_id] = int(nastran_id_m1 + 1)
+
+            # convert back to list of nastran_ids owned by this processor in order
+            struct_id = list(nastran_ids)
+
+        # We might need to clean up this code. This is making educated guesses
+        # about what index the temperature is stored. This could be wrong if things
+        # change later. May query from TACS directly?
+        if assembler is not None and thermal_index == -1:
+            varsPerNode = assembler.getVarsPerNode()
+
+            # This is the likely index of the temperature variable
+            if varsPerNode == 1:  # Thermal only
+                thermal_index = 0
+            elif varsPerNode == 4:  # Solid + thermal
+                thermal_index = 3
+            elif varsPerNode >= 7:  # Shell or beam + thermal
+                thermal_index = varsPerNode - 1
+
+        # Broad cast the thermal index to ensure it's the same on all procs
+        thermal_index = comm.bcast(thermal_index, root=0)
+
+        # Create the tacs interface
+        return cls(
+            comm,
+            model,
+            assembler,
+            gen_output,
+            thermal_index=thermal_index,
+            struct_id=struct_id,
+            tacs_comm=tacs_comm,
+            override_rotx=override_rotx,
+            Fvec=Fvec,
+            debug=debug,
+            relaxation_scheme=relaxation_scheme,
+            struct_loads_file=struct_loads_file,
+            tacs_panel_dimensions=tacs_panel_dimensions,
+        )
+
 
 class TacsOutputGenerator:
     def __init__(self, prefix, name="tacs_output_file", f5=None):

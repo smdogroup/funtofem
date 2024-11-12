@@ -342,7 +342,7 @@ class OnewayAeroDriver:
                 sens_file_src = self.remote.aero_sens_file
                 print(f"Remote aero sens file src: {sens_file_src}", flush=True)
 
-            # run the tacs aim postAnalysis to compute the chain rule product
+            # run the flow aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
