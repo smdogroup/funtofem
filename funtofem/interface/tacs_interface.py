@@ -639,6 +639,7 @@ class TacsSteadyInterface(SolverInterface):
         if self.tacs_panel_dimensions is not None:
             for body in bodies:  # will not work for multiple bodies
                 self.tacs_panel_dimensions._compute_panel_dimension_xpt_sens(
+                    self.assembler,
                     scenario,
                     body,
                     self.struct_variables,
@@ -1749,6 +1750,7 @@ class TacsPanelDimensions:
 
     def _compute_panel_dimension_xpt_sens(
         self,
+        assembler,
         scenario: Scenario,
         body: Body,
         struct_vars,
@@ -1763,35 +1765,36 @@ class TacsPanelDimensions:
 
         # Add shape sensitivities for length state
         if self.panel_length_constr is not None:
-            if self.assembler is not None:
+            if assembler is not None:
                 funcSens = {}
-                self.panel_length_constraint.evalConstraintsSens(funcSens)
+                self.panel_length_constr.evalConstraintsSens(funcSens)
+                # print(funcSens)
                 # if self.comm.rank == 0:
                 for ifunc, func in enumerate(scenario.functions):
                     length_comp_ct = 0
                     first_key = [_ for _ in funcSens][0]
                     for ivar, var in enumerate(struct_vars):
                         if length_base_name in var.name:
-                            struct_xpts_sens[ifunc, :] += (
+                            struct_xpts_sens[:, ifunc] += (
                                 func.derivatives[var]
-                                * funcSens[first_key][length_comp_ct]["struct"]
+                                * funcSens[first_key]["Xpts"][[length_comp_ct], :]
                             )
                             length_comp_ct += 1
 
         # Add shape sensitivities for width state
         if self.panel_width_constr is not None:
-            if self.assembler is not None:
+            if assembler is not None:
                 funcSens = {}
-                self.panel_width_constraint.evalConstraintsSens(funcSens)
+                self.panel_width_constr.evalConstraintsSens(funcSens)
                 # if self.comm.rank == 0:
                 for ifunc, func in enumerate(scenario.functions):
                     width_comp_ct = 0
                     first_key = [_ for _ in funcSens][0]
                     for ivar, var in enumerate(struct_vars):
                         if width_base_name in var.name:
-                            struct_xpts_sens[ifunc, :] += (
+                            struct_xpts_sens[:, ifunc] += (
                                 func.derivatives[var]
-                                * funcSens[first_key][width_comp_ct]["struct"]
+                                * funcSens[first_key]["Xpts"][[width_comp_ct], :]
                             )
                             width_comp_ct += 1
 

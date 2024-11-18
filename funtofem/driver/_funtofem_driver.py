@@ -239,6 +239,9 @@ class FUNtoFEMDriver(object):
             if scenario.steady:
                 fail = self._solve_steady_adjoint(scenario)
                 if fail != 0:
+                    print(
+                        f"Fail flag detected after _solve_steady_adjoint!", flush=True
+                    )
                     return fail
             else:
                 fail = self._solve_unsteady_adjoint(scenario)

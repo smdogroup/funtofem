@@ -72,6 +72,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         struct_nprocs=48,
         forward_flow_post_analysis=False,
         reload_funtofem_states=False,
+        struct_callback=None,
+        tacs_inertial=False,
     ):
         """
         Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
@@ -85,6 +87,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             struct_nprocs=struct_nprocs,
             forward_flow_post_analysis=forward_flow_post_analysis,
             reload_funtofem_states=reload_funtofem_states,
+            struct_callback=struct_callback,
+            tacs_inertial=tacs_inertial,
         )
 
     @classmethod
@@ -154,6 +158,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         struct_nprocs=48,
         forward_flow_post_analysis=False,
         reload_funtofem_states=False,
+        struct_callback=None,
+        tacs_inertial=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -196,6 +202,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
         self.forward_flow_post_analysis = forward_flow_post_analysis
+
+        self.struct_callback = struct_callback
+        self.tacs_inertial = tacs_inertial
 
         # make sure the solver interfaces are TACS and FUN3D
         if not (self.change_shape) and self.is_remote:
@@ -501,13 +510,27 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # to system call FUN3D, please don't put shape variables in the analysis file
                 # make the new tacs interface of the structural geometry
                 if self.uses_tacs:
-                    self.solvers.structural = TacsInterface.create_from_bdf(
-                        model=self.model,
-                        comm=self.comm,
-                        nprocs=self.struct_nprocs,
-                        bdf_file=self.struct_aim.root_dat_file,
-                        output_dir=self.struct_aim.root_analysis_dir,
-                    )
+                    if self.tacs_inertial:
+                        self.solvers.structural = (
+                            TacsSteadyInterface.create_from_bdf_inertial(
+                                model=self.model,
+                                comm=self.comm,
+                                nprocs=self.struct_nprocs,
+                                bdf_file=self.struct_aim.root_dat_file,
+                                prefix=self.struct_aim.root_analysis_dir,
+                                callback=self.struct_callback,
+                                panel_length_dv_index=0,
+                                panel_width_dv_index=5,
+                            )
+                        )
+                    else:
+                        self.solvers.structural = TacsInterface.create_from_bdf(
+                            model=self.model,
+                            comm=self.comm,
+                            nprocs=self.struct_nprocs,
+                            bdf_file=self.struct_aim.root_dat_file,
+                            output_dir=self.struct_aim.root_analysis_dir,
+                        )
 
                 # update the structural part of transfer scheme due to remeshing
                 self._update_struct_transfer()
