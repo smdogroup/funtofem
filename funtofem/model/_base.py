@@ -370,9 +370,9 @@ class Base(object):
 
     def _print_variables(self, vartype):
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
-        self._print_long("Variable", width=12, indent_line=5)
+        self._print_long("Variable", width=20, indent_line=5)
         self._print_long("Var. ID", width=10)
         self._print_long("Value", width=16)
         self._print_long("Bounds", width=24)
@@ -380,7 +380,7 @@ class Base(object):
         self._print_long("Coupled", width=9, end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
         for var in self.variables[vartype]:
             _name = "{:s}".format(var.name)
@@ -392,7 +392,7 @@ class Base(object):
             _coupled = str(var.coupled)
             _bounds = " ".join(("[", _lower, ",", _upper, "]"))
 
-            self._print_long(_name, width=12, indent_line=5)
+            self._print_long(_name, width=20, indent_line=5)
             self._print_long(_id, width=10, align="<")
             self._print_long(_value, width=16)
             self._print_long(_bounds, width=24)
@@ -400,7 +400,7 @@ class Base(object):
             self._print_long(_coupled, width=9, end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
 
         return

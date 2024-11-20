@@ -1014,7 +1014,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             gradients.append([])
             for ivar, var in enumerate(variables):
                 derivative = None
-                if var.analysis_type == "structural":
+                # Hack to only get shape derivatives for thickness from CAPS
+                if var.analysis_type == "structural" and "-T" in var.name:
                     if self.struct_aim.root_proc:
                         derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
                             var.full_name

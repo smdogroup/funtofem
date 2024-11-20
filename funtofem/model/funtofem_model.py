@@ -811,7 +811,13 @@ class FUNtoFEMmodel(object):
         return loads_files
 
     def write_sensitivity_file(
-        self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
+        self,
+        comm,
+        filename,
+        discipline="aerodynamic",
+        root=0,
+        write_dvs: bool = True,
+        only_thickness=True,
     ):
         """
         Write the sensitivity file.
@@ -859,7 +865,11 @@ class FUNtoFEMmodel(object):
                 for var in variables:
                     # Write the variables whose analysis_type matches the discipline string.
                     if discipline == var.analysis_type and var.active:
-                        discpline_vars.append(var)
+                        if discipline == "structural" and only_thickness:
+                            if "-T" in var.name:
+                                discpline_vars.append(var)
+                        else:
+                            discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
             num_dvs = len(discpline_vars)
