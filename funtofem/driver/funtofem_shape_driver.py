@@ -1156,24 +1156,33 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     def tacs_model(self):
         return self.model.structural
 
-    def print_summary(self, print_model=False, print_comm=False):
+    def print_summary(self, comm=None, print_model=False, print_comm=False):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
         """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
 
-        print("\n\n==========================================================")
-        print("||               FUNtoFEM Driver Summary                ||")
-        print("==========================================================")
-        print(self)
+        if print_here:
+            print("\n\n==========================================================")
+            print("||               FUNtoFEM Driver Summary                ||")
+            print("==========================================================")
+            print(self)
 
-        self._print_shape_change()
-        self._print_transfer(print_comm=print_comm)
+            self._print_shape_change()
+            self._print_transfer(print_comm=print_comm)
 
-        if print_model:
-            print(
-                "\nPrinting abbreviated model summary. For details print model summary directly."
-            )
-            self.model.print_summary(print_level=-1, ignore_rigid=True)
+            if print_model:
+                print(
+                    "\nPrinting abbreviated model summary. For details print model summary directly."
+                )
+                self.model.print_summary(print_level=-1, ignore_rigid=True)
+            
+        if comm is not None:
+            comm.Barrier()
 
         return
 

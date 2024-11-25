@@ -1561,16 +1561,16 @@ class FUNtoFEMmodel(object):
     def _print_functions(self):
         model_functions = self.get_functions(all=True)
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
-        self._print_long("Function", width=12, indent_line=5)
+        self._print_long("Function", width=18, indent_line=5)
         self._print_long("Analysis Type", width=15)
         self._print_long("Comp. Adjoint", width=15)
         self._print_long("Time Range", width=20)
         self._print_long("Averaging", end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
         for func in model_functions:
             if isinstance(func, CompositeFunction):
@@ -1587,13 +1587,13 @@ class FUNtoFEMmodel(object):
                 averaging = func.averaging
             _time_range = " ".join(("[", str(start), ",", str(stop), "]"))
             adjoint = str(adjoint)
-            self._print_long(func.name, width=12, indent_line=5)
+            self._print_long(func.name, width=18, indent_line=5)
             self._print_long(analysis_type, width=15)
             self._print_long(adjoint, width=15)
             self._print_long(_time_range, width=20)
             self._print_long(averaging, end_line=True)
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
 
         return
