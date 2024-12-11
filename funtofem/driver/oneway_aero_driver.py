@@ -54,7 +54,7 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Construct the FUNtoFEMmodel
     - Construct the bodies and scenarios
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
-    - Construct the Fun3dInterface
+    - Construct the Fun3d14Interface
     - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
     - Construct the a fun3d oneway driver with class method OnewayAeroDriver.analysis
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
@@ -75,7 +75,7 @@ import importlib.util
 # 1) FUN3D
 fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3dInterface, Fun3dModel
+    from funtofem.interface import Fun3d14Interface, Fun3dModel
 
 # 2) TBD
 # -----------------------------------------------------
@@ -180,6 +180,24 @@ class OnewayAeroDriver:
                     "The mesh morphing does not require a remote driver! Make this driver regularly!"
                 )
 
+        # check for unsteady problems
+        self._unsteady = any([not scenario.steady for scenario in model.scenarios])
+
+        # check which aero solver we were given
+        self.flow_aim = None
+        self._flow_solver_type = None
+        if model.flow is None:
+            if fun3d_loader is not None:
+                if isinstance(solvers.flow, Fun3d14Interface):
+                    self._flow_solver_type = "fun3d"
+            # TBD on new types
+        else:  # check with shape change
+            if fun3d_loader is not None:
+                if isinstance(model.flow, Fun3dModel):
+                    self._flow_solver_type = "fun3d"
+                    self.flow_aim = model.flow.fun3d_aim
+            # TBD on new types
+
         if not self.is_remote:
             if self.model.flow is not None:
                 if not self.is_paired and not self.model.flow.mesh_morph:
@@ -191,24 +209,6 @@ class OnewayAeroDriver:
                 print(
                     f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
                 )
-
-        # check for unsteady problems
-        self._unsteady = any([not scenario.steady for scenario in model.scenarios])
-
-        # check which aero solver we were given
-        self.flow_aim = None
-        self._flow_solver_type = None
-        if model.flow is None:
-            if fun3d_loader is not None:
-                if isinstance(solvers.flow, Fun3dInterface):
-                    self._flow_solver_type = "fun3d"
-            # TBD on new types
-        else:  # check with shape change
-            if fun3d_loader is not None:
-                if isinstance(model.flow, Fun3dModel):
-                    self._flow_solver_type = "fun3d"
-                    self.flow_aim = model.flow.fun3d_aim
-            # TBD on new types
 
         self.transfer_settings = (
             transfer_settings if transfer_settings is not None else TransferSettings()
@@ -457,7 +457,7 @@ class OnewayAeroDriver:
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.solvers.flow.iterate(scenario, bodies, step=step)
-        self.solvers.flow.post(scenario, bodies)
+        self.solvers.flow.post(scenario, bodies, coupled_residuals=False)
 
         # get functions to store the function values into the model
         self.solvers.flow.get_functions(scenario, bodies)
@@ -472,7 +472,7 @@ class OnewayAeroDriver:
         self.solvers.flow.initialize(scenario, bodies)
         for step in range(1, scenario.steps + 1):
             self.solvers.flow.iterate(scenario, bodies, step=step)
-        self.solvers.flow.post(scenario, bodies)
+        self.solvers.flow.post(scenario, bodies, coupled_residuals=False)
 
         # get functions to store the function values into the model
         self.solvers.flow.get_functions(scenario, bodies)
@@ -498,7 +498,7 @@ class OnewayAeroDriver:
         for step in range(1, steps + 2):
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
-        self.solvers.flow.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)
@@ -520,7 +520,7 @@ class OnewayAeroDriver:
             step = scenario.steps + 1 - rstep
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
             self._extract_coordinate_derivatives(scenario, bodies, step=step)
-        self.solvers.flow.post_adjoint(scenario, bodies)
+        self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
         self.solvers.flow.get_function_gradients(scenario, bodies)

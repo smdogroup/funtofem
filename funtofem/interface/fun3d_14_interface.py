@@ -54,10 +54,10 @@ class Fun3d14Interface(SolverInterface):
         coord_test_override=False,
         debug=False,
         external_mesh_morph=False,
-        forward_min_tolerance=1e-9,
-        forward_stop_tolerance=1e-6,
-        adjoint_min_tolerance=1e-8,
-        adjoint_stop_tolerance=1e-6,
+        forward_min_tolerance=1e-6,
+        forward_stop_tolerance=1e-9,
+        adjoint_min_tolerance=1e-6,
+        adjoint_stop_tolerance=1e-8,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -534,13 +534,13 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def initialize_forward_tight_coupling(self):
-        self._forward_coupling_frequency = 1
+    def initialize_forward_tight_coupling(self, scenario):
+        self._forward_coupling_frequency = scenario.post_forward_coupling_freq
         self.fun3d_flow.set_coupling_frequency(self._forward_coupling_frequency)
         return
 
-    def initialize_adjoint_tight_coupling(self):
-        self._adjoint_coupling_frequency = 1
+    def initialize_adjoint_tight_coupling(self, scenario):
+        self._adjoint_coupling_frequency = scenario.post_adjoint_coupling_freq
         self.fun3d_adjoint.set_coupling_frequency(self._adjoint_coupling_frequency)
         return
 
@@ -697,7 +697,7 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
-    def post(self, scenario, bodies):
+    def post(self, scenario, bodies, coupled_residuals=True):
         """
         Calls FUN3D post to save history files, deallocate memory etc.
         Then moves back to the problem's root directory
@@ -708,13 +708,15 @@ class Fun3d14Interface(SolverInterface):
             The scenario
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies.
-        first_pass: bool
-            Set to true during instantiation
+        coupled_residuals: bool
+            Whether FUN3D is coupled or oneway. If coupled, then the residual
+            check is performed over the maximum of the flow residuals since
+            the last coupled iteration.
         """
 
         # report warning if flow residual too large
         resid = self.get_forward_residual(
-            step=self._last_forward_step, all=True, outer=True
+            step=self._last_forward_step, all=True, outer=coupled_residuals
         )  # step=scenario.steps
         if self.comm.rank == 0:
             print(f"Forward residuals = {resid}")
@@ -734,7 +736,7 @@ class Fun3d14Interface(SolverInterface):
         # throw a runtime error if adjoint didn't converge sufficiently
         if scalar_resid > self.forward_min_tolerance:
             raise RuntimeError(
-                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_tolerance:.2e}, is too large..."
+                f"Funtofem/Fun3dInterface: fun3d forward flow residual = {resid} > {self.forward_min_tolerance:.2e}, is too large..."
             )
         return
 
@@ -1146,7 +1148,7 @@ class Fun3d14Interface(SolverInterface):
             print(f"complete f2f adjoint iteration step {rstep}", flush=True)
         return fail
 
-    def post_adjoint(self, scenario, bodies):
+    def post_adjoint(self, scenario, bodies, coupled_residuals=True):
         """
         Calls post fo the adjoint solver in FUN3D.
         Then moves back to the problem's root directory
@@ -1157,11 +1159,15 @@ class Fun3d14Interface(SolverInterface):
             The scenario
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies.
+        coupled_residuals: bool
+            Whether FUN3D is coupled or oneway. If coupled, then the residual
+            check is performed over the maximum of the flow residuals since
+            the last coupled iteration.
         """
 
         # report warning if flow residual too large
         resid = self.get_adjoint_residual(
-            step=self._last_adjoint_step, outer=True, all=True
+            step=self._last_adjoint_step, outer=coupled_residuals, all=True
         )
         if self.comm.rank == 0:
             print(f"Adjoint residuals = {resid}")
@@ -1182,7 +1188,7 @@ class Fun3d14Interface(SolverInterface):
         # throw a runtime error if adjoint didn't converge sufficiently
         if abs(np.linalg.norm(resid).real) > self.adjoint_min_tolerance:
             raise RuntimeError(
-                f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_tolerance:.2e}, is too large..."
+                f"Funtofem/Fun3dInterface: fun3d forward adjoint residual = {resid} > {self.adjoint_min_tolerance:.2e}, is too large..."
             )
         return
 
@@ -1416,6 +1422,12 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            forward_options=fun3d_interface.forward_options,
+            adjoint_options=fun3d_interface.adjoint_options,
+            forward_min_tolerance=fun3d_interface.forward_min_tolerance,
+            forward_stop_tolerance=fun3d_interface.forward_tolerance,
+            adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
+            adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )
 
     @classmethod
@@ -1437,4 +1449,10 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            forward_options=fun3d_interface.forward_options,
+            adjoint_options=fun3d_interface.adjoint_options,
+            forward_min_tolerance=fun3d_interface.forward_min_tolerance,
+            forward_stop_tolerance=fun3d_interface.forward_tolerance,
+            adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
+            adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )

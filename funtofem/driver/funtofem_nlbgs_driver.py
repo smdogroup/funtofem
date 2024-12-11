@@ -141,7 +141,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             [scenario.steps, scenario.post_tight_forward_steps]
         ):
             if i == 1:
-                self.solvers.flow.initialize_forward_tight_coupling()
+                self.solvers.flow.initialize_forward_tight_coupling(scenario)
 
             for step in range(1, nlbgs_steps + 1):
                 # Transfer displacements and temperatures
@@ -209,15 +209,16 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     all_converged = True
                     for solver in self.solvers.solver_list:
                         forward_resid = abs(solver.get_forward_residual(step=step))
-                        if self.comm.rank == 0:
-                            print(
-                                f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
-                                flush=True,
-                            )
-                        forward_tol = solver.forward_tolerance
-                        if forward_resid > forward_tol:
-                            all_converged = False
-                            break
+                        if forward_resid != 0.0:
+                            if self.comm.rank == 0:
+                                print(
+                                    f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
+                                    flush=True,
+                                )
+                            forward_tol = solver.forward_tolerance
+                            if forward_resid > forward_tol:
+                                all_converged = False
+                                break
 
                     if all_converged:
                         exit_early = True
@@ -263,7 +264,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             if i == 0:  # loose coupling phase
                 start = 1
             else:  # tight coupling phase
-                self.solvers.flow.initialize_adjoint_tight_coupling()
+                self.solvers.flow.initialize_adjoint_tight_coupling(scenario)
                 start = self.solvers.flow.get_last_adjoint_step()
 
             for step in range(start, nlbgs_steps + start):

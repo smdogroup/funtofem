@@ -25,6 +25,7 @@ __all__ = ["FUNtoFEMmodel"]
 import numpy as np, os, importlib
 from .variable import Variable
 from .function import CompositeFunction
+import sys
 
 # optional tacs import for caps2tacs
 tacs_loader = importlib.util.find_spec("tacs")
@@ -255,7 +256,7 @@ class FUNtoFEMmodel(object):
             self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
-    def get_variables(self, names=None, all=False):
+    def get_variables(self, names=None, all=False, optim=False):
         """
         Get all the coupled and uncoupled variable objects for the entire model.
         Coupled variables only appear once.
@@ -271,6 +272,9 @@ class FUNtoFEMmodel(object):
         -------
         var_list: list of variable objects
         """
+
+        if optim:  # return all active and non-state variables
+            return [var for var in self.get_variables() if not (var.state)]
 
         if names is None:
             dv = []
@@ -343,7 +347,7 @@ class FUNtoFEMmodel(object):
 
         return len(self.get_functions())
 
-    def get_functions(self, optim=False, all=False):
+    def get_functions(self, optim=False, all=False, include_vars_only=True):
         """
         Get all the functions in the model
 
@@ -353,6 +357,9 @@ class FUNtoFEMmodel(object):
             get functions for optimization when True otherwise just analysis functions within drivers
         all: bool
             get all functions analysis or composite for unittests
+        include_vars_only: bool
+            whether to include composite functions that have variables only or not
+            changed default to True so it doesn't mess up sparse gradient functionality for now..
 
         Returns
         -------
@@ -369,8 +376,12 @@ class FUNtoFEMmodel(object):
                 functions.extend(scenario.functions)
 
         if optim or all:
-            # for optimization also include composite functions
-            functions += self.composite_functions
+            composite_functions = self.composite_functions
+            if not include_vars_only:
+                composite_functions = [
+                    cfunc for cfunc in composite_functions if not (cfunc.vars_only)
+                ]
+            functions += composite_functions
 
             # filter out only functions with optim True flag, can be set with func.optimize()
             functions = [func for func in functions if func.optim or all]
@@ -407,6 +418,39 @@ class FUNtoFEMmodel(object):
             gradients.append(grad)
 
         return gradients
+
+    def clear_vars_only_composite_functions(self):
+        """
+        clears all vars only composite functions to save memory on large wing optimizations
+        after registering them to the optimizer [their sparse gradients depend only on design variables and are not needed after this point.]
+        In a large HSCT wing optimization case, there were 13k adjacency constraints which took up a considerable amount of space on memory..
+        """
+        import gc
+        import sys
+
+        # get vars only composite functions first to delete later
+        vars_only_cfuncs = [
+            cfunc for cfunc in self.composite_functions if cfunc.vars_only
+        ]
+        if len(vars_only_cfuncs) == 0:
+            return
+        nvars_only_cfuncs = [
+            cfunc for cfunc in self.composite_functions if not (cfunc.vars_only)
+        ]
+        self.composite_functions = nvars_only_cfuncs
+        first_vars_only_cfunc = vars_only_cfuncs[0]
+        ref_count1 = sys.getrefcount(first_vars_only_cfunc)
+        del vars_only_cfuncs
+        gc.collect()  # garbage collection..
+        # # check reference count on one of the vars only cfunc
+        # # will only delete if no references available
+        ref_count2 = sys.getrefcount(first_vars_only_cfunc)
+
+        print(
+            f"clear_vars_only_cfuncs: ref count1 {ref_count1} ref count2 {ref_count2}"
+        )
+        print(f"need to have 2 for the object to be truly deleted")
+        return
 
     def evaluate_composite_functions(self, compute_grad=True):
         """
@@ -445,7 +489,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------
@@ -486,13 +530,13 @@ class FUNtoFEMmodel(object):
                         body_name = entries[2]
                         mesh_data[body_name] = {"aeroID": [], "aeroX": []}
                     elif len(entries) == 4 and entries[0] != "body":
-                        mesh_data[body_name]["aeroID"] += [entries[0]]
+                        mesh_data[body_name]["aeroID"] += [int(entries[0])]
                         mesh_data[body_name]["aeroX"] += entries[1:4]
 
                     elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
-                            "aeroID": entries[0],
+                            "aeroID": int(entries[0]),
                             "load": entries[1:4],
                             "hflux": entries[4],
                         }
@@ -532,6 +576,77 @@ class FUNtoFEMmodel(object):
         # return the loads data
         return loads_data
 
+    def _read_struct_loads(self, comm, filename, root=0):
+        """
+        Read the structural loads file from file.
+
+        This file contains the following information:
+
+        # of Bodies, # of Scenarios
+
+        # aero mesh section
+        Body_mesh name
+        for node in surface_nodes:
+            node, xpos, ypos, zpos
+
+        # aero loads section
+        for each body and scenario:
+            Scenario name
+            Body name
+            for node in surface_nodes:
+                id xload yload zload hflux
+
+        Parameters
+        ----------
+        comm: MPI communicator
+            Global communicator across all FUNtoFEM processors
+        filename: str
+            The name of the file to be generated
+        root: int
+            The rank of the processor that will write the file
+        """
+        loads_data = None
+
+        if comm.rank == root:
+            scenario_data = None
+            loads_data = {}
+
+            with open(filename, "r") as fp:
+                for line in fp.readlines():
+                    entries = line.strip().split(" ")
+                    # print("==> entries: ", entries)
+                    if len(entries) == 2:
+                        assert int(entries[1]) == len(self.scenarios)
+                        assert int(entries[0]) == len(self.bodies)
+
+                    elif len(entries) == 3 and entries[0] == "scenario":
+                        matching_scenario = False
+                        for scenario in self.scenarios:
+                            if str(scenario.name).strip() == str(entries[2]).strip():
+                                matching_scenario = True
+                                break
+                        assert matching_scenario
+                        if scenario_data is not None:
+                            loads_data[scenario.id] = scenario_data
+                        scenario_data = []
+                    elif len(entries) == 4 and entries[0] == "body":
+                        body_name = entries[2]
+
+                    elif len(entries) == 5:
+                        entry = {
+                            "bodyName": body_name,
+                            "structID": int(entries[0]),
+                            "load": entries[1:4],
+                            "hflux": entries[4],
+                        }
+                        scenario_data.append(entry)
+
+            loads_data[scenario.id] = scenario_data
+
+        loads_data = comm.bcast(loads_data, root=root)
+
+        return loads_data
+
     def write_struct_loads(self, comm, filename, root=0):
         """
         Write the struct loads file for the OnewayStructDriver.
@@ -545,7 +660,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------
@@ -572,7 +687,7 @@ class FUNtoFEMmodel(object):
                 id, hflux, load = body._collect_struct_loads(comm, scenario, root=root)
 
                 if comm.rank == root:
-                    data += f"body {body.id} {body.name} {body.aero_nnodes} \n"
+                    data += f"body {body.id} {body.name} {body.struct_nnodes} \n"
                     for i in range(len(id)):
                         data += "{} {} {} {} {} \n".format(
                             int(id[i]),
@@ -617,7 +732,7 @@ class FUNtoFEMmodel(object):
             Scenario name
             Body name
             for node in surface_nodes:
-                id hflux xload yload zload
+                id xload yload zload hflux
 
         Parameters
         ----------
@@ -889,6 +1004,85 @@ class FUNtoFEMmodel(object):
                     hdl.write(f"\tvar {var.full_name} {var.value.real}\n")
 
             hdl.close()
+
+        return
+
+    def print_memory_size(self, comm, root: int, starting_message=""):
+        """print the memory of the funtofem model and its various constituents"""
+
+        def print_list(m_list, name):
+            number = len(m_list)
+            size = sys.getsizeof(m_list) + sum([sys.getsizeof(item) for item in m_list])
+            print(f"\t{number} {name} have size {size}")
+            return size
+
+        if comm.rank == root:
+            print(f"\nFuntofem model size {starting_message}")
+
+            # size of the whole funtofem model
+            model_size = sys.getsizeof(self)
+            print(f"\tmodel_size = {model_size}")
+
+            # size of scenarios list
+            scenario_size = print_list(
+                m_list=self.scenarios,
+                name="scenarios",
+            )
+
+            # size of bodies list
+            body_size = print_list(
+                m_list=self.bodies,
+                name="bodies",
+            )
+
+            # size of regular functions
+            functions = [
+                func for scenario in self.scenarios for func in scenario.functions
+            ]
+            function_size = print_list(
+                m_list=functions,
+                name="functions",
+            )
+
+            # size of variables
+            variables = [
+                var for scenario in self.scenarios for var in scenario.variables
+            ] + [var for body in self.bodies for var in body.variables]
+            variable_size = print_list(
+                m_list=variables,
+                name="variables",
+            )
+
+            # size of composite funtions, vars only
+            vars_only_composite_functions = [
+                cfunc for cfunc in self.composite_functions if cfunc.vars_only
+            ]
+            vars_only_cfunc_size = print_list(
+                m_list=vars_only_composite_functions,
+                name="vars only composite functions",
+            )
+
+            # size of composite funtions, not vars only
+            not_vars_only_composite_functions = [
+                cfunc for cfunc in self.composite_functions if not (cfunc.vars_only)
+            ]
+            nvars_only_cfunc_size = print_list(
+                m_list=not_vars_only_composite_functions,
+                name="not vars only composite functions",
+            )
+
+            total_size = (
+                model_size
+                + scenario_size
+                + body_size
+                + function_size
+                + variable_size
+                + vars_only_cfunc_size
+                + nvars_only_cfunc_size
+            )
+            print(f"\ttotal size = {total_size}")
+
+            print("\n", flush=True)
 
         return
 

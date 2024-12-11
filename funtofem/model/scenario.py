@@ -55,6 +55,8 @@ class Scenario(Base):
         early_stopping=False,
         post_tight_forward_steps=0,
         post_tight_adjoint_steps=0,
+        post_forward_coupling_freq=1,
+        post_adjoint_coupling_freq=1,
         T_ref=300,
         T_inf=300,
         qinf=1.0,
@@ -153,6 +155,8 @@ class Scenario(Base):
         self.uncoupled_steps = uncoupled_steps
         self.post_tight_forward_steps = post_tight_forward_steps
         self.post_tight_adjoint_steps = post_tight_adjoint_steps
+        self.post_forward_coupling_freq = post_forward_coupling_freq
+        self.post_adjoint_coupling_freq = post_adjoint_coupling_freq
 
         self.tacs_integration_settings = tacs_integration_settings
         self.fun3d_project_name = fun3d_project_name
@@ -394,6 +398,8 @@ class Scenario(Base):
         min_adjoint_steps=None,
         post_tight_forward_steps=None,
         post_tight_adjoint_steps=None,
+        post_forward_coupling_freq=None,
+        post_adjoint_coupling_freq=None,
     ):
         """
         turn on the early stopping criterion, note you probably don't need
@@ -422,6 +428,10 @@ class Scenario(Base):
             self.post_tight_forward_steps = post_tight_forward_steps
         if post_tight_adjoint_steps is not None:
             self.post_tight_adjoint_steps = post_tight_adjoint_steps
+        if post_forward_coupling_freq is not None:
+            self.post_forward_coupling_freq = post_forward_coupling_freq
+        if post_adjoint_coupling_freq is not None:
+            self.post_adjoint_coupling_freq = post_adjoint_coupling_freq
         return self
 
     def set_flow_ref_vals(self, qinf: float = 1.0, flow_dt: float = 1.0):

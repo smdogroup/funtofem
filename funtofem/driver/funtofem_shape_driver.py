@@ -30,7 +30,7 @@ my_funtofem_analysis.py : fun3d analysis script, which is called indirectly from
     - Construct the FUNtoFEMmodel
     - Construct the bodies and scenarios
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
-    - Construct the Fun3dInterface
+    - Construct the Fun3d14Interface
     - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
     - Construct the a fun3d oneway driver with class method FuntofemShapeDriver.analysis
     - Run solve_forward() and solve_adjoint() on the FuntofemShapeDriver
@@ -49,7 +49,7 @@ caps_loader = importlib.util.find_spec("pyCAPS")
 fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3dInterface, Fun3dModel
+    from funtofem.interface import Fun3d14Interface, Fun3dModel
 if tacs_loader is not None:
     from funtofem.interface import (
         TacsSteadyInterface,
@@ -211,7 +211,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         self._flow_solver_type = None
         if model.flow is None:
             if fun3d_loader is not None:
-                if isinstance(solvers.flow, Fun3dInterface):
+                if isinstance(solvers.flow, Fun3d14Interface):
                     self._flow_solver_type = "fun3d"
             # TBD on new types
         else:  # check with shape change
@@ -479,6 +479,13 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                         self.model.scenarios[0], self.model.bodies
                     )
 
+                    # initialize handcrafted mesh coorrdinates
+                    if self.model.flow is not None and isinstance(
+                        self.model.flow, Fun3dModel
+                    ):
+                        if self.flow_aim.is_handcrafted:
+                            self.flow_aim.handcrafted_mesh_morph._get_hc_coords()
+
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()
                     self._first_forward = False
@@ -579,6 +586,23 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 root=self.flow_aim.root,
                 write_dvs=False,
             )
+
+            self.comm.Barrier()
+
+            # hack to do shape change with handcrafted mesh with Fun3dAim
+            if self.model.flow is not None and isinstance(self.model.flow, Fun3dModel):
+                if self.flow_aim.is_handcrafted:
+                    hc_obj = self.flow_aim.handcrafted_mesh_morph
+                    for scenario in self.model.scenarios:
+                        hc_obj.compute_caps_coord_derivatives(scenario)
+                    # overwrite the previous sens file
+                    hc_obj.write_sensitivity_file(
+                        comm=self.comm,
+                        filename=filepath,
+                        discipline="aerodynamic",
+                        root=self.flow_aim.root,
+                        write_dvs=False,
+                    )
 
             self.comm.Barrier()
 
@@ -710,6 +734,25 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     root=0,
                     write_dvs=False,
                 )
+
+                self.comm.Barrier()
+
+                # hack to do shape change with handcrafted mesh with Fun3dAim
+                if self.model.flow is not None and isinstance(
+                    self.model.flow, Fun3dModel
+                ):
+                    if self.flow_aim.is_handcrafted:
+                        hc_obj = self.flow_aim.handcrafted_mesh_morph
+                        for scenario in self.model.scenarios:
+                            hc_obj.compute_caps_coord_derivatives(scenario)
+                        # overwrite the previous sens file
+                        hc_obj.write_sensitivity_file(
+                            comm=self.comm,
+                            filename=aero_sensfile,
+                            discipline="aerodynamic",
+                            root=self.flow_aim.root,
+                            write_dvs=False,
+                        )
 
         # mpi barrier before start of post analysis
         self.comm.Barrier()

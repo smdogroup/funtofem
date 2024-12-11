@@ -20,7 +20,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ["TacsInterface", "TacsSteadyInterface"]
+__all__ = [
+    "TacsInterface",
+    "TacsSteadyInterface",
+    "TacsPanelDimensions",
+    "TacsOutputGenerator",
+]
 
 from mpi4py import MPI
 from tacs import pytacs, TACS, functions
@@ -122,7 +127,10 @@ class TacsSteadyInterface(SolverInterface):
     A base class to do coupled steady simulations with TACS
     """
 
-    PANEL_LENGTH_CONSTR = "length"
+    LENGTH_VAR = "LENGTH"
+    LENGTH_CONSTR = "PANEL-LENGTH"
+    WIDTH_VAR = "WIDTH"
+    WIDTH_CONSTR = "PANEL-WIDTH"
 
     def __init__(
         self,
@@ -138,7 +146,8 @@ class TacsSteadyInterface(SolverInterface):
         nprocs=None,
         relaxation_scheme: AitkenRelaxationTacs = None,
         debug=False,
-        panel_length_constraint=None,
+        struct_loads_file=None,
+        tacs_panel_dimensions=None,
     ):
         """
         Initialize the TACS implementation of the SolverInterface for the FUNtoFEM
@@ -176,6 +185,8 @@ class TacsSteadyInterface(SolverInterface):
             argument mainly for hidden use by drivers (matches tacs_comm)
         use_aitken: boolean
             Whether to use Aitken relaxation.
+        struct_loads_file: str
+            File name of the struct_loads_file to be used as a constant load to the structure.
         """
 
         self.comm = comm
@@ -189,6 +200,8 @@ class TacsSteadyInterface(SolverInterface):
         # Set Aitken relaxation flag
         self.relaxation_scheme = relaxation_scheme
         self.use_aitken = isinstance(relaxation_scheme, AitkenRelaxationTacs)
+
+        self.struct_loads_file = struct_loads_file
 
         # const load in TACS, separate and added onto from coupled loading
         self.has_const_load = Fvec is not None
@@ -209,6 +222,8 @@ class TacsSteadyInterface(SolverInterface):
             if var.analysis_type == "structural":
                 self.struct_variables.append(var)
 
+        self.tacs_panel_dimensions = tacs_panel_dimensions
+
         # Set the assembler object - if it exists or not
         self._initialize_variables(
             model,
@@ -227,14 +242,17 @@ class TacsSteadyInterface(SolverInterface):
             for body in model.bodies:
                 body.initialize_struct_nodes(struct_X, struct_id=struct_id)
 
+        # Read in fixed loads from file
+        if self.struct_loads_file is not None:
+            loads_data = model._read_struct_loads(comm, self.struct_loads_file)
+
+            for body in model.bodies:
+                body._distribute_struct_loads(
+                    loads_data, include_elastic=True, include_thermal=False
+                )
+
         # Generate output
         self.gen_output = gen_output
-
-        # create panel length constraints
-        self.panel_length_constraint = panel_length_constraint
-        self.panel_length_name = "PanelLengthCon_PanelLength"
-
-        self._eval_panel_length(forward=True, adjoint=True)
 
         # Debug flag
         self._debug = debug
@@ -503,6 +521,19 @@ class TacsSteadyInterface(SolverInterface):
             The bodies in the model
         """
 
+        if self.tacs_panel_dimensions is not None:
+            # compute panel length and width (checks if we need to inside the object)
+            self.tacs_panel_dimensions.compute_panel_length(
+                self.assembler,
+                self.struct_variables,
+                self.LENGTH_CONSTR,
+                self.LENGTH_VAR,
+            )
+            self.tacs_panel_dimensions.compute_panel_width(
+                self.assembler, self.struct_variables, self.WIDTH_CONSTR, self.WIDTH_VAR
+            )
+
+        # write F2F variable values into TACS
         if self.tacs_proc:
             # Set the design variable values on the processors that
             # have an instance of TACSAssembler.
@@ -517,6 +548,10 @@ class TacsSteadyInterface(SolverInterface):
                     xarray[i] = var.value
 
             self.assembler.setDesignVars(xvec)
+
+            # also copy to the constraints local vectors
+            if self.tacs_panel_dimensions is not None:
+                self.tacs_panel_dimensions.setDesignVars(xvec)
 
         return
 
@@ -555,10 +590,13 @@ class TacsSteadyInterface(SolverInterface):
         # Evaluate the list of the functions of interest
         feval = None
         if self.tacs_proc:
+            # print(f"evalFunctions", flush=True)
             feval = self.assembler.evalFunctions(self.scenario_data[scenario].func_list)
+            # print(f"\tDone with evalFunctions", flush=True)
 
         # Broacast the list across all processors - not just structural procs
         feval = self.comm.bcast(feval, root=0)
+        # print(f"feval = {feval}", flush=True)
 
         # Set the function values on all processors
         for i, func in enumerate(scenario.functions):
@@ -581,12 +619,14 @@ class TacsSteadyInterface(SolverInterface):
             The bodies in the model
         """
 
+        # print(f"get function gradients start", flush=True)
         func_grad = self.scenario_data[scenario].func_grad
 
         for ifunc, func in enumerate(scenario.functions):
             for i, var in enumerate(self.struct_variables):
                 # func.set_gradient_component(var, func_grad[ifunc][i])
                 func.add_gradient_component(var, func_grad[ifunc][i])
+        # print(f"\tdoneget function gradients start", flush=True)
 
         return
 
@@ -708,6 +748,17 @@ class TacsSteadyInterface(SolverInterface):
                         :
                     ].astype(TACS.dtype)
 
+                if self.struct_loads_file is not None:
+                    fixed_struct_loads = body._fixed_struct_loads[scenario.id]
+                    fixed_struct_heat_flux = body._fixed_struct_heat_flux[scenario.id]
+                    for i in range(3):
+                        ext_force_array[i::ndof] += fixed_struct_loads[i::3].astype(
+                            TACS.dtype
+                        )
+                    ext_force_array[
+                        self.thermal_index :: ndof
+                    ] += fixed_struct_heat_flux[:].astype(TACS.dtype)
+
             # add in optional constant load
             if self.has_const_load:
                 ext_force_array[:] += self.const_force[:]
@@ -720,7 +771,9 @@ class TacsSteadyInterface(SolverInterface):
             self.res.axpy(-1.0, self.ext_force)
 
             # Solve for the update
+            # print(f"solve linear static analysis", flush=True)
             self.gmres.solve(self.res, self.update)
+            # print(f"\tsolved linear static analysis", flush=True)
 
             if self.comm.rank == 0 and self.aitken_debug:
                 print(f"TACS iterate step: {step}", flush=True)
@@ -787,85 +840,9 @@ class TacsSteadyInterface(SolverInterface):
                         + scenario.T_ref
                     )
 
+        # print(f"done with iterate", flush=True)
+
         return fail
-
-    def _eval_panel_length(self, forward=True, adjoint=True):
-        # whether to do the panel length constraint
-        _has_panel_length = None
-        if self.comm.rank == 0:
-            _has_panel_length = self.panel_length_constraint is not None
-        _has_panel_length = self.comm.bcast(_has_panel_length, root=0)
-
-        # print(f"has panel length rank {self.comm.rank} = {_has_panel_length}", flush=True)
-
-        # compute the panel length constraint
-        if _has_panel_length:
-            if forward:
-                funcs_dict = None
-                # print(f"rank {self.comm.rank} enter forward", flush=True)
-                if self.assembler is not None:
-                    funcs = {}
-                    funcs_dict = {}
-                    ct = 0
-                    self.panel_length_constraint.evalConstraints(funcs)
-                    # print(f"inside rank 0 check post eval constraints", flush=True)
-                    for func in self.model.composite_functions:
-                        if self.PANEL_LENGTH_CONSTR in func.name:
-                            # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
-                            func.value = funcs[self.panel_length_name][ct]
-                            ct += 1
-                            funcs_dict[func.full_name] = func.value
-                    # print(f"inside rank 0 check : funcs dict = {funcs_dict}", flush=True)
-
-                # broadcast the funcs dict to other processors
-                funcs_dict = self.comm.bcast(funcs_dict, root=0)
-
-                # print(f"rank {self.comm.rank} : forward funcs dict = {funcs_dict}", flush=True)
-
-                for func in self.model.composite_functions:
-                    if func.full_name in list(funcs_dict.keys()):
-                        func.value = funcs_dict[func.full_name]
-
-            # compute the panel length constraint
-            if adjoint:
-                grads_dict = None
-                if self.assembler is not None:
-                    funcSens = {}
-                    if self.comm.rank == 0:
-                        grads_dict = {}
-                    ifunc = 0
-                    self.panel_length_constraint.evalConstraintsSens(funcSens)
-                    for func in self.model.composite_functions:
-                        if (
-                            self.PANEL_LENGTH_CONSTR in func.name
-                            and self.comm.rank == 0
-                        ):
-
-                            grads_dict[func.full_name] = {}
-
-                            # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
-                            for ivar, var in enumerate(self.struct_variables):
-                                func.derivatives[var] = funcSens[
-                                    self.panel_length_name
-                                ]["struct"].toarray()[ifunc, ivar]
-                                grads_dict[func.full_name][var.full_name] = (
-                                    func.derivatives[var]
-                                )
-
-                            ifunc += 1
-
-                # broadcast the funcs dict to other processors
-                grads_dict = self.comm.bcast(grads_dict, root=0)
-
-                # print(f"rank {self.comm.rank} : grads dict = {grads_dict}", flush=True)
-
-                for func in self.model.composite_functions:
-                    if func.full_name in list(grads_dict.keys()):
-                        for ivar, var in enumerate(self.struct_variables):
-                            func.derivatives[var] = grads_dict[func.full_name][
-                                var.full_name
-                            ]
-                            # print(f"rank {self.comm.rank} : d{func.full_name}/d{var.full_name} = {func.derivatives[var]}", flush=True)
 
     def post(self, scenario, bodies):
         """
@@ -880,8 +857,6 @@ class TacsSteadyInterface(SolverInterface):
         bodies: :class:`~body.Body`
             list of FUNtoFEM bodies
         """
-
-        self._eval_panel_length(adjoint=False)
 
         # update solution and dv1 state (like _updateAssemblerVars() in pytacs)
         self.set_variables(scenario, bodies)
@@ -1077,7 +1052,9 @@ class TacsSteadyInterface(SolverInterface):
                 self.assembler.applyBCs(self.res)
 
                 # Solve structural adjoint equation
+                # print(f"linear adjoint solve", flush=True)
                 self.gmres.solve(self.res, psi[ifunc])
+                # print(f"\tdone withlinear adjoint solve", flush=True)
 
                 # Aitken adjoint step
                 if self.use_aitken:
@@ -1156,6 +1133,8 @@ class TacsSteadyInterface(SolverInterface):
                             self.thermal_index :: ndof
                         ].astype(body.dtype)
 
+        # print(f"done with iterate adjoint", flush=True)
+
         return fail
 
     def post_adjoint(self, scenario, bodies):
@@ -1177,7 +1156,7 @@ class TacsSteadyInterface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        self._eval_panel_length(adjoint=True)
+        # print(f"begin post adjoint", flush=True)
 
         func_grad = []
         if self.tacs_proc:
@@ -1203,6 +1182,8 @@ class TacsSteadyInterface(SolverInterface):
 
         # Broadcast the gradients to all processors
         self.scenario_data[scenario].func_grad = self.comm.bcast(func_grad, root=0)
+
+        # print(f"\tdone with post adjoint", flush=True)
 
         return
 
@@ -1263,6 +1244,9 @@ class TacsSteadyInterface(SolverInterface):
         debug=False,
         add_loads=True,  # whether it will try to add loads or not
         relaxation_scheme: AitkenRelaxationTacs = None,
+        struct_loads_file=None,
+        panel_length_dv_index=None,
+        panel_width_dv_index=None,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1285,6 +1269,8 @@ class TacsSteadyInterface(SolverInterface):
             The options passed to pyTACS
         relaxation_scheme: Relaxation Scheme Object
             Object to store relaxation scheme settings. If None, then no relaxation is used.
+        struct_loads_file: str
+            File name of the struct_loads_file to be used as a constant load to the structure.
         """
 
         # Split the communicator
@@ -1298,7 +1284,11 @@ class TacsSteadyInterface(SolverInterface):
         assembler = None
         f5 = None
         Fvec = None
-        panel_length_constraint = None
+        tacs_panel_dimensions: TacsPanelDimensions = TacsPanelDimensions(
+            comm=comm,
+            panel_length_dv_index=panel_length_dv_index,
+            panel_width_dv_index=panel_width_dv_index,
+        )
         if world_rank < nprocs:
             # Create the assembler class
             fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
@@ -1342,20 +1332,21 @@ class TacsSteadyInterface(SolverInterface):
                 Fvec = addLoadsFromBDF(fea_assembler)
             # Fvec = None
 
-            # make the panel length constraint object
-            has_panel_length_funcs = any(
-                [
-                    cls.PANEL_LENGTH_CONSTR in comp_func.name
-                    for comp_func in model.composite_functions
-                ]
-            )
-            if has_panel_length_funcs:
-                panel_length_constraint = fea_assembler.createPanelLengthConstraint(
-                    "PanelLengthCon"
+            if panel_length_dv_index is not None and tacs_panel_dimensions is not None:
+                tacs_panel_dimensions.panel_length_constr = (
+                    fea_assembler.createPanelLengthConstraint("PanelLengthCon")
                 )
-                panel_length_constraint.addConstraint("PanelLength", dvIndex=0)
-            else:
-                panel_length_constraint = None
+                tacs_panel_dimensions.panel_length_constr.addConstraint(
+                    cls.LENGTH_CONSTR,
+                    dvIndex=tacs_panel_dimensions.panel_length_dv_index,
+                )
+            if panel_width_dv_index is not None and tacs_panel_dimensions is not None:
+                tacs_panel_dimensions.panel_width_constr = (
+                    fea_assembler.createPanelWidthConstraint("PanelWidthCon")
+                )
+                tacs_panel_dimensions.panel_width_constr.addConstraint(
+                    cls.WIDTH_CONSTR, dvIndex=tacs_panel_dimensions.panel_width_dv_index
+                )
 
             # Retrieve the assembler from pyTACS fea_assembler object
             assembler = fea_assembler.assembler
@@ -1364,7 +1355,10 @@ class TacsSteadyInterface(SolverInterface):
             f5 = fea_assembler.outputViewer
 
         # Create the output generator
-        gen_output = TacsOutputGenerator(prefix, f5=f5)
+        if prefix is None:
+            gen_output = None
+        else:
+            gen_output = TacsOutputGenerator(prefix, f5=f5)
 
         # get struct ids for coordinate derivatives and .sens file
         struct_id = None
@@ -1431,8 +1425,9 @@ class TacsSteadyInterface(SolverInterface):
             override_rotx=override_rotx,
             Fvec=Fvec,
             debug=debug,
-            panel_length_constraint=panel_length_constraint,
             relaxation_scheme=relaxation_scheme,
+            struct_loads_file=struct_loads_file,
+            tacs_panel_dimensions=tacs_panel_dimensions,
         )
 
 
@@ -1457,3 +1452,164 @@ class TacsOutputGenerator:
     def _deallocate(self):
         """free up memory before delete"""
         self.f5.__dealloc__()
+
+
+class TacsPanelDimensions:
+    def __init__(self, comm, panel_length_dv_index: int, panel_width_dv_index: int):
+        self.comm = comm
+        self.panel_length_dv_index = panel_length_dv_index
+        self.panel_width_dv_index = panel_width_dv_index
+
+        self.panel_length_constr = None
+        self.panel_width_constr = None
+
+    def compute_panel_length(
+        self, assembler, struct_vars, constr_base_name, var_base_name
+    ):
+        if self.panel_length_constr is not None:
+            length_funcs = None
+            if assembler is not None:
+
+                # get the panel length from the TACS constraint object
+                length_funcs = {}
+                # clear up to date otherwise it might copy the old value
+                self.panel_length_constr.externalClearUpToDate()
+                self.panel_length_constr.evalConstraints(length_funcs)
+
+            # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
+            length_funcs = self.comm.bcast(length_funcs, root=0)
+
+            # update the panel length and width dimensions into the F2F variables
+            # these will later be set into the TACS constitutive objects in the self.set_variables() call
+            length_comp_ct = 0
+            first_key = [_ for _ in length_funcs][0]
+            # constraint values return actual - current (so use this to solve for actual panel length)
+            for var in struct_vars:
+                if var_base_name in var.name:
+                    var.value += length_funcs[first_key][length_comp_ct]
+                    length_comp_ct += 1
+        return
+
+    def compute_panel_width(
+        self, assembler, struct_vars, constr_base_name, var_base_name
+    ):
+        if self.panel_width_constr is not None:
+            width_funcs = None
+            if assembler is not None:
+
+                # get the panel width from the TACS constraint object
+                width_funcs = {}
+                self.panel_width_constr.externalClearUpToDate()
+                self.panel_width_constr.evalConstraints(width_funcs)
+
+            # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
+            width_funcs = self.comm.bcast(width_funcs, root=0)
+
+            # update the panel length and width dimensions into the F2F variables
+            # these will later be set into the TACS constitutive objects in the self.set_variables() call
+            width_comp_ct = 0
+            first_key = [_ for _ in width_funcs][0]
+            # constraint values return actual - current (so use this to solve for actual panel length)
+            for var in struct_vars:
+                if var_base_name in var.name:
+                    var.value += width_funcs[first_key][width_comp_ct]
+                    width_comp_ct += 1
+        return
+
+    def setDesignVars(self, xvec):
+        if self.panel_length_constr is not None:
+            self.panel_length_constr.setDesignVars(xvec)
+        if self.panel_width_constr is not None:
+            self.panel_width_constr.setDesignVars(xvec)
+
+    def _compute_panel_dimension_xpt_sens(self, scenario):
+        """
+        compute panel length and width coordinate derivatives
+        for stiffened panel constitutive objects and write into the f2f variables
+        """
+
+        # TBD - haven't written this yet
+        # need to multiply the panel length, width DV values by the xpt sens of the constraints
+        # then add to the struct xpt sens for each function in F2F
+        func_grad = self.scenario_data[scenario].func_grad
+
+        for ifunc, func in enumerate(scenario.functions):
+            for i, var in enumerate(self.struct_variables):
+                pass
+
+        # end of prototype
+
+        grads_dict = None
+        if self.assembler is not None:
+            funcSens = {}
+            if self.comm.rank == 0:
+                grads_dict = {}
+            ifunc = 0
+            self.panel_length_constraint.evalConstraintsSens(funcSens)
+            for func in self.model.composite_functions:
+                if self.PANEL_LENGTH_CONSTR in func.name and self.comm.rank == 0:
+
+                    grads_dict[func.full_name] = {}
+
+                    # assume name of form f"{self.PANEL_LENGTH_CONSTR}-fnum"
+                    for ivar, var in enumerate(self.struct_variables):
+                        func.derivatives[var] = funcSens[self.panel_length_name][
+                            "struct"
+                        ].toarray()[ifunc, ivar]
+                        grads_dict[func.full_name][var.full_name] = func.derivatives[
+                            var
+                        ]
+
+                    ifunc += 1
+
+        # broadcast the funcs dict to other processors
+        grads_dict = self.comm.bcast(grads_dict, root=0)
+
+        for func in self.model.composite_functions:
+            if func.full_name in list(grads_dict.keys()):
+                for ivar, var in enumerate(self.struct_variables):
+                    func.derivatives[var] = grads_dict[func.full_name][var.full_name]
+
+        # # compute the panel length values
+        # # -----------------------------------------
+        # if self.panel_length_dv_index:
+        #     length_funcs = None
+        #     if self.assembler is not None:
+
+        #         # get the panel length from the TACS constraint object
+        #         length_funcs = {}
+        #         self.panel_length_constr.evalConstraints(length_funcs)
+
+        #     # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
+        #     length_funcs = self.comm.bcast(length_funcs, root=0)
+
+        #     # update the panel length and width dimensions into the F2F variables
+        #     # these will later be set into the TACS constitutive objects in the self.set_variables() call
+        #     length_comp_ct = 0
+        #     for var in self.struct_variables:
+        #         if self.LENGTH_VAR in var.name:
+        #             var.value = length_funcs[self.LENGTH_CONSTR][length_comp_ct]
+        #             length_comp_ct += 1
+
+        # # compute the panel width values
+        # # -----------------------------------------
+        # if self.panel_length_dv_index:
+        #     width_funcs = None
+        #     if self.assembler is not None:
+
+        #         # get the panel width from the TACS constraint object
+        #         width_funcs = {}
+        #         self.panel_width_constr.evalConstraints(width_funcs)
+
+        #     # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
+        #     width_funcs = self.comm.bcast(width_funcs, root=0)
+
+        #     # update the panel length and width dimensions into the F2F variables
+        #     # these will later be set into the TACS constitutive objects in the self.set_variables() call
+        #     width_comp_ct = 0
+        #     for var in self.struct_variables:
+        #         if self.WIDTH_VAR in var.name:
+        #             var.value = width_funcs[self.WIDTH_CONSTR][width_comp_ct]
+        #             width_comp_ct += 1
+
+        #     return
