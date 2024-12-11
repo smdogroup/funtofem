@@ -77,7 +77,7 @@ for e in exts:
 optional_dependencies = {
     "testing": ["testflo>=1.4.7"],
     "docs": ["sphinx"],
-    "mphys": ["mphys>=2.0.0b1", "openmdao>=3.25.0"],
+    "mphys": ["mphys>=2.0.0", "openmdao>=3.25.0"],
     "plots": ["niceplots"],
 }
 
