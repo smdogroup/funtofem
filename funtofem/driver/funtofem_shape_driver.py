@@ -512,7 +512,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 if self.uses_tacs:
                     if self.tacs_inertial:
                         self.solvers.structural = (
-                            TacsSteadyInterface.create_from_bdf_inertial(
+                            TacsSteadyInterface.create_from_bdf(
                                 model=self.model,
                                 comm=self.comm,
                                 nprocs=self.struct_nprocs,
@@ -521,6 +521,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                                 callback=self.struct_callback,
                                 panel_length_dv_index=0,
                                 panel_width_dv_index=5,
+                                inertial_loads=True
                             )
                         )
                     else:
