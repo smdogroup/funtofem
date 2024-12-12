@@ -1266,6 +1266,7 @@ class TacsSteadyInterface(SolverInterface):
         struct_loads_file=None,
         panel_length_dv_index=None,
         panel_width_dv_index=None,
+        inertial_loads=False,
     ):
         """
         Class method to create a TacsSteadyInterface instance using the pytacs BDF loader
@@ -1290,6 +1291,12 @@ class TacsSteadyInterface(SolverInterface):
             Object to store relaxation scheme settings. If None, then no relaxation is used.
         struct_loads_file: str
             File name of the struct_loads_file to be used as a constant load to the structure.
+        panel_length_dv_index: int
+            DV index of panel length in the callback. For GP, this should be 0.
+        panel_width_dv_index: int
+            DV index of panel width in the callback. For GP, this should be 5.
+        inertial_loads: bool
+            Whether to add auxiliary elements to include inertial loads.
         """
 
         # Split the communicator
@@ -1346,6 +1353,12 @@ class TacsSteadyInterface(SolverInterface):
             # Set up constitutive objects and elements in pyTACS
             fea_assembler.initialize(callback)
 
+            if inertial_loads:
+                # Add stuff for inertial loads through auxilary elements
+                SP = fea_assembler.createStaticProblem("struct-benchmark")
+                SP.addInertialLoad([0.0, 0.0, -9.81])
+                SP._updateAssemblerVars()  # this writes auxElems into assembler
+
             # get any constant loads for static case
             if add_loads:
                 Fvec = addLoadsFromBDF(fea_assembler)
@@ -1368,7 +1381,10 @@ class TacsSteadyInterface(SolverInterface):
                 )
 
             # Retrieve the assembler from pyTACS fea_assembler object
-            assembler = fea_assembler.assembler
+            if inertial_loads:
+                assembler = SP.assembler
+            else:
+                assembler = fea_assembler.assembler
 
             # Set the output file creator
             f5 = fea_assembler.outputViewer
