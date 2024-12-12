@@ -511,18 +511,16 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # make the new tacs interface of the structural geometry
                 if self.uses_tacs:
                     if self.tacs_inertial:
-                        self.solvers.structural = (
-                            TacsSteadyInterface.create_from_bdf(
-                                model=self.model,
-                                comm=self.comm,
-                                nprocs=self.struct_nprocs,
-                                bdf_file=self.struct_aim.root_dat_file,
-                                prefix=self.struct_aim.root_analysis_dir,
-                                callback=self.struct_callback,
-                                panel_length_dv_index=0,
-                                panel_width_dv_index=5,
-                                inertial_loads=True
-                            )
+                        self.solvers.structural = TacsSteadyInterface.create_from_bdf(
+                            model=self.model,
+                            comm=self.comm,
+                            nprocs=self.struct_nprocs,
+                            bdf_file=self.struct_aim.root_dat_file,
+                            prefix=self.struct_aim.root_analysis_dir,
+                            callback=self.struct_callback,
+                            panel_length_dv_index=0,
+                            panel_width_dv_index=5,
+                            inertial_loads=True,
                         )
                     else:
                         self.solvers.structural = TacsInterface.create_from_bdf(
