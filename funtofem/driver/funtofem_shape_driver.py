@@ -1180,7 +1180,7 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                     "\nPrinting abbreviated model summary. For details print model summary directly."
                 )
                 self.model.print_summary(print_level=-1, ignore_rigid=True)
-            
+
         if comm is not None:
             comm.Barrier()
 
