@@ -112,13 +112,13 @@ class MeldTempXfer(om.ExplicitComponent):
         if mode == "fwd":
             if T_AERO in d_outputs:
                 if T_THERMAL in d_inputs:
-                    d_T_THERMAL = np.array(
+                    d_T_thermal = np.array(
                         d_inputs[T_THERMAL], dtype=TransferScheme.dtype
                     )
 
                     prod = np.zeros(d_outputs[T_AERO].size, dtype=TransferScheme.dtype)
 
-                    meld.applydTdtS(d_T_THERMAL, prod)
+                    meld.applydTdtS(d_T_thermal, prod)
                     d_outputs[T_AERO] += np.array(prod, dtype=float)
 
                 if X_AERO_SURFACE0 in d_inputs:
@@ -135,15 +135,15 @@ class MeldTempXfer(om.ExplicitComponent):
 
         if mode == "rev":
             if T_AERO in d_outputs:
-                dT_AERO = np.array(d_outputs[T_AERO], dtype=TransferScheme.dtype)
+                dT_aero = np.array(d_outputs[T_AERO], dtype=TransferScheme.dtype)
                 if T_THERMAL in d_inputs:
-                    # dT_AERO/dT_THERMAL^T * psi = - dD/dT_THERMAL^T psi
+                    # dT_aero/dT_THERMAL^T * psi = - dD/dT_THERMAL^T psi
 
                     prod = np.zeros(
                         d_inputs[T_THERMAL].size, dtype=TransferScheme.dtype
                     )
 
-                    meld.applydTdtSTrans(dT_AERO, prod)
+                    meld.applydTdtSTrans(dT_aero, prod)
 
                     d_inputs[T_THERMAL] -= np.array(prod, dtype=np.float64)
 

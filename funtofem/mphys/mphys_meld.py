@@ -577,7 +577,7 @@ class MeldBuilder(Builder):
     def initialize(self, comm):
         self.nnodes_aero = self.aero_builder.get_number_of_nodes()
         self.nnodes_struct = self.struct_builder.get_number_of_nodes()
-        self.ndoF_STRUCT = self.struct_builder.get_ndof()
+        self.ndof_struct = self.struct_builder.get_ndof()
 
         self.bodies = []
 
@@ -615,7 +615,7 @@ class MeldBuilder(Builder):
                         aero_nnodes=self.nnodes_aero,
                         struct_node_ids=struct_node_ids,
                         struct_nnodes=self.nnodes_struct,
-                        struct_ndof=self.ndoF_STRUCT,
+                        struct_ndof=self.ndof_struct,
                         linearized=self.linearized[i],
                     )
                 ]
@@ -629,14 +629,14 @@ class MeldBuilder(Builder):
                     beta=self.beta,
                     aero_nnodes=self.nnodes_aero,
                     struct_nnodes=self.nnodes_struct,
-                    struct_ndof=self.ndoF_STRUCT,
+                    struct_ndof=self.ndof_struct,
                     linearized=self.linearized,
                 )
             ]
 
     def get_coupling_group_subsystem(self, scenario_name=None):
         disp_xfer = MeldDispXfer(
-            struct_ndof=self.ndoF_STRUCT,
+            struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
             check_partials=self.check_partials,
@@ -644,7 +644,7 @@ class MeldBuilder(Builder):
         )
 
         load_xfer = MeldLoadXfer(
-            struct_ndof=self.ndoF_STRUCT,
+            struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
             check_partials=self.check_partials,
