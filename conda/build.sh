@@ -33,4 +33,4 @@ mkdir ${PREFIX}/include/funtofem
 cp ${F2F_DIR}/include/*.h ${PREFIX}/include/funtofem
 
 # make the python package
-CFLAGS=${PIP_FLAGS} ${PYTHON} -m pip install --no-deps --prefix=${PREFIX} . -vv;
+CPPFLAGS=${PIP_FLAGS} ${PYTHON} -m pip install --no-deps --prefix=${PREFIX} . -vv;
