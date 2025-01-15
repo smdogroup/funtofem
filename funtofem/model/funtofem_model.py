@@ -817,7 +817,7 @@ class FUNtoFEMmodel(object):
         discipline="aerodynamic",
         root=0,
         write_dvs: bool = True,
-        only_thickness=True,
+        only_thickness: bool = True,
     ):
         """
         Write the sensitivity file.
@@ -842,7 +842,10 @@ class FUNtoFEMmodel(object):
         root: int
             The rank of the processor that will write the file
         write_dvs: bool
-            whether to write the design variables for this discipline
+            Whether to write the design variables for this discipline
+        only_thickness: bool
+            Whether to write sensitivities for only thickness structural variables.
+            This is necessary when using composite stiffened callback.
         """
 
         funcs = self.get_functions()
