@@ -35,7 +35,7 @@ except:
     pass
 
 
-class FUNtoFEMmodal(FUNtoFEMDriver):
+class FUNtoFEMmodalDriver(FUNtoFEMDriver):
     def __init__(
         self,
         solvers,
@@ -46,8 +46,8 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
         reload_funtofem_states=False,
     ):
         """
-        Driver that is based on FUNtoFEMnlbgs, but uses an IDF 
-        implementation to solve the coupled problem and a modal 
+        Driver that is based on FUNtoFEMnlbgs, but uses an IDF
+        implementation to solve the coupled problem and a modal
         reconstruction of the structural deformation.
 
         Parameters
@@ -64,7 +64,7 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
             whether to save and reload funtofem states
         """
 
-        super(FUNtoFEMmodal, self).__init__(
+        super(FUNtoFEMmodalDriver, self).__init__(
             solvers,
             comm_manager=comm_manager,
             transfer_settings=transfer_settings,
@@ -88,7 +88,7 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
 
     def _initialize_adjoint_variables(self, scenario, bodies):
         """
-        Initialize the adjoint variables
+        Initialize the adjoint variables stored in the body.
 
         Parameters
         ----------
@@ -105,8 +105,9 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
 
     def _solve_steady_forward(self, scenario, steps=None):
         """
-        Solve the aerothermoelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.
-        Aitken under-relaxation is used here for stabilty.
+        Evaluate the aerothermoelastic forward analysis. Does *not* solve
+        the coupled problem.
+        Evaluation path for e.g., aeroelastic is D->A->L->S.
 
         Parameters
         ----------
@@ -119,127 +120,53 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
         assert scenario.steady
         fail = 0
 
-        # # Determine if we're using the scenario's number of steps or the argument
-        # if steps is None:
-        #     steps = scenario.steps
+        # Transfer modal displacements and temperatures from structure to aerodynamic mesh
+        for body in self.model.bodies:
+            # Get the modal coordinates on the structure mesh and compute the product
+            # to get effective disps.
+            body.convert_modal_disps(scenario)
+            body.convert_modal_temps(scenario)
+            # At this stage, we've recreated u_s and T_s
 
-        # flow uncoupled steps (mainly for aerothermal and aerothermoelastic analysis)
-        for step in range(1, scenario.uncoupled_steps + 1):
-            # Take a step in the flow solver for (just aerodynamic iteration)
-            fail = self.solvers.flow.uncoupled_iterate(
-                scenario, self.model.bodies, step
-            )
+            body.transfer_disps(scenario)
+            body.transfer_temps(scenario)
 
-            # exit with failure if the flow iteration failed
+        # Solve the flow problem
+        for step in range(1, scenario.steps + 1):
+            fail = self.solvers.flow.iterate(scenario, self.model.bodies, step)
+
             fail = self.comm.allreduce(fail)
             if fail != 0:
                 if self.comm.Get_rank() == 0:
-                    print("Flow solver returned fail flag")
+                    print("Flow solver returned fail flag.")
                 return fail
 
-        # Loop over the NLBGS steps in a loose coupling phase then tight coupling phase
-        for i, nlbgs_steps in enumerate(
-            [scenario.steps, scenario.post_tight_forward_steps]
-        ):
-            if i == 1:
-                self.solvers.flow.initialize_forward_tight_coupling(scenario)
+        # Transfer forces and heat fluxes from aerodynamic to structure mesh
+        for body in self.model.bodies:
+            body.transfer_loads(scenario)
+            body.transfer_heat_flux(scenario)
 
-            for step in range(1, nlbgs_steps + 1):
-                # Transfer displacements and temperatures
-                for body in self.model.bodies:
-                    body.transfer_disps(scenario)
-                    body.transfer_temps(scenario)
+        # Solve the structure problem
+        fail = self.solvers.structural.iterate(scenario, self.model.bodies, step)
 
-                # Take a step in the flow solver
-                fail = self.solvers.flow.iterate(scenario, self.model.bodies, step)
+        fail = self.comm.allreduce(fail)
+        if fail != 0:
+            if self.comm.Get_rank() == 0:
+                print("Structural solver returned fail flag.")
+            return fail
 
-                fail = self.comm.allreduce(fail)
-                if fail != 0:
-                    if self.comm.Get_rank() == 0:
-                        print("Flow solver returned fail flag")
-                    return fail
-
-                # Transfer the loads and heat flux
-                for body in self.model.bodies:
-                    body.transfer_loads(scenario)
-                    body.transfer_heat_flux(scenario)
-
-                    if self._debug:
-                        struct_loads = body.get_struct_loads(scenario)
-                        aero_loads = body.get_aero_loads(scenario)
-                        print(f"========================================")
-                        print(f"Inside nlbgs driver, step: {step}")
-                        if struct_loads is not None:
-                            print(
-                                f"norm of real struct_loads: {real_norm(struct_loads)}"
-                            )
-                            print(
-                                f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
-                            )
-                        print(f"aero_loads: {aero_loads}")
-                        if aero_loads is not None:
-                            print(f"norm of real aero_loads: {real_norm(aero_loads)}")
-                            print(
-                                f"norm of imaginary aero_loads: {imag_norm(aero_loads)}"
-                            )
-                        print(f"========================================\n", flush=True)
-
-                # Take a step in the FEM model
-                fail = self.solvers.structural.iterate(
-                    scenario, self.model.bodies, step
-                )
-
-                fail = self.comm.allreduce(fail)
-                if fail != 0:
-                    if self.comm.Get_rank() == 0:
-                        print("Structural solver returned fail flag")
-                    return fail
-
-                # Under-relaxation for solver stability
-                for body in self.model.bodies:
-                    body.aitken_relax(self.comm, scenario)
-
-                # check for early stopping criterion, exit if meets criterion
-                exit_early = False
-                # only exit early in the loose coupling phase
-                if (
-                    scenario.early_stopping
-                    and step > scenario.min_forward_steps
-                    and i == 0
-                ):
-                    all_converged = True
-                    for solver in self.solvers.solver_list:
-                        forward_resid = abs(solver.get_forward_residual(step=step))
-                        if forward_resid != 0.0:
-                            if self.comm.rank == 0:
-                                print(
-                                    f"f2f scenario {scenario.name}, forward resid = {forward_resid}",
-                                    flush=True,
-                                )
-                            forward_tol = solver.forward_tolerance
-                            if forward_resid > forward_tol:
-                                all_converged = False
-                                break
-
-                    if all_converged:
-                        exit_early = True
-                        if exit_early and self.comm.rank == 0:
-                            print(
-                                f"F2F Steady Forward analysis of scenario {scenario.name} exited early"
-                            )
-                            print(
-                                f"\tat step {step} with tolerance {forward_resid} < {forward_tol}",
-                                flush=True,
-                            )
-                if exit_early:
-                    break
+        # Additional computation to transpose modal coordinate matrix
+        for body in self.model.bodies:
+            body.convert_modal_disps_transpose(scenario)
+            body.convert_modal_temps_transpose(scenario)
 
         return fail
 
     def _solve_steady_adjoint(self, scenario):
         """
-        Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.
-        Aitken under-relaxation for stabilty.
+        Evaluate the aerothermoelastic adjoint analysis. Does *not* solve
+        the coupled problem.
+        Evaluation path for e.g., aeroelastic is S^bar->L^bar->A^bar->D^bar.
 
         Parameters
         ----------
@@ -255,8 +182,33 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
             body.transfer_disps(scenario)
             body.transfer_loads(scenario)
 
+            body.transfer_temps(scenario)
+            body.transfer_heat_flux(scenario)
+
         # Initialize the adjoint variables
         self._initialize_adjoint_variables(scenario, self.model.bodies)
+
+        # Take a step in the structural adjoint
+        fail = self.solvers.structural.iterate_adjoint(
+            scenario, self.model.bodies, step=0
+        )
+
+        # Solve the flow adjoint
+        for step in range(1, scenario.adjoint_steps + 1):
+            # Get force and heat flux terms for flow solver
+            for body in self.model.bodies:
+                body.transfer_loads_adjoint(scenario)
+                body.transfer_heat_flux_adjoint(scenario)
+
+            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
+
+            fail = self.comm.allreduce(fail)
+            if fail != 0:
+                if self.comm.Get_rank() == 0:
+                    print("Flow solver returned fail flag.")
+                return fail
+
+        ###
 
         # loop over the adjoint NLBGS solver in a loose coupling phase
         for i, nlbgs_steps in enumerate(
@@ -365,68 +317,7 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
 
         """
 
-        assert not scenario.steady
-        fail = 0
-
-        if not steps:
-            if not self.fakemodel:
-                steps = scenario.steps
-            else:
-                if self.comm.Get_rank() == 0:
-                    print(
-                        "No number of steps given for the coupled problem. Using default (1000)"
-                    )
-                steps = 1000
-
-        for time_index in range(1, steps + 1):
-            # Transfer displacements and temperatures
-            for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index)
-                body.transfer_temps(scenario, time_index)
-
-            # Take a step in the flow solver
-            fail = self.solvers.flow.iterate(scenario, self.model.bodies, time_index)
-
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Flow solver returned fail flag")
-                return fail
-
-            # Transfer the loads and heat flux
-            for body in self.model.bodies:
-                body.transfer_loads(scenario, time_index)
-                body.transfer_heat_flux(scenario, time_index)
-
-                if self._debug:
-                    struct_loads = body.get_struct_loads(
-                        scenario, time_index=time_index
-                    )
-                    aero_loads = body.get_aero_loads(scenario, time_index=time_index)
-                    print(f"========================================")
-                    print(f"Inside nlbgs driver, step: {time_index}")
-                    if struct_loads is not None:
-                        print(f"norm of real struct_loads: {real_norm(struct_loads)}")
-                        print(
-                            f"norm of imaginary struct_loads: {imag_norm(struct_loads)}"
-                        )
-                    if aero_loads is not None:
-                        print(f"norm of real aero_loads: {real_norm(aero_loads)}")
-                        print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
-                    print(f"========================================\n", flush=True)
-
-            # Take a step in the FEM model
-            fail = self.solvers.structural.iterate(
-                scenario, self.model.bodies, time_index
-            )
-
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Structural solver returned fail flag")
-                return fail
-
-        return fail
+        pass
 
     def _solve_unsteady_adjoint(self, scenario):
         """
@@ -446,78 +337,4 @@ class FUNtoFEMmodal(FUNtoFEMDriver):
 
         """
 
-        assert not scenario.steady
-        fail = 0
-
-        # how many steps to take
-        steps = scenario.steps
-
-        # Initialize the adjoint variables
-        self._initialize_adjoint_variables(scenario, self.model.bodies)
-
-        # Loop over each time step in the reverse order
-        for rstep in range(1, steps + 1):
-            step = steps - rstep + 1
-
-            # load current state, affects MELD jacobians in the adjoint matrix (esp. load transfer)
-            for body in self.model.bodies:
-                body.transfer_disps(scenario, time_index=step)
-                body.transfer_temps(scenario, time_index=step)
-
-            self.solvers.flow.set_states(scenario, self.model.bodies, step)
-            # Due to the staggering, we linearize the transfer about t_s^(n-1)
-            self.solvers.structural.set_states(scenario, self.model.bodies, step - 1)
-
-            # take a step in the structural adjoint
-            fail = self.solvers.structural.iterate_adjoint(
-                scenario, self.model.bodies, step
-            )
-
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Structural solver returned fail flag")
-                return fail
-
-            for body in self.model.bodies:
-                body.transfer_loads_adjoint(scenario)
-                body.transfer_heat_flux_adjoint(scenario)
-
-            fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step)
-
-            fail = self.comm.allreduce(fail)
-            if fail != 0:
-                if self.comm.Get_rank() == 0:
-                    print("Flow solver returned fail flag")
-                return fail
-
-            for body in self.model.bodies:
-                body.transfer_disps_adjoint(scenario)
-                body.transfer_temps_adjoint(scenario)
-
-            # extract and accumulate coordinate derivative every step
-            self._extract_coordinate_derivatives(scenario, self.model.bodies, step)
-
-        # end of solve loop
-
-        # evaluate the initial conditions
-        fail = self.solvers.flow.iterate_adjoint(scenario, self.model.bodies, step=0)
-        fail = self.comm.allreduce(fail)
-        if fail != 0:
-            if self.comm.Get_rank() == 0:
-                print("Flow solver returned fail flag")
-            return fail
-
-        fail = self.solvers.structural.iterate_adjoint(
-            scenario, self.model.bodies, step=0
-        )
-        fail = self.comm.allreduce(fail)
-        if fail != 0:
-            if self.comm.Get_rank() == 0:
-                print("Structural solver returned fail flag")
-            return fail
-
-        # extract coordinate derivative term from initial condition
-        self._extract_coordinate_derivatives(scenario, self.model.bodies, step=0)
-
-        return 0
+        pass

@@ -777,6 +777,37 @@ class Body(Base):
 
         return
 
+    def convert_modal_disps(self, scenario, time_index=0):
+        """
+        Convert from modal displacements to full discplacements on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+
+
+        return
+
+    def convert_modal_temps(self, scenario, time_index=0):
+        """
+        Convert from modal temperatures to full temperatures on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        time_index: int
+            The time-index for time-dependent problems
+        """
+
+        return
+
     def get_aero_disps(self, scenario, time_index=0, add_dxa0=False):
         """
         Get the displacements on the aerodynamic surface for the given scenario.
