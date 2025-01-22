@@ -74,7 +74,6 @@ import importlib.util
 # ---------------------------------------------------
 # 1) FUN3D
 fun3d_loader = importlib.util.find_spec("fun3d")
-caps_loader = importlib.util.find_spec("pyCAPS")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from funtofem.interface import Fun3d14Interface, Fun3dModel
 
@@ -164,11 +163,6 @@ class OnewayAeroDriver:
         self.is_paired = is_paired
         self.external_shape = external_shape
 
-        # assert at least one uncoupled scenario
-        self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
-        any_uncoupled = any([not(scenario.coupled) for scenario in model.scenarios])
-        assert any_uncoupled
-
         # store the shape variables list
         self.shape_variables = [
             var for var in self.model.get_variables() if var.analysis_type == "shape"
@@ -252,7 +246,7 @@ class OnewayAeroDriver:
                 aero_root=comm_manager.aero_root,
                 transfer_settings=self.transfer_settings,  # using minimal settings since we don't use the state variables here (almost a dummy obj)
             )
-            for scenario in self.uncoupled_scenarios:
+            for scenario in self.model.scenarios:
                 body.initialize_variables(scenario)
                 body.initialize_adjoint_variables(
                     scenario
@@ -281,7 +275,7 @@ class OnewayAeroDriver:
                 ):  # FUN3D mesh morphing initialize body nodes
                     assert not (self.solvers.flow.auto_coords)
                     self.solvers.flow._initialize_body_nodes(
-                        self.uncoupled_scenarios[0], self.model.bodies
+                        self.model.scenarios[0], self.model.bodies
                     )
                     # initialize funtofem transfer data with new aero_nnodes size
                     self._initialize_funtofem()
@@ -316,11 +310,11 @@ class OnewayAeroDriver:
 
             # run the FUN3D forward analysis with no shape change
             if self.steady:
-                for scenario in self.uncoupled_scenarios:
+                for scenario in self.model.scenarios:
                     self._solve_steady_forward(scenario, self.model.bodies)
 
             if self.unsteady:
-                for scenario in self.uncoupled_scenarios:
+                for scenario in self.model.scenarios:
                     self._solve_unsteady_forward(scenario, self.model.bodies)
 
         # Write sens file for remote to read. Analysis functions/derivatives are being written to a file
@@ -381,11 +375,11 @@ class OnewayAeroDriver:
 
         if not (self.is_remote):
             if self.steady:
-                for scenario in self.uncoupled_scenarios:
+                for scenario in self.model.scenarios:
                     self._solve_steady_adjoint(scenario, self.model.bodies)
 
             if self.unsteady:
-                for scenario in self.uncoupled_scenarios:
+                for scenario in self.model.scenarios:
                     self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
             # write sens file for remote to read or if shape change all in one
@@ -411,7 +405,7 @@ class OnewayAeroDriver:
             self.flow_aim.post_analysis(sens_file_src)
 
             # store the shape variables in the function gradients
-            for scenario in self.uncoupled_scenarios:
+            for scenario in self.model.scenarios:
                 self._get_shape_derivatives(scenario)
         return
 
@@ -548,7 +542,7 @@ class OnewayAeroDriver:
         else:
             fun3d_dir = self.remote.main_dir
         grid_filepaths = []
-        for scenario in self.uncoupled_scenarios:
+        for scenario in self.model.scenarios:
             filepath = os.path.join(
                 fun3d_dir,
                 scenario.name,
@@ -561,7 +555,7 @@ class OnewayAeroDriver:
 
         # also setup the mapbc files
         mapbc_filepaths = []
-        for scenario in self.uncoupled_scenarios:
+        for scenario in self.model.scenarios:
             filepath = os.path.join(
                 fun3d_dir,
                 scenario.name,
