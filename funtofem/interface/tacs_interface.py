@@ -1522,21 +1522,42 @@ class TacsSteadyInterface(SolverInterface):
         cls,
         modal_problem,
         num_modes:int,
-        body
+        body,
+        output_dir:str=None,
     ):
         """get the modal basis matrix for IDF approach using the modal analysis problem class in TACS"""
         modal_problem.solve()
+        modal_problem.writeSolution(output_dir)
 
         num_eigs = modal_problem.getNumEigs()
         # get first eigenvector to determine vars_per_node*nnodes
         _,first_eigvec = modal_problem.getVariables(0)
         nvars = first_eigvec.shape[0]
+        
+        vars_per_node = modal_problem.assembler.getVarsPerNode()
+        num_nodes = modal_problem.meshLoader.bdfInfo.nnodes
 
-        model_basis = np.zeros((nvars, num_modes), dtype=body.dtype)
+        # assumes for shell elements right now
+        # just the u,v,w for elastic
+        elastic_modal_basis = np.zeros((3*num_nodes, num_modes), dtype=body.dtype)
+        thermal_modal_basis = None
+        has_thermal_dof = vars_per_node > 6
+        if has_thermal_dof:
+            thermal_modal_basis = np.zeros((num_nodes, num_modes), dtype=body.dtype)
+
         for imode in range(num_modes):
-            model_basis[:,imode] = modal_problem.getVariables(imode)
+            eigval,eigvec = modal_problem.getVariables(imode)
+            for i in range(3):
+                # print(f"{i=} {vars_per_node=} {imode=}")
+                elastic_modal_basis[i::3, imode] = eigvec[i::vars_per_node]
+        
+        if has_thermal_dof:
+            thermal_index = vars_per_node - 1 # for shell elements (can generalize later)
+            for imode in range(num_modes):
+                eigval,eigvec = modal_problem.getVariables(imode)
+                thermal_modal_basis[:, imode] = eigvec[thermal_index::vars_per_node]
 
-        body.set_modal_basis(model_basis)
+        body.set_modal_basis(elastic_modal_basis, thermal_modal_basis)
         return
 
 class TacsOutputGenerator:

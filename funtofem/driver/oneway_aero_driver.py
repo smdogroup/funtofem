@@ -54,7 +54,7 @@ my_fun3d_analyzer.py : fun3d analysis script, which is called indirectly from my
     - Construct the FUNtoFEMmodel
     - Construct the bodies and scenarios
     - Register aerodynamic DVs to the scenarios/bodies (no shape variables added and no AIMs here)
-    - Construct the Fun3dInterface
+    - Construct the Fun3d14Interface
     - Construct the solvers (SolverManager), and set solvers.flow = my_fun3d_interface
     - Construct the a fun3d oneway driver with class method OnewayAeroDriver.analysis
     - Run solve_forward() and solve_adjoint() on the Fun3dOnewayAnalyzer
@@ -76,9 +76,7 @@ import importlib.util
 fun3d_loader = importlib.util.find_spec("fun3d")
 caps_loader = importlib.util.find_spec("pyCAPS")
 if fun3d_loader is not None:  # check whether we can import FUN3D
-    from funtofem.interface import Fun3d14Interface
-    if caps_loader is not None:
-        from funtofem.interface import Fun3dModel
+    from funtofem.interface import Fun3d14Interface, Fun3dModel
 
 # 2) TBD
 # -----------------------------------------------------
@@ -188,18 +186,6 @@ class OnewayAeroDriver:
                     "The mesh morphing does not require a remote driver! Make this driver regularly!"
                 )
 
-        if not self.is_remote:
-            if self.model.flow is not None:
-                if not self.is_paired and not self.model.flow.mesh_morph:
-                    raise AssertionError(
-                        "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
-                    )
-
-            if self.change_shape and self.root_proc:
-                print(
-                    f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
-                )
-
         # check for unsteady problems
         self._unsteady = any([not scenario.steady for scenario in model.scenarios])
 
@@ -212,11 +198,23 @@ class OnewayAeroDriver:
                     self._flow_solver_type = "fun3d"
             # TBD on new types
         else:  # check with shape change
-            if fun3d_loader is not None and caps_loader is not None:
+            if fun3d_loader is not None:
                 if isinstance(model.flow, Fun3dModel):
                     self._flow_solver_type = "fun3d"
                     self.flow_aim = model.flow.fun3d_aim
             # TBD on new types
+
+        if not self.is_remote:
+            if self.model.flow is not None:
+                if not self.is_paired and not self.model.flow.mesh_morph:
+                    raise AssertionError(
+                        "The nominal version of the driver only works for Fun3d mesh morphing not remeshing."
+                    )
+
+            if self.change_shape and self.root_proc:
+                print(
+                    f"Warning!! You are trying to remesh without using remote system calls of FUN3D, this will likely cause a FUN3D bug."
+                )
 
         self.transfer_settings = (
             transfer_settings if transfer_settings is not None else TransferSettings()

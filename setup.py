@@ -77,7 +77,7 @@ for e in exts:
 optional_dependencies = {
     "testing": ["testflo>=1.4.7"],
     "docs": ["sphinx"],
-    "mphys": ["mphys>=1.1.0", "openmdao>=3.25.0"],
+    "mphys": ["mphys>=2.0.0", "openmdao>=3.25.0"],
     "plots": ["niceplots"],
 }
 
@@ -92,13 +92,13 @@ optional_dependencies["all"] = sorted(
 
 setup(
     name="funtofem",
-    version="0.3.7",
+    version="0.3.8",
     description="Aerothermoelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
     python_requires=">=3.9.0",
     extras_require=optional_dependencies,
-    install_requires=["numpy<2.0.0", "mpi4py>=3.1.1"],
+    install_requires=["numpy<2.0.0", "mpi4py>=3.1.5"],
     packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )

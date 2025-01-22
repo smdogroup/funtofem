@@ -19,5 +19,8 @@ if caps_loader is not None:
 from .oneway_struct_driver import *
 from .oneway_aero_driver import *
 
+# modal IDF driver
+from .modal_idf_driver import *
+
 # import all the custom or special drivers
 from .custom import *
