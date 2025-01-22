@@ -48,7 +48,7 @@ class OptimizationManager:
         debug: bool = False,
         sparse: bool = True,
         write_checkpoints=False,
-        plot_hist=False,
+        plot_hist=True,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
@@ -177,7 +177,7 @@ class OptimizationManager:
             if self.comm.rank == 0 and self.write_designs:
                 if self.sparse:  # all vars in same group
                     regular_dict = {
-                        var.full_name: float(x_dict[self.SPARSE_VARS_GROUP][ivar])
+                        var.name: float(x_dict[self.SPARSE_VARS_GROUP][ivar])
                         for ivar, var in enumerate(self.model.get_variables(optim=True))
                     }
                 else:

@@ -507,34 +507,25 @@ class FUNtoFEMmodel(object):
             scenario_data = None
             loads_data = {}
             mesh_data = {}
-            valid_scenario = False
 
             with open(filename, "r") as fp:
                 for line in fp.readlines():
                     entries = line.strip().split(" ")
                     # print("==> entries: ", entries)
                     if len(entries) == 2:
-                        # allow subset of scenarios for now
-                        # assert int(entries[1]) == len(self.scenarios)
+                        assert int(entries[1]) == len(self.scenarios)
                         assert int(entries[0]) == len(self.bodies)
 
                     elif len(entries) == 3 and entries[0] == "scenario":
-                        
-                        # save old scenario data
-                        if scenario_data is not None:
-                            loads_data[scenario.id] = scenario_data
-
                         matching_scenario = False
                         for scenario in self.scenarios:
                             if str(scenario.name).strip() == str(entries[2]).strip():
                                 matching_scenario = True
                                 break
-                        valid_scenario = matching_scenario
-                        # assert matching_scenario
-
-                        # reset the scenario data
+                        assert matching_scenario
+                        if scenario_data is not None:
+                            loads_data[scenario.id] = scenario_data
                         scenario_data = []
-
                     elif len(entries) == 4 and entries[0] == "body_mesh":
                         body_name = entries[2]
                         mesh_data[body_name] = {"aeroID": [], "aeroX": []}
@@ -542,7 +533,7 @@ class FUNtoFEMmodel(object):
                         mesh_data[body_name]["aeroID"] += [int(entries[0])]
                         mesh_data[body_name]["aeroX"] += entries[1:4]
 
-                    elif len(entries) == 5 and valid_scenario:
+                    elif len(entries) == 5:
                         entry = {
                             "bodyName": body_name,
                             "aeroID": int(entries[0]),
@@ -551,14 +542,7 @@ class FUNtoFEMmodel(object):
                         }
                         scenario_data.append(entry)
 
-            # get the last scenario as well
-            if valid_scenario:
-                loads_data[scenario.id] = scenario_data
-
-        # debug
-        # for scenario in self.scenarios:
-        #     print(f"loads_data[{scenario.id}] = {loads_data[scenario.id][0]}")
-        # exit()
+            loads_data[scenario.id] = scenario_data
 
         loads_data = comm.bcast(loads_data, root=root)
         mesh_data = comm.bcast(mesh_data, root=root)
