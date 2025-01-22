@@ -1439,7 +1439,105 @@ class TacsSteadyInterface(SolverInterface):
             struct_loads_file=struct_loads_file,
             tacs_panel_dimensions=tacs_panel_dimensions,
         )
+    
+    @classmethod
+    def create_modal_problem_from_bdf(
+        cls,
+        model,
+        comm,
+        nprocs,
+        bdf_file,
+        sigma:float,
+        num_eigs:int,
+        callback=None,
+        struct_options={},
+    ):
+        """
+        create a TACS modal problem from BDF file
+        for use in IDF analysis
 
+        Parameters
+        ----------
+        model: :class:`FUNtoFEMmodel`
+            The model class associated with the problem
+        comm: MPI.comm
+            MPI communicator (typically MPI_COMM_WORLD)
+        bdf_file: str
+            The BDF file name
+        sigma: float
+            guess for lowest eigenvalue of the structure
+        num_eigs: int
+            number of eigenvalues to solve for
+        callback: function
+            The element callback function for pyTACS
+        struct_options: dictionary
+            The options passed to pyTACS
+        """
+
+        # Split the communicator
+        world_rank = comm.Get_rank()
+        if world_rank < nprocs:
+            color = 1
+        else:
+            color = MPI.UNDEFINED
+        tacs_comm = comm.Split(color, world_rank)
+
+        modal_problem = None
+        if world_rank < nprocs:
+            # Create the assembler class
+            fea_assembler = pytacs.pyTACS(bdf_file, tacs_comm, options=struct_options)
+
+            # get dict of struct DVs from the bodies and structural variables
+            # only supports thickness DVs for the structure currently
+            structDV_dict = {}
+            variables = model.get_variables()
+            structDV_names = []
+
+            # Get the structural variables from the global list of variables.
+            struct_variables = []
+            for var in variables:
+                if var.analysis_type == "structural":
+                    struct_variables.append(var)
+                    structDV_dict[var.name.lower()] = var.value
+                    structDV_names.append(var.name.lower())
+
+            # use the default funtofem callback if none is provided
+            if callback is None:
+                include_thermal = any(
+                    ["therm" in body.analysis_type for body in model.bodies]
+                )
+                callback = f2f_callback(
+                    fea_assembler, structDV_names, structDV_dict, include_thermal
+                )
+
+            # Set up constitutive objects and elements in pyTACS
+            fea_assembler.initialize(callback)
+            
+            modal_problem = fea_assembler.createModalProblem("modal", sigma, num_eigs)
+
+        return modal_problem
+    
+    @classmethod
+    def make_modal_basis(
+        cls,
+        modal_problem,
+        num_modes:int,
+        body
+    ):
+        """get the modal basis matrix for IDF approach using the modal analysis problem class in TACS"""
+        modal_problem.solve()
+
+        num_eigs = modal_problem.getNumEigs()
+        # get first eigenvector to determine vars_per_node*nnodes
+        _,first_eigvec = modal_problem.getVariables(0)
+        nvars = first_eigvec.shape[0]
+
+        model_basis = np.zeros((nvars, num_modes), dtype=body.dtype)
+        for imode in range(num_modes):
+            model_basis[:,imode] = modal_problem.getVariables(imode)
+
+        body.set_modal_basis(model_basis)
+        return
 
 class TacsOutputGenerator:
     def __init__(self, prefix, name="tacs_output_file", f5=None):

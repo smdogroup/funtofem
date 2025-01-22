@@ -246,6 +246,11 @@ class Body(Base):
         self.struct_heat_flux = {}
         self.struct_shape_term = {}
 
+        # modal states
+        self.modal_struct_disp_coords = {}
+        self.modal_struct_temp_coords = {}
+        self.num_modes = None
+
         self._fixed_struct_loads = {}
         self._fixed_struct_heat_flux = {}
 
@@ -675,6 +680,9 @@ class Body(Base):
             ns = 3 * self.struct_nnodes
             na = 3 * self.aero_nnodes
 
+            # modal analysis states for aeroelastic
+            self.modal_struct_disp_coords[scenario.id] = np.zeros(ns, dtype=self.dtype)
+
             if scenario.steady:
                 self.struct_loads[scenario.id] = np.zeros(ns, dtype=self.dtype)
                 self.aero_loads[scenario.id] = np.zeros(na, dtype=self.dtype)
@@ -696,6 +704,9 @@ class Body(Base):
         if self.thermal_transfer is not None:
             ns = self.struct_nnodes
             na = self.aero_nnodes
+
+            # modal analysis states for the aerothermal case
+            self.modal_struct_temp_coords[scenario.id] = np.zeros(ns, dtype=self.dtype)
 
             if scenario.steady:
                 self.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=self.dtype)
@@ -720,6 +731,37 @@ class Body(Base):
                     self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
 
         return
+    
+    def set_modal_basis(self, modal_basis:np.ndarray):
+        # assume modal basis matrix is (dof_per_node * num_struct_nodes, num_modes)
+        self.num_modes = modal_basis.shape[1]
+        self.modal_basis = modal_basis     
+        return        
+
+    def initialize_modal_variables(self, scenario):
+        """
+        Initialize the modal variables each time we run an analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        ns = self.struct_nnodes
+        nm = self.num_modes
+
+        # modal analysis states for aeroelastic case
+        if self.transfer is not None:
+            self.modal_struct_disp_coords[scenario.id] = np.zeros((3*ns, nm), dtype=self.dtype)
+
+        # modal analysis states for the aerothermal case
+        if self.thermal_transfer is not None:
+            self.modal_struct_temp_coords[scenario.id] = np.zeros((ns, nm), dtype=self.dtype)
+        return
+    
+    def convert_modal_struct_disps(self, scenario):
+        # 
 
     def initialize_adjoint_variables(self, scenario):
         """
