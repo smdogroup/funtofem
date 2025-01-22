@@ -246,6 +246,15 @@ class Body(Base):
         self.struct_heat_flux = {}
         self.struct_shape_term = {}
 
+        # modal states
+        self.modal_struct_disp_coords = {}
+        self.modal_struct_temp_coords = {}
+        self.num_modes = None
+        self.elastic_modal_basis = None
+        self.thermal_modal_basis = None
+        self.modal_struct_disp_coords_ajp = {}
+        self.modal_struct_temp_coords_ajp = {}
+
         self._fixed_struct_loads = {}
         self._fixed_struct_heat_flux = {}
 
@@ -697,6 +706,9 @@ class Body(Base):
             ns = self.struct_nnodes
             na = self.aero_nnodes
 
+            # modal analysis states for the aerothermal case
+            self.modal_struct_temp_coords[scenario.id] = np.zeros(ns, dtype=self.dtype)
+
             if scenario.steady:
                 self.struct_heat_flux[scenario.id] = np.zeros(ns, dtype=self.dtype)
                 self.aero_heat_flux[scenario.id] = np.zeros(na, dtype=self.dtype)
@@ -719,6 +731,249 @@ class Body(Base):
                     )
                     self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
 
+        return
+    
+    def set_modal_basis(self, elastic_modal_basis:np.ndarray, thermal_modal_basis:np.ndarray):
+        # assume modal basis matrix is (dof_per_node * num_struct_nodes, num_modes)
+        self.num_modes = elastic_modal_basis.shape[1]
+        self.elastic_modal_basis = elastic_modal_basis     
+        self.thermal_modal_basis = thermal_modal_basis
+        return        
+
+    def initialize_modal_variables(self, scenario):
+        """
+        Initialize the modal variables each time we run an analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        nm = self.num_modes
+
+        # modal analysis states for aeroelastic case
+        if self.transfer is not None:
+            self.modal_struct_disp_coords[scenario.id] = np.zeros((nm,), dtype=self.dtype)
+
+        # modal analysis states for the aerothermal case
+        if self.thermal_transfer is not None:
+            self.modal_struct_temp_coords[scenario.id] = np.zeros((nm,), dtype=self.dtype)
+        return
+    
+    def initialize_modal_adjoint_variables(self, scenario):
+        """
+        Initialize the modal variables each time we run an analysis.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        nm = self.num_modes
+        nf = scenario.count_adjoint_functions()
+
+        # modal analysis states for aeroelastic case
+        if self.transfer is not None:
+            self.modal_struct_disp_coords_ajp = np.zeros((nm, nf), dtype=self.dtype)
+
+        # modal analysis states for the aerothermal case
+        if self.thermal_transfer is not None:
+            self.modal_struct_temp_coords_ajp = np.zeros((nm, nf), dtype=self.dtype)
+        return
+    
+    def get_modal_struct_disp_coords(self, scenario):
+        """
+        Get the modal struct displacements for the scenario
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        if self.transfer is not None:
+            modal_struct_disps = self.modal_struct_disp_coords[scenario.id]
+            return modal_struct_disps
+        else:
+            return None
+        
+    def get_modal_struct_temp_coords(self, scenario):
+        """
+        Get the modal struct displacements for the scenario
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        if self.transfer is not None:
+            modal_struct_temps = self.modal_struct_temp_coords[scenario.id]
+            return modal_struct_temps
+        else:
+            return None
+    
+    def convert_modal_struct_disps(self, scenario):
+        """
+        Convert from modal displacements to full discplacements on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is not None:
+            modal_uS = self.get_modal_struct_disp_coords(scenario)
+            full_uS = self.get_struct_disps(scenario)
+            modal_basis = self.elastic_modal_basis
+            full_uS[:] = modal_basis @ modal_uS
+        return
+
+    def convert_modal_struct_temps(self, scenario):
+        """
+        Convert from modal temperatures to full temperatures on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.thermal_transfer is not None:
+            modal_tS = self.get_modal_struct_temp_coords(scenario)
+            full_tS = self.get_struct_temps(scenario)
+            modal_basis = self.elastic_modal_basis
+            full_tS[:] = modal_basis @ modal_tS
+        return
+    
+    def convert_modal_struct_disps_transpose(self, scenario):
+        """
+        Convert from full displacements to modal discplacements on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is not None:
+            modal_uS = self.get_modal_struct_disp_coords(scenario)
+            full_uS = self.get_struct_disps(scenario)
+            modal_basis = self.elastic_modal_basis
+            modal_uS[:] = modal_basis.T @ full_uS
+        return
+
+    def convert_modal_struct_temps_transpose(self, scenario):
+        """
+        Convert from full temperatures to modal temperatures on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.thermal_transfer is not None:
+            modal_tS = self.get_modal_struct_temp_coords(scenario)
+            full_tS = self.get_struct_temps(scenario)
+            modal_basis = self.elastic_modal_basis
+            modal_tS[:] = modal_basis.T @ full_tS
+        return
+    
+    def convert_modal_struct_disps_adjoint(self, scenario):
+        """
+        Convert from full disp adjoint => modal disp adjoint on the structure
+        for the given scenario, adjoint
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        if self.transfer is None: return
+        
+        modal_uS_bar = self.modal_struct_disp_coords_ajp
+        full_uS_bar = self.struct_disps_ajp
+        modal_basis = self.elastic_modal_basis
+
+        # forward analysis was full_uS = modal_basis @ modal_uS
+        # adjoint analysis is modal_uS_bar = modal_basis.T @ full_uS_bar
+        nfunc = scenario.count_adjoint_functions()
+        for ifunc in range(nfunc):
+            modal_uS_bar[:,ifunc] = modal_basis.T @ full_uS_bar[:,ifunc]
+        return
+
+    def convert_modal_struct_temps_adjoint(self, scenario):
+        """
+        Convert from modal temperatures to full temperatures on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        if self.thermal_transfer is None: return
+
+        modal_tS_bar = self.modal_struct_temp_coords_ajp
+        full_tS_bar = self.struct_temps_ajp
+        modal_basis = self.thermal_modal_basis
+
+        # forward analysis was full_tS = modal_basis @ modal_tS
+        # adjoint analysis is modal_tS_bar = modal_basis.T @ full_tS_bar
+        nfunc = scenario.count_adjoint_functions()
+        for ifunc in range(nfunc):
+            modal_tS_bar[:,ifunc] = modal_basis.T @ full_tS_bar[:,ifunc]
+        return
+    
+    def convert_modal_struct_disps_transpose_adjoint(self, scenario):
+        """
+        Convert from full displacements to modal discplacements on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+
+        if self.transfer is None: return
+
+        modal_uS_bar = self.modal_struct_disp_coords_ajp
+        full_uS_bar = self.struct_disps_ajp
+        modal_basis = self.elastic_modal_basis
+
+        # forward analysis was modal_uS = modal_basis.T @ full_uS
+        # adjoint analysis is full_uS_bar = modal_basis @ modal_uS_bar
+        nfunc = scenario.count_adjoint_functions()
+        for ifunc in range(nfunc):
+            full_uS_bar[:,ifunc] = modal_basis @ modal_uS_bar[:,ifunc]
+        return
+
+    def convert_modal_struct_temps_transpose_adjoint(self, scenario):
+        """
+        Convert from full temperatures to modal temperatures (adjoint for that) on the structure
+        for the given scenario.
+
+        Parameters
+        ----------
+        scenario: :class:`~scenario.Scenario`
+            The current scenario
+        """
+        if self.thermal_transfer is None: return
+
+        modal_tS_bar = self.modal_struct_temp_coords_ajp
+        full_tS_bar = self.struct_temps_ajp
+        modal_basis = self.thermal_modal_basis
+
+        # forward analysis was modal_tS = modal_basis.T @ full_tS
+        # adjoint analysis is full_tS_bar = modal_basis @ modal_tS_bar
+        nfunc = scenario.count_adjoint_functions()
+        for ifunc in range(nfunc):
+            full_tS_bar[:,ifunc] = modal_basis @ modal_tS_bar[:,ifunc]
         return
 
     def initialize_adjoint_variables(self, scenario):

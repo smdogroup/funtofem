@@ -102,6 +102,11 @@ class OnewayStructDriver:
         self.struct_interface = solvers.structural
         self.struct_aim = None
 
+        # assert at least one uncoupled scenario
+        self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
+        any_uncoupled = any([not(scenario.coupled) for scenario in model.scenarios])
+        assert any_uncoupled
+
         # figure out which discipline solver we are using
         self._struct_solver_type = None
         if model.structural is None:
@@ -145,7 +150,7 @@ class OnewayStructDriver:
                 # initializing transfer schemes is the responsibility of drivers with aerodynamic analysis since they come first
                 body.update_transfer()
 
-                for scenario in self.model.scenarios:
+                for scenario in self.uncoupled_scenarios:
                     # perform disps transfer first to prevent seg fault
                     body.transfer_disps(scenario)
                     body.transfer_temps(scenario)
@@ -491,7 +496,7 @@ class OnewayStructDriver:
                 )
 
             # zero the initial struct loads and struct flux for each scenario
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 # initialize new struct shape term for new ns
                 nf = scenario.count_adjoint_functions()
                 body.struct_shape_term[scenario.id] = np.zeros(
@@ -586,11 +591,11 @@ class OnewayStructDriver:
         _start_forward_analysis = time.time()
 
         if self.steady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_steady_forward(scenario, self.model.bodies)
 
         if self.unsteady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_unsteady_forward(scenario, self.model.bodies)
 
         dt_forward = (time.time() - _start_forward_analysis) / 60.0
@@ -610,20 +615,19 @@ class OnewayStructDriver:
         # timing data
         _start_adjoint = time.time()
 
-        # run the adjoint structural analysis
-        functions = self.model.get_functions()
-
         # Zero the derivative values stored in the function
         self._zero_derivatives()
-        for func in functions:
-            func.zero_derivatives()
+
+        # zero adjoint data
+        if self.uses_tacs:
+            self._zero_adjoint_data()
 
         if self.steady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_steady_adjoint(scenario, self.model.bodies)
 
         if self.unsteady:
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._solve_unsteady_adjoint(scenario, self.model.bodies)
 
         dt_adjoint = (time.time() - _start_adjoint) / 60.0
@@ -634,15 +638,6 @@ class OnewayStructDriver:
             root=0,
         )
         _start_derivatives = time.time()
-
-        # transfer loads adjoint since fa -> fs has shape dependency
-        if self.change_shape:
-            # TODO : for unsteady this part might have to be included before extract coordinate derivatives?
-            for body in self.model.bodies:
-                body.transfer_loads_adjoint(scenario)
-
-        # call get function gradients to store  the gradients from tacs
-        self.struct_interface.get_function_gradients(scenario, self.model.bodies)
 
         if self.change_shape and not self.external_shape:
             # write the sensitivity file for the tacs AIM
@@ -683,7 +678,7 @@ class OnewayStructDriver:
             self.comm.Barrier()
 
             # store the shape variables in the function gradients
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 self._get_shape_derivatives(scenario)
 
         dt_derivatives = (time.time() - _start_derivatives) / 60.0
@@ -706,9 +701,10 @@ class OnewayStructDriver:
 
     def _zero_derivatives(self):
         """zero all model derivatives"""
-        for func in self.model.get_functions(all=True):
-            for var in self.model.get_variables():
-                func.derivatives[var] = 0.0
+        for scenario in self.uncoupled_scenarios:
+            for func in scenario.functions:
+                for var in self.model.get_variables():
+                    func.derivatives[var] = 0.0
         return
 
     def _extract_coordinate_derivatives(self, scenario, bodies, step):
@@ -837,10 +833,6 @@ class OnewayStructDriver:
         Similar to funtofem_driver
         """
 
-        # zero adjoint data
-        if self.uses_tacs:
-            self._zero_adjoint_data()
-
         # set functions and variables
         self.struct_interface.set_variables(scenario, bodies)
         self.struct_interface.set_functions(scenario, bodies)
@@ -854,6 +846,18 @@ class OnewayStructDriver:
         self.struct_interface.iterate_adjoint(scenario, bodies, step=0)
         self._extract_coordinate_derivatives(scenario, bodies, step=0)
         self.struct_interface.post_adjoint(scenario, bodies)
+
+        # get derivatives while adjoint variables for this scenario are stored
+        # -------------------------------
+
+        # transfer loads adjoint since fa -> fs has shape dependency
+        if self.change_shape:
+            # TODO : for unsteady this part might have to be included before extract coordinate derivatives?
+            for body in self.model.bodies:
+                body.transfer_loads_adjoint(scenario)
+
+        # call get function gradients to store  the gradients from tacs
+        self.struct_interface.get_function_gradients(scenario, self.model.bodies)
 
         return
 
@@ -882,6 +886,19 @@ class OnewayStructDriver:
         self.struct_interface.iterate_adjoint(scenario, bodies, step=step)
         self.struct_interface.post_adjoint(scenario, bodies)
 
+        # transfer loads adjoint since fa -> fs has shape dependency
+        if self.change_shape:
+            # TODO : for unsteady this part might have to be included before extract coordinate derivatives?
+            for body in self.model.bodies:
+                body.transfer_loads_adjoint(scenario)
+
+        # call get function gradients to store  the gradients from tacs
+        self.struct_interface.get_function_gradients(scenario, self.model.bodies)
+
+        return
+    
+    def _get_custom_derivatives(self, scenario):
+        """get custom derivatives see custom/ drivers folder"""
         return
 
     def _zero_tacs_data(self):
@@ -896,17 +913,10 @@ class OnewayStructDriver:
             self.struct_interface.ext_force.zeroEntries()
             self.struct_interface.update.zeroEntries()
 
-            # zero any scenario data
-            for scenario in self.model.scenarios:
-                # zero state data
-                u = self.struct_interface.scenario_data[scenario].u
-                u.zeroEntries()
-                self.struct_interface.assembler.setVariables(u)
-
     def _zero_adjoint_data(self):
         if self.struct_interface.tacs_proc:
             # zero adjoint variable
-            for scenario in self.model.scenarios:
+            for scenario in self.uncoupled_scenarios:
                 psi = self.struct_interface.scenario_data[scenario].psi
                 for vec in psi:
                     vec.zeroEntries()

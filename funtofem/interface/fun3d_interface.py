@@ -756,6 +756,11 @@ class Fun3dInterface(SolverInterface):
                 )
                 shutil.copy2(src, dest)
 
+        # set the store_full_loop_krylov if specified
+        if self.adjoint_options is not None:
+            if "store_full_stencil" in self.adjoint_options and self.adjoint_options["store_full_stencil"]:
+               interface.set_adjoint_stencil() # custom routine to set store_full_stencil in fun3d
+
         if scenario.steady:
             # Initialize FUN3D adjoint - special order for static adjoint
             if self.adjoint_options is None:

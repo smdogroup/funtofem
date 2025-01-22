@@ -168,6 +168,11 @@ class Fun3dAim:
         if self.root_proc:
             self.geometry.cfgpmtr[param_name].value = value
         return
+    
+    def set_design_parameter(self, param_name: str, value: float):
+        if self.root_proc:
+            self.geometry.despmtr[param_name].value = value
+        return
 
     def get_config_parameter(self, param_name: str):
         value = None
