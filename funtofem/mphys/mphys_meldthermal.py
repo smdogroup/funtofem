@@ -36,7 +36,7 @@ class MeldTempXfer(om.ExplicitComponent):
         self.thermal_ndof = None
         self.thermal_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         self.meldThermal = self.options["xfer_object"]
@@ -44,7 +44,7 @@ class MeldTempXfer(om.ExplicitComponent):
         self.thermal_ndof = self.options["thermal_ndof"]
         self.thermal_nnodes = self.options["thermal_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
         aero_nnodes = self.aero_nnodes
 
         # initialization inputs
@@ -122,13 +122,13 @@ class MeldTempXfer(om.ExplicitComponent):
                     d_outputs[T_AERO] += np.array(prod, dtype=float)
 
                 if X_AERO_SURFACE0 in d_inputs:
-                    if self.check_partials:
+                    if self.under_check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
                 if X_THERMAL0 in d_inputs:
-                    if self.check_partials:
+                    if self.under_check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
@@ -167,7 +167,7 @@ class MeldHeatXfer(om.ExplicitComponent):
         self.thermal_ndof = None
         self.thermal_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         # get the transfer scheme object
@@ -176,7 +176,7 @@ class MeldHeatXfer(om.ExplicitComponent):
         self.thermal_ndof = self.options["thermal_ndof"]
         self.thermal_nnodes = self.options["thermal_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
 
         # initialization inputs
         self.add_input(
@@ -253,13 +253,13 @@ class MeldHeatXfer(om.ExplicitComponent):
                     d_outputs[Q_THERMAL] += np.array(prod, dtype=np.float64)
 
                 if X_AERO_SURFACE0 in d_inputs:
-                    if self.check_partials:
+                    if self.under_check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
 
                 if X_THERMAL0 in d_inputs:
-                    if self.check_partials:
+                    if self.under_check_partials:
                         pass
                     else:
                         raise ValueError("forward mode requested but not implemented")
@@ -292,7 +292,7 @@ class MeldThermalBuilder(Builder):
         self.isym = isym
         self.n = n
         self.beta = beta
-        self.check_partials = check_partials
+        self.under_check_partials = check_partials
 
     def initialize(self, comm):
         self.nnodes_aero = self.aero_builder.get_number_of_nodes()
@@ -316,7 +316,7 @@ class MeldThermalBuilder(Builder):
             thermal_ndof=self.ndof_thermal,
             thermal_nnodes=self.nnodes_thermal,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
         )
 
         temp_xfer = MeldTempXfer(
@@ -324,7 +324,7 @@ class MeldThermalBuilder(Builder):
             thermal_ndof=self.ndof_thermal,
             thermal_nnodes=self.nnodes_thermal,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
         )
 
         return heat_xfer, temp_xfer
