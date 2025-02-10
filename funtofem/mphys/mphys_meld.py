@@ -30,13 +30,13 @@ class MeldDispXfer(om.ExplicitComponent):
         self.struct_ndof = None
         self.struct_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         self.struct_ndof = self.options["struct_ndof"]
         self.struct_nnodes = self.options["struct_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
         self.bodies = self.options["bodies"]
 
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
@@ -117,7 +117,7 @@ class MeldDispXfer(om.ExplicitComponent):
         """
 
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
                     inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
@@ -155,7 +155,7 @@ class MeldDispXfer(om.ExplicitComponent):
                         )
 
                     if X_AERO0 in d_inputs:
-                        if self.check_partials:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -163,7 +163,7 @@ class MeldDispXfer(om.ExplicitComponent):
                             )
 
                     if X_STRUCT0 in d_inputs:
-                        if self.check_partials:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -223,13 +223,13 @@ class MeldLoadXfer(om.ExplicitComponent):
         self.struct_ndof = None
         self.struct_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         self.struct_ndof = self.options["struct_ndof"]
         self.struct_nnodes = self.options["struct_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
         self.bodies = self.options["bodies"]
 
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
@@ -282,7 +282,7 @@ class MeldLoadXfer(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         outputs[F_STRUCT][:] = 0.0
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
                     inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
@@ -326,7 +326,7 @@ class MeldLoadXfer(om.ExplicitComponent):
         """
 
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
                     inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
@@ -389,7 +389,7 @@ class MeldLoadXfer(om.ExplicitComponent):
                             ] -= np.array(prod[i::3], dtype=float)
 
                     if X_AERO0 in d_inputs:
-                        if self.check_partials:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -397,7 +397,7 @@ class MeldLoadXfer(om.ExplicitComponent):
                             )
 
                     if X_STRUCT0 in d_inputs:
-                        if self.check_partials:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -562,7 +562,7 @@ class MeldBuilder(Builder):
         self.isym = isym
         self.n = n
         self.beta = beta
-        self.check_partials = check_partials
+        self.under_check_partials = check_partials
         self.linearized = linearized
         self.body_tags = body_tags if body_tags is not None else []
 
@@ -639,7 +639,7 @@ class MeldBuilder(Builder):
             struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
             bodies=self.bodies,
         )
 
@@ -647,7 +647,7 @@ class MeldBuilder(Builder):
             struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
             bodies=self.bodies,
         )
 
