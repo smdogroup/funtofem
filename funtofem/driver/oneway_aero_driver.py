@@ -340,8 +340,9 @@ class OnewayAeroDriver:
             sens_file_src = None
             if self.uses_fun3d and self.is_paired:
                 sens_file_src = self.remote.aero_sens_file
+                print(f"Remote aero sens file src: {sens_file_src}", flush=True)
 
-            # run the tacs aim postAnalysis to compute the chain rule product
+            # run the flow aim postAnalysis to compute the chain rule product
             self.flow_aim.post_analysis(sens_file_src)
 
             # get the analysis function values
@@ -495,9 +496,13 @@ class OnewayAeroDriver:
         # initialize, run, and do post adjoint
         self.solvers.flow.initialize_adjoint(scenario, bodies)
         # one extra call to match step 0 call (see fully coupled driver)
-        for step in range(1, steps + 2):
+        for step in range(1, steps + 1):
             self.solvers.flow.iterate_adjoint(scenario, bodies, step=step)
-        self._extract_coordinate_derivatives(scenario, bodies, step=0)
+
+        # get the current step to extract derivatives
+        istep = scenario.adjoint_steps * scenario.adjoint_coupling_frequency
+
+        self._extract_coordinate_derivatives(scenario, bodies, step=steps)
         self.solvers.flow.post_adjoint(scenario, bodies, coupled_residuals=False)
 
         # call get function gradients to store the gradients w.r.t. aero DVs from FUN3D
@@ -635,6 +640,79 @@ class OnewayAeroDriver:
                 func.add_gradient_component(var, derivative)
 
         return
+
+    def print_summary(self, print_model=False, print_comm=False):
+        """
+        Print out a summary of the FUNtoFEM driver for inspection.
+        """
+
+        print("\n\n==========================================================")
+        print("||               FUNtoFEM Driver Summary                ||")
+        print("==========================================================")
+        print(self)
+
+        self._print_shape_change()
+        self._print_transfer(print_comm=print_comm)
+
+        if print_model:
+            print(
+                "\nPrinting abbreviated model summary. For details print model summary directly."
+            )
+            self.model.print_summary(print_level=-1, ignore_rigid=True)
+
+        return
+
+    def _print_transfer(self, print_comm=False):
+        print("\n---------------------")
+        print("| Transfer Settings |")
+        print("---------------------")
+
+        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
+        print(f"    No. points: {self.transfer_settings.npts}")
+        print(f"    Beta: {self.transfer_settings.beta}")
+        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
+        print(f"    No. points: {self.transfer_settings.thermal_npts}")
+        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
+
+        if print_comm:
+            print(self.comm_manager)
+
+        return
+
+    def _print_shape_change(self):
+        _num_shape_vars = len(self.shape_variables)
+        print("\n--------------------")
+        print("|   Shape Change   |")
+        print("--------------------")
+
+        print(f"  No. shape variables: {_num_shape_vars}")
+        print(f"  Aerodynamic shape change: {self.aero_shape}")
+        print(f"  Structural shape change:  {self.struct_shape}")
+
+        print(f"  Meshing:", end=" ")
+        if self.is_paired:
+            # Remeshing
+            print(f" RE-MESH")
+            if self.change_shape:
+                print(f"    Remote is meshing.")
+            else:
+                print(f"    Analysis script is meshing.")
+        else:
+            # Morphing
+            print(f" MORPH")
+
+        return
+
+    def __str__(self):
+        line1 = f"Driver (<Type>): {self.__class__.__qualname__}"
+        line2 = f"  Using remote: {self.is_remote}"
+        line3 = f"  Flow solver type: {self._flow_solver_type}"
+        line4 = f"  Structural solver type: {self._struct_solver_type}"
+        line5 = f"    No. structural procs: {self.struct_nprocs}"
+
+        output = (line1, line2, line3, line4, line5)
+
+        return "\n".join(output)
 
     # @classmethod
     # def prime_disps(cls, funtofem_driver):
