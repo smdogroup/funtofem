@@ -2,9 +2,9 @@
 _run_flow.py
 
 Run a FUN3D analysis using the OnewayAeroDriver.
-The flow solver is run first to generate aerodynamic loads on the structure which are 
+The flow solver is run first to generate aerodynamic loads on the structure which are
 saved to uncoupled_loads.txt.
-A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS 
+A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS
 to solve the structural sizing optimization problem.
 """
 

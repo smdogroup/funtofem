@@ -1,7 +1,7 @@
 """
 4_oml_shape.py
 
-Run a coupled optimization of the geometric twist at each station and the 
+Run a coupled optimization of the geometric twist at each station and the
 panel thicknesses.
 """
 
