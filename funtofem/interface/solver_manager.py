@@ -1,7 +1,7 @@
 __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
-import importlib
+import importlib.util
 
 tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:
