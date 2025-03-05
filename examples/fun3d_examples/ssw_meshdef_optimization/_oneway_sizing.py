@@ -5,10 +5,10 @@ Brian J. Burke, Georgia Tech 2024
 
 Oneway sizing optimization of the initial SSW structure.
 
-Run a oneway-coupled optimization of the panel thicknesses of the wing structure. The 
+Run a oneway-coupled optimization of the panel thicknesses of the wing structure. The
 flow solver is run first to generate aerodynamic loads on the structure which are saved
 to uncoupled_loads.txt.
-A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS 
+A FUNtoFEM model is created with an aeroelastic body which only iterates through TACS
 to solve the structural sizing optimization problem.
 Local machine optimization for the panel thicknesses using nribs-1 OML panels and nribs-1 LE panels
 """
