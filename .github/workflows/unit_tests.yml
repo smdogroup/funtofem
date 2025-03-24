@@ -112,7 +112,7 @@ jobs:
           cd $F2F_DIR;
           mkdir extern
           cd $F2F_DIR/extern/
-          wget https://acdl.mit.edu/ESP/PreBuilts/ESP126-linux-x86_64.tgz
+          wget https://acdl.mit.edu/ESP/archive/ESP126-linux-x86_64.tgz
           tar -xvf ESP126-linux-x86_64.tgz
           export ESP_ROOT=${F2F_DIR}/extern/ESP126/EngSketchPad
           export CASROOT=${F2F_DIR}/extern/ESP126/OpenCASCADE-7.8.1
