@@ -48,14 +48,14 @@ class ModeTransfer(om.ExplicitComponent):
         )
         if self.options["use_ref_coordinates"]:
             self.add_input(
-                X_STRUCT0 + "_initial",
+                X_STRUCT0 + "_ref",
                 shape_by_conn=True,
                 distributed=True,
                 desc="baseline structural node coordinates with which to initialize MELD",
                 tags=["mphys_coordinates"],
             )
             self.add_input(
-                X_AERO0 + "_initial",
+                X_AERO0 + "_ref",
                 shape_by_conn=True,
                 distributed=True,
                 desc="baseline aero surface node coordinates with which to initialize MELD",
