@@ -26,6 +26,7 @@ class MeldDispXfer(om.ExplicitComponent):
         self.options.declare("aero_nnodes")
         self.options.declare("check_partials")
         self.options.declare("bodies", recordable=False)
+        self.options.declare("use_initial_coords")
 
         self.struct_ndof = None
         self.struct_nnodes = None
@@ -63,6 +64,21 @@ class MeldDispXfer(om.ExplicitComponent):
             desc="structural node displacements",
             tags=["mphys_coupling"],
         )
+        if self.options["use_initial_coords"]:
+            self.add_input(
+                X_STRUCT0 + "_initial",
+                shape_by_conn=True,
+                distributed=True,
+                desc="baseline structural node coordinates with which to initialize MELD",
+                tags=["mphys_coordinates"],
+            )
+            self.add_input(
+                X_AERO0 + "_initial",
+                shape_by_conn=True,
+                distributed=True,
+                desc="baseline aero surface node coordinates with which to initialize MELD",
+                tags=["mphys_coordinates"],
+            )
 
         # outputs
         self.add_output(
@@ -79,6 +95,20 @@ class MeldDispXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         for body in self.bodies:
+            if not body.initialized_meld and self.options["use_initial_coords"]:
+                x_s0 = np.array(
+                    inputs[X_STRUCT0 + "_initial"][body.struct_coord_indices],
+                    dtype=TransferScheme.dtype,
+                )
+                x_a0 = np.array(
+                    inputs[X_AERO0 + "_initial"][body.aero_coord_indices],
+                    dtype=TransferScheme.dtype,
+                )
+                body.meld.setStructNodes(x_s0)
+                body.meld.setAeroNodes(x_a0)
+                body.meld.initialize()
+                body.initialized_meld = False
+
             x_s0 = np.array(
                 inputs[X_STRUCT0][body.struct_coord_indices],
                 dtype=TransferScheme.dtype,
@@ -556,6 +586,7 @@ class MeldBuilder(Builder):
         check_partials=False,
         linearized=False,
         body_tags=None,
+        use_initial_coords=False,
     ):
         self.aero_builder = aero_builder
         self.struct_builder = struct_builder
@@ -565,6 +596,7 @@ class MeldBuilder(Builder):
         self.under_check_partials = check_partials
         self.linearized = linearized
         self.body_tags = body_tags if body_tags is not None else []
+        self.use_initial_coords = use_initial_coords
 
         if len(self.body_tags) > 0:  # make into lists, potentially for different bodies
             if not hasattr(self.n, "__len__"):
@@ -641,6 +673,7 @@ class MeldBuilder(Builder):
             aero_nnodes=self.nnodes_aero,
             check_partials=self.under_check_partials,
             bodies=self.bodies,
+            use_initial_coords=self.use_initial_coords,
         )
 
         load_xfer = MeldLoadXfer(
