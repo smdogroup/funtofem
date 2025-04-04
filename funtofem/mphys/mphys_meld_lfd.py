@@ -188,9 +188,10 @@ class MeldLfdBuilder(MeldBuilder):
         n=200,
         beta=0.5,
         check_partials=False,
+        use_ref_coordinates=False,
     ):
         self.nmodes = nmodes
-        super().__init__(aero_builder, struct_builder, isym, n, beta, check_partials)
+        super().__init__(aero_builder, struct_builder, isym, n, beta, check_partials, False, None, use_ref_coordinates)
 
     def get_post_coupling_subsystem(self):
         return ModeTransfer(
@@ -199,4 +200,5 @@ class MeldLfdBuilder(MeldBuilder):
             ndof_struct=self.ndof_struct,
             nnodes_aero=self.nnodes_aero,
             meld=self.meld,
+            use_ref_coordinates=self.use_ref_coordinates,
         )
