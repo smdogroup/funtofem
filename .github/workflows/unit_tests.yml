@@ -78,7 +78,6 @@ jobs:
           export TACS_DIR=/home/runner/work/tacs;
           conda install -c conda-forge sysroot_linux-64=2.17 -q -y;
           conda install -c conda-forge openmpi openmpi-mpicxx -q -y;
-          conda install -c anaconda openblas -q -y;
           conda install -c conda-forge lapack -q -y;
           conda install -c conda-forge metis=5.1.0 -q -y;
           pip install openmdao==3.30.0
