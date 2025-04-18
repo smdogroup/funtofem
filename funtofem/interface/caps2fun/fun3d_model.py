@@ -167,7 +167,7 @@ class Fun3dModel:
 
     def _set_grid_filename(self):
         if isinstance(self.mesh_aim.volume_aim, Aflr3Aim):
-            filename = "aflr3_0.lb8.ugrid"
+            filename = self.project_name + ".lb8.ugrid"
         elif isinstance(self.mesh_aim.volume_aim, PointwiseAIM):
             filename = "caps.GeomTomesh.lb8.ugrid"
 
