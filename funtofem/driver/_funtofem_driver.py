@@ -239,6 +239,9 @@ class FUNtoFEMDriver(object):
             if scenario.steady:
                 fail = self._solve_steady_adjoint(scenario)
                 if fail != 0:
+                    print(
+                        f"Fail flag detected after _solve_steady_adjoint!", flush=True
+                    )
                     return fail
             else:
                 fail = self._solve_unsteady_adjoint(scenario)
@@ -369,23 +372,29 @@ class FUNtoFEMDriver(object):
     def _solve_unsteady_adjoint(self, scenario):
         return 1
 
-    def print_summary(self, print_model=False, print_comm=False):
+    def print_summary(self, comm=None, print_model=False, print_comm=False):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
         """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
 
-        print("==========================================================")
-        print("||               FUNtoFEM Driver Summary                ||")
-        print("==========================================================")
-        print(self)
+        if print_here:
+            print("==========================================================")
+            print("||               FUNtoFEM Driver Summary                ||")
+            print("==========================================================")
+            print(self)
 
-        self._print_transfer(print_comm=print_comm)
+            self._print_transfer(print_comm=print_comm)
 
-        if print_model:
-            print(
-                "\nPrinting abbreviated model summary. For details print model summary directly."
-            )
-            self.model.print_summary(print_level=-1, ignore_rigid=True)
+            if print_model:
+                print(
+                    "\nPrinting abbreviated model summary. For details print model summary directly."
+                )
+                self.model.print_summary(print_level=-1, ignore_rigid=True)
 
         return
 

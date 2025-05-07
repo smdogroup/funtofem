@@ -234,6 +234,7 @@ class Fun3dAim:
     def _move_sens_files(self, src):
         """move sens files from the fun3d_dir to the fun3d AIM workdir"""
         dest = self.sens_file_path
+        print(f"Destination: {dest}", flush=True)
         if self.root_proc:
             shutil.copy(src, dest)
         return
@@ -299,6 +300,7 @@ class Fun3dAim:
     def post_analysis(self, sens_file_src=None):
         if self.root_proc:
             # move sens files if need be from fun3d dir to fun3d workdir
+            print(f"Attempting to move sens file.", flush=True)
             if sens_file_src is not None:
                 self._move_sens_files(src=sens_file_src)
             self.aim.postAnalysis()
@@ -345,3 +347,16 @@ class Fun3dAim:
     @property
     def is_handcrafted(self) -> bool:
         return self.handcrafted_mesh_morph is not None
+
+    def print_summary(self):
+        if self.root_proc:
+            print("==========================================================")
+            print("||                  FUN3D AIM Summary                   ||")
+            print("==========================================================")
+
+            self._print_file_locs(self)
+
+        return
+
+    def _print_file_locs(self):
+        return

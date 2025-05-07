@@ -72,6 +72,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         struct_nprocs=48,
         forward_flow_post_analysis=False,
         reload_funtofem_states=False,
+        struct_callback=None,
+        tacs_inertial=False,
     ):
         """
         Build a FuntofemShapeDriver object with FUN3D mesh morphing or with no fun3dAIM
@@ -85,6 +87,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             struct_nprocs=struct_nprocs,
             forward_flow_post_analysis=forward_flow_post_analysis,
             reload_funtofem_states=reload_funtofem_states,
+            struct_callback=struct_callback,
+            tacs_inertial=tacs_inertial,
         )
 
     @classmethod
@@ -154,6 +158,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
         struct_nprocs=48,
         forward_flow_post_analysis=False,
         reload_funtofem_states=False,
+        struct_callback=None,
+        tacs_inertial=False,
     ):
         """
         The FUNtoFEM driver for the Nonlinear Block Gauss-Seidel
@@ -196,6 +202,9 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             var for var in self.model.get_variables() if var.analysis_type == "shape"
         ]
         self.forward_flow_post_analysis = forward_flow_post_analysis
+
+        self.struct_callback = struct_callback
+        self.tacs_inertial = tacs_inertial
 
         # make sure the solver interfaces are TACS and FUN3D
         if not (self.change_shape) and self.is_remote:
@@ -501,13 +510,26 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
                 # to system call FUN3D, please don't put shape variables in the analysis file
                 # make the new tacs interface of the structural geometry
                 if self.uses_tacs:
-                    self.solvers.structural = TacsInterface.create_from_bdf(
-                        model=self.model,
-                        comm=self.comm,
-                        nprocs=self.struct_nprocs,
-                        bdf_file=self.struct_aim.root_dat_file,
-                        output_dir=self.struct_aim.root_analysis_dir,
-                    )
+                    if self.tacs_inertial:
+                        self.solvers.structural = TacsSteadyInterface.create_from_bdf(
+                            model=self.model,
+                            comm=self.comm,
+                            nprocs=self.struct_nprocs,
+                            bdf_file=self.struct_aim.root_dat_file,
+                            prefix=self.struct_aim.root_analysis_dir,
+                            callback=self.struct_callback,
+                            panel_length_dv_index=0,
+                            panel_width_dv_index=5,
+                            inertial_loads=True,
+                        )
+                    else:
+                        self.solvers.structural = TacsInterface.create_from_bdf(
+                            model=self.model,
+                            comm=self.comm,
+                            nprocs=self.struct_nprocs,
+                            bdf_file=self.struct_aim.root_dat_file,
+                            output_dir=self.struct_aim.root_analysis_dir,
+                        )
 
                 # update the structural part of transfer scheme due to remeshing
                 self._update_struct_transfer()
@@ -991,7 +1013,8 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
             gradients.append([])
             for ivar, var in enumerate(variables):
                 derivative = None
-                if var.analysis_type == "structural":
+                # Hack to only get shape derivatives for thickness from CAPS
+                if var.analysis_type == "structural" and "-T" in var.name:
                     if self.struct_aim.root_proc:
                         derivative = self.struct_aim.aim.dynout[func.full_name].deriv(
                             var.full_name
@@ -1132,24 +1155,33 @@ class FuntofemShapeDriver(FUNtoFEMnlbgs):
     def tacs_model(self):
         return self.model.structural
 
-    def print_summary(self, print_model=False, print_comm=False):
+    def print_summary(self, comm=None, print_model=False, print_comm=False):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
         """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
 
-        print("\n\n==========================================================")
-        print("||               FUNtoFEM Driver Summary                ||")
-        print("==========================================================")
-        print(self)
+        if print_here:
+            print("\n\n==========================================================")
+            print("||               FUNtoFEM Driver Summary                ||")
+            print("==========================================================")
+            print(self)
 
-        self._print_shape_change()
-        self._print_transfer(print_comm=print_comm)
+            self._print_shape_change()
+            self._print_transfer(print_comm=print_comm)
 
-        if print_model:
-            print(
-                "\nPrinting abbreviated model summary. For details print model summary directly."
-            )
-            self.model.print_summary(print_level=-1, ignore_rigid=True)
+            if print_model:
+                print(
+                    "\nPrinting abbreviated model summary. For details print model summary directly."
+                )
+                self.model.print_summary(print_level=-1, ignore_rigid=True)
+
+        if comm is not None:
+            comm.Barrier()
 
         return
 

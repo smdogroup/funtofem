@@ -48,7 +48,7 @@ class OptimizationManager:
         debug: bool = False,
         sparse: bool = True,
         write_checkpoints=False,
-        plot_hist=True,
+        plot_hist=False,
     ):
         """
         Constructs the optimization manager class using a funtofem model and driver
