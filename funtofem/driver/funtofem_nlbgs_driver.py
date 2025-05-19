@@ -19,6 +19,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import annotations
 
 __all__ = ["FUNtoFEMnlbgs"]
 
@@ -158,6 +159,10 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                         print("Flow solver returned fail flag")
                     return fail
 
+                # Add contribution from thermal radiation
+                if scenario.thermal_rad:
+                    self.solvers.thermal_rad.iterate(scenario, self.model.bodies, step)
+
                 # Transfer the loads and heat flux
                 for body in self.model.bodies:
                     body.transfer_loads(scenario)
@@ -283,6 +288,12 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     if self.comm.Get_rank() == 0:
                         print("Flow solver returned fail flag")
                     return fail
+
+                # Add contribution from thermal radiation
+                if scenario.thermal_rad:
+                    self.solvers.thermal_rad.iterate_adjoint(
+                        scenario, self.model.bodies, step
+                    )
 
                 # Get the structural adjoint rhs
                 for body in self.model.bodies:

@@ -68,6 +68,10 @@ class Scenario(Base):
         gamma=1.4,
         R_specific=287.058,
         Pr=0.72,
+        emis=0.8,
+        F_v=1.0,
+        T_v=0.0,
+        thermal_rad=False,
     ):
         """
         Parameters
@@ -133,6 +137,14 @@ class Scenario(Base):
             Specific gas constant of the working fluid (assumed air). Units of J/kg-K
         Pr: double
             Prandtl number.
+        emis: float
+            Surface emissivity (for thermal radiation model).
+        F_v: float
+            View factor (for thermal radiation model).
+        T_v: float
+            Temperature of background environment (vacuum) (for thermal radiation model).
+        thermal_rad: bool
+            Whether to use thermal radiation model in this scenario.
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -186,6 +198,12 @@ class Scenario(Base):
         # Heat capacity at constant pressure
         cp = self.R_specific * self.gamma / (self.gamma - 1)
         self.cp = cp
+
+        # Thermal radiation parameters
+        self.emis = emis
+        self.F_v = F_v
+        self.T_v = T_v
+        self.thermal_rad = thermal_rad
 
         if fun3d:
             mach = Variable("Mach", id=1, upper=5.0, active=False)
@@ -454,6 +472,33 @@ class Scenario(Base):
 
         if self.steady is True and float(self.flow_dt) != 1.0:
             raise ValueError("For steady cases, flow_dt must be set to 1.")
+        return self
+
+    def set_therm_rad_vals(
+        self,
+        emis: float = 0.8,
+        F_v: float = 1.0,
+        T_v: float = 0.0,
+        thermal_rad: bool = True,
+    ):
+        """
+        Set parameters for thermal radiation model.
+
+        Parameters
+        ----------
+        emis: float
+            Surface emissivity.
+        F_v: float
+            View factor.
+        T_v: float
+            Temperature of background environment (vacuum).
+        thermal_rad: bool
+            Whether to use thermal radiation model in this scenario.
+        """
+        self.emis = emis
+        self.F_v = F_v
+        self.T_v = T_v
+        self.thermal_rad = thermal_rad
         return self
 
     def set_id(self, id):

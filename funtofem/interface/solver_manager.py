@@ -13,6 +13,8 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
     from .fun3d_14_interface import Fun3d14Interface
 
+from .radiation_interface import RadiationInterface
+
 
 class CommManager:
     def __init__(
@@ -55,7 +57,13 @@ class CommManager:
 
 
 class SolverManager:
-    def __init__(self, comm, use_flow: bool = True, use_struct: bool = True):
+    def __init__(
+        self,
+        comm,
+        use_flow: bool = True,
+        use_struct: bool = True,
+        use_thermal_rad: bool = False,
+    ):
         """
         Create a solver manager object which holds flow, struct solvers
         and in the future might be expanded to hold dynamics, etc.
@@ -68,13 +76,17 @@ class SolverManager:
             whether to require flow solvers like Fun3dInterface
         use_struct: bool
             whether to require structural solvers like TacsInterface
+        use_thermal_rad: bool
+            whether to require thermal radiation solvers like RadiationInterface
         """
         self.comm = comm
         self._use_flow = use_flow
         self._use_struct = use_struct
+        self._use_thermal_rad = use_thermal_rad
 
         self._flow = None
         self._structural = None
+        self._thermal_rad = None
 
     @property
     def use_flow(self) -> bool:
@@ -85,11 +97,22 @@ class SolverManager:
         return self._use_struct
 
     @property
+    def use_thermal_rad(self) -> bool:
+        return self._use_thermal_rad
+
+    @property
     def uses_fun3d(self) -> bool:
         if fun3d_loader is None or self.flow is None:
             return False
         else:
             return isinstance(self.flow, Fun3d14Interface)
+
+    @property
+    def uses_radiation(self) -> bool:
+        if self.thermal_rad is None:
+            return False
+        else:
+            return isinstance(self.thermal_rad, RadiationInterface)
 
     @property
     def solver_list(self):
@@ -101,6 +124,8 @@ class SolverManager:
             mlist.append(self.flow)
         if self.use_struct:
             mlist.append(self.structural)
+        if self.use_thermal_rad:
+            mlist.append(self.thermal_rad)
         return mlist
 
     @property
@@ -141,6 +166,14 @@ class SolverManager:
     @structural.setter
     def structural(self, new_structural_solver):
         self._structural = new_structural_solver
+
+    @property
+    def thermal_rad(self):
+        return self._thermal_rad
+
+    @thermal_rad.setter
+    def thermal_rad(self, thermal_rad_solver):
+        self._thermal_rad = thermal_rad_solver
 
     @property
     def comm_manager(self) -> CommManager:
