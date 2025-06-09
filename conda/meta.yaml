@@ -44,7 +44,7 @@ requirements:
     - openmpi-mpicxx  # [mpi == "openmpi" and build_platform != target_platform]
     - mpich-mpicxx  # [mpi == "mpich" and build_platform != target_platform]
     - mpi4py >=3.1.5,<4.0.0 # [build_platform != target_platform]
-    - cython >=0.29,<3.0 # [build_platform != target_platform]
+    - cython >=3.0,<4.0 # [build_platform != target_platform]
     - setuptools # [build_platform != target_platform]
     - tacs >=3.4.0 # [build_platform != target_platform]
 
@@ -57,7 +57,7 @@ requirements:
     - libopenblas
     - lapack
     - mpi4py >=3.1.5,<4.0.0
-    - cython >=0.29,<3.0
+    - cython >=3.0,<4.0
     - tacs >=3.4.0
 
   run:
