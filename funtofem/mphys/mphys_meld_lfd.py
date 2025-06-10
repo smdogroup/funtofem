@@ -4,9 +4,11 @@ __all__ = ["ModeTransfer", "MeldLfdBuilder"]
 
 import numpy as np
 import openmdao.api as om
-from .mphys_meld import MeldBuilder
+from mphys import MPhysVariables
 
 from funtofem import TransferScheme
+
+from .mphys_meld import MeldBuilder
 
 # Set MPhys variable names
 X_STRUCT0 = MPhysVariables.Structures.COORDINATES
