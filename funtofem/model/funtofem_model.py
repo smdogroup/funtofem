@@ -811,7 +811,13 @@ class FUNtoFEMmodel(object):
         return loads_files
 
     def write_sensitivity_file(
-        self, comm, filename, discipline="aerodynamic", root=0, write_dvs: bool = True
+        self,
+        comm,
+        filename,
+        discipline="aerodynamic",
+        root=0,
+        write_dvs: bool = True,
+        only_thickness: bool = True,
     ):
         """
         Write the sensitivity file.
@@ -836,7 +842,10 @@ class FUNtoFEMmodel(object):
         root: int
             The rank of the processor that will write the file
         write_dvs: bool
-            whether to write the design variables for this discipline
+            Whether to write the design variables for this discipline
+        only_thickness: bool
+            Whether to write sensitivities for only thickness structural variables.
+            This is necessary when using composite stiffened callback.
         """
 
         funcs = self.get_functions()
@@ -859,7 +868,11 @@ class FUNtoFEMmodel(object):
                 for var in variables:
                     # Write the variables whose analysis_type matches the discipline string.
                     if discipline == var.analysis_type and var.active:
-                        discpline_vars.append(var)
+                        if discipline == "structural" and only_thickness:
+                            if "-T" in var.name:
+                                discpline_vars.append(var)
+                        else:
+                            discpline_vars.append(var)
 
             # Write out the number of sets of discpline variables
             num_dvs = len(discpline_vars)
@@ -1479,7 +1492,7 @@ class FUNtoFEMmodel(object):
         return
 
     def print_summary(
-        self, print_level=0, print_model_details=True, ignore_rigid=False
+        self, comm=None, print_level=0, print_model_details=True, ignore_rigid=False
     ):
         """
         Print out a summary of the assembled model for inspection
@@ -1489,69 +1502,78 @@ class FUNtoFEMmodel(object):
         print_level: int
             how much detail to print in the summary. Print level < 0 does not print all the variables
         """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
 
-        print("==========================================================")
-        print("||                FUNtoFEM Model Summary                ||")
-        print("==========================================================")
-        print(self)
+        if print_here:
+            print("==========================================================")
+            print("||                FUNtoFEM Model Summary                ||")
+            print("==========================================================")
+            print(self)
 
-        if print_model_details:
-            self._print_functions()
-            self._print_variables()
+            if print_model_details:
+                self._print_functions()
+                self._print_variables()
 
-        print("\n------------------")
-        print("| Bodies Summary |")
-        print("------------------")
-        for body in self.bodies:
-            print(body)
-            for vartype in body.variables:
-                print("\n    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(body.variables[vartype]),
-                )
-                if (vartype == "rigid_motion") and ignore_rigid:
-                    print("      Ignoring rigid_motion vartype list.")
-                else:
+            print("\n------------------")
+            print("| Bodies Summary |")
+            print("------------------")
+            for body in self.bodies:
+                print(body)
+                for vartype in body.variables:
+                    print("\n    Variable type:", vartype)
+                    print(
+                        "      Number of",
+                        vartype,
+                        "variables:",
+                        len(body.variables[vartype]),
+                    )
+                    if (vartype == "rigid_motion") and ignore_rigid:
+                        print("      Ignoring rigid_motion vartype list.")
+                    else:
+                        if print_level >= 0:
+                            body._print_variables(vartype)
+
+            print(" ")
+            print("--------------------")
+            print("| Scenario Summary |")
+            print("--------------------")
+            for scenario in self.scenarios:
+                print(scenario)
+                scenario._print_functions()
+
+                for vartype in scenario.variables:
+                    print("    Variable type:", vartype)
+                    print(
+                        "      Number of",
+                        vartype,
+                        "variables:",
+                        len(scenario.variables[vartype]),
+                    )
                     if print_level >= 0:
-                        body._print_variables(vartype)
+                        scenario._print_variables(vartype)
 
-        print(" ")
-        print("--------------------")
-        print("| Scenario Summary |")
-        print("--------------------")
-        for scenario in self.scenarios:
-            print(scenario)
-            scenario._print_functions()
-
-            for vartype in scenario.variables:
-                print("    Variable type:", vartype)
-                print(
-                    "      Number of",
-                    vartype,
-                    "variables:",
-                    len(scenario.variables[vartype]),
-                )
-                if print_level >= 0:
-                    scenario._print_variables(vartype)
+        if comm is not None:
+            comm.Barrier()
 
         return
 
     def _print_functions(self):
         model_functions = self.get_functions(all=True)
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
-        self._print_long("Function", width=12, indent_line=5)
+        self._print_long("Function", width=18, indent_line=5)
         self._print_long("Analysis Type", width=15)
         self._print_long("Comp. Adjoint", width=15)
         self._print_long("Time Range", width=20)
         self._print_long("Averaging", end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
         for func in model_functions:
             if isinstance(func, CompositeFunction):
@@ -1568,13 +1590,13 @@ class FUNtoFEMmodel(object):
                 averaging = func.averaging
             _time_range = " ".join(("[", str(start), ",", str(stop), "]"))
             adjoint = str(adjoint)
-            self._print_long(func.name, width=12, indent_line=5)
+            self._print_long(func.name, width=18, indent_line=5)
             self._print_long(analysis_type, width=15)
             self._print_long(adjoint, width=15)
             self._print_long(_time_range, width=20)
             self._print_long(averaging, end_line=True)
         print(
-            "     --------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------"
         )
 
         return
@@ -1582,9 +1604,9 @@ class FUNtoFEMmodel(object):
     def _print_variables(self):
         model_variables = self.get_variables()
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
-        self._print_long("Variable", width=12, indent_line=5)
+        self._print_long("Variable", width=20, indent_line=5)
         self._print_long("Var. ID", width=10)
         self._print_long("Value", width=16)
         self._print_long("Bounds", width=24)
@@ -1592,7 +1614,7 @@ class FUNtoFEMmodel(object):
         self._print_long("Coupled", width=9, end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
         for var in model_variables:
             _name = "{:s}".format(var.name)
@@ -1604,7 +1626,7 @@ class FUNtoFEMmodel(object):
             _coupled = str(var.coupled)
             _bounds = " ".join(("[", _lower, ",", _upper, "]"))
 
-            self._print_long(_name, width=12, indent_line=5)
+            self._print_long(_name, width=20, indent_line=5)
             self._print_long(_id, width=10, align="<")
             self._print_long(_value, width=16)
             self._print_long(_bounds, width=24)
@@ -1612,7 +1634,7 @@ class FUNtoFEMmodel(object):
             self._print_long(_coupled, width=9, end_line=True)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------"
         )
 
         return
