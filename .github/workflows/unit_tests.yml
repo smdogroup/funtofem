@@ -81,7 +81,7 @@ jobs:
           conda install -c conda-forge mamba -q -y;
           mamba install -c conda-forge sysroot_linux-64=2.17 -q -y;
           mamba install -c conda-forge openmpi openmpi-mpicxx -q -y;
-          mamba install -c anaconda openblas -q -y;
+          mamba install -c conda-forge openblas -q -y;
           mamba install -c conda-forge lapack -q -y;
           mamba install -c conda-forge metis=5.1.0 -q -y;
           pip install openmdao==3.30.0
@@ -174,7 +174,9 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: 3.8
+          channels: conda-forge
+          python-version: "3.10"
+          conda-remove-defaults: true
 
       - name: Install FUNtoFEM
         run: |
@@ -185,7 +187,7 @@ jobs:
           echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
-          mamba install sphinx -q -y;
+          pip install sphinx;
 
       - name: Build docs
         run: |
