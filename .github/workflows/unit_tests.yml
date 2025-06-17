@@ -85,7 +85,7 @@ jobs:
           mamba install -c conda-forge lapack -q -y;
           mamba install -c conda-forge metis=5.1.0 -q -y;
           pip install openmdao==3.30.0
-          mamba install -c conda-forge petsc=3.19 petsc4py -q -y;
+          mamba install -c conda-forge "petsc4py>=3.19" -q -y;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} TACS_DIR=$TACS_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
