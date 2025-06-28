@@ -10,9 +10,6 @@ cimport mpi4py.MPI as MPI
 cdef extern from "mpi-compat.h":
        pass
 
-# Import the declarations required from the pxd file
-from TransferScheme cimport *
-
 # Import numpy
 import numpy as np
 cimport numpy as np
