@@ -15,7 +15,7 @@ For those intending to be users of funtofem and not developers, the easiest way 
 Conda packages of funtofem are available for the Linux and Mac OS from our smdogroup channel. The user should first open a terminal and create
 a conda environment, such as `F2F`, and then install funtofem as follows with conda install.
 ```
-conda create -n F2F python=3.9
+conda create -n F2F python=3.10
 conda activate F2F
 conda install -c conda-forge -c smdogroup funtofem
 ```
