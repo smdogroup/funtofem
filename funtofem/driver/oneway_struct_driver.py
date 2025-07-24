@@ -68,7 +68,7 @@ class OnewayStructDriver:
         fun3d_dir=None,
         external_shape=False,
         timing_file=None,
-        caps_only_thickness = False,
+        caps_only_thickness=False,
     ):
         """
         build the analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
