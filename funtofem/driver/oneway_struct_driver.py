@@ -68,6 +68,7 @@ class OnewayStructDriver:
         fun3d_dir=None,
         external_shape=False,
         timing_file=None,
+        caps_only_thickness=False,
     ):
         """
         build the analysis driver for shape/no shape change, assumes you have already primed the loads (see class method to assist with that)
@@ -88,6 +89,8 @@ class OnewayStructDriver:
             whether the tacs aim shape analysis is performed outside the class
         timing_file: str or Path object
             file to write timing data to
+        caps_only_thickness: bool
+            Whether struct vars must have "-T" in their name
         """
         self.solvers = solvers
         self.comm = solvers.comm
@@ -101,6 +104,7 @@ class OnewayStructDriver:
 
         self.struct_interface = solvers.structural
         self.struct_aim = None
+        self.caps_only_thickness = caps_only_thickness
 
         # figure out which discipline solver we are using
         self._struct_solver_type = None
@@ -654,6 +658,7 @@ class OnewayStructDriver:
                     else self.analysis_sens_file
                 ),
                 discipline="structural",
+                only_thickness=self.caps_only_thickness,
             )
 
             self.comm.Barrier()
@@ -821,7 +826,7 @@ class OnewayStructDriver:
 
         # run the forward analysis via iterate
         self.struct_interface.initialize(scenario, bodies)
-        for step in range(1, scenario.steps + 1):
+        for step in range(scenario.steps):
             self.struct_interface.iterate(scenario, bodies, step=step)
         self.struct_interface.post(scenario, bodies)
 

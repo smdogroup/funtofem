@@ -817,7 +817,7 @@ class FUNtoFEMmodel(object):
         discipline="aerodynamic",
         root=0,
         write_dvs: bool = True,
-        only_thickness: bool = True,
+        only_thickness: bool = False,
     ):
         """
         Write the sensitivity file.
