@@ -10,8 +10,7 @@ from funtofem.interface import (
 )
 from funtofem.driver import FUNtoFEMnlbgs, TransferSettings
 
-import importlib as os
-import unittest
+import unittest, os
 
 comm = MPI.COMM_WORLD
 
