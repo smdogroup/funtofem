@@ -27,7 +27,7 @@ class MeldDispXfer(om.ExplicitComponent):
         self.options.declare("check_partials")
         self.options.declare("bodies", recordable=False)
         self.options.declare(
-            "use_ref_coordinates",
+            "use_reference_coordinates",
             types=bool,
             desc="Use separate aero and struct reference coordinates for transfer scheme initialization (same variable name with '_ref' appended)",
         )
@@ -68,7 +68,7 @@ class MeldDispXfer(om.ExplicitComponent):
             desc="structural node displacements",
             tags=["mphys_coupling"],
         )
-        if self.options["use_ref_coordinates"]:
+        if self.options["use_reference_coordinates"]:
             self.add_input(
                 X_STRUCT0 + "_ref",
                 shape_by_conn=True,
@@ -98,7 +98,7 @@ class MeldDispXfer(om.ExplicitComponent):
         # self.declare_partials(U_AERO,[X_STRUCT0,X_AERO0,U_STRUCT])
 
     def _initialize_xfer(self, inputs, body):
-        if self.options["use_ref_coordinates"]:
+        if self.options["use_reference_coordinates"]:
             x_s0 = np.array(
                 inputs[X_STRUCT0 + "_ref"][body.struct_coord_indices],
                 dtype=TransferScheme.dtype,
@@ -599,7 +599,7 @@ class MeldBuilder(Builder):
         check_partials=False,
         linearized=False,
         body_tags=None,
-        use_ref_coordinates=False,
+        use_reference_coordinates=False,
     ):
         self.aero_builder = aero_builder
         self.struct_builder = struct_builder
@@ -609,7 +609,7 @@ class MeldBuilder(Builder):
         self.under_check_partials = check_partials
         self.linearized = linearized
         self.body_tags = body_tags if body_tags is not None else []
-        self.use_ref_coordinates = use_ref_coordinates
+        self.use_reference_coordinates = use_reference_coordinates
 
         if len(self.body_tags) > 0:  # make into lists, potentially for different bodies
             if not hasattr(self.n, "__len__"):
@@ -686,7 +686,7 @@ class MeldBuilder(Builder):
             aero_nnodes=self.nnodes_aero,
             check_partials=self.under_check_partials,
             bodies=self.bodies,
-            use_ref_coordinates=self.use_ref_coordinates,
+            use_reference_coordinates=self.use_reference_coordinates,
         )
 
         load_xfer = MeldLoadXfer(

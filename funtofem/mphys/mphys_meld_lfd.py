@@ -23,7 +23,7 @@ class ModeTransfer(om.ExplicitComponent):
         self.options.declare("nnodes_aero")
         self.options.declare("meld")
         self.options.declare(
-            "use_ref_coordinates",
+            "use_reference_coordinates",
             types=bool,
             desc="Use separate aero and struct reference coordinates for transfer scheme initialization (same variable name with '_ref' appended)",
         )
@@ -48,7 +48,7 @@ class ModeTransfer(om.ExplicitComponent):
         self.add_input(
             X_AERO0, shape_by_conn=True, distributed=True, tags=["mphys_coordinates"]
         )
-        if self.options["use_ref_coordinates"]:
+        if self.options["use_reference_coordinates"]:
             self.add_input(
                 X_STRUCT0 + "_ref",
                 shape_by_conn=True,
@@ -78,7 +78,7 @@ class ModeTransfer(om.ExplicitComponent):
         )
 
     def _initialize_xfer(self, inputs, meld):
-        if self.options["use_ref_coordinates"]:
+        if self.options["use_reference_coordinates"]:
             aero_X = np.array(inputs[X_AERO0 + "_ref"], dtype=TransferScheme.dtype)
             struct_X = np.array(inputs[X_STRUCT0 + "_ref"], dtype=TransferScheme.dtype)
         else:
@@ -190,7 +190,7 @@ class MeldLfdBuilder(MeldBuilder):
         n=200,
         beta=0.5,
         check_partials=False,
-        use_ref_coordinates=False,
+        use_reference_coordinates=False,
     ):
         self.nmodes = nmodes
         super().__init__(
@@ -202,15 +202,15 @@ class MeldLfdBuilder(MeldBuilder):
             check_partials,
             False,
             None,
-            use_ref_coordinates,
+            use_reference_coordinates,
         )
 
-    def get_post_coupling_subsystem(self):
+    def get_post_coupling_subsystem(self, scenario_name=None):
         return ModeTransfer(
             nmodes=self.nmodes,
             nnodes_struct=self.nnodes_struct,
             ndof_struct=self.ndof_struct,
             nnodes_aero=self.nnodes_aero,
-            meld=self.meld,
-            use_ref_coordinates=self.use_ref_coordinates,
+            meld=self.bodies[0].meld, # TODO: implement multi-body mode transfer
+            use_reference_coordinates=self.use_reference_coordinates,
         )
