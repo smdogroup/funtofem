@@ -12,6 +12,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 csm_path = os.path.join(base_dir, "input_files", "simple_naca_wing.csm")
 dat_filepath = os.path.join(base_dir, "input_files", "simple_naca_wing.dat")
 results_folder, _ = make_test_directories(comm, base_dir)
+caps_work = os.path.join(base_dir, "tmp")
 
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
@@ -20,6 +21,10 @@ if tacs_loader is not None and caps_loader is not None:
 in_github_workflow = bool(os.getenv("GITHUB_ACTIONS"))
 # in_github_workflow = True
 optional = True  # whether to run optional tests
+
+if comm.rank == 0:
+    if not os.path.exists(caps_work):
+        os.mkdir(caps_work)
 
 
 @unittest.skipIf(
@@ -34,8 +39,12 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aeroelastic(self):
         # make the funtofem and tacs model
+        caps_name = "shape-steady-AE"
+        caps_path = os.path.join(caps_work, caps_name)
         f2f_model = FUNtoFEMmodel("wing")
-        tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+        tacs_model = caps2tacs.TacsModel.build(
+            csm_file=csm_path, comm=comm, problem_name=caps_path, verbosity=0
+        )
         tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
@@ -69,10 +78,7 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
         ).register_to(tacs_model)
 
         # register any shape variables to the wing which are auto-registered to tacs model
-        # Variable.shape(name="rib_a1").set_bounds(
-        #     lower=0.4, value=1.0, upper=1.6
-        # ).register_to(wing)
-        Variable.shape(name="spar_a1").set_bounds(
+        Variable.shape(name="rib_a1").set_bounds(
             lower=0.4, value=1.0, upper=1.6
         ).register_to(wing)
 
@@ -113,8 +119,12 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
 
     def test_shape_and_thick_steady_aeroelastic(self):
         # make the funtofem and tacs model
+        caps_name = "shape-thick-steady-AE"
+        caps_path = os.path.join(caps_work, caps_name)
         f2f_model = FUNtoFEMmodel("wing")
-        tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+        tacs_model = caps2tacs.TacsModel.build(
+            csm_file=csm_path, comm=comm, problem_name=caps_path
+        )
         tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
@@ -200,8 +210,12 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermal(self):
         # make the funtofem and tacs model
+        caps_name = "shape-steady-AT"
+        caps_path = os.path.join(caps_work, caps_name)
         f2f_model = FUNtoFEMmodel("wing")
-        tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+        tacs_model = caps2tacs.TacsModel.build(
+            csm_file=csm_path, comm=comm, problem_name=caps_path
+        )
         tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
@@ -279,8 +293,12 @@ class TestTacsSteadyShapeDriver(unittest.TestCase):
     @unittest.skipIf(in_github_workflow, "only run this test offline")
     def test_shape_steady_aerothermoelastic(self):
         # make the funtofem and tacs model
+        caps_name = "shape-steady-ATE"
+        caps_path = os.path.join(caps_work, caps_name)
         f2f_model = FUNtoFEMmodel("wing")
-        tacs_model = caps2tacs.TacsModel.build(csm_file=csm_path, comm=comm)
+        tacs_model = caps2tacs.TacsModel.build(
+            csm_file=csm_path, comm=comm, problem_name=caps_path
+        )
         tacs_model.mesh_aim.set_mesh(  # need a refined-enough mesh for the derivative test to pass
             edge_pt_min=5,
             edge_pt_max=10,
@@ -362,3 +380,5 @@ if __name__ == "__main__":
             open(TestTacsSteadyShapeDriver.FILEPATH, "w").close()
 
     unittest.main()
+    # tester = TestTacsSteadyShapeDriver()
+    # tester.test_shape_steady_aeroelastic()
