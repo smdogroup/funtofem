@@ -211,6 +211,6 @@ class MeldLfdBuilder(MeldBuilder):
             nnodes_struct=self.nnodes_struct,
             ndof_struct=self.ndof_struct,
             nnodes_aero=self.nnodes_aero,
-            meld=self.bodies[0].meld, # TODO: implement multi-body mode transfer
+            meld=self.bodies[0].meld,  # TODO: implement multi-body mode transfer
             use_reference_coordinates=self.use_reference_coordinates,
         )
