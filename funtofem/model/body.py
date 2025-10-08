@@ -1621,6 +1621,10 @@ class Body(Base):
                             (1 - self.theta_adj[ifunc]) * value / norm2
                         )
 
+                        if self.relaxation_scheme.debug and comm.rank == 0:
+                            print(f"Calculated theta_adj[func-{ifunc}]: {self.theta_adj[ifunc]}", flush=True)
+                            print(f"\t{self.theta_min=:.2e} {self.theta_max=:.2e}")
+
                         self.theta_adj[ifunc] = np.max(
                             (
                                 np.min((self.theta_adj[ifunc], self.theta_max)),
@@ -1733,7 +1737,7 @@ class Body(Base):
                 break
         print("\n----------------------------------------\n")
         return all_conv
-        
+
 
     def _distribute_aero_loads(self, data, steady: bool = True, itime: int = 0):
         """
