@@ -217,6 +217,12 @@ class Body(Base):
             3  # 0,1,2 for xyz and 3 for temp (mod 4) see tacs_interface.py
         )
 
+        # disp and adjoint change norms
+        self.init_disp_change_nrm = None
+        self.current_disp_change_nrm = None
+        self.init_adj_change_nrm = None
+        self.current_adj_change_nrm = None
+
         # Node locations u
         self.struct_X = None
         self.aero_X = None
@@ -1516,6 +1522,13 @@ class Body(Base):
             self.prev_update[:] = up[:] * self.theta # before this was not the actual update though
             struct_disps[:] = self.aitken_vec * 1.0
 
+            # record max change in disps (for coupled conv check)
+            self.current_disp_change_nrm = np.max(np.abs(self.theta * up))
+            self.current_disp_change_nrm = comm.allreduce(self.current_disp_change_nrm)
+            if first_iteration:
+                self.init_disp_change_nrm = self.current_disp_change_nrm * 1.0
+
+
         if self.thermal_transfer is not None:
             struct_temps = self.get_struct_temps(scenario)
             up = struct_temps * 1.0 - self.aitken_vec_t * 1.0
@@ -1586,6 +1599,8 @@ class Body(Base):
             self.aitken_adj_vec_t = np.zeros((ns, nf), dtype=self.dtype)
 
             self.aitken_adj_is_initialized = True
+            self.init_adj_change_nrm = np.zeros(nf, dtype=self.dtype)
+            self.current_adj_change_nrm = np.zeros(nf, dtype=self.dtype)
 
         # Elastic adjoint transfer
         struct_disps_ajp = self.get_struct_disps_ajp(scenario)
@@ -1623,6 +1638,13 @@ class Body(Base):
                     self.aitken_adj_vec[:, ifunc] += self.theta_adj[ifunc] * up[:]
                     self.prev_adj_update[:, ifunc] = self.theta_adj[ifunc] * up[:]
                     struct_disps_ajp[:, ifunc] = self.aitken_adj_vec[:, ifunc] * 1.0 # so arrays don't point to each other (copy)
+
+                    # record max change in disps (for coupled conv check)
+                    _current_change_nrm = np.max(np.abs(self.theta_adj[ifunc] * up))
+                    _current_change_nrm = comm.allreduce(_current_change_nrm)
+                    self.current_adj_change_nrm[ifunc] = _current_change_nrm
+                    if first_iteration:
+                        self.init_adj_change_nrm[ifunc] = _current_change_nrm
                     
 
         # Thermal adjoint transfer
@@ -1675,43 +1697,43 @@ class Body(Base):
                 # barrier before next iteration
                 # comm.Barrier()
 
-        # elastic adjoint transfer
-        # if self.transfer is not None:
-        #     struct_disps = self.get_struct_disps(scenario)
-        #     up = struct_disps - self.aitken_vec
-
-        #     if self.use_aitken_accel:
-        #         norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
-        #         norm2 = comm.allreduce(norm2)
-
-        #         # Only update theta if the displacements changed
-        #         if norm2 > tol:
-        #             # Compute the tentative theta value
-        #             value = (up - self.prev_update).dot(up)
-        #             value = comm.allreduce(value)
-        #             self.theta *= 1.0 - value / norm2
-
-        #       :q      self.theta = np.max(
-        #                 (np.min((self.theta, self.theta_max)), self.theta_min)
-        #             )
-
-        #         # handle the min/max for complex step
-        #         if type(self.theta) == np.complex128 or type(self.theta) == complex:
-        #             self.theta = self.theta.real + 0.0j
-
-        #     if self.use_simple_accel:
-        #         # overwrite theta learning rate from the relaxation scheme
-        #         self.theta = self.relaxation_scheme.theta
-
-        #         # call the scheme to drop the learning rate for the next iteration
-        #         self.relaxation_scheme.relax_displacement()
-
-        #     # perform the aitken update for displacement transfer
-        #     self.aitken_vec += self.theta * up
-        #     self.prev_update[:] = up[:]
-        #     struct_disps[:] = self.aitken_vec
-
         return
+
+    def check_small_disp_change(self, scenario):
+        """check small disp change"""
+        if self.current_disp_change_nrm is None: return True
+
+        # otherwise if it has been recorded, check it
+        rtol, atol = scenario.coupled_rtol, scenario.coupled_atol
+        
+        ub = (atol + rtol * self.init_disp_change_nrm)
+        rel_conv = self.current_disp_change_nrm / self.init_disp_change_nrm
+        del_disp_nrm = self.current_disp_change_nrm
+        print("\n----------------------------------------\n")
+        print(f"F2F coupled disp norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_disp_nrm=:.2e}")
+        print("\n----------------------------------------\n")
+        return self.current_disp_change_nrm < ub
+
+    def check_small_adj_change(self, scenario):
+        """check small adjoint change"""
+        if self.current_disp_change_nrm is None: return True
+
+        # otherwise if it has been recorded, check it
+        rtol, atol = scenario.coupled_rtol, scenario.coupled_atol
+        
+        all_conv = True
+        print("\n----------------------------------------\n")
+        for ifunc in range(scenario.count_adjoint_functions()):
+            ub = (atol + rtol * self.init_adj_change_nrm[ifunc])
+            rel_conv = self.current_adj_change_nrm[ifunc] / self.init_adj_change_nrm[ifunc]
+            del_adj_norm = self.current_adj_change_nrm[ifunc]
+            print(f"F2F coupled adj func-{ifunc} norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_adj_norm=:.2e}")
+            if not(del_adj_norm < ub): 
+                all_conv = False
+                break
+        print("\n----------------------------------------\n")
+        return all_conv
+        
 
     def _distribute_aero_loads(self, data, steady: bool = True, itime: int = 0):
         """

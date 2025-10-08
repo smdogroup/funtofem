@@ -220,6 +220,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                                 all_converged = False
                                 break
 
+                    # also coupled disp change step check
+                    for body in self.model.bodies:
+                        small_disp_change = body.check_small_disp_change(scenario)
+                        if not small_disp_change: all_converged = False
+
                     if all_converged:
                         exit_early = True
                         if exit_early and self.comm.rank == 0:
@@ -320,6 +325,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                                 f"f2f scenario {scenario.name}, adjoint resid = {adjoint_resid}",
                                 flush=True,
                             )
+                        
+                        # also coupled disp change step check
+                        for body in self.model.bodies:
+                            small_adj_change = body.check_small_adj_change(scenario)
+                            if not small_adj_change: all_converged = False
 
                         if adjoint_resid > adjoint_tol:
                             all_converged = False

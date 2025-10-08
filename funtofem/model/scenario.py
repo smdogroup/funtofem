@@ -174,6 +174,9 @@ class Scenario(Base):
         self.R_specific = R_specific
         self.Pr = Pr
 
+        self.coupled_rtol = 1e-6
+        self.coupled_atol = 1e-8
+
         # early stopping criterion
         self.min_forward_steps = (
             min_forward_steps
@@ -400,6 +403,8 @@ class Scenario(Base):
     def set_stop_criterion(
         self,
         early_stopping: bool = True,
+        coupled_rtol:float=1e-6,
+        coupled_atol:float=1e-6,
         min_forward_steps=None,
         min_adjoint_steps=None,
         post_tight_forward_steps=None,
@@ -426,6 +431,8 @@ class Scenario(Base):
             (optional) number of additional tightly coupled adjoint steps at the end of the solve
         """
         self.early_stopping = early_stopping
+        self.coupled_atol = coupled_atol
+        self.coupled_rtol = coupled_rtol
         if min_forward_steps is not None:
             self.min_forward_steps = min_forward_steps
         if min_adjoint_steps is not None:
