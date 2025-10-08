@@ -1708,9 +1708,9 @@ class Body(Base):
         if self.current_disp_change_nrm is None: return True
 
         # otherwise if it has been recorded, check it
-        rtol, atol = scenario.coupled_rtol, scenario.coupled_atol
+        rtol = scenario.coupled_fw_rtol
         
-        ub = (atol + rtol * self.init_disp_change_nrm)
+        ub = rtol * self.init_disp_change_nrm
         rel_conv = self.current_disp_change_nrm / self.init_disp_change_nrm
         del_disp_nrm = self.current_disp_change_nrm
         print("\n----------------------------------------\n")
@@ -1723,14 +1723,15 @@ class Body(Base):
         if self.current_disp_change_nrm is None: return True
 
         # otherwise if it has been recorded, check it
-        rtol, atol = scenario.coupled_rtol, scenario.coupled_atol
+        rtol = scenario.coupled_adj_rtol
         
         all_conv = True
         print("\n----------------------------------------\n")
         for ifunc in range(scenario.count_adjoint_functions()):
-            ub = (atol + rtol * self.init_adj_change_nrm[ifunc])
-            rel_conv = self.current_adj_change_nrm[ifunc] / self.init_adj_change_nrm[ifunc]
+            ub = rtol * self.init_adj_change_nrm[ifunc]
             del_adj_norm = self.current_adj_change_nrm[ifunc]
+            rel_conv = del_adj_norm / self.init_adj_change_nrm[ifunc]
+            
             print(f"F2F coupled adj func-{ifunc} norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_adj_norm=:.2e}")
             if not(del_adj_norm < ub): 
                 all_conv = False
