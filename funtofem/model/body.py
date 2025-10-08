@@ -1483,15 +1483,15 @@ class Body(Base):
                         self._aitken_hdl.write(f"{self.theta.real}")
 
                     if self.relaxation_scheme.debug and comm.rank == 0:
-                        print(f"Calculated theta: {self.theta}", flush=True)
+                        print("\n------------------------------------------\n", flush=True)
+                        print(f"Aitken relax, calc theta: {self.theta=:.2e}")
+                        print(f"\t{self.theta_min=:.2e}, {self.theta_max=:.2e}")
+                        print("\n------------------------------------------\n", flush=True)
 
                     self.theta = np.max(
                        (np.min((self.theta, self.theta_max)), self.theta_min)
                     )
 
-                    if comm.rank == 0 and self.relaxation_scheme.debug:
-                        print(f"Max theta: {self.theta_max}")
-                        print(f"Min theta: {self.theta_min}", flush=True)
                 else: # is first iteration
                     if self.relaxation_scheme.write_history and comm.rank == 0:
                         self._aitken_hdl.write(f"NUL")
@@ -1622,8 +1622,10 @@ class Body(Base):
                         )
 
                         if self.relaxation_scheme.debug and comm.rank == 0:
-                            print(f"Calculated theta_adj[func-{ifunc}]: {self.theta_adj[ifunc]}", flush=True)
-                            print(f"\t{self.theta_min=:.2e} {self.theta_max=:.2e}")
+                            print("\n------------------------------------------\n", flush=True)
+                            print(f"Aitken adj relax, calc theta_func-{ifunc}: {self.theta_adj[ifunc]:.2e}")
+                            print(f"\t{self.theta_min=:.2e}, {self.theta_max=:.2e}")
+                            print("\n------------------------------------------\n", flush=True)
 
                         self.theta_adj[ifunc] = np.max(
                             (
@@ -1735,7 +1737,6 @@ class Body(Base):
             print(f"F2F coupled adj func-{ifunc} norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_adj_norm=:.2e}")
             if not(del_adj_norm < ub): 
                 all_conv = False
-                break
         print("\n----------------------------------------\n")
         return all_conv
 
