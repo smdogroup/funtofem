@@ -196,7 +196,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                 # Under-relaxation for solver stability
                 for body in self.model.bodies:
-                    body.aitken_relax(self.comm, scenario)
+                    body.aitken_relax(self.comm, scenario, first_iteration=step == 1)
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False
@@ -301,7 +301,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     return fail
 
                 for body in self.model.bodies:
-                    body.aitken_adjoint_relax(self.comm, scenario)
+                    body.aitken_adjoint_relax(self.comm, scenario, first_iteration=step == start)
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False

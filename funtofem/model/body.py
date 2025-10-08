@@ -35,6 +35,7 @@ except:
 class AitkenRelaxation:
     """
     Class to define aitken relaxation settings
+    THIS is now an Aitken Acceleration method technically speaking
     """
 
     def __init__(
@@ -42,7 +43,7 @@ class AitkenRelaxation:
         theta_init=0.125,
         theta_therm_init=0.125,
         theta_min=0.01,
-        theta_max=1.0,
+        theta_max=10.0, # higher than 1 so it can accelerate
         debug=False,
         history_file=None,
     ):
@@ -68,7 +69,6 @@ class AitkenRelaxation:
         self.write_history = False
         if self.history_file is not None:
             self.write_history = True
-        self.first_iteration = True
         return
 
 
@@ -1418,7 +1418,7 @@ class Body(Base):
 
         return
 
-    def aitken_relax(self, comm, scenario, tol=1e-13):
+    def aitken_relax(self, comm, scenario, tol=1e-13, first_iteration=False):
         """
         Perform Aitken relaxation for the displacements set in the
         """
@@ -1428,6 +1428,9 @@ class Body(Base):
         # If Aitken relaxation is turned off, skip this
         if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
+
+        if first_iteration:
+            self.aitken_is_initialized = False # reset all the states
 
         if not self.aitken_is_initialized:
             # Aitken data for the displacements
@@ -1463,7 +1466,7 @@ class Body(Base):
 
                 # Only update theta if the displacements changed
                 #if norm2 > tol:
-                if not self.relaxation_scheme.first_iteration:
+                if not first_iteration:
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
@@ -1484,7 +1487,6 @@ class Body(Base):
                         print(f"Max theta: {self.theta_max}")
                         print(f"Min theta: {self.theta_min}", flush=True)
                 else: # is first iteration
-                    self.relaxation_scheme.first_iteration = False
                     if self.relaxation_scheme.write_history and comm.rank == 0:
                         self._aitken_hdl.write(f"NUL")
 
@@ -1516,14 +1518,14 @@ class Body(Base):
 
         if self.thermal_transfer is not None:
             struct_temps = self.get_struct_temps(scenario)
-            up = struct_temps - self.aitken_vec_t
+            up = struct_temps * 1.0 - self.aitken_vec_t * 1.0
 
             if self.use_aitken_accel:
                 norm2 = np.linalg.norm(up - self.prev_update_t) ** 2.0
                 norm2 = comm.allreduce(norm2)
 
                 # Only update theta if the temperatures changed
-                if norm2 > tol:
+                if not first_iteration:
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
@@ -1546,12 +1548,13 @@ class Body(Base):
 
             self.aitken_vec_t += self.theta_t * up
             self.prev_update_t[:] = self.theta_t * up[:]
-            struct_temps[:] = self.aitken_vec_t
+            struct_temps[:] = self.aitken_vec_t * 1.0
 
         return
 
-    def aitken_adjoint_relax(self, comm, scenario, tol=1e-16):
-        pass
+    def aitken_adjoint_relax(self, comm, scenario, tol=1e-16, first_iteration=False):
+        # pass
+
         # If Aitken relaxation is turned off, skip this
         if not (self.use_aitken_accel) and not (self.use_simple_accel):
             return
@@ -1562,6 +1565,9 @@ class Body(Base):
         # number of nodes and functions
         ns = self.struct_nnodes
         nf = scenario.count_adjoint_functions()
+
+        if first_iteration:
+            self.aitken_adj_is_initialized = False # reset all the states
 
         if not self.aitken_adj_is_initialized:
             # Aitken data for the displacements
@@ -1585,18 +1591,17 @@ class Body(Base):
         struct_disps_ajp = self.get_struct_disps_ajp(scenario)
         if self.transfer is not None:
             for ifunc in range(nf):
-                up = struct_disps_ajp[:, ifunc] - self.aitken_adj_vec[:, ifunc]
+                up = struct_disps_ajp[:, ifunc] * 1.0 - self.aitken_adj_vec[:, ifunc] * 1.0
 
                 if self.use_aitken_accel:
                     norm2 = np.linalg.norm(up - self.prev_adj_update[:, ifunc]) ** 2.0
                     norm2 = comm.allreduce(norm2)
 
                     # Only update theta if the displacements changed
-                    if norm2 > tol:
+                    if not first_iteration:
                         # Compute the tentative theta value
                         value = (up - self.prev_adj_update[:, ifunc]).dot(up)
                         value = comm.allreduce(value.real)
-                        # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
                         self.theta_adj[ifunc] += (
                             (1 - self.theta_adj[ifunc]) * value / norm2
                         )
@@ -1614,6 +1619,12 @@ class Body(Base):
                     ):
                         self.theta_adj[ifunc] = self.theta_adj[ifunc].real + 0.0j
 
+                    # now do the disp update
+                    self.aitken_adj_vec[:, ifunc] += self.theta_adj[ifunc] * up[:]
+                    self.prev_adj_update[:, ifunc] = self.theta_adj[ifunc] * up[:]
+                    struct_disps_ajp[:, ifunc] = self.aitken_adj_vec[:, ifunc] * 1.0 # so arrays don't point to each other (copy)
+                    
+
         # Thermal adjoint transfer
         struct_flux_ajp = self.get_struct_heat_flux_ajp(scenario)
         if self.thermal_transfer is not None:
@@ -1626,7 +1637,7 @@ class Body(Base):
                     norm2 = comm.allreduce(norm2)
 
                     # Only update theta if the temperatures changed
-                    if norm2 > tol:
+                    if not first_iteration:
                         # Compute the tentative theta value
                         value = (up - self.prev_adj_update_t[:, ifunc]).dot(up)
                         value = comm.allreduce(value.real)
@@ -1656,9 +1667,10 @@ class Body(Base):
                 #     # call the scheme to drop the learning rate for the next iteration
                 #     self.relaxation_scheme.relax_thermal()
 
-                self.aitken_adj_vec_t[:, ifunc] += self.theta_adj_t[ifunc] * up
-                self.prev_adj_update_t[:, ifunc] = up[:]
-                struct_flux_ajp[:, ifunc] = self.aitken_adj_vec_t[:, ifunc]
+                # now do the disp update
+                self.aitken_adj_vec_t[:, ifunc] += self.theta_adj_t[ifunc] * up[:]
+                self.prev_adj_update_t[:, ifunc] = self.theta_adj_t[ifunc] * up[:]
+                struct_flux_ajp[:, ifunc] = self.aitken_adj_vec_t[:, ifunc] * 1.0 # so arrays don't point to each other (copy)
 
                 # barrier before next iteration
                 # comm.Barrier()
