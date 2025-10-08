@@ -1486,7 +1486,7 @@ class Body(Base):
                         print("\n------------------------------------------\n", flush=True)
                         print(f"Aitken relax, calc theta: {self.theta=:.2e}")
                         print(f"\t{self.theta_min=:.2e}, {self.theta_max=:.2e}")
-                        print("\n------------------------------------------\n", flush=True)
+                        print("\n------------------------------------------", flush=True)
 
                     self.theta = np.max(
                        (np.min((self.theta, self.theta_max)), self.theta_min)
@@ -1625,7 +1625,7 @@ class Body(Base):
                             print("\n------------------------------------------\n", flush=True)
                             print(f"Aitken adj relax, calc theta_func-{ifunc}: {self.theta_adj[ifunc]:.2e}")
                             print(f"\t{self.theta_min=:.2e}, {self.theta_max=:.2e}")
-                            print("\n------------------------------------------\n", flush=True)
+                            print("\n------------------------------------------", flush=True)
 
                         self.theta_adj[ifunc] = np.max(
                             (
@@ -1649,7 +1649,8 @@ class Body(Base):
                     _current_change_nrm = np.max(np.abs(self.theta_adj[ifunc] * up))
                     _current_change_nrm = comm.allreduce(_current_change_nrm)
                     self.current_adj_change_nrm[ifunc] = _current_change_nrm
-                    if first_iteration:
+                    if first_iteration or np.max(np.abs(self.init_adj_change_nrm[ifunc])) < 1e-12: 
+                        # 1e-12 is edge case where second iteration needed for one function..
                         self.init_adj_change_nrm[ifunc] = _current_change_nrm
                     
 
@@ -1717,7 +1718,7 @@ class Body(Base):
         del_disp_nrm = self.current_disp_change_nrm
         print("\n----------------------------------------\n")
         print(f"F2F coupled disp norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_disp_nrm=:.2e}")
-        print("\n----------------------------------------\n")
+        print("\n----------------------------------------")
         return self.current_disp_change_nrm < ub
 
     def check_small_adj_change(self, scenario):
@@ -1737,7 +1738,7 @@ class Body(Base):
             print(f"F2F coupled adj func-{ifunc} norm check, {rel_conv=:.2e} < {rtol=:.2e}; with {del_adj_norm=:.2e}")
             if not(del_adj_norm < ub): 
                 all_conv = False
-        print("\n----------------------------------------\n")
+        print("\n----------------------------------------")
         return all_conv
 
 
