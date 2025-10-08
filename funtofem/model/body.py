@@ -1467,8 +1467,8 @@ class Body(Base):
                 norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
                 norm2 = comm.allreduce(norm2)
 
-                if comm.rank == 0 and self.relaxation_scheme.debug:
-                    print(f"Aitken norm2: {norm2}", flush=True)
+                # if comm.rank == 0 and self.relaxation_scheme.debug:
+                #     print(f"Aitken norm2: {norm2}", flush=True)
 
                 # Only update theta if the displacements changed
                 #if norm2 > tol:
@@ -1476,7 +1476,7 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
-                    if comm.rank == 0: print(f"Aitken {value=:.2e} {norm2=:.2e}")
+                    # if comm.rank == 0: print(f"Aitken {value=:.2e} {norm2=:.2e}")
                     self.theta += (1 - self.theta) * value / norm2
 
                     if self.relaxation_scheme.write_history and comm.rank == 0:
@@ -1515,8 +1515,8 @@ class Body(Base):
                 self._aitken_hdl.flush()
 
             # perform the aitken update for displacement transfer
-            if comm.rank == 0:
-                print(f"Aitken vec update with {self.theta=:.2e}")
+            # if comm.rank == 0:
+            #     print(f"Aitken vec update with {self.theta=:.2e}")
             
             self.aitken_vec += self.theta * up
             self.prev_update[:] = up[:] * self.theta # before this was not the actual update though
