@@ -68,7 +68,7 @@ class AitkenRelaxation:
         self.write_history = False
         if self.history_file is not None:
             self.write_history = True
-
+        self.first_iteration = True
         return
 
 
@@ -1423,7 +1423,7 @@ class Body(Base):
         Perform Aitken relaxation for the displacements set in the
         """
 
-        pass
+        #pass
 
         # If Aitken relaxation is turned off, skip this
         if not (self.use_aitken_accel) and not (self.use_simple_accel):
@@ -1452,7 +1452,7 @@ class Body(Base):
 
         if self.transfer is not None:
             struct_disps = self.get_struct_disps(scenario)
-            up = struct_disps - self.aitken_vec
+            up = struct_disps * 1.0 - self.aitken_vec * 1.0
 
             if self.use_aitken_accel:
                 norm2 = np.linalg.norm(up - self.prev_update) ** 2.0
@@ -1462,11 +1462,13 @@ class Body(Base):
                     print(f"Aitken norm2: {norm2}", flush=True)
 
                 # Only update theta if the displacements changed
-                if norm2 > tol:
+                #if norm2 > tol:
+                if not self.relaxation_scheme.first_iteration:
                     # Compute the tentative theta value
                     value = (up - self.prev_update).dot(up)
                     value = comm.allreduce(value)
-                    self.theta += (self.theta - 1) * value / norm2
+                    if comm.rank == 0: print(f"Aitken {value=:.2e} {norm2=:.2e}")
+                    self.theta += (1 - self.theta) * value / norm2
 
                     if self.relaxation_scheme.write_history and comm.rank == 0:
                         self._aitken_hdl.write(f"{self.theta.real}")
@@ -1475,13 +1477,14 @@ class Body(Base):
                         print(f"Calculated theta: {self.theta}", flush=True)
 
                     self.theta = np.max(
-                        (np.min((self.theta, self.theta_max)), self.theta_min)
+                       (np.min((self.theta, self.theta_max)), self.theta_min)
                     )
 
                     if comm.rank == 0 and self.relaxation_scheme.debug:
                         print(f"Max theta: {self.theta_max}")
                         print(f"Min theta: {self.theta_min}", flush=True)
-                else:
+                else: # is first iteration
+                    self.relaxation_scheme.first_iteration = False
                     if self.relaxation_scheme.write_history and comm.rank == 0:
                         self._aitken_hdl.write(f"NUL")
 
@@ -1496,17 +1499,20 @@ class Body(Base):
                 # call the scheme to drop the learning rate for the next iteration
                 self.relaxation_scheme.relax_displacement()
 
-            if self.relaxation_scheme.debug and comm.rank == 0:
-                print(f"Bounded theta: {self.theta}", flush=True)
+            #if self.relaxation_scheme.debug and comm.rank == 0:
+            #    print(f"Bounded theta: {self.theta}", flush=True)
 
             if self.relaxation_scheme.write_history and comm.rank == 0:
                 self._aitken_hdl.write(f", {self.theta.real}\n")
                 self._aitken_hdl.flush()
 
             # perform the aitken update for displacement transfer
+            if comm.rank == 0:
+                print(f"Aitken vec update with {self.theta=:.2e}")
+            
             self.aitken_vec += self.theta * up
-            self.prev_update[:] = up[:]
-            struct_disps[:] = self.aitken_vec
+            self.prev_update[:] = up[:] * self.theta # before this was not the actual update though
+            struct_disps[:] = self.aitken_vec * 1.0
 
         if self.thermal_transfer is not None:
             struct_temps = self.get_struct_temps(scenario)
@@ -1521,7 +1527,7 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
-                    self.theta_t += (self.theta_t - 1) * value / norm2
+                    self.theta_t += (1 - self.theta_t) * value / norm2
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
@@ -1539,7 +1545,7 @@ class Body(Base):
                 self.relaxation_scheme.relax_thermal()
 
             self.aitken_vec_t += self.theta_t * up
-            self.prev_update_t[:] = up[:]
+            self.prev_update_t[:] = self.theta_t * up[:]
             struct_temps[:] = self.aitken_vec_t
 
         return
@@ -1592,7 +1598,7 @@ class Body(Base):
                         value = comm.allreduce(value.real)
                         # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
                         self.theta_adj[ifunc] += (
-                            (self.theta_adj[ifunc] - 1) * value / norm2
+                            (1 - self.theta_adj[ifunc]) * value / norm2
                         )
 
                         self.theta_adj[ifunc] = np.max(
@@ -1626,7 +1632,7 @@ class Body(Base):
                         value = comm.allreduce(value.real)
                         # self.theta_adj_t[ifunc] *= 1.0 - value / norm2
                         self.theta_adj_t[ifunc] += (
-                            (self.theta_adj_t[ifunc] - 1) * value / norm2
+                            (1 - self.theta_adj_t[ifunc]) * value / norm2
                         )
 
                         self.theta_adj_t[ifunc] = np.max(
