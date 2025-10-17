@@ -196,7 +196,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                 # Under-relaxation for solver stability
                 for body in self.model.bodies:
-                    body.aitken_relax(self.comm, scenario)
+                    body.aitken_relax(self.comm, scenario, first_iteration=step == 1)
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False
@@ -219,6 +219,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                             if forward_resid > forward_tol:
                                 all_converged = False
                                 break
+
+                    # also coupled disp change step check
+                    for body in self.model.bodies:
+                        small_disp_change = body.check_small_disp_change(scenario)
+                        if not small_disp_change: all_converged = False
 
                     if all_converged:
                         exit_early = True
@@ -301,7 +306,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
                     return fail
 
                 for body in self.model.bodies:
-                    body.aitken_adjoint_relax(self.comm, scenario)
+                    body.aitken_adjoint_relax(self.comm, scenario, first_iteration=step == start)
 
                 # check for early stopping criterion, exit if meets criterion
                 exit_early = False
@@ -323,6 +328,11 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
                         if adjoint_resid > adjoint_tol:
                             all_converged = False
+                    
+                    # also coupled disp change step check
+                    for body in self.model.bodies:
+                        small_adj_change = body.check_small_adj_change(scenario)
+                        if not small_adj_change: all_converged = False
 
                     if all_converged:
                         exit_early = True
