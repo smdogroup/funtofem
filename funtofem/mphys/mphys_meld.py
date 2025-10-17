@@ -2,9 +2,17 @@ __all__ = ["MeldLoadXfer", "MeldDispXfer", "MeldBuilder"]
 
 import numpy as np
 import openmdao.api as om
-from mphys import Builder
+from mphys import Builder, MPhysVariables
 
 from funtofem import TransferScheme
+
+# Set MPhys variable names
+X_STRUCT0 = MPhysVariables.Structures.COORDINATES
+X_AERO0 = MPhysVariables.Aerodynamics.Surface.COORDINATES_INITIAL
+U_STRUCT = MPhysVariables.Structures.DISPLACEMENTS
+U_AERO = MPhysVariables.Aerodynamics.Surface.DISPLACEMENTS
+F_AERO = MPhysVariables.Aerodynamics.Surface.LOADS
+F_STRUCT = MPhysVariables.Structures.Loads.AERODYNAMIC
 
 
 class MeldDispXfer(om.ExplicitComponent):
@@ -22,34 +30,34 @@ class MeldDispXfer(om.ExplicitComponent):
         self.struct_ndof = None
         self.struct_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         self.struct_ndof = self.options["struct_ndof"]
         self.struct_nnodes = self.options["struct_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
         self.bodies = self.options["bodies"]
 
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
 
         # inputs
         self.add_input(
-            "x_struct0",
+            X_STRUCT0,
             shape_by_conn=True,
             distributed=True,
             desc="initial structural node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            "x_aero0",
+            X_AERO0,
             shape_by_conn=True,
             distributed=True,
             desc="initial aero surface node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            "u_struct",
+            U_STRUCT,
             shape_by_conn=True,
             distributed=True,
             desc="structural node displacements",
@@ -58,7 +66,7 @@ class MeldDispXfer(om.ExplicitComponent):
 
         # outputs
         self.add_output(
-            "u_aero",
+            U_AERO,
             shape=self.aero_nnodes * 3,
             distributed=True,
             val=np.zeros(self.aero_nnodes * 3),
@@ -67,24 +75,24 @@ class MeldDispXfer(om.ExplicitComponent):
         )
 
         # partials
-        # self.declare_partials('u_aero',['x_struct0','x_aero0','u_struct'])
+        # self.declare_partials(U_AERO,[X_STRUCT0,X_AERO0,U_STRUCT])
 
     def compute(self, inputs, outputs):
         for body in self.bodies:
             x_s0 = np.array(
-                inputs["x_struct0"][body.struct_coord_indices],
+                inputs[X_STRUCT0][body.struct_coord_indices],
                 dtype=TransferScheme.dtype,
             )
             x_a0 = np.array(
-                inputs["x_aero0"][body.aero_coord_indices], dtype=TransferScheme.dtype
+                inputs[X_AERO0][body.aero_coord_indices], dtype=TransferScheme.dtype
             )
             u_a = np.array(
-                outputs["u_aero"][body.aero_coord_indices], dtype=TransferScheme.dtype
+                outputs[U_AERO][body.aero_coord_indices], dtype=TransferScheme.dtype
             )
 
             u_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
             for i in range(3):
-                u_s[i::3] = inputs["u_struct"][
+                u_s[i::3] = inputs[U_STRUCT][
                     body.struct_dof_indices[i :: self.struct_ndof]
                 ]
 
@@ -97,7 +105,7 @@ class MeldDispXfer(om.ExplicitComponent):
 
             body.meld.transferDisps(u_s, u_a)
 
-            outputs["u_aero"][body.aero_coord_indices] = u_a
+            outputs[U_AERO][body.aero_coord_indices] = u_a
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         """
@@ -109,53 +117,53 @@ class MeldDispXfer(om.ExplicitComponent):
         """
 
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
-                    inputs["x_struct0"][body.struct_coord_indices],
+                    inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 x_a0 = np.array(
-                    inputs["x_aero0"][body.aero_coord_indices],
+                    inputs[X_AERO0][body.aero_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 body.meld.setStructNodes(x_s0)
                 body.meld.setAeroNodes(x_a0)
             u_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
             for i in range(3):
-                u_s[i::3] = inputs["u_struct"][
+                u_s[i::3] = inputs[U_STRUCT][
                     body.struct_dof_indices[i :: self.struct_ndof]
                 ]
             u_a = np.zeros(len(body.aero_coord_indices), dtype=TransferScheme.dtype)
             body.meld.transferDisps(u_s, u_a)
 
             if mode == "fwd":
-                if "u_aero" in d_outputs:
-                    if "u_struct" in d_inputs:
+                if U_AERO in d_outputs:
+                    if U_STRUCT in d_inputs:
                         d_in = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         for i in range(3):
-                            d_in[i::3] = d_inputs["u_struct"][
+                            d_in[i::3] = d_inputs[U_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ]
                         prod = np.zeros(
                             len(body.aero_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydDduS(d_in, prod)
-                        d_outputs["u_aero"][body.aero_coord_indices] -= np.array(
+                        d_outputs[U_AERO][body.aero_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
-                    if "x_aero0" in d_inputs:
-                        if self.check_partials:
+                    if X_AERO0 in d_inputs:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
                                 "MELD forward mode requested but not implemented"
                             )
 
-                    if "x_struct0" in d_inputs:
-                        if self.check_partials:
+                    if X_STRUCT0 in d_inputs:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -163,39 +171,39 @@ class MeldDispXfer(om.ExplicitComponent):
                             )
 
             if mode == "rev":
-                if "u_aero" in d_outputs:
+                if U_AERO in d_outputs:
                     du_a = np.array(
-                        d_outputs["u_aero"][body.aero_coord_indices],
+                        d_outputs[U_AERO][body.aero_coord_indices],
                         dtype=TransferScheme.dtype,
                     )
-                    if "u_struct" in d_inputs:
+                    if U_STRUCT in d_inputs:
                         # du_a/du_s^T * psi = - dD/du_s^T psi
                         prod = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydDduSTrans(du_a, prod)
                         for i in range(3):
-                            d_inputs["u_struct"][
+                            d_inputs[U_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ] -= np.array(prod[i::3], dtype=np.float64)
 
                     # du_a/dx_a0^T * psi = - psi^T * dD/dx_a0 in F2F terminology
-                    if "x_aero0" in d_inputs:
+                    if X_AERO0 in d_inputs:
                         prod = np.zeros(
-                            d_inputs["x_aero0"][body.aero_coord_indices].size,
+                            d_inputs[X_AERO0][body.aero_coord_indices].size,
                             dtype=TransferScheme.dtype,
                         )
                         body.meld.applydDdxA0(du_a, prod)
-                        d_inputs["x_aero0"][body.aero_coord_indices] -= np.array(
+                        d_inputs[X_AERO0][body.aero_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
-                    if "x_struct0" in d_inputs:
+                    if X_STRUCT0 in d_inputs:
                         prod = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydDdxS0(du_a, prod)
-                        d_inputs["x_struct0"][body.struct_coord_indices] -= np.array(
+                        d_inputs[X_STRUCT0][body.struct_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
@@ -215,13 +223,13 @@ class MeldLoadXfer(om.ExplicitComponent):
         self.struct_ndof = None
         self.struct_nnodes = None
         self.aero_nnodes = None
-        self.check_partials = False
+        self.under_check_partials = False
 
     def setup(self):
         self.struct_ndof = self.options["struct_ndof"]
         self.struct_nnodes = self.options["struct_nnodes"]
         self.aero_nnodes = self.options["aero_nnodes"]
-        self.check_partials = self.options["check_partials"]
+        self.under_check_partials = self.options["check_partials"]
         self.bodies = self.options["bodies"]
 
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
@@ -231,28 +239,28 @@ class MeldLoadXfer(om.ExplicitComponent):
 
         # inputs
         self.add_input(
-            "x_struct0",
+            X_STRUCT0,
             shape_by_conn=True,
             distributed=True,
             desc="initial structural node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            "x_aero0",
+            X_AERO0,
             shape_by_conn=True,
             distributed=True,
             desc="initial aero surface node coordinates",
             tags=["mphys_coordinates"],
         )
         self.add_input(
-            "u_struct",
+            U_STRUCT,
             shape_by_conn=True,
             distributed=True,
             desc="structural node displacements",
             tags=["mphys_coupling"],
         )
         self.add_input(
-            "f_aero",
+            F_AERO,
             shape_by_conn=True,
             distributed=True,
             desc="aerodynamic force vector",
@@ -261,7 +269,7 @@ class MeldLoadXfer(om.ExplicitComponent):
 
         # outputs
         self.add_output(
-            "f_struct",
+            F_STRUCT,
             shape=struct_nnodes * struct_ndof,
             distributed=True,
             desc="structural force vector",
@@ -269,34 +277,34 @@ class MeldLoadXfer(om.ExplicitComponent):
         )
 
         # partials
-        # self.declare_partials('f_struct',['x_struct0','x_aero0','u_struct','f_aero'])
+        # self.declare_partials('F_STRUCT',['X_STRUCT0','X_AERO0','U_STRUCT','F_AERO'])
 
     def compute(self, inputs, outputs):
-        outputs["f_struct"][:] = 0.0
+        outputs[F_STRUCT][:] = 0.0
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
-                    inputs["x_struct0"][body.struct_coord_indices],
+                    inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 x_a0 = np.array(
-                    inputs["x_aero0"][body.aero_coord_indices],
+                    inputs[X_AERO0][body.aero_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 body.meld.setStructNodes(x_s0)
                 body.meld.setAeroNodes(x_a0)
             f_a = np.array(
-                inputs["f_aero"][body.aero_coord_indices], dtype=TransferScheme.dtype
+                inputs[F_AERO][body.aero_coord_indices], dtype=TransferScheme.dtype
             )
             f_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
 
             u_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
             for i in range(3):
-                u_s[i::3] = inputs["u_struct"][
+                u_s[i::3] = inputs[U_STRUCT][
                     body.struct_dof_indices[i :: self.struct_ndof]
                 ]
             u_a = np.zeros(
-                inputs["f_aero"][body.aero_coord_indices].size,
+                inputs[F_AERO][body.aero_coord_indices].size,
                 dtype=TransferScheme.dtype,
             )
             body.meld.transferDisps(u_s, u_a)
@@ -304,9 +312,9 @@ class MeldLoadXfer(om.ExplicitComponent):
             body.meld.transferLoads(f_a, f_s)
 
             for i in range(3):
-                outputs["f_struct"][body.struct_dof_indices[i :: self.struct_ndof]] = (
-                    f_s[i::3]
-                )
+                outputs[F_STRUCT][body.struct_dof_indices[i :: self.struct_ndof]] = f_s[
+                    i::3
+                ]
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         """
@@ -318,42 +326,42 @@ class MeldLoadXfer(om.ExplicitComponent):
         """
 
         for body in self.bodies:
-            if self.check_partials:
+            if self.under_check_partials:
                 x_s0 = np.array(
-                    inputs["x_struct0"][body.struct_coord_indices],
+                    inputs[X_STRUCT0][body.struct_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 x_a0 = np.array(
-                    inputs["x_aero0"][body.aero_coord_indices],
+                    inputs[X_AERO0][body.aero_coord_indices],
                     dtype=TransferScheme.dtype,
                 )
                 body.meld.setStructNodes(x_s0)
                 body.meld.setAeroNodes(x_a0)
             f_a = np.array(
-                inputs["f_aero"][body.aero_coord_indices], dtype=TransferScheme.dtype
+                inputs[F_AERO][body.aero_coord_indices], dtype=TransferScheme.dtype
             )
             f_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
 
             u_s = np.zeros(len(body.struct_coord_indices), dtype=TransferScheme.dtype)
             for i in range(3):
-                u_s[i::3] = inputs["u_struct"][
+                u_s[i::3] = inputs[U_STRUCT][
                     body.struct_dof_indices[i :: self.struct_ndof]
                 ]
             u_a = np.zeros(
-                inputs["f_aero"][body.aero_coord_indices].size,
+                inputs[F_AERO][body.aero_coord_indices].size,
                 dtype=TransferScheme.dtype,
             )
             body.meld.transferDisps(u_s, u_a)
             body.meld.transferLoads(f_a, f_s)
 
             if mode == "fwd":
-                if "f_struct" in d_outputs:
-                    if "u_struct" in d_inputs:
+                if F_STRUCT in d_outputs:
+                    if U_STRUCT in d_inputs:
                         d_in = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         for i in range(3):
-                            d_in[i::3] = d_inputs["u_struct"][
+                            d_in[i::3] = d_inputs[U_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ]
                         prod = np.zeros(
@@ -361,35 +369,35 @@ class MeldLoadXfer(om.ExplicitComponent):
                         )
                         body.meld.applydLduS(d_in, prod)
                         for i in range(3):
-                            d_outputs["f_struct"][
+                            d_outputs[F_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ] -= np.array(prod[i::3], dtype=float)
 
-                    if "f_aero" in d_inputs:
+                    if F_AERO in d_inputs:
                         # df_s/df_a psi = - dL/df_a * psi = -dD/du_s^T * psi
                         prod = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         df_a = np.array(
-                            d_inputs["f_aero"][body.aero_coord_indices],
+                            d_inputs[F_AERO][body.aero_coord_indices],
                             dtype=TransferScheme.dtype,
                         )
                         body.meld.applydDduSTrans(df_a, prod)
                         for i in range(3):
-                            d_outputs["f_struct"][
+                            d_outputs[F_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ] -= np.array(prod[i::3], dtype=float)
 
-                    if "x_aero0" in d_inputs:
-                        if self.check_partials:
+                    if X_AERO0 in d_inputs:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
                                 "forward mode requested but not implemented"
                             )
 
-                    if "x_struct0" in d_inputs:
-                        if self.check_partials:
+                    if X_STRUCT0 in d_inputs:
+                        if self.under_check_partials:
                             pass
                         else:
                             raise ValueError(
@@ -397,16 +405,16 @@ class MeldLoadXfer(om.ExplicitComponent):
                             )
 
             if mode == "rev":
-                if "f_struct" in d_outputs:
+                if F_STRUCT in d_outputs:
                     d_out = np.zeros(
                         len(body.struct_coord_indices), dtype=TransferScheme.dtype
                     )
                     for i in range(3):
-                        d_out[i::3] = d_outputs["f_struct"][
+                        d_out[i::3] = d_outputs[F_STRUCT][
                             body.struct_dof_indices[i :: self.struct_ndof]
                         ]
 
-                    if "u_struct" in d_inputs:
+                    if U_STRUCT in d_inputs:
                         d_in = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
@@ -414,37 +422,37 @@ class MeldLoadXfer(om.ExplicitComponent):
                         body.meld.applydLduSTrans(d_out, d_in)
 
                         for i in range(3):
-                            d_inputs["u_struct"][
+                            d_inputs[U_STRUCT][
                                 body.struct_dof_indices[i :: self.struct_ndof]
                             ] -= np.array(d_in[i::3], dtype=float)
 
-                    if "f_aero" in d_inputs:
+                    if F_AERO in d_inputs:
                         # df_s/df_a^T psi = - dL/df_a^T * psi = -dD/du_s * psi
                         prod = np.zeros(
                             len(body.aero_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydDduS(d_out, prod)
-                        d_inputs["f_aero"][body.aero_coord_indices] -= np.array(
+                        d_inputs[F_AERO][body.aero_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
-                    if "x_aero0" in d_inputs:
+                    if X_AERO0 in d_inputs:
                         # df_s/dx_a0^T * psi = - psi^T * dL/dx_a0 in F2F terminology
                         prod = np.zeros(
                             len(body.aero_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydLdxA0(d_out, prod)
-                        d_inputs["x_aero0"][body.aero_coord_indices] -= np.array(
+                        d_inputs[X_AERO0][body.aero_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
-                    if "x_struct0" in d_inputs:
+                    if X_STRUCT0 in d_inputs:
                         # df_s/dx_s0^T * psi = - psi^T * dL/dx_s0 in F2F terminology
                         prod = np.zeros(
                             len(body.struct_coord_indices), dtype=TransferScheme.dtype
                         )
                         body.meld.applydLdxS0(d_out, prod)
-                        d_inputs["x_struct0"][body.struct_coord_indices] -= np.array(
+                        d_inputs[X_STRUCT0][body.struct_coord_indices] -= np.array(
                             prod, dtype=float
                         )
 
@@ -554,7 +562,7 @@ class MeldBuilder(Builder):
         self.isym = isym
         self.n = n
         self.beta = beta
-        self.check_partials = check_partials
+        self.under_check_partials = check_partials
         self.linearized = linearized
         self.body_tags = body_tags if body_tags is not None else []
 
@@ -631,7 +639,7 @@ class MeldBuilder(Builder):
             struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
             bodies=self.bodies,
         )
 
@@ -639,7 +647,7 @@ class MeldBuilder(Builder):
             struct_ndof=self.ndof_struct,
             struct_nnodes=self.nnodes_struct,
             aero_nnodes=self.nnodes_aero,
-            check_partials=self.check_partials,
+            check_partials=self.under_check_partials,
             bodies=self.bodies,
         )
 

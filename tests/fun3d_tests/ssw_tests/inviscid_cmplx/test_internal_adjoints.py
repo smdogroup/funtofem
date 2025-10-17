@@ -1,5 +1,5 @@
 """
-Test the vector function fA(xG, q) and its associated adjoints, internally using 
+Test the vector function fA(xG, q) and its associated adjoints, internally using
 a fun3d.nml flag that activates this test. Only run the forward analysis => since this test
 can run internally on the fun3d_flow object only. NOTE : also need to run this test in serial as of right now. Don't need to run flow to completion.
 """

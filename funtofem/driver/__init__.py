@@ -3,6 +3,9 @@
 
 # the classes/methods in import * are detailed in __all__ at the
 # top of each file
+import importlib
+
+caps_loader = importlib.util.find_spec("pyCAPS")
 
 # import base funtofem driver
 from ._funtofem_driver import *

@@ -58,8 +58,8 @@ class Aflr3Aim:
             self.aim.input.BL_Initial_Spacing = initial_spacing
             self.aim.input.BL_Thickness = thickness
             self.aim.input.BL_Max_Layers = max_layers
-        if use_quads and (thickness > 0.0):
-            self.aim.input.Mesh_Gen_Input_String = "-blc3"
+            if use_quads and (thickness > 0.0):
+                self.aim.input.Mesh_Gen_Input_String = "-blc3"
         return self
 
     def save_dict_options(self, dictOptions):
