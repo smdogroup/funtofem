@@ -47,7 +47,7 @@ class Scenario(Base):
         fun3d=True,
         steps=1000,
         uncoupled_steps=0,
-        coupled=True,
+        coupled=False,
         adjoint_steps=None,
         min_forward_steps=50,
         min_adjoint_steps=None,

@@ -32,6 +32,7 @@ class Base(object):
     VAR_TYPES = [
         "structural",
         "aerodynamic",
+        "custom",
         "rigid_motion",
         "shape",
         "control",
