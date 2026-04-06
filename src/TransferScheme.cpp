@@ -274,7 +274,7 @@ void TransferScheme::aeroScatter(int global_len, F2FScalar *global_data,
     }
 
     MPI_Scatterv(global_data, nvalues, disps, F2F_MPI_TYPE, local_data,
-                 local_len, F2F_MPI_TYPE, aero_root, aero_comm);
+                 local_len, F2F_MPI_TYPE, 0, aero_comm);
 
     delete[] nvalues;
     delete[] disps;
