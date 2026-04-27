@@ -148,6 +148,9 @@ class Fun3dModel:
         # update the variables in the AIM
         self.fun3d_aim.set_variables(self._shape_varnames, self._aero_varnames)
 
+    def register(self, obj):
+        self.fun3d_aim.register(obj)
+
     @property
     def is_setup(self) -> bool:
         """whether the fun3d model is setup"""

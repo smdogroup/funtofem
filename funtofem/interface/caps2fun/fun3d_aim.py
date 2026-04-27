@@ -3,6 +3,14 @@ __all__ = ["Fun3dAim", "Fun3dBC"]
 import os, shutil
 from .hc_mesh_morph import HandcraftedMeshMorph
 
+import importlib
+
+# optional tacs import for caps2tacs
+tacs_loader = importlib.util.find_spec("tacs")
+caps_loader = importlib.util.find_spec("pyCAPS")
+if tacs_loader is not None and caps_loader is not None:
+    from tacs import caps2tacs
+
 
 class Fun3dBC:
     BC_TYPES = [
@@ -269,6 +277,12 @@ class Fun3dAim:
             raise AssertionError(
                 "No other objects can be registered to a Fun3dAim wrapper."
             )
+
+    def register(self, obj):
+        if isinstance(obj, Fun3dBC):
+            self._boundary_conditions[obj.name] = obj.BC_dict
+        elif isinstance (obj, caps2tacs.ShapeVariable):
+            self._shape_variables.append(obj)
 
     @property
     def aim(self):
