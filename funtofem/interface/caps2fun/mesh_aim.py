@@ -116,10 +116,11 @@ class MeshAim:
         """
         Suppress output from the meshing process.
         """
-        # Set volume aim
-        self.volume_aim.aim.input["Mesh_Quiet_Flag"].value = flag
+        if self.root_proc:
+            # Set volume aim
+            self.volume_aim.aim.input["Mesh_Quiet_Flag"].value = flag
 
-        # Set boundary aim
-        self.surface_aim.aim.input["Mesh_Quiet_Flag"].value = flag
+            # Set boundary aim
+            self.surface_aim.aim.input["Mesh_Quiet_Flag"].value = flag
 
         return self
