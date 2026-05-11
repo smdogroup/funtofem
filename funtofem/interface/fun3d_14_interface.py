@@ -921,7 +921,8 @@ class Fun3d14Interface(SolverInterface):
         # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
-        if self._debug:
+        if self.comm.rank == 0:
+            print(f"FUN3D interface debug: {self._debug}", flush=True)
             print(f"FUNtoFEM nfuncs: {nfuncs}", flush=True)
 
         for ibody, body in enumerate(bodies, 1):
@@ -1425,6 +1426,7 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            debug=fun3d_interface._debug,
             forward_options=fun3d_interface.forward_options,
             adjoint_options=fun3d_interface.adjoint_options,
             forward_min_tolerance=fun3d_interface.forward_min_tolerance,
@@ -1452,6 +1454,7 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            debug=fun3d_interface._debug,
             forward_options=fun3d_interface.forward_options,
             adjoint_options=fun3d_interface.adjoint_options,
             forward_min_tolerance=fun3d_interface.forward_min_tolerance,
