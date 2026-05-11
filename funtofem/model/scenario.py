@@ -537,3 +537,129 @@ class Scenario(Base):
         output = (line1, line2, line3, line4)
 
         return "\n".join(output)
+
+    def print_summary(self, comm=None, filename=None):
+        """
+        Print a detailed summary of the scenario's step counts, coupling
+        frequencies, early-stopping settings, flow reference values, and
+        thermal/gas constants.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, a barrier is inserted before and after printing and
+            only rank 0 produces output.
+        filename : str or path-like, optional
+            If provided, the summary is written to this file (opened in write
+            mode and closed after printing). If None, prints to stdout.
+        """
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if not print_here:
+            if comm is not None:
+                comm.Barrier()
+            return
+
+        if filename is not None:
+            fp = open(filename, "w")
+        else:
+            fp = None
+
+        p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+        p("--------------------------------------------------")
+        p(f"| Scenario Summary: {self.name}")
+        p("--------------------------------------------------")
+
+        # --- Identity ---
+        p(f"  Name               : {self.name}")
+        p(f"  ID                 : {self.id}")
+        p(f"  Group              : {self.group}")
+        p(f"  Steady             : {self.steady}")
+        p(f"  FUN3D project name : {self.fun3d_project_name}")
+
+        # --- Forward solve steps ---
+        p("")
+        p("  Forward Solve")
+        p("  -------------")
+        p(f"  Uncoupled steps          : {self.uncoupled_steps}")
+        p(f"  Coupled steps            : {self.steps}")
+        p(f"  Forward coupling freq    : {self.forward_coupling_frequency}")
+        total_fwd = self.steps * self.forward_coupling_frequency + self.uncoupled_steps
+        p(f"  Total flow iterations    : {total_fwd}")
+        if self.post_tight_forward_steps > 0:
+            p(f"  Post tight-coupling steps: {self.post_tight_forward_steps}")
+            p(f"  Post tight coupling freq : {self.post_forward_coupling_freq}")
+
+        # --- Adjoint solve steps ---
+        p("")
+        p("  Adjoint Solve")
+        p("  -------------")
+        p(f"  Adjoint steps            : {self.adjoint_steps}")
+        p(f"  Adjoint coupling freq    : {self.adjoint_coupling_frequency}")
+        if self.adjoint_steps is not None:
+            total_adj = self.adjoint_steps * self.adjoint_coupling_frequency
+            p(f"  Total adjoint iterations : {total_adj}")
+        if self.post_tight_adjoint_steps > 0:
+            p(f"  Post tight-coupling steps: {self.post_tight_adjoint_steps}")
+            p(f"  Post tight coupling freq : {self.post_adjoint_coupling_freq}")
+
+        # --- Early stopping ---
+        p("")
+        p("  Early Stopping")
+        p("  --------------")
+        p(f"  Enabled                  : {self.early_stopping}")
+        p(f"  Min forward steps        : {self.min_forward_steps}")
+        p(f"  Min adjoint steps        : {self.min_adjoint_steps}")
+
+        # --- Flow reference values ---
+        p("")
+        p("  Flow Reference Values")
+        p("  ---------------------")
+        p(f"  qinf (dyn. pressure)     : {self.qinf}")
+        p(f"  flow_dt (nondim dt)      : {self.flow_dt}")
+        p(f"  T_ref (struct ref temp)  : {self.T_ref} K")
+        p(f"  T_inf (freestream temp)  : {self.T_inf} K")
+
+        # --- Gas / thermal constants ---
+        p("")
+        p("  Gas / Thermal Constants")
+        p("  -----------------------")
+        p(f"  gamma                    : {self.gamma}")
+        p(f"  R_specific               : {self.R_specific} J/kg-K")
+        p(f"  Pr (Prandtl)             : {self.Pr}")
+        p(f"  Sutherland C1            : {self.suther1} kg/m-s-K^0.5")
+        p(f"  Sutherland C2            : {self.suther2} K")
+        p(f"  cp                       : {self.cp:.6g} J/kg-K")
+
+        # --- Functions ---
+        p("")
+        p("  Functions")
+        p("  ---------")
+        if self.functions:
+            self._print_functions(file=fp)
+        else:
+            p("    (none registered)")
+
+        # --- Variables ---
+        p("")
+        p("  Variables")
+        p("  ---------")
+        if any(self.variables[vt] for vt in self.variables):
+            for vartype in self.variables:
+                p(f"    Variable type : {vartype}  ({len(self.variables[vartype])} vars)")
+                self._print_variables(vartype, file=fp)
+        else:
+            p("    (none registered)")
+
+        if fp is not None:
+            fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return
