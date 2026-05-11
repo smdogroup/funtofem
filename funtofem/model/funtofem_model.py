@@ -1498,6 +1498,7 @@ class FUNtoFEMmodel(object):
         print_model_details=True,
         ignore_rigid=False,
         filename=None,
+        _fp=None,
     ):
         """
         Print out a summary of the assembled model for inspection.
@@ -1515,6 +1516,10 @@ class FUNtoFEMmodel(object):
         filename: str or path-like, optional
             If provided, the summary is written to this file instead of stdout.
             The file is opened in write mode and closed after printing.
+        _fp: file-like object, optional
+            Internal use. If provided, output is written to this already-open
+            file object and the caller is responsible for closing it.
+            Takes priority over filename.
         """
         print_here = True
         if comm is not None:
@@ -1523,10 +1528,16 @@ class FUNtoFEMmodel(object):
                 print_here = False
 
         if print_here:
-            if filename is not None:
+            # _fp (already-open handle) takes priority over filename
+            if _fp is not None:
+                fp = _fp
+                _close_fp = False
+            elif filename is not None:
                 fp = open(filename, "w")
+                _close_fp = True
             else:
                 fp = None  # print() defaults to sys.stdout when file=None
+                _close_fp = False
 
             print("==========================================================", file=fp)
             print("||                FUNtoFEM Model Summary                ||", file=fp)
@@ -1578,7 +1589,7 @@ class FUNtoFEMmodel(object):
                     if print_level >= 0:
                         scenario._print_variables(vartype, file=fp)
 
-            if fp is not None:
+            if _close_fp:
                 fp.close()
 
         if comm is not None:

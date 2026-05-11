@@ -372,9 +372,22 @@ class FUNtoFEMDriver(object):
     def _solve_unsteady_adjoint(self, scenario):
         return 1
 
-    def print_summary(self, comm=None, print_model=False, print_comm=False):
+    def print_summary(self, comm=None, print_model=False, print_comm=False, filename=None):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted before
+            and after.
+        print_model : bool
+            Whether to also print an abbreviated model summary.
+        print_comm : bool
+            Whether to print the comm manager in the transfer settings section.
+        filename : str or path-like, optional
+            If provided, the summary is written to this file (opened in write
+            mode and closed after printing). If None, prints to stdout.
         """
         print_here = True
         if comm is not None:
@@ -383,35 +396,49 @@ class FUNtoFEMDriver(object):
                 print_here = False
 
         if print_here:
-            print("==========================================================")
-            print("||               FUNtoFEM Driver Summary                ||")
-            print("==========================================================")
-            print(self)
+            if filename is not None:
+                fp = open(filename, "w")
+            else:
+                fp = None
 
-            self._print_transfer(print_comm=print_comm)
+            print("==========================================================", file=fp)
+            print("||               FUNtoFEM Driver Summary                ||", file=fp)
+            print("==========================================================", file=fp)
+            print(self, file=fp)
+
+            self._print_transfer(print_comm=print_comm, file=fp)
 
             if print_model:
                 print(
-                    "\nPrinting abbreviated model summary. For details print model summary directly."
+                    "\nPrinting abbreviated model summary. For details print model summary directly.",
+                    file=fp,
                 )
-                self.model.print_summary(print_level=-1, ignore_rigid=True)
+                # Pass the already-open file handle so model output goes to
+                # the same destination without reopening/overwriting the file.
+                self.model.print_summary(print_level=-1, ignore_rigid=True, _fp=fp)
+
+            if fp is not None:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
 
         return
 
-    def _print_transfer(self, print_comm=False):
-        print("\n---------------------")
-        print("| Transfer Settings |")
-        print("---------------------")
+    def _print_transfer(self, print_comm=False, file=None):
+        print("\n---------------------", file=file)
+        print("| Transfer Settings |", file=file)
+        print("---------------------", file=file)
 
-        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
-        print(f"    No. points: {self.transfer_settings.npts}")
-        print(f"    Beta: {self.transfer_settings.beta}")
-        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
-        print(f"    No. points: {self.transfer_settings.thermal_npts}")
-        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
+        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}", file=file)
+        print(f"    No. points: {self.transfer_settings.npts}", file=file)
+        print(f"    Beta: {self.transfer_settings.beta}", file=file)
+        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}", file=file)
+        print(f"    No. points: {self.transfer_settings.thermal_npts}", file=file)
+        print(f"    Beta: {self.transfer_settings.thermal_beta}\n", file=file)
 
         if print_comm:
-            print(self.comm_manager)
+            print(self.comm_manager, file=file)
 
         return
 
