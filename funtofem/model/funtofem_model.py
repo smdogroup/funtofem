@@ -1209,21 +1209,21 @@ class FUNtoFEMmodel(object):
                 fp.write(data)
 
     @property
-    def structural(self):
+    def structural(self) -> caps2tacs.TacsModel:
         """structural discipline submodel such as TacsModel"""
         return self._struct_model
 
     @structural.setter
-    def structural(self, structural_model):
+    def structural(self, structural_model: caps2tacs.TacsModel):
         self._struct_model = structural_model
 
     @property
-    def flow(self):
+    def flow(self) -> Fun3dModel:
         """flow discipline submodel such as Fun3dModel"""
         return self._flow_model
 
     @flow.setter
-    def flow(self, flow_model):
+    def flow(self, flow_model: Fun3dModel):
         self._flow_model = flow_model
 
     def save_forward_states(self, comm, scenario):
@@ -1492,15 +1492,29 @@ class FUNtoFEMmodel(object):
         return
 
     def print_summary(
-        self, comm=None, print_level=0, print_model_details=True, ignore_rigid=False
+        self,
+        comm=None,
+        print_level=0,
+        print_model_details=True,
+        ignore_rigid=False,
+        filename=None,
     ):
         """
-        Print out a summary of the assembled model for inspection
+        Print out a summary of the assembled model for inspection.
 
         Parameters
         ----------
+        comm: MPI communicator, optional
+            If provided, only rank 0 prints.
         print_level: int
-            how much detail to print in the summary. Print level < 0 does not print all the variables
+            How much detail to print. print_level < 0 skips variable listings.
+        print_model_details: bool
+            Whether to print the functions and variables tables.
+        ignore_rigid: bool
+            Whether to skip rigid_motion variable listings on bodies.
+        filename: str or path-like, optional
+            If provided, the summary is written to this file instead of stdout.
+            The file is opened in write mode and closed after printing.
         """
         print_here = True
         if comm is not None:
@@ -1509,71 +1523,100 @@ class FUNtoFEMmodel(object):
                 print_here = False
 
         if print_here:
-            print("==========================================================")
-            print("||                FUNtoFEM Model Summary                ||")
-            print("==========================================================")
-            print(self)
+            if filename is not None:
+                fp = open(filename, "w")
+            else:
+                fp = None  # print() defaults to sys.stdout when file=None
+
+            print("==========================================================", file=fp)
+            print("||                FUNtoFEM Model Summary                ||", file=fp)
+            print("==========================================================", file=fp)
+            print(self, file=fp)
 
             if print_model_details:
-                self._print_functions()
-                self._print_variables()
+                self._print_functions(file=fp)
+                self._print_variables(file=fp)
+                self._print_submodels(file=fp)
 
-            print("\n------------------")
-            print("| Bodies Summary |")
-            print("------------------")
+            print("\n------------------", file=fp)
+            print("| Bodies Summary |", file=fp)
+            print("------------------", file=fp)
             for body in self.bodies:
-                print(body)
+                print(body, file=fp)
                 for vartype in body.variables:
-                    print("\n    Variable type:", vartype)
+                    print("\n    Variable type:", vartype, file=fp)
                     print(
                         "      Number of",
                         vartype,
                         "variables:",
                         len(body.variables[vartype]),
+                        file=fp,
                     )
                     if (vartype == "rigid_motion") and ignore_rigid:
-                        print("      Ignoring rigid_motion vartype list.")
+                        print("      Ignoring rigid_motion vartype list.", file=fp)
                     else:
                         if print_level >= 0:
-                            body._print_variables(vartype)
+                            body._print_variables(vartype, file=fp)
 
-            print(" ")
-            print("--------------------")
-            print("| Scenario Summary |")
-            print("--------------------")
+            print(" ", file=fp)
+            print("--------------------", file=fp)
+            print("| Scenario Summary |", file=fp)
+            print("--------------------", file=fp)
             for scenario in self.scenarios:
-                print(scenario)
-                scenario._print_functions()
+                print(scenario, file=fp)
+                scenario._print_functions(file=fp)
 
                 for vartype in scenario.variables:
-                    print("    Variable type:", vartype)
+                    print("    Variable type:", vartype, file=fp)
                     print(
                         "      Number of",
                         vartype,
                         "variables:",
                         len(scenario.variables[vartype]),
+                        file=fp,
                     )
                     if print_level >= 0:
-                        scenario._print_variables(vartype)
+                        scenario._print_variables(vartype, file=fp)
+
+            if fp is not None:
+                fp.close()
 
         if comm is not None:
             comm.Barrier()
 
         return
 
-    def _print_functions(self):
+    def _print_submodels(self, file=None):
+        print("--------------------", file=file)
+        print("| Submodel Summary |", file=file)
+        print("--------------------", file=file)
+
+        print(f"  Flow model registered: {self.flow is not None}", file=file)
+        print(
+            f"  Structural model registered: {self.structural is not None}", file=file
+        )
+
+        if self.flow is not None and hasattr(self.flow, "print_summary"):
+            print("", file=file)
+            self.flow.print_summary(file=file)
+
+        return
+
+    def _print_functions(self, file=None):
         model_functions = self.get_functions(all=True)
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
-        self._print_long("Function", width=18, indent_line=5)
-        self._print_long("Analysis Type", width=15)
-        self._print_long("Comp. Adjoint", width=15)
-        self._print_long("Time Range", width=20)
-        self._print_long("Averaging", end_line=True)
+        self._print_long("Function", width=18, indent_line=5, file=file)
+        self._print_long("Analysis Type", width=15, file=file)
+        self._print_long("Comp. Adjoint", width=15, file=file)
+        self._print_long("Time Range", width=20, file=file)
+        self._print_long("Averaging", end_line=True, file=file)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
         for func in model_functions:
             if isinstance(func, CompositeFunction):
@@ -1590,31 +1633,34 @@ class FUNtoFEMmodel(object):
                 averaging = func.averaging
             _time_range = " ".join(("[", str(start), ",", str(stop), "]"))
             adjoint = str(adjoint)
-            self._print_long(func.name, width=18, indent_line=5)
-            self._print_long(analysis_type, width=15)
-            self._print_long(adjoint, width=15)
-            self._print_long(_time_range, width=20)
-            self._print_long(averaging, end_line=True)
+            self._print_long(func.name, width=18, indent_line=5, file=file)
+            self._print_long(analysis_type, width=15, file=file)
+            self._print_long(adjoint, width=15, file=file)
+            self._print_long(_time_range, width=20, file=file)
+            self._print_long(averaging, end_line=True, file=file)
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
 
         return
 
-    def _print_variables(self):
+    def _print_variables(self, file=None):
         model_variables = self.get_variables()
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
-        self._print_long("Variable", width=20, indent_line=5)
-        self._print_long("Var. ID", width=10)
-        self._print_long("Value", width=16)
-        self._print_long("Bounds", width=24)
-        self._print_long("Active", width=8)
-        self._print_long("Coupled", width=9, end_line=True)
+        self._print_long("Variable", width=20, indent_line=5, file=file)
+        self._print_long("Var. ID", width=10, file=file)
+        self._print_long("Value", width=16, file=file)
+        self._print_long("Bounds", width=24, file=file)
+        self._print_long("Active", width=8, file=file)
+        self._print_long("Coupled", width=9, end_line=True, file=file)
 
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
         for var in model_variables:
             _name = "{:s}".format(var.name)
@@ -1626,29 +1672,38 @@ class FUNtoFEMmodel(object):
             _coupled = str(var.coupled)
             _bounds = " ".join(("[", _lower, ",", _upper, "]"))
 
-            self._print_long(_name, width=20, indent_line=5)
-            self._print_long(_id, width=10, align="<")
-            self._print_long(_value, width=16)
-            self._print_long(_bounds, width=24)
-            self._print_long(_active, width=8)
-            self._print_long(_coupled, width=9, end_line=True)
+            self._print_long(_name, width=20, indent_line=5, file=file)
+            self._print_long(_id, width=10, align="<", file=file)
+            self._print_long(_value, width=16, file=file)
+            self._print_long(_bounds, width=24, file=file)
+            self._print_long(_active, width=8, file=file)
+            self._print_long(_coupled, width=9, end_line=True, file=file)
 
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
 
         return
 
-    def _print_long(self, value, width=12, indent_line=0, end_line=False, align="^"):
+    def _print_long(
+        self, value, width=12, indent_line=0, end_line=False, align="^", file=None
+    ):
         if value is None:
             value = "None"
         if indent_line > 0:
-            print("{val:{wid}}".format(wid=indent_line, val=""), end="")
+            print("{val:{wid}}".format(wid=indent_line, val=""), end="", file=file)
         if not end_line:
-            print("|{val:{ali}{wid}}".format(wid=width, ali=align, val=value), end="")
+            print(
+                "|{val:{ali}{wid}}".format(wid=width, ali=align, val=value),
+                end="",
+                file=file,
+            )
         else:
             print(
-                "|{val:{ali}{wid}}|".format(wid=width, ali=align, val=value), end="\n"
+                "|{val:{ali}{wid}}|".format(wid=width, ali=align, val=value),
+                end="\n",
+                file=file,
             )
         return
 
