@@ -921,6 +921,9 @@ class Fun3d14Interface(SolverInterface):
         # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
+        if self._debug:
+            print(f"FUNtoFEM nfuncs: {nfuncs}", flush=True)
+
         for ibody, body in enumerate(bodies, 1):
             # Get the adjoint Jacobian product for the aerodynamic loads
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
