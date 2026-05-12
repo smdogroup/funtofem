@@ -1891,12 +1891,12 @@ class Body(Base):
             if len(aero_loads) > 0:
                 aero_loads = np.concatenate(aero_loads)
             else:
-                aero_loads = np.zeros((3 * len(aero_ids), 1))
+                aero_loads = np.zeros(3 * len(aero_ids))
 
             if len(aero_hflux) > 0:
                 aero_hflux = np.concatenate(aero_hflux)
             else:
-                aero_hflux = np.zeros((1 * len(aero_ids), 1))
+                aero_hflux = np.zeros(1 * len(aero_ids))
 
         return aero_ids, aero_hflux, aero_loads
 
@@ -1945,12 +1945,12 @@ class Body(Base):
             if len(struct_loads) > 0:
                 struct_loads = np.concatenate(struct_loads)
             else:
-                struct_loads = np.zeros((3 * len(struct_ids), 1))
+                struct_loads = np.zeros(3 * len(struct_ids))
 
             if len(struct_hflux) > 0:
                 struct_hflux = np.concatenate(struct_hflux)
             else:
-                struct_hflux = np.zeros((1 * len(struct_ids), 1))
+                struct_hflux = np.zeros(len(struct_ids))
 
         return struct_ids, struct_hflux, struct_loads
 
