@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
@@ -13,10 +15,18 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
     from .fun3d_14_interface import Fun3d14Interface
 
+if TYPE_CHECKING:
+    from mpi4py import MPI
+
 
 class CommManager:
     def __init__(
-        self, master_comm, struct_comm=None, struct_root=0, aero_comm=None, aero_root=0
+        self,
+        master_comm: MPI.Comm,
+        struct_comm: MPI.Comm = None,
+        struct_root=0,
+        aero_comm: MPI.Comm = None,
+        aero_root=0,
     ):
         """
         Comm Manager holds the disciplinary comms of each solver below in the SolverManager class
@@ -55,7 +65,7 @@ class CommManager:
 
 
 class SolverManager:
-    def __init__(self, comm, use_flow: bool = True, use_struct: bool = True):
+    def __init__(self, comm: MPI.Comm, use_flow: bool = True, use_struct: bool = True):
         """
         Create a solver manager object which holds flow, struct solvers
         and in the future might be expanded to hold dynamics, etc.
@@ -96,7 +106,7 @@ class SolverManager:
         """
         return a list of solvers
         """
-        mlist = []
+        mlist: list[Fun3d14Interface | TacsSteadyInterface] = []
         if self.use_flow:
             mlist.append(self.flow)
         if self.use_struct:
@@ -112,7 +122,7 @@ class SolverManager:
         return max([abs(solver.get_adjoint_residual()) for solver in self.solver_list])
 
     @property
-    def flow(self):
+    def flow(self) -> Fun3d14Interface:
         return self._flow
 
     @flow.setter
@@ -135,7 +145,7 @@ class SolverManager:
         return self
 
     @property
-    def structural(self):
+    def structural(self) -> TacsSteadyInterface | TacsUnsteadyInterface:
         return self._structural
 
     @structural.setter

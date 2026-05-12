@@ -20,16 +20,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 import numpy as np
 from ._base import Base
 from mpi4py import MPI
 from funtofem import TransferScheme
 from ..driver.transfer_settings import TransferSettings
+from typing import TYPE_CHECKING
 
 try:
     from .hermes_transfer import HermesTransfer
 except:
     pass
+
+if TYPE_CHECKING:
+    from .scenario import Scenario
 
 
 class AitkenRelaxation:
@@ -657,7 +663,7 @@ class Body(Base):
 
         super(Body, self).add_variable(vartype, var)
 
-    def initialize_variables(self, scenario):
+    def initialize_variables(self, scenario: Scenario):
         """
         Initialize the variables each time we run an analysis.
 

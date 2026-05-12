@@ -37,6 +37,9 @@ except:
 
 if TYPE_CHECKING:
     from ..interface.solver_manager import SolverManager, CommManager
+    from ..model.scenario import Scenario
+    from ..model.body import Body
+    from ..model.funtofem_model import FUNtoFEMmodel
 
 np.set_printoptions(precision=15)
 
@@ -51,7 +54,7 @@ class FUNtoFEMDriver(object):
         solvers: SolverManager,
         comm_manager: CommManager = None,
         transfer_settings: TransferSettings = None,
-        model=None,
+        model: FUNtoFEMmodel = None,
         debug=False,
         reload_funtofem_states=False,
     ):
@@ -255,7 +258,7 @@ class FUNtoFEMDriver(object):
 
         return fail
 
-    def _initialize_forward(self, scenario, bodies):
+    def _initialize_forward(self, scenario: Scenario, bodies: list[Body]):
         """
         Initialize the variables and solver data for a forward analysis
         """
@@ -273,7 +276,7 @@ class FUNtoFEMDriver(object):
             self.model.load_forward_states(self.comm, scenario)
         return 0
 
-    def _initialize_adjoint(self, scenario, bodies):
+    def _initialize_adjoint(self, scenario: Scenario, bodies: list[Body]):
         """
         Initialize the variables and solver data for an adjoint solve
         """
@@ -296,7 +299,7 @@ class FUNtoFEMDriver(object):
                 func.derivatives[var] = 0.0
         return
 
-    def _post_forward(self, scenario, bodies):
+    def _post_forward(self, scenario: Scenario, bodies: list[Body]):
         # save the funtofem states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.save_forward_states(self.comm, scenario)
@@ -306,7 +309,7 @@ class FUNtoFEMDriver(object):
 
         return
 
-    def _post_adjoint(self, scenario, bodies):
+    def _post_adjoint(self, scenario: Scenario, bodies: list[Body]):
         # save the funtofem adjoint states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.save_adjoint_states(self.comm, scenario)
@@ -314,19 +317,19 @@ class FUNtoFEMDriver(object):
         for solver in self.solvers.solver_list:
             solver.post_adjoint(scenario, bodies)
 
-    def _distribute_functions(self, scenario, bodies):
+    def _distribute_functions(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.set_functions(scenario, bodies)
 
-    def _distribute_variables(self, scenario, bodies):
+    def _distribute_variables(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.set_variables(scenario, bodies)
 
-    def _get_functions(self, scenario, bodies):
+    def _get_functions(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.get_functions(scenario, self.model.bodies)
 
-    def _get_function_grads(self, scenario):
+    def _get_function_grads(self, scenario: Scenario):
         # Set the function gradients into the scenario and body classes
         bodies = self.model.bodies
         for solver in self.solvers.solver_list:
@@ -336,7 +339,7 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.shape_derivative(scenario, offset)
 
-    def _get_scenario_function_offset(self, scenario):
+    def _get_scenario_function_offset(self, scenario: Scenario):
         """
         The offset tells each scenario what is first function's index is
         """
@@ -346,7 +349,9 @@ class FUNtoFEMDriver(object):
 
         return offset
 
-    def _extract_coordinate_derivatives(self, scenario, bodies, step):
+    def _extract_coordinate_derivatives(
+        self, scenario: Scenario, bodies: list[Body], step
+    ):
         nfunctions = scenario.count_adjoint_functions()
 
         # get the contributions from the solvers
@@ -360,19 +365,21 @@ class FUNtoFEMDriver(object):
 
         return
 
-    def _solve_steady_forward(self, scenario, steps):
+    def _solve_steady_forward(self, scenario: Scenario, steps):
         return 1
 
-    def _solve_unsteady_forward(self, scenario, steps):
+    def _solve_unsteady_forward(self, scenario: Scenario, steps):
         return 1
 
-    def _solve_steady_adjoint(self, scenario):
+    def _solve_steady_adjoint(self, scenario: Scenario):
         return 1
 
-    def _solve_unsteady_adjoint(self, scenario):
+    def _solve_unsteady_adjoint(self, scenario: Scenario):
         return 1
 
-    def print_summary(self, comm=None, print_model=False, print_comm=False, filename=None):
+    def print_summary(
+        self, comm=None, print_model=False, print_comm=False, filename=None
+    ):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
 

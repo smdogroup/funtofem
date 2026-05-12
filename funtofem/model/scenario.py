@@ -20,6 +20,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 __all__ = ["Scenario"]
 
 from ._base import Base
@@ -27,10 +29,14 @@ from .variable import Variable
 from .function import Function
 import numpy as np
 import importlib
+from typing import TYPE_CHECKING
 
 tacs_loader = importlib.util.find_spec("tacs")
 if tacs_loader is not None:
     from funtofem.interface import TacsIntegrationSettings
+
+if TYPE_CHECKING:
+    from .composite_function import CompositeFunction
 
 
 class Scenario(Base):
@@ -40,7 +46,7 @@ class Scenario(Base):
 
     def __init__(
         self,
-        name,
+        name: str,
         id=0,
         group=None,
         steady=True,
@@ -147,7 +153,7 @@ class Scenario(Base):
         self._adjoint_steps = adjoint_steps
         self.variables = {}
 
-        self.functions = []
+        self.functions: list[Function | CompositeFunction] = []
         self.steady = steady
         self.steps = steps
         self.forward_coupling_frequency = forward_coupling_frequency
@@ -260,7 +266,7 @@ class Scenario(Base):
         assert self.steady
         self._adjoint_steps = new_steps
 
-    def add_function(self, function):
+    def add_function(self, function: Function | CompositeFunction):
         """
         Add a new function to the scenario's function list
 
@@ -288,7 +294,7 @@ class Scenario(Base):
         return self
 
     @property
-    def adjoint_functions(self) -> list:
+    def adjoint_functions(self) -> list[Function | CompositeFunction]:
         """return a list of the adjoint functions only"""
         return [func for func in self.functions if func.adjoint]
 
@@ -651,7 +657,9 @@ class Scenario(Base):
         p("  ---------")
         if any(self.variables[vt] for vt in self.variables):
             for vartype in self.variables:
-                p(f"    Variable type : {vartype}  ({len(self.variables[vartype])} vars)")
+                p(
+                    f"    Variable type : {vartype}  ({len(self.variables[vartype])} vars)"
+                )
                 self._print_variables(vartype, file=fp)
         else:
             p("    (none registered)")

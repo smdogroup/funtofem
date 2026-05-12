@@ -20,6 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 __all__ = ["FUNtoFEMmodel"]
 
 import numpy as np, os, importlib
@@ -35,6 +38,11 @@ if caps_loader is not None:
 
 if tacs_loader is not None and caps_loader is not None:
     from tacs import caps2tacs
+
+if TYPE_CHECKING:
+    from .scenario import Scenario
+    from .body import Body
+    from .function import Function
 
 
 class FUNtoFEMmodel(object):
@@ -63,14 +71,14 @@ class FUNtoFEMmodel(object):
         self.name = name
         self.id = id
 
-        self.scenarios = []
-        self.bodies = []
-        self.composite_functions = []
+        self.scenarios: list[Scenario] = []
+        self.bodies: list[Body] = []
+        self.composite_functions: list[CompositeFunction] = []
 
         self._struct_model = None
         self._flow_model = None
 
-    def add_body(self, body):
+    def add_body(self, body: Body):
         """
         Add a body to the model. The body must be completely defined before adding to the model
 
@@ -102,7 +110,7 @@ class FUNtoFEMmodel(object):
 
         self.bodies.append(body)
 
-    def add_composite_function(self, composite_function):
+    def add_composite_function(self, composite_function: CompositeFunction):
         """
         Add a composite function to the existing list of composite functions in the model.
         Need all variables to be setup before making any composite functions...
@@ -111,7 +119,7 @@ class FUNtoFEMmodel(object):
         self.composite_functions.append(composite_function)
         return
 
-    def add_scenario(self, scenario):
+    def add_scenario(self, scenario: Scenario):
         """
         Add a scenario to model. The scenario must be completely defined before adding to the model
 
@@ -256,7 +264,7 @@ class FUNtoFEMmodel(object):
             self.flow.set_variables(active_shape_vars, active_aero_vars)
         return
 
-    def get_variables(self, names=None, all=False, optim=False):
+    def get_variables(self, names=None, all=False, optim=False) -> list[Variable]:
         """
         Get all the coupled and uncoupled variable objects for the entire model.
         Coupled variables only appear once.
@@ -368,7 +376,7 @@ class FUNtoFEMmodel(object):
         """
 
         # add in analysis functions
-        functions = []
+        functions: list[Function | CompositeFunction] = []
         for scenario in self.scenarios:
             if optim:
                 functions.extend([func for func in scenario.functions if func.optim])
