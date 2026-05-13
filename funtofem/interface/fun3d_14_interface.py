@@ -1477,3 +1477,119 @@ class Fun3d14Interface(SolverInterface):
             adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
             adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )
+
+    def print_summary(self, comm=None, filename=None, _fp=None):
+        """
+        Print a summary of the Fun3d14Interface settings, tolerances, and
+        current residual status.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the summary to this file (opened in write mode) instead of
+            stdout.  Ignored when ``_fp`` is supplied.
+        _fp : file-like object, optional
+            Internal use — an already-open file handle passed by
+            SolverManager.  Takes priority over ``filename``.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            _close_fp = False
+            if _fp is not None:
+                fp = _fp
+            elif filename is not None:
+                fp = open(filename, "w")
+                _close_fp = True
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||           FUN3D v14 Interface Summary               ||")
+            p("==========================================================")
+
+            # --- Directories ---
+            p("")
+            p("  Directories")
+            p("  -----------")
+            p(f"  FUN3D dir            : {self.fun3d_dir}")
+            p(f"  Root dir             : {self.root_dir}")
+
+            # --- Configuration ---
+            p("")
+            p("  Configuration")
+            p("  -------------")
+            p(f"  Complex mode         : {self.complex_mode}")
+            p(f"  Auto coords          : {self.auto_coords}")
+            p(f"  External mesh morph  : {self.external_mesh_morph}")
+            p(f"  Debug                : {self._debug}")
+            p(f"  Coord test override  : {self._coord_test_override}")
+
+            conv_str = "(convergence stopping criterion)"
+            min_str = "(minimum residual allowed)"
+
+            # --- Tolerances ---
+            p("")
+            p("  Tolerances")
+            p("  ----------")
+            p(f"  Forward stop tol     : {self.forward_tolerance:<12g}  {conv_str}")
+            p(f"  Forward min tol      : {self.forward_min_tolerance:<12g}  {min_str}")
+            p(f"  Adjoint stop tol     : {self.adjoint_tolerance:<12g}  {conv_str}")
+            p(f"  Adjoint min tol      : {self.adjoint_min_tolerance:<12g}  {min_str}")
+
+            # --- Solver options ---
+            p("")
+            p("  Solver Options")
+            p("  --------------")
+            fwd_opts = (
+                self.forward_options if self.forward_options is not None else "default"
+            )
+            adj_opts = (
+                self.adjoint_options if self.adjoint_options is not None else "default"
+            )
+            p(f"  Forward options      : {fwd_opts}")
+            p(f"  Adjoint options      : {adj_opts}")
+
+            # --- Aerodynamic parameters ---
+            p("")
+            p("  Aerodynamic Parameters")
+            p("  ----------------------")
+            p(f"  Thermal scale        : {self.thermal_scale}")
+
+            # --- Residual status ---
+            p("")
+            p("  Residual Status")
+            p("  ---------------")
+            p(f"  Forward done         : {self._forward_done}")
+            fwd_resid = (
+                self._forward_resid
+                if self._forward_resid is not None
+                else "not yet run"
+            )
+            p(f"  Forward residual     : {fwd_resid}")
+            p(f"  Adjoint done         : {self._adjoint_done}")
+            adj_resid = (
+                self._adjoint_resid
+                if self._adjoint_resid is not None
+                else "not yet run"
+            )
+            p(f"  Adjoint residual     : {adj_resid}")
+
+            if _close_fp:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return

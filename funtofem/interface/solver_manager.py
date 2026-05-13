@@ -197,3 +197,66 @@ class SolverManager:
         has_flow = not (self.use_flow) or self.flow is not None
         has_struct = not (self.use_struct) or self.structural is not None
         return has_flow and has_struct
+
+    def print_summary(self, comm=None, filename=None):
+        """
+        Print a summary of the SolverManager and each registered solver.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the full summary (manager + all solvers) to this file
+            (opened in write mode) instead of stdout.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            if filename is not None:
+                fp = open(filename, "w")
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||            Solver Manager Summary                   ||")
+            p("==========================================================")
+
+            flow_type = type(self.flow).__name__ if self.flow is not None else "None"
+            struct_type = (
+                type(self.structural).__name__
+                if self.structural is not None
+                else "None"
+            )
+
+            p(f"  Flow solver          : {flow_type}")
+            p(f"  Structural solver    : {struct_type}")
+            p(f"  Uses FUN3D           : {self.uses_fun3d}")
+
+            # --- Delegate to each solver, sharing the open file handle ---
+            if self.flow is not None and hasattr(self.flow, "print_summary"):
+                p("")
+                self.flow.print_summary(_fp=fp)
+
+            if self.structural is not None and hasattr(
+                self.structural, "print_summary"
+            ):
+                p("")
+                self.structural.print_summary(_fp=fp)
+
+            if fp is not None:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return
