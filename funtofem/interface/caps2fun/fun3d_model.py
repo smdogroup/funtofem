@@ -155,7 +155,11 @@ class Fun3dModel:
         self.fun3d_aim.set_variables(self._shape_varnames, self._aero_varnames)
 
     def register(self, obj):
-        if isinstance(obj, caps2tacs.ShapeVariable):
+        if (
+            tacs_loader is not None
+            and caps_loader is not None
+            and isinstance(obj, caps2tacs.ShapeVariable)
+        ):
             self._shape_varnames += [obj.name]
 
         self.fun3d_aim.register(obj)

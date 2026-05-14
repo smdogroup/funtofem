@@ -281,7 +281,11 @@ class Fun3dAim:
     def register(self, obj):
         if isinstance(obj, Fun3dBC):
             self._boundary_conditions[obj.name] = obj.BC_dict
-        elif isinstance(obj, caps2tacs.ShapeVariable):
+        elif (
+            tacs_loader is not None
+            and caps_loader is not None
+            and isinstance(obj, caps2tacs.ShapeVariable)
+        ):
             self._shape_variables.append(obj)
         else:
             raise AssertionError(
