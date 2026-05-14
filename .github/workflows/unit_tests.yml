@@ -72,7 +72,7 @@ jobs:
           auto-update-conda: true
           channels: conda-forge
           python-version: "3.10"
-          conda-remove-defaults: "true"
+          add-pip-as-python-dependency: true
 
       - name: Install TACS
         run: |
@@ -176,7 +176,7 @@ jobs:
           auto-update-conda: true
           channels: conda-forge
           python-version: "3.10"
-          conda-remove-defaults: true
+          add-pip-as-python-dependency: true
 
       - name: Install FUNtoFEM
         run: |
