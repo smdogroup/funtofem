@@ -378,7 +378,11 @@ class FUNtoFEMDriver(object):
         return 1
 
     def print_summary(
-        self, comm=None, print_model=False, print_comm=False, filename=None
+        self,
+        comm: MPI.Intracomm = None,
+        print_model=False,
+        print_comm=False,
+        filename=None,
     ):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
