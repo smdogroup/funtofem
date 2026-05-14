@@ -4,6 +4,7 @@ gen_TACS_bdf_aero.py
 Generates the TACS BDF mesh for the diamond wedge aerothermoelastic example.
 Writes struct/tacs_aero.bdf relative to this script's directory.
 """
+
 import numpy as np
 import os
 
