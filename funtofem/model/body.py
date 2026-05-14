@@ -1714,7 +1714,7 @@ class Body(Base):
             scenario_entry_dict = {}
             for entry in scenario_data:
                 if entry["bodyName"] == self.name:
-                    scenario_entry_dict[entry["aeroID"]] = {
+                    scenario_entry_dict[int(entry["aeroID"])] = {
                         "load": entry["load"],
                         "hflux": entry["hflux"],
                     }
@@ -1780,7 +1780,7 @@ class Body(Base):
             scenario_entry_dict = {}
             for entry in scenario_data:
                 if entry["bodyName"] == self.name:
-                    scenario_entry_dict[entry["structID"]] = {
+                    scenario_entry_dict[int(entry["structID"])] = {
                         "load": entry["load"],
                         "hflux": entry["hflux"],
                     }
