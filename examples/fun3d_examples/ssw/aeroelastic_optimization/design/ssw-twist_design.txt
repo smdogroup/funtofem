@@ -1,0 +1,19 @@
+Starting new pyoptsparse optimization for the ssw-twist model...
+New design = {'twist1': 1.0, 'twist2': 1.0, 'twist3': 1.0, 'twist4': 1.0}
+Functions = {'cruise_inviscid-ksfailure': 1.2054533210155232, 'LiftObj': 0.5041192285955857}
+New design = {'twist1': 1.0125, 'twist2': 0.987500125, 'twist3': 1.01249975000125, 'twist4': 0.98750037499625}
+Functions = {'cruise_inviscid-ksfailure': 1.2035527098899477, 'LiftObj': 0.5050189550611138}
+New design = {'twist1': 0.8350349254972186, 'twist2': 0.3289410891217649, 'twist3': 0.0, 'twist4': 0.6073614993270895}
+Functions = {'cruise_inviscid-ksfailure': 1.007387943142844, 'LiftObj': 0.6076494979072695}
+New design = {'twist1': 0.8470114478806534, 'twist2': 0.3302964975863229, 'twist3': -0.05344132386471272, 'twist4': 0.5793750583185265}
+Functions = {'cruise_inviscid-ksfailure': 1.0001127660119855, 'LiftObj': 0.6107541431301692}
+New design = {'twist1': 3.954878727289292, 'twist2': 4.024319393347629, 'twist3': -2.1787872541630593, 'twist4': -1.7994815147236025}
+Functions = {'cruise_inviscid-ksfailure': 0.9895836485899948, 'LiftObj': 0.49107042562806313}
+New design = {'twist1': 10.0, 'twist2': 10.0, 'twist3': -5.025174138965088, 'twist4': -6.898902889889806}
+Functions = {'cruise_inviscid-ksfailure': 0.9300471739876369, 'LiftObj': 0.37112023592025545}
+New design = {'twist1': 10.0, 'twist2': 10.0, 'twist3': -3.9454395330964, 'twist4': -8.204319525202585}
+Functions = {'cruise_inviscid-ksfailure': 1.0001884833489054, 'LiftObj': 0.3434062522564213}
+New design = {'twist1': 10.0, 'twist2': 10.0, 'twist3': -3.3040025390377643, 'twist4': -10.0}
+Functions = {'cruise_inviscid-ksfailure': 1.0002604837805813, 'LiftObj': 0.3390969398281868}
+New design = {'twist1': 10.0, 'twist2': 10.0, 'twist3': -3.3063167077132736, 'twist4': -10.0}
+Functions = {'cruise_inviscid-ksfailure': 0.9999271497861982, 'LiftObj': 0.33921386963822303}

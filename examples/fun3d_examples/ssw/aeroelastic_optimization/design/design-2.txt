@@ -1,0 +1,2 @@
+Discipline aerodynamic
+	var cruise_inviscid-AOA -1.6791811743954177
