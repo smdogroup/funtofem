@@ -8,6 +8,7 @@ first and leave the optimal panel thickness design variables in the meshes folde
 We no longer perform the mesh generation in this script as then we can't use parallel tacsAIMs
 NOTE : don't call this script with mpiexec_mpt, call it with python (otherwise system calls won't work)
 """
+
 from pyoptsparse import SNOPT, Optimization
 import os
 import numpy as np

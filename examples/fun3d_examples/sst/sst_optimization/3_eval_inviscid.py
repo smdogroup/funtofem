@@ -2,9 +2,10 @@
 Sean P. Engelstad, Georgia Tech 2023
 
 This runs the fully coupled aeroelastic, inviscid forward analysis.
-It prints out the aerostructural functionals for you to manually improve the design before full 
+It prints out the aerostructural functionals for you to manually improve the design before full
 optimization.
 """
+
 import os
 from mpi4py import MPI
 from funtofem import *
