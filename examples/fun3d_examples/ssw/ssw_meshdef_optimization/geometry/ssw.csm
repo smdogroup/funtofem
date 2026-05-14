@@ -1,0 +1,61 @@
+# Super Simple Wing geometry script
+
+cfgpmtr view:flow 1
+cfgpmtr view:struct 0
+
+cfgpmtr midplane 0 # 0 is off, 1 is upper, 2 is lower
+cfgpmtr chopMode 2 # 0 is off, 1 is LE, 2 is middle, 3 is TE
+
+cfgpmtr nribs 7
+cfgpmtr nspars 2
+
+## DESIGN PARAMETERS
+# ---------------------------------
+# General wing and airfoil parameters
+despmtr ff 50.0         # Farfield distance
+despmtr sspan 5.0       # Semispan
+despmtr camber 0.02     # Maximum camber
+despmtr xCamber 0.4     # Location of maximum camber
+despmtr aoa 0.0         # Geometric angle of attack
+despmtr chord 1.0       # Chord length
+
+# Thickness parameters (thickness/chord)
+despmtr tc1 0.2
+despmtr tc2 0.15
+despmtr tc3 0.12
+despmtr tc4 0.1
+
+# Geomtric twist parameters
+despmtr twist1 0.0
+despmtr twist2 0.0
+despmtr twist3 0.0
+despmtr twist4 0.0
+
+# Internal structure parameters
+despmtr LEchop 0.05
+despmtr TEchop 0.05
+# ---------------------------------
+
+ifthen view:struct EQ 1
+    # Make the structural model
+    udparg $/wingStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+    udparg $/wingStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+    udparg $/wingStruct chord chord sspan sspan camber camber xCamber xCamber
+    udparg $/wingStruct LEchop LEchop TEchop TEchop 
+    udparg $/wingStruct chopMode chopMode
+    udparg $/wingStruct nribs nribs nspars nspars
+    udparg $/wingStruct aoa aoa
+    udprim $/wingStruct midplane midplane
+endif
+
+ifthen view:flow EQ 1
+    # Make the aero model
+    udparg $/wingAero tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+    udparg $/wingAero twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+    udparg $/wingAero chord chord sspan sspan camber camber xCamber xCamber
+    udparg $/wingAero aoa aoa
+    udprim $/wingAero sharpTE 1 ff ff
+endif
+
+end
+||

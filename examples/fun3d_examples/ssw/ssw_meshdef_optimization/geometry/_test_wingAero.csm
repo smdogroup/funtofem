@@ -1,0 +1,28 @@
+
+despmtr ff 20.0
+despmtr sspan 5.0
+despmtr camber 0.02
+despmtr xCamber 0.4
+despmtr aoa 0.0
+despmtr chord 1.0
+despmtr sharpTE 1
+
+despmtr tc1 0.2
+despmtr tc2 0.1
+despmtr tc3 0.1
+despmtr tc4 0.1
+
+despmtr twist1 0.0
+despmtr twist2 4.0
+despmtr twist3 6.0
+despmtr twist4 1.0
+
+# Make the full wing solid
+udparg $/wingAero tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/wingAero twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/wingAero chord chord sspan sspan camber camber xCamber xCamber
+udparg $/wingAero aoa aoa
+udprim $/wingAero sharpTE sharpTE ff ff
+
+end
+|

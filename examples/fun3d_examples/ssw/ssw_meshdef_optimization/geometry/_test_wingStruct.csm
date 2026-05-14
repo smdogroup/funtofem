@@ -1,0 +1,39 @@
+cfgpmtr midplane 0 # 0 is off, 1 is upper, 2 is lower
+cfgpmtr chopMode 2 # 0 is off, 1 is LE, 2 is middle, 3 is TE
+
+despmtr ff 20.0
+despmtr sspan 5.0
+despmtr camber 0.02
+despmtr xCamber 0.4
+despmtr aoa 0.0
+despmtr chord 1.0
+
+despmtr tc1 0.2
+despmtr tc2 0.1
+despmtr tc3 0.1
+despmtr tc4 0.1
+
+despmtr twist1 0.0
+despmtr twist2 4.0
+despmtr twist3 6.0
+despmtr twist4 1.0
+
+despmtr LEchop 0.05
+despmtr TEchop 0.05
+
+despmtr nribs 7
+despmtr nspars 2
+
+
+# Make the full wing solid
+udparg $/wingStruct tc1 tc1 tc2 tc2 tc3 tc3 tc4 tc4
+udparg $/wingStruct twist1 twist1 twist2 twist2 twist3 twist3 twist4 twist4
+udparg $/wingStruct chord chord sspan sspan camber camber xCamber xCamber
+udparg $/wingStruct LEchop LEchop TEchop TEchop 
+udparg $/wingStruct chopMode chopMode
+udparg $/wingStruct nribs nribs nspars nspars
+udparg $/wingStruct aoa aoa
+udprim $/wingStruct midplane midplane
+
+end
+|
