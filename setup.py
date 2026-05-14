@@ -92,13 +92,13 @@ optional_dependencies["all"] = sorted(
 
 setup(
     name="funtofem",
-    version="0.3.9",
+    version="0.3.10",
     description="Aerothermoelastic coupling framework and transfer schemes",
     author="Graeme J. Kennedy",
     author_email="graeme.kennedy@ae.gatech.edu",
     python_requires=">=3.10.0",
     extras_require=optional_dependencies,
-    install_requires=["numpy", "mpi4py>=4.0.3"],
+    install_requires=["numpy>=2.0.0", "mpi4py>=4.0.3"],
     packages=find_packages(include=["funtofem*"]),
     ext_modules=cythonize(exts, include_path=inc_dirs),
 )
