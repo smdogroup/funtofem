@@ -111,10 +111,11 @@ jobs:
           cd $TACS_DIR;
           make ${{ matrix.INTERFACE }};
 
-      - name: Install TACS Python interface (always, even on cache hit)
+      - name: Build TACS Python interface (always, even on cache hit)
         run: |
           export TACS_DIR=/home/runner/work/tacs;
-          pip install $TACS_DIR;
+          cd $TACS_DIR;
+          make ${{ matrix.INTERFACE }};
 
       - name: Install FUNtoFEM
         run: |
