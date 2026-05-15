@@ -12,8 +12,6 @@ The SSW is a simple rectangular wing geometry used for aeroelastic and aerotherm
 
 - **`ssw/ssw_meshdef_optimization/`** — Mesh deformation-based aeroelastic optimization of the Super Simple Wing. Uses FUN3D, TACS, and CAPS/ESP.
 
-- **`ssw/ssw_remesh_optimization/`** — Remesh-based aeroelastic optimization of the Super Simple Wing. Uses FUN3D, TACS, and CAPS/ESP.
-
 ---
 
 ## Supersonic Transport Wing (SST)
