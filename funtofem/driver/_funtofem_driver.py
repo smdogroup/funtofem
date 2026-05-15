@@ -37,6 +37,9 @@ except:
 
 if TYPE_CHECKING:
     from ..interface.solver_manager import SolverManager, CommManager
+    from ..model.scenario import Scenario
+    from ..model.body import Body
+    from ..model.funtofem_model import FUNtoFEMmodel
 
 np.set_printoptions(precision=15)
 
@@ -51,7 +54,7 @@ class FUNtoFEMDriver(object):
         solvers: SolverManager,
         comm_manager: CommManager = None,
         transfer_settings: TransferSettings = None,
-        model=None,
+        model: FUNtoFEMmodel = None,
         debug=False,
         reload_funtofem_states=False,
     ):
@@ -255,7 +258,7 @@ class FUNtoFEMDriver(object):
 
         return fail
 
-    def _initialize_forward(self, scenario, bodies):
+    def _initialize_forward(self, scenario: Scenario, bodies: list[Body]):
         """
         Initialize the variables and solver data for a forward analysis
         """
@@ -273,7 +276,7 @@ class FUNtoFEMDriver(object):
             self.model.load_forward_states(self.comm, scenario)
         return 0
 
-    def _initialize_adjoint(self, scenario, bodies):
+    def _initialize_adjoint(self, scenario: Scenario, bodies: list[Body]):
         """
         Initialize the variables and solver data for an adjoint solve
         """
@@ -296,7 +299,7 @@ class FUNtoFEMDriver(object):
                 func.derivatives[var] = 0.0
         return
 
-    def _post_forward(self, scenario, bodies):
+    def _post_forward(self, scenario: Scenario, bodies: list[Body]):
         # save the funtofem states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.save_forward_states(self.comm, scenario)
@@ -306,7 +309,7 @@ class FUNtoFEMDriver(object):
 
         return
 
-    def _post_adjoint(self, scenario, bodies):
+    def _post_adjoint(self, scenario: Scenario, bodies: list[Body]):
         # save the funtofem adjoint states, do it here so we remain in solver directory
         if self.reload_funtofem_states:
             self.model.save_adjoint_states(self.comm, scenario)
@@ -314,19 +317,19 @@ class FUNtoFEMDriver(object):
         for solver in self.solvers.solver_list:
             solver.post_adjoint(scenario, bodies)
 
-    def _distribute_functions(self, scenario, bodies):
+    def _distribute_functions(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.set_functions(scenario, bodies)
 
-    def _distribute_variables(self, scenario, bodies):
+    def _distribute_variables(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.set_variables(scenario, bodies)
 
-    def _get_functions(self, scenario, bodies):
+    def _get_functions(self, scenario: Scenario, bodies: list[Body]):
         for solver in self.solvers.solver_list:
             solver.get_functions(scenario, self.model.bodies)
 
-    def _get_function_grads(self, scenario):
+    def _get_function_grads(self, scenario: Scenario):
         # Set the function gradients into the scenario and body classes
         bodies = self.model.bodies
         for solver in self.solvers.solver_list:
@@ -336,7 +339,7 @@ class FUNtoFEMDriver(object):
         for body in bodies:
             body.shape_derivative(scenario, offset)
 
-    def _get_scenario_function_offset(self, scenario):
+    def _get_scenario_function_offset(self, scenario: Scenario):
         """
         The offset tells each scenario what is first function's index is
         """
@@ -346,7 +349,9 @@ class FUNtoFEMDriver(object):
 
         return offset
 
-    def _extract_coordinate_derivatives(self, scenario, bodies, step):
+    def _extract_coordinate_derivatives(
+        self, scenario: Scenario, bodies: list[Body], step
+    ):
         nfunctions = scenario.count_adjoint_functions()
 
         # get the contributions from the solvers
@@ -360,21 +365,40 @@ class FUNtoFEMDriver(object):
 
         return
 
-    def _solve_steady_forward(self, scenario, steps):
+    def _solve_steady_forward(self, scenario: Scenario, steps):
         return 1
 
-    def _solve_unsteady_forward(self, scenario, steps):
+    def _solve_unsteady_forward(self, scenario: Scenario, steps):
         return 1
 
-    def _solve_steady_adjoint(self, scenario):
+    def _solve_steady_adjoint(self, scenario: Scenario):
         return 1
 
-    def _solve_unsteady_adjoint(self, scenario):
+    def _solve_unsteady_adjoint(self, scenario: Scenario):
         return 1
 
-    def print_summary(self, comm=None, print_model=False, print_comm=False):
+    def print_summary(
+        self,
+        comm: MPI.Intracomm = None,
+        print_model=False,
+        print_comm=False,
+        filename=None,
+    ):
         """
         Print out a summary of the FUNtoFEM driver for inspection.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted before
+            and after.
+        print_model : bool
+            Whether to also print an abbreviated model summary.
+        print_comm : bool
+            Whether to print the comm manager in the transfer settings section.
+        filename : str or path-like, optional
+            If provided, the summary is written to this file (opened in write
+            mode and closed after printing). If None, prints to stdout.
         """
         print_here = True
         if comm is not None:
@@ -383,35 +407,49 @@ class FUNtoFEMDriver(object):
                 print_here = False
 
         if print_here:
-            print("==========================================================")
-            print("||               FUNtoFEM Driver Summary                ||")
-            print("==========================================================")
-            print(self)
+            if filename is not None:
+                fp = open(filename, "w")
+            else:
+                fp = None
 
-            self._print_transfer(print_comm=print_comm)
+            print("==========================================================", file=fp)
+            print("||               FUNtoFEM Driver Summary                ||", file=fp)
+            print("==========================================================", file=fp)
+            print(self, file=fp)
+
+            self._print_transfer(print_comm=print_comm, file=fp)
 
             if print_model:
                 print(
-                    "\nPrinting abbreviated model summary. For details print model summary directly."
+                    "\nPrinting abbreviated model summary. For details print model summary directly.",
+                    file=fp,
                 )
-                self.model.print_summary(print_level=-1, ignore_rigid=True)
+                # Pass the already-open file handle so model output goes to
+                # the same destination without reopening/overwriting the file.
+                self.model.print_summary(print_level=-1, ignore_rigid=True, _fp=fp)
+
+            if fp is not None:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
 
         return
 
-    def _print_transfer(self, print_comm=False):
-        print("\n---------------------")
-        print("| Transfer Settings |")
-        print("---------------------")
+    def _print_transfer(self, print_comm=False, file=None):
+        print("\n---------------------", file=file)
+        print("| Transfer Settings |", file=file)
+        print("---------------------", file=file)
 
-        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}")
-        print(f"    No. points: {self.transfer_settings.npts}")
-        print(f"    Beta: {self.transfer_settings.beta}")
-        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}")
-        print(f"    No. points: {self.transfer_settings.thermal_npts}")
-        print(f"    Beta: {self.transfer_settings.thermal_beta}\n")
+        print(f"  Elastic scheme:  {self.transfer_settings.elastic_scheme}", file=file)
+        print(f"    No. points: {self.transfer_settings.npts}", file=file)
+        print(f"    Beta: {self.transfer_settings.beta}", file=file)
+        print(f"  Thermal scheme:  {self.transfer_settings.thermal_scheme}", file=file)
+        print(f"    No. points: {self.transfer_settings.thermal_npts}", file=file)
+        print(f"    Beta: {self.transfer_settings.thermal_beta}\n", file=file)
 
         if print_comm:
-            print(self.comm_manager)
+            print(self.comm_manager, file=file)
 
         return
 

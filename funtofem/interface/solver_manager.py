@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = ["SolverManager", "CommManager"]
 
 from typing import TYPE_CHECKING
@@ -13,10 +15,18 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 if fun3d_loader is not None:
     from .fun3d_14_interface import Fun3d14Interface
 
+if TYPE_CHECKING:
+    from mpi4py import MPI
+
 
 class CommManager:
     def __init__(
-        self, master_comm, struct_comm=None, struct_root=0, aero_comm=None, aero_root=0
+        self,
+        master_comm: MPI.Comm,
+        struct_comm: MPI.Comm = None,
+        struct_root=0,
+        aero_comm: MPI.Comm = None,
+        aero_root=0,
     ):
         """
         Comm Manager holds the disciplinary comms of each solver below in the SolverManager class
@@ -55,7 +65,7 @@ class CommManager:
 
 
 class SolverManager:
-    def __init__(self, comm, use_flow: bool = True, use_struct: bool = True):
+    def __init__(self, comm: MPI.Comm, use_flow: bool = True, use_struct: bool = True):
         """
         Create a solver manager object which holds flow, struct solvers
         and in the future might be expanded to hold dynamics, etc.
@@ -96,7 +106,7 @@ class SolverManager:
         """
         return a list of solvers
         """
-        mlist = []
+        mlist: list[Fun3d14Interface | TacsSteadyInterface] = []
         if self.use_flow:
             mlist.append(self.flow)
         if self.use_struct:
@@ -112,7 +122,7 @@ class SolverManager:
         return max([abs(solver.get_adjoint_residual()) for solver in self.solver_list])
 
     @property
-    def flow(self):
+    def flow(self) -> Fun3d14Interface:
         return self._flow
 
     @flow.setter
@@ -135,7 +145,7 @@ class SolverManager:
         return self
 
     @property
-    def structural(self):
+    def structural(self) -> TacsSteadyInterface | TacsUnsteadyInterface:
         return self._structural
 
     @structural.setter
@@ -187,3 +197,66 @@ class SolverManager:
         has_flow = not (self.use_flow) or self.flow is not None
         has_struct = not (self.use_struct) or self.structural is not None
         return has_flow and has_struct
+
+    def print_summary(self, comm=None, filename=None):
+        """
+        Print a summary of the SolverManager and each registered solver.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the full summary (manager + all solvers) to this file
+            (opened in write mode) instead of stdout.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            if filename is not None:
+                fp = open(filename, "w")
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||            Solver Manager Summary                   ||")
+            p("==========================================================")
+
+            flow_type = type(self.flow).__name__ if self.flow is not None else "None"
+            struct_type = (
+                type(self.structural).__name__
+                if self.structural is not None
+                else "None"
+            )
+
+            p(f"  Flow solver          : {flow_type}")
+            p(f"  Structural solver    : {struct_type}")
+            p(f"  Uses FUN3D           : {self.uses_fun3d}")
+
+            # --- Delegate to each solver, sharing the open file handle ---
+            if self.flow is not None and hasattr(self.flow, "print_summary"):
+                p("")
+                self.flow.print_summary(_fp=fp)
+
+            if self.structural is not None and hasattr(
+                self.structural, "print_summary"
+            ):
+                p("")
+                self.structural.print_summary(_fp=fp)
+
+            if fp is not None:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return

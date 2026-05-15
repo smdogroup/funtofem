@@ -20,7 +20,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 __all__ = ["FUNtoFEMnlbgs"]
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from mpi4py import MPI
@@ -33,6 +37,10 @@ try:
     from .hermes_transfer import HermesTransfer
 except:
     pass
+
+if TYPE_CHECKING:
+    from ..model.scenario import Scenario
+    from ..model.body import Body
 
 
 class FUNtoFEMnlbgs(FUNtoFEMDriver):
@@ -85,7 +93,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
             hot_start=hot_start,
         )
 
-    def _initialize_adjoint_variables(self, scenario, bodies):
+    def _initialize_adjoint_variables(self, scenario: Scenario, bodies: list[Body]):
         """
         Initialize the adjoint variables
 
@@ -102,7 +110,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return
 
-    def _solve_steady_forward(self, scenario, steps=None):
+    def _solve_steady_forward(self, scenario: Scenario, steps=None):
         """
         Solve the aerothermoelastic forward analysis using the nonlinear block Gauss-Seidel algorithm.
         Aitken under-relaxation is used here for stabilty.
@@ -235,7 +243,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return fail
 
-    def _solve_steady_adjoint(self, scenario):
+    def _solve_steady_adjoint(self, scenario: Scenario):
         """
         Solve the aeroelastic adjoint analysis using the linear block Gauss-Seidel algorithm.
         Aitken under-relaxation for stabilty.
@@ -346,7 +354,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
         self._extract_coordinate_derivatives(scenario, self.model.bodies, steps)
         return 0
 
-    def _solve_unsteady_forward(self, scenario, steps=None):
+    def _solve_unsteady_forward(self, scenario: Scenario, steps=None):
         """
         This function solves the unsteady forward problem using NLBGS without FSI subiterations
 
@@ -427,7 +435,7 @@ class FUNtoFEMnlbgs(FUNtoFEMDriver):
 
         return fail
 
-    def _solve_unsteady_adjoint(self, scenario):
+    def _solve_unsteady_adjoint(self, scenario: Scenario):
         """
         Solves the unsteady adjoint problem using LBGS without FSI subiterations
 

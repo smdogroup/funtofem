@@ -1248,6 +1248,91 @@ class TacsSteadyInterface(SolverInterface):
 
         return
 
+    def print_summary(self, comm=None, filename=None, _fp=None):
+        """
+        Print a summary of the TacsSteadyInterface settings and tolerances.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the summary to this file (opened in write mode) instead of
+            stdout.  Ignored when ``_fp`` is supplied.
+        _fp : file-like object, optional
+            Internal use — an already-open file handle passed by
+            SolverManager.  Takes priority over ``filename``.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            _close_fp = False
+            if _fp is not None:
+                fp = _fp
+            elif filename is not None:
+                fp = open(filename, "w")
+                _close_fp = True
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||         TACS Steady Interface Summary               ||")
+            p("==========================================================")
+
+            # --- Configuration ---
+            p("")
+            p("  Configuration")
+            p("  -------------")
+            p(f"  TACS proc            : {self.tacs_proc}")
+            p(f"  Num procs            : {self.nprocs}")
+            p(f"  Thermal index        : {self.thermal_index}")
+            p(f"  Override rotx        : {self.override_rotx}")
+            p(f"  Debug                : {self._debug}")
+            p(f"  Struct loads file    : {self.struct_loads_file}")
+
+            tol_str = "(set by early stopping in driver)"
+
+            # --- Tolerances ---
+            p("")
+            p("  Tolerances")
+            p("  ----------")
+            p(f"  Forward tolerance    : {self.forward_tolerance:<12g}  {tol_str}")
+            p(f"  Adjoint tolerance    : {self.adjoint_tolerance:<12g}")
+
+            # --- Aitken relaxation ---
+            p("")
+            p("  Aitken Relaxation")
+            p("  -----------------")
+            p(f"  Enabled              : {self.use_aitken}")
+            if self.use_aitken:
+                p(f"  Theta init           : {self.theta_init}")
+                p(f"  Theta min            : {self.aitken_min}")
+                p(f"  Theta max            : {self.aitken_max}")
+                p(f"  Tolerance            : {self.aitken_tol}")
+
+            # --- Structural variables ---
+            p("")
+            p("  Structural Variables")
+            p("  --------------------")
+            p(f"  Count                : {len(self.struct_variables)}")
+
+            if _close_fp:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return
+
     @classmethod
     def create_from_bdf(
         cls,
