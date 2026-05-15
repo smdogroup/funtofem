@@ -20,6 +20,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 
 # FUN3D one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["OnewayAeroDriver"]
@@ -67,8 +69,12 @@ import os, numpy as np
 from funtofem.driver import TransferSettings
 from funtofem.optimization.optimization_manager import OptimizationManager
 from funtofem.interface.utils import Remote
+from typing import TYPE_CHECKING
 
 import importlib.util
+
+if TYPE_CHECKING:
+    from ..model.funtofem_model import FUNtoFEMmodel
 
 # Imports for each of the available flow/aero solvers
 # ---------------------------------------------------
@@ -133,7 +139,7 @@ class OnewayAeroDriver:
     def __init__(
         self,
         solvers,
-        model,
+        model: FUNtoFEMmodel,
         transfer_settings=None,
         remote=None,
         is_paired=False,

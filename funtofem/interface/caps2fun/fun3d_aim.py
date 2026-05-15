@@ -3,6 +3,14 @@ __all__ = ["Fun3dAim", "Fun3dBC"]
 import os, shutil
 from .hc_mesh_morph import HandcraftedMeshMorph
 
+import importlib
+
+# optional tacs import for caps2tacs
+tacs_loader = importlib.util.find_spec("tacs")
+caps_loader = importlib.util.find_spec("pyCAPS")
+if tacs_loader is not None and caps_loader is not None:
+    from tacs import caps2tacs
+
 
 class Fun3dBC:
     BC_TYPES = [
@@ -62,13 +70,13 @@ class Fun3dBC:
     @property
     def BC_dict(self) -> dict:
         if self.wall_spacing is None:
-            if self.symmetryPlane is None:
-                return {"bcType": self.bc_type}
-            else:
-                # As of ESP/CAPS 1.23, there is an option to return BC types as either
-                # a json string (dictionary) or a single string. To use SymmetryX(/Y/Z),
-                # the BC type must be passed as a single string.
-                return self.bc_type
+            # if self.symmetryPlane is None:
+            #     return {"bcType": self.bc_type}
+            # else:
+            # As of ESP/CAPS 1.23, there is an option to return BC types as either
+            # a json string (dictionary) or a single string. To use SymmetryX(/Y/Z),
+            # the BC type must be passed as a single string.
+            return self.bc_type
         else:
             return {"bcType": self.bc_type, "boundaryLayerSpacing": self.wall_spacing}
 
@@ -270,6 +278,20 @@ class Fun3dAim:
                 "No other objects can be registered to a Fun3dAim wrapper."
             )
 
+    def register(self, obj):
+        if isinstance(obj, Fun3dBC):
+            self._boundary_conditions[obj.name] = obj.BC_dict
+        elif (
+            tacs_loader is not None
+            and caps_loader is not None
+            and isinstance(obj, caps2tacs.ShapeVariable)
+        ):
+            self._shape_variables.append(obj)
+        else:
+            raise AssertionError(
+                "Object not recognized to be registered to Fun3dAim wrapper."
+            )
+
     @property
     def aim(self):
         return self._aim
@@ -348,15 +370,73 @@ class Fun3dAim:
     def is_handcrafted(self) -> bool:
         return self.handcrafted_mesh_morph is not None
 
-    def print_summary(self):
+    def print_summary(self, file=None):
+        """
+        Print a summary of the Fun3dAim settings, paths, variables, and
+        boundary conditions.
+
+        Parameters
+        ----------
+        file : file-like object, optional
+            Open file object to write to. If None, prints to stdout.
+        """
         if self.root_proc:
-            print("==========================================================")
-            print("||                  FUN3D AIM Summary                   ||")
-            print("==========================================================")
+            p = lambda *args, **kw: print(*args, file=file, **kw)
 
-            self._print_file_locs(self)
+            p("==========================================================")
+            p("||                  FUN3D AIM Summary                   ||")
+            p("==========================================================")
+
+            # --- Project / CAPS settings ---
+            p("  Project name       :", self.project_name)
+            p("  Mesh morph         :", self.mesh_morph)
+            p("  Is handcrafted     :", self.is_handcrafted)
+
+            # --- Key paths ---
+            self._print_file_locs(file=file)
+
+            # --- Boundary conditions ---
+            p("")
+            p("  Boundary Conditions")
+            p("  -------------------")
+            if self._boundary_conditions:
+                for name, bc_dict in self._boundary_conditions.items():
+                    p(f"    {str(name):<30s} : {bc_dict}")
+            else:
+                p("    (none registered)")
+
+            # --- Design variables ---
+            p("")
+            p("  Shape Variables")
+            p("  ---------------")
+            if self._shape_variables:
+                for sv in self._shape_variables:
+                    p(f"    {sv.name}")
+            else:
+                p("    (none registered)")
 
         return
 
-    def _print_file_locs(self):
-        return
+    def _print_file_locs(self, file=None):
+        """Print the key file paths and locations for this Fun3dAim."""
+        p = lambda *args, **kw: print(*args, file=file, **kw)
+
+        p("")
+        p("  Paths")
+        p("  -----")
+        p("  Analysis dir       :", self.analysis_dir)
+        p("  Flow dir           :", self.flow_directory)
+        p("  Adjoint dir        :", self.adjoint_directory)
+        p("  Grid file          :", self.grid_file)
+        p("  Mapbc file         :", self.mapbc_file)
+        p("  Sens file          :", self.sens_file_path)
+        if self.is_handcrafted:
+            p("  HC mesh morph file :", self.mesh_morph_filepath)
+
+        # Grid file destinations (per scenario)
+        if self._grid_filepaths:
+            p("")
+            p("  Grid file destinations (per scenario)")
+            p("  -------------------------------------")
+            for i, fp in enumerate(self._grid_filepaths):
+                p(f"    [{i}] {fp}")

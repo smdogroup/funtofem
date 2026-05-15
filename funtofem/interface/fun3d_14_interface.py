@@ -20,7 +20,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import annotations
+
 __all__ = ["Fun3d14Interface"]
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import os, sys, importlib, shutil
@@ -29,6 +33,11 @@ from fun3d import interface
 from funtofem import TransferScheme
 from ._solver_interface import SolverInterface
 from .utils.general_utils import real_norm, imag_norm
+
+if TYPE_CHECKING:
+    from ..model.body import Body
+    from ..model.scenario import Scenario
+    from ..model.funtofem_model import FUNtoFEMmodel
 
 
 class Fun3d14Interface(SolverInterface):
@@ -45,7 +54,7 @@ class Fun3d14Interface(SolverInterface):
     def __init__(
         self,
         comm,
-        model,
+        model: FUNtoFEMmodel,
         complex_mode=False,
         fun3d_dir=None,
         forward_options=None,
@@ -197,7 +206,7 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def initialize(self, scenario, bodies):
+    def initialize(self, scenario: Scenario, bodies: list[Body]):
         """
         Changes the directory to ./`scenario.name`/Flow, then
         initializes the FUN3D flow (forward) solver.
@@ -319,7 +328,7 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
-    def set_functions(self, scenario, bodies):
+    def set_functions(self, scenario: Scenario, bodies: list[Body]):
         """
         Set the function definitions into FUN3D using the design interface.
         Since FUNtoFEM only allows single discipline functions, the FUN3D composite
@@ -391,7 +400,7 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def set_variables(self, scenario, bodies):
+    def set_variables(self, scenario: Scenario, bodies: list[Body]):
         """
         Set the aerodynamic variable definitions into FUN3D using the design interface.
         FUN3D expects 6 global variables (Mach number, AOA, yaw, etc.) that are stored in the scenario.
@@ -437,7 +446,7 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def get_functions(self, scenario, bodies):
+    def get_functions(self, scenario: Scenario, bodies: list[Body]):
         """
         Populate the scenario with the aerodynamic function values.
 
@@ -458,7 +467,7 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def get_function_gradients(self, scenario, bodies):
+    def get_function_gradients(self, scenario: Scenario, bodies: list[Body]):
         """
         Populates the FUNtoFEM model with derivatives w.r.t. aerodynamic variables
 
@@ -489,7 +498,9 @@ class Fun3d14Interface(SolverInterface):
 
         return scenario, bodies
 
-    def get_coordinate_derivatives(self, scenario, bodies, step):
+    def get_coordinate_derivatives(
+        self, scenario: Scenario, bodies: list[Body], step: int
+    ):
         """
         Adds FUN3D's contribution to the aerodynamic surface coordinate derivatives.
         This is just the grid adjoint variable, $\lambda_G$.
@@ -534,17 +545,17 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def initialize_forward_tight_coupling(self, scenario):
+    def initialize_forward_tight_coupling(self, scenario: Scenario):
         self._forward_coupling_frequency = scenario.post_forward_coupling_freq
         self.fun3d_flow.set_coupling_frequency(self._forward_coupling_frequency)
         return
 
-    def initialize_adjoint_tight_coupling(self, scenario):
+    def initialize_adjoint_tight_coupling(self, scenario: Scenario):
         self._adjoint_coupling_frequency = scenario.post_adjoint_coupling_freq
         self.fun3d_adjoint.set_coupling_frequency(self._adjoint_coupling_frequency)
         return
 
-    def uncoupled_iterate(self, scenario, bodies, step):
+    def uncoupled_iterate(self, scenario: Scenario, bodies: list[Body], step: int):
         """
         Flow solver uncoupled iterations for aerothermal and aerothermoelastic analysis to
         get a decent flow solution before perturbing with coupling.
@@ -582,7 +593,7 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
-    def iterate(self, scenario, bodies, step):
+    def iterate(self, scenario: Scenario, bodies: list[Body], step: int):
         """
         Forward iteration of FUN3D.
         For the aeroelastic cases, these steps are:
@@ -697,7 +708,7 @@ class Fun3d14Interface(SolverInterface):
 
         return 0
 
-    def post(self, scenario, bodies, coupled_residuals=True):
+    def post(self, scenario: Scenario, bodies: list[Body], coupled_residuals=True):
         """
         Calls FUN3D post to save history files, deallocate memory etc.
         Then moves back to the problem's root directory
@@ -740,7 +751,7 @@ class Fun3d14Interface(SolverInterface):
             )
         return
 
-    def initialize_adjoint(self, scenario, bodies):
+    def initialize_adjoint(self, scenario: Scenario, bodies: list[Body]):
         """
         Changes the directory to ./`scenario.name`/Adjoint, then
         initializes the FUN3D adjoint solver.
@@ -893,7 +904,7 @@ class Fun3d14Interface(SolverInterface):
     def get_last_adjoint_step(self):
         return self._last_adjoint_step
 
-    def iterate_adjoint(self, scenario, bodies, step):
+    def iterate_adjoint(self, scenario: Scenario, bodies: list[Body], step: int):
         """
         Adjoint iteration of FUN3D.
         For the aeroelastic cases, these steps are:
@@ -921,6 +932,7 @@ class Fun3d14Interface(SolverInterface):
         # self._last_adjoint_step = step
 
         nfuncs = scenario.count_adjoint_functions()
+
         for ibody, body in enumerate(bodies, 1):
             # Get the adjoint Jacobian product for the aerodynamic loads
             aero_loads_ajp = body.get_aero_loads_ajp(scenario)
@@ -1148,7 +1160,9 @@ class Fun3d14Interface(SolverInterface):
             print(f"complete f2f adjoint iteration step {rstep}", flush=True)
         return fail
 
-    def post_adjoint(self, scenario, bodies, coupled_residuals=True):
+    def post_adjoint(
+        self, scenario: Scenario, bodies: list[Body], coupled_residuals=True
+    ):
         """
         Calls post fo the adjoint solver in FUN3D.
         Then moves back to the problem's root directory
@@ -1259,7 +1273,7 @@ class Fun3d14Interface(SolverInterface):
         else:
             return np.linalg.norm(residuals)
 
-    def set_states(self, scenario, bodies, step):
+    def set_states(self, scenario: Scenario, bodies: list[Body], step: int):
         """
         Loads the saved aerodynamic displacements and temperatures
         for the time dependent adjoint.
@@ -1305,11 +1319,13 @@ class Fun3d14Interface(SolverInterface):
 
         return
 
-    def step_pre(self, scenario, bodies, step):
+    def step_pre(self, scenario: Scenario, bodies: list[Body], step: int):
         self.fun3d_flow.step_pre(step)
         return 0
 
-    def step_solver(self, scenario, bodies, step, fsi_subiter):
+    def step_solver(
+        self, scenario: Scenario, bodies: list[Body], step: int, fsi_subiter: int
+    ):
         """
         Forward iteration of FUN3D.
         For the aeroelastic cases, these steps are:
@@ -1385,7 +1401,7 @@ class Fun3d14Interface(SolverInterface):
                     body.aero_heat_flux_mag[:] = self.thermal_scale * cq_mag[:]
         return 0
 
-    def step_post(self, scenario, bodies, step):
+    def step_post(self, scenario: Scenario, bodies: list[Body], step: int):
         self.fun3d_flow.step_post(step)
 
         # save this steps forces for the adjoint
@@ -1422,6 +1438,7 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            debug=fun3d_interface._debug,
             forward_options=fun3d_interface.forward_options,
             adjoint_options=fun3d_interface.adjoint_options,
             forward_min_tolerance=fun3d_interface.forward_min_tolerance,
@@ -1449,6 +1466,7 @@ class Fun3d14Interface(SolverInterface):
             fun3d_dir=fun3d_interface.fun3d_dir,
             auto_coords=fun3d_interface.auto_coords,
             coord_test_override=fun3d_interface._coord_test_override,
+            debug=fun3d_interface._debug,
             forward_options=fun3d_interface.forward_options,
             adjoint_options=fun3d_interface.adjoint_options,
             forward_min_tolerance=fun3d_interface.forward_min_tolerance,
@@ -1456,3 +1474,119 @@ class Fun3d14Interface(SolverInterface):
             adjoint_min_tolerance=fun3d_interface.adjoint_min_tolerance,
             adjoint_stop_tolerance=fun3d_interface.adjoint_tolerance,
         )
+
+    def print_summary(self, comm=None, filename=None, _fp=None):
+        """
+        Print a summary of the Fun3d14Interface settings, tolerances, and
+        current residual status.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the summary to this file (opened in write mode) instead of
+            stdout.  Ignored when ``_fp`` is supplied.
+        _fp : file-like object, optional
+            Internal use — an already-open file handle passed by
+            SolverManager.  Takes priority over ``filename``.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            _close_fp = False
+            if _fp is not None:
+                fp = _fp
+            elif filename is not None:
+                fp = open(filename, "w")
+                _close_fp = True
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||           FUN3D v14 Interface Summary               ||")
+            p("==========================================================")
+
+            # --- Directories ---
+            p("")
+            p("  Directories")
+            p("  -----------")
+            p(f"  FUN3D dir            : {self.fun3d_dir}")
+            p(f"  Root dir             : {self.root_dir}")
+
+            # --- Configuration ---
+            p("")
+            p("  Configuration")
+            p("  -------------")
+            p(f"  Complex mode         : {self.complex_mode}")
+            p(f"  Auto coords          : {self.auto_coords}")
+            p(f"  External mesh morph  : {self.external_mesh_morph}")
+            p(f"  Debug                : {self._debug}")
+            p(f"  Coord test override  : {self._coord_test_override}")
+
+            conv_str = "(convergence stopping criterion)"
+            min_str = "(minimum residual allowed)"
+
+            # --- Tolerances ---
+            p("")
+            p("  Tolerances")
+            p("  ----------")
+            p(f"  Forward stop tol     : {self.forward_tolerance:<12g}  {conv_str}")
+            p(f"  Forward min tol      : {self.forward_min_tolerance:<12g}  {min_str}")
+            p(f"  Adjoint stop tol     : {self.adjoint_tolerance:<12g}  {conv_str}")
+            p(f"  Adjoint min tol      : {self.adjoint_min_tolerance:<12g}  {min_str}")
+
+            # --- Solver options ---
+            p("")
+            p("  Solver Options")
+            p("  --------------")
+            fwd_opts = (
+                self.forward_options if self.forward_options is not None else "default"
+            )
+            adj_opts = (
+                self.adjoint_options if self.adjoint_options is not None else "default"
+            )
+            p(f"  Forward options      : {fwd_opts}")
+            p(f"  Adjoint options      : {adj_opts}")
+
+            # --- Aerodynamic parameters ---
+            p("")
+            p("  Aerodynamic Parameters")
+            p("  ----------------------")
+            p(f"  Thermal scale        : {self.thermal_scale}")
+
+            # --- Residual status ---
+            p("")
+            p("  Residual Status")
+            p("  ---------------")
+            p(f"  Forward done         : {self._forward_done}")
+            fwd_resid = (
+                self._forward_resid
+                if self._forward_resid is not None
+                else "not yet run"
+            )
+            p(f"  Forward residual     : {fwd_resid}")
+            p(f"  Adjoint done         : {self._adjoint_done}")
+            adj_resid = (
+                self._adjoint_resid
+                if self._adjoint_resid is not None
+                else "not yet run"
+            )
+            p(f"  Adjoint residual     : {adj_resid}")
+
+            if _close_fp:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return
