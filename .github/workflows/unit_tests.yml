@@ -14,7 +14,11 @@ on:
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
-        default: false
+        default: 'false'
+      force_tacs_rebuild:
+        description: 'Force a fresh TACS clone and build (bypasses cache)'
+        required: false
+        default: 'false'
 
 jobs:
   # This job is called test_docs.
@@ -64,34 +68,54 @@ jobs:
           echo "=============================================================";
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup conda environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v4
         with:
           auto-update-conda: true
           channels: conda-forge
           python-version: "3.10"
           add-pip-as-python-dependency: true
 
+      - name: Install conda dependencies
+        run: |
+          conda install -c conda-forge mamba -q -y;
+          mamba install -c conda-forge sysroot_linux-64=2.17 openmpi openmpi-mpicxx openblas lapack metis=5.1.0 pip petsc4py -q -y;
+          pip install openmdao==3.30.0
+
+      - name: Get TACS commit hash
+        id: tacs-hash
+        run: echo "hash=$(git ls-remote https://github.com/smdogroup/tacs.git HEAD | cut -f1)" >> $GITHUB_OUTPUT
+
+      - name: Cache TACS build
+        id: cache-tacs
+        if: ${{ github.event.inputs.force_tacs_rebuild != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/work/tacs
+          # Cache key includes:
+          #   - matrix name (Real vs Complex, since they compile differently)
+          #   - TACS HEAD commit hash (busts cache when TACS is updated)
+          #   - hash of this workflow file (busts cache when conda deps or build flags change)
+          key: tacs-${{ matrix.NAME }}-${{ steps.tacs-hash.outputs.hash }}-${{ hashFiles('.github/workflows/unit_tests.yml') }}
+
       - name: Install TACS
+        if: steps.cache-tacs.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/smdogroup/tacs.git /home/runner/work/tacs;
           export TACS_DIR=/home/runner/work/tacs;
-          conda install -c conda-forge mamba -q -y;
-          mamba install -c conda-forge sysroot_linux-64=2.17 -q -y;
-          mamba install -c conda-forge openmpi openmpi-mpicxx -q -y;
-          mamba install -c conda-forge openblas -q -y;
-          mamba install -c conda-forge lapack -q -y;
-          mamba install -c conda-forge metis=5.1.0 -q -y;
-          mamba install -c conda-forge pip -q -y;
-          pip install openmdao==3.30.0
-          conda install -c conda-forge petsc4py;
           cd $TACS_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} TACS_DIR=$TACS_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
           cd $TACS_DIR;
-          make ${{ matrix.INTERFACE }}; 
+          make ${{ matrix.INTERFACE }};
+
+      - name: Build TACS Python interface (always, even on cache hit)
+        run: |
+          export TACS_DIR=/home/runner/work/tacs;
+          cd $TACS_DIR;
+          make ${{ matrix.INTERFACE }};
 
       - name: Install FUNtoFEM
         run: |
@@ -100,7 +124,6 @@ jobs:
           echo "=============================================================";
           export F2F_DIR=${GITHUB_WORKSPACE};
           echo "F2F_DIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
-          mamba install -c conda-forge pip -q -y;
           cd $F2F_DIR;
           cp Makefile.in.info Makefile.in;
           make ${{ matrix.OPTIONAL }} F2F_DIR=$F2F_DIR METIS_INCLUDE=-I${CONDA_PREFIX}/include/ METIS_LIB="-L${CONDA_PREFIX}/lib/ -lmetis";
@@ -170,10 +193,10 @@ jobs:
           echo "=============================================================";
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup conda environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v4
         with:
           auto-update-conda: true
           channels: conda-forge
