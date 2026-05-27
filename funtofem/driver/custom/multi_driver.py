@@ -1,8 +1,8 @@
-
 __all__ = ["MultiDriver"]
 
+
 class MultiDriver:
-    def __init__(self, driver_list:list):
+    def __init__(self, driver_list: list):
         """
         call solve_forward, solve_adjoint on multiple drivers
 

@@ -22,7 +22,6 @@ limitations under the License.
 
 from __future__ import annotations
 
-
 # FUN3D one-way coupled drivers that use fixed fun3d aero loads
 __all__ = ["OnewayAeroDriver"]
 
@@ -83,6 +82,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 caps_loader = importlib.util.find_spec("pyCAPS")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from funtofem.interface import Fun3d14Interface
+
     if caps_loader is not None:
         from funtofem.interface import Fun3dModel
 
@@ -173,8 +173,10 @@ class OnewayAeroDriver:
         self.external_shape = external_shape
 
         # assert at least one uncoupled scenario
-        self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
-        any_uncoupled = any([not(scenario.coupled) for scenario in model.scenarios])
+        self.uncoupled_scenarios = [
+            scenario for scenario in model.scenarios if not (scenario.coupled)
+        ]
+        any_uncoupled = any([not (scenario.coupled) for scenario in model.scenarios])
         assert any_uncoupled
 
         # store the shape variables list

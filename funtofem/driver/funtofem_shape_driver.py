@@ -50,6 +50,7 @@ fun3d_loader = importlib.util.find_spec("fun3d")
 tacs_loader = importlib.util.find_spec("tacs")
 if fun3d_loader is not None:  # check whether we can import FUN3D
     from funtofem.interface import Fun3d14Interface
+
     if caps_loader is not None:
         from funtofem.interface import Fun3dModel
 if tacs_loader is not None:

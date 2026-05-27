@@ -527,7 +527,7 @@ class FUNtoFEMmodel(object):
                         assert int(entries[0]) == len(self.bodies)
 
                     elif len(entries) == 3 and entries[0] == "scenario":
-                        
+
                         # save old scenario data
                         if scenario_data is not None:
                             loads_data[scenario.id] = scenario_data

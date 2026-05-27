@@ -172,7 +172,7 @@ class Variable(object):
         (make sure to set optimal settings and then register it)
         """
         return cls(name=name, value=value, analysis_type="shape")
-    
+
     @classmethod
     def custom(cls, name: str, value=0.0):
         """

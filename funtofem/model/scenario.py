@@ -218,7 +218,7 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        coupled:bool=True,
+        coupled: bool = True,
         uncoupled_steps: int = 0,
         forward_coupling_frequency: int = 1,
         adjoint_coupling_frequency: int = 1,
@@ -244,7 +244,7 @@ class Scenario(Base):
         cls,
         name: str,
         steps: int,
-        coupled:bool=True,
+        coupled: bool = True,
         uncoupled_steps: int = 0,
         tacs_integration_settings=None,
     ):
@@ -409,8 +409,8 @@ class Scenario(Base):
     def set_stop_criterion(
         self,
         early_stopping: bool = True,
-        coupled_fw_rtol:float=1e-6,
-        coupled_adj_rtol:float=1e-6,
+        coupled_fw_rtol: float = 1e-6,
+        coupled_adj_rtol: float = 1e-6,
         min_forward_steps=None,
         min_adjoint_steps=None,
         post_tight_forward_steps=None,

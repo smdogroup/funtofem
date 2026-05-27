@@ -107,8 +107,10 @@ class OnewayStructDriver:
         self.caps_only_thickness = caps_only_thickness
 
         # assert at least one uncoupled scenario
-        self.uncoupled_scenarios = [scenario for scenario in model.scenarios if not(scenario.coupled)]
-        any_uncoupled = any([not(scenario.coupled) for scenario in model.scenarios])
+        self.uncoupled_scenarios = [
+            scenario for scenario in model.scenarios if not (scenario.coupled)
+        ]
+        any_uncoupled = any([not (scenario.coupled) for scenario in model.scenarios])
         assert any_uncoupled
 
         # figure out which discipline solver we are using
@@ -901,7 +903,7 @@ class OnewayStructDriver:
         self.struct_interface.get_function_gradients(scenario, self.model.bodies)
 
         return
-    
+
     def _get_custom_derivatives(self, scenario):
         """get custom derivatives see custom/ drivers folder"""
         return

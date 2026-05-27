@@ -477,9 +477,7 @@ class TacsSteadyInterface(SolverInterface):
                         # Finally set the domain information
                         ks_func.setDomain(elemIDs)
 
-                    func_list.append(
-                        ks_func
-                    )
+                    func_list.append(ks_func)
                     func_tag.append(1)
 
                 elif func.name.lower() == "compliance":
@@ -1572,7 +1570,7 @@ class TacsSteadyInterface(SolverInterface):
             relaxation_scheme=relaxation_scheme,
             struct_loads_file=struct_loads_file,
             tacs_panel_dimensions=tacs_panel_dimensions,
-            mesh_loader=mesh_loader
+            mesh_loader=mesh_loader,
         )
 
     @classmethod
