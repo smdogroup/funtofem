@@ -38,7 +38,7 @@ requirements:
     - make
     - python {{ python }}                    # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
-    - numpy   >=1.25 # [build_platform != target_platform]
+    - numpy   >=2.0 # [build_platform != target_platform]
     - openmpi >=4.1.4 # [mpi == "openmpi" and build_platform != target_platform]
     - mpich  # [mpi == "mpich" and build_platform != target_platform]
     - openmpi-mpicxx  # [mpi == "openmpi" and build_platform != target_platform]
@@ -46,19 +46,19 @@ requirements:
     - mpi4py >=4.0.3,<5.0.0 # [build_platform != target_platform]
     - cython >=3.0,<4.0 # [build_platform != target_platform]
     - setuptools # [build_platform != target_platform]
-    - tacs >=3.4.0 # [build_platform != target_platform]
+    - tacs >=3.10.0 # [build_platform != target_platform]
 
   host:
     - python {{ python }}
     - pip
-    - numpy   >=1.25
+    - numpy   >=2.0
     - openmpi >=4.1.4 # [mpi == "openmpi"]
     - mpich  # [mpi == "mpich"]
     - libopenblas
     - lapack
     - mpi4py >=4.0.3,<5.0.0
     - cython >=3.0,<4.0
-    - tacs >=3.4.0
+    - tacs >=3.10.0
 
   run:
     - python
@@ -69,7 +69,7 @@ requirements:
     - libopenblas
     - lapack
     - mpi4py >=4.0.3,<5.0.0
-    - tacs >=3.4.0
+    - tacs >=3.10.0
 
 test:
   requires:

@@ -111,3 +111,16 @@ class MeshAim:
                 self.surface_aim._set_dict_options()
 
         return self
+
+    def set_mesh_quiet_flag(self, flag: bool = True):
+        """
+        Suppress output from the meshing process.
+        """
+        if self.root_proc:
+            # Set volume aim
+            self.volume_aim.aim.input["Mesh_Quiet_Flag"].value = flag
+
+            # Set boundary aim
+            self.surface_aim.aim.input["Mesh_Quiet_Flag"].value = flag
+
+        return self
