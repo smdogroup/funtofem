@@ -332,11 +332,11 @@ class Function(object):
         return cls(name="struct-func", analysis_type="structural")
 
     @classmethod
-    def temperature(cls):
+    def avg_temperature(cls):
         """
-        Class constructor for the Temperature function
+        Class constructor for the average temperature function
         """
-        return cls(name="temperature", analysis_type="structural")
+        return cls(name="avg_temperature", analysis_type="structural")
 
     @classmethod
     def center_of_mass(cls, direction="all"):
@@ -402,6 +402,38 @@ class Function(object):
             options={
                 "ksWeight": ks_weight,
                 "direction": direction,
+                "ftype": ftype,
+            },
+            plot_name=plot_name,
+        )
+
+    @classmethod
+    def kstemperature(
+        cls,
+        ks_weight: float = 100.0,
+        ftype="continuous",
+        plot_name: float = None,
+    ):
+        """
+        Class constructor for the KS temperature TACS function (approximation of maximum temperature).
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
+        plot_name (str, optional):
+            Plot name of the function as registered in FUNtoFEM.
+        """
+
+        return cls(
+            name="kstemperature",
+            analysis_type="structural",
+            options={
+                "ksWeight": ks_weight,
                 "ftype": ftype,
             },
             plot_name=plot_name,
