@@ -140,7 +140,9 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.avg_temperature())
+        scenario = Scenario.steady("test", steps=200).include(
+            Function.avg_temperature()
+        )
         scenario.include(Function.ksfailure())
         scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
