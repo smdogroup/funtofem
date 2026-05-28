@@ -507,6 +507,27 @@ class TacsSteadyInterface(SolverInterface):
                     func_list.append(functions.StructuralMass(self.assembler))
                     func_tag.append(-1)
 
+                elif func.name.lower() == "ksdisplacement":
+                    ksweight = 100.0
+                    if func.options is not None and "ksWeight" in func.options:
+                        ksweight = func.options["ksWeight"]
+                    direction = [0, 0, 0]
+                    if func.options is not None and "direction" in func.options:
+                        direction = func.options["direction"]
+                    ftype = "continuous"
+                    if func.options is not None and "ftype" in func.options:
+                        ftype = func.options["ftype"]
+
+                    func_list.append(
+                        functions.KSDisplacement(
+                            self.assembler,
+                            ksWeight=ksweight,
+                            direction=direction,
+                            ftype=ftype,
+                        )
+                    )
+                    func_tag.append(1)
+
                 else:
                     print("WARNING: Unknown function being set into TACS set to mass")
                     func_list.append(functions.StructuralMass(self.assembler))

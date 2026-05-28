@@ -370,6 +370,43 @@ class Function(object):
             analysis_type="structural",
         )
 
+    @classmethod
+    def ksdisplacement(
+        cls,
+        ks_weight: float = 100.0,
+        direction=[0.0, 0.0, 0.0],
+        ftype="continuous",
+        plot_name: float = None,
+    ):
+        """
+        Class constructor for the KS displacement TACS function.
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        direction (array-like[double], optional):
+            3D vector specifying which direction to project displacements in for KS aggregation.
+            Defaults to [0, 0, 0].
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
+        plot_name (str, optional):
+            Plot name of the function as registered in FUNtoFEM.
+        """
+
+        return cls(
+            name="ksdisplacement",
+            analysis_type="structural",
+            options={
+                "ksWeight": ks_weight,
+                "direction": direction,
+                "ftype": ftype,
+            },
+            plot_name=plot_name,
+        )
+
     @property
     def composite_function(self):
         """turn this function into a composite function"""
