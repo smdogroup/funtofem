@@ -102,7 +102,7 @@ class TestNoAdjoint(unittest.TestCase):
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         Function.test_aero().register_to(test_scenario)
         TacsIntegrationSettings(dt=dt, num_steps=test_scenario.steps).register_to(
             test_scenario
@@ -148,7 +148,7 @@ class TestNoAdjoint(unittest.TestCase):
         plate.register_to(model)
         test_scenario = Scenario.unsteady("test", steps=steps)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         Function.test_aero().register_to(test_scenario)
         TacsIntegrationSettings(dt=dt, num_steps=test_scenario.steps).register_to(
             test_scenario
@@ -196,7 +196,7 @@ class TestNoAdjoint(unittest.TestCase):
         # make the first scenario with ksfailure, temperature
         test_scenario1 = Scenario.unsteady("test1", steps=steps)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario1)
-        Function.temperature().register_to(test_scenario1)
+        Function.avg_temperature().register_to(test_scenario1)
         Function.test_aero().register_to(test_scenario1)
         TacsIntegrationSettings(dt=dt, num_steps=test_scenario1.steps).register_to(
             test_scenario1
@@ -206,7 +206,7 @@ class TestNoAdjoint(unittest.TestCase):
         # make the second scenario with ksfailure, temperature
         test_scenario2 = Scenario.unsteady("test2", steps=steps)
         Function.ksfailure(ks_weight=10.0).register_to(test_scenario2)
-        Function.temperature().register_to(test_scenario2)
+        Function.avg_temperature().register_to(test_scenario2)
         Function.test_aero().register_to(test_scenario2)
         TacsIntegrationSettings(dt=dt, num_steps=test_scenario2.steps).register_to(
             test_scenario2

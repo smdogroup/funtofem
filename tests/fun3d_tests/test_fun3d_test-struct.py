@@ -73,7 +73,7 @@ class TestFun3dUncoupled(unittest.TestCase):
         test_scenario = Scenario.steady("laminar", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.temperature()).include(Function.lift()).include(
+        test_scenario.include(Function.avg_temperature()).include(Function.lift()).include(
             Function.drag()
         )
         test_scenario.register_to(model)
@@ -107,7 +107,7 @@ class TestFun3dUncoupled(unittest.TestCase):
             T_ref=300.0, T_inf=300.0
         )
         test_scenario.include(Function.ksfailure()).include(
-            Function.temperature()
+            Function.avg_temperature()
         ).include(Function.lift()).include(Function.drag())
         test_scenario.set_flow_ref_vals(qinf=1.0e2)
         test_scenario.register_to(model)

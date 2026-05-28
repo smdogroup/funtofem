@@ -105,7 +105,7 @@ class TestFun3dAeroCoords(unittest.TestCase):
         scenario = (
             Scenario.steady("turbulent_miniMesh", steps=500)
             .include(Function.ksfailure(ks_weight=10.0))
-            .include(Function.temperature())
+            .include(Function.avg_temperature())
             .include(Function.lift())
             .include(Function.drag())
         )

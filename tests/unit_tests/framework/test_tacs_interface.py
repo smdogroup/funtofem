@@ -91,7 +91,7 @@ class TacsInterfaceTest(unittest.TestCase):
 
         # Create a scenario to run
         steady = Scenario.steady("test", steps=150)
-        Function.temperature().register_to(steady)
+        Function.avg_temperature().register_to(steady)
         Function.test_aero().register_to(steady)
         steady.register_to(model)
 
@@ -138,7 +138,7 @@ class TacsInterfaceTest(unittest.TestCase):
         # Create a scenario to run
         steady = Scenario.steady("test", steps=150)
         Function.ksfailure().register_to(steady)
-        Function.temperature().register_to(steady)
+        Function.avg_temperature().register_to(steady)
         Function.test_aero().register_to(steady)
         steady.register_to(model)
 

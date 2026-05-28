@@ -99,7 +99,7 @@ class TestOnewayStructDriver(unittest.TestCase):
         # build the scenario
         scenario = Scenario.steady("test", steps=150)
         Function.ksfailure().register_to(scenario)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -147,7 +147,7 @@ class TestOnewayStructDriver(unittest.TestCase):
         # build the scenario
         scenario = Scenario.steady("test", steps=150)
         Function.ksfailure().register_to(scenario)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver

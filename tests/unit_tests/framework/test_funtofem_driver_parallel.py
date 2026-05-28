@@ -84,7 +84,7 @@ class TacsParallelFrameworkTest(unittest.TestCase):
         ).register_to(plate)
         plate.register_to(model)
         test_scenario = Scenario.steady("test", steps=150)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)
@@ -123,7 +123,7 @@ class TacsParallelFrameworkTest(unittest.TestCase):
         plate.register_to(model)
         test_scenario = Scenario.steady("test", steps=150)
         Function.ksfailure().register_to(test_scenario)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         test_scenario.register_to(model)
 
         solvers = SolverManager(comm)

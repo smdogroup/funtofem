@@ -93,7 +93,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.unsteady("test", steps=steps)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         TacsIntegrationSettings(dt=dt, num_steps=scenario.steps).register_to(scenario)
         Variable.shape("rotation").register_to(scenario)
@@ -140,7 +140,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
         # build the scenario
         scenario = Scenario.unsteady("test", steps=steps)
         Function.ksfailure(ks_weight=10.0).register_to(scenario)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         TacsIntegrationSettings(dt=dt, num_steps=scenario.steps).register_to(scenario)
         Variable.shape("rotation").register_to(scenario)
@@ -193,7 +193,7 @@ class TestFuntofemDriverUnsteadyAeroCoordinate(unittest.TestCase):
 
         climb = Scenario.unsteady("climb", steps=steps)
         Function.ksfailure().register_to(climb)
-        Function.temperature().register_to(climb)
+        Function.avg_temperature().register_to(climb)
         integration_settings = TacsIntegrationSettings(dt=dt, num_steps=climb.steps)
         climb.include(integration_settings).register_to(model)
 
