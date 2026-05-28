@@ -90,7 +90,9 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.avg_temperature())
+        scenario = Scenario.unsteady("test", steps=10).include(
+            Function.avg_temperature()
+        )
         integration_settings = TacsIntegrationSettings(
             dt=0.001, num_steps=scenario.steps
         )
@@ -136,7 +138,9 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.avg_temperature())
+        scenario = Scenario.unsteady("test", steps=10).include(
+            Function.avg_temperature()
+        )
         scenario.include(Function.avg_temperature()).include(Function.lift())
         integration_settings = TacsIntegrationSettings(
             dt=0.001, num_steps=scenario.steps

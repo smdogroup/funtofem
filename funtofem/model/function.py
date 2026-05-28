@@ -342,6 +342,7 @@ class Function(object):
     def temperature(cls):
         """Deprecated alias for avg_temperature."""
         import warnings
+
         warnings.warn(
             "Function.temperature() is deprecated, use Function.avg_temperature() instead.",
             DeprecationWarning,
