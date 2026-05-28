@@ -330,24 +330,15 @@ class TacsUnsteadyInterface(SolverInterface):
                     func_tag.append(0)
 
                 elif func.name.lower() == "ksfailure":
-                    ksweight = 50.0
-                    if func.options is not None and "ksWeight" in func.options:
-                        ksweight = func.options["ksWeight"]
-                    safetyFactor = 1.0
-                    if func.options is not None and "safetyFactor" in func.options:
-                        safetyFactor = func.options["safetyFactor"]
-                    func_list.append(
-                        functions.KSFailure(
-                            self.assembler, ksWeight=ksweight, safetyFactor=safetyFactor
-                        )
-                    )
+                    options = func.options if func.options is not None else {}
+                    func_list.append(functions.KSFailure(self.assembler, **options))
                     func_tag.append(1)
 
                 elif func.name.lower() == "compliance":
                     func_list.append(functions.Compliance(self.assembler))
                     func_tag.append(1)
 
-                elif func.name.lower() == "temperature":
+                elif func.name.lower() == "avg_temperature":
                     func_list.append(
                         functions.AverageTemperature(self.assembler, volume=self.vol)
                     )
@@ -365,24 +356,15 @@ class TacsUnsteadyInterface(SolverInterface):
                     func_tag.append(-1)
 
                 elif func.name.lower() == "ksdisplacement":
-                    ksweight = 100.0
-                    if func.options is not None and "ksWeight" in func.options:
-                        ksweight = func.options["ksWeight"]
-                    direction = [0, 0, 0]
-                    if func.options is not None and "direction" in func.options:
-                        direction = func.options["direction"]
-                    ftype = "continuous"
-                    if func.options is not None and "ftype" in func.options:
-                        ftype = func.options["ftype"]
-
+                    options = func.options if func.options is not None else {}
                     func_list.append(
-                        functions.KSDisplacement(
-                            self.assembler,
-                            ksWeight=ksweight,
-                            direction=direction,
-                            ftype=ftype,
-                        )
+                        functions.KSDisplacement(self.assembler, **options)
                     )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "kstemperature":
+                    options = func.options if func.options is not None else {}
+                    func_list.append(functions.KSTemperature(self.assembler, **options))
                     func_tag.append(1)
 
                 else:
