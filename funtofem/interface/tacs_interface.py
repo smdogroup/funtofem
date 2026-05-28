@@ -459,6 +459,16 @@ class TacsSteadyInterface(SolverInterface):
 
                 elif func.name.lower() == "ksfailure":
                     options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "ksfailure option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
                     func_list.append(functions.KSFailure(self.assembler, **options))
                     func_tag.append(1)
 
@@ -500,6 +510,16 @@ class TacsSteadyInterface(SolverInterface):
 
                 elif func.name.lower() == "ksdisplacement":
                     options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "ksdisplacement option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
                     func_list.append(
                         functions.KSDisplacement(self.assembler, **options)
                     )
@@ -507,6 +527,16 @@ class TacsSteadyInterface(SolverInterface):
 
                 elif func.name.lower() == "kstemperature":
                     options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "kstemperature option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
                     func_list.append(functions.KSTemperature(self.assembler, **options))
                     func_tag.append(1)
 

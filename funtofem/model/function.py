@@ -94,7 +94,7 @@ class Function(object):
 
         mass = Function('mass', analysis_type='structural', adjoint=False)
 
-        ks = Function('ksFailure', analysis_type='structural', options={'ksweight':50.0})
+        ks = Function('ksfailure', analysis_type='structural', options={'ksWeight':50.0})
         """
         self.name = name
         self.id = id
@@ -339,6 +339,17 @@ class Function(object):
         return cls(name="avg_temperature", analysis_type="structural")
 
     @classmethod
+    def temperature(cls):
+        """Deprecated alias for avg_temperature."""
+        import warnings
+        warnings.warn(
+            "Function.temperature() is deprecated, use Function.avg_temperature() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return cls.avg_temperature()
+
+    @classmethod
     def center_of_mass(cls, direction="all"):
         """
         Class constructor for the center of mass functional
@@ -376,7 +387,7 @@ class Function(object):
         ks_weight: float = 100.0,
         direction=[0.0, 0.0, 0.0],
         ftype="continuous",
-        plot_name: float = None,
+        plot_name: str = None,
     ):
         """
         Class constructor for the KS displacement TACS function.
@@ -412,7 +423,7 @@ class Function(object):
         cls,
         ks_weight: float = 100.0,
         ftype="continuous",
-        plot_name: float = None,
+        plot_name: str = None,
     ):
         """
         Class constructor for the KS temperature TACS function (approximation of maximum temperature).
