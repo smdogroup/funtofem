@@ -459,8 +459,8 @@ class TacsSteadyInterface(SolverInterface):
 
                 elif func.name.lower() == "ksfailure":
                     ksweight = 50.0
-                    if func.options is not None and "ksweight" in func.options:
-                        ksweight = func.options["ksweight"]
+                    if func.options is not None and "ksWeight" in func.options:
+                        ksweight = func.options["ksWeight"]
                     safetyFactor = 1.0
                     if func.options is not None and "safetyFactor" in func.options:
                         safetyFactor = func.options["safetyFactor"]
