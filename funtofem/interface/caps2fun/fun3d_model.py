@@ -4,12 +4,18 @@ Written by Sean Engelstad and Brian Burke, Georgia Tech SMDO Lab, 2024.
 
 __all__ = ["Fun3dModel"]
 
-import pyCAPS, os
+import pyCAPS, os, importlib
 from .fun3d_aim import Fun3dAim
 from .mesh_aim import MeshAim
 from .pointwise_aim import PointwiseAIM
 from .aflr_aim import Aflr3Aim
 from .hc_mesh_morph import HandcraftedMeshMorph
+
+# optional tacs import for caps2tacs
+tacs_loader = importlib.util.find_spec("tacs")
+caps_loader = importlib.util.find_spec("pyCAPS")
+if tacs_loader is not None and caps_loader is not None:
+    from tacs import caps2tacs
 
 
 class Fun3dModel:
@@ -148,6 +154,16 @@ class Fun3dModel:
         # update the variables in the AIM
         self.fun3d_aim.set_variables(self._shape_varnames, self._aero_varnames)
 
+    def register(self, obj):
+        if (
+            tacs_loader is not None
+            and caps_loader is not None
+            and isinstance(obj, caps2tacs.ShapeVariable)
+        ):
+            self._shape_varnames += [obj.name]
+
+        self.fun3d_aim.register(obj)
+
     @property
     def is_setup(self) -> bool:
         """whether the fun3d model is setup"""
@@ -207,3 +223,116 @@ class Fun3dModel:
     @handcrafted_mesh_morph.setter
     def handcrafted_mesh_morph(self, my_hmm: HandcraftedMeshMorph):
         self.fun3d_aim.handcrafted_mesh_morph = my_hmm
+
+    def print_summary(self, file=None):
+        """
+        Print a summary of the Fun3dModel including project settings, mesh
+        configuration, paths, boundary conditions, and design variables.
+
+        Parameters
+        ----------
+        file : file-like object or str/path-like, optional
+            If a string or path-like object is given the summary is written to
+            that file (opened in write mode).  If a file-like object is given
+            it is used directly.  If None (default) the summary is printed to
+            stdout.
+        """
+        _opened = False
+        if file is not None and isinstance(file, (str, os.PathLike)):
+            file = open(file, "w")
+            _opened = True
+
+        if self.root_proc:
+            p = lambda *args, **kw: print(*args, file=file, **kw)
+
+            p("==========================================================")
+            p("||               FUN3D Model Summary                    ||")
+            p("==========================================================")
+
+            # --- Top-level settings ---
+            p("  Project name       :", self.project_name)
+            p("  Mesh morph         :", self.mesh_morph)
+            p("  Is setup           :", self._setup)
+            p("  Is handcrafted     :", self.fun3d_aim.is_handcrafted)
+
+            # --- Variable names ---
+            p("")
+            p("  Shape variable names")
+            p("  --------------------")
+            if self._shape_varnames:
+                for name in self._shape_varnames:
+                    p(f"    {name}")
+            else:
+                p("    (none)")
+
+            p("")
+            p("  Aero variable names")
+            p("  -------------------")
+            if self._aero_varnames:
+                for name in self._aero_varnames:
+                    p(f"    {name}")
+            else:
+                p("    (none)")
+
+            # --- FUN3D AIM paths ---
+            p("")
+            p("  FUN3D AIM Paths")
+            p("  ---------------")
+            p("  Analysis dir       :", self.fun3d_aim.analysis_dir)
+            p("  Flow dir           :", self.fun3d_aim.flow_directory)
+            p("  Adjoint dir        :", self.fun3d_aim.adjoint_directory)
+            p("  Grid file          :", self.fun3d_aim.grid_file)
+            p("  Mapbc file         :", self.fun3d_aim.mapbc_file)
+            p("  Sens file          :", self.fun3d_aim.sens_file_path)
+            if self.fun3d_aim.is_handcrafted:
+                p("  HC mesh morph file :", self.fun3d_aim.mesh_morph_filepath)
+
+            # --- Grid file destinations (per scenario) ---
+            if self.fun3d_aim._grid_filepaths:
+                p("")
+                p("  Grid file destinations (per scenario)")
+                p("  -------------------------------------")
+                for i, fp in enumerate(self.fun3d_aim._grid_filepaths):
+                    p(f"    [{i}] {fp}")
+
+            # --- Mesh AIM info ---
+            p("")
+            p("  Mesh AIM")
+            p("  --------")
+            vol_aim = self.mesh_aim.volume_aim
+            surf_aim = self.mesh_aim.surface_aim
+            p(
+                "  Volume mesher      :",
+                type(vol_aim).__name__ if vol_aim is not None else "None",
+            )
+            p(
+                "  Surface mesher     :",
+                type(surf_aim).__name__ if surf_aim is not None else "None",
+            )
+            p("  Mesh analysis dir  :", self.mesh_aim.analysis_dir)
+
+            # --- Boundary conditions ---
+            p("")
+            p("  Boundary Conditions")
+            p("  -------------------")
+            bcs = self.fun3d_aim._boundary_conditions
+            if bcs:
+                for name, bc_dict in bcs.items():
+                    p(f"    {str(name):<30s} : {bc_dict}")
+            else:
+                p("    (none registered)")
+
+            # --- Shape variables (with values) ---
+            p("")
+            p("  Shape Variables (with current values)")
+            p("  -------------------------------------")
+            if self.fun3d_aim._shape_variables:
+                for sv in self.fun3d_aim._shape_variables:
+                    p(f"    {sv.name:<30s} = {sv.value}")
+            else:
+                p("    (none registered)")
+
+        if _opened:
+            file.close()
+
+        return

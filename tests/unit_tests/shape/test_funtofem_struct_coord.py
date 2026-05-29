@@ -95,7 +95,7 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.steady("test", steps=200)
-        scenario.include(Function.temperature())
+        scenario.include(Function.avg_temperature())
         scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
 
@@ -140,7 +140,9 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.temperature())
+        scenario = Scenario.steady("test", steps=200).include(
+            Function.avg_temperature()
+        )
         scenario.include(Function.ksfailure())
         scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
@@ -195,7 +197,7 @@ class TestFuntofemDriverStructCoordinate(unittest.TestCase):
 
         climb = Scenario.steady("climb", steps=200)
         Function.ksfailure().register_to(climb)
-        Function.temperature().register_to(climb)
+        Function.avg_temperature().register_to(climb)
         climb.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver

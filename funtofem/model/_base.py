@@ -19,9 +19,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+from __future__ import annotations
+
 __all__ = ["Base"]
 
+from typing import TYPE_CHECKING
+
 from funtofem import TransferScheme
+
+if TYPE_CHECKING:
+    from .variable import Variable
 
 
 class Base(object):
@@ -63,7 +71,7 @@ class Base(object):
         else:
             self.group = -1
         self.group_root = False
-        self.variables = {}
+        self.variables: dict[str, list[Variable]] = {}
 
         return
 
@@ -73,7 +81,7 @@ class Base(object):
         """
         pass
 
-    def add_variable(self, vartype, var):
+    def add_variable(self, vartype: str, var: Variable):
         """
         Add a new variable to the body's or scenario's variable dictionary
 
@@ -250,7 +258,7 @@ class Base(object):
         active_list: list of variables
             list of active variables
         """
-        full_list = []
+        full_list: list[Variable] = []
         is_active = lambda var: var.active == True
 
         for vartype in self.variables:
@@ -260,14 +268,14 @@ class Base(object):
 
     def get_inactive_variables(self):
         """
-        Get the list of active variables in body or scenario
+        Get the list of inactive variables in body or scenario
 
         Returns
         -------
-        active_list: list of variables
-            list of active variables
+        inactive_list: list of variables
+            list of inactive variables
         """
-        full_list = []
+        full_list: list[Variable] = []
         is_active = lambda var: var.active == False
 
         for vartype in self.variables:
@@ -284,7 +292,7 @@ class Base(object):
         active_list: list of variables
             list of uncoupled, active variables
         """
-        full_list = []
+        full_list: list[Variable] = []
         is_coupled = lambda var: var.active == True and not var.coupled
 
         for vartype in self.variables:
@@ -292,7 +300,7 @@ class Base(object):
 
         return full_list
 
-    def get_variable(self, varname, set_active=True):
+    def get_variable(self, varname, set_active=True) -> Variable:
         """get the scenario variable with matching name, helpful for FUN3D automatic variables"""
         var = None
         for discipline in self.variables:
@@ -335,18 +343,20 @@ class Base(object):
         """
         self.id = id
 
-    def _print_functions(self):
+    def _print_functions(self, file=None):
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
-        self._print_long("Function", width=18, indent_line=5)
-        self._print_long("Analysis Type", width=15)
-        self._print_long("Comp. Adjoint", width=15)
-        self._print_long("Time Range", width=20)
-        self._print_long("Averaging", end_line=True)
+        self._print_long("Function", width=18, indent_line=5, file=file)
+        self._print_long("Analysis Type", width=15, file=file)
+        self._print_long("Comp. Adjoint", width=15, file=file)
+        self._print_long("Time Range", width=20, file=file)
+        self._print_long("Averaging", end_line=True, file=file)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
         for func in self.functions:
             analysis_type = func.analysis_type
@@ -356,31 +366,34 @@ class Base(object):
             averaging = func.averaging
             _time_range = " ".join(("[", str(start), ",", str(stop), "]"))
             adjoint = str(adjoint)
-            self._print_long(func.name, width=18, indent_line=5)
-            self._print_long(analysis_type, width=15)
-            self._print_long(adjoint, width=15)
-            self._print_long(_time_range, width=20)
-            self._print_long(averaging, end_line=True)
+            self._print_long(func.name, width=18, indent_line=5, file=file)
+            self._print_long(analysis_type, width=15, file=file)
+            self._print_long(adjoint, width=15, file=file)
+            self._print_long(_time_range, width=20, file=file)
+            self._print_long(averaging, end_line=True, file=file)
 
         print(
-            "     --------------------------------------------------------------------------------------"
+            "     --------------------------------------------------------------------------------------",
+            file=file,
         )
 
         return
 
-    def _print_variables(self, vartype):
+    def _print_variables(self, vartype, file=None):
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
-        self._print_long("Variable", width=20, indent_line=5)
-        self._print_long("Var. ID", width=10)
-        self._print_long("Value", width=16)
-        self._print_long("Bounds", width=24)
-        self._print_long("Active", width=8)
-        self._print_long("Coupled", width=9, end_line=True)
+        self._print_long("Variable", width=20, indent_line=5, file=file)
+        self._print_long("Var. ID", width=10, file=file)
+        self._print_long("Value", width=16, file=file)
+        self._print_long("Bounds", width=24, file=file)
+        self._print_long("Active", width=8, file=file)
+        self._print_long("Coupled", width=9, end_line=True, file=file)
 
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
         for var in self.variables[vartype]:
             _name = "{:s}".format(var.name)
@@ -392,28 +405,37 @@ class Base(object):
             _coupled = str(var.coupled)
             _bounds = " ".join(("[", _lower, ",", _upper, "]"))
 
-            self._print_long(_name, width=20, indent_line=5)
-            self._print_long(_id, width=10, align="<")
-            self._print_long(_value, width=16)
-            self._print_long(_bounds, width=24)
-            self._print_long(_active, width=8)
-            self._print_long(_coupled, width=9, end_line=True)
+            self._print_long(_name, width=20, indent_line=5, file=file)
+            self._print_long(_id, width=10, align="<", file=file)
+            self._print_long(_value, width=16, file=file)
+            self._print_long(_bounds, width=24, file=file)
+            self._print_long(_active, width=8, file=file)
+            self._print_long(_coupled, width=9, end_line=True, file=file)
 
         print(
-            "     ----------------------------------------------------------------------------------------------"
+            "     ----------------------------------------------------------------------------------------------",
+            file=file,
         )
 
         return
 
-    def _print_long(self, value, width=12, indent_line=0, end_line=False, align="^"):
+    def _print_long(
+        self, value, width=12, indent_line=0, end_line=False, align="^", file=None
+    ):
         if value is None:
             value = "None"
         if indent_line > 0:
-            print("{val:{wid}}".format(wid=indent_line, val=""), end="")
+            print("{val:{wid}}".format(wid=indent_line, val=""), end="", file=file)
         if not end_line:
-            print("|{val:{ali}{wid}}".format(wid=width, ali=align, val=value), end="")
+            print(
+                "|{val:{ali}{wid}}".format(wid=width, ali=align, val=value),
+                end="",
+                file=file,
+            )
         else:
             print(
-                "|{val:{ali}{wid}}|".format(wid=width, ali=align, val=value), end="\n"
+                "|{val:{ali}{wid}}|".format(wid=width, ali=align, val=value),
+                end="\n",
+                file=file,
             )
         return

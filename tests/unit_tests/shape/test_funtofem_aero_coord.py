@@ -91,7 +91,7 @@ class TestFuntofemDriverAeroCoordinate(unittest.TestCase):
 
         # build the scenario
         scenario = Scenario.steady("test", steps=200)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         scenario.register_to(model)
 
@@ -135,7 +135,7 @@ class TestFuntofemDriverAeroCoordinate(unittest.TestCase):
         # build the scenario
         scenario = Scenario.steady("test", steps=200)
         Function.ksfailure().register_to(scenario)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         scenario.register_to(model)
 

@@ -89,7 +89,9 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.temperature())
+        scenario = Scenario.steady("test", steps=200).include(
+            Function.avg_temperature()
+        )
         scenario.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver
@@ -134,7 +136,9 @@ class TestTacsDriverCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.steady("test", steps=200).include(Function.temperature())
+        scenario = Scenario.steady("test", steps=200).include(
+            Function.avg_temperature()
+        )
         scenario.include(Function.drag()).include(Function.lift())
         scenario.register_to(model)
 
@@ -189,7 +193,7 @@ class TestTacsDriverCoordinate(unittest.TestCase):
 
         climb = Scenario.steady("climb", steps=200)
         Function.ksfailure().register_to(climb)
-        Function.temperature().register_to(climb)
+        Function.avg_temperature().register_to(climb)
         climb.register_to(model)
 
         # build the tacs interface, coupled driver, and oneway driver

@@ -94,7 +94,7 @@ class Function(object):
 
         mass = Function('mass', analysis_type='structural', adjoint=False)
 
-        ks = Function('ksFailure', analysis_type='structural', options={'ksweight':50.0})
+        ks = Function('ksfailure', analysis_type='structural', options={'ksWeight':50.0})
         """
         self.name = name
         self.id = id
@@ -273,14 +273,31 @@ class Function(object):
         cls,
         ks_weight: float = 50.0,
         safety_factor: float = 1.0,
+        ftype="continuous",
     ):
         """
-        Class constructor for the KS Failure function
+        Class constructor for the KS failure function.
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        safety_factor (float, optional):
+            Safety factor used in the calculation
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
         """
+
         return cls(
             name="ksfailure",
             analysis_type="structural",
-            options={"ksWeight": ks_weight, "safetyFactor": safety_factor},
+            options={
+                "ksWeight": ks_weight,
+                "safetyFactor": safety_factor,
+                "ftype": ftype,
+            },
         )
     
     @classmethod
@@ -350,11 +367,23 @@ class Function(object):
         return cls(name="struct-func", analysis_type="structural")
 
     @classmethod
+    def avg_temperature(cls):
+        """
+        Class constructor for the average temperature function
+        """
+        return cls(name="avg_temperature", analysis_type="structural")
+
+    @classmethod
     def temperature(cls):
-        """
-        Class constructor for the Temperature function
-        """
-        return cls(name="temperature", analysis_type="structural")
+        """Deprecated alias for avg_temperature."""
+        import warnings
+
+        warnings.warn(
+            "Function.temperature() is deprecated, use Function.avg_temperature() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return cls.avg_temperature()
 
     @classmethod
     def center_of_mass(cls, direction="all"):
@@ -386,6 +415,75 @@ class Function(object):
         return cls(
             name="compliance",
             analysis_type="structural",
+        )
+
+    @classmethod
+    def ksdisplacement(
+        cls,
+        ks_weight: float = 100.0,
+        direction=[0.0, 0.0, 0.0],
+        ftype="continuous",
+        plot_name: str = None,
+    ):
+        """
+        Class constructor for the KS displacement TACS function.
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        direction (array-like[double], optional):
+            3D vector specifying which direction to project displacements in for KS aggregation.
+            Defaults to [0, 0, 0].
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
+        plot_name (str, optional):
+            Plot name of the function as registered in FUNtoFEM.
+        """
+
+        return cls(
+            name="ksdisplacement",
+            analysis_type="structural",
+            options={
+                "ksWeight": ks_weight,
+                "direction": direction,
+                "ftype": ftype,
+            },
+            plot_name=plot_name,
+        )
+
+    @classmethod
+    def kstemperature(
+        cls,
+        ks_weight: float = 100.0,
+        ftype="continuous",
+        plot_name: str = None,
+    ):
+        """
+        Class constructor for the KS temperature TACS function (approximation of maximum temperature).
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
+        plot_name (str, optional):
+            Plot name of the function as registered in FUNtoFEM.
+        """
+
+        return cls(
+            name="kstemperature",
+            analysis_type="structural",
+            options={
+                "ksWeight": ks_weight,
+                "ftype": ftype,
+            },
+            plot_name=plot_name,
         )
 
     @property

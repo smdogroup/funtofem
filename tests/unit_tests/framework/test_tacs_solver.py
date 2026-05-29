@@ -104,7 +104,7 @@ class TacsInterfaceSolver(unittest.TestCase):
 
         # Create a scenario to run
         scenario = Scenario.steady("test", steps=150)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         scenario.register_to(model)
 
@@ -171,7 +171,7 @@ class TacsInterfaceSolver(unittest.TestCase):
         # Create a scenario to run
         scenario = Scenario.steady("test", steps=150)
         Function.ksfailure().register_to(scenario)
-        Function.temperature().register_to(scenario)
+        Function.avg_temperature().register_to(scenario)
         Function.test_aero().register_to(scenario)
         scenario.register_to(model)
 

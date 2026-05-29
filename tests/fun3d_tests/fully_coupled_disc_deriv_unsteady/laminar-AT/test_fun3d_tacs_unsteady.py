@@ -66,7 +66,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         )
         test_scenario.set_temperature(T_ref=300.0, T_inf=300.0)
         test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         Function.lift().set_timing(start=1, stop=num_steps, averaging=True).register_to(
             test_scenario
         )
@@ -125,7 +125,7 @@ class TestFun3dTacsUnsteady(unittest.TestCase):
         test_scenario.set_flow_ref_vals(qinf=qinf, flow_dt=flow_dt)
         aoa = test_scenario.get_variable("AOA", set_active=True)
         aoa.set_bounds(lower=5.0, value=10.0, upper=15.0)
-        Function.temperature().register_to(test_scenario)
+        Function.avg_temperature().register_to(test_scenario)
         Function.lift().set_timing(start=1, stop=num_steps, averaging=True).register_to(
             test_scenario
         )

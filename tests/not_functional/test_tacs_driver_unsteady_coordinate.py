@@ -90,7 +90,9 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
+        scenario = Scenario.unsteady("test", steps=10).include(
+            Function.avg_temperature()
+        )
         integration_settings = TacsIntegrationSettings(
             dt=0.001, num_steps=scenario.steps
         )
@@ -136,8 +138,10 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
         plate.register_to(model)
 
         # build the scenario
-        scenario = Scenario.unsteady("test", steps=10).include(Function.temperature())
-        scenario.include(Function.temperature()).include(Function.lift())
+        scenario = Scenario.unsteady("test", steps=10).include(
+            Function.avg_temperature()
+        )
+        scenario.include(Function.avg_temperature()).include(Function.lift())
         integration_settings = TacsIntegrationSettings(
             dt=0.001, num_steps=scenario.steps
         )
@@ -196,7 +200,7 @@ class TestTacsDriverUnsteadyCoordinate(unittest.TestCase):
 
         climb = Scenario.unsteady("climb", steps=10)
         Function.ksfailure().register_to(climb)
-        Function.temperature().register_to(climb)
+        Function.avg_temperature().register_to(climb)
         integration_settings = TacsIntegrationSettings(dt=0.001, num_steps=climb.steps)
         climb.include(integration_settings).register_to(model)
 

@@ -45,7 +45,7 @@ class TestTurbulentAerothermal(unittest.TestCase):
         test_scenario = Scenario.steady("turbulent2", steps=500).set_temperature(
             T_ref=300.0, T_inf=300.0
         )
-        test_scenario.include(Function.temperature())
+        test_scenario.include(Function.avg_temperature())
         test_scenario.set_flow_ref_vals(qinf=1.0e4)
         test_scenario.register_to(model)
 

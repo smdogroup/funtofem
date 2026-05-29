@@ -330,24 +330,25 @@ class TacsUnsteadyInterface(SolverInterface):
                     func_tag.append(0)
 
                 elif func.name.lower() == "ksfailure":
-                    ksweight = 50.0
-                    if func.options is not None and "ksweight" in func.options:
-                        ksweight = func.options["ksweight"]
-                    safetyFactor = 1.0
-                    if func.options is not None and "safetyFactor" in func.options:
-                        safetyFactor = func.options["safetyFactor"]
-                    func_list.append(
-                        functions.KSFailure(
-                            self.assembler, ksWeight=ksweight, safetyFactor=safetyFactor
+                    options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "ksfailure option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
                         )
-                    )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
+                    func_list.append(functions.KSFailure(self.assembler, **options))
                     func_tag.append(1)
 
                 elif func.name.lower() == "compliance":
                     func_list.append(functions.Compliance(self.assembler))
                     func_tag.append(1)
 
-                elif func.name.lower() == "temperature":
+                elif func.name.lower() == "avg_temperature":
                     func_list.append(
                         functions.AverageTemperature(self.assembler, volume=self.vol)
                     )
@@ -363,6 +364,38 @@ class TacsUnsteadyInterface(SolverInterface):
                 elif func.name == "mass":
                     func_list.append(functions.StructuralMass(self.assembler))
                     func_tag.append(-1)
+
+                elif func.name.lower() == "ksdisplacement":
+                    options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "ksdisplacement option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
+                    func_list.append(
+                        functions.KSDisplacement(self.assembler, **options)
+                    )
+                    func_tag.append(1)
+
+                elif func.name.lower() == "kstemperature":
+                    options = func.options if func.options is not None else {}
+                    if "ksweight" in options:
+                        import warnings
+
+                        warnings.warn(
+                            "kstemperature option key 'ksweight' is deprecated, use 'ksWeight' instead.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
+                        options = {**options, "ksWeight": options.pop("ksweight")}
+
+                    func_list.append(functions.KSTemperature(self.assembler, **options))
+                    func_tag.append(1)
 
                 else:
                     print("WARNING: Unknown function being set into TACS set to mass")
@@ -846,6 +879,98 @@ class TacsUnsteadyInterface(SolverInterface):
 
     def step_post(self, scenario, bodies, step):
         pass
+
+    def print_summary(self, comm=None, filename=None, _fp=None):
+        """
+        Print a summary of the TacsUnsteadyInterface settings and tolerances.
+
+        Parameters
+        ----------
+        comm : MPI communicator, optional
+            If provided, only rank 0 prints and barriers are inserted.
+            Defaults to self.comm.
+        filename : str or path-like, optional
+            Write the summary to this file (opened in write mode) instead of
+            stdout.  Ignored when ``_fp`` is supplied.
+        _fp : file-like object, optional
+            Internal use — an already-open file handle passed by
+            SolverManager.  Takes priority over ``filename``.
+        """
+        comm = comm if comm is not None else self.comm
+
+        print_here = True
+        if comm is not None:
+            comm.Barrier()
+            if comm.rank != 0:
+                print_here = False
+
+        if print_here:
+            _close_fp = False
+            if _fp is not None:
+                fp = _fp
+            elif filename is not None:
+                fp = open(filename, "w")
+                _close_fp = True
+            else:
+                fp = None
+
+            p = lambda *args, **kw: print(*args, file=fp, **kw)
+
+            p("==========================================================")
+            p("||        TACS Unsteady Interface Summary              ||")
+            p("==========================================================")
+
+            # --- Configuration ---
+            p("")
+            p("  Configuration")
+            p("  -------------")
+            p(f"  TACS proc            : {self.tacs_proc}")
+            p(f"  Num procs            : {self.nprocs}")
+            p(f"  Thermal index        : {self.thermal_index}")
+            p(f"  Debug                : {self._debug}")
+
+            tol_str = "(set by early stopping in driver)"
+
+            # --- Tolerances ---
+            p("")
+            p("  Tolerances")
+            p("  ----------")
+            p(f"  Forward tolerance    : {self.forward_tolerance:<12g}  {tol_str}")
+            p(f"  Adjoint tolerance    : {self.adjoint_tolerance:<12g}")
+
+            # --- Integration settings ---
+            p("")
+            p("  Integration Settings")
+            p("  --------------------")
+            if self.integration_settings is not None:
+                s = self.integration_settings
+                p(f"  Type                 : {s.integration_type}")
+                p(f"  Order                : {s.integration_order}")
+                p(f"  Num steps            : {s.num_steps}")
+                p(f"  Start time           : {s.start_time}")
+                p(f"  End time             : {s.end_time}")
+                p(f"  L2 convergence (abs) : {s.L2_convergence}")
+                p(f"  L2 convergence (rel) : {s.L2_convergence_rel}")
+                p(f"  Jacobian assembly    : every {s.jac_assembly_freq} step(s)")
+                p(f"  Print level          : {s.print_level}")
+                p(f"  Print timing info    : {s.print_timing_info}")
+                p(f"  Write solution       : {s.write_solution}")
+            else:
+                p("  (no integration settings registered)")
+
+            # --- Structural variables ---
+            p("")
+            p("  Structural Variables")
+            p("  --------------------")
+            p(f"  Count                : {len(self.struct_variables)}")
+
+            if _close_fp:
+                fp.close()
+
+        if comm is not None:
+            comm.Barrier()
+
+        return
 
     @classmethod
     def create_from_bdf(
