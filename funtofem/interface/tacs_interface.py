@@ -196,6 +196,11 @@ class TacsSteadyInterface(SolverInterface):
             Whether to use Aitken relaxation.
         struct_loads_file: str
             File name of the struct_loads_file to be used as a constant load to the structure.
+        tacs_panel_dimensions: ``TacsPanelDimensions`` object
+            helper class for length and width values of panels
+        mesh_loader: ``TACS pyMeshLoader`` object
+            Useful for getting component IDs of components in the structure.
+            Used to get local ksfailure.
         """
 
         self.comm = comm
