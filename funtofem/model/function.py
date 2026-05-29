@@ -273,14 +273,31 @@ class Function(object):
         cls,
         ks_weight: float = 50.0,
         safety_factor: float = 1.0,
+        ftype="continuous",
     ):
         """
-        Class constructor for the KS Failure function
+        Class constructor for the KS failure function.
+
+        Parameters
+        ----------
+        ks_weight (float, optional):
+            ks weight used in the calculation
+        safety_factor (float, optional):
+            Safety factor used in the calculation
+        ftype (str, optional):
+            Type of KS aggregation.
+            Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
+            Case-insensitive, defaults to 'continuous'.
         """
+
         return cls(
             name="ksfailure",
             analysis_type="structural",
-            options={"ksWeight": ks_weight, "safetyFactor": safety_factor},
+            options={
+                "ksWeight": ks_weight,
+                "safetyFactor": safety_factor,
+                "ftype": ftype,
+            },
         )
 
     @classmethod
