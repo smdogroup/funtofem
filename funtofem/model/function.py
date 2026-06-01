@@ -414,6 +414,7 @@ class Function(object):
         ----------
         direction (array-like[double]):
             3D vector specifying which direction to project displacements in for KS aggregation.
+            Specify direction as a list or numpy array of length 3 (e.g., [1.0, 0.0, 0.0]).
         ks_weight (float, optional):
             ks weight used in the calculation
         aggregation_type (str, optional):
