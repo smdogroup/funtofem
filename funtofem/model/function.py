@@ -402,8 +402,8 @@ class Function(object):
     @classmethod
     def ksdisplacement(
         cls,
+        direction,
         ks_weight: float = 100.0,
-        direction=None,
         aggregation_type: str = "continuous",
         plot_name: str = None,
     ):
@@ -412,11 +412,10 @@ class Function(object):
 
         Parameters
         ----------
+        direction (array-like[double]):
+            3D vector specifying which direction to project displacements in for KS aggregation.
         ks_weight (float, optional):
             ks weight used in the calculation
-        direction (array-like[double], optional):
-            3D vector specifying which direction to project displacements in for KS aggregation.
-            Defaults to [0, 0, 0].
         aggregation_type (str, optional):
             Type of KS aggregation.
             Accepted inputs are: 'discrete', 'continuous', 'pnorm-discrete', and 'pnorm-continuous'.
@@ -424,8 +423,6 @@ class Function(object):
         plot_name (str, optional):
             Plot name of the function as registered in FUNtoFEM.
         """
-        if direction is None:
-            direction = [0.0, 0.0, 0.0]
 
         return cls(
             name="ksdisplacement",
