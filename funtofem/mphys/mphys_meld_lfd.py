@@ -27,11 +27,21 @@ class ModeTransfer(om.ExplicitComponent):
             types=bool,
             desc="Use separate aero and struct reference coordinates for transfer scheme initialization (same variable name with '_ref' appended)",
         )
+        self.options.declare(
+            "ase_mode",
+            types=bool,
+            desc="Add _motion onto the end of mode_shapes_aero, so that they can later be combined with control surface modes",
+        )
 
         self.first_pass = True
 
     def setup(self):
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
+
+        if self.options["ase_mode"]:
+            self.mode_shapes_aero_name = "mode_shapes_aero_motion"
+        else:
+            self.mode_shapes_aero_name = "mode_shapes_aero"
 
         self.add_input(
             X_STRUCT0,
@@ -71,7 +81,7 @@ class ModeTransfer(om.ExplicitComponent):
 
         aero_mode_size = (self.nnodes_aero * 3, nmodes)
         self.add_output(
-            "mode_shapes_aero",
+            self.mode_shapes_aero_name,
             shape=aero_mode_size,
             distributed=True,
             tags=["mphys_coupling"],
@@ -113,7 +123,7 @@ class ModeTransfer(om.ExplicitComponent):
             meld.transferDisps(struct_mode, aero_mode)
             aero_modes[:, mode] = aero_mode
 
-        outputs["mode_shapes_aero"] = aero_modes.copy()
+        outputs[self.mode_shapes_aero_name] = aero_modes.copy()
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         meld = self.options["meld"]
@@ -131,7 +141,7 @@ class ModeTransfer(om.ExplicitComponent):
             u_a = np.zeros(self.nnodes_aero * 3, dtype=TransferScheme.dtype)
             meld.transferDisps(u_s, u_a)
             if mode == "fwd":
-                if "mode_shapes_aero" in d_outputs:
+                if self.mode_shapes_aero_name in d_outputs:
                     if "mode_shapes_struct" in d_inputs:
                         d_in = np.zeros(
                             self.nnodes_struct * 3, dtype=TransferScheme.dtype
@@ -144,13 +154,13 @@ class ModeTransfer(om.ExplicitComponent):
                             self.nnodes_aero * 3, dtype=TransferScheme.dtype
                         )
                         meld.applydDduS(d_in, prod)
-                        d_outputs["mode_shapes_aero"][:, imode] -= np.array(
+                        d_outputs[self.mode_shapes_aero_name][:, imode] -= np.array(
                             prod, dtype=float
                         )
             if mode == "rev":
-                if "mode_shapes_aero" in d_outputs:
+                if self.mode_shapes_aero_name in d_outputs:
                     du_a = np.array(
-                        d_outputs["mode_shapes_aero"][:, imode],
+                        d_outputs[self.mode_shapes_aero_name][:, imode],
                         dtype=TransferScheme.dtype,
                     )
                     if "mode_shapes_struct" in d_inputs:
@@ -191,8 +201,10 @@ class MeldLfdBuilder(MeldBuilder):
         beta=0.5,
         check_partials=False,
         use_reference_coordinates=False,
+        ase_mode=False,
     ):
         self.nmodes = nmodes
+        self.ase_mode = ase_mode
         super().__init__(
             aero_builder,
             struct_builder,
@@ -213,4 +225,5 @@ class MeldLfdBuilder(MeldBuilder):
             nnodes_aero=self.nnodes_aero,
             meld=self.bodies[0].meld,  # TODO: implement multi-body mode transfer
             use_reference_coordinates=self.use_reference_coordinates,
+            ase_mode=self.ase_mode,
         )
