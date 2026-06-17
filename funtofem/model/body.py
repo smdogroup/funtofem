@@ -683,7 +683,10 @@ class Body(Base):
         self.aitken_is_initialized = False
         self.aitken_adj_is_initialized = False
 
-        if self.transfer is not None:
+        elastic_analyses = [_ for _ in Body.ANALYSIS_TYPES if "elastic" in _]
+        thermal_analyses = [_ for _ in Body.ANALYSIS_TYPES if "therm" in _]
+
+        if self.analysis_type in elastic_analyses:
             ns = 3 * self.struct_nnodes
             na = 3 * self.aero_nnodes
 
@@ -705,7 +708,7 @@ class Body(Base):
                     self.struct_disps[id].append(np.zeros(ns, dtype=self.dtype))
                     self.aero_disps[id].append(np.zeros(na, dtype=self.dtype))
 
-        if self.thermal_transfer is not None:
+        if self.analysis_type in thermal_analyses:
             ns = self.struct_nnodes
             na = self.aero_nnodes
 
@@ -880,7 +883,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.thermal_transfer is not None:
+        if self.thermal_transfer is not None or scenario.id in self.aero_temps:
             if scenario.steady:
                 return self.aero_temps[scenario.id]
             else:
@@ -899,7 +902,7 @@ class Body(Base):
         time_index: int
             The time-index for time-dependent problems
         """
-        if self.thermal_transfer is not None:
+        if self.thermal_transfer is not None or scenario.id in self.aero_heat_flux:
             if scenario.steady:
                 return self.aero_heat_flux[scenario.id]
             else:
@@ -1923,7 +1926,7 @@ class Body(Base):
             all_aero_loads = comm.gather(_loads, root=root)
         else:
             all_aero_loads = []
-        if self.thermal_transfer is not None:
+        if self.thermal_transfer is not None or scenario.id in self.aero_heat_flux:
             _hflux = (
                 self.aero_heat_flux[scenario.id]
                 if scenario.steady
