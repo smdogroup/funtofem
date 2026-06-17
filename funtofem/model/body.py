@@ -718,7 +718,14 @@ class Body(Base):
                 self.struct_temps[scenario.id] = (
                     np.ones(ns, dtype=self.dtype) * scenario.T_ref
                 )
-                self.aero_temps[scenario.id] = np.zeros(na, dtype=self.dtype)
+                # Initialize aero_temps to T_inf rather than zero.
+                # In a coupled solve this gets overwritten by the transfer from TACS
+                # before FUN3D sees it. In a flow-only context (OnewayAeroDriver) it
+                # is never overwritten, so it must be non-zero to produce a finite
+                # thermal conductivity via Sutherland's law when scaling FUN3D's cqa.
+                self.aero_temps[scenario.id] = (
+                    np.ones(na, dtype=self.dtype) * scenario.T_inf
+                )
             else:
                 id = scenario.id
                 self.struct_heat_flux[id] = []
