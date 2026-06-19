@@ -1828,8 +1828,8 @@ class TacsPanelDimensions:
     def compute_panel_length(
         self, assembler, struct_vars, constr_base_name, var_base_name
     ):
+        length_funcs = None
         if self.panel_length_constr is not None:
-            length_funcs = None
             if assembler is not None:
 
                 # get the panel length from the TACS constraint object
@@ -1838,9 +1838,14 @@ class TacsPanelDimensions:
                 self.panel_length_constr.externalClearUpToDate()
                 self.panel_length_constr.evalConstraints(length_funcs)
 
-            # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
-            length_funcs = self.comm.bcast(length_funcs, root=0)
+        # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
+        # NOTE: this bcast must be outside the panel_length_constr guard so that
+        # ALL ranks (including non-TACS ranks where panel_length_constr is None)
+        # participate. Otherwise ranks with struct_nprocs < comm.size skip this
+        # collective entirely, causing a mismatch and segfault.
+        length_funcs = self.comm.bcast(length_funcs, root=0)
 
+        if length_funcs is not None:
             # update the panel length and width dimensions into the F2F variables
             # these will later be set into the TACS constitutive objects in the self.set_variables() call
             length_comp_ct = 0
@@ -1855,8 +1860,8 @@ class TacsPanelDimensions:
     def compute_panel_width(
         self, assembler, struct_vars, constr_base_name, var_base_name
     ):
+        width_funcs = None
         if self.panel_width_constr is not None:
-            width_funcs = None
             if assembler is not None:
 
                 # get the panel width from the TACS constraint object
@@ -1864,9 +1869,11 @@ class TacsPanelDimensions:
                 self.panel_width_constr.externalClearUpToDate()
                 self.panel_width_constr.evalConstraints(width_funcs)
 
-            # assume rank 0 is a TACS proc (this is true as TACS uses rank 0 as root)
-            width_funcs = self.comm.bcast(width_funcs, root=0)
+        # NOTE: same fix as compute_panel_length - bcast must be outside the
+        # panel_width_constr guard so all ranks participate in the collective.
+        width_funcs = self.comm.bcast(width_funcs, root=0)
 
+        if width_funcs is not None:
             # update the panel length and width dimensions into the F2F variables
             # these will later be set into the TACS constitutive objects in the self.set_variables() call
             width_comp_ct = 0
