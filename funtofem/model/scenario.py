@@ -652,14 +652,18 @@ class Scenario(Base):
         Parameters
         ----------
         T : float or np.ndarray
-            Temperature(s) at which to evaluate conductivity.
+            Temperature(s) at which to evaluate conductivity.  Values are
+            floored at 1 K before evaluation so that unphysical negative
+            temperatures (which can appear during a diverging coupled
+            iteration) produce a finite, positive result rather than nan.
 
         Returns
         -------
         k : same type/shape as T
             Dimensional thermal conductivity (W/m-K).
         """
-        mu = self.suther1 * T ** (3.0 / 2.0) / (T + self.suther2)
+        T_safe = np.maximum(T, 1.0)
+        mu = self.suther1 * T_safe ** (3.0 / 2.0) / (T_safe + self.suther2)
         return mu * self.cp / self.Pr
 
     def _sutherland_k_deriv(self, T):
@@ -669,15 +673,22 @@ class Scenario(Base):
         Parameters
         ----------
         T : float or np.ndarray
-            Temperature(s) at which to evaluate the derivative.
+            Temperature(s) at which to evaluate the derivative.  Values are
+            floored at 1 K consistent with ``_sutherland_k``.
 
         Returns
         -------
         dkdT : same type/shape as T
             Derivative of dimensional thermal conductivity with respect to T (W/m-K^2).
         """
+        T_safe = np.maximum(T, 1.0)
         s2 = self.suther2
-        dmu_dT = self.suther1 * T ** (0.5) * (3.0 * s2 + T) / (2.0 * (s2 + T) ** 2)
+        dmu_dT = (
+            self.suther1
+            * T_safe ** (0.5)
+            * (3.0 * s2 + T_safe)
+            / (2.0 * (s2 + T_safe) ** 2)
+        )
         return dmu_dT * self.cp / self.Pr
 
     def _eckert_T_star(self, aero_temps):
