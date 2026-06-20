@@ -50,6 +50,7 @@ class AitkenRelaxation:
         theta_therm_init=0.125,
         theta_min=0.01,
         theta_max=10.0,  # higher than 1 so it can accelerate
+        theta_increase_factor=1.5,  # max factor theta can grow per step
         debug=False,
         history_file=None,
     ):
@@ -65,11 +66,19 @@ class AitkenRelaxation:
             minimum learning rate
         theta_max : float
             maximum learning rate
+        theta_increase_factor : float
+            maximum factor by which theta can increase in a single step.
+            Prevents Aitken from jumping to large values during the transient
+            phase when updates are still large and the linear assumption
+            underlying the Aitken formula does not hold.  A value of 1.5
+            means theta can at most grow by 50% per step.  Set to None or
+            a large number to disable.
         """
         self.theta_init = theta_init
         self.theta_therm_init = theta_therm_init
         self.theta_min = theta_min
         self.theta_max = theta_max
+        self.theta_increase_factor = theta_increase_factor
         self.debug = debug
         self.history_file = history_file
         self.write_history = False
@@ -1457,23 +1466,23 @@ class Body(Base):
             self.aitken_is_initialized = False  # reset all the states
 
         if not self.aitken_is_initialized:
+            # Pull scheme parameters first so they're available for initialization
+            self.theta_init = self.relaxation_scheme.theta_init
+            self.theta_therm_init = self.relaxation_scheme.theta_therm_init
+            self.theta_min = self.relaxation_scheme.theta_min
+            self.theta_max = self.relaxation_scheme.theta_max
+
             # Aitken data for the displacements
             self.theta = self.theta_init
             self.prev_update = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
             self.aitken_vec = np.zeros(3 * self.struct_nnodes, dtype=self.dtype)
 
-            # Aitken data for the temperatures
-            self.theta_t = self.theta_init
+            # Aitken data for the temperatures — use theta_therm_init, not theta_init
+            self.theta_t = self.theta_therm_init
             self.prev_update_t = np.zeros(self.struct_nnodes, dtype=self.dtype)
             self.aitken_vec_t = (
                 np.ones(self.struct_nnodes, dtype=self.dtype) * scenario.T_ref
             )
-
-            # Update default parameters
-            self.theta_init = self.relaxation_scheme.theta_init
-            self.theta_therm_init = self.relaxation_scheme.theta_therm_init
-            self.theta_min = self.relaxation_scheme.theta_min
-            self.theta_max = self.relaxation_scheme.theta_max
 
             self.aitken_is_initialized = True
 
@@ -1561,7 +1570,15 @@ class Body(Base):
                     # Compute the tentative theta value
                     value = (up - self.prev_update_t).dot(up)
                     value = comm.allreduce(value.real)
+                    theta_prev = float(np.real(self.theta_t))
                     self.theta_t += (1 - self.theta_t) * value / norm2
+
+                    # Limit how fast theta can increase per step so that
+                    # Aitken can't jump to large values during the transient
+                    # phase when the linear assumption doesn't yet hold.
+                    if self.relaxation_scheme.theta_increase_factor is not None:
+                        theta_ceil = theta_prev * self.relaxation_scheme.theta_increase_factor
+                        self.theta_t = np.min((self.theta_t, theta_ceil))
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
