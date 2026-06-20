@@ -38,7 +38,7 @@ The CSV has one row per coupling step with columns::
 
 __all__ = ["AeroelasticCouplingMonitor"]
 
-import csv
+import csv, os
 import numpy as np
 
 
@@ -65,14 +65,18 @@ class AeroelasticCouplingMonitor:
 
     COLUMNS = [
         "step",
-        "disp_min", "disp_max", "disp_mean",
-        "load_min", "load_max", "load_mean",
+        "disp_min",
+        "disp_max",
+        "disp_mean",
+        "load_min",
+        "load_max",
+        "load_mean",
     ]
 
     def __init__(self, scenario, comm, csv_file=None, print_each_step=True):
         self.scenario_name = scenario.name
         self.comm = comm
-        self.csv_file = csv_file
+        self.csv_file = os.path.abspath(csv_file) if csv_file is not None else None
         self.print_each_step = print_each_step
 
         self._rows = []
@@ -156,9 +160,7 @@ class AeroelasticCouplingMonitor:
         divider = "-" * len(header)
 
         with open(filename, "w") as fh:
-            fh.write(
-                f"Aeroelastic coupling history — scenario: {self.scenario_name}\n"
-            )
+            fh.write(f"Aeroelastic coupling history — scenario: {self.scenario_name}\n")
             fh.write(divider + "\n")
             fh.write(header + "\n")
             fh.write(divider + "\n")
@@ -253,7 +255,11 @@ class AeroelasticCouplingMonitor:
             return None
 
         return {
-            "step":      step,
-            "disp_min":  d_min,  "disp_max":  d_max,  "disp_mean": d_mean,
-            "load_min":  l_min,  "load_max":  l_max,  "load_mean": l_mean,
+            "step": step,
+            "disp_min": d_min,
+            "disp_max": d_max,
+            "disp_mean": d_mean,
+            "load_min": l_min,
+            "load_max": l_max,
+            "load_mean": l_mean,
         }

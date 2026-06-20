@@ -35,8 +35,7 @@ The CSV has one row per coupling step with columns::
 
 __all__ = ["AerothermalCouplingMonitor"]
 
-import csv
-import os
+import csv, os
 import numpy as np
 
 
@@ -79,7 +78,7 @@ class AerothermalCouplingMonitor:
     def __init__(self, scenario, comm, csv_file=None, print_each_step=True):
         self.scenario_name = scenario.name
         self.comm = comm
-        self.csv_file = csv_file
+        self.csv_file = os.path.abspath(csv_file) if csv_file is not None else None
         self.print_each_step = print_each_step
 
         # In-memory list of dicts, one per step
@@ -119,12 +118,9 @@ class AerothermalCouplingMonitor:
         heat_flux : np.ndarray
             Heating rate at each aero node (W, area-weighted).
         """
-        if self.comm.rank == 0:
+        if self.comm.rank == 0 and step == 1:
             print(
-                f"[AerothermalCouplingMonitor] record() called: step={step}, "
-                f"aero_temps={'array' if aero_temps is not None else 'None'}, "
-                f"k_dim={'array' if k_dim is not None else 'None'}, "
-                f"heat_flux={'array' if heat_flux is not None else 'None'}",
+                f"[AerothermalCouplingMonitor] csv: {self.csv_file}",
                 flush=True,
             )
         row = self._reduce_stats(step, aero_temps, k_dim, heat_flux)
