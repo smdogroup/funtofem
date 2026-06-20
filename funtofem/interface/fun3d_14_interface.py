@@ -755,9 +755,14 @@ class Fun3d14Interface(SolverInterface):
                         f"[iterate step {step}, body {ibody}] heat_flux: min={heat_flux.min():.4g} max={heat_flux.max():.4g}",
                         flush=True,
                     )
+            else:
+                aero_temps = None
+                k_dim = None
 
-                if self.aerothermal_monitor is not None:
-                    self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux)
+            # record() uses allreduce across all ranks — must be called
+            # unconditionally so that ranks with no aero nodes participate.
+            if self.aerothermal_monitor is not None:
+                self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux)
 
         return 0
 
