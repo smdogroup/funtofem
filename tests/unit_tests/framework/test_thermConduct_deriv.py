@@ -82,7 +82,7 @@ class ThermalConductTest(unittest.TestCase):
         self.assertLess(abs(rel_err), 1e-6)
 
     def test_fixed_strategy(self):
-        """Fixed-k strategy: derivative should be exactly zero."""
+        """Fixed-k strategy via explicit k value: derivative should be exactly zero."""
         myType = TransferScheme.dtype
         k_val = 0.05  # representative air conductivity ~822 K
         scenario = Scenario(
@@ -98,6 +98,28 @@ class ThermalConductTest(unittest.TestCase):
 
         dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
         self.assertTrue(np.all(dkdtA == 0.0), "fixed strategy derivative should be zero")
+
+    def test_T_fixed_strategy(self):
+        """Fixed-k strategy via T_fixed: k should equal Sutherland(T_fixed) everywhere."""
+        myType = TransferScheme.dtype
+        T_val = 241.5  # freestream temp from Wieting cylinder case
+        scenario = Scenario(
+            "T_fixed_test",
+            group=0,
+            steps=1,
+            T_fixed=T_val,
+        )
+        # k_fixed should have been pre-computed from Sutherland at T_val
+        k_expected = scenario._sutherland_k(T_val)
+        self.assertAlmostEqual(scenario.k_fixed, k_expected, places=10)
+        self.assertEqual(scenario.k_eval_strategy, "fixed")
+
+        aero_temps = np.array(np.random.rand(100) * 400 + 200, dtype=myType)
+        k = scenario.get_thermal_conduct(aero_temps)
+        self.assertTrue(np.all(k == k_expected), "T_fixed: k should be constant at Sutherland(T_fixed)")
+
+        dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
+        self.assertTrue(np.all(dkdtA == 0.0), "T_fixed: derivative should be zero")
 
     def test_strategy_precedence(self):
         """k_fixed takes precedence over Mach_inf when both are supplied."""

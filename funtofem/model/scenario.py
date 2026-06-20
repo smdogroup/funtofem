@@ -78,6 +78,7 @@ class Scenario(Base):
         Mach_inf=None,
         turbulent=True,
         k_fixed=None,
+        T_fixed=None,
     ):
         """
         Parameters
@@ -163,7 +164,12 @@ class Scenario(Base):
             When provided, selects the ``"fixed"`` k-evaluation strategy: thermal conductivity
             is held at this constant value (W/m-K) for every coupling exchange. This is the
             only provably globally-contractive strategy and is useful for debugging or as a
-            conservative fallback. Takes precedence over ``Mach_inf``.
+            conservative fallback. Takes precedence over ``Mach_inf`` and ``T_fixed``.
+        T_fixed: float or None
+            Reference temperature (K) at which Sutherland's law is evaluated once to produce
+            a constant k for the ``"fixed"`` strategy. Convenient when you want to pin k at a
+            physically meaningful temperature without computing the value by hand. Ignored when
+            ``k_fixed`` is also supplied.
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -204,8 +210,12 @@ class Scenario(Base):
         self.R_specific = R_specific
         self.Pr = Pr
 
+        # Heat capacity at constant pressure — must be set before set_conductivity_info,
+        # which may call _sutherland_k (used when T_fixed is supplied).
+        self.cp = self.R_specific * self.gamma / (self.gamma - 1)
+
         self.set_conductivity_info(
-            Mach_inf=Mach_inf, turbulent=turbulent, k_fixed=k_fixed
+            Mach_inf=Mach_inf, turbulent=turbulent, k_fixed=k_fixed, T_fixed=T_fixed
         )
 
         self.coupled_fw_rtol = 1e-6
@@ -221,10 +231,6 @@ class Scenario(Base):
             min_adjoint_steps if min_adjoint_steps is not None else 0
         )
         self.early_stopping = early_stopping
-
-        # Heat capacity at constant pressure
-        cp = self.R_specific * self.gamma / (self.gamma - 1)
-        self.cp = cp
 
         if fun3d:
             mach = Variable("Mach", id=1, upper=5.0, active=False)
@@ -439,6 +445,7 @@ class Scenario(Base):
         Mach_inf: float = None,
         turbulent: bool = True,
         k_fixed: float = None,
+        T_fixed: float = None,
     ):
         """
         Set the thermal-conductivity evaluation strategy for aerothermal coupling.
@@ -455,7 +462,14 @@ class Scenario(Base):
           as a conservative fallback, but introduces a steady-state bias.
           Takes precedence over ``Mach_inf`` if both are given.
 
-        * ``Mach_inf`` supplied (and ``k_fixed`` is None) → ``"eckert"`` strategy:
+        * ``T_fixed`` supplied (and ``k_fixed`` is None) → ``"fixed"`` strategy:
+          conductivity is computed once from Sutherland's law at the given temperature
+          and then held constant.  Convenient when you want to pin k at a physically
+          meaningful reference temperature (e.g. the freestream or film temperature)
+          without computing the value by hand.  ``k_fixed`` takes precedence if both
+          are given.
+
+        * ``Mach_inf`` supplied (and neither ``k_fixed`` nor ``T_fixed``) → ``"eckert"`` strategy:
           conductivity is evaluated at the Eckert reference temperature
 
               T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf)
@@ -481,6 +495,11 @@ class Scenario(Base):
             the laminar form r = sqrt(Pr).  Only relevant when ``Mach_inf`` is set.
         k_fixed : float or None
             Constant thermal conductivity value (W/m-K) for the ``"fixed"`` strategy.
+            Takes precedence over ``T_fixed`` if both are supplied.
+        T_fixed : float or None
+            Reference temperature (K) at which to evaluate Sutherland's law once to
+            produce a constant k for the ``"fixed"`` strategy.  Ignored when
+            ``k_fixed`` is also supplied.
 
         Returns
         -------
@@ -493,23 +512,34 @@ class Scenario(Base):
 
             scenario.set_conductivity_info(Mach_inf=6.47)
 
-        Fixed-k strategy (conservative fallback)::
+        Fixed-k strategy via explicit value::
 
             scenario.set_conductivity_info(k_fixed=0.05)
+
+        Fixed-k strategy via reference temperature (k computed from Sutherland's law)::
+
+            scenario.set_conductivity_info(T_fixed=241.5)  # e.g. freestream temp
 
         See Also
         --------
         get_thermal_conduct, get_thermal_conduct_deriv
         """
         # Determine the thermal-conductivity evaluation strategy.
-        # "fixed"  : k is held at the user-supplied k_fixed value (globally contractive).
+        # "fixed"  : k is held at a constant value (globally contractive).
         # "eckert" : k is evaluated at the Eckert reference temperature T* (recommended
         #            for aerothermal problems at significant Mach numbers).
         # "wall"   : k is evaluated at the current wall temperature T_w (legacy default;
         #            unstable at high Mach / low coupling frequency — use with caution).
         if k_fixed is not None:
+            # Explicit k value takes precedence over everything.
             self.k_eval_strategy = "fixed"
             self.k_fixed = float(k_fixed)
+            self.Mach_inf = None
+            self.turbulent = turbulent
+        elif T_fixed is not None:
+            # Derive k once from Sutherland's law at the given reference temperature.
+            self.k_eval_strategy = "fixed"
+            self.k_fixed = float(self._sutherland_k(float(T_fixed)))
             self.Mach_inf = None
             self.turbulent = turbulent
         elif Mach_inf is not None:
