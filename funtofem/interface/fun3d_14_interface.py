@@ -67,6 +67,7 @@ class Fun3d14Interface(SolverInterface):
         forward_stop_tolerance=1e-9,
         adjoint_min_tolerance=1e-6,
         adjoint_stop_tolerance=1e-8,
+        aerothermal_monitor=None,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -95,6 +96,11 @@ class Fun3d14Interface(SolverInterface):
             whether to print debug statements or not such as the real/imag norms of state vectors in FUN3D
         external_mesh_morph: bool
             override for AFRL to set mesh morph through constructor instead of caps2fun
+        aerothermal_monitor : :class:`~funtofem.interface.utils.AerothermalCouplingMonitor`, optional
+            If provided, ``record()`` is called once per coupling step after
+            the heat flux is computed, saving per-step statistics of wall
+            temperature, thermal conductivity, and heat flux to a CSV file
+            and/or to memory for later plotting.
         """
 
         self.comm = comm
@@ -124,6 +130,9 @@ class Fun3d14Interface(SolverInterface):
         # heat flux
         self.thermal_scale = 1.0  # = 1/2 * rho_inf * (V_inf)^3
         self.dHdq = []
+
+        # optional per-step aerothermal diagnostics
+        self.aerothermal_monitor = aerothermal_monitor
 
         # fun3d residual data
         self._forward_done = False
@@ -640,6 +649,11 @@ class Fun3d14Interface(SolverInterface):
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                 temps = temps if self.complex_mode else temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
+                if self.comm.Get_rank() == 0:
+                    print(
+                        f"[iter {step}] aero_temps min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
+                        flush=True,
+                    )
 
             if self._debug:
                 struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
@@ -713,10 +727,37 @@ class Fun3d14Interface(SolverInterface):
                 dTdn_dim = dTdn * scenario.T_inf
 
                 aero_temps = body.get_aero_temps(scenario, time_index=step)
+                if self.comm.rank == 0:
+                    print(
+                        f"[iter {step}] aero_temps min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
+                        flush=True,
+                    )
                 k_dim = scenario.get_thermal_conduct(aero_temps)
+                if self.comm.rank == 0 and step == 1:
+                    print(
+                        f"[k_eval_strategy] scenario '{scenario.name}': "
+                        f"strategy={scenario.k_eval_strategy}, "
+                        f"Mach_inf={scenario.Mach_inf}, "
+                        f"k_fixed={scenario.k_fixed}",
+                        flush=True,
+                    )
+                if self.comm.rank == 0:
+                    print(
+                        f"[iterate step {step}] k_dim: min={k_dim.min():.4g} max={k_dim.max():.4g}",
+                        flush=True,
+                    )
 
                 # actually a heating rate integral(heat_flux) over the area
                 heat_flux[:] = dTdn_dim[:] * k_dim[:]
+
+                if self.comm.Get_rank() == 0:
+                    print(
+                        f"[iterate step {step}, body {ibody}] heat_flux: min={heat_flux.min():.4g} max={heat_flux.max():.4g}",
+                        flush=True,
+                    )
+
+                if self.aerothermal_monitor is not None:
+                    self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux)
 
         return 0
 

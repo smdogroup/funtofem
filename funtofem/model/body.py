@@ -718,13 +718,15 @@ class Body(Base):
                 self.struct_temps[scenario.id] = (
                     np.ones(ns, dtype=self.dtype) * scenario.T_ref
                 )
-                # Initialize aero_temps to T_inf rather than zero.
-                # In a coupled solve this gets overwritten by the transfer from TACS
-                # before FUN3D sees it. In a flow-only context (OnewayAeroDriver) it
-                # is never overwritten, so it must be non-zero to produce a finite
-                # thermal conductivity via Sutherland's law when scaling FUN3D's cqa.
+                # Initialize aero_temps to T_ref (the structural wall reference
+                # temperature). In a coupled solve this gets overwritten by the
+                # TACS-aero transfer before FUN3D sees it. In a flow-only context
+                # (OnewayAeroDriver) it is never overwritten, so initializing to
+                # T_ref ensures FUN3D receives the correct cold-wall temperature
+                # on the first iteration and produces a finite thermal conductivity
+                # via Sutherland's law when scaling cqa.
                 self.aero_temps[scenario.id] = (
-                    np.ones(na, dtype=self.dtype) * scenario.T_inf
+                    np.ones(na, dtype=self.dtype) * scenario.T_ref
                 )
             else:
                 id = scenario.id
@@ -739,7 +741,9 @@ class Body(Base):
                     self.struct_temps[id].append(
                         np.ones(ns, dtype=self.dtype) * scenario.T_ref
                     )
-                    self.aero_temps[id].append(np.zeros(na, dtype=self.dtype))
+                    self.aero_temps[id].append(
+                        np.ones(na, dtype=self.dtype) * scenario.T_ref
+                    )
 
         return
 
@@ -1561,6 +1565,30 @@ class Body(Base):
 
                     self.theta_t = np.max(
                         (np.min((self.theta_t, self.theta_max)), self.theta_min)
+                    )
+
+                    if self.relaxation_scheme.debug and comm.rank == 0:
+                        print(
+                            "\n------------------------------------------\n",
+                            flush=True,
+                        )
+                        print(
+                            f"Thermal coupling Aitken: theta_t={float(np.real(self.theta_t)):.4g}"
+                            f"  (min={self.theta_min:.4g}, max={self.theta_max:.4g})"
+                        )
+                        print(
+                            f"  T_struct: min={float(np.real(struct_temps.min())):.4g}"
+                            f"  max={float(np.real(struct_temps.max())):.4g} K"
+                        )
+                        print(
+                            "\n------------------------------------------",
+                            flush=True,
+                        )
+                elif self.relaxation_scheme.debug and comm.rank == 0:
+                    print(
+                        f"Thermal coupling Aitken (first iteration): "
+                        f"theta_t={float(np.real(self.theta_t)):.4g} (theta_therm_init)",
+                        flush=True,
                     )
 
                 # handle the min/max for complex step

@@ -21,6 +21,7 @@ from .test_result import *
 from .test_utils import *
 from .remote import *
 from .relaxation_utils import *
+from .aerothermal_coupling_monitor import *
 
 # need to be updated and therefore commmented out for now
 # if fun3d_loader is not None: from .fun3d_client import *

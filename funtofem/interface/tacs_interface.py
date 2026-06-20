@@ -844,7 +844,7 @@ class TacsSteadyInterface(SolverInterface):
                     if np.real(den) > self.aitken_tol:
                         theta = prev_theta * (1 - num / den)
                         if self.comm.rank == 0 and self.aitken_debug:
-                            print(f"Theta unbounded: {theta}", flush=True)
+                            print(f"Theta (TACS internal Aitken): {theta}", flush=True)
                     else:
                         # If not updating, then reset to theta = 1.0 to effectively turn off relaxation
                         theta = 1.0
