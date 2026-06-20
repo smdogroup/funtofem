@@ -75,6 +75,9 @@ class Scenario(Base):
         gamma=1.4,
         R_specific=287.058,
         Pr=0.72,
+        Mach_inf=None,
+        turbulent=True,
+        k_fixed=None,
     ):
         """
         Parameters
@@ -145,6 +148,22 @@ class Scenario(Base):
             Specific gas constant of the working fluid (assumed air). Units of J/kg-K
         Pr: double
             Prandtl number.
+        Mach_inf: float or None
+            Freestream Mach number. When provided, selects the ``"eckert"`` k-evaluation
+            strategy: thermal conductivity is evaluated at the Eckert reference temperature
+            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf), which severs the positive-feedback
+            loop that destabilizes the aerothermal coupling at high Mach numbers. When None,
+            falls back to the legacy ``"wall"`` strategy (k evaluated at T_wall) with a
+            one-time warning. Ignored when ``k_fixed`` is also supplied.
+        turbulent: bool
+            Recovery factor formulation used in the Eckert adiabatic-wall temperature.
+            True (default) uses the turbulent form r = Pr^(1/3); False uses the laminar
+            form r = sqrt(Pr). Only relevant when ``Mach_inf`` is set.
+        k_fixed: float or None
+            When provided, selects the ``"fixed"`` k-evaluation strategy: thermal conductivity
+            is held at this constant value (W/m-K) for every coupling exchange. This is the
+            only provably globally-contractive strategy and is useful for debugging or as a
+            conservative fallback. Takes precedence over ``Mach_inf``.
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -184,6 +203,28 @@ class Scenario(Base):
         self.gamma = gamma
         self.R_specific = R_specific
         self.Pr = Pr
+
+        # Determine the thermal-conductivity evaluation strategy.
+        # "fixed"  : k is held at the user-supplied k_fixed value (globally contractive).
+        # "eckert" : k is evaluated at the Eckert reference temperature T* (recommended
+        #            for aerothermal problems at significant Mach numbers).
+        # "wall"   : k is evaluated at the current wall temperature T_w (legacy default;
+        #            unstable at high Mach / low coupling frequency — use with caution).
+        if k_fixed is not None:
+            self.k_eval_strategy = "fixed"
+            self.k_fixed = float(k_fixed)
+            self.Mach_inf = None
+            self.turbulent = turbulent
+        elif Mach_inf is not None:
+            self.k_eval_strategy = "eckert"
+            self.k_fixed = None
+            self.Mach_inf = float(Mach_inf)
+            self.turbulent = bool(turbulent)
+        else:
+            self.k_eval_strategy = "wall"
+            self.k_fixed = None
+            self.Mach_inf = None
+            self.turbulent = turbulent
 
         self.coupled_fw_rtol = 1e-6
         self.coupled_adj_rtol = 1e-6
@@ -500,57 +541,153 @@ class Scenario(Base):
         for func in self.functions:
             func.scenario = id
 
+    def _sutherland_k(self, T):
+        """
+        Evaluate dimensional thermal conductivity via Sutherland's two-constant viscosity
+        law at temperature T (K), using constant Prandtl number and cp.
+
+        Parameters
+        ----------
+        T : float or np.ndarray
+            Temperature(s) at which to evaluate conductivity.
+
+        Returns
+        -------
+        k : same type/shape as T
+            Dimensional thermal conductivity (W/m-K).
+        """
+        mu = self.suther1 * T ** (3.0 / 2.0) / (T + self.suther2)
+        return mu * self.cp / self.Pr
+
+    def _sutherland_k_deriv(self, T):
+        """
+        Evaluate dk/dT via Sutherland's law at temperature T (K).
+
+        Parameters
+        ----------
+        T : float or np.ndarray
+            Temperature(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        dkdT : same type/shape as T
+            Derivative of dimensional thermal conductivity with respect to T (W/m-K^2).
+        """
+        s2 = self.suther2
+        dmu_dT = self.suther1 * T ** (0.5) * (3.0 * s2 + T) / (2.0 * (s2 + T) ** 2)
+        return dmu_dT * self.cp / self.Pr
+
+    def _eckert_T_star(self, aero_temps):
+        """
+        Compute the Eckert reference temperature T* (K) at each aero surface node.
+
+        The standard Eckert reference temperature is:
+            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf)
+
+        where the adiabatic-wall temperature is:
+            T_aw = T_inf * (1 + r*(gamma-1)/2 * Mach_inf^2)
+
+        and the recovery factor r is:
+            r = Pr^(1/3)   (turbulent, default)
+            r = Pr^(1/2)   (laminar)
+
+        Parameters
+        ----------
+        aero_temps : np.ndarray
+            Current wall temperatures at each aero surface node (K).
+
+        Returns
+        -------
+        T_star : np.ndarray
+            Eckert reference temperature at each node (K).
+        """
+        r = self.Pr ** (1.0 / 3.0) if self.turbulent else self.Pr**0.5
+        T_aw = self.T_inf * (1.0 + r * (self.gamma - 1.0) / 2.0 * self.Mach_inf**2)
+        T_star = 0.5 * (aero_temps + self.T_inf) + 0.22 * (T_aw - self.T_inf)
+        return T_star
+
     def get_thermal_conduct(self, aero_temps):
         """
         Calculate dimensional thermal conductivity at each aero surface node.
-        First, use two-constant Sutherland's law to calculate viscosity for use in calculating aero heat flux.
+
+        Dispatches to one of three strategies set at Scenario construction time via the
+        ``Mach_inf`` and ``k_fixed`` arguments:
+
+        * ``"eckert"``  (recommended for aerothermal problems): evaluates Sutherland's law at
+          the Eckert reference temperature T*, which removes the positive-feedback loop that
+          causes instability when k is evaluated at the wall temperature.  Requires
+          ``Mach_inf`` to be set.
+        * ``"fixed"``   (most conservative): returns the user-supplied constant ``k_fixed``
+          broadcast to the size of ``aero_temps``.  Globally contractive but introduces a
+          steady-state bias.
+        * ``"wall"``    (legacy default): evaluates Sutherland's law at the current wall
+          temperature.  Unstable at high Mach / low coupling frequency — use with caution.
 
         Parameters
         ----------
-        aero_temps: np.ndarray
-            Current aero surface temperatures.
+        aero_temps : np.ndarray
+            Current aero surface temperatures (K).
+
+        Returns
+        -------
+        k : np.ndarray
+            Dimensional thermal conductivity at each node (W/m-K).
         """
+        if self.k_eval_strategy == "fixed":
+            return np.full_like(aero_temps, self.k_fixed)
 
-        # Gas constants
-        s1 = self.suther1
-        s2 = self.suther2
-        cp = self.cp
-        Pr = self.Pr
+        if self.k_eval_strategy == "eckert":
+            T_star = self._eckert_T_star(aero_temps)
+            return self._sutherland_k(T_star)
 
-        # Compute viscosity at each aero surface node
-        mu = s1 * aero_temps ** (3.0 / 2.0) / (aero_temps + s2)
-        # Compute the dimensional thermal conductivity
-        k = mu * cp / Pr
+        # "wall" strategy — legacy behaviour with a one-time warning
+        if not getattr(self, "_wall_strategy_warned", False):
+            import warnings
 
-        return k
+            warnings.warn(
+                f"Scenario '{self.name}': k_eval_strategy='wall' evaluates thermal "
+                "conductivity at the current wall temperature. This is known to be "
+                "unstable in aerothermal coupling at significant Mach numbers. "
+                "Set Mach_inf when constructing the Scenario to use the stable "
+                "'eckert' strategy, or supply k_fixed for a fixed-k fallback.",
+                UserWarning,
+                stacklevel=2,
+            )
+            self._wall_strategy_warned = True
+        return self._sutherland_k(aero_temps)
 
     def get_thermal_conduct_deriv(self, aero_temps):
         """
-        Calculate derivative of thermal conductivity with respect to aero surface temperature.
+        Calculate dk/dT_wall at each aero surface node, consistent with the active
+        ``k_eval_strategy``.
+
+        * ``"eckert"``: applies the chain rule through T*.  Since dT*/dT_w = 0.5, this
+          returns ``dk/dT* * 0.5`` — exactly halving the destabilizing sensitivity
+          compared with the ``"wall"`` strategy.
+        * ``"fixed"``: returns zeros (k is constant, no sensitivity to wall temperature).
+        * ``"wall"``: returns ``dk/dT_w`` directly from Sutherland's law (legacy).
 
         Parameters
         ----------
-        aero_temps: np.ndarray
-            Current aero surface temperatures.
+        aero_temps : np.ndarray
+            Current aero surface temperatures (K).
+
+        Returns
+        -------
+        dkdtA : np.ndarray
+            Derivative of dimensional thermal conductivity with respect to wall
+            temperature at each node (W/m-K^2).
         """
+        if self.k_eval_strategy == "fixed":
+            return np.zeros_like(aero_temps)
 
-        # Gas constants
-        s1 = self.suther1
-        s2 = self.suther2
-        cp = self.cp
-        Pr = self.Pr
+        if self.k_eval_strategy == "eckert":
+            T_star = self._eckert_T_star(aero_temps)
+            # chain rule: dk/dT_w = dk/dT* * dT*/dT_w,  dT*/dT_w = 0.5
+            return self._sutherland_k_deriv(T_star) * 0.5
 
-        # Compute viscosity at each aero surface node
-        dmu_dtA = (
-            s1
-            * aero_temps ** (0.5)
-            * (3 * s2 + aero_temps)
-            / (2 * (s2 + aero_temps) ** 2)
-        )
-        # Compute the dimensional thermal conductivity
-        dkdtA = dmu_dtA * cp / Pr
-
-        return dkdtA
+        # "wall" strategy — direct Sutherland derivative
+        return self._sutherland_k_deriv(aero_temps)
 
     def __str__(self):
         line1 = f"Scenario (<ID> <Name>): {self.id} {self.name}"
@@ -659,6 +796,12 @@ class Scenario(Base):
         p(f"  Sutherland C1            : {self.suther1} kg/m-s-K^0.5")
         p(f"  Sutherland C2            : {self.suther2} K")
         p(f"  cp                       : {self.cp:.6g} J/kg-K")
+        p(f"  k_eval_strategy          : {self.k_eval_strategy}")
+        if self.k_eval_strategy == "eckert":
+            p(f"  Mach_inf                 : {self.Mach_inf}")
+            p(f"  turbulent recovery factor: {self.turbulent}")
+        elif self.k_eval_strategy == "fixed":
+            p(f"  k_fixed                  : {self.k_fixed} W/m-K")
 
         # --- Functions ---
         p("")

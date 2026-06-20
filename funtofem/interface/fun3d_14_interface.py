@@ -689,11 +689,21 @@ class Fun3d14Interface(SolverInterface):
                     print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
                 print(f"========================================\n", flush=True)
 
-            # Compute the heat flux on the body
-            # FUN3D is nondimensional, it doesn't output a heat flux (which can't be scaled linearly).
-            # Instead, FUN3D can directly output a temperature gradient at the wall. We then compute
-            # the heat flux manually by calculating viscosity based on aero temps to get thermal conductivity,
-            # and then take the product of thermal conductivity and area-weighted temperature gradient.
+            # Compute the heat flux on the body.
+            # FUN3D is nondimensional — it outputs an area-weighted, non-dimensional
+            # wall temperature gradient (cqa) rather than a heat flux directly.
+            # We dimensionalize and form the heating rate as:
+            #   heat_flux = dTdn_dim * k_dim
+            # where dTdn_dim = cqa * T_inf  (dimensionalizes the gradient)
+            # and k_dim is the thermal conductivity of the gas evaluated according to
+            # scenario.k_eval_strategy:
+            #   "eckert" (recommended): k evaluated at the Eckert reference temperature
+            #            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf), which severs the
+            #            positive-feedback loop that destabilizes coupling at high Mach.
+            #   "fixed":  k held at a user-supplied constant (globally contractive).
+            #   "wall":   k evaluated at the current wall temperature T_w (legacy; unstable
+            #             at significant Mach numbers / low coupling frequency).
+            # See scenario.get_thermal_conduct() for full details.
             heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
 
             if heat_flux is not None and aero_nnodes > 0:
