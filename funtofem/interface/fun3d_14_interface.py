@@ -68,6 +68,7 @@ class Fun3d14Interface(SolverInterface):
         adjoint_min_tolerance=1e-6,
         adjoint_stop_tolerance=1e-8,
         aerothermal_monitor=None,
+        aeroelastic_monitor=None,
     ):
         """
         The instantiation of the FUN3D interface class will populate the model with the aerodynamic surface
@@ -101,6 +102,10 @@ class Fun3d14Interface(SolverInterface):
             the heat flux is computed, saving per-step statistics of wall
             temperature, thermal conductivity, and heat flux to a CSV file
             and/or to memory for later plotting.
+        aeroelastic_monitor : :class:`~funtofem.interface.utils.AeroelasticCouplingMonitor`, optional
+            If provided, ``record()`` is called once per coupling step after
+            aero loads are extracted from FUN3D, saving per-step statistics
+            of aero surface displacement and load magnitudes.
         """
 
         self.comm = comm
@@ -133,6 +138,9 @@ class Fun3d14Interface(SolverInterface):
 
         # optional per-step aerothermal diagnostics
         self.aerothermal_monitor = aerothermal_monitor
+
+        # optional per-step aeroelastic diagnostics
+        self.aeroelastic_monitor = aeroelastic_monitor
 
         # fun3d residual data
         self._forward_done = False
@@ -702,6 +710,12 @@ class Fun3d14Interface(SolverInterface):
                     print(f"norm of real aero_loads: {real_norm(aero_loads)}")
                     print(f"norm of imaginary aero_loads: {imag_norm(aero_loads)}")
                 print(f"========================================\n", flush=True)
+
+            # record() uses allreduce — must be called unconditionally so that
+            # ranks with no aero nodes still participate in the collective.
+            if self.aeroelastic_monitor is not None:
+                aero_disps = body.get_aero_disps(scenario, time_index=step)
+                self.aeroelastic_monitor.record(step, aero_disps, aero_loads)
 
             # Compute the heat flux on the body.
             # FUN3D is nondimensional — it outputs an area-weighted, non-dimensional

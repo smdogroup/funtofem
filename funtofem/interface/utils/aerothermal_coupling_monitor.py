@@ -90,6 +90,10 @@ class AerothermalCouplingMonitor:
             with open(self.csv_file, "w", newline="") as fh:
                 writer = csv.DictWriter(fh, fieldnames=self.COLUMNS)
                 writer.writeheader()
+            print(
+                f"[AerothermalCouplingMonitor] writing to: {os.path.abspath(self.csv_file)}",
+                flush=True,
+            )
 
     # ------------------------------------------------------------------
     # Public API
@@ -115,6 +119,14 @@ class AerothermalCouplingMonitor:
         heat_flux : np.ndarray
             Heating rate at each aero node (W, area-weighted).
         """
+        if self.comm.rank == 0:
+            print(
+                f"[AerothermalCouplingMonitor] record() called: step={step}, "
+                f"aero_temps={'array' if aero_temps is not None else 'None'}, "
+                f"k_dim={'array' if k_dim is not None else 'None'}, "
+                f"heat_flux={'array' if heat_flux is not None else 'None'}",
+                flush=True,
+            )
         row = self._reduce_stats(step, aero_temps, k_dim, heat_flux)
         if row is None:
             return  # non-rank-0 processes return here
