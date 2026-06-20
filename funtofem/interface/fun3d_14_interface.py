@@ -743,7 +743,7 @@ class Fun3d14Interface(SolverInterface):
                 aero_temps = body.get_aero_temps(scenario, time_index=step)
                 if self.comm.rank == 0:
                     print(
-                        f"[iter {step}] aero_temps min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
+                        f"[iter {step}] aero_temps (rank 0 local) min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
                         flush=True,
                     )
                 k_dim = scenario.get_thermal_conduct(aero_temps)
@@ -757,7 +757,7 @@ class Fun3d14Interface(SolverInterface):
                     )
                 if self.comm.rank == 0:
                     print(
-                        f"[iterate step {step}] k_dim: min={k_dim.min():.4g} max={k_dim.max():.4g}",
+                        f"[iterate step {step}] k_dim (rank 0 local): min={k_dim.min():.4g} max={k_dim.max():.4g}",
                         flush=True,
                     )
 
@@ -766,7 +766,7 @@ class Fun3d14Interface(SolverInterface):
 
                 if self.comm.Get_rank() == 0:
                     print(
-                        f"[iterate step {step}, body {ibody}] heat_flux: min={heat_flux.min():.4g} max={heat_flux.max():.4g}",
+                        f"[iterate step {step}, body {ibody}] heat_flux (rank 0 local): min={heat_flux.min():.4g} max={heat_flux.max():.4g}",
                         flush=True,
                     )
             else:
@@ -776,7 +776,7 @@ class Fun3d14Interface(SolverInterface):
             # record() uses allreduce across all ranks — must be called
             # unconditionally so that ranks with no aero nodes participate.
             if self.aerothermal_monitor is not None:
-                self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux)
+                self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux, body=body)
 
         return 0
 

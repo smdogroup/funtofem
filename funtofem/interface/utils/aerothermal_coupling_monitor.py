@@ -73,6 +73,7 @@ class AerothermalCouplingMonitor:
         "q_min",
         "q_max",
         "q_mean",
+        "theta_t",
     ]
 
     def __init__(self, scenario, comm, csv_file=None, print_each_step=True):
@@ -98,7 +99,7 @@ class AerothermalCouplingMonitor:
     # Public API
     # ------------------------------------------------------------------
 
-    def record(self, step, aero_temps, k_dim, heat_flux):
+    def record(self, step, aero_temps, k_dim, heat_flux, body=None):
         """
         Record statistics for one coupling step.
 
@@ -117,24 +118,40 @@ class AerothermalCouplingMonitor:
             Dimensional thermal conductivity at each aero node (W/m-K).
         heat_flux : np.ndarray
             Heating rate at each aero node (W, area-weighted).
+        body : :class:`~funtofem.model.body.Body`, optional
+            If provided, the current thermal Aitken relaxation factor
+            ``body.theta_t`` is recorded alongside the field statistics.
+            This is the theta value that was *applied* on this step (i.e.
+            computed during the previous ``aitken_relax`` call).
         """
         if self.comm.rank == 0 and step == 1:
             print(
                 f"[AerothermalCouplingMonitor] csv: {self.csv_file}",
                 flush=True,
             )
+        # Read theta_t from the body on this rank; None if body not provided
+        # or Aitken not yet initialised.
+        theta_t = None
+        if body is not None and hasattr(body, "theta_t"):
+            raw = body.theta_t
+            theta_t = float(np.real(raw)) if raw is not None else None
+
         row = self._reduce_stats(step, aero_temps, k_dim, heat_flux)
         if row is None:
             return  # non-rank-0 processes return here
 
+        row["theta_t"] = theta_t
+
         self._rows.append(row)
 
         if self.print_each_step:
+            theta_str = f" | theta_t: {theta_t:.4g}" if theta_t is not None else ""
             print(
                 f"[monitor {self.scenario_name}] step {step:4d} | "
                 f"T: [{row['T_min']:.4g}, {row['T_max']:.4g}] K | "
                 f"k: [{row['k_min']:.4g}, {row['k_max']:.4g}] W/m-K | "
-                f"q: [{row['q_min']:.4g}, {row['q_max']:.4g}] W",
+                f"q: [{row['q_min']:.4g}, {row['q_max']:.4g}] W"
+                f"{theta_str}",
                 flush=True,
             )
 
@@ -178,7 +195,8 @@ class AerothermalCouplingMonitor:
             f"{'step':>6s}  "
             f"{'T_min':>12s}  {'T_max':>12s}  {'T_mean':>12s}  "
             f"{'k_min':>10s}  {'k_max':>10s}  {'k_mean':>10s}  "
-            f"{'q_min':>14s}  {'q_max':>14s}  {'q_mean':>14s}"
+            f"{'q_min':>14s}  {'q_max':>14s}  {'q_mean':>14s}  "
+            f"{'theta_t':>8s}"
         )
         divider = "-" * len(header)
 
@@ -188,11 +206,13 @@ class AerothermalCouplingMonitor:
             fh.write(header + "\n")
             fh.write(divider + "\n")
             for row in self._rows:
+                theta_str = f"{row['theta_t']:>8.4g}" if row['theta_t'] is not None else f"{'N/A':>8s}"
                 fh.write(
                     f"{int(row['step']):>6d}  "
                     f"{row['T_min']:>12.4g}  {row['T_max']:>12.4g}  {row['T_mean']:>12.4g}  "
                     f"{row['k_min']:>10.4g}  {row['k_max']:>10.4g}  {row['k_mean']:>10.4g}  "
-                    f"{row['q_min']:>14.4g}  {row['q_max']:>14.4g}  {row['q_mean']:>14.4g}\n"
+                    f"{row['q_min']:>14.4g}  {row['q_max']:>14.4g}  {row['q_mean']:>14.4g}  "
+                    f"{theta_str}\n"
                 )
             fh.write(divider + "\n")
 
@@ -236,7 +256,8 @@ class AerothermalCouplingMonitor:
             reader = csv.DictReader(fh)
             for row in reader:
                 for col in cls.COLUMNS:
-                    rows[col].append(float(row[col]))
+                    val = row[col]
+                    rows[col].append(float("nan") if val in ("None", "", "nan") else float(val))
         return {col: np.array(rows[col]) for col in cls.COLUMNS}
 
     # ------------------------------------------------------------------
@@ -290,4 +311,5 @@ class AerothermalCouplingMonitor:
             "q_min": q_min,
             "q_max": q_max,
             "q_mean": q_mean,
+            "theta_t": None,  # filled in by record() after allreduce
         }
