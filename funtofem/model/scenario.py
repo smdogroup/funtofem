@@ -204,27 +204,9 @@ class Scenario(Base):
         self.R_specific = R_specific
         self.Pr = Pr
 
-        # Determine the thermal-conductivity evaluation strategy.
-        # "fixed"  : k is held at the user-supplied k_fixed value (globally contractive).
-        # "eckert" : k is evaluated at the Eckert reference temperature T* (recommended
-        #            for aerothermal problems at significant Mach numbers).
-        # "wall"   : k is evaluated at the current wall temperature T_w (legacy default;
-        #            unstable at high Mach / low coupling frequency — use with caution).
-        if k_fixed is not None:
-            self.k_eval_strategy = "fixed"
-            self.k_fixed = float(k_fixed)
-            self.Mach_inf = None
-            self.turbulent = turbulent
-        elif Mach_inf is not None:
-            self.k_eval_strategy = "eckert"
-            self.k_fixed = None
-            self.Mach_inf = float(Mach_inf)
-            self.turbulent = bool(turbulent)
-        else:
-            self.k_eval_strategy = "wall"
-            self.k_fixed = None
-            self.Mach_inf = None
-            self.turbulent = turbulent
+        self.set_conductivity_info(
+            Mach_inf=Mach_inf, turbulent=turbulent, k_fixed=k_fixed
+        )
 
         self.coupled_fw_rtol = 1e-6
         self.coupled_adj_rtol = 1e-6
@@ -450,6 +432,97 @@ class Scenario(Base):
         """
         self.T_ref = T_ref
         self.T_inf = T_inf
+        return self
+
+    def set_conductivity_info(
+        self,
+        Mach_inf: float = None,
+        turbulent: bool = True,
+        k_fixed: float = None,
+    ):
+        """
+        Set the thermal-conductivity evaluation strategy for aerothermal coupling.
+
+        This method provides a method-cascade-friendly alternative to supplying
+        ``Mach_inf``, ``turbulent``, and ``k_fixed`` directly to ``__init__``.
+        Calling it overwrites any strategy previously set on this scenario.
+
+        The active strategy is determined by which arguments are provided:
+
+        * ``k_fixed`` supplied → ``"fixed"`` strategy: conductivity is held at the
+          given constant value (W/m-K) for every coupling exchange.  This is the
+          only provably globally-contractive option and is useful for debugging or
+          as a conservative fallback, but introduces a steady-state bias.
+          Takes precedence over ``Mach_inf`` if both are given.
+
+        * ``Mach_inf`` supplied (and ``k_fixed`` is None) → ``"eckert"`` strategy:
+          conductivity is evaluated at the Eckert reference temperature
+
+              T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf)
+
+          where T_aw = T_inf * (1 + r*(𝛾-1)/2 * Mach_inf²) and r is the recovery
+          factor (turbulent: r = Pr^(1/3); laminar: r = Pr^(1/2)).  Evaluating k at
+          T* instead of T_w severs the positive-feedback loop responsible for
+          aerothermal coupling instability at significant Mach numbers.
+
+        * Neither supplied → ``"wall"`` strategy (legacy): conductivity is evaluated
+          at the current wall temperature T_w.  This is the pre-existing default
+          behaviour and is known to be unstable in aerothermal coupling at high Mach
+          numbers or low coupling frequency.  A one-time ``UserWarning`` is emitted
+          on the first call to ``get_thermal_conduct``.
+
+        Parameters
+        ----------
+        Mach_inf : float or None
+            Freestream Mach number.  Required for the ``"eckert"`` strategy.
+        turbulent : bool
+            Recovery factor formulation used in the Eckert adiabatic-wall temperature.
+            ``True`` (default) uses the turbulent form r = Pr^(1/3); ``False`` uses
+            the laminar form r = sqrt(Pr).  Only relevant when ``Mach_inf`` is set.
+        k_fixed : float or None
+            Constant thermal conductivity value (W/m-K) for the ``"fixed"`` strategy.
+
+        Returns
+        -------
+        self : Scenario
+            Returns the scenario itself to support method cascading.
+
+        Examples
+        --------
+        Eckert strategy (recommended for hypersonic aerothermal problems)::
+
+            scenario.set_conductivity_info(Mach_inf=6.47)
+
+        Fixed-k strategy (conservative fallback)::
+
+            scenario.set_conductivity_info(k_fixed=0.05)
+
+        See Also
+        --------
+        get_thermal_conduct, get_thermal_conduct_deriv
+        """
+        # Determine the thermal-conductivity evaluation strategy.
+        # "fixed"  : k is held at the user-supplied k_fixed value (globally contractive).
+        # "eckert" : k is evaluated at the Eckert reference temperature T* (recommended
+        #            for aerothermal problems at significant Mach numbers).
+        # "wall"   : k is evaluated at the current wall temperature T_w (legacy default;
+        #            unstable at high Mach / low coupling frequency — use with caution).
+        if k_fixed is not None:
+            self.k_eval_strategy = "fixed"
+            self.k_fixed = float(k_fixed)
+            self.Mach_inf = None
+            self.turbulent = turbulent
+        elif Mach_inf is not None:
+            self.k_eval_strategy = "eckert"
+            self.k_fixed = None
+            self.Mach_inf = float(Mach_inf)
+            self.turbulent = bool(turbulent)
+        else:
+            self.k_eval_strategy = "wall"
+            self.k_fixed = None
+            self.Mach_inf = None
+            self.turbulent = turbulent
+
         return self
 
     def set_stop_criterion(
