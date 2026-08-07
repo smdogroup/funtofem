@@ -9,6 +9,10 @@ from mpi4py import MPI
 import unittest
 
 
+@unittest.skipIf(
+    MPI.COMM_WORLD.size < 2,
+    "requires 2+ MPI ranks; run with testflo (honors N_PROCS) or mpirun -n 2",
+)
 class TransferSchemeTest(unittest.TestCase):
     N_PROCS = 2
 

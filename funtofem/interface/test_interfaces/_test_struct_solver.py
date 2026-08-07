@@ -7,6 +7,9 @@ import os
 
 
 class TestStructuralSolver(SolverInterface):
+    # Not a pytest test class despite the name; suppresses PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, comm, model, elastic_k=1.0, thermal_k=1.0, default_mesh=True):
         """
         A test solver that provides the functionality that FUNtoFEM expects from

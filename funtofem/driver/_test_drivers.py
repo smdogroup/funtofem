@@ -36,6 +36,9 @@ class NullDriver:
 
 
 class TestAeroOnewayDriver:
+    # Not a pytest test class despite the name; suppresses PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, solvers, model, transfer_settings=None):
         """
         Aerodynamic driver for unit tests (similar to OnewayAeroDriver).

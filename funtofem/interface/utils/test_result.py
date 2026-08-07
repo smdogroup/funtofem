@@ -8,6 +8,9 @@ import os
 
 
 class TestResult:
+    # Not a pytest test class despite the name; suppresses PytestCollectionWarning
+    __test__ = False
+
     def __init__(
         self,
         name,

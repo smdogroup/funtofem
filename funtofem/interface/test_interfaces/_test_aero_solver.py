@@ -32,6 +32,9 @@ import os
 
 
 class TestAerodynamicSolver(SolverInterface):
+    # Not a pytest test class despite the name; suppresses PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, comm, model, copy_struct_mesh=False):
         """
         This class provides the functionality that FUNtoFEM expects from
