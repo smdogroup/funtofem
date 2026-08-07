@@ -98,14 +98,9 @@ class Fun3d14Interface(SolverInterface):
         external_mesh_morph: bool
             override for AFRL to set mesh morph through constructor instead of caps2fun
         aerothermal_monitor : :class:`~funtofem.interface.utils.AerothermalCouplingMonitor`, optional
-            If provided, ``record()`` is called once per coupling step after
-            the heat flux is computed, saving per-step statistics of wall
-            temperature, thermal conductivity, and heat flux to a CSV file
-            and/or to memory for later plotting.
+            Records per-step wall temperature, conductivity, and heat flux statistics.
         aeroelastic_monitor : :class:`~funtofem.interface.utils.AeroelasticCouplingMonitor`, optional
-            If provided, ``record()`` is called once per coupling step after
-            aero loads are extracted from FUN3D, saving per-step statistics
-            of aero surface displacement and load magnitudes.
+            Records per-step aero surface displacement and load statistics.
         """
 
         self.comm = comm
@@ -668,11 +663,6 @@ class Fun3d14Interface(SolverInterface):
                 temps = np.asfortranarray(aero_temps[:]) / scenario.T_inf
                 temps = temps if self.complex_mode else temps.astype(np.double)
                 self.fun3d_flow.input_wall_temperature(temps, body=ibody)
-                if self.comm.Get_rank() == 0:
-                    print(
-                        f"[iter {step}] aero_temps min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
-                        flush=True,
-                    )
 
             if self._debug:
                 struct_disps = body.get_struct_disps(scenario, time_index=step - 1)
@@ -729,20 +719,11 @@ class Fun3d14Interface(SolverInterface):
                 self.aeroelastic_monitor.record(step, aero_disps, aero_loads)
 
             # Compute the heat flux on the body.
-            # FUN3D is nondimensional — it outputs an area-weighted, non-dimensional
-            # wall temperature gradient (cqa) rather than a heat flux directly.
-            # We dimensionalize and form the heating rate as:
-            #   heat_flux = dTdn_dim * k_dim
-            # where dTdn_dim = cqa * T_inf  (dimensionalizes the gradient)
-            # and k_dim is the thermal conductivity of the gas evaluated according to
-            # scenario.k_eval_strategy:
-            #   "eckert" (recommended): k evaluated at the Eckert reference temperature
-            #            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf), which severs the
-            #            positive-feedback loop that destabilizes coupling at high Mach.
-            #   "fixed":  k held at a user-supplied constant (globally contractive).
-            #   "wall":   k evaluated at the current wall temperature T_w (legacy; unstable
-            #             at significant Mach numbers / low coupling frequency).
-            # See scenario.get_thermal_conduct() for full details.
+            # FUN3D outputs an area-weighted, non-dimensional wall temperature gradient
+            # (cqa) rather than a heat flux, so form the heating rate from Fourier's law:
+            #   heat_flux = dTdn_dim * k_dim,   dTdn_dim = cqa * T_inf
+            # where k_dim comes from scenario.get_thermal_conduct(), which evaluates the
+            # gas conductivity at the wall temperature by default.
             heat_flux = body.get_aero_heat_flux(scenario, time_index=step)
 
             if heat_flux is not None and aero_nnodes > 0:
@@ -752,34 +733,10 @@ class Fun3d14Interface(SolverInterface):
                 dTdn_dim = dTdn * scenario.T_inf
 
                 aero_temps = body.get_aero_temps(scenario, time_index=step)
-                if self.comm.rank == 0:
-                    print(
-                        f"[iter {step}] aero_temps (rank 0 local) min={aero_temps.min():.4g} max={aero_temps.max():.4g}",
-                        flush=True,
-                    )
                 k_dim = scenario.get_thermal_conduct(aero_temps)
-                if self.comm.rank == 0 and step == 1:
-                    print(
-                        f"[k_eval_strategy] scenario '{scenario.name}': "
-                        f"strategy={scenario.k_eval_strategy}, "
-                        f"Mach_inf={scenario.Mach_inf}, "
-                        f"k_fixed={scenario.k_fixed}",
-                        flush=True,
-                    )
-                if self.comm.rank == 0:
-                    print(
-                        f"[iterate step {step}] k_dim (rank 0 local): min={k_dim.min():.4g} max={k_dim.max():.4g}",
-                        flush=True,
-                    )
 
                 # actually a heating rate integral(heat_flux) over the area
                 heat_flux[:] = dTdn_dim[:] * k_dim[:]
-
-                if self.comm.Get_rank() == 0:
-                    print(
-                        f"[iterate step {step}, body {ibody}] heat_flux (rank 0 local): min={heat_flux.min():.4g} max={heat_flux.max():.4g}",
-                        flush=True,
-                    )
             else:
                 aero_temps = None
                 k_dim = None

@@ -124,11 +124,6 @@ class AerothermalCouplingMonitor:
             This is the theta value that was *applied* on this step (i.e.
             computed during the previous ``aitken_relax`` call).
         """
-        if self.comm.rank == 0 and step == 1:
-            print(
-                f"[AerothermalCouplingMonitor] csv: {self.csv_file}",
-                flush=True,
-            )
         # Read theta_t from the body on this rank; None if body not provided
         # or Aitken not yet initialised.
         theta_t = None

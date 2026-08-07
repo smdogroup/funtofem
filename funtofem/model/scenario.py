@@ -166,26 +166,21 @@ class Scenario(Base):
         Pr: double
             Prandtl number.
         Mach_inf: float or None
-            Freestream Mach number. When provided, selects the ``"eckert"`` k-evaluation
-            strategy: thermal conductivity is evaluated at the Eckert reference temperature
-            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf), which severs the positive-feedback
-            loop that destabilizes the aerothermal coupling at high Mach numbers. When None,
-            falls back to the legacy ``"wall"`` strategy (k evaluated at T_wall) with a
-            one-time warning. Ignored when ``k_fixed`` is also supplied.
+            Freestream Mach number. Selects the ``"eckert"`` conductivity-evaluation
+            strategy. Ignored when ``k_fixed`` or ``T_fixed`` is also supplied.
         turbulent: bool
-            Recovery factor formulation used in the Eckert adiabatic-wall temperature.
-            True (default) uses the turbulent form r = Pr^(1/3); False uses the laminar
-            form r = sqrt(Pr). Only relevant when ``Mach_inf`` is set.
+            Recovery factor in the Eckert adiabatic-wall temperature: True (default)
+            uses r = Pr^(1/3), False uses r = sqrt(Pr). Only used by ``"eckert"``.
         k_fixed: float or None
-            When provided, selects the ``"fixed"`` k-evaluation strategy: thermal conductivity
-            is held at this constant value (W/m-K) for every coupling exchange. This is the
-            only provably globally-contractive strategy and is useful for debugging or as a
-            conservative fallback. Takes precedence over ``Mach_inf`` and ``T_fixed``.
+            Constant thermal conductivity (W/m-K). Selects the ``"fixed"`` strategy and
+            takes precedence over ``Mach_inf`` and ``T_fixed``.
         T_fixed: float or None
-            Reference temperature (K) at which Sutherland's law is evaluated once to produce
-            a constant k for the ``"fixed"`` strategy. Convenient when you want to pin k at a
-            physically meaningful temperature without computing the value by hand. Ignored when
-            ``k_fixed`` is also supplied.
+            Reference temperature (K) at which Sutherland's law is evaluated once to
+            produce a constant k for the ``"fixed"`` strategy. Ignored when ``k_fixed``
+            is also supplied.
+
+        See ``set_conductivity_info`` for the full description of the strategies.
+
         See Also
         --------
         :mod:`base` : Scenario inherits from Base
@@ -588,56 +583,40 @@ class Scenario(Base):
         """
         Set the thermal-conductivity evaluation strategy for aerothermal coupling.
 
-        This method provides a method-cascade-friendly alternative to supplying
-        ``Mach_inf``, ``turbulent``, and ``k_fixed`` directly to ``__init__``.
-        Calling it overwrites any strategy previously set on this scenario.
+        Cascade-friendly alternative to passing ``Mach_inf``, ``turbulent``,
+        ``k_fixed``, or ``T_fixed`` to ``__init__``.  Calling it overwrites any
+        strategy previously set on this scenario.  The strategy is picked by which
+        argument is supplied, in precedence order:
 
-        The active strategy is determined by which arguments are provided:
+        * ``k_fixed``  → ``"fixed"``: k held at the given constant (W/m-K).
+        * ``T_fixed``  → ``"fixed"``: k evaluated once from Sutherland's law at the
+          given reference temperature, then held constant.
+        * ``Mach_inf`` → ``"eckert"`` (experimental): k evaluated at the Eckert
+          reference temperature, a high-speed refinement of the film temperature.
+        * none of these → ``"wall"`` (default): k evaluated at the current wall
+          temperature T_w, the physical evaluation.
 
-        * ``k_fixed`` supplied → ``"fixed"`` strategy: conductivity is held at the
-          given constant value (W/m-K) for every coupling exchange.  This is the
-          only provably globally-contractive option and is useful for debugging or
-          as a conservative fallback, but introduces a steady-state bias.
-          Takes precedence over ``Mach_inf`` if both are given.
-
-        * ``T_fixed`` supplied (and ``k_fixed`` is None) → ``"fixed"`` strategy:
-          conductivity is computed once from Sutherland's law at the given temperature
-          and then held constant.  Convenient when you want to pin k at a physically
-          meaningful reference temperature (e.g. the freestream or film temperature)
-          without computing the value by hand.  ``k_fixed`` takes precedence if both
-          are given.
-
-        * ``Mach_inf`` supplied (and neither ``k_fixed`` nor ``T_fixed``) → ``"eckert"`` strategy:
-          conductivity is evaluated at the Eckert reference temperature
-
-              T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf)
-
-          where T_aw = T_inf * (1 + r*(𝛾-1)/2 * Mach_inf²) and r is the recovery
-          factor (turbulent: r = Pr^(1/3); laminar: r = Pr^(1/2)).  Evaluating k at
-          T* instead of T_w severs the positive-feedback loop responsible for
-          aerothermal coupling instability at significant Mach numbers.
-
-        * Neither supplied → ``"wall"`` strategy (legacy): conductivity is evaluated
-          at the current wall temperature T_w.  This is the pre-existing default
-          behaviour and is known to be unstable in aerothermal coupling at high Mach
-          numbers or low coupling frequency.  A one-time ``UserWarning`` is emitted
-          on the first call to ``get_thermal_conduct``.
+        This is primarily an accuracy choice, not a stability one.  The coupling runs
+        only a few CFD sub-iterations per coupled step, far short of the flow solver's
+        thermal settling time, so the exchange sits in a partially-frozen regime where
+        its fixed-point eigenvalue is near unity and the conductivity strategy shifts
+        it only slightly.  Aitken relaxation of the interface, not the choice of
+        strategy, is what stabilizes the coupling in practice.  See the aerothermal
+        coupling stability section of B. Burke's dissertation for the analysis.
 
         Parameters
         ----------
         Mach_inf : float or None
             Freestream Mach number.  Required for the ``"eckert"`` strategy.
         turbulent : bool
-            Recovery factor formulation used in the Eckert adiabatic-wall temperature.
-            ``True`` (default) uses the turbulent form r = Pr^(1/3); ``False`` uses
-            the laminar form r = sqrt(Pr).  Only relevant when ``Mach_inf`` is set.
+            Recovery factor in the Eckert adiabatic-wall temperature: ``True``
+            (default) uses r = Pr^(1/3), ``False`` uses r = sqrt(Pr).  Only used
+            by ``"eckert"``.
         k_fixed : float or None
-            Constant thermal conductivity value (W/m-K) for the ``"fixed"`` strategy.
-            Takes precedence over ``T_fixed`` if both are supplied.
+            Constant thermal conductivity (W/m-K) for the ``"fixed"`` strategy.
         T_fixed : float or None
-            Reference temperature (K) at which to evaluate Sutherland's law once to
-            produce a constant k for the ``"fixed"`` strategy.  Ignored when
-            ``k_fixed`` is also supplied.
+            Reference temperature (K) at which Sutherland's law is evaluated once to
+            produce a constant k.  Ignored when ``k_fixed`` is also supplied.
 
         Returns
         -------
@@ -646,28 +625,16 @@ class Scenario(Base):
 
         Examples
         --------
-        Eckert strategy (recommended for hypersonic aerothermal problems)::
+        ::
 
-            scenario.set_conductivity_info(Mach_inf=6.47)
-
-        Fixed-k strategy via explicit value::
-
-            scenario.set_conductivity_info(k_fixed=0.05)
-
-        Fixed-k strategy via reference temperature (k computed from Sutherland's law)::
-
-            scenario.set_conductivity_info(T_fixed=241.5)  # e.g. freestream temp
+            scenario.set_conductivity_info(Mach_inf=6.47)   # eckert
+            scenario.set_conductivity_info(k_fixed=0.05)    # fixed, explicit k
+            scenario.set_conductivity_info(T_fixed=241.5)   # fixed, k from Sutherland
 
         See Also
         --------
         get_thermal_conduct, get_thermal_conduct_deriv
         """
-        # Determine the thermal-conductivity evaluation strategy.
-        # "fixed"  : k is held at a constant value (globally contractive).
-        # "eckert" : k is evaluated at the Eckert reference temperature T* (recommended
-        #            for aerothermal problems at significant Mach numbers).
-        # "wall"   : k is evaluated at the current wall temperature T_w (legacy default;
-        #            unstable at high Mach / low coupling frequency — use with caution).
         if k_fixed is not None:
             # Explicit k value takes precedence over everything.
             self.k_eval_strategy = "fixed"
@@ -831,17 +798,12 @@ class Scenario(Base):
 
     def _eckert_T_star(self, aero_temps):
         """
-        Compute the Eckert reference temperature T* (K) at each aero surface node.
+        Compute the Eckert reference temperature T* (K) at each aero surface node,
 
-        The standard Eckert reference temperature is:
-            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf)
+            T* = 0.5*(T_w + T_inf) + 0.22*(T_aw - T_inf),
 
-        where the adiabatic-wall temperature is:
-            T_aw = T_inf * (1 + r*(gamma-1)/2 * Mach_inf^2)
-
-        and the recovery factor r is:
-            r = Pr^(1/3)   (turbulent, default)
-            r = Pr^(1/2)   (laminar)
+        with adiabatic-wall temperature T_aw = T_inf*(1 + r*(gamma-1)/2*Mach_inf^2)
+        and recovery factor r = Pr^(1/3) (turbulent) or Pr^(1/2) (laminar).
 
         Parameters
         ----------
@@ -862,18 +824,11 @@ class Scenario(Base):
         """
         Calculate dimensional thermal conductivity at each aero surface node.
 
-        Dispatches to one of three strategies set at Scenario construction time via the
-        ``Mach_inf`` and ``k_fixed`` arguments:
+        Dispatches on ``k_eval_strategy`` (see ``set_conductivity_info``):
 
-        * ``"eckert"``  (recommended for aerothermal problems): evaluates Sutherland's law at
-          the Eckert reference temperature T*, which removes the positive-feedback loop that
-          causes instability when k is evaluated at the wall temperature.  Requires
-          ``Mach_inf`` to be set.
-        * ``"fixed"``   (most conservative): returns the user-supplied constant ``k_fixed``
-          broadcast to the size of ``aero_temps``.  Globally contractive but introduces a
-          steady-state bias.
-        * ``"wall"``    (legacy default): evaluates Sutherland's law at the current wall
-          temperature.  Unstable at high Mach / low coupling frequency — use with caution.
+        * ``"wall"`` (default): Sutherland's law at the current wall temperature.
+        * ``"eckert"``: Sutherland's law at the Eckert reference temperature T*.
+        * ``"fixed"``: the constant ``k_fixed``, broadcast over ``aero_temps``.
 
         Parameters
         ----------
@@ -892,20 +847,7 @@ class Scenario(Base):
             T_star = self._eckert_T_star(aero_temps)
             return self._sutherland_k(T_star)
 
-        # "wall" strategy — legacy behaviour with a one-time warning
-        if not getattr(self, "_wall_strategy_warned", False):
-            import warnings
-
-            warnings.warn(
-                f"Scenario '{self.name}': k_eval_strategy='wall' evaluates thermal "
-                "conductivity at the current wall temperature. This is known to be "
-                "unstable in aerothermal coupling at significant Mach numbers. "
-                "Set Mach_inf when constructing the Scenario to use the stable "
-                "'eckert' strategy, or supply k_fixed for a fixed-k fallback.",
-                UserWarning,
-                stacklevel=2,
-            )
-            self._wall_strategy_warned = True
+        # "wall" strategy — default, k evaluated at the current wall temperature
         return self._sutherland_k(aero_temps)
 
     def get_thermal_conduct_deriv(self, aero_temps):
@@ -913,11 +855,9 @@ class Scenario(Base):
         Calculate dk/dT_wall at each aero surface node, consistent with the active
         ``k_eval_strategy``.
 
-        * ``"eckert"``: applies the chain rule through T*.  Since dT*/dT_w = 0.5, this
-          returns ``dk/dT* * 0.5`` — exactly halving the destabilizing sensitivity
-          compared with the ``"wall"`` strategy.
-        * ``"fixed"``: returns zeros (k is constant, no sensitivity to wall temperature).
-        * ``"wall"``: returns ``dk/dT_w`` directly from Sutherland's law (legacy).
+        * ``"wall"``: ``dk/dT_w`` directly from Sutherland's law.
+        * ``"eckert"``: chain rule through T*, where dT*/dT_w = 0.5.
+        * ``"fixed"``: zeros, since k does not depend on the wall temperature.
 
         Parameters
         ----------
@@ -938,7 +878,7 @@ class Scenario(Base):
             # chain rule: dk/dT_w = dk/dT* * dT*/dT_w,  dT*/dT_w = 0.5
             return self._sutherland_k_deriv(T_star) * 0.5
 
-        # "wall" strategy — direct Sutherland derivative
+        # "wall" strategy (default) — direct Sutherland derivative
         return self._sutherland_k_deriv(aero_temps)
 
     def __str__(self):

@@ -2,7 +2,6 @@ import numpy as np
 from funtofem import TransferScheme
 from funtofem.model import Scenario
 import unittest
-import warnings
 
 np.random.seed(343)
 
@@ -38,14 +37,11 @@ class ThermalConductTest(unittest.TestCase):
         return (fd_scalar - exact_scalar) / exact_scalar
 
     def test_wall_strategy(self):
-        """Legacy "wall" strategy: k evaluated at T_wall."""
+        """Default "wall" strategy: k evaluated at T_wall."""
         myType = TransferScheme.dtype
         scenario = Scenario("wall_test", group=0, steps=1)
-        # suppress the expected UserWarning about the wall strategy
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            aero_temps = np.array(np.random.rand(100) * 400 + 200, dtype=myType)
-            rel_err = self._fd_check(scenario, aero_temps)
+        aero_temps = np.array(np.random.rand(100) * 400 + 200, dtype=myType)
+        rel_err = self._fd_check(scenario, aero_temps)
         print(f"wall   FD rel err: {rel_err:.3e}", flush=True)
         self.assertLess(abs(rel_err), 1e-6)
 

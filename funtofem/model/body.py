@@ -42,6 +42,12 @@ class AitkenRelaxation:
     """
     Class to define aitken relaxation settings
     THIS is now an Aitken Acceleration method technically speaking
+
+    For aerothermal coupling this is the primary stabilizer, not just an
+    accelerator: with only a handful of CFD sub-iterations per coupled step the
+    flux-forward/temperature-back exchange is marginally stable on its own, and
+    bounding the per-exchange wall-temperature increment is what keeps it
+    converging.
     """
 
     def __init__(
@@ -67,12 +73,10 @@ class AitkenRelaxation:
         theta_max : float
             maximum learning rate
         theta_increase_factor : float
-            maximum factor by which theta can increase in a single step.
-            Prevents Aitken from jumping to large values during the transient
-            phase when updates are still large and the linear assumption
-            underlying the Aitken formula does not hold.  A value of 1.5
-            means theta can at most grow by 50% per step.  Set to None or
-            a large number to disable.
+            maximum factor by which theta may grow in a single step (1.5 = 50%).
+            Keeps Aitken from jumping to large values during the transient, where
+            the linear assumption behind the update does not yet hold. Set to None
+            to disable.
         """
         self.theta_init = theta_init
         self.theta_therm_init = theta_therm_init
@@ -727,13 +731,9 @@ class Body(Base):
                 self.struct_temps[scenario.id] = (
                     np.ones(ns, dtype=self.dtype) * scenario.T_ref
                 )
-                # Initialize aero_temps to T_ref (the structural wall reference
-                # temperature). In a coupled solve this gets overwritten by the
-                # TACS-aero transfer before FUN3D sees it. In a flow-only context
-                # (OnewayAeroDriver) it is never overwritten, so initializing to
-                # T_ref ensures FUN3D receives the correct cold-wall temperature
-                # on the first iteration and produces a finite thermal conductivity
-                # via Sutherland's law when scaling cqa.
+                # Initialize aero_temps to T_ref. A coupled solve overwrites these
+                # via the temperature transfer, but a flow-only run (OnewayAeroDriver)
+                # never does, and zeros would give a meaningless Sutherland k.
                 self.aero_temps[scenario.id] = (
                     np.ones(na, dtype=self.dtype) * scenario.T_ref
                 )
@@ -1573,9 +1573,7 @@ class Body(Base):
                     theta_prev = float(np.real(self.theta_t))
                     self.theta_t += (1 - self.theta_t) * value / norm2
 
-                    # Limit how fast theta can increase per step so that
-                    # Aitken can't jump to large values during the transient
-                    # phase when the linear assumption doesn't yet hold.
+                    # Cap the per-step growth of theta through the transient
                     if self.relaxation_scheme.theta_increase_factor is not None:
                         theta_ceil = (
                             theta_prev * self.relaxation_scheme.theta_increase_factor

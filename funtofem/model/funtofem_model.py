@@ -434,7 +434,8 @@ class FUNtoFEMmodel(object):
         In a large HSCT wing optimization case, there were 13k adjacency constraints which took up a considerable amount of space on memory..
         """
         import gc
-        import sys
+
+        # import sys
 
         # get vars only composite functions first to delete later
         vars_only_cfuncs = [
@@ -446,18 +447,18 @@ class FUNtoFEMmodel(object):
             cfunc for cfunc in self.composite_functions if not (cfunc.vars_only)
         ]
         self.composite_functions = nvars_only_cfuncs
-        first_vars_only_cfunc = vars_only_cfuncs[0]
-        ref_count1 = sys.getrefcount(first_vars_only_cfunc)
+        # first_vars_only_cfunc = vars_only_cfuncs[0]
+        # ref_count1 = sys.getrefcount(first_vars_only_cfunc)
         del vars_only_cfuncs
         gc.collect()  # garbage collection..
         # # check reference count on one of the vars only cfunc
         # # will only delete if no references available
-        ref_count2 = sys.getrefcount(first_vars_only_cfunc)
+        # ref_count2 = sys.getrefcount(first_vars_only_cfunc)
 
-        print(
-            f"clear_vars_only_cfuncs: ref count1 {ref_count1} ref count2 {ref_count2}"
-        )
-        print(f"need to have 2 for the object to be truly deleted")
+        # print(
+        #     f"clear_vars_only_cfuncs: ref count1 {ref_count1} ref count2 {ref_count2}"
+        # )
+        # print(f"need to have 2 for the object to be truly deleted")
         return
 
     def evaluate_composite_functions(self, compute_grad=True):
