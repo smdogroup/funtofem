@@ -1577,7 +1577,9 @@ class Body(Base):
                     # Aitken can't jump to large values during the transient
                     # phase when the linear assumption doesn't yet hold.
                     if self.relaxation_scheme.theta_increase_factor is not None:
-                        theta_ceil = theta_prev * self.relaxation_scheme.theta_increase_factor
+                        theta_ceil = (
+                            theta_prev * self.relaxation_scheme.theta_increase_factor
+                        )
                         self.theta_t = np.min((self.theta_t, theta_ceil))
 
                     self.theta_t = np.max(

@@ -206,7 +206,11 @@ class AerothermalCouplingMonitor:
             fh.write(header + "\n")
             fh.write(divider + "\n")
             for row in self._rows:
-                theta_str = f"{row['theta_t']:>8.4g}" if row['theta_t'] is not None else f"{'N/A':>8s}"
+                theta_str = (
+                    f"{row['theta_t']:>8.4g}"
+                    if row["theta_t"] is not None
+                    else f"{'N/A':>8s}"
+                )
                 fh.write(
                     f"{int(row['step']):>6d}  "
                     f"{row['T_min']:>12.4g}  {row['T_max']:>12.4g}  {row['T_mean']:>12.4g}  "
@@ -257,7 +261,9 @@ class AerothermalCouplingMonitor:
             for row in reader:
                 for col in cls.COLUMNS:
                     val = row[col]
-                    rows[col].append(float("nan") if val in ("None", "", "nan") else float(val))
+                    rows[col].append(
+                        float("nan") if val in ("None", "", "nan") else float(val)
+                    )
         return {col: np.array(rows[col]) for col in cls.COLUMNS}
 
     # ------------------------------------------------------------------

@@ -19,8 +19,8 @@ class ThermalConductTest(unittest.TestCase):
 
     # Cylinder case freestream conditions (Wieting 1987) used as a representative
     # aerothermal test point.
-    T_INF = 241.5   # K
-    MACH  = 6.47
+    T_INF = 241.5  # K
+    MACH = 6.47
 
     def _fd_check(self, scenario, aero_temps, rtol=1e-6):
         """Run the FD check and return the relative error."""
@@ -29,11 +29,11 @@ class ThermalConductTest(unittest.TestCase):
         h = 1e-5
         v = np.array(np.random.randn(*aero_temps.shape), dtype=myType)
 
-        k0    = scenario.get_thermal_conduct(aero_temps)
-        k1    = scenario.get_thermal_conduct(aero_temps + h * p)
+        k0 = scenario.get_thermal_conduct(aero_temps)
+        k1 = scenario.get_thermal_conduct(aero_temps + h * p)
         dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
 
-        fd_scalar    = np.dot(v * (k1 - k0) / h, p)
+        fd_scalar = np.dot(v * (k1 - k0) / h, p)
         exact_scalar = np.dot(v * dkdtA, p)
         return (fd_scalar - exact_scalar) / exact_scalar
 
@@ -97,7 +97,9 @@ class ThermalConductTest(unittest.TestCase):
         self.assertTrue(np.all(k == k_val), "fixed strategy should return constant k")
 
         dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
-        self.assertTrue(np.all(dkdtA == 0.0), "fixed strategy derivative should be zero")
+        self.assertTrue(
+            np.all(dkdtA == 0.0), "fixed strategy derivative should be zero"
+        )
 
     def test_T_fixed_strategy(self):
         """Fixed-k strategy via T_fixed: k should equal Sutherland(T_fixed) everywhere."""
@@ -116,7 +118,10 @@ class ThermalConductTest(unittest.TestCase):
 
         aero_temps = np.array(np.random.rand(100) * 400 + 200, dtype=myType)
         k = scenario.get_thermal_conduct(aero_temps)
-        self.assertTrue(np.all(k == k_expected), "T_fixed: k should be constant at Sutherland(T_fixed)")
+        self.assertTrue(
+            np.all(k == k_expected),
+            "T_fixed: k should be constant at Sutherland(T_fixed)",
+        )
 
         dkdtA = scenario.get_thermal_conduct_deriv(aero_temps)
         self.assertTrue(np.all(dkdtA == 0.0), "T_fixed: derivative should be zero")
