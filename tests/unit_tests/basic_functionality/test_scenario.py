@@ -71,5 +71,132 @@ class ScenarioTest(unittest.TestCase):
         assert scenario.functions[1].adjoint == False
 
 
+class ScenarioFunctionOrderTest(unittest.TestCase):
+    """
+    Functions may be registered in any order; Scenario reorders them internally so
+    that all functions requiring an adjoint come first. See
+    Scenario._canonicalize_functions for why that ordering is required.
+    """
+
+    def test_reorder_mass_first(self):
+        """registering the non-adjoint function first must not be an error"""
+        scenario = Scenario(name="cruise", steps=10)
+        scenario.add_function(Function.mass())
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+
+        names = [func.name for func in scenario.functions]
+        assert names[-1] == "mass"
+        assert all(func.adjoint for func in scenario.functions[:-1])
+
+        # function.id must stay the 1-based index into scenario.functions, since it
+        # is pushed into the FUN3D design interface
+        assert [func.id for func in scenario.functions] == [1, 2, 3]
+
+    def test_registration_order_preserved_within_group(self):
+        """the sort is stable, so relative order within each group is untouched"""
+        scenario = Scenario(name="cruise", steps=10)
+        scenario.add_function(Function.mass())
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+        scenario.add_function(Function.drag())
+
+        adjoint_names = [func.name for func in scenario.adjoint_functions]
+        assert adjoint_names == ["ksfailure", "cl", "cd"]
+
+    def test_already_correct_order_unchanged(self):
+        """a correctly ordered scenario must not be perturbed at all"""
+        scenario = Scenario(name="cruise", steps=10)
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+        scenario.add_function(Function.mass())
+
+        assert [func.name for func in scenario.functions] == ["ksfailure", "cl", "mass"]
+        assert [func.id for func in scenario.functions] == [1, 2, 3]
+        assert scenario._reordered == False
+
+    def test_early_stopping_puts_aero_first(self):
+        """
+        with early stopping on, an aerodynamic function must come first or the FUN3D
+        adjoint early stopping criterion fails
+        """
+        scenario = Scenario(name="cruise", steps=10, early_stopping=True)
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+        scenario.add_function(Function.mass())
+
+        assert scenario.functions[0].name == "cl"
+        assert [func.name for func in scenario.functions] == ["cl", "ksfailure", "mass"]
+
+    def test_early_stopping_set_after_registration(self):
+        """turning early stopping on later must still reorder"""
+        scenario = Scenario(name="cruise", steps=10, early_stopping=False)
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+        scenario.add_function(Function.mass())
+        assert scenario.functions[0].name == "ksfailure"
+
+        scenario.set_stop_criterion(early_stopping=True)
+        assert scenario.functions[0].name == "cl"
+        assert [func.id for func in scenario.functions] == [1, 2, 3]
+
+    def test_adjoint_map_is_identity(self):
+        """
+        the canonical order is what makes adjoint_map the identity, which the driver
+        and interface index arithmetic relies on
+        """
+        scenario = Scenario(name="cruise", steps=10)
+        scenario.add_function(Function.mass())
+        scenario.add_function(Function.ksfailure())
+        scenario.add_function(Function.lift())
+
+        nadjoint = scenario.count_adjoint_functions()
+        assert scenario.adjoint_map == {i: i for i in range(nadjoint)}
+        assert scenario.reverse_adjoint_map == {
+            v: k for k, v in scenario.adjoint_map.items()
+        }
+
+    def test_strict_mode_raises_informative_error(self):
+        """with auto reordering disabled, the failure must name the functions"""
+        Scenario.AUTO_REORDER_FUNCTIONS = False
+        try:
+            scenario = Scenario(name="cruise", steps=10)
+            scenario.add_function(Function.mass())
+            with self.assertRaises(RuntimeError) as raised:
+                scenario.add_function(Function.ksfailure())
+        finally:
+            Scenario.AUTO_REORDER_FUNCTIONS = True
+
+        message = str(raised.exception)
+        assert "ksfailure" in message
+        assert "mass" in message
+        assert "cruise" in message
+
+        # the rejected function must not have been left half registered
+        assert [func.name for func in scenario.functions] == ["mass"]
+
+    def test_strict_mode_still_assigns_ids(self):
+        Scenario.AUTO_REORDER_FUNCTIONS = False
+        try:
+            scenario = Scenario(name="cruise", steps=10)
+            scenario.add_function(Function.ksfailure())
+            scenario.add_function(Function.mass())
+        finally:
+            Scenario.AUTO_REORDER_FUNCTIONS = True
+
+        assert [func.name for func in scenario.functions] == ["ksfailure", "mass"]
+        assert [func.id for func in scenario.functions] == [1, 2]
+
+    def test_composite_function_rejected(self):
+        """composite functions register to the model, not to a scenario"""
+        scenario = Scenario(name="cruise", steps=10)
+        ksfailure = Function.ksfailure()
+        scenario.add_function(ksfailure)
+
+        composite = ksfailure * 2.0
+        with self.assertRaises(TypeError):
+            scenario.add_function(composite)
+
+
 if __name__ == "__main__":
     unittest.main()

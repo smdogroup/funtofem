@@ -39,10 +39,26 @@ if TYPE_CHECKING:
     from .composite_function import CompositeFunction
 
 
+def _on_root_proc() -> bool:
+    """whether this is the root proc, so status messages only print once under MPI"""
+    try:
+        from mpi4py import MPI
+
+        return MPI.COMM_WORLD.rank == 0
+    except ImportError:  # pragma: no cover - funtofem normally requires mpi4py
+        return True
+
+
 class Scenario(Base):
     """A class to hold scenario information for a design point in optimization"""
 
     UNCOUPLED_STEP_BUFFER = 10
+
+    # Automatically reorder function list on add_function so that all functions that require
+    # an adjoint come first (also, when early stopping is active, an aerodynamic function
+    # comes first). False: hard error when functions are registered out of order.
+    # See _canonicalize_functions.
+    AUTO_REORDER_FUNCTIONS = True
 
     def __init__(
         self,
@@ -185,6 +201,9 @@ class Scenario(Base):
         self.variables = {}
 
         self.functions = []
+        # whether the function list has already been reordered once (so the
+        # notice about it is only printed once per scenario)
+        self._reordered = False
         self.coupled = coupled
         self.steady = steady
         self.steps = steps
@@ -309,9 +328,83 @@ class Scenario(Base):
         assert self.steady
         self._adjoint_steps = new_steps
 
-    def add_function(self, function: Function | CompositeFunction):
+    @property
+    def early_stopping(self) -> bool:
+        return self._early_stopping
+
+    @early_stopping.setter
+    def early_stopping(self, value: bool):
+        self._early_stopping = value
+        # the required function ordering depends on this setting, and it may be
+        # changed after functions have already been registered
+        self._canonicalize_functions()
+
+    def _canonicalize_functions(self):
+        """
+        Reorder `self.functions` in place into the canonical order the rest of the
+        framework assumes, and renumber the function ids to match.
+
+        Two orderings are required downstream:
+
+        1. All functions requiring an adjoint must come first. The adjoint-Jacobian
+           product arrays in Body are sized with `count_adjoint_functions()` while much
+           of the driver and interface code indexes them with the full function index,
+           so the two index spaces must coincide. Critically, `function.id` is the
+           1-based full-list index and is pushed straight into FUN3D's Fortran design
+           interface, which was sized with `count_adjoint_functions()` -- getting this
+           wrong is an out-of-bounds write into compiled code, not a Python error.
+
+        2. When the early stopping criterion is on, an aerodynamic function must come
+           first, otherwise FUN3D's adjoint early stopping criterion fails (see
+           `Fun3d14Interface.set_functions`).
+
+        The sort is stable, so the order in which the user registered functions is
+        preserved within each group. `add_function` keeps the list canonical as it goes
+        and only calls this when an append would actually break the invariant.
+        """
+        old_order = list(self.functions)
+
+        if self.AUTO_REORDER_FUNCTIONS:
+            # adjoint functions first
+            self.functions.sort(key=lambda func: not func.adjoint)
+
+            # then, if early stopping is on and there is an aerodynamic function to
+            # promote, move an aerodynamic one to the front of the adjoint group
+            if self.early_stopping and any(
+                func.analysis_type == "aerodynamic" for func in self.adjoint_functions
+            ):
+                self.functions.sort(
+                    key=lambda func: (
+                        not func.adjoint,
+                        func.analysis_type != "aerodynamic",
+                    )
+                )
+
+        # renumber so function.id stays the 1-based index into self.functions
+        for ifunc, func in enumerate(self.functions):
+            func.id = ifunc + 1
+
+        if self.functions != old_order and not self._reordered:
+            self._reordered = True
+            if _on_root_proc():
+                print(
+                    f"FUNtoFEM scenario '{self.name}': functions were registered out of "
+                    "order and are being reordered automatically so that functions "
+                    "requiring an adjoint come first. scenario.functions is therefore "
+                    "not in registration order; call scenario.print_summary() to see "
+                    "the order that will be used.",
+                    flush=True,
+                )
+        return
+
+    def add_function(self, function: Function):
         """
         Add a new function to the scenario's function list
+
+        Functions may be registered in any order; the list is reordered internally so
+        that all functions requiring an adjoint come first (see
+        `_canonicalize_functions`). Set `Scenario.AUTO_REORDER_FUNCTIONS = False` to
+        get a hard error on out-of-order registration instead.
 
         Parameters
         ----------
@@ -319,20 +412,60 @@ class Scenario(Base):
             function object to be added to scenario
         """
 
-        function.id = len(self.functions) + 1
+        if not isinstance(function, Function):
+            raise TypeError(
+                f"FUNtoFEM scenario '{self.name}': add_function expects a Function, got "
+                f"{type(function).__name__}. Composite functions are registered to the "
+                "model rather than to a scenario, via "
+                "CompositeFunction.register_to(model)."
+            )
+
+        if not self.AUTO_REORDER_FUNCTIONS and function.adjoint:
+            blockers = [
+                (ifunc, func)
+                for ifunc, func in enumerate(self.functions)
+                if not func.adjoint
+            ]
+            if blockers:
+                ifunc, blocker = blockers[0]
+                listing = "\n".join(
+                    f"    [{jfunc}] {func.name:<16} adjoint={func.adjoint}"
+                    for jfunc, func in enumerate(self.functions)
+                )
+                raise RuntimeError(
+                    f"FUNtoFEM: cannot register adjoint function '{function.name}' to "
+                    f"scenario '{self.name}' after non-adjoint function "
+                    f"'{blocker.name}' (index {ifunc}). All functions requiring an "
+                    "adjoint must be registered first.\n\n"
+                    f"  Current order in scenario '{self.name}':\n"
+                    f"{listing}\n"
+                    f"    [{len(self.functions)}] {function.name:<16} "
+                    f"adjoint={function.adjoint}   <-- rejected\n\n"
+                    f"  Fix: register '{blocker.name}' last, or leave "
+                    "Scenario.AUTO_REORDER_FUNCTIONS = True (the default) to have "
+                    "FUNtoFEM reorder them automatically."
+                )
+
         function.scenario = self.id
         function._scenario_name = self.name
 
-        if function.adjoint:
-            for func in self.functions:
-                if not func.adjoint:
-                    print("Cannot add an adjoint function after a non-adjoint.")
-                    print(
-                        "Please reorder the functions so that all functions requiring an adjoint come first"
-                    )
-                    exit()
-
+        # self.functions is canonical before every add (this method maintains that
+        # invariant): a non-adjoint function always belongs at the end, and an
+        # adjoint function belongs at the end only if nothing non-adjoint is there
+        # yet -- which is true exactly when the current last function is adjoint.
+        # Early stopping additionally wants an aerodynamic function promoted to the
+        # front, which is not a local decision, so fall through in that case.
+        previous_last = self.functions[-1] if self.functions else None
         self.functions.append(function)
+
+        stays_canonical = not self.early_stopping and (
+            not function.adjoint or previous_last is None or previous_last.adjoint
+        )
+        if stays_canonical:
+            function.id = len(self.functions)
+        else:
+            self._canonicalize_functions()
+
         # return the object for method cascading
         return self
 
@@ -354,8 +487,13 @@ class Scenario(Base):
 
     @property
     def reverse_adjoint_map(self) -> dict:
-        """return an int map from full function index to adjoint function index"""
-        return {key: self.adjoint_map[key] for key in self.adjoint_map}
+        """
+        return an int map from full function index to adjoint function index
+
+        Only adjoint functions appear as keys, so callers iterating the full function
+        list should skip indices that are absent.
+        """
+        return {ifunc: iadj for iadj, ifunc in self.adjoint_map.items()}
 
     def count_functions(self):
         """

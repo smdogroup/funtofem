@@ -375,8 +375,19 @@ class Fun3d14Interface(SolverInterface):
                 stop = 1
 
                 if ct == 1 and scenario.early_stopping and any_aerodynamic:
-                    raise AssertionError(
-                        "Need to register an aerodynamic function first otherwise the Adjoint early stopping criterion fails"
+                    # Scenario._canonicalize_functions normally promotes an
+                    # aerodynamic function to the front, so this is only reachable
+                    # if that reordering was disabled.
+                    raise RuntimeError(
+                        f"FUNtoFEM scenario '{scenario.name}': the first function "
+                        f"requiring an adjoint is '{function.name}' "
+                        f"(analysis_type='{function.analysis_type}'), but the early "
+                        "stopping criterion requires an aerodynamic function to come "
+                        "first, otherwise the FUN3D adjoint early stopping criterion "
+                        "fails. Register an aerodynamic function first, set "
+                        "Scenario.AUTO_REORDER_FUNCTIONS = True to have FUNtoFEM do it "
+                        "for you, or turn off early stopping via "
+                        "scenario.set_stop_criterion(early_stopping=False)."
                     )
             else:
                 start = 1 if function.start is None else function.start
@@ -776,7 +787,9 @@ class Fun3d14Interface(SolverInterface):
             # record() uses allreduce across all ranks — must be called
             # unconditionally so that ranks with no aero nodes participate.
             if self.aerothermal_monitor is not None:
-                self.aerothermal_monitor.record(step, aero_temps, k_dim, heat_flux, body=body)
+                self.aerothermal_monitor.record(
+                    step, aero_temps, k_dim, heat_flux, body=body
+                )
 
         return 0
 
