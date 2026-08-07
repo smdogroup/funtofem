@@ -815,7 +815,7 @@ class Scenario(Base):
         T_star : np.ndarray
             Eckert reference temperature at each node (K).
         """
-        r = self.Pr ** (1.0 / 3.0) if self.turbulent else self.Pr**0.5
+        r = self.Pr ** (1.0 / 3.0) if self.turbulent else self.Pr ** (0.5)
         T_aw = self.T_inf * (1.0 + r * (self.gamma - 1.0) / 2.0 * self.Mach_inf**2)
         T_star = 0.5 * (aero_temps + self.T_inf) + 0.22 * (T_aw - self.T_inf)
         return T_star
