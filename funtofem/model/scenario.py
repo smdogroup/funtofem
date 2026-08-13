@@ -809,7 +809,9 @@ class Scenario(Base):
             * (3.0 * s2 + T_safe)
             / (2.0 * (s2 + T_safe) ** 2)
         )
-        return dmu_dT * self.cp / self.Pr
+        # zero out the clamped region so the derivative matches _sutherland_k, which
+        # is constant there -- otherwise the adjoint picks up a spurious dk/dT
+        return dmu_dT * self.cp / self.Pr * (np.real(T) >= 1.0)
 
     def _eckert_T_star(self, aero_temps):
         """
