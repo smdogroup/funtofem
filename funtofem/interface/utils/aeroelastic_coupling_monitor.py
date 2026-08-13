@@ -47,6 +47,8 @@ class AeroelasticCouplingMonitor:
     Records per-coupling-step statistics of aero surface displacements and
     aerodynamic loads during a FUNtoFEM aeroelastic solve.
 
+    Assumes a single body.
+
     Parameters
     ----------
     scenario : :class:`~funtofem.model.scenario.Scenario`

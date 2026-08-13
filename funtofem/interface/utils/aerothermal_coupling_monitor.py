@@ -44,6 +44,8 @@ class AerothermalCouplingMonitor:
     Records per-coupling-step statistics of aero surface temperatures,
     thermal conductivity, and heat flux during a FUNtoFEM aerothermal solve.
 
+    Assumes a single body.
+
     Parameters
     ----------
     scenario : :class:`~funtofem.model.scenario.Scenario`
