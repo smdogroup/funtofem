@@ -363,17 +363,14 @@ class Scenario(Base):
             # adjoint functions first
             self.functions.sort(key=lambda func: not func.adjoint)
 
-            # then, if early stopping is on and there is an aerodynamic function to
-            # promote, move an aerodynamic one to the front of the adjoint group
-            if self.early_stopping and any(
-                func.analysis_type == "aerodynamic" for func in self.adjoint_functions
-            ):
-                self.functions.sort(
-                    key=lambda func: (
-                        not func.adjoint,
-                        func.analysis_type != "aerodynamic",
-                    )
-                )
+            # then, if early stopping is on, move the first aerodynamic function to the
+            # front of the adjoint group, which the sort above put at index 0
+            if self.early_stopping:
+                for ifunc, func in enumerate(self.functions):
+                    if func.adjoint and func.analysis_type == "aerodynamic":
+                        if ifunc > 0:
+                            self.functions.insert(0, self.functions.pop(ifunc))
+                        break
 
         # renumber so function.id stays the 1-based index into self.functions
         for ifunc, func in enumerate(self.functions):
