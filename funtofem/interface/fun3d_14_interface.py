@@ -356,9 +356,13 @@ class Fun3d14Interface(SolverInterface):
             list of FUNtoFEM bodies
         """
 
-        # check if any aerodynamic functions
+        # check if any aerodynamic functions require an adjoint. Only these can be
+        # made to come first, so this must match the promotion condition in
+        # Scenario._canonicalize_functions: a non-adjoint aerodynamic function is
+        # never pushed here and cannot satisfy the early stopping criterion.
+        # Note: I don't know of any aero functions that don't require an adjoint.
         any_aerodynamic = any(
-            [func.analysis_type == "aerodynamic" for func in scenario.functions]
+            [func.analysis_type == "aerodynamic" for func in scenario.adjoint_functions]
         )
 
         ct = 0
