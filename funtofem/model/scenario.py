@@ -576,7 +576,7 @@ class Scenario(Base):
     def set_conductivity_info(
         self,
         Mach_inf: float = None,
-        turbulent: bool = True,
+        turbulent: bool = None,
         k_fixed: float = None,
         T_fixed: float = None,
     ):
@@ -608,10 +608,12 @@ class Scenario(Base):
         ----------
         Mach_inf : float or None
             Freestream Mach number.  Required for the ``"eckert"`` strategy.
-        turbulent : bool
+        turbulent : bool or None
             Recovery factor in the Eckert adiabatic-wall temperature: ``True``
             (default) uses r = Pr^(1/3), ``False`` uses r = sqrt(Pr).  Only used
-            by ``"eckert"``.
+            by ``"eckert"``.  This is a modifier rather than a strategy selector,
+            so supplying it on its own updates the recovery factor and leaves the
+            strategy already set on this scenario in place.
         k_fixed : float or None
             Constant thermal conductivity (W/m-K) for the ``"fixed"`` strategy.
         T_fixed : float or None
@@ -635,6 +637,19 @@ class Scenario(Base):
         --------
         get_thermal_conduct, get_thermal_conduct_deriv
         """
+        no_strategy_given = k_fixed is None and T_fixed is None and Mach_inf is None
+        if (
+            turbulent is not None
+            and no_strategy_given
+            and getattr(self, "k_eval_strategy", None) is not None
+        ):
+            # turbulent only modifies the Eckert recovery factor, it does not select
+            # a strategy - supplying it alone should not silently reset one set earlier
+            self.turbulent = bool(turbulent)
+            return self
+
+        turbulent = True if turbulent is None else bool(turbulent)
+
         if k_fixed is not None:
             # Explicit k value takes precedence over everything.
             self.k_eval_strategy = "fixed"
