@@ -1593,10 +1593,11 @@ class Body(Base):
                             f"Thermal coupling Aitken: theta_t={float(np.real(self.theta_t)):.4g}"
                             f"  (min={self.theta_min:.4g}, max={self.theta_max:.4g})"
                         )
-                        print(
-                            f"  T_struct: min={float(np.real(struct_temps.min())):.4g}"
-                            f"  max={float(np.real(struct_temps.max())):.4g} K"
-                        )
+                        if struct_temps.size > 0:
+                            print(
+                                f"  T_struct: min={float(np.real(struct_temps.min())):.4g}"
+                                f"  max={float(np.real(struct_temps.max())):.4g} K"
+                            )
                         print(
                             "\n------------------------------------------",
                             flush=True,
