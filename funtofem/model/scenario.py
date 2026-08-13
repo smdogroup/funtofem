@@ -358,10 +358,16 @@ class Scenario(Base):
         and only calls this when an append would actually break the invariant.
         """
         old_order = list(self.functions)
+        out_of_order = False
 
         if self.AUTO_REORDER_FUNCTIONS:
             # adjoint functions first
             self.functions.sort(key=lambda func: not func.adjoint)
+
+            # whether that sort alone moved anything, i.e. whether the functions really
+            # were registered out of order. The aero promotion below is not a
+            # registration mistake, so the notice must tell the two apart
+            out_of_order = self.functions != old_order
 
             # then, if early stopping is on, move the first aerodynamic function to the
             # front of the adjoint group, which the sort above put at index 0
@@ -379,12 +385,13 @@ class Scenario(Base):
         if self.functions != old_order and not self._reordered:
             self._reordered = True
             if _on_root_proc():
+                if out_of_order:
+                    reason = "functions were registered out of order; adjoint functions moved first"
+                else:
+                    reason = "an aerodynamic function moved first, as early stopping requires"
                 print(
-                    f"FUNtoFEM scenario '{self.name}': functions were registered out of "
-                    "order and are being reordered automatically so that functions "
-                    "requiring an adjoint come first. scenario.functions is therefore "
-                    "not in registration order; call scenario.print_summary() to see "
-                    "the order that will be used.",
+                    f"FUNtoFEM scenario '{self.name}': {reason}. "
+                    "See scenario.print_summary() for the order that will be used.",
                     flush=True,
                 )
         return
