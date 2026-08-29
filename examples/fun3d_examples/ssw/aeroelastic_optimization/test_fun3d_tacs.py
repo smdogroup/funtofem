@@ -41,7 +41,7 @@ tacs_model = caps2tacs.TacsModel.build(
     comm=comm,
     problem_name="capsStruct1",
     active_procs=[0],
-    verbosity=1,
+    verbosity=0,
 )
 tacs_model.mesh_aim.set_mesh(
     edge_pt_min=2,
@@ -73,18 +73,14 @@ caps2tacs.PinConstraint("root").register_to(tacs_model)
 # BODIES AND STRUCT DVs
 # <----------------------------------------------------
 
-# wing = Body.aeroelastic("wing", boundary=3).relaxation(
-#     AitkenRelaxation(theta_init=0.6, theta_max=0.95)
-# )
+
 wing = Body.aeroelastic("wing", boundary=3)
 
 # setup the material and shell properties
 aluminum = caps2tacs.Isotropic.aluminum().register_to(tacs_model)
 
-# nribs = int(tacs_model.get_config_parameter("nribs"))
-# nspars = int(tacs_model.get_config_parameter("nspars"))
-nribs = 7
-nspars = 4
+nribs = int(tacs_model.get_config_parameter("nribs"))  # 7
+nspars = int(tacs_model.get_config_parameter("nspars"))  # 2
 nOML = nribs - 1
 
 for irib in range(1, nribs + 1):
@@ -142,7 +138,7 @@ comm.barrier()
 # <----------------------------------------------------
 
 # make a funtofem scenario
-cruise = Scenario.steady("cruise", steps=100, uncoupled_steps=0)
+cruise = Scenario.steady("cruise_inviscid", steps=100, uncoupled_steps=0)
 cruise.adjoint_steps = 150
 mass = Function.mass().optimize(
     scale=1.0e-4, objective=True, plot=True, plot_name="mass"
@@ -153,7 +149,20 @@ ksfailure = Function.ksfailure(ks_weight=150.0, safety_factor=1.5).optimize(
 cruise.include(ksfailure).include(Function.lift()).include(mass)
 cruise.set_temperature(T_ref=T_inf, T_inf=T_inf)
 cruise.set_flow_ref_vals(qinf=q_inf)
+
+cruise.set_stop_criterion(
+    early_stopping=True,
+    min_forward_steps=10,
+    min_adjoint_steps=10,
+    post_tight_forward_steps=0,
+    post_tight_adjoint_steps=0,
+    post_forward_coupling_freq=1,
+    post_adjoint_coupling_freq=1,
+)
+
 cruise.register_to(f2f_model)
+
+cruise.print_summary(comm, "cruise.txt")
 
 # ---------------------------------------------------->
 
@@ -181,13 +190,14 @@ for isection, prefix in enumerate(section_prefix):
 # <----------------------------------------------------
 
 solvers = SolverManager(comm)
-solvers.flow = Fun3dInterface(
+solvers.flow = Fun3d14Interface(
     comm,
     f2f_model,
-    fun3d_project_name="ssw-pw1.2",
     fun3d_dir="cfd",
-    forward_tol=1e-5,
-    adjoint_tol=1e-4,
+    forward_stop_tolerance=1e-8,
+    forward_min_tolerance=1e-5,
+    adjoint_stop_tolerance=1e-7,
+    adjoint_min_tolerance=1e-4,
     debug=global_debug_flag,
 )
 solvers.structural = TacsSteadyInterface.create_from_bdf(
@@ -214,17 +224,17 @@ f2f_driver = FUNtoFEMnlbgs(
 # Derivative test
 # <----------------------------------------------------
 
-if comm.rank == 0:
-    f2f_driver.print_summary()
-    f2f_model.print_summary()
+f2f_driver.print_summary(
+    comm, print_model=True, print_comm=True, filename="driver_summary.txt"
+)
 
 max_rel_error = TestResult.derivative_test(
     "fun3d+tacs-ssw1",
     model=f2f_model,
     driver=f2f_driver,
     status_file=FILEPATH,
-    complex_mode=True,
-    epsilon=1e-30,
+    complex_mode=False,
+    epsilon=1e-5,
 )
 
 # ---------------------------------------------------->
