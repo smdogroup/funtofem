@@ -75,11 +75,11 @@ in the order added to the body/scenario.</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pyOpt</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optimization</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="n">opt_prob</span> <span class="o">=</span> <span class="n">Optimization</span><span class="p">(</span><span class="s1">&#39;optimization&#39;</span><span class="p">,</span><span class="n">design_problem</span><span class="o">.</span><span class="n">eval_obj_con</span><span class="p">)</span>
+<span class="n">opt_prob</span> <span class="o">=</span> <span class="n">Optimization</span><span class="p">(</span><span class="s1">'optimization'</span><span class="p">,</span><span class="n">design_problem</span><span class="o">.</span><span class="n">eval_obj_con</span><span class="p">)</span>
 <span class="n">variables</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_variables</span><span class="p">()</span>
 
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-    <span class="n">opt_prob</span><span class="o">.</span><span class="n">addVar</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="n">var</span><span class="o">.</span><span class="n">scaling</span><span class="p">,</span>
+    <span class="n">opt_prob</span><span class="o">.</span><span class="n">addVar</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">'c'</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">var</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="n">var</span><span class="o">.</span><span class="n">scaling</span><span class="p">,</span>
                                       <span class="n">lower</span><span class="o">=</span><span class="n">var</span><span class="o">.</span><span class="n">lower</span><span class="o">/</span><span class="n">var</span><span class="o">.</span><span class="n">scaling</span><span class="p">,</span>
                                       <span class="n">upper</span><span class="o">=</span><span class="n">var</span><span class="o">.</span><span class="n">upper</span><span class="o">/</span><span class="n">var</span><span class="o">.</span><span class="n">scaling</span><span class="p">)</span>
 </pre></div>
@@ -97,9 +97,9 @@ The output list contains the <code class="xref py py-class docutils literal notr
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">driver</span><span class="o">.</span><span class="n">solve_forward</span><span class="p">()</span>
 <span class="n">functions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions</span><span class="p">()</span>
 
-<span class="nb">print</span> <span class="s2">&quot;Function values:&quot;</span>
+<span class="nb">print</span> <span class="s2">"Function values:"</span>
 <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-    <span class="nb">print</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">value</span>
+    <span class="nb">print</span> <span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">'='</span><span class="p">,</span> <span class="n">function</span><span class="o">.</span><span class="n">value</span>
 </pre></div>
 </div>
 <p>The functions in the FUNtoFEM model need to be single discipline functions to maintain modularity.
@@ -132,7 +132,7 @@ Gradients can be retrieved using <code class="xref py py-func docutils literal n
 <span class="n">grad</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_functions_gradients</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">ifunc</span><span class="p">,</span><span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">functions</span><span class="p">):</span>
            <span class="k">for</span> <span class="n">ivar</span><span class="p">,</span><span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-               <span class="nb">print</span> <span class="s1">&#39;Derivative of &#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w.r.t.&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="p">[</span><span class="n">ifunc</span><span class="p">][</span><span class="n">ivar</span><span class="p">]</span>
+               <span class="nb">print</span> <span class="s1">'Derivative of '</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">'w.r.t.'</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s1">'='</span><span class="p">,</span> <span class="n">grad</span><span class="p">[</span><span class="n">ifunc</span><span class="p">][</span><span class="n">ivar</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>The following is a pseudo code would be a gradient evaluation for pyOpt.</p>

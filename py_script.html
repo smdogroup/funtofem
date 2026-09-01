@@ -70,24 +70,24 @@ The next section of the Python script handles the MPI set-up.</p>
 The model is made up of bodies and scenarios. A model is first created by calling the FUNtoFEMmodel function.
 Bodies, scenarios, and design variables can then be added to the model. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">&#39;myModel&#39;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">'myModel'</span><span class="p">)</span>
 
-<span class="c1"># Create a body called &#39;body0&#39;</span>
-<span class="n">body0</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="s1">&#39;body0&#39;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Create a body called 'body0'</span>
+<span class="n">body0</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="s1">'body0'</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="c1"># Add thickness as a structural design variable to the body</span>
 <span class="n">t</span> <span class="o">=</span> <span class="mf">0.025</span>
-<span class="n">svar</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s1">&#39;thickness&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
-<span class="n">body0</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;structural&#39;</span><span class="p">,</span> <span class="n">svar</span><span class="p">)</span>
+<span class="n">svar</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s1">'thickness'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">body0</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">'structural'</span><span class="p">,</span> <span class="n">svar</span><span class="p">)</span>
 
 <span class="c1"># Set number of iterations (steps)</span>
 <span class="n">steps</span> <span class="o">=</span> <span class="mi">20</span>
 
-<span class="c1"># Add a &#39;cruise&#39; scenario</span>
-<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="p">(</span><span class="s1">&#39;cruise&#39;</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
+<span class="c1"># Add a 'cruise' scenario</span>
+<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="p">(</span><span class="s1">'cruise'</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">add_scenario</span><span class="p">(</span><span class="n">cruise</span><span class="p">)</span>
 
-<span class="c1"># Add a &#39;drag&#39; function</span>
-<span class="n">drag</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;cd&#39;</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s1">&#39;aerodynamic&#39;</span><span class="p">)</span>
+<span class="c1"># Add a 'drag' function</span>
+<span class="n">drag</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">'cd'</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s1">'aerodynamic'</span><span class="p">)</span>
 <span class="n">cruise</span><span class="o">.</span><span class="n">add_function</span><span class="p">(</span><span class="n">drag</span><span class="p">)</span>
 
 <span class="c1"># Add the body to the model after the variables</span>
@@ -101,19 +101,19 @@ Classmethods for scenarios include <code class="xref py py-func docutils literal
 include <code class="xref py py-func docutils literal notranslate"><span class="pre">ksfailure()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">mass()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">lift()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">drag()</span></code>. Registration methods
 are available for bodies and scenarios to the model, variables to the body or scenario, and functions to be included in a scenario.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create model and body</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">&#39;myModel&#39;</span><span class="p">)</span>
-<span class="n">body</span> <span class="o">=</span> <span class="n">Body</span><span class="o">.</span><span class="n">aeroelastic</span><span class="p">(</span><span class="s1">&#39;body0&#39;</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FUNtoFEMmodel</span><span class="p">(</span><span class="s1">'myModel'</span><span class="p">)</span>
+<span class="n">body</span> <span class="o">=</span> <span class="n">Body</span><span class="o">.</span><span class="n">aeroelastic</span><span class="p">(</span><span class="s1">'body0'</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="c1"># Add thickness as a structural design variable to the body</span>
-<span class="n">Variable</span><span class="o">.</span><span class="n">structural</span><span class="p">(</span><span class="s1">&#39;thickness&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bounds</span><span class="p">(</span>
+<span class="n">Variable</span><span class="o">.</span><span class="n">structural</span><span class="p">(</span><span class="s1">'thickness'</span><span class="p">)</span><span class="o">.</span><span class="n">set_bounds</span><span class="p">(</span>
      <span class="n">lower</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.025</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span>
 <span class="p">)</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
 
 <span class="c1"># register body to model</span>
 <span class="n">body</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-<span class="c1"># Add a &#39;cruise&#39; scenario and register to model</span>
-<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">(</span><span class="s1">&#39;cruise&#39;</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">drag</span><span class="p">())</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">mass</span><span class="p">())</span>
+<span class="c1"># Add a 'cruise' scenario and register to model</span>
+<span class="n">cruise</span> <span class="o">=</span> <span class="n">Scenario</span><span class="o">.</span><span class="n">steady</span><span class="p">(</span><span class="s1">'cruise'</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">drag</span><span class="p">())</span><span class="o">.</span><span class="n">include</span><span class="p">(</span><span class="n">Function</span><span class="o">.</span><span class="n">mass</span><span class="p">())</span>
 <span class="n">cruise</span><span class="o">.</span><span class="n">register_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -125,7 +125,7 @@ Fun3dInterface for the fluid solver and a call to TacsSteadyInterface or TacsUns
 for the structural solver.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instantiate the flow and structural solvers</span>
 <span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
-<span class="n">bdf_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;meshes&quot;</span><span class="p">,</span> <span class="s2">&quot;nastran_CAPS.dat&quot;</span><span class="p">)</span> <span class="c1"># dat file from tacsAIM includes .bdf file + constraints, loads, dvs</span>
+<span class="n">bdf_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">"meshes"</span><span class="p">,</span> <span class="s2">"nastran_CAPS.dat"</span><span class="p">)</span> <span class="c1"># dat file from tacsAIM includes .bdf file + constraints, loads, dvs</span>
 
 <span class="n">solvers</span> <span class="o">=</span> <span class="n">SolverManager</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span>
 <span class="n">solvers</span><span class="o">.</span><span class="n">flow</span> <span class="o">=</span> <span class="n">Fun3dInterface</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">fun3d_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">forward_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adjoint_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
@@ -139,7 +139,7 @@ for the structural solver.</p>
 <p>The problem driver is instantiated with a call to FUNtoFEMnlbgs.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the transfer scheme options</span>
 <span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
-     <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span> <span class="n">thermal_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span>
+     <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">"meld"</span><span class="p">,</span> <span class="n">thermal_scheme</span><span class="o">=</span><span class="s2">"meld"</span><span class="p">,</span>
      <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">npts</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">isym</span><span class="o">=</span><span class="mi">1</span>
 <span class="p">)</span>
 
@@ -185,13 +185,13 @@ Then <code class="xref py py-func docutils literal notranslate"><span class="pre
 <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs0</span><span class="p">:</span>
      <span class="n">f0vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
      <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Function value: &#39;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">'Function value: '</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
 <span class="c1"># Evaluate the function gradient</span>
 <span class="n">fail</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">solve_adjoint</span><span class="p">()</span>
 <span class="n">grads</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_function_gradients</span><span class="p">()</span>
 <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adjoint gradient: &#39;</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
+     <span class="nb">print</span><span class="p">(</span><span class="s1">'Adjoint gradient: '</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>

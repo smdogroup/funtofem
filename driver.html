@@ -105,7 +105,7 @@ used in the transfer scheme from structural to aerodynamic mesh and vice versa.<
 <li><p>2 for symmetry across z = 0</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
-    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;meld&quot;</span><span class="p">,</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">"meld"</span><span class="p">,</span>
     <span class="n">isym</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
     <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
@@ -118,7 +118,7 @@ used in the transfer scheme from structural to aerodynamic mesh and vice versa.<
 <p>The linearized version of MELD has a lower computational cost than the full version, but it also more error prone for larger deflections and extrapolations.
 It cannot reproduce rigid motion, and should not be used for case such as rotors.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
-    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;linearized meld&quot;</span><span class="p">,</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">"linearized meld"</span><span class="p">,</span>
     <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
 <span class="p">)</span>
@@ -130,15 +130,15 @@ It cannot reproduce rigid motion, and should not be used for case such as rotors
 <p>Radial basis function (RBF) interpolation is available in FUNtoFEM with various basis functions.</p>
 <p>The options available for the RBF scheme are the different basis functions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Available basis functions:</span>
-<span class="c1"># &#39;thin plate spline&#39;</span>
-<span class="c1"># &#39;gaussian&#39;</span>
-<span class="c1"># &#39;multiquadric&#39;</span>
-<span class="c1"># &#39;inverse multiquadric&#39;</span>
+<span class="c1"># 'thin plate spline'</span>
+<span class="c1"># 'gaussian'</span>
+<span class="c1"># 'multiquadric'</span>
+<span class="c1"># 'inverse multiquadric'</span>
 <span class="n">transfer_settings</span> <span class="o">=</span> <span class="n">TransferSettings</span><span class="p">(</span>
-    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">,</span>
+    <span class="n">elastic_scheme</span><span class="o">=</span><span class="s2">"rbf"</span><span class="p">,</span>
     <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">npts</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;basis function&#39;</span> <span class="p">:</span> <span class="s1">&#39;thin plate spline&#39;</span><span class="p">},</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'basis function'</span> <span class="p">:</span> <span class="s1">'thin plate spline'</span><span class="p">},</span>
 <span class="p">)</span>
 </pre></div>
 </div>
