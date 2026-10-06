@@ -4,9 +4,15 @@ __all__ = ["ModeTransfer", "MeldLfdBuilder"]
 
 import numpy as np
 import openmdao.api as om
-from .mphys_meld import MeldBuilder
+from mphys import MPhysVariables
 
 from funtofem import TransferScheme
+
+from .mphys_meld import MeldBuilder
+
+# Set MPhys variable names
+X_STRUCT0 = MPhysVariables.Structures.COORDINATES
+X_AERO0 = MPhysVariables.Aerodynamics.Surface.COORDINATES_INITIAL
 
 
 class ModeTransfer(om.ExplicitComponent):
@@ -16,14 +22,29 @@ class ModeTransfer(om.ExplicitComponent):
         self.options.declare("ndof_struct")
         self.options.declare("nnodes_aero")
         self.options.declare("meld")
+        self.options.declare(
+            "use_reference_coordinates",
+            types=bool,
+            desc="Use separate aero and struct reference coordinates for transfer scheme initialization (same variable name with '_ref' appended)",
+        )
+        self.options.declare(
+            "ase_mode",
+            types=bool,
+            desc="Add _motion onto the end of mode_shapes_aero, so that they can later be combined with control surface modes",
+        )
 
         self.first_pass = True
 
     def setup(self):
         # self.set_check_partial_options(wrt='*',method='cs',directional=True)
 
+        if self.options["ase_mode"]:
+            self.mode_shapes_aero_name = "mode_shapes_aero_motion"
+        else:
+            self.mode_shapes_aero_name = "mode_shapes_aero"
+
         self.add_input(
-            "x_struct0",
+            X_STRUCT0,
             shape_by_conn=True,
             distributed=True,
             tags=["mphys_coordinates"],
@@ -35,8 +56,23 @@ class ModeTransfer(om.ExplicitComponent):
             tags="mphys_coupling",
         )
         self.add_input(
-            "x_aero0", shape_by_conn=True, distributed=True, tags=["mphys_coordinates"]
+            X_AERO0, shape_by_conn=True, distributed=True, tags=["mphys_coordinates"]
         )
+        if self.options["use_reference_coordinates"]:
+            self.add_input(
+                X_STRUCT0 + "_ref",
+                shape_by_conn=True,
+                distributed=True,
+                desc="baseline structural node coordinates with which to initialize MELD",
+                tags=["mphys_coordinates"],
+            )
+            self.add_input(
+                X_AERO0 + "_ref",
+                shape_by_conn=True,
+                distributed=True,
+                desc="baseline aero surface node coordinates with which to initialize MELD",
+                tags=["mphys_coordinates"],
+            )
 
         nmodes = self.options["nmodes"]
         self.nnodes_aero = self.options["nnodes_aero"]
@@ -45,17 +81,28 @@ class ModeTransfer(om.ExplicitComponent):
 
         aero_mode_size = (self.nnodes_aero * 3, nmodes)
         self.add_output(
-            "mode_shapes_aero",
+            self.mode_shapes_aero_name,
             shape=aero_mode_size,
             distributed=True,
             tags=["mphys_coupling"],
         )
 
+    def _initialize_xfer(self, inputs, meld):
+        if self.options["use_reference_coordinates"]:
+            aero_X = np.array(inputs[X_AERO0 + "_ref"], dtype=TransferScheme.dtype)
+            struct_X = np.array(inputs[X_STRUCT0 + "_ref"], dtype=TransferScheme.dtype)
+        else:
+            aero_X = np.array(inputs[X_AERO0], dtype=TransferScheme.dtype)
+            struct_X = np.array(inputs[X_STRUCT0], dtype=TransferScheme.dtype)
+        meld.setStructNodes(struct_X)
+        meld.setAeroNodes(aero_X)
+        meld.initialize()
+
     def compute(self, inputs, outputs):
         meld = self.options["meld"]
         nmodes = self.options["nmodes"]
-        aero_X = np.array(inputs["x_aero0"], dtype=TransferScheme.dtype)
-        struct_X = np.array(inputs["x_struct0"], dtype=TransferScheme.dtype)
+        aero_X = np.array(inputs[X_AERO0], dtype=TransferScheme.dtype)
+        struct_X = np.array(inputs[X_STRUCT0], dtype=TransferScheme.dtype)
 
         aero_modes = np.zeros((aero_X.size, nmodes), dtype=TransferScheme.dtype)
         struct_modes = inputs["mode_shapes_struct"].reshape((-1, nmodes))
@@ -64,7 +111,7 @@ class ModeTransfer(om.ExplicitComponent):
         meld.setStructNodes(struct_X)
 
         if self.first_pass:
-            meld.initialize()
+            self._initialize_xfer(inputs, meld)
             self.first_pass = False
 
         struct_mode = np.zeros(self.nnodes_struct * 3, dtype=TransferScheme.dtype)
@@ -76,13 +123,13 @@ class ModeTransfer(om.ExplicitComponent):
             meld.transferDisps(struct_mode, aero_mode)
             aero_modes[:, mode] = aero_mode
 
-        outputs["mode_shapes_aero"] = aero_modes.copy()
+        outputs[self.mode_shapes_aero_name] = aero_modes.copy()
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         meld = self.options["meld"]
         nmodes = self.options["nmodes"]
-        x_s0 = np.array(inputs["x_struct0"], dtype=TransferScheme.dtype)
-        x_a0 = np.array(inputs["x_aero0"], dtype=TransferScheme.dtype)
+        x_s0 = np.array(inputs[X_STRUCT0], dtype=TransferScheme.dtype)
+        x_a0 = np.array(inputs[X_AERO0], dtype=TransferScheme.dtype)
 
         meld.setStructNodes(x_s0)
         meld.setAeroNodes(x_a0)
@@ -94,7 +141,7 @@ class ModeTransfer(om.ExplicitComponent):
             u_a = np.zeros(self.nnodes_aero * 3, dtype=TransferScheme.dtype)
             meld.transferDisps(u_s, u_a)
             if mode == "fwd":
-                if "mode_shapes_aero" in d_outputs:
+                if self.mode_shapes_aero_name in d_outputs:
                     if "mode_shapes_struct" in d_inputs:
                         d_in = np.zeros(
                             self.nnodes_struct * 3, dtype=TransferScheme.dtype
@@ -107,13 +154,13 @@ class ModeTransfer(om.ExplicitComponent):
                             self.nnodes_aero * 3, dtype=TransferScheme.dtype
                         )
                         meld.applydDduS(d_in, prod)
-                        d_outputs["mode_shapes_aero"][:, imode] -= np.array(
+                        d_outputs[self.mode_shapes_aero_name][:, imode] -= np.array(
                             prod, dtype=float
                         )
             if mode == "rev":
-                if "mode_shapes_aero" in d_outputs:
+                if self.mode_shapes_aero_name in d_outputs:
                     du_a = np.array(
-                        d_outputs["mode_shapes_aero"][:, imode],
+                        d_outputs[self.mode_shapes_aero_name][:, imode],
                         dtype=TransferScheme.dtype,
                     )
                     if "mode_shapes_struct" in d_inputs:
@@ -128,19 +175,19 @@ class ModeTransfer(om.ExplicitComponent):
                             ] -= np.array(prod[i::3], dtype=np.float64)
 
                     # du_a/dx_a0^T * psi = - psi^T * dD/dx_a0 in F2F terminology
-                    if "x_aero0" in d_inputs:
+                    if X_AERO0 in d_inputs:
                         prod = np.zeros(
-                            d_inputs["x_aero0"].size, dtype=TransferScheme.dtype
+                            d_inputs[X_AERO0].size, dtype=TransferScheme.dtype
                         )
                         meld.applydDdxA0(du_a, prod)
-                        d_inputs["x_aero0"] -= np.array(prod, dtype=float)
+                        d_inputs[X_AERO0] -= np.array(prod, dtype=float)
 
-                    if "x_struct0" in d_inputs:
+                    if X_STRUCT0 in d_inputs:
                         prod = np.zeros(
                             self.nnodes_struct * 3, dtype=TransferScheme.dtype
                         )
                         meld.applydDdxS0(du_a, prod)
-                        d_inputs["x_struct0"] -= np.array(prod, dtype=float)
+                        d_inputs[X_STRUCT0] -= np.array(prod, dtype=float)
 
 
 class MeldLfdBuilder(MeldBuilder):
@@ -153,15 +200,30 @@ class MeldLfdBuilder(MeldBuilder):
         n=200,
         beta=0.5,
         check_partials=False,
+        use_reference_coordinates=False,
+        ase_mode=False,
     ):
         self.nmodes = nmodes
-        super().__init__(aero_builder, struct_builder, isym, n, beta, check_partials)
+        self.ase_mode = ase_mode
+        super().__init__(
+            aero_builder,
+            struct_builder,
+            isym,
+            n,
+            beta,
+            check_partials,
+            False,
+            None,
+            use_reference_coordinates,
+        )
 
-    def get_post_coupling_subsystem(self):
+    def get_post_coupling_subsystem(self, scenario_name=None):
         return ModeTransfer(
             nmodes=self.nmodes,
             nnodes_struct=self.nnodes_struct,
             ndof_struct=self.ndof_struct,
             nnodes_aero=self.nnodes_aero,
-            meld=self.meld,
+            meld=self.bodies[0].meld,  # TODO: implement multi-body mode transfer
+            use_reference_coordinates=self.use_reference_coordinates,
+            ase_mode=self.ase_mode,
         )
