@@ -1,13 +1,13 @@
 """
-Linearized MELD with a symmetry plane, checked against two references that do not use its
-symmetry code:
+Linearized MELD with a symmetry plane, checked against two references that do not use
+its symmetry code:
 
-- full MELD with the same symmetry plane, at a displacement small enough that it equals its
-  own linearization (full MELD reflects the mirrored nodes' displacements and loads);
+- full MELD with the same symmetry plane, at a displacement small enough that it equals
+  its own linearization (full MELD reflects mirrored nodes' displacements and loads);
 - linearized MELD without symmetry, on a structure mirrored by hand.
 
-The derivative checks of test_transfer_schemes.py compare the transfer against itself, so
-they cannot see a wrong symmetry treatment that is applied consistently.
+The derivative checks of test_transfer_schemes.py compare the transfer against itself,
+so they cannot see a wrong symmetry treatment that is applied consistently.
 """
 
 from __future__ import annotations
@@ -25,14 +25,19 @@ BETA = 0.5  # Relative decay factor
 EPS = 1e-7  # Displacement scale at which full MELD equals its linearization
 FULL_RTOL = 1e-5  # Full MELD at EPS still differs from its linearization by ~3e-7
 MIRROR_RTOL = 1e-10  # The mirrored structure takes the same arithmetic, up to roundoff
-PLANE_TOL = 1e-7  # Nodes closer than this to the plane are not mirrored by MELD
+
+# Nodes closer than this to the plane are not mirrored, as in the default tol of
+# TransferScheme::computeAeroStructConn. The case below keeps every node either exactly
+# on the plane or well away from it.
+PLANE_TOL = 1e-7
 
 
 def symmetricCase(isymm: int) -> dict[str, np.ndarray]:
-    """Structural nodes on one side of the plane normal to axis isymm, aero nodes close to it.
+    """Nodes, displacements and loads for a symmetry plane normal to axis isymm.
 
-    A few structural nodes lie on the plane, so the case also covers the nodes that MELD
-    does not mirror. Displacements and loads are random, with components normal to the plane.
+    The structural nodes lie on one side of the plane and a few on it, so the case also
+    covers the nodes that MELD does not mirror. The aero nodes are close to the plane.
+    Displacements and loads are random, with components normal to the plane.
     """
     rng = np.random.default_rng(1234)
     ns, na = 40, 25
@@ -57,12 +62,14 @@ def reflection(isymm: int) -> np.ndarray:
 
 
 def mirroredStructure(xs: np.ndarray, isymm: int) -> tuple[np.ndarray, np.ndarray]:
-    """Structural nodes plus the reflections of those off the plane, and the off-plane mask."""
+    """Structural nodes plus the reflections of those off the plane, and that mask."""
     off = np.abs(xs[:, isymm]) > PLANE_TOL
     return np.concatenate([xs, xs[off] * reflection(isymm)]), off
 
 
-def createScheme(name: str, isymm: int, xs: np.ndarray, xa: np.ndarray):
+def createScheme(
+    name: str, isymm: int, xs: np.ndarray, xa: np.ndarray
+) -> TransferScheme.pyTransferScheme:
     """Create and initialize a MELD-type transfer scheme on the given nodes."""
     comm = MPI.COMM_WORLD
     transfer = getattr(TransferScheme, name)(comm, comm, 0, comm, 0, isymm, NN, BETA)
@@ -72,15 +79,20 @@ def createScheme(name: str, isymm: int, xs: np.ndarray, xa: np.ndarray):
     return transfer
 
 
-def transferDisps(transfer, us: np.ndarray, na: int) -> np.ndarray:
+def transferDisps(
+    transfer: TransferScheme.pyTransferScheme, us: np.ndarray, na: int
+) -> np.ndarray:
     """Aero displacements, shape (na, 3), for structural displacements us."""
     ua = np.zeros(3 * na, dtype=DTYPE)
     transfer.transferDisps(us.ravel().astype(DTYPE), ua)
     return ua.reshape(-1, 3)
 
 
-def transferLoads(transfer, fa: np.ndarray, ns: int) -> np.ndarray:
+def transferLoads(
+    transfer: TransferScheme.pyTransferScheme, fa: np.ndarray, ns: int
+) -> np.ndarray:
     """Structural loads, shape (ns, 3), for aero loads fa, at zero displacement."""
+    # Linearized MELD sets up its centroids and covariances in transferDisps
     na = fa.shape[0]
     transfer.transferDisps(np.zeros(3 * ns, dtype=DTYPE), np.zeros(3 * na, dtype=DTYPE))
     fs = np.zeros(3 * ns, dtype=DTYPE)
@@ -89,12 +101,17 @@ def transferLoads(transfer, fa: np.ndarray, ns: int) -> np.ndarray:
 
 
 class LinearizedMELDSymmetryTest(unittest.TestCase):
-    def assertTransferEqual(self, actual: np.ndarray, desired: np.ndarray, rtol: float):
+    """Linearized MELD with isymm = 0, 1 and 2 against independent references."""
+
+    def assertTransferEqual(
+        self, actual: np.ndarray, desired: np.ndarray, rtol: float
+    ) -> None:
         """Agreement to rtol of the largest reference value."""
         atol = rtol * np.abs(desired).max()
         np.testing.assert_allclose(actual, desired, rtol=0.0, atol=atol)
 
-    def test_disps_match_full_meld(self):
+    def test_disps_match_full_meld(self) -> None:
+        """Displacements of mirrored structural nodes must be reflected."""
         for isymm in (0, 1, 2):
             with self.subTest(isymm=isymm):
                 case = symmetricCase(isymm)
@@ -106,7 +123,8 @@ class LinearizedMELDSymmetryTest(unittest.TestCase):
                     transferDisps(linear, us, len(xa)), expected, FULL_RTOL
                 )
 
-    def test_loads_match_full_meld(self):
+    def test_loads_match_full_meld(self) -> None:
+        """Loads folded back from mirrored structural nodes must be reflected."""
         for isymm in (0, 1, 2):
             with self.subTest(isymm=isymm):
                 case = symmetricCase(isymm)
@@ -119,7 +137,8 @@ class LinearizedMELDSymmetryTest(unittest.TestCase):
                     transferLoads(linear, fa, len(xs)), expected, FULL_RTOL
                 )
 
-    def test_disps_match_mirrored_structure(self):
+    def test_disps_match_mirrored_structure(self) -> None:
+        """Symmetry must equal an explicitly mirrored structure, for displacements."""
         for isymm in (0, 1, 2):
             with self.subTest(isymm=isymm):
                 case = symmetricCase(isymm)
@@ -133,7 +152,8 @@ class LinearizedMELDSymmetryTest(unittest.TestCase):
                     transferDisps(linear, us, len(xa)), expected, MIRROR_RTOL
                 )
 
-    def test_loads_match_mirrored_structure(self):
+    def test_loads_match_mirrored_structure(self) -> None:
+        """Symmetry must equal an explicitly mirrored structure, for loads."""
         for isymm in (0, 1, 2):
             with self.subTest(isymm=isymm):
                 case = symmetricCase(isymm)
@@ -151,11 +171,12 @@ class LinearizedMELDSymmetryTest(unittest.TestCase):
                     transferLoads(linear, fa, len(xs)), expected, MIRROR_RTOL
                 )
 
-    def test_derivatives_with_symmetry(self):
+    def test_derivatives_with_symmetry(self) -> None:
+        """The node-sensitivity products must follow the reflected transfer."""
         dh = 1e-6
         rtol = 1e-5
         atol = 1e-30
-        if DTYPE == complex:
+        if DTYPE is complex:
             dh = 1e-30
             rtol = 1e-9
 
