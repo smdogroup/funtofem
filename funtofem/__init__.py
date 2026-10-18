@@ -43,3 +43,7 @@ if mphys_loader is not None and openmdao_loader is not None:
         print(
             "Mphys module couldn't be built despite available openmdao and mphys packages."
         )
+
+# from .sweep import *
+# sweep is currently experimental, import with:
+# from funtofem.sweep import ParameterSweep
