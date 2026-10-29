@@ -190,13 +190,15 @@ void LinearizedMELD::transferDisps(const F2FScalar *struct_disps,
         F2FScalar q[3];
         vec_diff(xs0bar, rxs0, q);
 
-        // Get structural node displacement
-        const F2FScalar *us = &Us[3 * indx];
+        // Get structural node displacement and reflect it
+        F2FScalar rus[3];
+        memcpy(rus, &Us[3 * indx], 3 * sizeof(F2FScalar));
+        rus[isymm] *= -1.0;
 
         // Compute and add contribution to aerodynamic surface node displacement
         F2FScalar w = W[j];
         F2FScalar uj[3];
-        computeDispContribution(w, r, Hinv, q, us, uj);
+        computeDispContribution(w, r, Hinv, q, rus, uj);
         vec_add(uj, ua, ua);
       }
     }
@@ -512,6 +514,9 @@ void LinearizedMELD::transferLoads(const F2FScalar *aero_loads,
         F2FScalar fj[3];
         computeLoadContribution(w, q, Hinv, r, fa, fj);
 
+        // Reflect the load contribution back onto the structural node
+        fj[isymm] *= -1.0;
+
         // Add load contribution into global structural load array
         fs[0] += fj[0];
         fs[1] += fj[1];
@@ -801,11 +806,13 @@ void LinearizedMELD::applydDdxA0(const F2FScalar *vecs, F2FScalar *prods) {
         F2FScalar q[3];
         vec_diff(xs0bar, rxs0, q);
 
-        // Get structural node displacement
-        const F2FScalar *us = &Us[3 * indx];
+        // Get structural node displacement and reflect it
+        F2FScalar rus[3];
+        memcpy(rus, &Us[3 * indx], 3 * sizeof(F2FScalar));
+        rus[isymm] *= -1.0;
 
         // Add contribution to aerodynamic surface node displacement
-        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, NULL, NULL);
+        addAdjDispContribution(W[j], r, Hinv, q, rus, lam, rd, NULL, NULL);
       }
     }
 
@@ -904,13 +911,15 @@ void LinearizedMELD::applydDdxS0(const F2FScalar *vecs, F2FScalar *prods) {
         F2FScalar q[3];
         vec_diff(xs0bar, rxs0, q);  // q = rxs - xs0bar
 
-        // Get structural node displacement
-        const F2FScalar *us = &Us[3 * indx];
+        // Get structural node displacement and reflect it
+        F2FScalar rus[3];
+        memcpy(rus, &Us[3 * indx], 3 * sizeof(F2FScalar));
+        rus[isymm] *= -1.0;
 
         // Compute the sensitivity to the node location
         F2FScalar qd[3];
         memset(qd, 0, 3 * sizeof(F2FScalar));
-        addAdjDispContribution(W[j], r, Hinv, q, us, lam, rd, qd, Hinvd);
+        addAdjDispContribution(W[j], r, Hinv, q, rus, lam, rd, qd, Hinvd);
 
         // Add the contribution to the centroid
         xs0bard[0] -= qd[0];
@@ -1108,11 +1117,14 @@ void LinearizedMELD::applydLdxA0(const F2FScalar *vecs, F2FScalar *prods) {
         F2FScalar q[3];
         vec_diff(xs0bar, rxs0, q);
 
-        // Compute load contribution
-        const F2FScalar *fsd = &vecs_global[3 * indx];
+        // Get the load adjoint and reflect it, since the load contribution is
+        // reflected
+        F2FScalar rfsd[3];
+        memcpy(rfsd, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
+        rfsd[isymm] *= -1.0;
         F2FScalar w = global_W[nn * i + j];
 
-        addAdjLoadContribution(w, r, Hinv, q, fa, fsd, rd, NULL, NULL);
+        addAdjLoadContribution(w, r, Hinv, q, fa, rfsd, rd, NULL, NULL);
       }
     }
 
@@ -1211,13 +1223,16 @@ void LinearizedMELD::applydLdxS0(const F2FScalar *vecs, F2FScalar *prods) {
         F2FScalar q[3];
         vec_diff(xs0bar, rxs0, q);  // q = rxs - xs0bar
 
-        // Get the load adjoint
-        const F2FScalar *fsd = &vecs_global[3 * indx];
+        // Get the load adjoint and reflect it, since the load contribution is
+        // reflected
+        F2FScalar rfsd[3];
+        memcpy(rfsd, &vecs_global[3 * indx], 3 * sizeof(F2FScalar));
+        rfsd[isymm] *= -1.0;
 
         // Compute load contribution to the adjoint
         F2FScalar qd[3];
         memset(qd, 0, 3 * sizeof(F2FScalar));
-        addAdjLoadContribution(W[j], r, Hinv, q, fa, fsd, rd, qd, Hinvd);
+        addAdjLoadContribution(W[j], r, Hinv, q, fa, rfsd, rd, qd, Hinvd);
 
         // Add the contribution to the centroid
         xs0bard[0] -= qd[0];
